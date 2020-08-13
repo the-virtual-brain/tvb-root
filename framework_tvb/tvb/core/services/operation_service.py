@@ -49,7 +49,7 @@ from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
 from tvb.config import choices, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS
 from tvb.core.adapters import constants
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
+from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
@@ -106,7 +106,7 @@ class OperationService:
         operations = self.prepare_operations(current_user.id, project, algo, algo_category,
                                              visible, view_model=model_view, **kwargs)[0]
 
-        if isinstance(adapter_instance, ABCSynchronous):
+        if adapter_instance.launch_mode == AdapterLaunchModeEnum.SYNC_SAME_MEM:
             if len(operations) > 1:
                 raise LaunchException("Synchronous operations are not supporting ranges!")
             if len(operations) < 1:
@@ -317,6 +317,8 @@ class OperationService:
         for operation in operations:
             try:
                 BackendClientFactory.execute(str(operation.id), current_username, adapter_instance)
+            except TVBException as ex:
+                self._handle_exception(ex, {}, ex.message, operation)
             except Exception as excep:
                 self._handle_exception(excep, {}, "Could not start operation!", operation)
 

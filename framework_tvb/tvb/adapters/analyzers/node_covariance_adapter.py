@@ -37,19 +37,20 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 import json
 import uuid
+
 import numpy
-from tvb.basic.neotraits.api import HasTraits, Attr
-from tvb.basic.neotraits.info import narray_describe
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.datatypes.graph import Covariance
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
+from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.info import narray_describe
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import Covariance
+from tvb.datatypes.time_series import TimeSeries
 
 
 class NodeCovariance(HasTraits):
@@ -96,7 +97,7 @@ class NodeCovarianceAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class NodeCovarianceAdapter(ABCAsynchronous):
+class NodeCovarianceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeCovariance algorithm. """
     _ui_name = "Temporal covariance of nodes"
     _ui_description = "Compute Temporal Node Covariance for a TimeSeries input DataType."

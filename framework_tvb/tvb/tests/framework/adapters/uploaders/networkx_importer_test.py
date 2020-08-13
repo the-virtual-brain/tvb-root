@@ -34,25 +34,27 @@
 """
 
 import os
-from tvb.adapters.uploaders.networkx_importer import NetworkxImporterModel, NetworkxConnectivityImporter
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.uploaders.networkx_importer import NetworkxImporterModel, NetworkxConnectivityImporter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestNetworkxImporter(TransactionalTestCase):
+class TestNetworkxImporter(BaseTestCase):
     """
     Unit-tests for NetworkxImporter
     """
 
     upload_file = os.path.join(os.path.dirname(__file__), "test_data", 'connectome_83.gpickle')
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         self.test_user = TestFactory.create_user('Networkx_User')
         self.test_project = TestFactory.create_project(self.test_user, "Networkx_Project")
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import(self):
@@ -61,7 +63,7 @@ class TestNetworkxImporter(TransactionalTestCase):
 
         view_model = NetworkxImporterModel()
         view_model.data_file = self.upload_file
-        TestFactory.launch_importer(NetworkxConnectivityImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(NetworkxConnectivityImporter, view_model, self.test_user, self.test_project, False)
 
         count_after = self.count_all_entities(ConnectivityIndex)
         assert 1 == count_after

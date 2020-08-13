@@ -36,17 +36,18 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 
 """
 import uuid
+
 import numpy
-from tvb.analyzers.pca import PCA
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5
+from tvb.analyzers.pca import PCA
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
 
 
 class PCAAdapterModel(ViewModel, PCA):
@@ -88,7 +89,7 @@ class PCAAdapterForm(ABCAdapterForm):
         return PCA()
 
 
-class PCAAdapter(ABCAsynchronous):
+class PCAAdapter(ABCAdapter):
     """ TVB adapter for calling the PCA algorithm. """
 
     _ui_name = "Principal Component Analysis"

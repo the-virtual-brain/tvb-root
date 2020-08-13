@@ -35,18 +35,19 @@ Adapter that uses the traits module to generate interfaces for ICA Analyzer.
 
 """
 
-import uuid
-import numpy
 import json
-from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
+import uuid
+
+import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
 from tvb.analyzers.ica import FastICA
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
 
@@ -88,7 +89,7 @@ class ICAAdapterForm(ABCAdapterForm):
         return FastICA()
 
 
-class ICAAdapter(ABCAsynchronous):
+class ICAAdapter(ABCAdapter):
     """ TVB adapter for calling the ICA algorithm. """
 
     _ui_name = "Independent Component Analysis"

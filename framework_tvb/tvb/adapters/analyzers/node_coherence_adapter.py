@@ -38,18 +38,19 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 
 import json
 import uuid
+
 import numpy
-from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
 from tvb.analyzers.node_coherence import NodeCoherence
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
-from tvb.datatypes.time_series import TimeSeries
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.spectral import CoherenceSpectrum
+from tvb.datatypes.time_series import TimeSeries
 
 
 class NodeCoherenceModel(ViewModel, NodeCoherence):
@@ -89,7 +90,7 @@ class NodeCoherenceForm(ABCAdapterForm):
         return NodeCoherence()
 
 
-class NodeCoherenceAdapter(ABCAsynchronous):
+class NodeCoherenceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeCoherence algorithm. """
 
     _ui_name = "Cross coherence of nodes"
