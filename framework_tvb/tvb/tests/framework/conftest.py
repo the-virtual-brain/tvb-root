@@ -27,13 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import datetime
+
 import json
 import os
 import os.path
 import uuid
 import numpy
 import pytest
+from datetime import datetime
 from time import sleep
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -45,7 +46,12 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesReg
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.profile import TvbProfile
+from tvb.basic.neotraits.api import Range
+from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.transient.range_parameter import RangeParameter
+from tvb.core.services.burst_service import BurstService
+from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
@@ -578,7 +584,7 @@ def test_adapter_factory():
         stored_adapter = Algorithm(adapter_class.__module__, adapter_class.__name__, algo_category_id,
                                    adapter_class.get_group_name(), adapter_class.get_group_description(),
                                    adapter_class.get_ui_name(), adapter_class.get_ui_description(),
-                                   adapter_class.get_ui_subsection(), datetime.datetime.now())
+                                   adapter_class.get_ui_subsection(), datetime.now())
         adapter_inst = adapter_class()
 
         adapter_form = adapter_inst.get_form()
@@ -677,5 +683,29 @@ def pse_burst_configuration_factory():
         burst.fk_metric_operation_group = group_ms.id
         burst = dao.store_entity(burst)
         return burst
+
+    return build
+
+
+@pytest.fixture()
+def simulation_launch(connectivity_index_factory):
+    def build(test_user, test_project, simulation_length=10, is_group=False):
+        model = SimulatorAdapterModel()
+        model.connectivity = connectivity_index_factory().gid
+        model.simulation_length = simulation_length
+        burst = BurstConfiguration(test_project.id, name="Sim " + str(datetime.now()))
+        burst.start_time = datetime.now()
+        algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        service = SimulatorService()
+        if is_group:
+            range_param = RangeParameter("conduction_speed", float, Range(lo=50.0, hi=100.0, step=20.0))
+            burst.range1 = range_param.to_json()
+            burst = BurstService().prepare_burst_for_pse(burst)
+            op = service.async_launch_and_prepare_pse(burst, test_user, test_project, algorithm,
+                                                      range_param, None, model)
+        else:
+            dao.store_entity(burst)
+            op = service.async_launch_and_prepare_simulation(burst, test_user, test_project, algorithm, model)
+        return op
 
     return build
