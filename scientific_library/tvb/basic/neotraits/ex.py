@@ -33,6 +33,7 @@ class TraitError(Exception):
     def __init__(self, msg='', trait=None, attr=None):
         self.trait = trait
         self.attr = attr
+        self.message = msg
         super(TraitError, self).__init__(msg)
 
     def __str__(self):
