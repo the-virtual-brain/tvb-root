@@ -84,7 +84,7 @@ class H5File(object):
         self.user_tag_3 = Scalar(Attr(str), self, name='user_tag_3')
         self.user_tag_4 = Scalar(Attr(str), self, name='user_tag_4')
         self.user_tag_5 = Scalar(Attr(str), self, name='user_tag_5')
-        self.operation_tag = Scalar(Attr(str), self, name='operation_tag')
+        self.operation_tag = Scalar(Attr(str, required=False), self, name='operation_tag')
         self.parent_burst = Uuid(Attr(uuid.UUID, required=False), self, name='parent_burst')
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
@@ -201,9 +201,12 @@ class H5File(object):
         self.generic_attributes.user_tag_3 = self.user_tag_3.load()
         self.generic_attributes.user_tag_4 = self.user_tag_4.load()
         self.generic_attributes.user_tag_5 = self.user_tag_5.load()
-        self.generic_attributes.operation_tag = self.operation_tag.load()
         self.generic_attributes.visible = self.visible.load()
         self.generic_attributes.create_date = string2date(str(self.create_date.load())) or None
+        try:
+            self.generic_attributes.operation_tag = self.operation_tag.load()
+        except MissingDataSetException:
+            self.generic_attributes.operation_tag = None
         try:
             burst = self.parent_burst.load()
             self.generic_attributes.parent_burst = burst.hex if burst is not None else None
