@@ -116,6 +116,7 @@ def store_complete(datatype, base_dir, generic_attributes=GenericAttributes()):
     index_class = REGISTRY.get_index_for_datatype(datatype.__class__)
     index_inst = index_class()
     index_inst.fill_from_has_traits(datatype)
+    index_inst.fill_from_generic_attributes(generic_attributes)
 
     h5_class = REGISTRY.get_h5file_for_datatype(datatype.__class__)
     storage_path = path_for(base_dir, h5_class, datatype.gid)

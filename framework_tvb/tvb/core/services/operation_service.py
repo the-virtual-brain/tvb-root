@@ -120,20 +120,18 @@ class OperationService:
     def _prepare_metadata(algo_category, submit_data, operation_group=None, burst=None):
         """
         Gather generic_metadata from submitted fields and current to be execute algorithm.
-        Will populate STATE, GROUP in generic_metadata
+        Will populate STATE, GROUP, etc in generic_metadata
         """
-        user_group = None
-        if DataTypeMetaData.KEY_OPERATION_TAG in submit_data:
-            user_group = submit_data[DataTypeMetaData.KEY_OPERATION_TAG]
-
         generic_metadata = GenericAttributes()
         generic_metadata.state = algo_category.defaultdatastate
         generic_metadata.parent_burst = burst
+        if DataTypeMetaData.KEY_OPERATION_TAG in submit_data:
+            generic_metadata.operation_tag = submit_data[DataTypeMetaData.KEY_OPERATION_TAG]
         if DataTypeMetaData.KEY_TAG_1 in submit_data:
             generic_metadata.user_tag_1 = submit_data[DataTypeMetaData.KEY_TAG_1]
         if operation_group is not None:
             generic_metadata.user_tag_3 = operation_group.name
-        return generic_metadata, user_group
+        return generic_metadata
 
     @staticmethod
     def _read_set(values):
@@ -164,8 +162,8 @@ class OperationService:
         metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
         datatype_index = h5.REGISTRY.get_index_for_datatype(TimeSeries)
         time_series_index = dao.get_generic_entity(datatype_index, sim_operation.id, 'fk_from_operation')[0]
-        ga, user_group = self._prepare_metadata(metric_algo.algorithm_category, {},
-                                                None, time_series_index.fk_parent_burst)
+        ga = self._prepare_metadata(metric_algo.algorithm_category, {}, None, time_series_index.fk_parent_burst)
+        ga.visible = False
 
         view_model = get_class_by_name("{}.{}".format(MEASURE_METRICS_MODULE, MEASURE_METRICS_MODEL_CLASS))()
         view_model.time_series = time_series_index.gid
@@ -176,7 +174,7 @@ class OperationService:
         metric_operation_group_id = parent_burst.fk_metric_operation_group
         range_values = sim_operation.range_values
         metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
-                                     json.dumps({'gid': view_model.gid.hex}),
+                                     json.dumps({'gid': view_model.gid.hex}), user_group=ga.operation_tag,
                                      op_group_id=metric_operation_group_id, range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
@@ -204,8 +202,7 @@ class OperationService:
         self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) +
                           ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(op_group_id) + ")")
 
-        visible_operation = visible and algorithm.algorithm_category.display is False
-        operation.visible = visible_operation
+        operation.visible = visible
         operation = dao.store_entity(operation)
         return operation
 
@@ -227,18 +224,18 @@ class OperationService:
         group_id = None
         if group is not None:
             group_id = group.id
-        ga, user_group = self._prepare_metadata(category, kwargs, group)
+        ga = self._prepare_metadata(category, kwargs, group)
+        ga.visible = visible
         view_model.generic_attributes = ga
 
         self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project.id) +
                           ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(group_id) + ")")
 
-        visible_operation = visible and category.display is False
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
             operation = Operation(user_id, project.id, algorithm.id, json.dumps({'gid': view_model.gid.hex}),
-                                  op_group_id=group_id, user_group=user_group, range_values=range_values)
-            operation.visible = visible_operation
+                                  op_group_id=group_id, user_group=ga.operation_tag, range_values=range_values)
+            operation.visible = visible
             operations.append(operation)
         operations = dao.store_entities(operations)
 

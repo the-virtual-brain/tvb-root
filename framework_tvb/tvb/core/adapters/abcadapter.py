@@ -390,14 +390,16 @@ class ABCAdapter(object):
         for res in result:
             if res is None:
                 continue
-            res.fill_from_generic_attributes(self.generic_attributes)
+            if not res.fixed_generic_attributes:
+                res.fill_from_generic_attributes(self.generic_attributes)
             res.fk_from_operation = self.operation_id
             res.fk_datatype_group = data_type_group_id
 
             associated_file = h5.path_for_stored_index(res)
             if os.path.exists(associated_file):
-                with H5File.from_file(associated_file) as f:
-                    f.store_generic_attributes(self.generic_attributes)
+                if not res.fixed_generic_attributes:
+                    with H5File.from_file(associated_file) as f:
+                        f.store_generic_attributes(self.generic_attributes)
                 # Compute size-on disk, in case file-storage is used
                 res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
 

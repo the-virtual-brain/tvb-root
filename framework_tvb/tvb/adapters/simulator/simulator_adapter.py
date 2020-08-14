@@ -324,7 +324,10 @@ class SimulatorAdapter(ABCAdapter):
         if not self._is_group_launch():
             simulation_history = SimulationHistory()
             simulation_history.populate_from(self.algorithm)
-            history_index = h5.store_complete(simulation_history, self._get_output_path())
+            self.generic_attributes.visible = False
+            history_index = h5.store_complete(simulation_history, self._get_output_path(), self.generic_attributes)
+            self.generic_attributes.visible = True
+            history_index.fixed_generic_attributes = True
             results.append(history_index)
 
         self.log.debug("Simulation state persisted, returning results ")
