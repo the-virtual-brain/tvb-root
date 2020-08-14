@@ -312,16 +312,12 @@ class TestProjectService(TransactionalTestCase):
         user1 = TestFactory.create_user("another_user")
         for i in range(4):
             test_proj.append(TestFactory.create_project(self.test_user if i < 3 else user1, 'test_proj' + str(i)))
-
-        project_storage = self.structure_helper.get_project_folder(test_proj[0])
-
         operation = TestFactory.create_operation(test_user=self.test_user, test_project=test_proj[0])
-
-        project_storage = os.path.join(project_storage, str(operation.id))
-        os.makedirs(project_storage)
         datatype = dao.store_entity(model_datatype.DataType(module="test_data", subject="subj1",
                                                             state="test_state", operation_id=operation.id))
+
         linkable = self.project_service.get_linkable_projects_for_user(self.test_user.id, str(datatype.id))[0]
+
         assert len(linkable) == 2, "Wrong count of link-able projects!"
         proj_names = [project.name for project in linkable]
         assert test_proj[1].name in proj_names
@@ -390,7 +386,7 @@ class TestProjectService(TransactionalTestCase):
 
         assert not os.path.exists(vw_h5_path)
         exact_data = dao.get_datatype_by_gid(gid)
-        assert exact_data  is not None, "Data should still be in DB, because of links"
+        assert exact_data is not None, "Data should still be in DB, because of links"
         vw_h5_path_new = h5.path_for_stored_index(exact_data)
         assert os.path.exists(vw_h5_path_new)
         assert vw_h5_path_new != vw_h5_path
