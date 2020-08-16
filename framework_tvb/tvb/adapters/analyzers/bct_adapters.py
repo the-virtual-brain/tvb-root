@@ -30,7 +30,6 @@
 
 import os
 from abc import abstractmethod
-
 from tvb.adapters.analyzers.matlab_worker import MatlabWorker
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
