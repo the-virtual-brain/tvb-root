@@ -215,6 +215,7 @@ class SimulatorService(object):
 
             self.logger.debug("Finished launching workflows. " + str(len(operations) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
+            return first_operation
 
         except Exception as excep:
             self.logger.error(excep)
