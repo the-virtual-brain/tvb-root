@@ -285,6 +285,7 @@ class ImportService(object):
                     operation = Operation(project.fk_admin, project.id, alg.id,
                                           parameters=self._get_param_from_view_model_gid(main_view_model),
                                           status=STATUS_FINISHED,
+                                          user_group=main_view_model.generic_attributes.operation_tag,
                                           start_date=datetime.now(), completion_date=datetime.now())
                     operation.create_date = main_view_model.create_date
                     self.logger.debug("Found main ViewModel to create operation for it: " + str(operation))

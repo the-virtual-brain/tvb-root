@@ -56,6 +56,7 @@ from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
@@ -389,21 +390,16 @@ class ABCAdapter(object):
         for res in result:
             if res is None:
                 continue
-            res.subject = self.generic_attributes.subject
-            res.state = self.generic_attributes.state
-            res.fk_parent_burst = self.generic_attributes.parent_burst
+            if not res.fixed_generic_attributes:
+                res.fill_from_generic_attributes(self.generic_attributes)
             res.fk_from_operation = self.operation_id
-            res.user_tag_1 = self.generic_attributes.user_tag_1
-            res.user_tag_2 = self.generic_attributes.user_tag_2
-            res.user_tag_3 = self.generic_attributes.user_tag_3
-            res.user_tag_4 = self.generic_attributes.user_tag_4
-            res.user_tag_5 = self.generic_attributes.user_tag_5
             res.fk_datatype_group = data_type_group_id
 
             associated_file = h5.path_for_stored_index(res)
             if os.path.exists(associated_file):
-                with H5File.from_file(associated_file) as f:
-                    f.store_generic_attributes(self.generic_attributes)
+                if not res.fixed_generic_attributes:
+                    with H5File.from_file(associated_file) as f:
+                        f.store_generic_attributes(self.generic_attributes)
                 # Compute size-on disk, in case file-storage is used
                 res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
 
@@ -522,6 +518,7 @@ class ABCAdapter(object):
 
     @staticmethod
     def determine_adapter_class(stored_adapter):
+        # type: (Algorithm) -> ABCAdapter
         """
         Determine the class of an adapter based on module and classname strings from stored_adapter
         :param stored_adapter: Algorithm or AlgorithmDTO type
@@ -533,6 +530,7 @@ class ABCAdapter(object):
 
     @staticmethod
     def build_adapter(stored_adapter):
+        # type: (Algorithm) -> ABCAdapter
         """
         Having a module and a class name, create an instance of ABCAdapter.
         """

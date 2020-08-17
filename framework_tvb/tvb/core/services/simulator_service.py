@@ -98,8 +98,8 @@ class SimulatorService(object):
         try:
             operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
                                                                  session_stored_simulator.gid)
-            ga, _ = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
-                                                             None, burst_config.gid)
+            ga = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
+                                                          None, burst_config.gid)
             session_stored_simulator.generic_attributes = ga
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             h5.store_view_model(session_stored_simulator, storage_path)

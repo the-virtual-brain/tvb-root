@@ -108,21 +108,22 @@ def load_with_links(source_path):
     return loader.load_with_links(source_path)
 
 
-def store_complete(datatype, base_dir):
-    # type: (HasTraits, str) -> DataType
+def store_complete(datatype, base_dir, generic_attributes=GenericAttributes()):
+    # type: (HasTraits, str, GenericAttributes) -> DataType
     """
     Stores the given HasTraits instance in a h5 file, and fill the Index entity for later storage in DB
     """
     index_class = REGISTRY.get_index_for_datatype(datatype.__class__)
     index_inst = index_class()
     index_inst.fill_from_has_traits(datatype)
+    index_inst.fill_from_generic_attributes(generic_attributes)
 
     h5_class = REGISTRY.get_h5file_for_datatype(datatype.__class__)
     storage_path = path_for(base_dir, h5_class, datatype.gid)
     with h5_class(storage_path) as f:
         f.store(datatype)
         # Store empty Generic Attributes, in case the file is saved no through ABCAdapter it can still be used
-        f.store_generic_attributes(GenericAttributes())
+        f.store_generic_attributes(generic_attributes)
 
     return index_inst
 
