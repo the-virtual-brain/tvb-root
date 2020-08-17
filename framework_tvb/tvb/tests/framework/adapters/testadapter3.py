@@ -32,8 +32,9 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.core.adapters import abcadapter
 from tvb.basic.neotraits.api import Int
+from tvb.core.adapters import abcadapter
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
 from tvb.core.neotraits.forms import IntField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
@@ -75,11 +76,12 @@ class TestAdapter3Form(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapter3(abcadapter.ABCAsynchronous):
+class TestAdapter3(abcadapter.ABCAdapter):
     """
     This class is used for testing purposes.
     It will be used as an adapter for testing Groups of operations. For ranges to work, it need to be asynchronous.
     """
+    launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
 
     def __init__(self):
         super(TestAdapter3, self).__init__()
@@ -144,10 +146,11 @@ class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapterHugeMemoryRequired(abcadapter.ABCAsynchronous):
+class TestAdapterHugeMemoryRequired(abcadapter.ABCAdapter):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
+    launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
 
     def __init__(self):
         super(TestAdapterHugeMemoryRequired, self).__init__()
@@ -196,10 +199,11 @@ class TestAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapterHDDRequired(abcadapter.ABCSynchronous):
+class TestAdapterHDDRequired(abcadapter.ABCAdapter):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
+    launch_mode = abcadapter.AdapterLaunchModeEnum.SYNC_SAME_MEM
 
     def __init__(self):
         super(TestAdapterHDDRequired, self).__init__()

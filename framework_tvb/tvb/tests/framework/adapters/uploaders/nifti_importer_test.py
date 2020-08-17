@@ -33,24 +33,25 @@
 """
 import json
 import os
+
 import numpy
-import tvb_data.nifti as demo_data
 import tvb_data
-from tvb.adapters.uploaders.nifti_importer import NIFTIImporterModel, NIFTIImporter
+import tvb_data.nifti as demo_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
-from tvb.core.neocom import h5
+from tvb.adapters.uploaders.nifti_importer import NIFTIImporterModel, NIFTIImporter
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestNIFTIImporter(TransactionalTestCase):
+class TestNIFTIImporter(BaseTestCase):
     """
     Unit-tests for NIFTI importer.
     """
@@ -64,14 +65,15 @@ class TestNIFTIImporter(TransactionalTestCase):
     DEFAULT_ORIGIN = [[0.0, 0.0, 0.0]]
     UNKNOWN_STR = "unknown"
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         self.test_user = TestFactory.create_user('Nifti_Importer_User')
         self.test_project = TestFactory.create_project(self.test_user, "Nifti_Importer_Project")
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
         """
         Clean-up tests data
         """
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_path=None, expected_result_class=StructuralMRIIndex, connectivity_gid=None):
@@ -86,7 +88,7 @@ class TestNIFTIImporter(TransactionalTestCase):
         view_model.connectivity = connectivity_gid
         view_model.data_subject = "Bla Bla"
 
-        TestFactory.launch_importer(NIFTIImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(NIFTIImporter, view_model, self.test_user, self.test_project, False)
 
         dts, count = dao.get_values_of_datatype(self.test_project.id, expected_result_class, None)
         assert 1, count == "Project should contain only one data type."

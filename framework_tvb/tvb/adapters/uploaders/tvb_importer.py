@@ -114,7 +114,7 @@ class TVBImporter(ABCUploader):
                 # Creates a new TMP folder where to extract data
                 tmp_folder = os.path.join(self.storage_path, "tmp_import")
                 FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
-                operations = service.import_project_operations(current_op.project, self.storage_path)
+                operations = service.import_project_operations(current_op.project, tmp_folder)
                 shutil.rmtree(tmp_folder)
                 self.nr_of_datatypes += len(operations)
 
@@ -128,9 +128,8 @@ class TVBImporter(ABCUploader):
                 if manager.is_valid_hdf5_file():
                     datatype = None
                     try:
-                        datatype = service.load_datatype_from_file(folder, h5file, self.operation_id,
-                                                                   final_storage=self.storage_path)
-                        service.store_datatype(datatype)
+                        datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
+                        service.store_datatype(datatype, view_model.data_file)
                         self.nr_of_datatypes += 1
                     except ImportException as excep:
                         self.log.exception(excep)

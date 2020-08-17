@@ -33,17 +33,17 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
-from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
 from tvb.basic.neotraits.api import Attr
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
-from tvb.core.neotraits.forms import ScalarField, FormField, SelectField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
-from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
+from tvb.core.neotraits.forms import ScalarField, FormField, SelectField, TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.surfaces import Surface, CORTICAL
 
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
@@ -132,7 +132,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
                 'equation_params_div': self.NAME_EQUATION_PARAMS_DIV, 'legend': 'Local connectivity parameters'}
 
 
-class LocalConnectivityCreator(ABCAsynchronous):
+class LocalConnectivityCreator(ABCAdapter):
     """
     The purpose of this adapter is create a LocalConnectivity.
     """

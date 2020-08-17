@@ -38,23 +38,24 @@ Adapter that uses the traits model to generate interfaces for FCD Analyzer.
 
 import json
 import uuid
+
 import numpy as np
 from scipy import linalg
 from scipy.spatial.distance import pdist
 from sklearn.cluster import DBSCAN
 from sklearn.manifold import SpectralEmbedding
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
-from tvb.basic.neotraits.info import narray_describe
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
-from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
+from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5
+from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.info import narray_describe
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -127,7 +128,7 @@ class FCDAdapterForm(ABCAdapterForm):
         return FcdCalculator()
 
 
-class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
+class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
     """ TVB adapter for calling the Pearson CrossCorrelation algorithm.
 
         The present class will do the following actions:

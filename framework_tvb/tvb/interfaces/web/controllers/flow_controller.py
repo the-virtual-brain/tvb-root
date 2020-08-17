@@ -48,22 +48,21 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.forms import Form, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr
-from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import url2path, parse_json_parameters, string2date, string2bool
+from tvb.core.utils import url2path, parse_json_parameters, string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array, \
-    expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -452,7 +451,7 @@ class FlowController(BaseController):
 
         :returns: JSON representation of the attribute.
         :param entity_gid: GID for DataType entity
-        :param dataset_name: name of the dataType property /method 
+        :param dataset_name: name of the dataType property /method
         :param flatten: result should be flatten before return (use with WebGL data mainly e.g vertices/triangles)
             Ignored if the attribute is not an ndarray
         :param datatype_kwargs: if passed, will contain a dictionary of type {'name' : 'gid'}, and for each such
@@ -491,7 +490,7 @@ class FlowController(BaseController):
     @expose_fragment("flow/full_adapter_interface")
     def getadapterinterface(self, project_id, algorithm_id, back_page=None):
         """
-        AJAX exposed method. Will return only a piece of a page, 
+        AJAX exposed method. Will return only a piece of a page,
         to be integrated as part in another page.
         """
         template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page)
@@ -525,7 +524,7 @@ class FlowController(BaseController):
     @handle_error(redirect=True)
     @context_selected
     def reloadoperation(self, operation_id, **_):
-        """Redirect to Operation Input selection page, 
+        """Redirect to Operation Input selection page,
         with input data already selected."""
         operation = OperationService.load_operation(operation_id)
         data = parse_json_parameters(operation.parameters)
@@ -539,7 +538,7 @@ class FlowController(BaseController):
     @context_selected
     def reload_burst_operation(self, operation_id, is_group, **_):
         """
-        Find out from which burst was this operation launched. Set that burst as the selected one and 
+        Find out from which burst was this operation launched. Set that burst as the selected one and
         redirect to the burst page.
         """
         is_group = int(is_group)
@@ -549,8 +548,8 @@ class FlowController(BaseController):
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
             operation = OperationService.load_operation(int(first_op.id))
-        operation.burst.prepare_after_load()
-        common.add2session(common.KEY_BURST_CONFIG, operation.burst)
+        SimulatorController().copy_simulator_configuration(operation.burst.id)
+
         raise cherrypy.HTTPRedirect("/burst/")
 
     @expose_json
@@ -561,16 +560,9 @@ class FlowController(BaseController):
         """
         operation_id = int(operation_id)
         is_group = int(is_group) != 0
-        # Load before we remove, to have its data in memory here
-        burst_config = BurstService.get_burst_for_operation_id(operation_id)
-
-        result = OperationService.stop_operation(operation_id, is_group, remove_after_stop)
-        if remove_after_stop:
-            current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-            if current_burst is not None and burst_config is not None and current_burst.id == burst_config.id:
-                common.remove_from_session(common.KEY_BURST_CONFIG)
-                common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(burst_config.project.id))
-        return result
+        if isinstance(remove_after_stop, str):
+            remove_after_stop = bool(remove_after_stop)
+        return SimulatorController.cancel_or_remove_operation(operation_id, is_group, remove_after_stop)
 
     def fill_default_attributes(self, template_dictionary, title='-'):
         """
@@ -587,9 +579,6 @@ class FlowController(BaseController):
         template_dictionary[common.KEY_INCLUDE_RESOURCES] = 'flow/included_resources'
         BaseController.fill_default_attributes(self, template_dictionary)
         return template_dictionary
-
-    ##### Below this point are operations that might be moved to different #####
-    ##### controller                                                       #####
 
     NEW_SELECTION_NAME = 'New selection'
 

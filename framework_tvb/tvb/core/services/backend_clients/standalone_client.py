@@ -41,8 +41,10 @@ import sys
 from subprocess import Popen, PIPE
 from threading import Thread, Event
 
+from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
@@ -159,7 +161,13 @@ class StandAloneClient(BackendClient):
         """Start asynchronous operation locally"""
         thread = OperationExecutor(operation_id)
         CURRENT_ACTIVE_THREADS.append(thread)
-        thread.start()
+        if adapter_instance.launch_mode is AdapterLaunchModeEnum.SYNC_DIFF_MEM:
+            thread.run()
+            operation = dao.get_operation_by_id(operation_id)
+            if operation.additional_info and operation.status == STATUS_ERROR:
+                raise TVBException(operation.additional_info)
+        else:
+            thread.start()
 
     @staticmethod
     def stop_operation(operation_id):
@@ -168,7 +176,7 @@ class StandAloneClient(BackendClient):
         """
         operation = dao.try_get_operation_by_id(operation_id)
         if not operation or operation.has_finished:
-            LOGGER.warning("Operation already stopped or not found is given to stop job: %s" % operation_id)
+            LOGGER.info("Operation already stopped or not found at ID: %s" % operation_id)
             return True
 
         LOGGER.debug("Stopping operation: %s" % str(operation_id))

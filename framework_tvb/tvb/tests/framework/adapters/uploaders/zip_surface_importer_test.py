@@ -33,30 +33,32 @@
 """
 
 import os
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.factory import TestFactory
+
+import tvb_data.surfaceData
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
-import tvb_data.surfaceData
+from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestZIPSurfaceImporter(TransactionalTestCase):
+class TestZIPSurfaceImporter(BaseTestCase):
     """
     Unit-tests for Zip Surface importer.
     """
 
     surf_skull = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'outer_skull_4096.zip')
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         self.test_user = TestFactory.create_user('Zip_Surface_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Zip_Surface_Project')
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_surf_zip(self):
-        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.surf_skull, CORTICAL)
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.surf_skull, CORTICAL,
+                                                 same_process=False)
         assert 4096 == surface.number_of_vertices
         assert 8188 == surface.number_of_triangles
         assert surface.valid_for_simulations
-

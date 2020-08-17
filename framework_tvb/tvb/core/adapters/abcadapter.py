@@ -40,16 +40,17 @@ import json
 import os
 import typing
 import uuid
-import numpy
-import psutil
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
+from enum import Enum
 from functools import wraps
+
+import numpy
+import psutil
 from six import add_metaclass
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, HasTraits, List
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters import constants
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -165,6 +166,12 @@ class ABCAdapterForm(Form):
                 field.fill_from_post(form_data)
 
 
+class AdapterLaunchModeEnum(Enum):
+    SYNC_SAME_MEM = 'sync_same_mem'
+    SYNC_DIFF_MEM = 'sync_diff_mem'
+    ASYNC_DIFF_MEM = 'async_diff_mem'
+
+
 @add_metaclass(ABCMeta)
 class ABCAdapter(object):
     """
@@ -172,6 +179,7 @@ class ABCAdapter(object):
     """
     # model.Algorithm instance that will be set for each adapter class created by in build_adapter method
     stored_adapter = None
+    launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
 
     def __init__(self):
         self.generic_attributes = GenericAttributes()
@@ -544,23 +552,9 @@ class ABCAdapter(object):
         input_gid = json.loads(operation.parameters)['gid']
         return h5.load_view_model(input_gid, storage_path)
 
-
-@add_metaclass(ABCMeta)
-class ABCAsynchronous(ABCAdapter):
-    """
-    Abstract class, for marking adapters that are prone to be executed  on Cluster.
-    """
-
     def array_size2kb(self, size):
         """
         :param size: size in bytes
         :return: size in kB
         """
         return size * TvbProfile.current.MAGIC_NUMBER / 8 / 2 ** 10
-
-
-@add_metaclass(ABCMeta)
-class ABCSynchronous(ABCAdapter):
-    """
-    Abstract class, for marking adapters that are prone to be NOT executed on Cluster.
-    """

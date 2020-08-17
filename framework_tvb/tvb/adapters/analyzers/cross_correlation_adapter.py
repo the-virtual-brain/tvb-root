@@ -39,24 +39,25 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 import json
 import uuid
+
 import numpy
 from scipy.signal.signaltools import correlate
-from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
     TimeSeriesSEEGIndex
+from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.basic.neotraits.api import HasTraits, Attr, Float
 from tvb.basic.neotraits.info import narray_describe
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.datatypes.graph import CorrelationCoefficients
+from tvb.datatypes.temporal_correlations import CrossCorrelation
+from tvb.datatypes.time_series import TimeSeries
 
 
 class CrossCorrelate(HasTraits):
@@ -104,7 +105,7 @@ class CrossCorrelateAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class CrossCorrelateAdapter(ABCAsynchronous):
+class CrossCorrelateAdapter(ABCAdapter):
     """ TVB adapter for calling the CrossCorrelate algorithm. """
     _ui_name = "Cross-correlation of nodes"
     _ui_description = "Cross-correlate two one-dimensional arrays."
@@ -313,7 +314,7 @@ class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
         return CorrelationCoefficient()
 
 
-class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
+class PearsonCorrelationCoefficientAdapter(ABCAdapter):
     """ TVB adapter for calling the Pearson correlation coefficients algorithm. """
 
     _ui_name = "Pearson correlation coefficients"

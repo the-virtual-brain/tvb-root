@@ -64,4 +64,4 @@ class BackendClientFactory(object):
     @staticmethod
     def stop_operation(operation_id):
         backend_client = BackendClientFactory._get_backend_client()
-        backend_client.stop_operation(operation_id)
+        return backend_client.stop_operation(operation_id)

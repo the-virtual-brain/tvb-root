@@ -196,7 +196,7 @@ def get_full_class_name(class_entity):
 
 
 def store_view_model(view_model, base_dir):
-    # type: (ViewModel, str) -> None
+    # type: (ViewModel, str) -> str
     """
     Completely store any ViewModel object to the directory specified by base_dir.
     It works recursively because there are view models that are serialized in multiple files (eg. SimulatorAdapterModel)
@@ -222,6 +222,7 @@ def store_view_model(view_model, base_dir):
                     store_view_model(model_attr[idx], base_dir)
             else:
                 store_view_model(model_attr, base_dir)
+    return h5_path
 
 
 def determine_filepath(gid, base_dir):
@@ -232,7 +233,7 @@ def determine_filepath(gid, base_dir):
 
 
 def load_view_model(gid, base_dir):
-    # type: (uuid.UUID, str) -> ViewModel
+    # type: (typing.Union[uuid.UUID, str], str) -> ViewModel
     """
     Load a ViewModel object by reading the H5 file with the given GID, from the directory specified by base_dir.
     """

@@ -34,7 +34,7 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import json
 import os
 import shutil
 from cgi import FieldStorage
@@ -44,8 +44,9 @@ from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.config import VIEW_MODEL2ADAPTER
+from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED
@@ -62,19 +63,21 @@ from tvb.core.services.exceptions import ImportException, ServicesBaseException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.neocom import h5
-from tvb.core.neotraits._h5core import H5File, ViewModelH5
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
 
 OPERATION_XML = "Operation.xml"
 
 
 class Operation2ImportData(object):
     # Plain Object for transporting operation related data before import
-    def __init__(self, operation, operation_folder, main_view_model=None, dt_paths=None, all_view_model_files=None):
+    def __init__(self, operation, operation_folder, main_view_model=None,
+                 dt_paths=None, all_view_model_files=None, is_fake=False):
         self.operation = operation
         self.operation_folder = operation_folder
         self.main_view_model = main_view_model
         self.dt_paths = dt_paths
         self.all_view_model_files = all_view_model_files
+        self.is_self_generated = is_fake
 
     @property
     def is_old_form(self):
@@ -194,22 +197,21 @@ class ImportService(object):
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
 
-    def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group, new_op_folder):
+    def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """
         Loads datatypes from operation folder
-        :returns: Datatype entities list
+        :returns: Datatype entities as dict {original_path: Dt instance}
         """
-        all_datatypes = []
+        all_datatypes = {}
         for file_name in os.listdir(src_op_path):
             if file_name.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
                 h5_file = os.path.join(src_op_path, file_name)
                 try:
                     file_update_manager = FilesUpdateManager()
                     file_update_manager.upgrade_file(h5_file)
-                    datatype = self.load_datatype_from_file(src_op_path, file_name, operation_entity.id,
-                                                            datatype_group, final_storage=new_op_folder,
-                                                            current_project_id=operation_entity.fk_launched_in)
-                    all_datatypes.append(datatype)
+                    datatype = self.load_datatype_from_file(h5_file, operation_entity.id,
+                                                            datatype_group, operation_entity.fk_launched_in)
+                    all_datatypes[h5_file] = datatype
 
                 except IncompatibleFileManagerException:
                     os.remove(h5_file)
@@ -218,16 +220,18 @@ class ImportService(object):
         return all_datatypes
 
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
-        def by_time(dt):
-            return dt.create_date or datetime.now()
-
-        all_datatypes.sort(key=by_time)
-        for datatype in all_datatypes:
+        # type: (Project, dict) -> int
+        sorted_dts = sorted(all_datatypes.items(),
+                            key=lambda dt_item: dt_item[1].create_date or datetime.now())
+        count = 0
+        for dt_path, datatype in sorted_dts:
             datatype_already_in_tvb = dao.get_datatype_by_gid(datatype.gid)
             if not datatype_already_in_tvb:
-                self.store_datatype(datatype)
+                self.store_datatype(datatype, dt_path)
+                count += 1
             else:
                 AlgorithmService.create_link([datatype_already_in_tvb.id], project.id)
+        return count
 
     def _store_imported_images(self, project, temp_project_path, project_name):
         """
@@ -279,7 +283,7 @@ class ImportService(object):
                 if main_view_model is not None:
                     alg = VIEW_MODEL2ADAPTER[type(main_view_model)]
                     operation = Operation(project.fk_admin, project.id, alg.id,
-                                          parameters='{"gid": "' + main_view_model.gid.hex + '"}',
+                                          parameters=self._get_param_from_view_model_gid(main_view_model),
                                           status=STATUS_FINISHED,
                                           start_date=datetime.now(), completion_date=datetime.now())
                     operation.create_date = main_view_model.create_date
@@ -289,7 +293,20 @@ class ImportService(object):
                         Operation2ImportData(operation, root, main_view_model, dt_paths, all_view_model_files))
 
                 elif len(dt_paths) > 0:
-                    retrieved_operations.append(Operation2ImportData(None, root, None, dt_paths))
+                    alg = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
+                    default_adapter = ABCAdapter.build_adapter(alg)
+                    view_model = default_adapter.get_view_model_class()()
+                    view_model.data_file = dt_paths[0]
+                    vm_path = h5.store_view_model(view_model, root)
+                    all_view_model_files.append(vm_path)
+                    operation = Operation(project.fk_admin, project.id, alg.id,
+                                          parameters=self._get_param_from_view_model_gid(view_model),
+                                          status=STATUS_FINISHED,
+                                          start_date=datetime.now(), completion_date=datetime.now())
+                    self.logger.debug("Found no ViewModel in folder, so we default to " + str(operation))
+
+                    retrieved_operations.append(
+                        Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
 
         return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
 
@@ -304,40 +321,67 @@ class ImportService(object):
             if operation_data.is_old_form:
                 operation_entity, datatype_group = self.__import_operation(operation_data.operation)
                 new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
-                # TODO ViewModel H5 should be created, as we want to preserve only the new structure in the future
                 operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
-                                                                                 operation_entity,
-                                                                                 datatype_group, new_op_folder)
+                                                                                 operation_entity, datatype_group)
+                # Create and store view_model from operation
+                view_model = self._get_new_form_view_model(operation_entity)
+                h5.store_view_model(view_model, new_op_folder)
+                operation_entity.parameters = self._get_param_from_view_model_gid(view_model)
+                dao.store_entity(operation_entity)
+
                 self._store_imported_datatypes_in_db(project, operation_datatypes)
                 imported_operations.append(operation_entity)
 
             elif operation_data.main_view_model is not None:
                 operation_entity = dao.store_entity(operation_data.operation)
                 dt_group = None  # TODO
-                imported_operations.append(operation_entity)
-                # Now we know the target Ope Folder, we move all ViewModel H5 files there
-                new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
-                for h5_file in operation_data.all_view_model_files:
-                    shutil.move(h5_file, new_op_folder)
                 # Store the DataTypes in db
-                dts = []
+                dts = {}
                 for dt_path in operation_data.dt_paths:
-                    folder, filename = os.path.split(dt_path)
-                    dt = self.load_datatype_from_file(folder, filename, operation_entity.id,
-                                                      datatype_group=dt_group, final_storage=new_op_folder,
-                                                      current_project_id=project.id)
+                    dt = self.load_datatype_from_file(dt_path, operation_entity.id, dt_group, project.id)
                     if isinstance(dt, BurstConfiguration):
                         dao.store_entity(dt)
                     else:
-                        dts.append(dt)
-                self._store_imported_datatypes_in_db(project, dts)
+                        dts[dt_path] = dt
+                stored_dts_count = self._store_imported_datatypes_in_db(project, dts)
+
+                if stored_dts_count > 0 or not operation_data.is_self_generated:
+                    imported_operations.append(operation_entity)
+                    new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
+                    for h5_file in operation_data.all_view_model_files:
+                        shutil.move(h5_file, new_op_folder)
+                else:
+                    # In case all Dts under the current operation were Links and the ViewModel is dummy,
+                    # don't keep the Operation empty in DB
+                    dao.remove_entity(Operation, operation_entity.id)
 
             else:
-                # TODO check for links here ?
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
-                                    "operation inside!" % operation_data.operation_folder)
+                                    "operation or DTs inside!" % operation_data.operation_folder)
 
         return imported_operations
+
+    @staticmethod
+    def _get_param_from_view_model_gid(view_model):
+        return '{"gid": "' + view_model.gid.hex + '"}'
+
+    @staticmethod
+    def _get_new_form_view_model(operation):
+        # type (Operation) -> ViewModel
+        ad = ABCAdapter.build_adapter(operation.algorithm)
+        view_model = ad.get_view_model_class()()
+        if operation.parameters:
+            params = json.loads(operation.parameters)
+            declarative_attrs = type(view_model).declarative_attrs
+
+            for param in params:
+                new_param_name = param
+                if param[0] == "_":
+                    new_param_name = param[1:]
+                new_param_name = new_param_name.lower()
+                if new_param_name in declarative_attrs:
+                    setattr(view_model, new_param_name, params[param])
+        return view_model
 
     def _import_image(self, src_folder, metadata_file, project_id, target_images_path):
         """
@@ -363,15 +407,13 @@ class ImportService(object):
         self.logger.debug("Store imported figure")
         self.files_helper.write_image_metadata(figure)
 
-    def load_datatype_from_file(self, storage_folder, file_name, op_id, datatype_group=None,
-                                move=True, final_storage=None, current_project_id=None):
-        # type: (str, str, int, DataTypeGroup, bool, str, int) -> HasTraitsIndex
+    def load_datatype_from_file(self, current_file, op_id, datatype_group=None, current_project_id=None):
+        # type: (str, int, DataTypeGroup, int) -> HasTraitsIndex
         """
         Creates an instance of datatype from storage / H5 file 
         :returns: DatatypeIndex
         """
-        self.logger.debug("Loading DataType from file: %s" % file_name)
-        current_file = os.path.join(storage_folder, file_name)
+        self.logger.debug("Loading DataType from file: %s" % current_file)
         h5_class = H5File.h5_class_from_file(current_file)
         if h5_class is BurstConfigurationH5:
             if current_project_id is None:
@@ -401,18 +443,18 @@ class ImportService(object):
                 datatype_index.disk_size = FilesHelper.compute_size_on_disk(associated_file)
             result = datatype_index
 
-        # Now move storage file into correct folder if necessary
-        if move and final_storage is not None:
-            final_path = h5.path_for(final_storage, h5_class, result.gid)
-            if final_path != current_file and move:
-                shutil.move(current_file, final_path)
-
         return result
 
-    def store_datatype(self, datatype):
+    def store_datatype(self, datatype, current_file=None):
         """This method stores data type into DB"""
         try:
             self.logger.debug("Store datatype: %s with Gid: %s" % (datatype.__class__.__name__, datatype.gid))
+            # Now move storage file into correct folder if necessary
+            if current_file is not None:
+                final_path = h5.path_for_stored_index(datatype)
+                if final_path != current_file:
+                    shutil.move(current_file, final_path)
+
             return dao.store_entity(datatype)
         except MissingDataSetException as e:
             self.logger.exception(e)
