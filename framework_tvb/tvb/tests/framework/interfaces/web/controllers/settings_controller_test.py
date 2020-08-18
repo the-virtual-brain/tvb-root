@@ -161,7 +161,8 @@ class TestSettingsController(BaseTransactionalControllerTest):
         assert submit_data['MAXIMUM_NR_OF_VERTICES_ON_SURFACE'] == TvbProfile.current.MAX_SURFACE_VERTICES_NUMBER
 
         assert submit_data['DEPLOY_CLUSTER'] == str(TvbProfile.current.cluster.IS_DEPLOY)
-        assert submit_data['SELECTED_DB'] == TvbProfile.current.db.SELECTED_DB
+        # We don't check this, as it is hard-coded in some profiles (e.g. TestPostgres)
+        # assert submit_data['SELECTED_DB'] == TvbProfile.current.db.SELECTED_DB
         assert submit_data['URL_VALUE'] == TvbProfile.current.db.DB_URL
 
         assert submit_data['WEB_SERVER_PORT'] == TvbProfile.current.web.SERVER_PORT
