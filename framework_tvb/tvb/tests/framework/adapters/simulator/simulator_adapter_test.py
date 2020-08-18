@@ -120,9 +120,11 @@ class TestSimulatorAdapter(TransactionalTestCase):
         rm_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, rm_file, surface.gid,
                                                            model.connectivity.hex)
+        local_conn = TestFactory.create_local_connectivity(self.test_user, self.test_project, surface.gid)
         cortex_model = CortexViewModel()
         cortex_model.region_mapping_data = region_mapping.gid
         cortex_model.fk_surface_gid = surface.gid
+        cortex_model.local_connectivity = local_conn.gid
         model.surface = cortex_model
 
         # Estimation when the surface input parameter is set
