@@ -42,7 +42,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData, GenericMetaData
+from tvb.core.entities.transient.structure_entities import GenericMetaData
 from werkzeug.utils import secure_filename
 
 LOCK_CREATE_FOLDER = Lock()
@@ -183,7 +183,6 @@ class FilesHelper(object):
         except Exception:
             self.logger.exception("Could not remove files")
             raise FileStructureException("Could not remove files for OP" + str(operation_id))
-
 
     ####################### DATA-TYPES METHODS Start Here #####################
     def remove_datatype_file(self, h5_file):

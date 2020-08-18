@@ -37,7 +37,6 @@ import json
 from tvb.basic.config.utils import EnhancedDictionary
 
 
-
 class StructureNode:
     """
     This entity represents a node in the Tree of a Project related Structure.
@@ -45,13 +44,12 @@ class StructureNode:
     TYPE_FOLDER = "Folder"
     TYPE_FILE = "File"
     TYPE_INVALID = "Invalid"
-    
+
     PREFIX_ID_NODE = "node_"
     PREFIX_ID_LEAF = "leaf_"
     PREFIX_ID_PROJECT = "projectID"
-    
-    SEP = "__"
 
+    SEP = "__"
 
     def __init__(self, nid, node_name, ntype=TYPE_FOLDER, meta=None, children=None):
         """
@@ -70,7 +68,6 @@ class StructureNode:
         self.metadata = meta
         self.children = children
 
-        
     @property
     def has_children(self):
         """
@@ -78,16 +75,15 @@ class StructureNode:
         Return FALSE when current node is a leaf in Tree.
         """
         return self.children and len(self.children) > 0
-    
+
     @property
     def is_link(self):
         """
         Check if meta_data has the transient is_link attribute set.
         """
-        return (self.metadata is not None 
+        return (self.metadata is not None
                 and DataTypeMetaData.KEY_LINK in self.metadata and
                 self.metadata[DataTypeMetaData.KEY_LINK] > 0)
-
 
     @property
     def is_irelevant(self):
@@ -97,24 +93,22 @@ class StructureNode:
             return True
         return False
 
-
     @property
     def is_group(self):
         """
         Check if meta_data has the transient is_link attribute set.
         """
-        return (self.metadata is not None 
+        return (self.metadata is not None
                 and DataTypeMetaData.KEY_OP_GROUP_ID in self.metadata and
                 self.metadata[DataTypeMetaData.KEY_OP_GROUP_ID] is not None)
-    
+
     @property
     def type(self):
         """
         Type of a node it can be FOLDER, FILE or INVALID.
         """
         return self._type
-    
-    
+
     @staticmethod
     def metadata2tree(metadatas, first_level, second_level, project_id, project_name):
         """ 
@@ -150,7 +144,7 @@ class StructureNode:
 
                     if meta[meta.KEY_OPERATION_TAG]:
                         parent_name = parent_name + " - " + meta[meta.KEY_OPERATION_TAG]
-                    
+
                     parent = StructureNode(meta.gid, parent_name, meta=meta)
                     if meta.invalid:
                         parent._type = StructureNode.TYPE_INVALID
@@ -162,12 +156,12 @@ class StructureNode:
                 sublevel_node = StructureNode(sublevel_id, sublevel_name, children=datas)
                 sublevel_node._type = StructureNode._capitalize_first_letter(second_level)
                 level_children.append(sublevel_node)
-                
+
             dir_name = StructureNode._prepare_node_name(level, first_level)
             level_node = StructureNode(level, dir_name, children=level_children)
             level_node._type = StructureNode._capitalize_first_letter(first_level)
             forest.append(level_node)
-            
+
         json_children = StructureNode.__convert2json(forest, project_id)
         if len(json_children) > 0:
             result = '{data: [{ data: {title: "' + project_name + '"'
@@ -178,9 +172,8 @@ class StructureNode:
             result = '{data: [{ data: {title: "' + project_name + '"'
             result += ',icon: "/static/style/nodes/nodeRoot.png"}'
             result += ',attr:{id:"' + StructureNode.PREFIX_ID_PROJECT + '"}}]}'
-            
-        return result
 
+        return result
 
     @staticmethod
     def _prepare_node_name(name, level_filter):
@@ -191,15 +184,13 @@ class StructureNode:
             return DataTypeMetaData.STATES[name]
         return name
 
-
     @staticmethod
     def _capitalize_first_letter(word):
         """
         :returns: same string, but with first letter capitalized.
         """
         return word[0].upper() + word[1:]
-    
-    
+
     @staticmethod
     def __convert2json(nodes_list, project_id):
         """
@@ -231,7 +222,7 @@ class StructureNode:
             if node.is_link:
                 json_node += 'font-style: italic;'
             json_node += '" }'
-            
+
             if node.has_children:
                 json_node += ', children:[' + StructureNode.__convert2json(node.children, project_id) + ']'
 
@@ -242,10 +233,7 @@ class StructureNode:
             place_comma = True
 
             result += json_node
-        return result  
-
-
-
+        return result
 
 
 class GenericMetaData(EnhancedDictionary):
@@ -255,8 +243,7 @@ class GenericMetaData(EnhancedDictionary):
     """
     KEY_GID = "Gid"
     KEY_FILENAME = "file_name"
-    
-    
+
     def __init__(self, data=None):
         """
         :param data: The actual dictionary to be wrapped by current entity.
@@ -264,7 +251,7 @@ class GenericMetaData(EnhancedDictionary):
         super(GenericMetaData, self).__init__()
         if data is not None:
             self.update(data)
-        
+
     @property
     def gid(self):
         """
@@ -273,7 +260,7 @@ class GenericMetaData(EnhancedDictionary):
         if self.KEY_GID in list(self):
             return self[self.KEY_GID]
         return None
-    
+
     @property
     def file_name(self):
         """
@@ -284,7 +271,6 @@ class GenericMetaData(EnhancedDictionary):
         return None
 
 
-    
 class DataTypeMetaData(GenericMetaData):
     """
     This object will be populated from meta-data stored on a particular DataType/Operation.
@@ -312,7 +298,7 @@ class DataTypeMetaData(GenericMetaData):
     KEY_RELEVANCY = "Relevant"
     KEY_TITLE = "title"
 
-    #Transient attributes
+    # Transient attributes
     KEY_NODE_TYPE = "DataType"
     KEY_DATATYPE_ID = "Datatypeid"
     KEY_INVALID = "datatype_invalid"
@@ -320,17 +306,16 @@ class DataTypeMetaData(GenericMetaData):
     KEY_LINK = "link"
     KEY_CREATE_DATA_MONTH = "createDataMonth"
     KEY_CREATE_DATA_DAY = "createDataDay"
-    
-    #operation details
+
+    # operation details
     KEY_OPERATION_GROUP_NAME = "op_group_name"
     KEY_OPERATION_ALGORITHM = "Operation_Algorithm"
     KEY_FK_OPERATION_GROUP = 'fk_operation_group'
 
-    
     def __init__(self, data=None, invalid=False):
         GenericMetaData.__init__(self, data)
         self.invalid = invalid
-        
+
     @property
     def subject(self):
         """
@@ -339,7 +324,7 @@ class DataTypeMetaData(GenericMetaData):
         if self.KEY_SUBJECT not in list(self):
             return self.DEFAULT_SUBJECT
         return self[self.KEY_SUBJECT]
-    
+
     @property
     def create_date(self):
         """
@@ -348,7 +333,7 @@ class DataTypeMetaData(GenericMetaData):
         if self.KEY_DATE in list(self):
             return self[self.KEY_DATE]
         return None
-    
+
     @property
     def group(self):
         """
@@ -357,14 +342,14 @@ class DataTypeMetaData(GenericMetaData):
         if self.KEY_OPERATION_TAG in list(self):
             return self[self.KEY_OPERATION_TAG]
         return None
-    
+
     def mark_invalid(self):
         """ 
         Mark current meta-data as invalid.
         e.g. Because of a missing associated file.
         """
         self.invalid = True
-        
+
     def merge_data(self, new_data):
         """
         Update current state, from an external dictionary.
@@ -372,13 +357,9 @@ class DataTypeMetaData(GenericMetaData):
         if new_data is None:
             return
         for val in new_data:
-            #Ignore transient entities
+            # Ignore transient entities
             if val != self.KEY_COUNT and val != self.KEY_OP_GROUP_ID:
-                self[val] = new_data[val] 
-               
-               
-    #####   CLASS METHODS start Here ########################################
-
+                self[val] = new_data[val]
 
     @classmethod
     def get_filterable_meta(cls):
@@ -405,6 +386,3 @@ class DataTypeMetaData(GenericMetaData):
             {cls.KEY_TAG_4: "DataType Tag 4"},
             {cls.KEY_TAG_5: "DataType Tag 5"}
         ]
-
-
-

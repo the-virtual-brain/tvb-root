@@ -98,8 +98,8 @@ class SimulatorService(object):
         try:
             operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
                                                                  session_stored_simulator.gid)
-            ga, _ = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
-                                                             None, burst_config.gid)
+            ga = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
+                                                          None, burst_config.gid)
             session_stored_simulator.generic_attributes = ga
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             h5.store_view_model(session_stored_simulator, storage_path)
@@ -215,6 +215,7 @@ class SimulatorService(object):
 
             self.logger.debug("Finished launching workflows. " + str(len(operations) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
+            return first_operation
 
         except Exception as excep:
             self.logger.error(excep)

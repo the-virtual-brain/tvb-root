@@ -48,6 +48,7 @@ class GenericAttributes(object):
     user_tag_3 = ''
     user_tag_4 = ''
     user_tag_5 = ''
+    operation_tag = ''
     parent_burst = None
     visible = True
     create_date = None
@@ -63,5 +64,6 @@ class GenericAttributes(object):
         self.user_tag_3 = extra_attributes.user_tag_3 or self.user_tag_3
         self.user_tag_4 = extra_attributes.user_tag_4 or self.user_tag_4
         self.user_tag_5 = extra_attributes.user_tag_5 or self.user_tag_5
+        self.operation_tag = extra_attributes.operation_tag or self.operation_tag
         self.parent_burst = extra_attributes.parent_burst or self.parent_burst
         self.visible = extra_attributes.visible

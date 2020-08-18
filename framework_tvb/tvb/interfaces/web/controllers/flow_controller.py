@@ -42,6 +42,7 @@ import formencode
 import numpy
 import six
 import sys
+from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
@@ -331,12 +332,9 @@ class FlowController(BaseController):
             errors = excep.unpack_errors()
             common.set_error_message("Invalid form inputs")
             self.logger.warning("Invalid form inputs %s" % errors)
-        except OperationException as excep1:
+        except (OperationException, LaunchException, TraitValueError) as excep1:
             self.logger.exception("Error while executing a Launch procedure:" + excep1.message)
             common.set_error_message(excep1.message)
-        except LaunchException as excep3:
-            self.logger.exception("Error while executing a Launch procedure:" + excep3.message)
-            common.set_error_message(excep3.message)
         except InvalidFormValues as excep2:
             message, errors = excep2.display_full_errors()
             common.set_error_message(message)

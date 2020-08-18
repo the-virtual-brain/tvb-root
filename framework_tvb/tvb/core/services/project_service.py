@@ -52,7 +52,7 @@ from tvb.core.entities.transient.structure_entities import StructureNode, DataTy
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.removers_factory import get_remover
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
@@ -74,10 +74,8 @@ def initialize_storage():
         logger.exception("Could not make sure the root folder exists!")
 
 
-# TODO move this page sizes into User-Settings once we have a UI table to set it.
 OPERATIONS_PAGE_SIZE = 20
 PROJECTS_PAGE_SIZE = 20
-KEY_VALUE = "value"
 
 MONTH_YEAR_FORMAT = "%B %Y"
 DAY_MONTH_YEAR_FORMAT = "%d %B %Y"
@@ -189,7 +187,6 @@ class ProjectService:
             return selected_project, 0, [], 0
 
         operations = []
-        view_categ_id = dao.get_visualisers_categories()[0].id
         for one_op in current_ops:
             try:
                 result = {}
@@ -210,7 +207,7 @@ class ProjectService:
                         datatype_group = dao.get_datatypegroup_by_op_group_id(one_op[3])
                         result["datatype_group_gid"] = datatype_group.gid
                         result["gid"] = operation_group.gid
-                        ## Filter only viewers for current DataTypeGroup entity:
+                        # Filter only viewers for current DataTypeGroup entity:
                         result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid)
                     except Exception:
                         self.logger.exception("We will ignore group on entity:" + str(one_op))
@@ -264,7 +261,7 @@ class ProjectService:
                     result['results'] = None
                 operations.append(result)
             except Exception:
-                ## We got an exception when processing one Operation Row. We will continue with the rest of the rows.
+                # We got an exception when processing one Operation Row. We will continue with the rest of the rows.
                 self.logger.exception("Could not prepare operation for display:" + str(one_op))
         return selected_project, total_ops_nr, operations, pages_no
 
@@ -289,7 +286,7 @@ class ProjectService:
         return available_projects, pages_no
 
     @staticmethod
-    def retrieve_all_user_projects(user_id, page_start=0, page_size= PROJECTS_PAGE_SIZE):
+    def retrieve_all_user_projects(user_id, page_start=0, page_size=PROJECTS_PAGE_SIZE):
         """
         Return a list with all projects visible for current user, without pagination.
         """
@@ -530,7 +527,6 @@ class ProjectService:
         """
         :returns: an array. First entry in array is an instance of DataTypeOverlayDetails\
             The second one contains all the possible states for the specified dataType.
-
         """
         meta_atts = DataTypeOverlayDetails()
         states = DataTypeMetaData.STATES
@@ -539,7 +535,7 @@ class ProjectService:
             meta_atts.fill_from_datatype(datatype_result, datatype_result._parent_burst)
             return meta_atts, states, datatype_result
         except Exception:
-            ## We ignore exception here (it was logged above, and we want to return no details).
+            # We ignore exception here (it was logged above, and we want to return no details).
             return meta_atts, states, None
 
     def _remove_project_node_files(self, project_id, gid, skip_validation=False):
@@ -630,7 +626,6 @@ class ProjectService:
             datatype = dao.get_datatype_by_id(datatype.fk_datatype_group)
 
         operations_set = [datatype.fk_from_operation]
-
         correct = True
 
         if is_datatype_group:
@@ -670,23 +665,24 @@ class ProjectService:
         new_data = dict()
         for key in DataTypeOverlayDetails().meta_attributes_list:
             if key in submit_data:
-                new_data[key] = submit_data[key]
+                value = submit_data[key]
+                if value == "None":
+                    value = None
+                if value == "" and key in [CommonDetails.CODE_OPERATION_TAG, CommonDetails.CODE_OPERATION_GROUP_ID]:
+                    value = None
+                new_data[key] = value
 
-        if new_data[CommonDetails.CODE_OPERATION_TAG] == '':
-            new_data[CommonDetails.CODE_OPERATION_TAG] = None
         try:
             if (CommonDetails.CODE_OPERATION_GROUP_ID in new_data
-                    and new_data[CommonDetails.CODE_OPERATION_GROUP_ID]
-                    and new_data[CommonDetails.CODE_OPERATION_GROUP_ID] != ''):
+                    and new_data[CommonDetails.CODE_OPERATION_GROUP_ID]):
                 # We need to edit a group
                 all_data_in_group = dao.get_datatype_in_group(operation_group_id=
                                                               new_data[CommonDetails.CODE_OPERATION_GROUP_ID])
                 if len(all_data_in_group) < 1:
                     raise StructureException("Inconsistent group, can not be updated!")
-                datatype_group = dao.get_generic_entity(DataTypeGroup, all_data_in_group[0].fk_datatype_group)[0]
-                all_data_in_group.append(datatype_group)
+                # datatype_group = dao.get_generic_entity(DataTypeGroup, all_data_in_group[0].fk_datatype_group)[0]
+                # all_data_in_group.append(datatype_group)
                 for datatype in all_data_in_group:
-                    new_data[CommonDetails.CODE_GID] = datatype.gid
                     self._edit_data(datatype, new_data, True)
             else:
                 # Get the required DataType and operation from DB to store changes that will be done in XML.
@@ -723,33 +719,43 @@ class ProjectService:
             operation = dao.get_operation_by_id(datatype.fk_from_operation)
             operation.user_group = new_group_name
             dao.store_entity(operation)
+            op_folder = self.structure_helper.get_project_folder(operation.project, str(operation.id))
+            vm_gid = json.loads(operation.parameters)['gid']
+            view_model_file = h5.determine_filepath(vm_gid, op_folder)
+            if view_model_file:
+                view_model_class = H5File.determine_type(view_model_file)
+                view_model = view_model_class()
+                with ViewModelH5(view_model_file, view_model) as f:
+                    ga = f.load_generic_attributes()
+                    ga.operation_tag = new_group_name
+                    f.store_generic_attributes(ga, False)
+            else:
+                self.logger.warning("Could not find ViewModel H5 file for op: {}".format(operation))
 
-        # 2. Update GenericAttributes on DataType index and in the associated H5 files:
+        # 2. Update GenericAttributes in the associated H5 files:
         h5_path = h5.path_for_stored_index(datatype)
         with H5File.from_file(h5_path) as f:
             ga = f.load_generic_attributes()
 
-        ga.subject = new_data[DataTypeOverlayDetails.DATA_SUBJECT]
-        ga.state = new_data[DataTypeOverlayDetails.DATA_STATE]
-        if DataTypeOverlayDetails.DATA_TAG_1 in new_data:
-            ga.user_tag_1 = new_data[DataTypeOverlayDetails.DATA_TAG_1]
-        if DataTypeOverlayDetails.DATA_TAG_2 in new_data:
-            ga.user_tag_2 = new_data[DataTypeOverlayDetails.DATA_TAG_2]
-        if DataTypeOverlayDetails.DATA_TAG_3 in new_data:
-            ga.user_tag_3 = new_data[DataTypeOverlayDetails.DATA_TAG_3]
-        if DataTypeOverlayDetails.DATA_TAG_4 in new_data:
-            ga.user_tag_4 = new_data[DataTypeOverlayDetails.DATA_TAG_4]
-        if DataTypeOverlayDetails.DATA_TAG_5 in new_data:
-            ga.user_tag_5 = new_data[DataTypeOverlayDetails.DATA_TAG_5]
+            ga.subject = new_data[DataTypeOverlayDetails.DATA_SUBJECT]
+            ga.state = new_data[DataTypeOverlayDetails.DATA_STATE]
+            ga.operation_tag = new_group_name
+            if DataTypeOverlayDetails.DATA_TAG_1 in new_data:
+                ga.user_tag_1 = new_data[DataTypeOverlayDetails.DATA_TAG_1]
+            if DataTypeOverlayDetails.DATA_TAG_2 in new_data:
+                ga.user_tag_2 = new_data[DataTypeOverlayDetails.DATA_TAG_2]
+            if DataTypeOverlayDetails.DATA_TAG_3 in new_data:
+                ga.user_tag_3 = new_data[DataTypeOverlayDetails.DATA_TAG_3]
+            if DataTypeOverlayDetails.DATA_TAG_4 in new_data:
+                ga.user_tag_4 = new_data[DataTypeOverlayDetails.DATA_TAG_4]
+            if DataTypeOverlayDetails.DATA_TAG_5 in new_data:
+                ga.user_tag_5 = new_data[DataTypeOverlayDetails.DATA_TAG_5]
 
-        datatype.fill_from_generic_attributes(ga)
-        datatype = dao.store_entity(datatype)
-        # 3. Update MetaData in DT H5 as well.
-        with H5File.from_file(h5_path) as f:
             f.store_generic_attributes(ga, False)
 
-        # 4. Update the group_name/user_group into the operation meta-data file
-        #  TODO update ViewModel of the operation H5
+        # 3. Update MetaData in DT Index DB as well.
+        datatype.fill_from_generic_attributes(ga)
+        dao.store_entity(datatype)
 
     def get_datatype_and_datatypegroup_inputs_for_operation(self, operation_gid, selected_filter):
         """
@@ -872,7 +878,6 @@ class ProjectService:
     @staticmethod
     def get_datatypes_in_project(project_id, only_visible=False):
         return dao.get_data_in_project(project_id, only_visible)
-
 
     @staticmethod
     def set_datatype_visibility(datatype_gid, is_visible):
