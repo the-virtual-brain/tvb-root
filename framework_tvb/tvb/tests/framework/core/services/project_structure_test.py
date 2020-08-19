@@ -499,23 +499,21 @@ class TestProjectStructure(TransactionalTestCase):
         else:
             datatype_gid = TestFactory.create_value_wrapper(self.test_user, self.test_project)[1]
 
-        parameters = json.dumps({"param_name": datatype_gid})
-
         ops = []
         for i in range(4):
             ops.append(TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project))
             if i in [1, 3]:
                 ops[i].visible = False
-            ops[i].parameters = parameters
+            ops[i].view_model_gid = datatype_gid
             ops[i] = dao.store_entity(ops[i])
 
         # groups
         ops_group = dao.get_operations_in_group(datatype_group.fk_from_operation)
         assert 10 == len(ops_group)
-        ops_group[0].parameters = parameters
+        ops_group[0].view_model_gid = datatype_gid
         ops_group[0] = dao.store_entity(ops_group[0])
         ops_group[1].visible = False
-        ops_group[1].parameters = parameters
+        ops_group[1].view_model_gid = datatype_gid
         ops_group[1] = dao.store_entity(ops_group[1])
 
         ops.extend(ops_group)
