@@ -330,6 +330,7 @@ class ImportService(object):
 
                 view_model = self._get_new_form_view_model(operation_entity, old_operation_xml_params)
                 h5.store_view_model(view_model, new_op_folder)
+                operation_entity.view_model_gid = view_model.gid.hex
                 dao.store_entity(operation_entity)
 
                 self._store_imported_datatypes_in_db(project, operation_datatypes)
@@ -369,8 +370,6 @@ class ImportService(object):
         # type (Operation) -> ViewModel
         ad = ABCAdapter.build_adapter(operation.algorithm)
         view_model = ad.get_view_model_class()()
-        operation.view_model_gid = view_model.gid.hex
-        dao.store_entity(operation)
 
         if xml_parameters:
             params = json.loads(xml_parameters)

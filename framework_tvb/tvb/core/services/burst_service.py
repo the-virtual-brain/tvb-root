@@ -325,4 +325,5 @@ class BurstService(object):
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
         op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
+        h5.store_view_model(view_model, op_dir)
         return op_dir, metric_operation
