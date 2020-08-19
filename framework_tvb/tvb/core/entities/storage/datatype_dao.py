@@ -245,7 +245,7 @@ class DatatypeDAO(RootDAO):
         count = 0
         try:
             count = self.session.query(DataType).join(Operation
-                                        ).filter(Operation.parameters.ilike('%' + datatype_gid + '%')).count()
+                                        ).filter(Operation.view_model_gid.ilike('%' + datatype_gid + '%')).count()
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
         return count

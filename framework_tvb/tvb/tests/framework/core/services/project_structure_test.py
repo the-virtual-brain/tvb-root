@@ -85,7 +85,7 @@ class TestProjectStructure(TransactionalTestCase):
         Check if the visibility for an operation is set correct.
         """
         self.__init_algorithmn()
-        op1 = Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
+        op1 = Operation(None, self.test_user.id, self.test_project.id, self.algo_inst.id)
         op1 = dao.store_entity(op1)
         assert op1.visible, "The operation should be visible."
         self.project_service.set_operation_and_group_visibility(op1.gid, False)
@@ -126,8 +126,8 @@ class TestProjectStructure(TransactionalTestCase):
         """
         self.__init_algorithmn()
         upload_algo = self._create_algo_for_upload()
-        op1 = Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
-        op2 = Operation(self.test_user.id, self.test_project.id, upload_algo.id, "")
+        op1 = Operation(None, self.test_user.id, self.test_project.id, self.algo_inst.id)
+        op2 = Operation(None, self.test_user.id, self.test_project.id, upload_algo.id)
         operations = dao.store_entities([op1, op2])
         is_upload_operation = self.project_service.is_upload_operation(operations[0].gid)
         assert not is_upload_operation, "The operation is not an upload operation."
@@ -144,11 +144,11 @@ class TestProjectStructure(TransactionalTestCase):
         project = Project("test_proj_2", self.test_user.id, "desc")
         project = dao.store_entity(project)
 
-        op1 = Operation(self.test_user.id, self.test_project.id, self.algo_inst.id, "")
-        op2 = Operation(self.test_user.id, project.id, upload_algo.id, "", status=STATUS_FINISHED)
-        op3 = Operation(self.test_user.id, self.test_project.id, upload_algo.id, "")
-        op4 = Operation(self.test_user.id, self.test_project.id, upload_algo.id, "", status=STATUS_FINISHED)
-        op5 = Operation(self.test_user.id, self.test_project.id, upload_algo.id, "", status=STATUS_FINISHED)
+        op1 = Operation(None, self.test_user.id, self.test_project.id, self.algo_inst.id)
+        op2 = Operation(None, self.test_user.id, project.id, upload_algo.id, status=STATUS_FINISHED)
+        op3 = Operation(None, self.test_user.id, self.test_project.id, upload_algo.id)
+        op4 = Operation(None, self.test_user.id, self.test_project.id, upload_algo.id, status=STATUS_FINISHED)
+        op5 = Operation(None, self.test_user.id, self.test_project.id, upload_algo.id, status=STATUS_FINISHED)
         operations = dao.store_entities([op1, op2, op3, op4, op5])
 
         upload_operations = self.project_service.get_all_operations_for_uploaders(self.test_project.id)
@@ -359,10 +359,10 @@ class TestProjectStructure(TransactionalTestCase):
         adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
         algorithm = adapter.stored_adapter
 
-        operation1 = Operation(self.test_user.id, self.test_project.id, algorithm.id,
-                               json.dumps({'gid': view_model.gid.hex}), op_group_id=group.id)
-        operation2 = Operation(self.test_user.id, self.test_project.id, algorithm.id,
-                               json.dumps({'gid': view_model.gid.hex}), op_group_id=group.id)
+        operation1 = Operation(view_model.gid.hex, self.test_user.id, self.test_project.id, algorithm.id,
+                               op_group_id=group.id)
+        operation2 = Operation(view_model.gid.hex, self.test_user.id, self.test_project.id, algorithm.id,
+                               op_group_id=group.id)
         dao.store_entities([operation1, operation2])
 
         OperationService()._store_view_model(operation1, dao.get_project_by_id(self.test_project.id), view_model)
@@ -483,7 +483,7 @@ class TestProjectStructure(TransactionalTestCase):
         :return: a dummy `Operation` with the given specifications
         """
         algorithm = dao.get_algorithm_by_id(algorithm_id)
-        operation = Operation(self.test_user.id, project_id, algorithm.id, 'test params', status=STATUS_FINISHED)
+        operation = Operation(None, self.test_user.id, project_id, algorithm.id, status=STATUS_FINISHED)
         return dao.store_entity(operation)
 
     def _create_operations_with_inputs(self, datatype_group, is_group_parent=False):

@@ -173,8 +173,8 @@ class OperationService:
         parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'gid')[0]
         metric_operation_group_id = parent_burst.fk_metric_operation_group
         range_values = sim_operation.range_values
-        metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
-                                     json.dumps({'gid': view_model.gid.hex}), user_group=ga.operation_tag,
+        metric_operation = Operation(view_model.gid.hex, sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
+                                     user_group=ga.operation_tag,
                                      op_group_id=metric_operation_group_id, range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
@@ -197,7 +197,7 @@ class OperationService:
         if isinstance(view_model_gid, uuid.UUID):
             view_model_gid = view_model_gid.hex
 
-        operation = Operation(user_id, project_id, algorithm.id, json.dumps({'gid': view_model_gid}),
+        operation = Operation(view_model_gid, user_id, project_id, algorithm.id,
                               op_group_id=op_group_id, range_values=ranges)
         self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) +
                           ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(op_group_id) + ")")
@@ -233,7 +233,7 @@ class OperationService:
 
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
-            operation = Operation(user_id, project.id, algorithm.id, json.dumps({'gid': view_model.gid.hex}),
+            operation = Operation(view_model.gid.hex, user_id, project.id, algorithm.id,
                                   op_group_id=group_id, user_group=ga.operation_tag, range_values=range_values)
             operation.visible = visible
             operations.append(operation)

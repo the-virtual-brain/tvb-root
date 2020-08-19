@@ -65,9 +65,8 @@ class ClusterSchedulerClient(BackendClient):
         """
         # Load operation so we can estimate the execution time
         operation = dao.get_operation_by_id(operation_identifier)
-        kwargs = parse_json_parameters(operation.parameters)
         # kwargs = adapter_instance.prepare_ui_inputs(kwargs)
-        time_estimate = int(adapter_instance.get_execution_time_approximation(**kwargs))
+        time_estimate = int(adapter_instance.get_execution_time_approximation())
         hours = int(time_estimate / 3600)
         minutes = (int(time_estimate) % 3600) / 60
         seconds = int(time_estimate) % 60

@@ -245,14 +245,16 @@ class ImportService(object):
                     self._import_image(root, metadata_file, project.id, target_images_path)
 
     def _retrieve_operations_in_order(self, project, import_path):
-        # type: (Project, str) -> list[Operation2ImportData]
+        # type: (Project, str) -> tuple[list[Operation2ImportData], dict]
         retrieved_operations = []
 
+        overlay_info_from_xml = {}
         for root, _, files in os.walk(import_path):
             if OPERATION_XML in files:
                 # Previous Operation format for uploading previous versions of projects
                 operation_file_path = os.path.join(root, OPERATION_XML)
-                operation = self.__build_operation_from_file(project, operation_file_path)
+                operation, operation_xml_parameters = self.__build_operation_from_file(project, operation_file_path)
+                overlay_info_from_xml[operation.gid] = operation_xml_parameters
                 operation.import_file = operation_file_path
                 self.logger.debug("Found operation in old XML format: " + str(operation))
                 retrieved_operations.append(Operation2ImportData(operation, root))
@@ -282,8 +284,7 @@ class ImportService(object):
 
                 if main_view_model is not None:
                     alg = VIEW_MODEL2ADAPTER[type(main_view_model)]
-                    operation = Operation(project.fk_admin, project.id, alg.id,
-                                          parameters=self._get_param_from_view_model_gid(main_view_model),
+                    operation = Operation(main_view_model.gid.hex, project.fk_admin, project.id, alg.id,
                                           status=STATUS_FINISHED,
                                           user_group=main_view_model.generic_attributes.operation_tag,
                                           start_date=datetime.now(), completion_date=datetime.now())
@@ -300,8 +301,7 @@ class ImportService(object):
                     view_model.data_file = dt_paths[0]
                     vm_path = h5.store_view_model(view_model, root)
                     all_view_model_files.append(vm_path)
-                    operation = Operation(project.fk_admin, project.id, alg.id,
-                                          parameters=self._get_param_from_view_model_gid(view_model),
+                    operation = Operation(view_model.gid.hex, project.fk_admin, project.id, alg.id,
                                           status=STATUS_FINISHED,
                                           start_date=datetime.now(), completion_date=datetime.now())
                     self.logger.debug("Found no ViewModel in folder, so we default to " + str(operation))
@@ -309,14 +309,14 @@ class ImportService(object):
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
 
-        return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
+        return sorted(retrieved_operations, key=lambda op_data: op_data.order_field), overlay_info_from_xml
 
     def import_project_operations(self, project, import_path):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
         imported_operations = []
-        ordered_operations = self._retrieve_operations_in_order(project, import_path)
+        ordered_operations, op_old_stuff = self._retrieve_operations_in_order(project, import_path)
 
         for operation_data in ordered_operations:
             if operation_data.is_old_form:
@@ -325,9 +325,12 @@ class ImportService(object):
                 operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
                                                                                  operation_entity, datatype_group)
                 # Create and store view_model from operation
-                view_model = self._get_new_form_view_model(operation_entity)
+                old_operation_xml_params = None
+                if operation_entity.gid in op_old_stuff.keys():
+                    old_operation_xml_params = op_old_stuff[operation_entity.gid]
+
+                view_model = self._get_new_form_view_model(operation_entity, old_operation_xml_params)
                 h5.store_view_model(view_model, new_op_folder)
-                operation_entity.parameters = self._get_param_from_view_model_gid(view_model)
                 dao.store_entity(operation_entity)
 
                 self._store_imported_datatypes_in_db(project, operation_datatypes)
@@ -363,16 +366,15 @@ class ImportService(object):
         return imported_operations
 
     @staticmethod
-    def _get_param_from_view_model_gid(view_model):
-        return '{"gid": "' + view_model.gid.hex + '"}'
-
-    @staticmethod
-    def _get_new_form_view_model(operation):
+    def _get_new_form_view_model(operation, xml_parameters):
         # type (Operation) -> ViewModel
         ad = ABCAdapter.build_adapter(operation.algorithm)
         view_model = ad.get_view_model_class()()
-        if operation.parameters:
-            params = json.loads(operation.parameters)
+        operation.view_model_gid = view_model.gid.hex
+        dao.store_entity(operation)
+
+        if xml_parameters:
+            params = json.loads(xml_parameters)
             declarative_attrs = type(view_model).declarative_attrs
 
             for param in params:

@@ -281,7 +281,7 @@ class OperationDAO(RootDAO):
         """
         try:
             query = self.session.query(Operation).filter(
-                                Operation.parameters.like('%' + datatype_gid + '%')).join(
+                                Operation.view_model_gid.like('%' + datatype_gid + '%')).join(
                                 Algorithm).join(AlgorithmCategory).filter(
                                 AlgorithmCategory.display == False)
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
@@ -304,7 +304,7 @@ class OperationDAO(RootDAO):
         try:
             query = self.session.query(Operation).filter(
                 DataType.fk_datatype_group == datatype_group_id).filter(
-                Operation.parameters.like('%' + DataType.gid + '%')).join(
+                Operation.view_model_gid.like('%' + DataType.gid + '%')).join(
                 Algorithm).join(AlgorithmCategory).filter(
                 AlgorithmCategory.display == False)
             query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)

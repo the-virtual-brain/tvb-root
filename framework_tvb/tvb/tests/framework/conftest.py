@@ -179,7 +179,7 @@ def operation_factory(user_factory, project_factory):
         if test_project is None:
             test_project = project_factory(test_user)
 
-        operation = Operation(test_user.id, test_project.id, algorithm.id, parameters,
+        operation = Operation(None, test_user.id, test_project.id, algorithm.id,
                               status=operation_status, range_values=range_values)
         dao.store_entity(operation)
         # Make sure lazy attributes are correctly loaded.
@@ -548,7 +548,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         # Now create some data types and add them to group
         for range_val1 in range_values_1:
             for range_val2 in range_values_2:
-                op = Operation(user.id, project.id, algorithm.id, 'test parameters',
+                op = Operation(None, user.id, project.id, algorithm.id,
                                status=STATUS_FINISHED,
                                range_values=json.dumps({range_1[0]: range_val1,
                                                         range_2[0]: range_val2}))
@@ -561,7 +561,7 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                 datatype.operation_id = op.id
                 dao.store_entity(datatype)
 
-                op_ms = Operation(user.id, project.id, algorithm.id, 'test parameters',
+                op_ms = Operation(None, user.id, project.id, algorithm.id,
                                   status=STATUS_FINISHED,
                                   range_values=json.dumps({range_1[0]: range_val1,
                                                            range_2[0]: range_val2}))

@@ -526,8 +526,7 @@ class FlowController(BaseController):
         """Redirect to Operation Input selection page,
         with input data already selected."""
         operation = OperationService.load_operation(operation_id)
-        data = parse_json_parameters(operation.parameters)
-        self.context.add_adapter_to_session(operation.algorithm, None, data)
+        self.context.add_adapter_to_session(operation.algorithm, None, None)
         category_id = operation.algorithm.fk_category
         algo_id = operation.fk_from_algo
         raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id) + "?not_reset=True")
@@ -663,7 +662,7 @@ class FlowController(BaseController):
         datatype_group_ob = ProjectService().get_datatypegroup_by_gid(dt_group_guid)
         operation_grp = datatype_group_ob.parent_operation_group
         operation_obj = OperationService.load_operation(datatype_group_ob.fk_from_operation)
-        parameters = json.loads(operation_obj.parameters)
+        parameters = {}
 
         range1name, range1_dict = json.loads(operation_grp.range1)
         range2name, range2_dict = json.loads(operation_grp.range2)

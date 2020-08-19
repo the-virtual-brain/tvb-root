@@ -557,10 +557,11 @@ class ProjectService:
                         was_link = True
                 if not was_link:
                     # Create a clone of the operation
-                    new_op = Operation(dao.get_system_user().id,
+                    # There is no view_model so the view_model_gid is None
+                    new_op = Operation(None,
+                                       dao.get_system_user().id,
                                        links[0].fk_to_project,
                                        datatype.parent_operation.fk_from_algo,
-                                       datatype.parent_operation.parameters,
                                        datatype.parent_operation.status,
                                        datatype.parent_operation.start_date,
                                        datatype.parent_operation.completion_date,
@@ -798,8 +799,7 @@ class ProjectService:
 
         except Exception:
             self.logger.exception("Could not load details for operation %s" % operation_gid)
-            parameters = json.loads(operation.parameters)
-            if 'gid' in parameters.keys():
+            if operation.view_model_gid:
                 changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
             else:
                 changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")

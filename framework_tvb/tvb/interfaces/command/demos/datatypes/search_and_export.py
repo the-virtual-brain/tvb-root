@@ -80,7 +80,7 @@ def search_and_export_ts(project_id, export_folder=os.path.join("~", "TVB")):
                                             FilterChain.datatype + '._title',
                                             FilterChain.datatype + '._sample_period',
                                             FilterChain.datatype + '._sample_rate',
-                                            FilterChain.operation + '.parameters'
+                                            FilterChain.operation + '.view_model_gid'
                                             ],
                                     operations=["==", "like", ">=", "<=", "like"],
                                     values=[connectivities[0].gid,

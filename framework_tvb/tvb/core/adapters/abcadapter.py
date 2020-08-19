@@ -548,7 +548,7 @@ class ABCAdapter(object):
 
     def load_view_model(self, operation):
         storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
-        input_gid = json.loads(operation.parameters)['gid']
+        input_gid = operation.view_model_gid
         return h5.load_view_model(input_gid, storage_path)
 
     def array_size2kb(self, size):

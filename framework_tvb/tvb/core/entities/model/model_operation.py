@@ -242,7 +242,7 @@ class Operation(Base, Exportable):
     fk_from_algo = Column(Integer, ForeignKey('ALGORITHMS.id'))
     fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"), default=None)
     gid = Column(String)
-    parameters = Column(String)
+    view_model_gid = Column(String)
     create_date = Column(DateTime)  # Date at which the user generated this entity
     start_date = Column(DateTime)  # Actual time when the operation executions is started (without queue time)
     completion_date = Column(DateTime)  # Time when the operation got status FINISHED/ ERROR or CANCEL set.
@@ -258,13 +258,13 @@ class Operation(Base, Exportable):
     operation_group = relationship(OperationGroup)
     user = relationship(User)
 
-    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters,
+    def __init__(self, view_model_gid, fk_launched_by, fk_launched_in, fk_from_algo,
                  status=STATUS_PENDING, start_date=None, completion_date=None, op_group_id=None, additional_info='',
                  user_group=None, range_values=None, estimated_disk_size=0):
         self.fk_launched_by = fk_launched_by
         self.fk_launched_in = fk_launched_in
         self.fk_from_algo = fk_from_algo
-        self.parameters = parameters
+        self.view_model_gid = view_model_gid
         self.create_date = datetime.now()
         self.start_date = start_date
         self.completion_date = completion_date
@@ -279,7 +279,7 @@ class Operation(Base, Exportable):
 
     def __repr__(self):
         return "<Operation('%s', %s, %s,'%s','%s','%s','%s', '%s','%s',%s, '%s', '%s', '%s', %s)>" \
-               % (self.gid, self.fk_launched_by, self.fk_launched_in, self.fk_from_algo, self.parameters,
+               % (self.view_model_gid, self.gid, self.fk_launched_by, self.fk_launched_in, self.fk_from_algo,
                   self.create_date, self.start_date, self.completion_date, self.status, self.visible,
                   self.fk_operation_group, self.user_group, self.additional_info, self.estimated_disk_size)
 
@@ -372,7 +372,6 @@ class Operation(Base, Exportable):
             self.operation_group = None
             self.fk_operation_group = None
 
-        self.parameters = dictionary['parameters']
         self.meta_data = dictionary['meta_data']
         self.create_date = string2date(dictionary['create_date'])
         if dictionary['start_date'] != "None":
@@ -386,7 +385,7 @@ class Operation(Base, Exportable):
         self.additional_info = dictionary['additional_info']
         self.gid = dictionary['gid']
 
-        return self
+        return self, dictionary['parameters']
 
     def _parse_status(self, status):
         """

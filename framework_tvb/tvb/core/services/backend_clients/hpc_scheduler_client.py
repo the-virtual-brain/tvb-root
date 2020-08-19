@@ -326,7 +326,7 @@ class HPCSchedulerClient(BackendClient):
         # type: (int) -> None
         operation = dao.get_operation_by_id(operation_identifier)
         is_group_launch = operation.fk_operation_group is not None
-        simulator_gid = json.loads(operation.parameters)['gid']
+        simulator_gid = operation.view_model_gid
         try:
             HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
         except Exception as exception:
