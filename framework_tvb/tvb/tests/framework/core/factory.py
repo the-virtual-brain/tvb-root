@@ -157,7 +157,7 @@ class TestFactory(object):
         adapter = ABCAdapter.build_adapter(algorithm)
         view_model = adapter.get_view_model_class()()
         view_model.data_file = "."
-        operation = Operation(None, test_user.id, test_project.id, algorithm.id,
+        operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status)
         dao.store_entity(operation)
         op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))

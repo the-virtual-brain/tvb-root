@@ -71,13 +71,14 @@ OPERATION_XML = "Operation.xml"
 class Operation2ImportData(object):
     # Plain Object for transporting operation related data before import
     def __init__(self, operation, operation_folder, main_view_model=None,
-                 dt_paths=None, all_view_model_files=None, is_fake=False):
+                 dt_paths=None, all_view_model_files=None, is_fake=False, info_from_xml=None):
         self.operation = operation
         self.operation_folder = operation_folder
         self.main_view_model = main_view_model
         self.dt_paths = dt_paths
         self.all_view_model_files = all_view_model_files
         self.is_self_generated = is_fake
+        self.info_from_xml = info_from_xml
 
     @property
     def is_old_form(self):
@@ -245,19 +246,17 @@ class ImportService(object):
                     self._import_image(root, metadata_file, project.id, target_images_path)
 
     def _retrieve_operations_in_order(self, project, import_path):
-        # type: (Project, str) -> tuple[list[Operation2ImportData], dict]
+        # type: (Project, str) -> list[Operation2ImportData]
         retrieved_operations = []
 
-        overlay_info_from_xml = {}
         for root, _, files in os.walk(import_path):
             if OPERATION_XML in files:
                 # Previous Operation format for uploading previous versions of projects
                 operation_file_path = os.path.join(root, OPERATION_XML)
                 operation, operation_xml_parameters = self.__build_operation_from_file(project, operation_file_path)
-                overlay_info_from_xml[operation.gid] = operation_xml_parameters
                 operation.import_file = operation_file_path
                 self.logger.debug("Found operation in old XML format: " + str(operation))
-                retrieved_operations.append(Operation2ImportData(operation, root))
+                retrieved_operations.append(Operation2ImportData(operation, root, info_from_xml=operation_xml_parameters))
 
             else:
                 # We strive for the new format with ViewModelH5
@@ -309,14 +308,14 @@ class ImportService(object):
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
 
-        return sorted(retrieved_operations, key=lambda op_data: op_data.order_field), overlay_info_from_xml
+        return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
 
     def import_project_operations(self, project, import_path):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
         imported_operations = []
-        ordered_operations, op_old_stuff = self._retrieve_operations_in_order(project, import_path)
+        ordered_operations = self._retrieve_operations_in_order(project, import_path)
 
         for operation_data in ordered_operations:
             if operation_data.is_old_form:
@@ -326,8 +325,8 @@ class ImportService(object):
                                                                                  operation_entity, datatype_group)
                 # Create and store view_model from operation
                 old_operation_xml_params = None
-                if operation_entity.gid in op_old_stuff.keys():
-                    old_operation_xml_params = op_old_stuff[operation_entity.gid]
+                if operation_data.info_from_xml:
+                    old_operation_xml_params = operation_data.info_from_xml
 
                 view_model = self._get_new_form_view_model(operation_entity, old_operation_xml_params)
                 h5.store_view_model(view_model, new_op_folder)
