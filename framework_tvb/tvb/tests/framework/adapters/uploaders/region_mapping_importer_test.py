@@ -33,14 +33,13 @@
 """
 
 import os
-
 import tvb.tests.framework.adapters.uploaders.test_data as test_data
 import tvb_data.regionMapping as demo_data
 import tvb_data.surfaceData
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -74,8 +73,7 @@ class TestRegionMappingImporter(BaseTestCase):
         self.test_project = TestFactory.create_project(self.test_user)
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         field = FilterChain.datatype + '.surface_type'
         filters = FilterChain('', [field], [CORTICAL], ['=='])
@@ -95,16 +93,16 @@ class TestRegionMappingImporter(BaseTestCase):
         This method tests import of region mapping without providing a surface or connectivity
         """
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.TXT_FILE, None,
-                                              self.connectivity.gid, False)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.TXT_FILE,
+                                              None, self.connectivity.gid, False)
             raise AssertionError("Import should fail in case Surface is missing")
         except TraitValueError:
             # Expected error
             pass
 
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.TXT_FILE, self.surface.gid, None,
-                                              False)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.TXT_FILE,
+                                              self.surface.gid, None)
             raise AssertionError("Import should fail in case Connectivity is missing")
         except TraitValueError:
             # Expected error
@@ -146,6 +144,7 @@ class TestRegionMappingImporter(BaseTestCase):
         array_data = region_mapping.array_data
         assert array_data is not None
         assert 16384 == len(array_data)
+        assert surface_index.number_of_vertices == len(array_data)
 
     def test_import_wrong_file_content(self):
         """
@@ -155,25 +154,26 @@ class TestRegionMappingImporter(BaseTestCase):
             - negative region number
         """
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_1, self.surface.gid,
-                                              self.connectivity.gid, False)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_1,
+                                              self.surface.gid, self.connectivity.gid, False)
             raise AssertionError("Import should fail in case of invalid region number")
         except OperationException:
             # Expected exception
             pass
 
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_2, self.surface.gid,
-                                              self.connectivity.gid, False)
+            # Execute some of these in the same process (to run faster, as they won't affect the logic)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_2,
+                                              self.surface.gid, self.connectivity.gid)
             raise AssertionError("Import should fail in case of invalid regions number")
-        except OperationException:
+        except (LaunchException, OperationException):
             # Expected exception
             pass
 
         try:
-            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_3, self.surface.gid,
-                                              self.connectivity.gid, False)
+            TestFactory.import_region_mapping(self.test_user, self.test_project, self.WRONG_FILE_3,
+                                              self.surface.gid, self.connectivity.gid)
             raise AssertionError("Import should fail in case of invalid region number (negative number)")
-        except OperationException:
+        except (LaunchException, OperationException):
             # Expected exception
             pass
