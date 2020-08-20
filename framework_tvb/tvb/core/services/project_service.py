@@ -548,6 +548,10 @@ class ProjectService:
             project = self.find_project(project_id)
             datatype = dao.get_datatype_by_gid(gid)
             links = dao.get_links_for_datatype(datatype.id)
+
+            op = dao.get_operation_by_id(datatype.fk_from_operation)
+            adapter = ABCAdapter.build_adapter(op.algorithm)
+            view_model = adapter.load_view_model(op)
             if links:
                 was_link = False
                 for link in links:
@@ -558,8 +562,8 @@ class ProjectService:
                 if not was_link:
                     # Create a clone of the operation
                     # There is no view_model so the view_model_gid is None
-                    previous_view_model_gid = dao.get_operation_by_id(datatype.fk_from_operation).view_model_gid
-                    new_op = Operation(previous_view_model_gid,
+
+                    new_op = Operation(op.view_model_gid,
                                        dao.get_system_user().id,
                                        links[0].fk_to_project,
                                        datatype.parent_operation.fk_from_algo,
@@ -573,9 +577,10 @@ class ProjectService:
                     new_op = dao.store_entity(new_op)
                     to_project = self.find_project(links[0].fk_to_project).name
                     full_path = h5.path_for_stored_index(datatype)
-                    self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
+                    new_op_folfer = self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
+                    h5.store_view_model(view_model, new_op_folfer)
                     dao.store_entity(datatype)
                     dao.remove_entity(Links, links[0].id)
             else:

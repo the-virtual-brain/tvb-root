@@ -206,6 +206,7 @@ class FilesHelper(object):
             folder = self.get_project_folder(new_project_name, str(new_op_id))
             full_new_file = os.path.join(folder, os.path.split(full_path)[1])
             os.rename(full_path, full_new_file)
+            return folder
         except Exception:
             self.logger.exception("Could not move file")
             raise FileStructureException("Could not move " + str(datatype))
