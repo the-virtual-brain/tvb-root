@@ -151,7 +151,7 @@ class RegionMappingImporter(ABCUploader):
             raise LaunchException("Uploaded file does not contains any data. Please initiate upload with another file.")
 
         # Check if we have a mapping for each surface vertex.
-        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface)
         if len(array_data) != surface_index.number_of_vertices:
             msg = "Imported file contains a different number of values than the number of surface vertices. " \
                   "Imported: %d values while surface has: %d vertices." % (
@@ -162,7 +162,7 @@ class RegionMappingImporter(ABCUploader):
         if array_data.min() < 0:
             raise LaunchException("Imported file contains negative values. Please fix problem and re-import file")
 
-        connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
+        connectivity_index = self.load_entity_by_gid(view_model.connectivity)
         if array_data.max() >= connectivity_index.number_of_regions:
             msg = "Imported file contains invalid regions. Found region: %d while selected connectivity has: %d " \
                   "regions defined (0 based)." % (array_data.max(), connectivity_index.number_of_regions)
