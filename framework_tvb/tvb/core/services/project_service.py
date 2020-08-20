@@ -558,7 +558,8 @@ class ProjectService:
                 if not was_link:
                     # Create a clone of the operation
                     # There is no view_model so the view_model_gid is None
-                    new_op = Operation(None,
+                    previous_view_model_gid = dao.get_operation_by_id(datatype.fk_from_operation).view_model_gid
+                    new_op = Operation(previous_view_model_gid,
                                        dao.get_system_user().id,
                                        links[0].fk_to_project,
                                        datatype.parent_operation.fk_from_algo,
