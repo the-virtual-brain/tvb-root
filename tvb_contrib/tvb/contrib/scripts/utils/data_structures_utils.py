@@ -339,10 +339,10 @@ def ensure_string(arg):
         return arg
 
 
-def flatten_list(lin, sort=False):
+def flatten_list(lin, sort=False, recursive=True):
     lout = []
     for sublist in lin:
-        if isinstance(sublist, (list, tuple)):
+        if recursive and isinstance(sublist, (list, tuple)):
             temp = flatten_list(list(sublist))
         else:
             temp = [sublist]
@@ -871,21 +871,24 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         return {"data": data, "dims": list(coords.keys()), "coords": coords, "name": name}
 
 
-def concatenate_heterogeneous_DataArrays(data, dim_name, data_name="", fill_value=np.nan, dims=None):
+def concatenate_heterogeneous_DataArrays(data, concat_dim_name,
+                                         data_keys=None, name=None, fill_value=np.nan, transpose_dims=None):
+    from pandas import Series
     from xarray import concat
     from pandas import Index
-    data_names = ensure_list(data.keys())
-    if isinstance(data, dict):  # dict
-        data = ensure_list(data.values())
-        name = data_name
-    else:  # pd.Series
-        name = data.name
-        data = ensure_list(data.values)
-    # assuming a pandas Series due to heterogeneity of populations in among brain regions:
-    data = concat(data, Index(data_names, name=dim_name), fill_value=fill_value)
+    if isinstance(data, (dict, Series)):
+        if data_keys is None:
+            data_keys = ensure_list(data.keys())
+        if isinstance(data, dict):  # dict
+            data = ensure_list(data.values())
+        else:  # pd.Series
+            if name is None:
+                name = data.name
+            data = ensure_list(data.values)
+    data = concat(data, Index(data_keys, name=concat_dim_name), fill_value=fill_value)
     data.name = name
-    if dims:
-        data = data.transpose(*dims)
+    if transpose_dims:
+        data = data.transpose(*transpose_dims)
     return data
 
 
