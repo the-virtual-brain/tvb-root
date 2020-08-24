@@ -106,7 +106,7 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
     def launch(self, view_model):
         # type: (WaveletSpectrogramVisualizerModel) -> dict
 
-        input_index = self.load_entity_by_gid(view_model.input_data.hex)
+        input_index = self.load_entity_by_gid(view_model.input_data)
         with h5.h5_file_for_index(input_index) as input_h5:
             shape = input_h5.array_data.shape
             input_sample_period = input_h5.sample_period.load()

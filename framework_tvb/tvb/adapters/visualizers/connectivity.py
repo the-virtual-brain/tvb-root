@@ -171,7 +171,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         """
         Return the required memory to run this algorithm.
         """
-        surface_index = self.load_entity_by_gid(view_model.surface_data.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface_data)
         if surface_index is not None:
             # Nr of triangles * sizeOf(uint16) + (nr of vertices + nr of normals) * sizeOf(float)
             return surface_index.number_of_vertices * 6 * 4 + surface_index.number_of_vertices * 6 * 8

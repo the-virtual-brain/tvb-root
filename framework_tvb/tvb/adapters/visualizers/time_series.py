@@ -109,7 +109,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
         """
         if isinstance(ts_h5, TimeSeriesSensorsH5):
             sensors_gid = ts_h5.sensors.load()
-            sensors_idx = self.load_entity_by_gid(sensors_gid.hex)
+            sensors_idx = self.load_entity_by_gid(sensors_gid)
             with h5.h5_file_for_index(sensors_idx) as sensors_h5:
                 labels = sensors_h5.labels.load()
                 # TODO uncomment this when the UI component will be able to scale for many groups
@@ -133,7 +133,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
             connectivity_gid = ts_h5.connectivity.load()
             if connectivity_gid is None:
                 return []
-            conn_idx = self.load_entity_by_gid(connectivity_gid.hex)
+            conn_idx = self.load_entity_by_gid(connectivity_gid)
             with h5.h5_file_for_index(conn_idx) as conn_h5:
                 return list(conn_h5.region_labels.load())
 
@@ -141,7 +141,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
             sensors_gid = ts_h5.sensors.load()
             if sensors_gid is None:
                 return []
-            sensors_idx = self.load_entity_by_gid(sensors_gid.hex)
+            sensors_idx = self.load_entity_by_gid(sensors_gid)
             with h5.h5_file_for_index(sensors_idx) as sensors_h5:
                 return list(sensors_h5.labels.load())
 
@@ -163,7 +163,7 @@ class TimeSeriesDisplay(ABCSpaceDisplayer):
         return -1
 
     def _launch(self, view_model, figsize, preview=False):
-        time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        time_series_index = self.load_entity_by_gid(view_model.time_series)
         h5_file = h5.h5_file_for_index(time_series_index)
         assert isinstance(h5_file, TimeSeriesH5)
         shape = list(h5_file.read_data_shape())

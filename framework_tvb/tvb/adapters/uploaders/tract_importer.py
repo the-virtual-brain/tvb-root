@@ -240,7 +240,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
     @transactional
     def launch(self, view_model):
         # type: (TrackImporterModel) -> [TractsIndex]
-        region_volume_index = self.load_entity_by_gid(view_model.region_volume.hex)
+        region_volume_index = self.load_entity_by_gid(view_model.region_volume)
         datatype = self._base_before_launch(view_model.data_file, region_volume_index)
 
         tract_start_indices = [0]

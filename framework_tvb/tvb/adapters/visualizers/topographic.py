@@ -247,7 +247,7 @@ class TopographicViewer(ABCDisplayer):
         measures_ht = []
         for measure in [view_model.data_0, view_model.data_1, view_model.data_2]:
             if measure is not None:
-                measure_index = self.load_entity_by_gid(measure.hex)
+                measure_index = self.load_entity_by_gid(measure)
                 measures_ht.append(h5.load_from_index(measure_index))
                 conn_index = self.load_entity_by_gid(measure_index.fk_connectivity_gid)
                 connectivities_idx.append(conn_index)

@@ -124,7 +124,7 @@ class CrossCorrelateAdapter(ABCAdapter):
 
         :param time_series: the input time-series index for which cross correlation should be computed
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -339,7 +339,7 @@ class PearsonCorrelationCoefficientAdapter(ABCAdapter):
         if view_model.t_start >= view_model.t_end or view_model.t_start < 0:
             raise LaunchException("Can not launch operation without monitors selected !!!")
 
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (int((view_model.t_end - view_model.t_start) / self.input_time_series_index.sample_period),
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

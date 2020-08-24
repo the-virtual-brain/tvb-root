@@ -148,10 +148,10 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         if view_model.surface is None:
             raise LaunchException("No source selected. Please initiate upload again and select a source.")
 
-        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface)
         expected_surface_shape = surface_index.number_of_vertices
 
-        sensors_index = self.load_entity_by_gid(view_model.sensors.hex)
+        sensors_index = self.load_entity_by_gid(view_model.sensors)
         expected_sensors_shape = sensors_index.number_of_sensors
 
         self.logger.debug("Reading projection matrix from uploaded file...")

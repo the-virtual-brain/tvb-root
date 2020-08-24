@@ -133,7 +133,7 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         """
         Do any configuration needed before launching and create an instance of the algorithm.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
