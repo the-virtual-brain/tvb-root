@@ -870,14 +870,6 @@ class ProjectService:
         return dao.get_datatype_group_by_gid(datatypegroup_gid)
 
     @staticmethod
-    def count_datatypes_generated_from(datatype_gid):
-        """
-        A list with all the datatypes resulted from operations that had as
-        input the datatype given by 'datatype_gid'.
-        """
-        return dao.count_datatypes_generated_from(datatype_gid)
-
-    @staticmethod
     def get_datatypegroup_by_op_group_id(operation_group_id):
         """ Returns the DataTypeGroup with the specified id. """
         return dao.get_datatypegroup_by_op_group_id(operation_group_id)

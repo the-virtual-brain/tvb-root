@@ -392,10 +392,6 @@ class ProjectController(BaseController):
         if "Export" not in exclude_tabs:
             tabs.append(OverlayTabDefinition("Export", "export", enabled=(exporters and len(exporters) > 0)))
             overlay_indexes.append(4)
-        if "Derived DataTypes" not in exclude_tabs:
-            tabs.append(OverlayTabDefinition("Derived DataTypes", "result_dts",
-                                             enabled=self.project_service.count_datatypes_generated_from(entity_gid)))
-            overlay_indexes.append(5)
         template_specification = self.fill_overlay_attributes(template_specification, "DataType Details",
                                                               overlay_title, "project/details_datatype_overlay",
                                                               overlay_class, tabs, overlay_indexes)
