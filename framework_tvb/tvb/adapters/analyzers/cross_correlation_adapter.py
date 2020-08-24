@@ -39,9 +39,9 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 import json
 import uuid
-
 import numpy
 from scipy.signal.signaltools import correlate
+from tvb.adapters.analyzers.abcanalyzer import ABCAnalyzer
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
@@ -105,7 +105,7 @@ class CrossCorrelateAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class CrossCorrelateAdapter(ABCAdapter):
+class CrossCorrelateAdapter(ABCAnalyzer):
     """ TVB adapter for calling the CrossCorrelate algorithm. """
     _ui_name = "Cross-correlation of nodes"
     _ui_description = "Cross-correlate two one-dimensional arrays."
@@ -124,7 +124,7 @@ class CrossCorrelateAdapter(ABCAdapter):
 
         :param time_series: the input time-series index for which cross correlation should be computed
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        super(CrossCorrelateAdapter, self).configure(view_model)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -314,7 +314,7 @@ class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
         return CorrelationCoefficient()
 
 
-class PearsonCorrelationCoefficientAdapter(ABCAdapter):
+class PearsonCorrelationCoefficientAdapter(ABCAnalyzer):
     """ TVB adapter for calling the Pearson correlation coefficients algorithm. """
 
     _ui_name = "Pearson correlation coefficients"
@@ -336,10 +336,10 @@ class PearsonCorrelationCoefficientAdapter(ABCAdapter):
         :param t_start: the physical time interval start for the analysis
         :param t_end: physical time, interval end
         """
+        super(PearsonCorrelationCoefficientAdapter, self).configure(view_model)
         if view_model.t_start >= view_model.t_end or view_model.t_start < 0:
             raise LaunchException("Can not launch operation without monitors selected !!!")
 
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
         self.input_shape = (int((view_model.t_end - view_model.t_start) / self.input_time_series_index.sample_period),
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

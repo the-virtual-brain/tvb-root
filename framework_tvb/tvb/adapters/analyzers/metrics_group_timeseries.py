@@ -40,8 +40,8 @@ Analyzer used to calculate a single measure for TimeSeries.
 """
 import json
 import uuid
-
 import numpy
+from tvb.adapters.analyzers.abcanalyzer import ABCAnalyzer
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
@@ -103,7 +103,7 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class TimeseriesMetricsAdapter(ABCAdapter):
+class TimeseriesMetricsAdapter(ABCAnalyzer):
     """
     TVB adapter for exposing as a group the measure algorithm.
     """
@@ -124,7 +124,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
         """
         Store the input shape to be later used to estimate memory usage.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        super(TimeseriesMetricsAdapter, self).configure(view_model)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

@@ -37,6 +37,7 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 
 import numpy
+from tvb.adapters.analyzers.abcanalyzer import ABCAnalyzer
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
@@ -85,7 +86,7 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
         return NodeComplexCoherence()
 
 
-class NodeComplexCoherenceAdapter(ABCAdapter):
+class NodeComplexCoherenceAdapter(ABCAnalyzer):
     """ TVB adapter for calling the NodeComplexCoherence algorithm. """
 
     _ui_name = "Complex Coherence of Nodes"
@@ -133,7 +134,7 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         """
         Do any configuration needed before launching and create an instance of the algorithm.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        super(NodeComplexCoherenceAdapter, self).configure(view_model)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

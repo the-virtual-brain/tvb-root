@@ -37,10 +37,10 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 import math
 import uuid
-
 import numpy
 import psutil
 import tvb.analyzers.fft as fft
+from tvb.adapters.analyzers.abcanalyzer import ABCAnalyzer
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
@@ -97,7 +97,7 @@ class FFTAdapterForm(ABCAdapterForm):
         return fft.FFT()
 
 
-class FourierAdapter(ABCAdapter):
+class FourierAdapter(ABCAnalyzer):
     """ TVB adapter for calling the FFT algorithm. """
 
     _ui_name = "Fourier Spectral Analysis"
@@ -120,7 +120,7 @@ class FourierAdapter(ABCAdapter):
         """
         Do any configuration needed before launching.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        super(FourierAdapter, self).configure(view_model)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

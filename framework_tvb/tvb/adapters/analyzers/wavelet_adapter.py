@@ -38,8 +38,8 @@ ContinuousWaveletTransform Analyzer.
 """
 
 import uuid
-
 import numpy
+from tvb.adapters.analyzers.abcanalyzer import ABCAnalyzer
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5
@@ -119,7 +119,7 @@ class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class ContinuousWaveletTransformAdapter(ABCAdapter):
+class ContinuousWaveletTransformAdapter(ABCAnalyzer):
     """
     TVB adapter for calling the ContinuousWaveletTransform algorithm.
     """
@@ -138,8 +138,7 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
         """
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
-
+        super(ContinuousWaveletTransformAdapter, self).configure(view_model)
         input_shape = []
         for length in [self.input_time_series_index.data_length_1d,
                        self.input_time_series_index.data_length_2d,

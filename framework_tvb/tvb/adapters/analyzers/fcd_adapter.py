@@ -38,12 +38,12 @@ Adapter that uses the traits model to generate interfaces for FCD Analyzer.
 
 import json
 import uuid
-
 import numpy as np
 from scipy import linalg
 from scipy.spatial.distance import pdist
 from sklearn.cluster import DBSCAN
 from sklearn.manifold import SpectralEmbedding
+from tvb.adapters.analyzers.abcanalyzer import ABCAnalyzer
 from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
@@ -128,7 +128,7 @@ class FCDAdapterForm(ABCAdapterForm):
         return FcdCalculator()
 
 
-class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
+class FunctionalConnectivityDynamicsAdapter(ABCAnalyzer):
     """ TVB adapter for calling the Pearson CrossCorrelation algorithm.
 
         The present class will do the following actions:
@@ -183,7 +183,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         """
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        super(FunctionalConnectivityDynamicsAdapter, self).configure(view_model)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

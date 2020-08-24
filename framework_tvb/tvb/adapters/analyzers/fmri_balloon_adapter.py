@@ -36,8 +36,8 @@ Adapter that uses the traits module to generate interfaces for BalloonModel Anal
 """
 
 import uuid
-
 import numpy
+from tvb.adapters.analyzers.abcanalyzer import ABCAnalyzer
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.analyzers.fmri_balloon import BalloonModel
@@ -129,7 +129,7 @@ class BalloonModelAdapterForm(ABCAdapterForm):
         return BalloonModel()
 
 
-class BalloonModelAdapter(ABCAdapter):
+class BalloonModelAdapter(ABCAnalyzer):
     """
     TVB adapter for calling the BalloonModel algorithm.
     """
@@ -150,7 +150,7 @@ class BalloonModelAdapter(ABCAdapter):
         Store the input shape to be later used to estimate memory usage. Also
         create the algorithm instance.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        super(BalloonModelAdapter, self).configure(view_model)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

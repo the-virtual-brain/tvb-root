@@ -37,8 +37,8 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 import json
 import uuid
-
 import numpy
+from tvb.adapters.analyzers.abcanalyzer import ABCAnalyzer
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
@@ -97,7 +97,7 @@ class NodeCovarianceAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class NodeCovarianceAdapter(ABCAdapter):
+class NodeCovarianceAdapter(ABCAnalyzer):
     """ TVB adapter for calling the NodeCovariance algorithm. """
     _ui_name = "Temporal covariance of nodes"
     _ui_description = "Compute Temporal Node Covariance for a TimeSeries input DataType."
@@ -114,7 +114,7 @@ class NodeCovarianceAdapter(ABCAdapter):
         """
         Store the input shape to be later used to estimate memory usage.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        super(NodeCovarianceAdapter, self).configure(view_model)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
