@@ -317,13 +317,12 @@ class BurstService(object):
         metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
 
         adapter = ABCAdapter.build_adapter(metric_algo)
-        view_model = adapter.get_view_model_class()()
+        view_model = adapter.load_view_model(operation)
 
-        metric_operation = Operation(view_model.git.hex, operation.fk_launched_by, operation.fk_launched_in, metric_algo.id,
+        metric_operation = Operation(view_model.gid.hex, operation.fk_launched_by, operation.fk_launched_in, metric_algo.id,
                                      status=STATUS_FINISHED, op_group_id=metric_operation_group_id,
                                      range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
         op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
-        h5.store_view_model(view_model, op_dir)
         return op_dir, metric_operation

@@ -79,7 +79,7 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         view_model.test = 5
 
         # Prepare operation for launch
-        operation = Operation(view_model.gid.hex, view_model.gid.hex, self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
+        operation = Operation(view_model.gid.hex, self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
                               status=STATUS_STARTED)
         operation = dao.store_entity(operation)
 

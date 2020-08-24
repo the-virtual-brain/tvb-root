@@ -164,7 +164,7 @@ def project_factory():
 
 
 @pytest.fixture()
-def operation_factory(user_factory, project_factory):
+def operation_factory(user_factory, project_factory, connectivity_factory):
     def build(algorithm=None, test_user=None, test_project=None,
               operation_status=STATUS_FINISHED, parameters="test params", range_values=None):
         """
@@ -179,9 +179,16 @@ def operation_factory(user_factory, project_factory):
         if test_project is None:
             test_project = project_factory(test_user)
 
-        operation = Operation(None, test_user.id, test_project.id, algorithm.id,
+        adapter = ABCAdapter.build_adapter(algorithm)
+        view_model = adapter.get_view_model_class()()
+        view_model.connectivity = connectivity_factory().gid
+
+        operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status, range_values=range_values)
         dao.store_entity(operation)
+
+        op_folfer = FilesHelper().get_project_folder(test_project, str(operation.id))
+        h5.store_view_model(view_model, op_folfer)
         # Make sure lazy attributes are correctly loaded.
         return dao.get_operation_by_id(operation.id)
 
@@ -530,6 +537,9 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         # Create operation
         operation = operation_factory(algorithm=algorithm, test_user=user, test_project=project)
 
+        adapter = ABCAdapter.build_adapter(algorithm)
+        view_model = adapter.load_view_model(operation)
+
         group = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
         group = dao.store_entity(group)
         group_ms = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
@@ -548,12 +558,14 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
         # Now create some data types and add them to group
         for range_val1 in range_values_1:
             for range_val2 in range_values_2:
-                op = Operation(None, user.id, project.id, algorithm.id,
+                op = Operation(view_model.gid.hex, user.id, project.id, algorithm.id,
                                status=STATUS_FINISHED,
                                range_values=json.dumps({range_1[0]: range_val1,
                                                         range_2[0]: range_val2}))
                 op.fk_operation_group = group.id
                 op = dao.store_entity(op)
+                op_path = FilesHelper().get_project_folder(operation.project, str(op.id))
+                h5.store_view_model(view_model, op_path)
                 datatype = time_series_index_factory(op=op)
                 datatype.number1 = range_val1
                 datatype.number2 = range_val2
@@ -561,13 +573,15 @@ def datatype_group_factory(time_series_index_factory, datatype_measure_factory, 
                 datatype.operation_id = op.id
                 dao.store_entity(datatype)
 
-                op_ms = Operation(None, user.id, project.id, algorithm.id,
+                op_ms = Operation(view_model.gid.hex, user.id, project.id, algorithm.id,
                                   status=STATUS_FINISHED,
                                   range_values=json.dumps({range_1[0]: range_val1,
                                                            range_2[0]: range_val2}))
                 op_ms.fk_operation_group = group_ms.id
                 op_ms = dao.store_entity(op_ms)
                 datatype_measure_factory(datatype, op_ms, dt_group_ms)
+                op_ms_path = FilesHelper().get_project_folder(operation.project, str(op_ms.id))
+                h5.store_view_model(view_model, op_ms_path)
 
         return datatype_group
 

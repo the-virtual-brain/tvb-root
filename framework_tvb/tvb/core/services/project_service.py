@@ -728,7 +728,7 @@ class ProjectService:
             operation.user_group = new_group_name
             dao.store_entity(operation)
             op_folder = self.structure_helper.get_project_folder(operation.project, str(operation.id))
-            vm_gid = json.loads(operation.parameters)['gid']
+            vm_gid = operation.view_model_gid
             view_model_file = h5.determine_filepath(vm_gid, op_folder)
             if view_model_file:
                 view_model_class = H5File.determine_type(view_model_file)
