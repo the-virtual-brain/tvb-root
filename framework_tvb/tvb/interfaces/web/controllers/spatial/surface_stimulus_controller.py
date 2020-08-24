@@ -42,7 +42,7 @@ from tvb.adapters.datatypes.h5.patterns_h5 import StimuliSurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
-from tvb.core.entities.load import try_get_last_datatype
+from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import Form, SimpleFloatField
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -290,7 +290,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         """
         Loads the interface for the selected surface stimulus.
         """
-        surface_stim_index = ABCAdapter.load_entity_by_gid(surface_stimulus_gid)
+        surface_stim_index = load_entity_by_gid(surface_stimulus_gid)
         surface_stim_h5_path = h5.path_for_stored_index(surface_stim_index)
         existent_surface_stim = SurfaceStimulusCreatorModel()
         with StimuliSurfaceH5(surface_stim_h5_path) as surface_stim_h5:

@@ -44,9 +44,9 @@ from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 import tvb.core.entities.model.model_operation as model
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.transient import graph_structures
 from tvb.core.entities.filters.factory import StaticFiltersFactory
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
@@ -275,8 +275,8 @@ class ProjectController(BaseController):
                                       total_op_count=total_op_count, total_pages=pages_no, page_number=page,
                                       filters=filters, no_filter_selected=(selected_filters is None), model=model)
         return self.fill_default_attributes(template_specification, 'operations')
-    
-    
+
+
     @expose_fragment("call_out_project")
     def generate_call_out_control(self):
         """
@@ -701,7 +701,7 @@ class ProjectController(BaseController):
         """ Export the data to a default path of TVB_STORAGE/PROJECTS/project_name """
         current_prj = common.get_current_project()
         # Load data by GID
-        entity = ABCAdapter.load_entity_by_gid(data_gid)
+        entity = load_entity_by_gid(data_gid)
         # Do real export
         export_mng = ExportManager()
         file_name, file_path, delete_file = export_mng.export_data(entity, export_module, current_prj)
@@ -781,7 +781,7 @@ class ProjectController(BaseController):
                 dt_outputs = self._create_datatype_nodes([datatype])
 
         elif item_type == graph_structures.NODE_DATATYPE_TYPE:
-            selected_dt = ABCAdapter.load_entity_by_gid(item_gid)
+            selected_dt = load_entity_by_gid(item_gid)
             if self.project_service.is_datatype_group(item_gid):
                 datatype_group = self.project_service.get_datatypegroup_by_gid(selected_dt.gid)
                 parent_op_group = self.project_service.get_operation_group_by_id(datatype_group.fk_operation_group)

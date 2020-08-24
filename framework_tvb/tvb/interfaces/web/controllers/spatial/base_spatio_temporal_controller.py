@@ -36,7 +36,7 @@
 import json
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
@@ -79,7 +79,7 @@ class SpatioTemporalController(BaseController):
         """
         Generates the HTML for displaying the surface with the given ID.
         """
-        surface = ABCAdapter.load_entity_by_gid(surface_gid)
+        surface = load_entity_by_gid(surface_gid)
         if surface is None:
             raise MissingDataException(SpatioTemporalController.MSG_MISSING_SURFACE + "!!")
         common.add2session(PARAM_SURFACE, surface_gid)

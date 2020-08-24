@@ -33,7 +33,7 @@
 """
 
 import os
-from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField
 
 
@@ -52,7 +52,7 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
         if isinstance(field, TraitDataTypeSelectField):
             data_type = None
             if attr_vm:
-                data_type = ABCAdapter.load_entity_by_gid(attr_vm)
+                data_type = load_entity_by_gid(attr_vm)
                 changed_attr[field.label] = data_type.display_name if data_type else "None"
             inputs_datatypes.append(data_type)
         else:

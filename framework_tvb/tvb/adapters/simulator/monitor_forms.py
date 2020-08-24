@@ -30,9 +30,9 @@
 import numpy
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
 from tvb.basic.neotraits.api import List
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, MultiSelectField
 from tvb.core.neotraits.forms import SelectField, TraitDataTypeSelectField
 from tvb.datatypes.projections import ProjectionsType
@@ -162,7 +162,7 @@ class SpatialAverageMonitorForm(MonitorForm):
 
     def fill_from_trait(self, trait):
         super(SpatialAverageMonitorForm, self).fill_from_trait(trait)
-        connectivity_index = ABCAdapter.load_entity_by_gid(self.session_stored_simulator.connectivity)
+        connectivity_index = load_entity_by_gid(self.session_stored_simulator.connectivity)
 
         if self.session_stored_simulator.is_surface_simulation is False:
             self.default_mask.choices.pop(SpatialAverage.REGION_MAPPING)
