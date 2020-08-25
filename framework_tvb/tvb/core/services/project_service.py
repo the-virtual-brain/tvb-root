@@ -577,10 +577,12 @@ class ProjectService:
                     new_op = dao.store_entity(new_op)
                     to_project = self.find_project(links[0].fk_to_project).name
                     full_path = h5.path_for_stored_index(datatype)
-                    new_op_folfer = self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
+                    self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
-                    h5.store_view_model(view_model, new_op_folfer)
+                    op_path = FilesHelper().get_project_folder(project, str(op.id))
+                    h5_file_path = h5.path_for(op_path, ViewModelH5, view_model.gid, type(view_model).__name__)
+                    self.structure_helper.move_datatype(view_model, to_project, str(new_op.id), h5_file_path)
                     dao.store_entity(datatype)
                     dao.remove_entity(Links, links[0].id)
             else:

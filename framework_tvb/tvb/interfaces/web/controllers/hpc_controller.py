@@ -64,7 +64,7 @@ class HPCController(object):
         if not operation:
             raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST, "Invalid operation id.")
 
-        if operation.view_model_gid:
+        if not operation.view_model_gid:
             raise cherrypy.HTTPError(HTTPStatus.BAD_REQUEST, "Invalid operation id.")
 
         if operation.view_model_gid != simulator_gid:
