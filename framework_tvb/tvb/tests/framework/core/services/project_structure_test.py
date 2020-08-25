@@ -49,6 +49,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
+from tvb.core.utils import no_matlab
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -313,6 +314,7 @@ class TestProjectStructure(TransactionalTestCase):
         assert created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
         assert created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
 
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_get_inputs_for_operation(self):
         """
         Tests method get_datatype_and_datatypegroup_inputs_for_operation.
@@ -339,6 +341,7 @@ class TestProjectStructure(TransactionalTestCase):
         assert len(inputs) == 1, "Incorrect number of inputs."
         assert conn.id == inputs[0].id, "Retrieved wrong input dataType."
 
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_get_inputs_for_group(self, datatype_group_factory, test_adapter_factory):
         """
         Tests method get_datatypes_inputs_for_operation_group.
