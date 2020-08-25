@@ -124,6 +124,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         metric_vm = TimeseriesMetricsAdapterModel()
         metric_vm.time_series = time_series_index.gid
         metric_vm.algorithms = tuple(choices.values())
+        h5.store_view_model(metric_vm, self._get_output_path())
         metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
         metric_adapter._prelaunch(None, metric_vm, None, self.available_disk_space)
 
