@@ -393,6 +393,8 @@ class DatatypeDAO(RootDAO):
                 result_dt.parent_operation.algorithm.algorithm_category
                 result_dt.parent_operation.operation_group
                 result_dt._parent_burst
+                if result_dt.get_lazy_load_field():
+                    getattr(result_dt, result_dt.get_lazy_load_field())
 
             return result_dt
         except NoResultFound as excep:
