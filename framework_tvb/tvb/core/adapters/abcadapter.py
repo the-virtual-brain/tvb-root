@@ -455,7 +455,8 @@ class ABCAdapter(object):
         Load a generic DataType, specified by GID.
         """
         idx = load_entity_by_gid(data_gid)
-        if idx:
+        if idx and self.generic_attributes.parent_burst is None:
+            # Only in case the BurstConfiguration references hasn't been set already, take it from the current DT
             self.generic_attributes.parent_burst = idx.fk_parent_burst
         return idx
 
