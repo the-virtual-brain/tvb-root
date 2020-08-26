@@ -129,10 +129,16 @@ class TestExporters(TransactionalTestCase):
         with closing(zipfile.ZipFile(file_path)) as zip_file:
             list_of_files = zip_file.namelist()
 
+            list_of_folders = []
+            for file in list_of_files:
+                dir_name = os.path.dirname(file)
+                if dir_name not in list_of_folders:
+                    list_of_folders.append(dir_name)
+
             count_datatypes = dao.count_datatypes_in_group(datatype_group.id)
 
             # Check if ZIP files contains files for data types
-            assert count_datatypes == len(list_of_files)
+            assert count_datatypes == len(list_of_folders)
 
     def test_export_with_invalid_data(self, dummy_datatype_index_factory):
         """
