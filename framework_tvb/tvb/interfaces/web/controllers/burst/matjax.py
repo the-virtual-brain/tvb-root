@@ -34,7 +34,7 @@ def configure_matjax_doc(available_models):
 
     for clz_name, clz in available_models.items():
         models_docs.append({
-            'name': clz_name,
+            'name': clz_name.replace(' ', '_'),
             'inline_description': _dfun_math_directives_to_matjax(clz),
             'description': clz.__doc__
         })

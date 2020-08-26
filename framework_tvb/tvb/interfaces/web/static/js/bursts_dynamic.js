@@ -538,14 +538,15 @@ function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
 
 function displayDocForModel(model){
     model_id = model.find(":selected").val();
-    $("#data_model_" + model_id).css("display", "block");
+    $("#data_model_" + model_id.replace(/ /g,"_")).css("display", "block");
 }
 
 function fillDoc(){
     var model = $('#model');
     model.on("change", function(event){
         $("#model > option").each(function(){
-            $("#data_model_" + $(this).val()).css("display", "none");
+            model_id = $(this).val();
+            $("#data_model_" + model_id.replace(/ /g,"_")).css("display", "none");
         })
 
         displayDocForModel(model);

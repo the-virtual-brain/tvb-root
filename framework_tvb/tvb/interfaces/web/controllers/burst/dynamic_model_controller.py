@@ -44,7 +44,6 @@ from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.matjax import configure_matjax_doc
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
@@ -55,6 +54,7 @@ from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
+from tvb.interfaces.web.controllers.burst.matjax import configure_matjax_doc
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
 from tvb.simulator import models
