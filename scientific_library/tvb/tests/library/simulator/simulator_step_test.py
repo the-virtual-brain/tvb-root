@@ -44,30 +44,30 @@ class TestStep(BaseTestCase):
         model=lab.models.ReducedWongWang()
         connectivity = lab.connectivity.Connectivity().from_file()
         coupling = lab.coupling.Linear()
-        integrator = lab.integrators.HeunDeterministic(dt=0.1)
+        integrator = lab.integrators.HeunDeterministic(dt=dt)
         monitor=(lab.monitors.Raw(),)
         return model,connectivity,coupling, integrator,monitor,dt
 
-    def test_no_modification(self):
+    def test_simulation_length(self):
         model,connectivity,coupling, integrator,monitor,dt = self._sim()
-        for j in np.arange(0.0,10.0,0.1):
+        for t in np.arange(0.1,10.0,0.1):
             simulator = lab.simulator.Simulator(model=model, connectivity=connectivity,
                                                 coupling=coupling, integrator=integrator,
                                                 monitors=monitor)
             simulator.configure()
-            time = 0.0
-            for i in simulator(j,test_step=True):
-                time = i[0][0]
-            assert time == j
+            for (time,_), in simulator(simulation_length=t):
+                pass
+            assert time > t or np.isclose(time, t)
 
-    def test_modification(self):
+
+    def test_n_steps(self):
         model,connectivity,coupling, integrator,monitor,dt = self._sim()
-        for j in np.arange(0.0,10.0,0.1):
+        for n in range(1,10):
             simulator = lab.simulator.Simulator(model=model, connectivity=connectivity,
                                                 coupling=coupling, integrator=integrator,
                                                 monitors=monitor)
             simulator.configure()
-            time = 0.0
-            for i in simulator(j,test_step=False):
-                time = i[0][0]
-            assert time == j
+            
+            for i, ((time,_),) in enumerate(simulator(n_steps=n)):
+                assert np.isclose(time, (i+1)*dt)
+            assert i == n-1
