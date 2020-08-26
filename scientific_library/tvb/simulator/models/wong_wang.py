@@ -150,7 +150,7 @@ class ReducedWongWang(ModelNumbaDfun):
         super(ReducedWongWang, self).configure()
         self.update_derived_parameters()
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, x, c, local_coupling=0.0):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 
@@ -160,22 +160,6 @@ class ReducedWongWang(ModelNumbaDfun):
                  \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
 
         """
-        S   = state_variables[0, :]
-
-        c_0 = coupling[0, :]
-
-
-        # if applicable
-        lc_0 = local_coupling * S
-
-        x  = self.w * self.J_N * S + self.I_o + self.J_N * c_0 + self.J_N * lc_0
-        H = (self.a * x - self.b) / (1 - numpy.exp(-self.d * (self.a * x - self.b)))
-        dS = - (S / self.tau_s) + (1 - S) * H * self.gamma
-
-        derivative = numpy.array([dS])
-        return derivative
-
-    def dfun(self, x, c, local_coupling=0.0):
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
         deriv = _numba_dfun(x_, c_, self.a, self.b, self.d, self.gamma,

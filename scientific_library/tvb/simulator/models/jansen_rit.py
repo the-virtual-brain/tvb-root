@@ -203,7 +203,7 @@ class JansenRit(ModelNumbaDfun):
     _nvar = 6
     cvar = numpy.array([1, 2], dtype=numpy.int32)
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, y, c, local_coupling=0.0):
         r"""
         The dynamic equations were taken from [JR_1995]_
 
@@ -234,37 +234,6 @@ class JansenRit(ModelNumbaDfun):
             w = 0.005 [s]
 
         """
-        y0, y1, y2, y3, y4, y5 = state_variables
-
-        # NOTE: This is assumed to be \sum_j u_kj * S[y_{1_j} - y_{2_j}]
-        lrc = coupling[0, :]
-        short_range_coupling =  local_coupling*(y1 -  y2)
-
-        # NOTE: for local couplings
-        # 0: pyramidal cells
-        # 1: excitatory interneurons
-        # 2: inhibitory interneurons
-        # 0 -> 1,
-        # 0 -> 2,
-        # 1 -> 0,
-        # 2 -> 0,
-
-        exp = numpy.exp
-        sigm_y1_y2 = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (y1 - y2))))
-        sigm_y0_1  = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (self.a_1 * self.J * y0))))
-        sigm_y0_3  = 2.0 * self.nu_max / (1.0 + exp(self.r * (self.v0 - (self.a_3 * self.J * y0))))
-
-        return numpy.array([
-            y3,
-            y4,
-            y5,
-            self.A * self.a * sigm_y1_y2 - 2.0 * self.a * y3 - self.a ** 2 * y0,
-            self.A * self.a * (self.mu + self.a_2 * self.J * sigm_y0_1 + lrc + short_range_coupling)
-                - 2.0 * self.a * y4 - self.a ** 2 * y1,
-            self.B * self.b * (self.a_4 * self.J * sigm_y0_3) - 2.0 * self.b * y5 - self.b ** 2 * y2,
-        ])
-
-    def dfun(self, y, c, local_coupling=0.0):
         src =  local_coupling*(y[1] - y[2])[:, 0]
         y_ = y.reshape(y.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
