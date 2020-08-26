@@ -86,6 +86,7 @@ class RestLink(Enum):
     # DATATYPES
     GET_DATATYPE = "/{" + LinkPlaceholder.DATATYPE_GID.value + "}"
     DATATYPE_OPERATIONS = "/{" + LinkPlaceholder.DATATYPE_GID.value + "}/operations"
+    OPERATION_RESULT = "/{" + LinkPlaceholder.DATATYPE_GID.value + "}/result"
 
     # OPERATIONS
     LAUNCH_OPERATION = "/{" + LinkPlaceholder.PROJECT_GID.value + "}/algorithm/{" + LinkPlaceholder.ALG_MODULE.value + "}/{" + LinkPlaceholder.ALG_CLASSNAME.value + "}"
@@ -111,7 +112,7 @@ class RestLink(Enum):
 _namespace_url_dict = {
     RestNamespace.USERS: [RestLink.LOGIN, RestLink.PROJECTS, RestLink.USEFUL_URLS],
     RestNamespace.PROJECTS: [RestLink.DATA_IN_PROJECT, RestLink.OPERATIONS_IN_PROJECT, RestLink.PROJECT_MEMBERS],
-    RestNamespace.DATATYPES: [RestLink.GET_DATATYPE, RestLink.DATATYPE_OPERATIONS],
+    RestNamespace.DATATYPES: [RestLink.GET_DATATYPE, RestLink.DATATYPE_OPERATIONS, RestLink.OPERATION_RESULT],
     RestNamespace.OPERATIONS: [RestLink.LAUNCH_OPERATION, RestLink.OPERATION_STATUS, RestLink.OPERATION_RESULTS],
     RestNamespace.SIMULATION: [RestLink.FIRE_SIMULATION]
 }
