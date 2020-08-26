@@ -225,7 +225,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
         super(ReducedWongWangExcInh, self).configure()
         self.update_derived_parameters()
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, x, c, local_coupling=0.0, **kwargs):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 
@@ -239,36 +239,6 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
                  \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \,
 
         """
-        S = state_variables[:, :]
-
-        c_0 = coupling[0, :]
-
-        # if applicable
-        lc_0 = local_coupling * S[0]
-
-        coupling = self.G * self.J_N * (c_0 + lc_0)
-
-        J_N_S_e = self.J_N * S[0]
-
-        x_e = self.w_p * J_N_S_e - self.J_i * S[1] + self.W_e * self.I_o + coupling
-
-        x_e = self.a_e * x_e - self.b_e
-        H_e = x_e / (1 - numpy.exp(-self.d_e * x_e))
-
-        dS_e = - (S[0] / self.tau_e) + (1 - S[0]) * H_e * self.gamma_e
-
-        x_i = J_N_S_e - S[1] + self.W_i * self.I_o + self.lamda * coupling
-
-        x_i = self.a_i * x_i - self.b_i
-        H_i = x_i / (1 - numpy.exp(-self.d_i * x_i))
-
-        dS_i = - (S[1] / self.tau_i) + H_i * self.gamma_i
-
-        derivative = numpy.array([dS_e, dS_i])
-
-        return derivative
-
-    def dfun(self, x, c, local_coupling=0.0, **kwargs):
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
         deriv = _numba_dfun(x_, c_,

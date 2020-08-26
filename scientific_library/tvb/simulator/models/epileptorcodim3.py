@@ -172,7 +172,35 @@ class EpileptorCodim3(ModelNumbaDfun):
     L = None
     M = None
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+    def update_derived_parameters(self):
+        r"""
+        The equations were taken from [Saggioetal_2017]
+        cf. Eqn. (7), page 17
+
+        Here we parametrize the great arc which lies on a sphere of radius R
+        between the points A and B, which are given by:
+
+            .. math::
+                A &= \begin{pmatrix}\mu_{2,start} & -\mu_{1,start} & \nu_{start} \end{pmatrix} \\
+                B &= \begin{pmatrix}\mu_{2,stop} & -\mu_{1,stop} & \nu_{stop} \end{pmatrix}
+
+        Then we parametrize this great arc with z as parameter by :math:`R(E \cos z + F \sin z)`
+            where the unit vectors E and F are given by:
+
+            .. math::
+                E &= A/\|A\| \\
+                F &= ((A \times B) \times A)/\|(A \times B) \times A\|
+        """
+
+        A = numpy.array(
+            [self.mu2_start[0], -self.mu1_start[0], self.nu_start[0]])
+        B = numpy.array([self.mu2_stop[0], -self.mu1_stop[0], self.nu_stop[0]])
+
+        self.E = A / numpy.linalg.norm(A)
+        self.F = numpy.cross(numpy.cross(A, B), A)
+        self.F = self.F / numpy.linalg.norm(self.F)
+
+    def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         The equations were taken from [Saggioetal_2017]
         cf. Eqns. (4) and (7), page 17
@@ -205,77 +233,7 @@ class EpileptorCodim3(ModelNumbaDfun):
 
         And taking the branch which corresponds to the resting state.
         If :math:`x_s` is complex, we take the real part.
-
         """
-
-        x = state_variables[0, :]
-        y = state_variables[1, :]
-        z = state_variables[2, :]
-
-        # Computes the values of mu2,mu1 and nu given the great arc (E,F,R) and the value of the slow variable z
-        mu2 = self.R * (self.E[0] * numpy.cos(z) + self.F[0] * numpy.sin(z))
-        mu1 = -self.R * (self.E[1] * numpy.cos(z) + self.F[1] * numpy.sin(z))
-        nu = self.R * (self.E[2] * numpy.cos(z) + self.F[2] * numpy.sin(z))
-
-        # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
-        if self.N == 1:
-            xs = (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
-        elif self.N == 2:
-            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                1.0 / 3.0)
-        elif self.N == 3:
-            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                1.0 / 3.0)
-        xs = numpy.real(xs)
-
-        xdot = -y
-        ydot = x ** 3 - mu2 * x - mu1 - y * (nu + self.b * x + x ** 2)
-        if self.modification:
-            zdot = -self.c * (
-                numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + 0.1 * (z - 0.5) ** 7 + self.Ks * coupling[0, :])
-        else:
-            zdot = -self.c * (numpy.sqrt(
-                (x - xs) ** 2 + y ** 2) - self.dstar + self.Ks * coupling[0, :])
-
-        derivative = numpy.array([xdot, ydot, zdot])
-        return derivative
-
-    def update_derived_parameters(self):
-        r"""
-        The equations were taken from [Saggioetal_2017]
-        cf. Eqn. (7), page 17
-
-        Here we parametrize the great arc which lies on a sphere of radius R
-        between the points A and B, which are given by:
-
-            .. math::
-                A &= \begin{pmatrix}\mu_{2,start} & -\mu_{1,start} & \nu_{start} \end{pmatrix} \\
-                B &= \begin{pmatrix}\mu_{2,stop} & -\mu_{1,stop} & \nu_{stop} \end{pmatrix}
-
-        Then we parametrize this great arc with z as parameter by :math:`R(E \cos z + F \sin z)`
-            where the unit vectors E and F are given by:
-
-            .. math::
-                E &= A/\|A\| \\
-                F &= ((A \times B) \times A)/\|(A \times B) \times A\|
-        """
-
-        A = numpy.array(
-            [self.mu2_start[0], -self.mu1_start[0], self.nu_start[0]])
-        B = numpy.array([self.mu2_stop[0], -self.mu1_stop[0], self.nu_stop[0]])
-
-        self.E = A / numpy.linalg.norm(A)
-        self.F = numpy.cross(numpy.cross(A, B), A)
-        self.F = self.F / numpy.linalg.norm(self.F)
-
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
-        """"The dfun using numba for speed"""
         state_variables_ = state_variables.reshape(state_variables.shape[:-1]).T
         coupling_ = coupling.reshape(coupling.shape[:-1]).T
         derivative = _numba_dfun(state_variables_, coupling_, self.E[0], self.E[1], self.E[2], self.F[0], self.F[1],
@@ -498,7 +456,44 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
     L = None
     M = None
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+    def update_derived_parameters(self):
+        r"""
+        The equations were adapted from [Saggioetal_2017]
+        cf. Eqn. (7), page 17 and page 21
+
+        We parametrize the great arc on the sphere of radius R between the
+        points Ain and Aend with the vectors G and H. This great arc is used
+        for the offset point of the burster, given by the vector A.
+
+            .. math::
+                G &= Ain/\|Ain\| \\
+                H &= ((Ain \times Aend) \times Ain)/\|(Ain \times Aend) \times Ain\|
+
+        We also parametrize the great arc on the sphere of radius R between the
+        points Bin and Bend with the vectors L and M. This great arc is used
+        for the onset point of the burster, given by the vector B.
+
+            .. math::
+                L &= Bin/\|Bin\| \\
+                M &= ((Bin \times Bend) \times Bin)/\|(Bin \times Bend) \times Bin\|
+        """
+
+        Ain = numpy.array([self.mu2_Ain[0], -self.mu1_Ain[0], self.nu_Ain[0]])
+        Bin = numpy.array([self.mu2_Bin[0], -self.mu1_Bin[0], self.nu_Bin[0]])
+        Aend = numpy.array(
+            [self.mu2_Aend[0], -self.mu1_Aend[0], self.nu_Aend[0]])
+        Bend = numpy.array(
+            [self.mu2_Bend[0], -self.mu1_Bend[0], self.nu_Bend[0]])
+
+        self.G = Ain / numpy.linalg.norm(Ain)
+        self.H = numpy.cross(numpy.cross(Ain, Aend), Ain)
+        self.H = self.H / numpy.linalg.norm(self.H)
+
+        self.L = Bin / numpy.linalg.norm(Bin)
+        self.M = numpy.cross(numpy.cross(Bin, Bend), Bin)
+        self.M = self.M / numpy.linalg.norm(self.M)
+
+    def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         The equations were taken from [Saggioetal_2017]
         cf. Eqns. (4) and (7), page 17 and 21
@@ -550,100 +545,6 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         If :math:`x_s` is complex, we take the real part.
 
         """
-        x = state_variables[0, :]
-        y = state_variables[1, :]
-        z = state_variables[2, :]
-        uA = state_variables[3, :]
-        uB = state_variables[4, :]
-
-        A = self.R * (self.G * numpy.cos(uA) + self.H * numpy.sin(uA))
-        B = self.R * (self.L * numpy.cos(uB) + self.M * numpy.sin(uB))
-
-        E = A / (numpy.linalg.norm(A, axis=1)).reshape(-1, 1)
-        C = numpy.cross(A,B)
-        F = numpy.cross(numpy.cross(A, B), A)
-        F = F / (numpy.linalg.norm(F, axis=1)).reshape(-1, 1)
-
-        # Computes the values of mu2,mu1 and nu given the great arc (E,F,R) and the value of the slow variable z
-        mu2 = self.R * (numpy.array([E[:, 0]]).T * numpy.cos(z) + numpy.array(
-            [F[:, 0]]).T * numpy.sin(z))
-        mu1 = -self.R * (numpy.array([E[:, 1]]).T * numpy.cos(z) + numpy.array(
-            [F[:, 1]]).T * numpy.sin(z))
-        nu = self.R * (numpy.array([E[:, 2]]).T * numpy.cos(z) + numpy.array(
-            [F[:, 2]]).T * numpy.sin(z))
-
-        # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
-        if self.N == 1:
-            xs = (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
-        elif self.N == 2:
-            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                1.0 / 3.0)
-        elif self.N == 3:
-            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                1.0 / 3.0)
-        xs = numpy.real(xs)
-
-        # global coupling: To be implemented
-
-        xdot = -y
-        ydot = x ** 3 - mu2 * x - mu1 - y * (nu + self.b * x + x ** 2)
-        if self.modification:
-            zdot = -self.c * (
-                numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + 0.1 * (
-                    z - 0.5) ** 7 + self.Ks * coupling[0, :])
-        else:
-            zdot = -self.c * (numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + self.Ks * coupling[0, :])
-        uAdot = numpy.full_like(uA, self.cA)
-        uBdot = numpy.full_like(uB, self.cB)
-
-        derivative = numpy.array([xdot, ydot, zdot, uAdot, uBdot])
-        return derivative
-
-    def update_derived_parameters(self):
-        r"""
-        The equations were adapted from [Saggioetal_2017]
-        cf. Eqn. (7), page 17 and page 21
-
-        We parametrize the great arc on the sphere of radius R between the
-        points Ain and Aend with the vectors G and H. This great arc is used
-        for the offset point of the burster, given by the vector A.
-
-            .. math::
-                G &= Ain/\|Ain\| \\
-                H &= ((Ain \times Aend) \times Ain)/\|(Ain \times Aend) \times Ain\|
-
-        We also parametrize the great arc on the sphere of radius R between the
-        points Bin and Bend with the vectors L and M. This great arc is used
-        for the onset point of the burster, given by the vector B.
-
-            .. math::
-                L &= Bin/\|Bin\| \\
-                M &= ((Bin \times Bend) \times Bin)/\|(Bin \times Bend) \times Bin\|
-        """
-
-        Ain = numpy.array([self.mu2_Ain[0], -self.mu1_Ain[0], self.nu_Ain[0]])
-        Bin = numpy.array([self.mu2_Bin[0], -self.mu1_Bin[0], self.nu_Bin[0]])
-        Aend = numpy.array(
-            [self.mu2_Aend[0], -self.mu1_Aend[0], self.nu_Aend[0]])
-        Bend = numpy.array(
-            [self.mu2_Bend[0], -self.mu1_Bend[0], self.nu_Bend[0]])
-
-        self.G = Ain / numpy.linalg.norm(Ain)
-        self.H = numpy.cross(numpy.cross(Ain, Aend), Ain)
-        self.H = self.H / numpy.linalg.norm(self.H)
-
-        self.L = Bin / numpy.linalg.norm(Bin)
-        self.M = numpy.cross(numpy.cross(Bin, Bend), Bin)
-        self.M = self.M / numpy.linalg.norm(self.M)
-
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
-        """"The dfun using numba for speed"""
         state_variables_ = state_variables.reshape(state_variables.shape[:-1]).T
         coupling_ = coupling.reshape(coupling.shape[:-1]).T
         derivative = _numba_dfun_slowmod(state_variables_, coupling_, self.G[0], self.G[1], self.G[2], self.H[0],

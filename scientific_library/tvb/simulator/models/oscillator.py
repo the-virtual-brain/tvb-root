@@ -328,7 +328,7 @@ class Generic2dOscillator(ModelNumbaDfun):
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
+    def dfun(self, vw, c, local_coupling=0.0):
         r"""
         The two state variables :math:`V` and :math:`W` are typically considered
         to represent a function of the neuron's membrane potential, such as the
@@ -346,39 +346,6 @@ class Generic2dOscillator(ModelNumbaDfun):
         long-range connectivity and stimulation.
 
         """
-
-        V = state_variables[0, :]
-        W = state_variables[1, :]
-
-        #[State_variables, nodes]
-        c_0 = coupling[0, :]
-
-        tau = self.tau
-        I = self.I
-        a = self.a
-        b = self.b
-        c = self.c
-        d = self.d
-        e = self.e
-        f = self.f
-        g = self.g
-        beta = self.beta
-        alpha = self.alpha
-        gamma = self.gamma
-
-        lc_0 = local_coupling * V
-
-        # Pre-allocate the result array then instruct numexpr to use it as output.
-        # This avoids an expensive array concatenation
-        derivative = numpy.empty_like(state_variables)
-
-        ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)', out=derivative[0])
-        ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=derivative[1])
-
-
-        return derivative
-
-    def dfun(self, vw, c, local_coupling=0.0):
         lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
@@ -553,30 +520,11 @@ class SupHopf(ModelNumbaDfun):
     _nvar = 2                                           # number of state-variables
     cvar = numpy.array([0, 1], dtype=numpy.int32)       # coupling variables
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, 
-                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
+    def dfun(self, x, c, local_coupling=0.0):
         r"""
         Computes the derivatives of the state-variables of supHopf
         with respect to time.
         """
-
-        y = state_variables
-        ydot = numpy.empty_like(state_variables)
-        
-        # long-range coupling
-        c_0 = coupling[0]
-        c_1 = coupling[1]
-
-        # short-range (local) coupling
-        lc_0 = local_coupling * y[0]
-
-        #supHopf's equations in Cartesian coordinates:
-        ydot[0] = (self.a - y[0]**2 - y[1]**2) * y[0] - self.omega * y[1] + c_0 + lc_0
-        ydot[1] = (self.a - y[0]**2 - y[1]**2) * y[1] + self.omega * y[0] + c_1
-
-        return ydot
-
-    def dfun(self, x, c, local_coupling=0.0):
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         lc_0 = local_coupling * x[0, :, 0]
