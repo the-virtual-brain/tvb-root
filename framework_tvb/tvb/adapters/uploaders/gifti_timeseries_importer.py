@@ -121,7 +121,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
             ts_h5.gid.store(uuid.UUID(ts_idx.gid))
 
             ts_data_shape = ts_h5.read_data_shape()
-            surface = self.load_entity_by_gid(view_model.surface.hex)
+            surface = self.load_entity_by_gid(view_model.surface)
             if surface.number_of_vertices != ts_data_shape[1]:
                 msg = "Imported time series doesn't have values for all surface vertices. Surface has %d vertices " \
                       "while time series has %d values." % (surface.number_of_vertices, ts_data_shape[1])

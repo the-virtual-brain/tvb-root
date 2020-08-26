@@ -42,6 +42,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
@@ -241,7 +242,7 @@ class ProjectService:
                     datatype_results = dao.get_results_for_operation(result['id'])
                     result['results'] = []
                     for dt in datatype_results:
-                        dt_loaded = ABCAdapter.load_entity_by_gid(dt.gid)
+                        dt_loaded = load_entity_by_gid(dt.gid)
                         if dt_loaded:
                             result['results'].append(dt_loaded)
                         else:

@@ -27,7 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.core.adapters.abcadapter import ABCAdapter
+
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.algorithm_service import AlgorithmService
@@ -40,7 +41,7 @@ class DatatypeFacade:
 
     @staticmethod
     def get_dt_h5_path(datatype_gid):
-        index = ABCAdapter.load_entity_by_gid(datatype_gid)
+        index = load_entity_by_gid(datatype_gid)
         return h5_file_for_index(index).path
 
     def get_datatype_operations(self, datatype_gid):

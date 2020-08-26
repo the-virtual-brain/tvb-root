@@ -36,14 +36,12 @@
 
 import os
 import shutil
-
 import pytest
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.load import get_filtered_datatypes
+from tvb.core.entities.load import get_filtered_datatypes, load_entity_by_gid
 from tvb.core.services.exceptions import OperationException
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -123,7 +121,7 @@ class TestTVBImporter(BaseTestCase):
         assert 1, len(data_types) == "Project should contain only one data type."
         assert 1, count == "Project should contain only one data type."
 
-        data_type_entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        data_type_entity = load_entity_by_gid(data_types[0][2])
         assert data_type_entity is not None, "Datatype should not be none"
         assert self.datatype.gid, data_type_entity.gid == "Imported datatype should have the same gid"
 

@@ -113,7 +113,7 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         with input_data_h5_class(input_data_h5_path) as input_data_h5:
             source_gid = input_data_h5.source.load()
 
-        source_index = self.load_entity_by_gid(source_gid.hex)
+        source_index = self.load_entity_by_gid(source_gid)
 
         params = dict(plotName=source_index.type,
                       xAxisName="Frequency [kHz]",

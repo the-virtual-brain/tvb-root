@@ -76,15 +76,12 @@ class DatatypeMeasureIndex(DataType):
 
     @property
     def display_name(self):
-        """
-        To be implemented in each sub-class which is about to be displayed in UI,
-        and return the text to appear.
-        """
-        name = "-"
+
+        result = super(DatatypeMeasureIndex, self).display_name
+
         if self.metrics is not None:
-            value = "\n"
             metrics = json.loads(self.metrics)
             for entry, metric_value in metrics.items():
-                value = value + entry + ' : ' + str(metric_value) + '\n'
-            name = value
-        return name
+                result = result + " -- " + entry + ' : ' + str(metric_value)
+
+        return result

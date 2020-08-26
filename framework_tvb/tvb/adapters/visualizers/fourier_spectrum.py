@@ -98,7 +98,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
         """
         Return the required memory to run this algorithm.
         """
-        fs_input_index = self.load_entity_by_gid(view_model.input_data.hex)
+        fs_input_index = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(fs_input_index.get_data_shape()) * 8
 
     def generate_preview(self, view_model, figure_size=None):
@@ -110,7 +110,7 @@ class FourierSpectrumDisplay(ABCDisplayer):
 
         self.log.debug("Plot started...")
         # these partial loads are dangerous for TS and FS instances, but efficient
-        fs_input_index = self.load_entity_by_gid(view_model.input_data.hex)
+        fs_input_index = self.load_entity_by_gid(view_model.input_data)
         fourier_spectrum = FourierSpectrum()
         with h5.h5_file_for_index(fs_input_index) as input_h5:
             shape = list(input_h5.array_data.shape)

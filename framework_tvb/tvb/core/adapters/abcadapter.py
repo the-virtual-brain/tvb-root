@@ -56,6 +56,7 @@ from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -448,28 +449,28 @@ class ABCAdapter(object):
     def _get_output_path(self):
         return self.storage_path
 
-    @staticmethod
-    def load_entity_by_gid(data_gid):
+    def load_entity_by_gid(self, data_gid):
+        # type: (typing.Union[uuid.UUID, str]) -> DataType
         """
         Load a generic DataType, specified by GID.
         """
-        if isinstance(data_gid, uuid.UUID):
-            data_gid = data_gid.hex
-        return load_entity_by_gid(data_gid)
+        idx = load_entity_by_gid(data_gid)
+        if idx and self.generic_attributes.parent_burst is None:
+            # Only in case the BurstConfiguration references hasn't been set already, take it from the current DT
+            self.generic_attributes.parent_burst = idx.fk_parent_burst
+        return idx
 
-    @staticmethod
-    def load_traited_by_gid(data_gid):
+    def load_traited_by_gid(self, data_gid):
         # type: (typing.Union[uuid.UUID, str]) -> HasTraits
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        index = ABCAdapter.load_entity_by_gid(data_gid)
+        index = self.load_entity_by_gid(data_gid)
         return h5.load_from_index(index)
 
-    @staticmethod
-    def load_with_references(dt_gid):
+    def load_with_references(self, dt_gid):
         # type: (typing.Union[uuid.UUID, str]) -> HasTraits
-        dt_index = ABCAdapter.load_entity_by_gid(dt_gid)
+        dt_index = self.load_entity_by_gid(dt_gid)
         h5_path = h5.path_for_stored_index(dt_index)
         dt, _ = h5.load_with_references(h5_path)
         return dt

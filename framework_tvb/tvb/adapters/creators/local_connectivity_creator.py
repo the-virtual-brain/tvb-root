@@ -158,7 +158,7 @@ class LocalConnectivityCreator(ABCAdapter):
         local_connectivity = LocalConnectivity()
         local_connectivity.cutoff = view_model.cutoff
         if not self.surface_index:
-            self.surface_index = self.load_entity_by_gid(view_model.surface.hex)
+            self.surface_index = self.load_entity_by_gid(view_model.surface)
         surface = h5.load_from_index(self.surface_index)
         local_connectivity.surface = surface
         local_connectivity.equation = view_model.equation
@@ -173,7 +173,7 @@ class LocalConnectivityCreator(ABCAdapter):
         Returns the required disk size to be able to run the adapter. (in kB)
         """
         if view_model.surface:
-            self.surface_index = self.load_entity_by_gid(view_model.surface.hex)
+            self.surface_index = self.load_entity_by_gid(view_model.surface)
             points_no = view_model.cutoff / self.surface_index.edge_mean_length
             disk_size_b = self.surface_index.number_of_vertices * points_no * points_no * 8
             return self.array_size2kb(disk_size_b)

@@ -33,7 +33,6 @@
 """
 
 import uuid
-
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
@@ -43,6 +42,7 @@ from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, SimpleStrField, TraitDataTypeSelectField, SelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
@@ -158,7 +158,7 @@ class SurfaceStimulusCreator(ABCAdapter):
         stimuli_surface.spatial = view_model.spatial
         stimuli_surface.temporal = view_model.temporal
 
-        surface_index = SurfaceStimulusCreator.load_entity_by_gid(view_model.surface.hex)
+        surface_index = load_entity_by_gid(view_model.surface)
         if load_full_surface:
             stimuli_surface.surface = h5.load_from_index(surface_index)
         else:

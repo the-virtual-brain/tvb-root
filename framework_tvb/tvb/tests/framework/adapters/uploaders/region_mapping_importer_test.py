@@ -38,10 +38,10 @@ import tvb_data.regionMapping as demo_data
 import tvb_data.surfaceData
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.ex import TraitValueError
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.surfaces import CORTICAL
@@ -133,10 +133,10 @@ class TestRegionMappingImporter(BaseTestCase):
         region_mapping_index = TestFactory.import_region_mapping(self.test_user, self.test_project, import_file,
                                                                  self.surface.gid, self.connectivity.gid, False)
 
-        surface_index = ABCAdapter.load_entity_by_gid(region_mapping_index.fk_surface_gid)
+        surface_index = load_entity_by_gid(region_mapping_index.fk_surface_gid)
         assert surface_index is not None
 
-        connectivity_index = ABCAdapter.load_entity_by_gid(region_mapping_index.fk_connectivity_gid)
+        connectivity_index = load_entity_by_gid(region_mapping_index.fk_connectivity_gid)
         assert connectivity_index is not None
 
         region_mapping = h5.load_from_index(region_mapping_index)
