@@ -37,6 +37,7 @@ Test for tvb.simulator.simulator module
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
 import numpy as np
+import pytest
 
 class TestStep(BaseTestCase):
     def _sim(self):
@@ -71,3 +72,14 @@ class TestStep(BaseTestCase):
             for i, ((time,_),) in enumerate(simulator(n_steps=n)):
                 assert np.isclose(time, (i+1)*dt)
             assert i == n-1
+
+    def test_n_steps_type(self):
+        model,connectivity,coupling, integrator,monitor,dt = self._sim()
+        simulator = lab.simulator.Simulator(model=model, connectivity=connectivity,
+                                            coupling=coupling, integrator=integrator,
+                                            monitors=monitor)
+        simulator.configure()
+        with pytest.raises(TypeError) as context:
+            for _ in simulator(n_steps=1.1):
+                pass
+        assert('n_steps' in str(context.value))
