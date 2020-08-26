@@ -393,7 +393,7 @@ class Simulator(HasTraits):
             n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
         else:
             if not numpy.issubdtype(type(n_steps), numpy.integer):
-                raise ValueError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
+                raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
 
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
             # needs implementing by hsitory + coupling?
