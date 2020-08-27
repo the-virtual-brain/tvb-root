@@ -69,7 +69,7 @@ def get_ui_name_to_model():
         'Epileptor': ModelsEnum.EPILEPTOR.get_class(),
         'Epileptor2D': ModelsEnum.EPILEPTOR_2D.get_class(),
         'Epileptor codim 3': ModelsEnum.EPILEPTOR_CODIM_3.get_class(),
-        'Epileptor codim 3 ultra-slow_modulations': ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(),
+        'Epileptor codim 3 ultra-slow modulations': ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(),
         'EpileptorRestingState': ModelsEnum.EPILEPTOR_RS.get_class(),
         'Jansen-Rit': ModelsEnum.JANSEN_RIT.get_class(),
         'Zetterberg-Jansen': ModelsEnum.ZETTERBERG_JANSEN.get_class(),

@@ -544,11 +544,7 @@ function displayDocForModel(model){
 function fillDoc(){
     var model = $('#model');
     model.on("change", function(event){
-        $("#model > option").each(function(){
-            model_id = $(this).val();
-            $("#data_model_" + model_id.replace(/ /g,"_")).css("display", "none");
-        })
-
+        $('div[id^="data_model_"]').css("display", "none");
         displayDocForModel(model);
     });
 

@@ -28,8 +28,20 @@
 #
 #
 
+"""
+Functions responsible for collecting and rendering the descriptions and the documentations
+of the dynamic models in Simulator/Phase Plane.
+
+.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
+"""
+
 
 def configure_matjax_doc(available_models):
+    """
+    Builds a list containing the model names, inline descriptions and descriptions,
+    which will be displayed in the Simulation/Phase Plane section.
+    """
     models_docs = []
 
     for clz_name, clz in available_models.items():
@@ -49,7 +61,7 @@ def _dfun_math_directives_to_matjax(model):
     The parsing is simplistic, not a full rst parser.
     """
     def format_doc(doc):
-        return multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::', '')
+        return _multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::', '')
 
     try:
         doc = model.dfun.__doc__
@@ -71,7 +83,7 @@ def _dfun_math_directives_to_matjax(model):
     return 'Documentation is missing. '
 
 
-def multiline_math_directives_to_matjax(doc):
+def _multiline_math_directives_to_matjax(doc):
     """
     Looks for multi-line sphinx math directives in the given rst string
     It converts them in html text that will be interpreted by mathjax
