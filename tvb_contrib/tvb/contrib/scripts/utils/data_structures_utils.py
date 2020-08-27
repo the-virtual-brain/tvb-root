@@ -288,7 +288,7 @@ def list_of_dicts_to_dict_of_lists(lst):
 
 
 def list_of_dicts_to_dicts_of_ndarrays(lst, shape=None):
-    d = list_of_dicts_to_dict_of_tuples(lst)
+    d = list_of_dicts_to_dict_of_tuples(ensure_list(lst))
     if isinstance(shape, tuple):
         for key, val in d.items():
             d[key] = np.reshape(np.stack(d[key]), shape)
@@ -339,7 +339,7 @@ def ensure_string(arg):
         return arg
 
 
-def flatten_list(lin, sort=False, recursive=True):
+def flatten_list(lin, sort=False, recursive=False):
     lout = []
     for sublist in lin:
         if recursive and isinstance(sublist, (list, tuple)):
@@ -353,8 +353,8 @@ def flatten_list(lin, sort=False, recursive=True):
     return lout
 
 
-def flatten_tuple(t, sort=False):
-    return tuple(flatten_list(list(t), sort))
+def flatten_tuple(t, sort=False, recursive=True):
+    return tuple(flatten_list(list(t), sort, recursive))
 
 
 def extract_integer_intervals(iterable, print=False):
@@ -897,3 +897,20 @@ def property_to_fun(property):
         return property
     else:
         return lambda *args, **kwargs: property
+
+
+def series_loop_generator(ser, inds_or_keys=None):
+    index = list(ser.index)
+    if inds_or_keys is None:
+        inds_or_keys = index
+    else:
+        inds_or_keys = ensure_list(inds_or_keys)
+    for index_or_key in inds_or_keys:
+        if isinstance(index_or_key, string_types):
+            lbl = index_or_key
+            id = index.index(index_or_key)
+        else:
+            lbl = index[index_or_key]
+            id = index_or_key
+        pop = ser[index_or_key]
+        yield id, lbl, pop
