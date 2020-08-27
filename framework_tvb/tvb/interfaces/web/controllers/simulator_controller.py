@@ -29,7 +29,6 @@
 #
 
 import threading
-
 from cherrypy.lib.static import serve_file
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
@@ -46,6 +45,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel, \
     AdditiveNoiseViewModel, BoldViewModel, RawViewModel
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -380,7 +380,7 @@ class SimulatorController(BurstBaseController):
 
     @staticmethod
     def _prepare_cortex_fragment(session_stored_simulator, rendering_rules):
-        surface_index = ABCAdapter.load_entity_by_gid(session_stored_simulator.surface.surface_gid)
+        surface_index = load_entity_by_gid(session_stored_simulator.surface.surface_gid)
         rm_fragment = SimulatorRMFragment('', common.get_current_project().id, surface_index,
                                           session_stored_simulator.connectivity)
         rm_fragment.fill_from_trait(session_stored_simulator.surface)

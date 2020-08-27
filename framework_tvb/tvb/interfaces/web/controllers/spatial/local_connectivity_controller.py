@@ -44,7 +44,7 @@ from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
     DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
-from tvb.core.entities.load import try_get_last_datatype
+from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.interfaces.web.controllers import common
@@ -197,7 +197,7 @@ class LocalConnectivityController(SpatioTemporalController):
         msg, _ = common.get_message_from_session()
         template_specification['displayedMessage'] = msg
         if current_lconn is not None:
-            selected_local_conn = ABCAdapter.load_entity_by_gid(current_lconn.gid.hex)
+            selected_local_conn = load_entity_by_gid(current_lconn.gid)
             template_specification.update(self.display_surface(selected_local_conn.fk_surface_gid))
             template_specification['no_local_connectivity'] = False
             template_specification['minValue'] = selected_local_conn.matrix_non_zero_min
@@ -228,7 +228,7 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         Loads an existing local connectivity.
         """
-        lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
+        lconn_index = load_entity_by_gid(local_connectivity_gid)
         existent_lconn = LocalConnectivityCreatorModel()
         lconn_h5_path = h5.path_for_stored_index(lconn_index)
         with LocalConnectivityH5(lconn_h5_path) as lconn_h5:
@@ -283,10 +283,10 @@ class LocalConnectivityController(SpatioTemporalController):
 
         Returns a json which contains the data needed for drawing a gradient view for the selected vertex.
         """
-        lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
+        lconn_index = load_entity_by_gid(local_connectivity_gid)
         triangle_index = int(selected_triangle)
 
-        surface_indx = ABCAdapter.load_entity_by_gid(lconn_index.fk_surface_gid)
+        surface_indx = load_entity_by_gid(lconn_index.fk_surface_gid)
         surface_h5 = h5.h5_file_for_index(surface_indx)
         assert isinstance(surface_h5, SurfaceH5)
         vertex_index = int(surface_h5.triangles[triangle_index][0])
@@ -333,7 +333,7 @@ class LocalConnectivityController(SpatioTemporalController):
             # in computation: equation, equation params, surface, cutoff
             current_lconn = common.get_from_session(KEY_LCONN)
             surface_gid = current_lconn.surface.hex
-            surface = ABCAdapter.load_entity_by_gid(surface_gid)
+            surface = load_entity_by_gid(surface_gid)
             if surface is None:
                 raise MissingDataException(self.MSG_MISSING_SURFACE + "!!!")
             max_x = current_lconn.cutoff

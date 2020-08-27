@@ -44,7 +44,7 @@ from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.load import try_get_last_datatype
+from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.datatypes.patterns import StimuliRegion
@@ -99,7 +99,7 @@ class RegionStimulusController(SpatioTemporalController):
         connectivity_form_field = RegionStimulusCreatorForm(common.get_current_project().id).connectivity
         connectivity_form_field.fill_from_post(param)
         current_region_stim.connectivity = connectivity_form_field.value
-        conn_index = ABCAdapter.load_entity_by_gid(connectivity_form_field.value.hex)
+        conn_index = load_entity_by_gid(connectivity_form_field.value)
         current_region_stim.weight = StimuliRegion.get_default_weights(conn_index.number_of_regions)
 
     @cherrypy.expose
@@ -184,7 +184,7 @@ class RegionStimulusController(SpatioTemporalController):
 
         default_weights = current_region_stimulus.weight
         if len(default_weights) == 0:
-            selected_connectivity = ABCAdapter.load_entity_by_gid(current_region_stimulus.connectivity.hex)
+            selected_connectivity = load_entity_by_gid(current_region_stimulus.connectivity)
             if selected_connectivity is None:
                 common.set_error_message(self.MSG_MISSING_CONNECTIVITY)
                 default_weights = numpy.array([])
@@ -248,7 +248,7 @@ class RegionStimulusController(SpatioTemporalController):
         """
         Generates the html for displaying the connectivity matrix.
         """
-        connectivity = ABCAdapter.load_entity_by_gid(connectivity_gid)
+        connectivity = load_entity_by_gid(connectivity_gid)
         if connectivity is None:
             raise MissingDataException(RegionStimulusController.MSG_MISSING_CONNECTIVITY + "!!")
         current_project = common.get_current_project()

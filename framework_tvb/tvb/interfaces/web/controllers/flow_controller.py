@@ -49,6 +49,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.forms import Form, TraitDataTypeSelectField
@@ -393,13 +394,13 @@ class FlowController(BaseController):
     def _read_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
 
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
-        entity = ABCAdapter.load_entity_by_gid(entity_gid)
+        entity = load_entity_by_gid(entity_gid)
         entity_dt = h5.load_from_index(entity)
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
             for key, value in six.iteritems(datatype_kwargs):
-                kwargs[key] = ABCAdapter.load_entity_by_gid(value)
+                kwargs[key] = load_entity_by_gid(value)
 
         result = getattr(entity_dt, dataset_name)
         if callable(result):
@@ -413,7 +414,7 @@ class FlowController(BaseController):
     def invoke_adapter(self, algo_id, method_name, entity_gid, **kwargs):
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algo_id)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
-        entity = ABCAdapter.load_entity_by_gid(entity_gid)
+        entity = load_entity_by_gid(entity_gid)
         storage_path = self.files_helper.get_project_folder(entity.parent_operation.project,
                                                             str(entity.fk_from_operation))
         adapter_instance.storage_path = storage_path
@@ -425,13 +426,13 @@ class FlowController(BaseController):
     @expose_json
     def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + method_name + "/" + str(kwargs))
-        entity = ABCAdapter.load_entity_by_gid(entity_gid)
+        entity = load_entity_by_gid(entity_gid)
         entity_h5 = h5.h5_file_for_index(entity)
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
             for key, value in six.iteritems(datatype_kwargs):
-                kwargs[key] = ABCAdapter.load_entity_by_gid(value)
+                kwargs[key] = load_entity_by_gid(value)
 
         result = getattr(entity_h5, method_name)
         if kwargs:

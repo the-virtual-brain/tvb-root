@@ -36,10 +36,11 @@
 import json
 from tvb.basic.logger.builder import get_logger
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
-from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -103,10 +104,10 @@ def function_sensors_to_surface(sensors_gid, surface_to_map_gid):
     Assumes coordinate systems are aligned, i.e. common x,y,z and origin.
 
     """
-    index = ABCAdapter.load_entity_by_gid(sensors_gid)
+    index = load_entity_by_gid(sensors_gid)
     sensors_dt = h5.load_from_index(index)
 
-    index = ABCAdapter.load_entity_by_gid(surface_to_map_gid)
+    index = load_entity_by_gid(surface_to_map_gid)
     surface_dt = h5.load_from_index(index)
 
     return sensors_dt.sensors_to_surface(surface_dt).tolist()
@@ -183,14 +184,14 @@ class SensorsViewer(ABCDisplayer):
         We support viewing all sensor types through a single viewer, so that a user doesn't need to
         go back to the data-page, for loading a different type of sensor.
         """
-        sensors_index = self.load_entity_by_gid(view_model.sensors.hex)
+        sensors_index = self.load_entity_by_gid(view_model.sensors)
         shell_surface_index = None
         projection_surface_index = None
 
         if view_model.shell_surface:
-            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
         if view_model.projection_surface:
-            projection_surface_index = self.load_entity_by_gid(view_model.projection_surface.hex)
+            projection_surface_index = self.load_entity_by_gid(view_model.projection_surface)
 
         if sensors_index.sensors_type == SensorsInternal.sensors_type.default:
             return self._params_internal_sensors(sensors_index, shell_surface_index)

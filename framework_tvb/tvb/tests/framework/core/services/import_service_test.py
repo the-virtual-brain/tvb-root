@@ -44,6 +44,7 @@ from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import ImportException
+from tvb.core.utils import no_matlab
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
@@ -75,6 +76,7 @@ class TestImportService(BaseTestCase):
 
         self.delete_project_folders()
 
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_import_export(self, user_factory, project_factory, value_wrapper_factory):
         """
         Test the import/export mechanism for a project structure.

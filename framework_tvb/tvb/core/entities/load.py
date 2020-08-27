@@ -33,6 +33,7 @@ Higher level entity loading.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import importlib
+import uuid
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.exceptions import FileVersioningException
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
@@ -58,6 +59,8 @@ def load_entity_by_gid(data_gid):
     """
     Load a generic DataType, specified by GID.
     """
+    if isinstance(data_gid, uuid.UUID):
+        data_gid = data_gid.hex
     datatype = dao.get_datatype_by_gid(data_gid)
     # TODO
     # from tvb.core.traits.types_mapped import MappedType

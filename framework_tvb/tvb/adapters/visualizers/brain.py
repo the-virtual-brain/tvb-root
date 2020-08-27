@@ -492,7 +492,7 @@ class DualBrainViewer(BrainViewer):
             self.surface_index = self.load_entity_by_gid(view_model.projection_surface)
 
         if view_model.shell_surface:
-            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         if isinstance(time_series_index, TimeSeriesSEEGIndex):
             shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index, CORTICAL)

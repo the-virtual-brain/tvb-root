@@ -36,6 +36,7 @@ Backend-side for Visualizers that display measures on regions in the brain volum
 
 import json
 from abc import ABCMeta
+
 from six import add_metaclass
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
@@ -43,13 +44,15 @@ from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.basic.neotraits.api import Attr
-from tvb.core.adapters.arguments_serialisation import *
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
+from tvb.core.adapters.arguments_serialisation import *
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -160,11 +163,30 @@ class _MappedArrayVolumeBase(ABCDisplayer):
     def compute_background_params(min_value=0, max_value=0, url=None):
         return dict(minBackgroundValue=min_value, maxBackgroundValue=max_value, urlBackgroundVolumeData=url)
 
+    def get_voxel_region(self, region_mapping_volume_gid, x_plane, y_plane, z_plane):
+
+        entity_h5_class, entity_h5_path = self._load_h5_of_gid(region_mapping_volume_gid)
+        with entity_h5_class(entity_h5_path) as entity_h5:
+
+            data_shape = entity_h5.array_data.shape
+            x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
+                                                                    data_shape[1], data_shape[2])
+            slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
+            voxel = entity_h5.array_data[slices][0, 0, 0]
+            if voxel != -1:
+                conn_index = load_entity_by_gid(entity_h5.connectivity.load().hex)
+                with h5.h5_file_for_index(conn_index) as conn_h5:
+                    labels = conn_h5.region_labels.load()
+                    return labels[int(voxel)]
+            else:
+                return 'background'
+
     def compute_params(self, region_mapping_volume=None, measure=None, data_slice='', background=None):
         # type: (RegionVolumeMappingIndex, DataTypeMatrix, str, StructuralMRIIndex) -> dict
 
         region_mapping_volume = self._ensure_region_mapping_index(region_mapping_volume, measure)
-        url_voxel_region = URLGenerator.build_h5_url(region_mapping_volume.gid, 'get_voxel_region', parameter='')
+        url_voxel_region = URLGenerator.build_url(self.stored_adapter.id, 'get_voxel_region', region_mapping_volume.gid,
+                                                  parameter='')
 
         if measure is None:
             params = self._compute_region_volume_map_params(region_mapping_volume)

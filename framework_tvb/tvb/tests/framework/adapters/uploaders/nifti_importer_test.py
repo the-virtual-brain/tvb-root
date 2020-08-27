@@ -42,8 +42,8 @@ from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
 from tvb.adapters.uploaders.nifti_importer import NIFTIImporterModel, NIFTIImporter
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
@@ -93,7 +93,7 @@ class TestNIFTIImporter(BaseTestCase):
         dts, count = dao.get_values_of_datatype(self.test_project.id, expected_result_class, None)
         assert 1, count == "Project should contain only one data type."
 
-        result = ABCAdapter.load_entity_by_gid(dts[0][2])
+        result = load_entity_by_gid(dts[0][2])
         assert result is not None, "Result should not be none"
         return result
 
@@ -113,7 +113,7 @@ class TestNIFTIImporter(BaseTestCase):
         assert dimension_labels is not None
         assert 4 == len(json.loads(dimension_labels))
 
-        volume_index = ABCAdapter.load_entity_by_gid(time_series_index.fk_volume_gid)
+        volume_index = load_entity_by_gid(time_series_index.fk_volume_gid)
         assert volume_index is not None
 
         volume = h5.load_from_index(volume_index)
@@ -136,7 +136,7 @@ class TestNIFTIImporter(BaseTestCase):
         assert 64 == data_shape[1]
         assert 10 == data_shape[2]
 
-        volume_index = ABCAdapter.load_entity_by_gid(structural_mri_index.fk_volume_gid)
+        volume_index = load_entity_by_gid(structural_mri_index.fk_volume_gid)
         assert volume_index is not None
 
         volume = h5.load_from_index(volume_index)
@@ -167,7 +167,7 @@ class TestNIFTIImporter(BaseTestCase):
         assert mapping.array_data.max() < to_link_conn.number_of_regions
         assert to_link_conn.gid == mapping_index.fk_connectivity_gid
 
-        volume_index = ABCAdapter.load_entity_by_gid(mapping_index.fk_volume_gid)
+        volume_index = load_entity_by_gid(mapping_index.fk_volume_gid)
         assert volume_index is not None
 
         volume = h5.load_from_index(volume_index)

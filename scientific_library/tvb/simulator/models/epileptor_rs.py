@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 
 """
-   JC_Epileptor model: modeling resting-state in epilepsy.
+   EpileptorRestingState model: modeling resting-state in epilepsy.
    
    .. moduleauthor:: courtiol.julie@gmail.com
 """
@@ -40,12 +40,13 @@ from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 class EpileptorRestingState(ModelNumbaDfun):
     r"""
-        JC_Epileptor is a combination of Epileptor [Jirsaetal_2014], reproducing realistically 
-        temporal seizure dynamics, and Generic 2-dimensional Oscillator (close to a Hopf Bifurcation)
-        [SanzLeonetal_2013], retrieving resting-state networks activity.
+        EpileptorRestingState is an extension of the phenomenological neural mass model of partial seizures 
+        Epileptor [Jirsaetal_2014], tuned to express regionally specific physiological oscillations in addition
+        to the epileptiform discharges. This extension was made using the Generic 2-dimensional Oscillator model
+        (parametrized close to a supercritical Hopf Bifurcation) [SanzLeonetal_2013] to reproduce the spontaneous
+        local field potential-like signal.
         
-        This model, its motivation and derivation are currently in preparation
-        for publication [Courtioletal_2018].
+        This model, its motivation and derivation can be found in the published article [Courtioletal_2020].
         
         .. Tutorial: Modeling_Resting-State_in_Epilepsy.ipynb
         
@@ -55,7 +56,9 @@ class EpileptorRestingState(ModelNumbaDfun):
             [SanzLeonetal_2013] Sanz Leon, P.; Knock, S. A.; Woodman, M. M.; Domide, L.; Mersmann, 
             J.; McIntosh, A. R.; Jirsa, V. K. *The Virtual Brain: a simulator of primate brain 
             network dynamics.* Front.Neuroinf., 2013.
-            [Courtioletal_2018] in submission.
+            [Courtioletal_2020] Courtiol, J.; Guye, M.; Bartolomei, F.; Petkoski, S.; Jirsa, V. K.
+            *Dynamical Mechanisms of Interictal Resting-State Functional Connectivity in Epilepsy.*
+            J.Neurosci., 2020.
         
         Variables of interest to be used by monitors: p * (-x_{1} + x_{2}) + (1 - p) * x_{rs}
         
@@ -271,7 +274,7 @@ class EpileptorRestingState(ModelNumbaDfun):
         doc="Linear coefficient.")
 
     # Initialization.
-    # Epileptor model is set in fixed point by default.
+    # Epileptor model is set in a fixed point by default.
     state_variable_range = Final(
         label="State variable ranges [lo, hi]",
         default={
@@ -283,14 +286,14 @@ class EpileptorRestingState(ModelNumbaDfun):
             "g": numpy.array([-1., 1.]),
             "x_rs": numpy.array([-2.0, 4.0]),
             "y_rs": numpy.array([-6.0, 6.0])},
-        doc="Typical bounds on state-variables in JC_Epileptor model.")
+        doc="Typical bounds on state-variables in EpileptorRestingState model.")
 
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
         choices=("x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs", "x2 - x1"),
         default=("x2 - x1", "z", "x_rs"),
-        doc="Quantities of JC_Epileptor available to monitor.")
+        doc="Quantities of EpileptorRestingState available to monitor.")
 
     state_variables = ("x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs")
 
@@ -300,7 +303,7 @@ class EpileptorRestingState(ModelNumbaDfun):
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
              array=numpy.array, where=numpy.where, concat=numpy.concatenate):
         r"""
-            Computes the derivatives of the state-variables of JC_Epileptor
+            Computes the derivatives of the state-variables of EpileptorRestingState
             with respect to time.
         """
 
@@ -365,7 +368,7 @@ def _numba_dfun(y, c_pop,
                 x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf, aa, bb, tau,
                 tau_rs, I_rs, a_rs, b_rs, d_rs, e_rs, f_rs, beta_rs, alpha_rs, gamma_rs, K_rs, lc_1,
                 ydot):
-    "Gufunc for JC_Epileptor model equations."
+    "Gufunc for EpileptorRestingState model equations."
 
     #long-range coupling
     c_pop1 = c_pop[0]

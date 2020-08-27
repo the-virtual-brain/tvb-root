@@ -192,6 +192,13 @@ class TVBJSONEncoder(json.JSONEncoder):
 
 ################## MATLAB related method start here ###############
 
+def no_matlab():
+    """
+    :return: True when Matlab/Octave path hasn't been set or not existent installation.
+    """
+    return (not TvbProfile.current.MATLAB_EXECUTABLE) or get_matlab_executable() is None
+
+
 def get_matlab_executable():
     """
     Check If MATLAB is installed on current system.

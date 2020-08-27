@@ -206,7 +206,7 @@ class CSVConnectivityImporter(ABCUploader):
         weights_matrix = self._read_csv_file(view_model.weights, view_model.weights_delimiter)
         tract_matrix = self._read_csv_file(view_model.tracts, view_model.tracts_delimiter)
         FilesHelper.remove_files([view_model.weights, view_model.tracts])
-        input_data = self.load_entity_by_gid(view_model.input_data.hex)
+        input_data = self.load_entity_by_gid(view_model.input_data)
         if weights_matrix.shape[0] != input_data.number_of_regions:
             raise LaunchException("The csv files define %s nodes but the connectivity you selected as reference "
                                   "has only %s nodes." % (weights_matrix.shape[0], input_data.number_of_regions))

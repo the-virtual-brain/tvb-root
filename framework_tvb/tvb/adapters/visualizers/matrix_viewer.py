@@ -59,7 +59,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
     def get_required_memory_size(self, view_model):
         # type: (MatrixVisualizerModel) -> float
         """Return required memory."""
-        dtm_index = self.load_entity_by_gid(view_model.datatype.hex)
+        dtm_index = self.load_entity_by_gid(view_model.datatype)
         input_size = dtm_index.parsed_shape
         return numpy.prod(input_size) * 8.0
 
