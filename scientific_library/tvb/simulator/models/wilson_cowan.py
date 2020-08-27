@@ -153,13 +153,13 @@ class WilsonCowan(Model):
         domain=Range(lo=11.0, hi=16.0, step=0.01),
         doc="""Excitatory to excitatory  coupling coefficient""")
 
-    c_ie = NArray(
+    c_ei = NArray(
         label=":math:`c_{ei}`",
         default=numpy.array([4.0]),
         domain=Range(lo=2.0, hi=15.0, step=0.01),
         doc="""Inhibitory to excitatory coupling coefficient""")
 
-    c_ei = NArray(
+    c_ie = NArray(
         label=":math:`c_{ie}`",
         default=numpy.array([13.0]),
         domain=Range(lo=2.0, hi=22.0, step=0.01),
