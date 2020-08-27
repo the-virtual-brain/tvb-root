@@ -115,12 +115,14 @@ examples.
 .. _Compare Integrators: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/compare_integrators.ipynb
 .. _Display Source Sensor Geometry: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
 .. _Display Surface Local Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
+.. _Encrypt Files before upload in TVB Web GUI: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/encrypt_data.ipynb
 .. _Exploring Epileptor 2D: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_epileptor2D.ipynb
 .. _Exploring Longer Time Series: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
 .. _Exploring Resting State in Epilepsy: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_resting_state_in_epilepsy.ipynb
 .. _Exploring The Bold Monitor: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
 .. _Exploring the Epileptor 3D: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exploring_the_epileptor_codim_3_model.ipynb
 .. _Exporing A Surface Mesh: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/exporing_a_surface_mesh.ipynb
+.. _Generate a new model using DSL: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/model_generation_using_dsl.ipynb
 .. _Generate TimeSeries for import in Web GUI: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_ts_h5_from_library.ipynb
 .. _Generate Surrogate Connectivity: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
 .. _Interacting With The Framework: http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos/interacting_with_the_framework.ipynb
@@ -209,6 +211,14 @@ examples.
       :target: `Generate Surrogate Connectivity`_
 
       `Generate Surrogate Connectivity`_
+
+
+.. figure:: figures/interact_client_api_simulation.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Generate a new model using DSL`_
+
+      `Generate a new model using DSL`_
 
 
 .. figure:: figures/simulate_bold_continuation.png
@@ -325,6 +335,13 @@ Interact with TVB Framework
       :target: `Generate TimeSeries for import in Web GUI`_
 
       `Generate TimeSeries for import in Web GUI`_
+
+.. figure:: figures/interacting_with_the_framework.png
+      :width: 200px
+      :figclass: demo-figure
+      :target: `Encrypt Files before upload in TVB Web GUI`_
+
+      `Encrypt Files before upload in TVB Web GUI`_
 
 Interact with TVB REST Client API
 ---------------------------------
