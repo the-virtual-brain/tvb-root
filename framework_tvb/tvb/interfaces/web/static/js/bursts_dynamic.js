@@ -535,3 +535,18 @@ function setEventsOnFormFields(param, div_id) {
 function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
     return 'refresh_subform/' + dynamicPage.dynamic_gid + '/' + currentElem.value + '/' + elementType;
 }
+
+function displayDocForModel(model){
+    model_id = model.find(":selected").val();
+    $("#data_model_" + model_id.replace(/ /g,"_")).css("display", "block");
+}
+
+function fillDoc(){
+    var model = $('#model');
+    model.on("change", function(event){
+        $('div[id^="data_model_"]').css("display", "none");
+        displayDocForModel(model);
+    });
+
+    displayDocForModel(model);
+}
