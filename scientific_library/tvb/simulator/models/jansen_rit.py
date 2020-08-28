@@ -360,7 +360,6 @@ class ZetterbergJansen(Model):
         domain=Range(lo=0.0, hi=200, step=10.0),
         doc="""Connectivity constant (interneurons to pyramidal)""")
 
-
     gamma_5 = NArray(
         label=r":math:`\gamma_5`",
         default=numpy.array([15.0]),

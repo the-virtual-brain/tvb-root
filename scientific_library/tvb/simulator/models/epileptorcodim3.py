@@ -208,22 +208,22 @@ class EpileptorCodim3(ModelNumbaDfun):
         The state variables x and y correspond to the fast subsystem and the
         state variable z corresponds to the slow subsystem.
 
-            .. math::
+        .. math::
                 \dot{x} &= -y \\
-                \dot{y} &= x^3 - \mu_2 x - \mu_1 - y(\nu + b x + x^2) \\
-                \dot{z} &= -c(\sqrt{(x-x_s}^2+y^2} - d^*)
+                \dot{y} &= x^3 - \mu_{2} x - \mu_{1} - y(\nu + b x + x^2) \\
+                \dot{z} &= -c(\sqrt{x-x_{s}^2+y^2} - d^*)
 
-        If the bool modification is True, then the equation for zdot will
+        If the bool modification is True, then the equation for \dot{z} will
         been modified to ensure stability for negative dstar
 
-            .. math::
-                    \dot{z} = -c(\sqrt{(x-x_s}^2+y^2} - d^* + 0.1(z-0.5)^7)
+        .. math::
+            \dot{z} = -c(\sqrt{x-x_{s}^2+y^2} - d^* + 0.1(z-0.5)^7)
 
         Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
         sphere of radius R parametrised by the unit vectors E and F.
 
-            .. math::
-                \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
+        .. math::
+            \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
 
         And where :math:`x_s` is the x-coordinate of the resting state
         (stable equilibrium). This is computed by finding the solution of
@@ -506,7 +506,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
             .. math::
                 \dot{x} &= -y \\
                 \dot{y} &= x^3 - \mu_2 x - \mu_1 - y(\nu + b x + x^2) \\
-                \dot{z} &= -c(\sqrt{(x-x_s}^2+y^2} - d^*)\\
+                \dot{z} &= -c(\sqrt{x-x_{s}^2+y^2} - d^*)\\
                 \dot(uA) &= cA\\
                 \dot(uB) &= cB\\
 
@@ -514,7 +514,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         been modified to ensure stability for negative dstar
 
             .. math::
-                    \dot{z} = -c(\sqrt{(x-x_s}^2+y^2} - d^* + 0.1(z-0.5)^7)
+                    \dot{z} = -c(\sqrt{x-x_{s}^2+y^2} - d^* + 0.1(z-0.5)^7)
 
         Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
         sphere of radius R parametrised by the unit vectors E and F.

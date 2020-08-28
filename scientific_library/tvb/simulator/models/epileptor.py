@@ -321,6 +321,7 @@ class Epileptor(ModelNumbaDfun):
                 -(slope - x_{2} + 0.6(z-4)^2) x_{1} &\text{if }x_{1} \geq 0
                 \end{cases}
 
+        and:
             .. math::
                 f_{2}(x_{2}) =
                 \begin{cases}
@@ -357,10 +358,13 @@ class Epileptor2D(ModelNumbaDfun):
             \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
             \dot{z_{i}} &=& r(h - z_{i})
         
-        with 
-            h = x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) if modification
-            h = 4 (x_{1,i} - x_{0})
-            
+        with
+            h =
+                \begin{cases}
+                x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
+                4 (x_{1,i} - x_{0}) & \text{else }
+                \end{cases}
+
         References:
             [Proixetal_2014] Proix, T.; Bartolomei, F; Chauvel, P; Bernard, C; Jirsa, V.K. *
             Permittivity coupling across brain regions determines seizure recruitment in 
