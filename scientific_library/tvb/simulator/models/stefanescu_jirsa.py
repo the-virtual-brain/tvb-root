@@ -89,17 +89,17 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     .. math::
                 \dot{\xi}_{i}    &=  c\left(\xi_i-e_i\frac{\xi_{i}^3}{3} -\eta_{i}\right)
                                   + K_{11}\left[\sum_{k=1}^{o} A_{ik}\xi_k-\xi_i\right]
-                                  - K_{12}\left[\sum_{k =1}^{o} B_{i k}\alpha_k-\xi_i\right] + cIE_i                       \\
+                                  - K_{12}\left[\sum_{k =1}^{o} B_{i k}\alpha_k-\xi_i\right] + cIE_i \\
                                  &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                  +  \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right],                            \\
-                \dot{\eta}_i     &= \frac{1}{c}\left(\xi_i-b\eta_i+m_i\right),                                              \\
-                &                                                                                                \\
+                                  +  \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
+                \dot{\eta}_i     &= \frac{1}{c}\left(\xi_i-b\eta_i+m_i\right) \\
+                & \\
                 \dot{\alpha}_i   &= c\left(\alpha_i-f_i\frac{\alpha_i^3}{3}-\beta_i\right)
-                                  + K_{21}\left[\sum_{k=1}^{o} C_{ik}\xi_i-\alpha_i\right] + cII_i                          \\
+                                  + K_{21}\left[\sum_{k=1}^{o} C_{ik}\xi_i-\alpha_i\right] + cII_i \\
                                  & \, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                  + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr}\right],                          \\
-                                 &                                                                               \\
-                \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right),
+                                  + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr}\right] \\
+                                 & \\
+                \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right)
 
     .. automethod:: ReducedSetFitzHughNagumo.update_derived_parameters
 
@@ -205,15 +205,15 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
                                   + K_{11}\left[\sum_{k=1}^{o} A_{ik}\xi_k-\xi_i\right]
                                   - K_{12}\left[\sum_{k =1}^{o} B_{i k}\alpha_k-\xi_i\right] + cIE_i                       \\
                                  &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                  +  \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right],                            \\
-                \dot{\eta}_i     &= \frac{1}{c}\left(\xi_i-b\eta_i+m_i\right),                                              \\
-                &                                                                                                \\
+                                  +  \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
+                \dot{\eta}_i     &= \frac{1}{c}\left(\xi_i-b\eta_i+m_i\right)                                              \\
+                & \\
                 \dot{\alpha}_i   &= c\left(\alpha_i-f_i\frac{\alpha_i^3}{3}-\beta_i\right)
                                   + K_{21}\left[\sum_{k=1}^{o} C_{ik}\xi_i-\alpha_i\right] + cII_i                          \\
                                  & \, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                  + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr}\right],                          \\
-                                 &                                                                               \\
-                \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right),
+                                  + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr}\right] \\
+                                 & \\
+                \dot{\beta}_i    &= \frac{1}{c}\left(\alpha_i-b\beta_i+n_i\right)
 
         """
 
@@ -348,21 +348,21 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     .. math::
                 \dot{\xi}_i     &=  \eta_i-a_i\xi_i^3 + b_i\xi_i^2- \tau_i
                                  + K_{11} \left[\sum_{k=1}^{o} A_{ik} \xi_k - \xi_i \right]
-                                 - K_{12} \left[\sum_{k=1}^{o} B_{ik} \alpha_k - \xi_i\right] + IE_i                \\
+                                 - K_{12} \left[\sum_{k=1}^{o} B_{ik} \alpha_k - \xi_i\right] + IE_i \\
                                 &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                 + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right],                     \\
-                &                                                                         \\
-                \dot{\eta}_i    &=  c_i-d_i\xi_i^2 -\tau_i,                                                         \\
-                &                                                                         \\
-                \dot{\tau}_i    &=  rs\xi_i - r\tau_i -m_i,                                                         \\
-                &                                                                         \\
+                                 + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
+                & \\
+                \dot{\eta}_i    &=  c_i-d_i\xi_i^2 -\tau_i \\
+                & \\
+                \dot{\tau}_i    &=  rs\xi_i - r\tau_i -m_i \\
+                & \\
                 \dot{\alpha}_i  &=  \beta_i - e_i \alpha_i^3 + f_i \alpha_i^2 - \gamma_i
-                                 + K_{21} \left[\sum_{k=1}^{o} C_{ik} \xi_k - \alpha_i \right] + II_i               \\
+                                 + K_{21} \left[\sum_{k=1}^{o} C_{ik} \xi_k - \alpha_i \right] + II_i \\
                                 &\, +\left[\sum_{k=1}^{o}\mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                 + \left[\sum_{k=1}^{o}W_{\zeta}\cdot\xi_{kr}\right],                    \\
-                &                                                                         \\
-                \dot{\beta}_i   &= h_i - p_i \alpha_i^2 - \beta_i,                                                   \\
-                \dot{\gamma}_i  &= rs \alpha_i - r \gamma_i - n_i,
+                                 + \left[\sum_{k=1}^{o}W_{\zeta}\cdot\xi_{kr}\right] \\
+                & \\
+                \dot{\beta}_i   &= h_i - p_i \alpha_i^2 - \beta_i \\
+                \dot{\gamma}_i  &= rs \alpha_i - r \gamma_i - n_i
 
     .. automethod:: ReducedSetHindmarshRose.update_derived_parameters
 
@@ -496,21 +496,21 @@ class ReducedSetHindmarshRose(ReducedSetBase):
         .. math::
                 \dot{\xi}_i     &=  \eta_i-a_i\xi_i^3 + b_i\xi_i^2- \tau_i
                                  + K_{11} \left[\sum_{k=1}^{o} A_{ik} \xi_k - \xi_i \right]
-                                 - K_{12} \left[\sum_{k=1}^{o} B_{ik} \alpha_k - \xi_i\right] + IE_i                \\
+                                 - K_{12} \left[\sum_{k=1}^{o} B_{ik} \alpha_k - \xi_i\right] + IE_i \\
                                 &\, + \left[\sum_{k=1}^{o} \mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                 + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right],                     \\
-                &                                                                         \\
-                \dot{\eta}_i    &=  c_i-d_i\xi_i^2 -\tau_i,                                                         \\
-                &                                                                         \\
-                \dot{\tau}_i    &=  rs\xi_i - r\tau_i -m_i,                                                         \\
-                &                                                                         \\
+                                 + \left[\sum_{k=1}^{o} W_{\zeta}\cdot\xi_{kr} \right] \\
+                & \\
+                \dot{\eta}_i    &=  c_i-d_i\xi_i^2 -\tau_i \\
+                & \\
+                \dot{\tau}_i    &=  rs\xi_i - r\tau_i -m_i \\
+                & \\
                 \dot{\alpha}_i  &=  \beta_i - e_i \alpha_i^3 + f_i \alpha_i^2 - \gamma_i
-                                 + K_{21} \left[\sum_{k=1}^{o} C_{ik} \xi_k - \alpha_i \right] + II_i               \\
+                                 + K_{21} \left[\sum_{k=1}^{o} C_{ik} \xi_k - \alpha_i \right] + II_i \\
                                 &\, +\left[\sum_{k=1}^{o}\mathbf{\Gamma}(\xi_{kq}, \xi_{kr}, u_{qr})\right]
-                                 + \left[\sum_{k=1}^{o}W_{\zeta}\cdot\xi_{kr}\right],                    \\
-                &                                                                         \\
-                \dot{\beta}_i   &= h_i - p_i \alpha_i^2 - \beta_i,                                                   \\
-                \dot{\gamma}_i  &= rs \alpha_i - r \gamma_i - n_i,
+                                 + \left[\sum_{k=1}^{o}W_{\zeta}\cdot\xi_{kr}\right] \\
+                & \\
+                \dot{\beta}_i   &= h_i - p_i \alpha_i^2 - \beta_i \\
+                \dot{\gamma}_i  &= rs \alpha_i - r \gamma_i - n_i
 
         """
 
