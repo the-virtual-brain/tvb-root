@@ -51,8 +51,8 @@ class Generic2dOscillator(ModelNumbaDfun):
     Equations:
 
     .. math::
-                \dot{V} &= d \, \tau (-f V^3 + e V^2 + g V + \alpha W + \gamma I), \\
-                \dot{W} &= \dfrac{d}{\tau}\,\,(c V^2 + b V - \beta W + a),
+            \dot{V} &= d \, \tau (-f V^3 + e V^2 + g V + \alpha W + \gamma I) \\
+            \dot{W} &= \dfrac{d}{\tau}\,\,(c V^2 + b V - \beta W + a)
 
     See:
 
@@ -339,8 +339,8 @@ class Generic2dOscillator(ModelNumbaDfun):
         The equations of the generic 2D population model read
 
         .. math::
-                \dot{V} &= d \, \tau (-f V^3 + e V^2 + g V + \alpha W + \gamma I), \\
-                \dot{W} &= \dfrac{d}{\tau}\,\,(c V^2 + b V - \beta W + a),
+                \dot{V} &= d \, \tau (-f V^3 + e V^2 + g V + \alpha W + \gamma I) \\
+                \dot{W} &= \dfrac{d}{\tau}\,\,(c V^2 + b V - \beta W + a)
 
         where external currents :math:`I` provide the entry point for local,
         long-range connectivity and stimulation.
@@ -479,8 +479,8 @@ class SupHopf(ModelNumbaDfun):
     The equations of the supHopf equations read as follows:
     
     .. math::
-        \dot{x}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})x_{i} - omega{i}y_{i} \\
-        \dot{y}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})y_{i} + omega{i}x_{i}
+        \dot{x}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})x_{i} - {\omega}{i}y_{i} \\
+        \dot{y}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})y_{i} + {\omega}{i}x_{i}
     
     where a is the local bifurcation parameter and omega the angular frequency.
     """

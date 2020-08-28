@@ -72,8 +72,9 @@ class EpileptorRestingState(ModelNumbaDfun):
                     \end{cases} \\
                 \dot{x_{2}} &=& -y_{2} + x_{2} - x_{2}^{3} + I_{ext2} + b_{2} g(x_{1}) - 0.3 (z-3.5) \\
                 \dot{y_{2}} &=& 1 / \tau (-y_{2} + f_{2}(x_{2}))\\
-                \dot{g} &=& -0.01 (g - 0.1 x_{1})
-                \dot{x_{rs}} &=& d_{rs} \tau_{rs} (-f_{rs} x_{rs}^3 + e_{rs} x_{rs}^2 + \alpha_{rs} y_{rs} + \gamma_{rs} I_{rs}) \\
+                \dot{g} &=& -0.01 (g - 0.1 x_{1})\\
+                \dot{x_{rs}} &=& d_{rs} \tau_{rs} (-f_{rs} x_{rs}^3 + e_{rs} x_{rs}^2 + \alpha_{rs} y_{rs} +
+                \gamma_{rs} I_{rs}) \\
                 \dot{y_{rs}} &=& d_{rs} (b_{rs}  x_{rs} - \beta_{rs} y_{rs} + a_{rs}) / \tau_{rs}
         
         where:
