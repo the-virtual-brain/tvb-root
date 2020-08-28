@@ -280,6 +280,7 @@ class OperationDAO(RootDAO):
         from an operation group, otherwise it will return only the operations that are NOT part of an operation group.
         """
         try:
+            #TODO: fix query, this has problems since the introduction od view_models
             query = self.session.query(Operation).filter(
                                 Operation.view_model_gid.like('%' + datatype_gid + '%')).join(
                                 Algorithm).join(AlgorithmCategory).filter(
@@ -302,6 +303,7 @@ class OperationDAO(RootDAO):
         are NOT part of an operation group.
         """
         try:
+            # TODO: fix query, this has problems since the introduction od view_models
             query = self.session.query(Operation).filter(
                 DataType.fk_datatype_group == datatype_group_id).filter(
                 Operation.view_model_gid.like('%' + DataType.gid + '%')).join(
