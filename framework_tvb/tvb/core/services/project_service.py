@@ -36,7 +36,6 @@ Service Layer for the Project entity.
 """
 
 import os
-import json
 import formencode
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
@@ -813,53 +812,12 @@ class ProjectService:
                 changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
             return [], changed_parameters
 
-    def get_datatypes_inputs_for_operation_group(self, group_id, selected_filter):
-        """
-        Returns the dataType inputs for an operation group. If more dataTypes
-        are part of the same dataType group then only the dataType group will
-        be returned instead of them.
-        """
-        operations_gids = dao.get_operations_in_group(group_id, only_gids=True)
-        op_group_inputs = dict()
-        for gid in operations_gids:
-            op_inputs = self.get_datatype_and_datatypegroup_inputs_for_operation(gid[0], selected_filter)
-            for datatype in op_inputs:
-                op_group_inputs[datatype.id] = datatype
-        return list(op_group_inputs.values())
-
     @staticmethod
     def get_results_for_operation(operation_id, selected_filter=None):
         """
         Retrieve the DataTypes entities resulted after the execution of the given operation.
         """
         return dao.get_results_for_operation(operation_id, selected_filter)
-
-    @staticmethod
-    def get_operations_for_datatype_group(datatype_group_id, visibility_filter, only_in_groups=False):
-        """
-        Returns all the operations which uses as an input parameter a dataType from the given DataTypeGroup.
-        visibility_filter - is a filter used for retrieving all the operations or only the relevant ones.
-
-        If only_in_groups is True than this method will return only the operations that are
-        part from an operation group, otherwise it will return only the operations that
-        are NOT part of an operation group.
-        """
-        if visibility_filter.display_name != StaticFiltersFactory.RELEVANT_VIEW:
-            return dao.get_operations_for_datatype_group(datatype_group_id, only_relevant=False,
-                                                         only_in_groups=only_in_groups)
-        return dao.get_operations_for_datatype_group(datatype_group_id, only_in_groups=only_in_groups)
-
-    @staticmethod
-    def get_operations_for_datatype(datatype_gid, visibility_filter, only_in_groups=False):
-        """
-        Returns all the operations which uses as an input parameter the dataType with the specified GID.
-
-        If only_in_groups is True than this method will return only the operations that are part
-        from an operation group, otherwise it will return only the operations that are NOT part of an operation group.
-        """
-        if visibility_filter.display_name != StaticFiltersFactory.RELEVANT_VIEW:
-            return dao.get_operations_for_datatype(datatype_gid, only_relevant=False, only_in_groups=only_in_groups)
-        return dao.get_operations_for_datatype(datatype_gid, only_in_groups=only_in_groups)
 
     @staticmethod
     def get_datatype_by_id(datatype_id):

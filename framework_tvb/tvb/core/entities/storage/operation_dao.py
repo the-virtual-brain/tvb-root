@@ -270,66 +270,6 @@ class OperationDAO(RootDAO):
             return None
 
 
-    def get_operations_for_datatype(self, datatype_gid, only_relevant=True, only_in_groups=False):
-        """
-        Returns all the operations which uses as an input parameter
-        the dataType with the specified GID.
-        If the flag only_relevant is True than only the relevant operations will be returned.
-    
-        If only_in_groups is True than this method will return only the operations that are part
-        from an operation group, otherwise it will return only the operations that are NOT part of an operation group.
-        """
-        try:
-            #TODO: fix query, this has problems since the introduction od view_models
-            query = self.session.query(Operation).filter(
-                                Operation.view_model_gid.like('%' + datatype_gid + '%')).join(
-                                Algorithm).join(AlgorithmCategory).filter(
-                                AlgorithmCategory.display == False)
-            query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
-            result = query.all()
-            return result
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-            return None
-
-
-    def get_operations_for_datatype_group(self, datatype_group_id, only_relevant=True, only_in_groups=False):
-        """
-        Returns all the operations which uses as an input parameter a datatype from the given DataTypeGroup.
-        If the flag only_relevant is True than only the relevant operations will be returned.
-    
-        If only_in_groups is True than this method will return only the operations that are
-        part from an operation group, otherwise it will return only the operations that
-        are NOT part of an operation group.
-        """
-        try:
-            # TODO: fix query, this has problems since the introduction od view_models
-            query = self.session.query(Operation).filter(
-                DataType.fk_datatype_group == datatype_group_id).filter(
-                Operation.view_model_gid.like('%' + DataType.gid + '%')).join(
-                Algorithm).join(AlgorithmCategory).filter(
-                AlgorithmCategory.display == False)
-            query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
-            result = query.all()
-            return result
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-            return None
-
-    @staticmethod
-    def _apply_visibility_and_group_filters(query, only_relevant, only_in_groups):
-        """
-        Used for applying filters on the given query.
-        """
-        if only_relevant:
-            query = query.filter(Operation.visible == True)
-        if only_in_groups:
-            query = query.filter(Operation.fk_operation_group != None)
-        else:
-            query = query.filter(Operation.fk_operation_group == None)
-        return query
-
-
     def set_operation_and_group_visibility(self, entity_gid, is_visible, is_operation_group=False):
         """
         Sets the operation visibility.

@@ -76,9 +76,6 @@ class StaticFiltersFactory(object):
         if filter_data['type'] == 'from_burst':
             return FilterChain('Burst', ['BurstConfiguration.id'],
                                [filter_data['value']], operations=["=="])
-        if filter_data['type'] == 'from_datatype':
-            return FilterChain('Datatypes', [FilterChain.operation + '.view_model_gid'],
-                               [filter_data['value']], operations=["like"])
         return None
 
     @staticmethod

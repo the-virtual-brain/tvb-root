@@ -2,7 +2,6 @@
 <!--           Main Content        -->
 <!-- ============================= -->
 <div id="main" class="columnized colscheme-2-1st-narrow">
-    <script type="text/javascript" src="/static/js/jit-tvb.js"></script>
 
     {% macro drawLevelSelect(level_index, data, default_selected, project_id) -%}
         <label for="levelTree_{{ level_index }}" id="label_levelTree_{{ level_index }}">Level {{ level_index }}:</label>
@@ -62,19 +61,13 @@
         </ul>
     </section>
 
-    <!--! Column displaying the project's data tree/graph -->
+    <!--! Column displaying the project's data tree -->
     <section class="data-view view-column col-2">
         <h4><mark>View</mark> TVB Results</h4>
-        <input id="lastVisibleTab" name="last_selected_tab" type="hidden" value="{{ lastSelectedTab }}"/>
         <input id="hiddenProjectId" type="hidden" value="{{ project.id }}"/>
 
-        <ul class="view-switcher tabswitcher">
-            <li id="treeTab" class="active"><a href="#" onclick="showTree()">Tree</a></li>
-            <li id="graphTab"><a href="#" onclick="showGraph()">Graph</a></li>
-        </ul>
-
         <div class="specialviewer">
-            <div id="tabTree" class="hide-element">
+            <div id="tabTree">
                 <ul class="toolbar-inline">
                     <li>
                         {{ drawLevelSelect(1, data, firstLevelSelection, project.id) }}
@@ -86,25 +79,13 @@
 
                 <div id="treeStructure" class="left-cell-structure"></div>
             </div>
-
-            <div id="tabWorkflow" class="hide-element">
-                <div id="workflowCanvasDiv" class="left-cell-structure"></div>
-                <nav class="inline-menu monitor-legend">
-                    <button class="action action-menu">Usage</button>
-                    <div class="extension" style="display: none;">
-                        <div class="dropdown-pane">
-                            <p>move node - click on the node and drag it</p>
-                            <p>navigate/select node - click on the node label</p>
-                        </div>
-                    </div>
-                </nav>
-            </div>
         </div>
 
         <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
         <script type="text/javascript">
-            displaySelectedTab();
-            updateTree('#treeStructure', {{ project.id }});
+            $(document).ready(function() {
+                updateTree('#treeStructure', {{ project.id }});
+            })
         </script>
     </section>
 </div>

@@ -259,61 +259,6 @@ class TestProjectStructure(TransactionalTestCase):
             assert expected.invalid == actual.invalid, "The invalid field value is not correct."
             assert expected.is_nan == actual.is_nan, "The is_nan field value is not correct."
 
-    def test_get_operations_for_dt(self, datatype_group_factory):
-        """
-        Tests method get_operations_for_datatype.
-        Verifies result dictionary has the correct values
-        """
-        group = datatype_group_factory()
-        created_ops, datatype_gid = self._create_operations_with_inputs(group)
-        operations = self.project_service.get_operations_for_datatype(datatype_gid, self.relevant_filter)
-        assert len(operations) == 2
-        assert created_ops[0].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
-        assert created_ops[2].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
-
-        operations = self.project_service.get_operations_for_datatype(datatype_gid, self.full_filter)
-        assert len(operations) == 4
-        ids = [operations[0].id, operations[1].id, operations[2].id, operations[3].id]
-        for i in range(4):
-            assert created_ops[i].id in ids, "Retrieved wrong operations."
-
-        operations = self.project_service.get_operations_for_datatype(datatype_gid, self.relevant_filter, True)
-        assert len(operations) == 1
-        assert created_ops[4].id == operations[0].id, "Incorrect number of operations."
-
-        operations = self.project_service.get_operations_for_datatype(datatype_gid, self.full_filter, True)
-        assert len(operations) == 2
-        assert created_ops[4].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
-        assert created_ops[5].id in [operations[0].id, operations[1].id], "Retrieved wrong operations."
-
-    def test_get_operations_for_dt_group(self, datatype_group_factory):
-        """
-        Tests method get_operations_for_datatype_group.
-        Verifies filters' influence over results is as expected
-        """
-        group = datatype_group_factory()
-        created_ops, dt_group_id = self._create_operations_with_inputs(group, True)
-
-        ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.relevant_filter)
-        assert len(ops) == 2
-        assert created_ops[0].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
-        assert created_ops[2].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
-
-        ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.full_filter)
-        assert len(ops) == 4, "Incorrect number of operations."
-        ids = [ops[0].id, ops[1].id, ops[2].id, ops[3].id]
-        for i in range(4):
-            assert created_ops[i].id in ids, "Retrieved wrong operations."
-
-        ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.relevant_filter, True)
-        assert len(ops) == 1
-        assert created_ops[4].id == ops[0].id, "Incorrect number of operations."
-
-        ops = self.project_service.get_operations_for_datatype_group(dt_group_id, self.full_filter, True)
-        assert len(ops), 2
-        assert created_ops[4].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
-        assert created_ops[5].id in [ops[0].id, ops[1].id], "Retrieved wrong operations."
-
     @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_get_inputs_for_operation(self):
         """
@@ -340,50 +285,6 @@ class TestProjectStructure(TransactionalTestCase):
                                                                                           self.full_filter)
         assert len(inputs) == 1, "Incorrect number of inputs."
         assert conn.id == inputs[0].id, "Retrieved wrong input dataType."
-
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
-    def test_get_inputs_for_group(self, datatype_group_factory, test_adapter_factory):
-        """
-        Tests method get_datatypes_inputs_for_operation_group.
-        """
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        conn = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        conn.visible = False
-        dao.store_entity(conn)
-
-        group = OperationGroup(self.test_project.id, "group", "range1[1..2]")
-        group = dao.store_entity(group)
-
-        view_model = BaseBCTModel()
-        view_model.connectivity = conn.gid
-        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        algorithm = adapter.stored_adapter
-
-        operation1 = Operation(view_model.gid.hex, self.test_user.id, self.test_project.id, algorithm.id,
-                               op_group_id=group.id)
-        operation2 = Operation(view_model.gid.hex, self.test_user.id, self.test_project.id, algorithm.id,
-                               op_group_id=group.id)
-        dao.store_entities([operation1, operation2])
-
-        OperationService()._store_view_model(operation1, dao.get_project_by_id(self.test_project.id), view_model)
-        OperationService()._store_view_model(operation2, dao.get_project_by_id(self.test_project.id), view_model)
-
-        inputs = self.project_service.get_datatypes_inputs_for_operation_group(group.id, self.relevant_filter)
-        assert len(inputs) == 0
-
-        inputs = self.project_service.get_datatypes_inputs_for_operation_group(group.id, self.full_filter)
-        assert len(inputs) == 1, "Incorrect number of dataTypes."
-        assert group.id == inputs[0].id, "Retrieved wrong dataType."
-
-        conn.visible = True
-        dao.store_entity(conn)
-
-        inputs = self.project_service.get_datatypes_inputs_for_operation_group(group.id, self.relevant_filter)
-        assert len(inputs) == 1, "Incorrect number of dataTypes."
-
-        inputs = self.project_service.get_datatypes_inputs_for_operation_group(group.id, self.full_filter)
-        assert len(inputs) == 1, "Incorrect number of dataTypes."
-        assert group.id == inputs[0].id, "Retrieved wrong dataType."
 
     def test_remove_datatype(self, array_factory):
         """
@@ -474,53 +375,6 @@ class TestProjectStructure(TransactionalTestCase):
             return get_filtered_datatypes(project.id, DataTypeMatrix)[0]
 
         return build
-
-    def _create_operation(self, project_id, algorithm_id):
-        """
-        dummy operation
-        :param project_id: the project in which the operation is created
-        :param algorithm_id: the algorithm to be run for the operation
-        :return: a dummy `Operation` with the given specifications
-        """
-        algorithm = dao.get_algorithm_by_id(algorithm_id)
-        operation = Operation(None, self.test_user.id, project_id, algorithm.id, status=STATUS_FINISHED)
-        return dao.store_entity(operation)
-
-    def _create_operations_with_inputs(self, datatype_group, is_group_parent=False):
-        """
-        Method used for creating a complex tree of operations.
-
-        If 'if_group_parent' is True then a new group will be created and one of its entries it will be used as
-        input for the returned operations.
-        """
-        group_dts = dao.get_datatypes_from_datatype_group(datatype_group.id)
-        if is_group_parent:
-            datatype_gid = group_dts[0].gid
-        else:
-            datatype_gid = TestFactory.create_value_wrapper(self.test_user, self.test_project)[1]
-
-        ops = []
-        for i in range(4):
-            ops.append(TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project))
-            if i in [1, 3]:
-                ops[i].visible = False
-            ops[i].view_model_gid = datatype_gid
-            ops[i] = dao.store_entity(ops[i])
-
-        # groups
-        ops_group = dao.get_operations_in_group(datatype_group.fk_from_operation)
-        assert 10 == len(ops_group)
-        ops_group[0].view_model_gid = datatype_gid
-        ops_group[0] = dao.store_entity(ops_group[0])
-        ops_group[1].visible = False
-        ops_group[1].view_model_gid = datatype_gid
-        ops_group[1] = dao.store_entity(ops_group[1])
-
-        ops.extend(ops_group)
-        if is_group_parent:
-            dt_group = dao.get_datatypegroup_by_op_group_id(datatype_group.id)
-            return ops, dt_group.id
-        return ops, datatype_gid
 
     def _check_if_datatype_was_removed(self, datatype):
         """
