@@ -550,7 +550,6 @@ class ProjectService:
 
             op = dao.get_operation_by_id(datatype.fk_from_operation)
             adapter = ABCAdapter.build_adapter(op.algorithm)
-            view_model = adapter.load_view_model(op)
             if links:
                 was_link = False
                 for link in links:
@@ -575,13 +574,17 @@ class ProjectService:
                                        datatype.parent_operation.range_values)
                     new_op = dao.store_entity(new_op)
                     to_project = self.find_project(links[0].fk_to_project).name
+
                     full_path = h5.path_for_stored_index(datatype)
                     self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
+                    # Move also the ViewModel H5
+                    old_folder = self.structure_helper.get_project_folder(project, str(op.id))
+                    view_model = adapter.load_view_model(op)
+                    vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
+                    self.structure_helper.move_datatype(view_model, to_project, str(new_op.id), vm_full_path)
+
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
-                    op_path = FilesHelper().get_project_folder(project, str(op.id))
-                    h5_file_path = h5.path_for(op_path, ViewModelH5, view_model.gid, type(view_model).__name__)
-                    self.structure_helper.move_datatype(view_model, to_project, str(new_op.id), h5_file_path)
                     dao.store_entity(datatype)
                     dao.remove_entity(Links, links[0].id)
             else:
