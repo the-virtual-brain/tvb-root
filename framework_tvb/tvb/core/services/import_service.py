@@ -324,11 +324,7 @@ class ImportService(object):
                 operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
                                                                                  operation_entity, datatype_group)
                 # Create and store view_model from operation
-                old_operation_xml_params = None
-                if operation_data.info_from_xml:
-                    old_operation_xml_params = operation_data.info_from_xml
-
-                view_model = self._get_new_form_view_model(operation_entity, old_operation_xml_params)
+                view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
                 h5.store_view_model(view_model, new_op_folder)
                 operation_entity.view_model_gid = view_model.gid.hex
                 dao.store_entity(operation_entity)
