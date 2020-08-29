@@ -77,18 +77,5 @@
         {% endif %}
 
     </section>
-
-    <!--! Overlay: Data Exporters -->
-    <section id="overlayTabContent_5" class="node-data node-chain-dts ">
-        <div id="div-burst-tree">
-            <div id="treeOverlay"></div>
-            <script type="text/javascript">
-                $(document).ready(function () {
-                    var filterValue = {'type': 'from_datatype', 'value': '{{ entity_gid }}'};
-                    updateTree('#treeOverlay', '{{ selectedProject.id }}', JSON.stringify(filterValue));
-                })
-            </script>
-        </div>
-    </section>
 </div>
 
