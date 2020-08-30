@@ -33,16 +33,17 @@
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 
-import json
 import os
 import typing
 import uuid
-import pyunicore.client as unicore_client
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
+
+import pyunicore.client as unicore_client
 from pyunicore.client import Job, Storage, Client
 from requests import HTTPError
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
@@ -300,22 +301,39 @@ class HPCSchedulerClient(BackendClient):
         return encrypted_files
 
     @staticmethod
+    def _handle_metric_results(metric_encrypted_file, metric_vm_encrypted_file, operation, encryption_handler):
+        if not metric_encrypted_file:
+            return None, None
+
+        metric_op_dir, metric_op = BurstService.prepare_metrics_operation(operation)
+        metric_files = encryption_handler.decrypt_files_to_dir([metric_encrypted_file, metric_vm_encrypted_file],
+                                                               metric_op_dir)
+        metric_file = metric_files[0]
+        metric_vm = h5.load_view_model_from_file(metric_files[1])
+        metric_op.view_model_gid = metric_vm.gid.hex
+        dao.store_entity(metric_op)
+        return metric_op, metric_file
+
+    @staticmethod
     def stage_out_to_operation_folder(working_dir, operation, simulator_gid):
         # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> (list, Operation, str)
         encrypted_files = HPCSchedulerClient._stage_out_results(working_dir, simulator_gid)
         encryption_handler = EncryptionHandler(simulator_gid)
 
         simulation_results = list()
-        metric_op = None
-        metric_file = None
+        metric_encrypted_file = None
+        metric_vm_encrypted_file = None
         for encrypted_file in encrypted_files:
             if os.path.basename(encrypted_file).startswith(DatatypeMeasureH5.file_name_base()):
-                metric_op_dir, metric_op = BurstService.prepare_metrics_operation(operation)
-                metric_files = encryption_handler.decrypt_files_to_dir([encrypted_file], metric_op_dir)
-                metric_file = metric_files[0]
+                metric_encrypted_file = encrypted_file
+            elif os.path.basename(encrypted_file).startswith(TimeseriesMetricsAdapterModel.__name__):
+                metric_vm_encrypted_file = encrypted_file
             else:
                 simulation_results.append(encrypted_file)
 
+        metric_op, metric_file = HPCSchedulerClient._handle_metric_results(metric_encrypted_file,
+                                                                           metric_vm_encrypted_file, operation,
+                                                                           encryption_handler)
         project = dao.get_project_by_id(operation.fk_launched_in)
         operation_dir = HPCSchedulerClient.file_handler.get_project_folder(project, str(operation.id))
         h5_filenames = EncryptionHandler(simulator_gid).decrypt_files_to_dir(simulation_results, operation_dir)
@@ -326,7 +344,7 @@ class HPCSchedulerClient(BackendClient):
         # type: (int) -> None
         operation = dao.get_operation_by_id(operation_identifier)
         is_group_launch = operation.fk_operation_group is not None
-        simulator_gid = json.loads(operation.parameters)['gid']
+        simulator_gid = operation.view_model_gid
         try:
             HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
         except Exception as exception:

@@ -165,7 +165,7 @@ class ExportManager(object):
 
         # Make a import operation which will contain links to other projects
         algo = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
-        op = model_operation.Operation(None, project.id, algo.id, '')
+        op = model_operation.Operation(None, None, project.id, algo.id)
         op.project = project
         op.algorithm = algo
         op.id = 'links-to-external-projects'

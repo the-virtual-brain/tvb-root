@@ -31,6 +31,7 @@
 import json
 import os
 from datetime import datetime
+
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
@@ -315,7 +316,7 @@ class BurstService(object):
         range_values = operation.range_values
         metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
 
-        metric_operation = Operation(operation.fk_launched_by, operation.fk_launched_in, metric_algo.id, '',
+        metric_operation = Operation(None, operation.fk_launched_by, operation.fk_launched_in, metric_algo.id,
                                      status=STATUS_FINISHED, op_group_id=metric_operation_group_id,
                                      range_values=range_values)
         metric_operation.visible = False

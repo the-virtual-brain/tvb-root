@@ -87,6 +87,7 @@ class TestImportService(BaseTestCase):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(test_user, test_project, zip_path)
         value_wrapper = value_wrapper_factory(test_user, test_project)
+        ProjectService.set_datatype_visibility(value_wrapper.gid, False)
 
         result = self.get_all_datatypes()
         expected_results = {}
@@ -124,6 +125,7 @@ class TestImportService(BaseTestCase):
         assert value_wrapper.data_value == new_val.data_value, "Data value incorrect"
         assert value_wrapper.data_type == new_val.data_type, "Data type incorrect"
         assert value_wrapper.data_name == new_val.data_name, "Data name incorrect"
+        assert False == new_val.visible, "Visibility incorrectly restored"
 
     def test_import_export_existing(self, user_factory, project_factory):
         """
