@@ -549,12 +549,12 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
         op_group_ms = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
         op_group_ms = dao.store_entity(op_group_ms)
 
-        datatype_group = DataTypeGroup(op_group)
+        datatype_group = DataTypeGroup(op_group, state="RAW_DATA")
         datatype_group.no_of_ranges = 2
         datatype_group.count_results = 10
         datatype_group = dao.store_entity(datatype_group)
 
-        dt_group_ms = DataTypeGroup(op_group_ms)
+        dt_group_ms = DataTypeGroup(op_group_ms, state="RAW_DATA")
         dt_group_ms.no_of_ranges = 2
         dt_group_ms.count_results = 10
         dao.store_entity(dt_group_ms)
