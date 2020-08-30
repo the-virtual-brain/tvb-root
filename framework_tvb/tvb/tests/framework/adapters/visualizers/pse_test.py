@@ -62,7 +62,7 @@ class TestPSE(TransactionalTestCase):
                          'has_started_ops', 'datatype_group_gid', 'color_metric', 'values_x', 'values_y']
         for key in expected_keys:
             assert key in result
-        assert json.loads(result['values_x']) == [1, 3, 5, 7, 9]
+        assert json.loads(result['values_x']) == [1, 3, 5]
         assert json.loads(result['values_y']) == [0.1, 0.4]
         assert dt_group.gid == result["datatype_group_gid"]
         assert 'false' == result["has_started_ops"]
@@ -102,7 +102,7 @@ class TestPSE(TransactionalTestCase):
                          'has_started_ops', 'datatype_group_gid', 'color_metric', 'values_x', 'values_y']
         for key in expected_keys:
             assert key in result
-        assert json.loads(result['values_x']) == [1, 2, 3, 5, 7, 9]
+        assert json.loads(result['values_x']) == [1, 2, 3, 5]
         assert json.loads(result['values_y']) == [0.1, 0.4]
         d3_data = json.loads(result['d3_data'])
         assert d3_data['3']['0.1']['color_weight'] == 3

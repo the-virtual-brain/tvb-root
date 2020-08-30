@@ -60,10 +60,10 @@ class TestExplorationController(BaseTransactionalControllerTest):
         assert result['available_metrics'] == ["v"]
         assert result['color_metric'] == "v"
         assert result['size_metric'] == "v"
-        assert [1, 3, 5, 7, 9] == json.loads(result['labels_x'])
+        assert [1, 3, 5] == json.loads(result['labels_x'])
         assert [0.1, 0.4] == json.loads(result['labels_y'])
         data = json.loads(result['d3_data'])
-        assert len(data) == 5
+        assert len(data) == 3
         for row in data.values():
             assert len(row) == 2
             for entry in row.values():

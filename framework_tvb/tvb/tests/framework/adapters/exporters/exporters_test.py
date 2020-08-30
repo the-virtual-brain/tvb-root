@@ -114,7 +114,7 @@ class TestExporters(TransactionalTestCase):
         """
         This method checks export of a data type group
         """
-        datatype_group = datatype_group_factory(project=self.test_project)
+        datatype_group = datatype_group_factory(project=self.test_project, store_vm=True)
         file_name, file_path, _ = self.export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.test_project)
 
         assert file_name is not None, "Export process should return a file name"

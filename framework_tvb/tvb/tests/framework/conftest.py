@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 import copy
 import json
 import os
@@ -165,7 +166,7 @@ def project_factory():
 
 @pytest.fixture()
 def operation_factory(user_factory, project_factory, connectivity_factory):
-    def build(test_user=None, test_project=None, is_simulation=False,
+    def build(test_user=None, test_project=None, is_simulation=False, store_vm=False,
               operation_status=STATUS_FINISHED, range_values=None):
         """
         Create persisted operation with a ViewModel stored
@@ -176,24 +177,33 @@ def operation_factory(user_factory, project_factory, connectivity_factory):
         if test_project is None:
             test_project = project_factory(test_user)
 
+        vm_gid = uuid.uuid4()
+        view_model = None
+
         if is_simulation:
             algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
-            adapter = ABCAdapter.build_adapter(algorithm)
-            view_model = adapter.get_view_model_class()()
-            view_model.connectivity = connectivity_factory(4).gid
+            if store_vm:
+                adapter = ABCAdapter.build_adapter(algorithm)
+                view_model = adapter.get_view_model_class()()
+                view_model.connectivity = connectivity_factory(4).gid
+                vm_gid = view_model.gid
 
         else:
             algorithm = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
-            adapter = ABCAdapter.build_adapter(algorithm)
-            view_model = adapter.get_view_model_class()()
-            view_model.data_file = "."
+            if store_vm:
+                adapter = ABCAdapter.build_adapter(algorithm)
+                view_model = adapter.get_view_model_class()()
+                view_model.data_file = "."
+                vm_gid = view_model.gid
 
-        operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
+        operation = Operation(vm_gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status, range_values=range_values)
         dao.store_entity(operation)
 
-        op_folder = FilesHelper().get_project_folder(test_project, str(operation.id))
-        h5.store_view_model(view_model, op_folder)
+        if store_vm:
+            op_folder = FilesHelper().get_project_folder(test_project, str(operation.id))
+            h5.store_view_model(view_model, op_folder)
+
         # Make sure lazy attributes are correctly loaded.
         return dao.get_operation_by_id(operation.id)
 
@@ -523,12 +533,12 @@ def datatype_measure_factory():
 @pytest.fixture()
 def datatype_group_factory(connectivity_factory, time_series_index_factory, datatype_measure_factory,
                            project_factory, user_factory, operation_factory):
-    def build(project=None):
+    def build(project=None, store_vm=False):
         # there store the name and the (hi, lo, step) value of the range parameters
-        range_1 = ["row1", [1, 2, 10]]
+        range_1 = ["row1", [1, 2, 6]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
         # there are the actual numbers in the interval
-        range_values_1 = [1, 3, 5, 7, 9]
+        range_values_1 = [1, 3, 5]
         range_values_2 = [0.1, 0.4]
 
         user = user_factory()
@@ -537,8 +547,11 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
 
         algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
-        view_model = adapter.get_view_model_class()()
-        view_model.connectivity = connectivity_factory(4).gid
+        if store_vm:
+            view_model = adapter.get_view_model_class()()
+            view_model.connectivity = connectivity_factory(4).gid
+        else:
+            view_model = None
 
         algorithm_ms = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm_ms)
@@ -551,45 +564,48 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
 
         datatype_group = DataTypeGroup(op_group, state="RAW_DATA")
         datatype_group.no_of_ranges = 2
-        datatype_group.count_results = 10
+        datatype_group.count_results = 6
         datatype_group = dao.store_entity(datatype_group)
 
         dt_group_ms = DataTypeGroup(op_group_ms, state="RAW_DATA")
         dt_group_ms.no_of_ranges = 2
-        dt_group_ms.count_results = 10
+        dt_group_ms.count_results = 6
         dao.store_entity(dt_group_ms)
 
         # Now create some data types and add them to group
         for range_val1 in range_values_1:
             for range_val2 in range_values_2:
-                view_model = copy.deepcopy(view_model)
-                view_model.gid = uuid.uuid4()
 
-                op = Operation(view_model.gid.hex, user.id, project.id, algorithm.id,
+                view_model_gid = uuid.uuid4()
+                view_model_ms_gid = uuid.uuid4()
+
+                op = Operation(view_model_gid.hex, user.id, project.id, algorithm.id,
                                status=STATUS_FINISHED, op_group_id=op_group.id,
                                range_values=json.dumps({range_1[0]: range_val1,
                                                         range_2[0]: range_val2}))
                 op = dao.store_entity(op)
-                op_path = FilesHelper().get_project_folder(project, str(op.id))
-                h5.store_view_model(view_model, op_path)
-
                 ts_index = time_series_index_factory(op=op)
                 ts_index.fk_datatype_group = datatype_group.id
                 dao.store_entity(ts_index)
 
-                view_model_ms = copy.deepcopy(view_model_ms)
-                view_model_ms.gid = uuid.uuid4()
-                view_model_ms.time_series = ts_index.gid
-
-                op_ms = Operation(view_model_ms.gid.hex, user.id, project.id, algorithm.id,
+                op_ms = Operation(view_model_ms_gid.hex, user.id, project.id, algorithm.id,
                                   status=STATUS_FINISHED, op_group_id=op_group_ms.id,
                                   range_values=json.dumps({range_1[0]: range_val1,
                                                            range_2[0]: range_val2}))
                 op_ms = dao.store_entity(op_ms)
-                op_ms_path = FilesHelper().get_project_folder(project, str(op_ms.id))
-                h5.store_view_model(view_model_ms, op_ms_path)
-
                 datatype_measure_factory(ts_index, op_ms, dt_group_ms)
+
+                if store_vm:
+                    view_model = copy.deepcopy(view_model)
+                    view_model.gid = view_model_gid
+                    op_path = FilesHelper().get_project_folder(project, str(op.id))
+                    h5.store_view_model(view_model, op_path)
+
+                    view_model_ms = copy.deepcopy(view_model_ms)
+                    view_model_ms.gid = view_model_ms_gid
+                    view_model_ms.time_series = ts_index.gid
+                    op_ms_path = FilesHelper().get_project_folder(project, str(op_ms.id))
+                    h5.store_view_model(view_model_ms, op_ms_path)
 
                 if not datatype_group.fk_from_operation:
                     # Mark first operation ID
