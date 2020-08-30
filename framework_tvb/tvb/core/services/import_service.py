@@ -389,9 +389,6 @@ class ImportService(object):
         if not os.path.exists(actual_figure):
             self.logger.warning("Expected to find image path %s .Skipping" % actual_figure)
             return
-        # TODO: this will never match in the current form. What to do ?
-        op = dao.get_operation_by_gid(figure_dict['fk_from_operation'])
-        figure_dict['fk_op_id'] = op.id if op is not None else None
         figure_dict['fk_user_id'] = self.user_id
         figure_dict['fk_project_id'] = project_id
         figure_entity = manager_of_class(ResultFigure).new_instance()

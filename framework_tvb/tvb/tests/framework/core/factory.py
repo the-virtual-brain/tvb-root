@@ -133,13 +133,11 @@ class TestFactory(object):
         return ProjectService().store_project(admin, True, None, **data)
 
     @staticmethod
-    def create_figure(operation_id, user_id, project_id, session_name=None,
-                      name=None, path=None, file_format='PNG'):
+    def create_figure(user_id, project_id, session_name=None, name=None, path=None, file_format='PNG'):
         """
         :returns: the `ResultFigure` for a result with the given specifications
         """
-        figure = ResultFigure(operation_id, user_id, project_id,
-                              session_name, name, path, file_format)
+        figure = ResultFigure(user_id, project_id, session_name, name, path, file_format)
         return dao.store_entity(figure)
 
     @staticmethod
