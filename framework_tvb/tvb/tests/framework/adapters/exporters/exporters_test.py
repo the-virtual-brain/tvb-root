@@ -183,7 +183,7 @@ class TestExporters(TransactionalTestCase):
         """
         Test export of a simulator configuration
         """
-        operation = operation_factory(is_simulation=True)
+        operation = operation_factory(is_simulation=True, store_vm=True)
 
         burst_configuration = BurstConfiguration(self.test_project.id)
         burst_configuration.fk_simulation = operation.id

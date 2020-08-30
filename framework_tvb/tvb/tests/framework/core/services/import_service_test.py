@@ -32,11 +32,14 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
+
 import os
 import tvb_data
 import shutil
 import pytest
+from time import sleep
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
@@ -145,3 +148,28 @@ class TestImportService(BaseTestCase):
 
         with pytest.raises(ImportException):
             self.import_service.import_project_structure(self.zip_path, test_user.id)
+
+    def test_import_export_burst(self, user_factory, project_factory, simulation_launch):
+        """
+        Test that fk_parent_burst is correctly preserved after export/import
+        """
+        test_user = user_factory()
+        test_project = project_factory(test_user, "TestIESim")
+        sim_op = simulation_launch(test_user, test_project, simulation_length=10)
+        tries = 5
+        while not sim_op.has_finished and tries > 0:
+            sleep(5)
+            tries = tries - 1
+            sim_op = dao.get_operation_by_id(sim_op.id)
+        assert sim_op.has_finished, "Simulation did not finish in the given time"
+
+        self.zip_path = ExportManager().export_project(test_project)
+        assert self.zip_path is not None, "Exported file is none"
+        self.project_service.remove_project(test_project.id)
+
+        self.import_service.import_project_structure(self.zip_path, test_user.id)
+        retrieved_project = self.project_service.retrieve_projects_for_user(test_user.id)[0][0]
+        ts = try_get_last_datatype(retrieved_project.id, TimeSeriesRegionIndex)
+        bursts = dao.get_bursts_for_project(retrieved_project.id)
+        assert 1 == len(bursts)
+        assert ts.fk_parent_burst == bursts[0].gid
