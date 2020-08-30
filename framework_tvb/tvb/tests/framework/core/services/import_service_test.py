@@ -37,19 +37,24 @@ import os
 import tvb_data
 import shutil
 import pytest
+from PIL import Image
 from time import sleep
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
+from tvb.core import utils
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.load import try_get_last_datatype
+from tvb.core.services.figure_service import FigureService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import ImportException
 from tvb.core.utils import no_matlab
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.services.figure_service_test import IMG_DATA
 
 
 class TestImportService(BaseTestCase):
@@ -149,7 +154,7 @@ class TestImportService(BaseTestCase):
         with pytest.raises(ImportException):
             self.import_service.import_project_structure(self.zip_path, test_user.id)
 
-    def test_import_export_burst(self, user_factory, project_factory, simulation_launch):
+    def test_export_import_burst(self, user_factory, project_factory, simulation_launch):
         """
         Test that fk_parent_burst is correctly preserved after export/import
         """
@@ -173,3 +178,41 @@ class TestImportService(BaseTestCase):
         bursts = dao.get_bursts_for_project(retrieved_project.id)
         assert 1 == len(bursts)
         assert ts.fk_parent_burst == bursts[0].gid
+
+    def test_export_import_figures(self, user_factory, project_factory):
+        """
+        Test that ResultFigure instances are correctly restores after an export+import project
+        """
+        # Prepare data
+        user = user_factory()
+        project = project_factory(user, "TestImportExportFigures")
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'paupau.zip')
+        TestFactory.import_zip_connectivity(user, project, zip_path)
+
+        figure_service = FigureService()
+        figure_service.store_result_figure(project, user, "png", IMG_DATA, "bla")
+        figure_service.store_result_figure(project, user, "png", IMG_DATA, "bla")
+        figures = list(figure_service.retrieve_result_figures(project, user)[0].values())[0]
+        assert 2 == len(figures)
+
+        # export, delete and the import project
+        self.zip_path = ExportManager().export_project(project)
+        assert self.zip_path is not None, "Exported file is none"
+        self.project_service.remove_project(project.id)
+
+        self.import_service.import_project_structure(self.zip_path, user.id)
+
+        # Check that state is as before export: one operation, one DT, 2 figures
+        retrieved_project = self.project_service.retrieve_projects_for_user(user.id)[0][0]
+        count_operations = dao.get_filtered_operations(retrieved_project.id, None, is_count=True)
+        assert 1 == count_operations
+        count_datatypes = dao.count_datatypes(retrieved_project.id, DataType)
+        assert 1 == count_datatypes
+
+        figures = list(figure_service.retrieve_result_figures(retrieved_project, user)[0].values())[0]
+        assert 2 == len(figures)
+        assert "bla" in figures[0].name
+        assert "bla" in figures[1].name
+        image_path = utils.url2path(figures[0].file_path)
+        img_data = Image.open(image_path).load()
+        assert img_data is not None
