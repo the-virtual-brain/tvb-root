@@ -200,6 +200,47 @@ class EpileptorCodim3(ModelNumbaDfun):
         self.F = numpy.cross(numpy.cross(A, B), A)
         self.F = self.F / numpy.linalg.norm(self.F)
 
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+        x = state_variables[0, :]
+        y = state_variables[1, :]
+        z = state_variables[2, :]
+
+        # Computes the values of mu2,mu1 and nu given the great arc (E,F,R) and the value of the slow variable z
+        mu2 = self.R * (self.E[0] * numpy.cos(z) + self.F[0] * numpy.sin(z))
+        mu1 = -self.R * (self.E[1] * numpy.cos(z) + self.F[1] * numpy.sin(z))
+        nu = self.R * (self.E[2] * numpy.cos(z) + self.F[2] * numpy.sin(z))
+
+        # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
+        if self.N == 1:
+            xs = (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
+        elif self.N == 2:
+            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
+                         1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+                             mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
+                         1.0 / 3.0)
+        elif self.N == 3:
+            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
+                         1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+                             mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
+                         1.0 / 3.0)
+        xs = numpy.real(xs)
+
+        xdot = -y
+        ydot = x ** 3 - mu2 * x - mu1 - y * (nu + self.b * x + x ** 2)
+        if self.modification:
+            zdot = -self.c * (
+                    numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + 0.1 * (z - 0.5) ** 7 + self.Ks * coupling[0, :])
+        else:
+            zdot = -self.c * (numpy.sqrt(
+                (x - xs) ** 2 + y ** 2) - self.dstar + self.Ks * coupling[0, :])
+
+        derivative = numpy.array([xdot, ydot, zdot])
+        return derivative
+
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         The equations were taken from [Saggioetal_2017]
@@ -492,6 +533,62 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         self.L = Bin / numpy.linalg.norm(Bin)
         self.M = numpy.cross(numpy.cross(Bin, Bend), Bin)
         self.M = self.M / numpy.linalg.norm(self.M)
+
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+        x = state_variables[0, :]
+        y = state_variables[1, :]
+        z = state_variables[2, :]
+        uA = state_variables[3, :]
+        uB = state_variables[4, :]
+
+        A = self.R * (self.G * numpy.cos(uA) + self.H * numpy.sin(uA))
+        B = self.R * (self.L * numpy.cos(uB) + self.M * numpy.sin(uB))
+
+        E = A / (numpy.linalg.norm(A, axis=1)).reshape(-1, 1)
+        C = numpy.cross(A,B)
+        F = numpy.cross(numpy.cross(A, B), A)
+        F = F / (numpy.linalg.norm(F, axis=1)).reshape(-1, 1)
+
+        # Computes the values of mu2,mu1 and nu given the great arc (E,F,R) and the value of the slow variable z
+        mu2 = self.R * (numpy.array([E[:, 0]]).T * numpy.cos(z) + numpy.array(
+            [F[:, 0]]).T * numpy.sin(z))
+        mu1 = -self.R * (numpy.array([E[:, 1]]).T * numpy.cos(z) + numpy.array(
+            [F[:, 1]]).T * numpy.sin(z))
+        nu = self.R * (numpy.array([E[:, 2]]).T * numpy.cos(z) + numpy.array(
+            [F[:, 2]]).T * numpy.sin(z))
+
+        # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
+        if self.N == 1:
+            xs = (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
+        elif self.N == 2:
+            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
+                1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
+                1.0 / 3.0)
+        elif self.N == 3:
+            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
+                1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
+                1.0 / 3.0)
+        xs = numpy.real(xs)
+
+        # global coupling: To be implemented
+
+        xdot = -y
+        ydot = x ** 3 - mu2 * x - mu1 - y * (nu + self.b * x + x ** 2)
+        if self.modification:
+            zdot = -self.c * (
+                numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + 0.1 * (
+                    z - 0.5) ** 7 + self.Ks * coupling[0, :])
+        else:
+            zdot = -self.c * (numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + self.Ks * coupling[0, :])
+        uAdot = numpy.full_like(uA, self.cA)
+        uBdot = numpy.full_like(uB, self.cB)
+
+        derivative = numpy.array([xdot, ydot, zdot, uAdot, uBdot])
+        return derivative
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""

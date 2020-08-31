@@ -288,6 +288,42 @@ class Epileptor(ModelNumbaDfun):
     cvar = numpy.array([0, 3], dtype=numpy.int32)  # should these not be constant Attr's?
     cvar.setflags(write=False)  # todo review this
 
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
+                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
+
+        y = state_variables
+        ydot = numpy.empty_like(state_variables)
+
+        Iext = self.Iext + local_coupling * y[0]
+        c_pop1 = coupling[0, :]
+        c_pop2 = coupling[1, :]
+
+        # population 1
+        if_ydot0 = - self.a * y[0] ** 2 + self.b * y[0]
+        else_ydot0 = self.slope - y[3] + 0.6 * (y[2] - 4.0) ** 2
+        ydot[0] = self.tt * (y[1] - y[2] + Iext + self.Kvf * c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0) * y[0])
+        ydot[1] = self.tt * (self.c - self.d * y[0] ** 2 - y[1])
+
+        # energy
+        if_ydot2 = - 0.1 * y[2] ** 7
+        else_ydot2 = 0
+        if self.modification:
+            h = self.x0 + 3. / (1. + numpy.exp(- (y[0] + 0.5) / 0.1))
+        else:
+            h = 4 * (y[0] - self.x0) + where(y[2] < 0., if_ydot2, else_ydot2)
+        ydot[2] = self.tt * (self.r * (h - y[2] + self.Ks * c_pop1))
+
+        # population 2
+        ydot[3] = self.tt * (-y[4] + y[3] - y[3] ** 3 + self.Iext2 + self.bb * y[5] - 0.3 * (y[2] - 3.5) + self.Kf * c_pop2)
+        if_ydot4 = 0
+        else_ydot4 = self.aa * (y[3] + 0.25)
+        ydot[4] = self.tt * ((-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4)) / self.tau)
+
+        # filter
+        ydot[5] = self.tt * (-0.01 * (y[5] - 0.1 * y[0]))
+
+        return ydot
+
     def dfun(self, x, c, local_coupling=0.0):
         r"""
         Computes the derivatives of the state variables of the Epileptor
@@ -461,6 +497,34 @@ class Epileptor2D(ModelNumbaDfun):
 
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
+
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
+                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
+
+        y = state_variables
+        ydot = numpy.empty_like(state_variables)
+
+        Iext = self.Iext + local_coupling * y[0]
+        c_pop = coupling[0, :]
+
+        # population 1
+        if_ydot0 = self.a * y[0] ** 2 + (self.d - self.b) * y[0]
+        else_ydot0 = - self.slope - 0.6 * (y[1] - 4.0) ** 2 + self.d * y[0]
+
+        ydot[0] = self.tt * (self.c - y[1] + Iext + self.Kvf * c_pop - (where(y[0] < 0., if_ydot0, else_ydot0)) * y[0])
+
+        # energy
+        if_ydot1 = - 0.1 * y[1] ** 7
+        else_ydot1 = 0
+
+        if self.modification:
+            h = self.x0 + 3. / (1. + numpy.exp(- (y[0] + 0.5) / 0.1))
+        else:
+            h = 4 * (y[0] - self.x0) + where(y[1] < 0., if_ydot1, else_ydot1)
+
+        ydot[1] = self.tt * (self.r * (h - y[1] + self.Ks * c_pop))
+
+        return ydot
 
     def dfun(self, x, c, local_coupling=0.0):
         r"""

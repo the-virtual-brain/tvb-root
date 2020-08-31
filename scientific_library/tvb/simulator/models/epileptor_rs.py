@@ -301,6 +301,54 @@ class EpileptorRestingState(ModelNumbaDfun):
     _nvar = 8                                           # number of state-variables
     cvar = numpy.array([0, 3, 6], dtype=numpy.int32)    # coupling variables
 
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
+                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
+
+        y = state_variables
+        ydot = numpy.empty_like(state_variables)
+
+        # long-range coupling
+        c_pop1 = coupling[0]
+        c_pop2 = coupling[1]
+        c_pop3 = coupling[2]
+
+        # short-range (local) coupling
+        Iext = self.Iext + local_coupling * y[0]
+        lc_1 = local_coupling * y[6]
+
+        # Epileptor's equations:
+        # population 1
+        if_ydot0 = - self.a * y[0] ** 2 + self.b * y[0]
+        else_ydot0 = self.slope - y[3] + 0.6 * (y[2] - 4.0) ** 2
+        ydot[0] = self.tt * (y[1] - y[2] + Iext + self.Kvf * c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0) * y[0])
+        ydot[1] = self.tt * (self.c - self.d * y[0] ** 2 - y[1])
+
+        # energy
+        if_ydot2 = - 0.1 * y[2] ** 7
+        else_ydot2 = 0
+        ydot[2] = self.tt * (
+                    self.r * (4 * (y[0] - self.x0) - y[2] + where(y[2] < 0., if_ydot2, else_ydot2) + self.Ks * c_pop1))
+
+        # population 2
+        ydot[3] = self.tt * (
+                    -y[4] + y[3] - y[3] ** 3 + self.Iext2 + self.bb * y[5] - 0.3 * (y[2] - 3.5) + self.Kf * c_pop2)
+        if_ydot4 = 0
+        else_ydot4 = self.aa * (y[3] + 0.25)
+        ydot[4] = self.tt * ((-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4)) / self.tau)
+
+        # filter
+        ydot[5] = self.tt * (-0.01 * (y[5] - 0.1 * y[0]))  # 0.01 = \gamma
+
+        # G2D's equations:
+        ydot[6] = self.d_rs * self.tau_rs * (self.alpha_rs * y[7] - self.f_rs * y[6] ** 3 + self.e_rs * y[
+            6] ** 2 + self.gamma_rs * self.I_rs + self.gamma_rs * self.K_rs * c_pop3 + lc_1)
+        ydot[7] = self.d_rs * (self.a_rs + self.b_rs * y[6] - self.beta_rs * y[7]) / self.tau_rs
+
+        # output: LFP
+        self.output = self.p * (- y[0] + y[3]) + (1 - self.p) * y[6]
+
+        return ydot
+
     def dfun(self, x, c, local_coupling=0.0):
         r"""
             Computes the derivatives of the state-variables of EpileptorRestingState
