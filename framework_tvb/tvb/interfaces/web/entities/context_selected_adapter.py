@@ -50,6 +50,19 @@ class SelectedAdapterContext(object):
     _KEY_SELECTED_DATA = 'defaultData'
     KEY_PORTLET_CONFIGURATION = 'portletConfig'
     KEY_TREE_DEFAULT = "defaultTree"
+    KEY_VIEW_MODEL = "viewModel"
+
+    def add_view_model_to_session(self, view_model):
+        """
+        Put in session information about the view_model
+        """
+        common.add2session(self.KEY_VIEW_MODEL, view_model)
+
+    def get_view_model_from_session(self):
+        """
+        Get view_model from session
+        """
+        return common.get_from_session(self.KEY_VIEW_MODEL)
 
     def add_adapter_to_session(self, algorithm, input_tree, default_data=None):
         """

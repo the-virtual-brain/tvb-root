@@ -299,6 +299,7 @@ class FlowController(BaseController):
                 try:
                     view_model = form.get_view_model()()
                     form.fill_trait(view_model)
+                    self.context.add_view_model_to_session(view_model)
                 except NotImplementedError:
                     self.logger.exception("Form and/or ViewModel not fully implemented for " + str(form))
                     raise InvalidFormValues("Invalid form inputs! Could not find a model for this form!",
@@ -365,6 +366,9 @@ class FlowController(BaseController):
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
             adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
+            vm = self.context.get_view_model_from_session()
+            if vm:
+                adapter_form.fill_from_trait(vm)
             template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form),
                                           title=title)
 
