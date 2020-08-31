@@ -110,7 +110,7 @@ class HPCOperationService(object):
                     HPCOperationService.LOGGER.info(
                         "Job for operation {} has status {}".format(operation.id, job_status))
                     if job_status == HPCJobStatus.SUCCESSFUL.value:
-                        simulator_gid = json.loads(operation.parameters)['gid']
+                        simulator_gid = operation.view_model_gid
                         HPCOperationService._operation_finished(operation, simulator_gid)
                     else:
                         HPCOperationService._operation_error(operation)

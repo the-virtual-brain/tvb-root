@@ -451,11 +451,7 @@ function closeAndRefreshNodeDetailsOverlay(returnCode, backPage) {
             document.getElementById('operationsForm').submit();
 
         } else if (backPage === 'data') {
-            if ($("#lastVisibleTab").val() === GRAPH_TAB) {
-                update_workflow_graph('workflowCanvasDiv', TREE_lastSelectedNode, TREE_lastSelectedNodeType);
-            } else {
-                updateTree('#treeStructure');
-            }
+            updateTree('#treeStructure');
 
         } else if (backPage === 'burst') {
             $("#tab-burst-tree")[0].onclick();

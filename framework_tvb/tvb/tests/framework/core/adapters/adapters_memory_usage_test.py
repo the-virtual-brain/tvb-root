@@ -79,8 +79,8 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         view_model.test = 5
 
         # Prepare operation for launch
-        operation = Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
-                              json.dumps({'gid': view_model.gid.hex}), status=STATUS_STARTED)
+        operation = Operation(view_model.gid.hex, self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
+                              status=STATUS_STARTED)
         operation = dao.store_entity(operation)
 
         # Store ViewModel in H5

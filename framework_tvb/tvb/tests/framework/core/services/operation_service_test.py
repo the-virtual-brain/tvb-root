@@ -226,8 +226,8 @@ class TestOperationService(BaseTestCase):
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         form = TestAdapterHDDRequiredForm()
         adapter.submit_form(form)
-        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id,
-                                                      adapter.stored_adapter.id, "",
+        started_operation = model_operation.Operation(None, self.test_user.id, self.test_project.id,
+                                                      adapter.stored_adapter.id,
                                                       status=model_operation.STATUS_STARTED,
                                                       estimated_disk_size=space_taken_by_started)
         view_model = adapter.get_view_model()()
@@ -263,8 +263,8 @@ class TestOperationService(BaseTestCase):
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         form = TestAdapterHDDRequiredForm()
         adapter.submit_form(form)
-        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id,
-                                                      adapter.stored_adapter.id, "",
+        started_operation = model_operation.Operation(None, self.test_user.id, self.test_project.id,
+                                                      adapter.stored_adapter.id,
                                                       status=model_operation.STATUS_STARTED,
                                                       estimated_disk_size=space_taken_by_started)
         view_model = adapter.get_view_model()()

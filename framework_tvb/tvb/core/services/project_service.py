@@ -35,11 +35,8 @@ Service Layer for the Project entity.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
-import json
 import formencode
 from tvb.basic.logger.builder import get_logger
-from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.load import load_entity_by_gid
@@ -237,7 +234,6 @@ class ProjectService:
                 result["additional"] = one_op[10]
                 result["visible"] = True if one_op[11] > 0 else False
                 result['operation_tag'] = one_op[12]
-                result['figures'] = None
                 if not result['group']:
                     datatype_results = dao.get_results_for_operation(result['id'])
                     result['results'] = []
@@ -248,16 +244,6 @@ class ProjectService:
                         else:
                             self.logger.warning("Could not retrieve datatype %s" % str(dt))
 
-                    operation_figures = dao.get_figures_for_operation(result['id'])
-
-                    # Compute the full path to the figure / image on disk
-                    for figure in operation_figures:
-                        figures_folder = self.structure_helper.get_images_folder(figure.project.name)
-                        figure_full_path = os.path.join(figures_folder, figure.file_path)
-                        # Compute the path available from browser
-                        figure.figure_path = utils.path2url_part(figure_full_path)
-
-                    result['figures'] = operation_figures
                 else:
                     result['results'] = None
                 operations.append(result)
@@ -548,6 +534,9 @@ class ProjectService:
             project = self.find_project(project_id)
             datatype = dao.get_datatype_by_gid(gid)
             links = dao.get_links_for_datatype(datatype.id)
+
+            op = dao.get_operation_by_id(datatype.fk_from_operation)
+            adapter = ABCAdapter.build_adapter(op.algorithm)
             if links:
                 was_link = False
                 for link in links:
@@ -557,10 +546,12 @@ class ProjectService:
                         was_link = True
                 if not was_link:
                     # Create a clone of the operation
-                    new_op = Operation(dao.get_system_user().id,
+                    # There is no view_model so the view_model_gid is None
+
+                    new_op = Operation(op.view_model_gid,
+                                       dao.get_system_user().id,
                                        links[0].fk_to_project,
                                        datatype.parent_operation.fk_from_algo,
-                                       datatype.parent_operation.parameters,
                                        datatype.parent_operation.status,
                                        datatype.parent_operation.start_date,
                                        datatype.parent_operation.completion_date,
@@ -570,8 +561,15 @@ class ProjectService:
                                        datatype.parent_operation.range_values)
                     new_op = dao.store_entity(new_op)
                     to_project = self.find_project(links[0].fk_to_project).name
+
                     full_path = h5.path_for_stored_index(datatype)
                     self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
+                    # Move also the ViewModel H5
+                    old_folder = self.structure_helper.get_project_folder(project, str(op.id))
+                    view_model = adapter.load_view_model(op)
+                    vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
+                    self.structure_helper.move_datatype(view_model, to_project, str(new_op.id), vm_full_path)
+
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
                     dao.store_entity(datatype)
@@ -721,7 +719,7 @@ class ProjectService:
             operation.user_group = new_group_name
             dao.store_entity(operation)
             op_folder = self.structure_helper.get_project_folder(operation.project, str(operation.id))
-            vm_gid = json.loads(operation.parameters)['gid']
+            vm_gid = operation.view_model_gid
             view_model_file = h5.determine_filepath(vm_gid, op_folder)
             if view_model_file:
                 view_model_class = H5File.determine_type(view_model_file)
@@ -798,26 +796,11 @@ class ProjectService:
 
         except Exception:
             self.logger.exception("Could not load details for operation %s" % operation_gid)
-            parameters = json.loads(operation.parameters)
-            if 'gid' in parameters.keys():
+            if operation.view_model_gid:
                 changed_parameters = dict(Warning="Algorithm changed dramatically. We can not offer more details")
             else:
                 changed_parameters = dict(Warning="GID parameter is missing. Old implementation of the operation.")
             return [], changed_parameters
-
-    def get_datatypes_inputs_for_operation_group(self, group_id, selected_filter):
-        """
-        Returns the dataType inputs for an operation group. If more dataTypes
-        are part of the same dataType group then only the dataType group will
-        be returned instead of them.
-        """
-        operations_gids = dao.get_operations_in_group(group_id, only_gids=True)
-        op_group_inputs = dict()
-        for gid in operations_gids:
-            op_inputs = self.get_datatype_and_datatypegroup_inputs_for_operation(gid[0], selected_filter)
-            for datatype in op_inputs:
-                op_group_inputs[datatype.id] = datatype
-        return list(op_group_inputs.values())
 
     @staticmethod
     def get_results_for_operation(operation_id, selected_filter=None):
@@ -825,33 +808,6 @@ class ProjectService:
         Retrieve the DataTypes entities resulted after the execution of the given operation.
         """
         return dao.get_results_for_operation(operation_id, selected_filter)
-
-    @staticmethod
-    def get_operations_for_datatype_group(datatype_group_id, visibility_filter, only_in_groups=False):
-        """
-        Returns all the operations which uses as an input parameter a dataType from the given DataTypeGroup.
-        visibility_filter - is a filter used for retrieving all the operations or only the relevant ones.
-
-        If only_in_groups is True than this method will return only the operations that are
-        part from an operation group, otherwise it will return only the operations that
-        are NOT part of an operation group.
-        """
-        if visibility_filter.display_name != StaticFiltersFactory.RELEVANT_VIEW:
-            return dao.get_operations_for_datatype_group(datatype_group_id, only_relevant=False,
-                                                         only_in_groups=only_in_groups)
-        return dao.get_operations_for_datatype_group(datatype_group_id, only_in_groups=only_in_groups)
-
-    @staticmethod
-    def get_operations_for_datatype(datatype_gid, visibility_filter, only_in_groups=False):
-        """
-        Returns all the operations which uses as an input parameter the dataType with the specified GID.
-
-        If only_in_groups is True than this method will return only the operations that are part
-        from an operation group, otherwise it will return only the operations that are NOT part of an operation group.
-        """
-        if visibility_filter.display_name != StaticFiltersFactory.RELEVANT_VIEW:
-            return dao.get_operations_for_datatype(datatype_gid, only_relevant=False, only_in_groups=only_in_groups)
-        return dao.get_operations_for_datatype(datatype_gid, only_in_groups=only_in_groups)
 
     @staticmethod
     def get_datatype_by_id(datatype_id):
@@ -862,14 +818,6 @@ class ProjectService:
     def get_datatypegroup_by_gid(datatypegroup_gid):
         """ Returns the DataTypeGroup with the specified gid. """
         return dao.get_datatype_group_by_gid(datatypegroup_gid)
-
-    @staticmethod
-    def count_datatypes_generated_from(datatype_gid):
-        """
-        A list with all the datatypes resulted from operations that had as
-        input the datatype given by 'datatype_gid'.
-        """
-        return dao.count_datatypes_generated_from(datatype_gid)
 
     @staticmethod
     def get_datatypegroup_by_op_group_id(operation_group_id):

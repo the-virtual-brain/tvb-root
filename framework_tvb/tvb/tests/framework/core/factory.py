@@ -133,13 +133,11 @@ class TestFactory(object):
         return ProjectService().store_project(admin, True, None, **data)
 
     @staticmethod
-    def create_figure(operation_id, user_id, project_id, session_name=None,
-                      name=None, path=None, file_format='PNG'):
+    def create_figure(user_id, project_id, session_name=None, name=None, path=None, file_format='PNG'):
         """
         :returns: the `ResultFigure` for a result with the given specifications
         """
-        figure = ResultFigure(operation_id, user_id, project_id,
-                              session_name, name, path, file_format)
+        figure = ResultFigure(user_id, project_id, session_name, name, path, file_format)
         return dao.store_entity(figure)
 
     @staticmethod
@@ -157,8 +155,8 @@ class TestFactory(object):
         adapter = ABCAdapter.build_adapter(algorithm)
         view_model = adapter.get_view_model_class()()
         view_model.data_file = "."
-        operation = Operation(test_user.id, test_project.id, algorithm.id,
-                              '{"gid": "' + view_model.gid.hex + '"}', status=operation_status)
+        operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
+                              status=operation_status)
         dao.store_entity(operation)
         op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
         h5.store_view_model(view_model, op_dir)

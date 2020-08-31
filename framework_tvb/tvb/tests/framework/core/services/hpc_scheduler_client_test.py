@@ -33,6 +33,7 @@
 """
 import os
 import shutil
+
 import numpy
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -130,7 +131,10 @@ class TestHPCSchedulerClient(BaseTestCase):
         assert len(os.listdir(encrypted_dir)) == 7
         output_path = os.path.join(encrypted_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
         assert os.path.exists(output_path)
-        assert len(os.listdir(output_path)) == 2
+        expected_files = 2
+        if is_pse:
+            expected_files = 3
+        assert len(os.listdir(output_path)) == expected_files
         return output_path
 
     def test_do_operation_launch_pse(self, simulator_factory, operation_factory, mocker):
