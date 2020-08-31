@@ -49,6 +49,7 @@ from tvb.core.entities.model.model_operation import has_finished
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
+from tvb.core.data_encryption_handler import FoldersQueueConsumer
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.burst_service import BurstService
 
@@ -107,4 +108,8 @@ def do_operation_launch(operation_id):
 
 if __name__ == '__main__':
     OPERATION_ID = sys.argv[1]
+    queue_consumer = FoldersQueueConsumer()
+    queue_consumer.start()
     do_operation_launch(OPERATION_ID)
+    queue_consumer.mark_stop()
+    queue_consumer.join()

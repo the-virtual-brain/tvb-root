@@ -24,3 +24,4 @@ RUN_ON_HPC=False
 HPC_COMPUTE_SITE=DAINT-CSCS
 CRYPT_DATADIR=/home/tvb_user/.data
 CRYPT_PASSDIR=/home/tvb_user/.pass
+ENCRYPT_STORAGE=False

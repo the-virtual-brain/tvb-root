@@ -33,8 +33,8 @@ Launches the web server and configure the controllers for UI.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
 import time
+
 
 STARTUP_TIC = time.time()
 
@@ -182,6 +182,9 @@ def start_tvb(arguments, browser=True):
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
+    if TvbProfile.current.web.ENCRYPT_STORAGE:
+        queue_consumer = FoldersQueueConsumer()
+        queue_consumer.start()
 
     #### Fire a browser page at the end.
     if browser:

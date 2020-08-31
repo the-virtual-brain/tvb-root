@@ -101,6 +101,11 @@ class FilesHelper(object):
             self.check_created(complete_path)
         return complete_path
 
+    @staticmethod
+    def get_project_folder_from_h5(h5_file):
+        op_folder = os.path.dirname(h5_file)
+        return os.path.dirname(op_folder)
+
     def rename_project_structure(self, project_name, new_name):
         """ Rename Project folder or THROW FileStructureException. """
         try:

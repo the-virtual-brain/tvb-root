@@ -35,31 +35,34 @@ This represents the Controller part (from MVC).
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+import shutil
 
 import cherrypy
 import formencode
+import tvb.core.entities.model.model_operation as model
+from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
-from cherrypy.lib.static import serve_file
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-import tvb.core.entities.model.model_operation as model
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.filters.factory import StaticFiltersFactory
+from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.data_encryption_handler import DataEncryptionHandler
+from tvb.core.services.exceptions import RemoveDataTypeException
+from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
+from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.import_service import ImportService
-from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
-from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.utils import string2bool
-from tvb.interfaces.web.controllers.autologging import traced
-from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
 from tvb.interfaces.web.controllers import common
-from tvb.interfaces.web.controllers.decorators import settings, check_user, handle_error
-from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment
+from tvb.interfaces.web.controllers.decorators import settings, check_user, handle_error
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
+from tvb.interfaces.web.entities.context_overlay import OverlayTabDefinition
 
 
 @traced('generate_call_out_control', exclude=True)
@@ -91,7 +94,6 @@ class ProjectController(BaseController):
         template_specification = dict(mainContent="project/project_submenu", title="TVB Project Menu")
         return self.fill_default_attributes(template_specification)
 
-
     @expose_page
     @settings
     def viewall(self, create=False, page=1, selected_project_id=None, **_):
@@ -113,12 +115,11 @@ class ProjectController(BaseController):
                 self.logger.warning("Could not select project: " + str(selected_project_id))
                 common.set_error_message("Could not select project: " + str(selected_project_id))
 
-        #Prepare template response
+        # Prepare template response
         prjs, pages_no = self.project_service.retrieve_projects_for_user(current_user_id, page)
         template_specification = dict(mainContent="project/viewall", title="Available TVB Projects",
                                       projectsList=prjs, page_number=page, total_pages=pages_no)
         return self.fill_default_attributes(template_specification, 'list')
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -136,7 +137,6 @@ class ProjectController(BaseController):
             self.logger.warning(excep.message)
             common.set_error_message(excep.message)
         raise cherrypy.HTTPRedirect('/project/viewall')
-
 
     def _remove_project(self, project_id):
         """Private method for removing project."""
@@ -187,6 +187,10 @@ class ProjectController(BaseController):
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
                 saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
+                if TvbProfile.current.web.ENCRYPT_STORAGE:
+                    project_folder = self.file_helper.get_project_folder(saved_project)
+                    DataEncryptionHandler.sync_folders(project_folder)
+                    shutil.rmtree(project_folder)
                 self._mark_selected(saved_project)
                 raise cherrypy.HTTPRedirect('/project/viewall')
         except formencode.Invalid as excep:
@@ -204,7 +208,6 @@ class ProjectController(BaseController):
         template_specification['usersCurrentPage'] = 1
         return self.fill_default_attributes(template_specification, 'properties')
 
-
     @expose_fragment('project/project_members')
     def getmemberspage(self, page, project_id=None):
         """Retrieve a new page of Project members."""
@@ -216,7 +219,6 @@ class ProjectController(BaseController):
             edit_enabled = (current_name == current_project.administrator.username)
         return dict(usersList=all_users, usersMembers=[m.id for m in members],
                     usersCurrentPage=page, editUsersEnabled=edit_enabled)
-
 
     @expose_json
     def set_visibility(self, entity_type, entity_gid, to_de_relevant):
@@ -236,7 +238,6 @@ class ProjectController(BaseController):
             self.project_service.set_operation_and_group_visibility(entity_gid, to_de_relevant, is_group)
         else:
             self.project_service.set_datatype_visibility(entity_gid, to_de_relevant)
-
 
     @expose_page
     @settings
@@ -278,7 +279,6 @@ class ProjectController(BaseController):
                                       filters=filters, no_filter_selected=(selected_filters is None), model=model)
         return self.fill_default_attributes(template_specification, 'operations')
 
-
     @expose_fragment("call_out_project")
     def generate_call_out_control(self):
         """
@@ -286,7 +286,6 @@ class ProjectController(BaseController):
         """
         self.update_operations_count()
         return {'selectedProject': common.get_current_project()}
-
 
     def __get_operations_filters(self):
         """
@@ -303,7 +302,6 @@ class ProjectController(BaseController):
             new_filters = StaticFiltersFactory.build_operations_filters(sim_group, common.get_logged_user().id)
             common.add2session(self.KEY_OPERATION_FILTERS, new_filters)
             return new_filters
-
 
     @expose_fragment("overlay_confirmation")
     def show_confirmation_overlay(self, **data):
@@ -404,7 +402,6 @@ class ProjectController(BaseController):
             template_specification[common.KEY_MESSAGE_TYPE] = "warningMessage"
         return template_specification
 
-
     @expose_fragment('project/linkable_projects')
     def get_linkable_projects(self, datatype_id, is_group, entity_gid):
         """
@@ -414,7 +411,6 @@ class ProjectController(BaseController):
         template_specification["entity_gid"] = entity_gid
         template_specification["isGroup"] = is_group
         return template_specification
-
 
     def _get_linkable_projects_dict(self, datatype_id):
         """" UI ready dictionary with projects in which current DataType can be linked."""
@@ -465,7 +461,6 @@ class ProjectController(BaseController):
                                                               "project/details_operation_overlay", overlay_class)
         return self.flow_controller.fill_default_attributes(template_specification)
 
-
     def _compute_operation_details(self, entity_gid, is_group=False):
         """
         Returns a dictionary which contains the details for the given operation.
@@ -495,11 +490,9 @@ class ProjectController(BaseController):
                                   "isRelevant": operation.visible}
         return template_specification
 
-
     def get_project_structure_grouping(self):
         user = common.get_logged_user()
         return user.get_project_structure_grouping()
-
 
     def set_project_structure_grouping(self, first, second):
         user = common.get_logged_user()
@@ -532,7 +525,6 @@ class ProjectController(BaseController):
                                       filterInputValue=filter_input, filters=filters)
         return self.fill_default_attributes(template_specification, 'data')
 
-
     @expose_fragment("overlay")
     def get_data_uploader_overlay(self, project_id):
         """
@@ -558,7 +550,6 @@ class ProjectController(BaseController):
 
         return self.flow_controller.fill_default_attributes(template_specification)
 
-
     @expose_fragment("overlay")
     def get_project_uploader_overlay(self):
         """
@@ -569,7 +560,6 @@ class ProjectController(BaseController):
                                                               "project/upload_project_overlay", "dialog-upload")
 
         return self.flow_controller.fill_default_attributes(template_specification)
-
 
     @expose_page
     def launchloader(self, project_id, algorithm_id, cancel=False, **data):
@@ -619,7 +609,6 @@ class ProjectController(BaseController):
         encoder = JSONEncoder()
         return encoder.iterencode(json_structure)
 
-
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
@@ -636,7 +625,6 @@ class ProjectController(BaseController):
             data_ids.append(int(link_data))
             self.algorithm_service.create_link(data_ids, project_id)
 
-
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
@@ -651,7 +639,6 @@ class ProjectController(BaseController):
             for data in all_data:
                 self.algorithm_service.remove_link(data.id, project_id)
             self.algorithm_service.remove_link(int(link_data), project_id)
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -673,7 +660,6 @@ class ProjectController(BaseController):
             return excep.message
         return None
 
-
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
@@ -688,7 +674,6 @@ class ProjectController(BaseController):
             self.logger.exception(excep)
             common.set_error_message(excep.message)
             return excep.message
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -707,7 +692,6 @@ class ProjectController(BaseController):
 
         self.logger.debug("Data exported in file: " + str(file_path))
         return serve_file(file_path, "application/x-download", "attachment", file_name)
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -749,6 +733,3 @@ class EditForm(formencode.Schema):
     administrator = validators.UnicodeString(not_empty=False)
     project_id = validators.UnicodeString(not_empty=False)
     visited_pages = validators.UnicodeString(not_empty=False)
-
-
-

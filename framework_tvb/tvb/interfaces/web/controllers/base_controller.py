@@ -42,7 +42,9 @@ import cherrypy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import using_template
@@ -63,7 +65,7 @@ class BaseController(object):
 
         self.user_service = UserService()
         self.algorithm_service = AlgorithmService()
-
+        self.file_helper = FilesHelper()
         self.analyze_category_link = '/flow/step_analyzers'
         self.analyze_adapters = None
 
@@ -140,6 +142,9 @@ class BaseController(object):
             # Display info message about project change
             self.logger.debug("Selected project is now " + project.name)
             common.set_info_message("Your current working project is: " + str(project.name))
+            DataEncryptionHandler.set_project_active(self.file_helper.get_project_folder(project))
+            if previous_project is not None:
+                DataEncryptionHandler.set_project_inactive(self.file_helper.get_project_folder(previous_project))
 
         # Add the project entity to session every time, as it might be changed (e.g. after edit)
         common.add2session(common.KEY_PROJECT, project)
