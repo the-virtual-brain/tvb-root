@@ -17,7 +17,7 @@
                         '{{ "" if ("back_page=" not in submitLink) else submitLink.split("back_page=")[-1] }}');
                     var saveFigureBtn = document.getElementById("ctrl-action-export");
                     saveFigureBtn.onclick = function () {
-                        C2I_exportFigures({operationId: '{{ currentOperationId }}'});
+                        C2I_exportFigures({});
                         return false;
                     };
                 });

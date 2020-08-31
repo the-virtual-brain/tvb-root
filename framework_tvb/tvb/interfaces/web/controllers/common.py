@@ -66,7 +66,6 @@ KEY_LINK_ANALYZE = "analyzeCategoryLink"
 KEY_LINK_CONNECTIVITY_TAB = "connectivityTabLink"
 KEY_TITLE = "title"
 KEY_ADAPTER = "currentAlgoId"
-KEY_OPERATION_ID = "currentOperationId"
 KEY_SECTION = "section_name"
 KEY_SUB_SECTION = 'subsection_name'
 KEY_INCLUDE_RESOURCES = 'includedResources'

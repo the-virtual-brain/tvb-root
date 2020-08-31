@@ -432,18 +432,15 @@ class ResultFigure(Base, Exportable):
     __tablename__ = 'RESULT_FIGURES'
 
     id = Column(Integer, primary_key=True)
-    fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     fk_for_user = Column(Integer, ForeignKey('USERS.id', ondelete="CASCADE"))
     fk_in_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
     project = relationship(Project, backref=backref('RESULT_FIGURES', order_by=id, cascade="delete"))
-    operation = relationship(Operation, backref=backref('RESULT_FIGURES', order_by=id, cascade="delete"))
     session_name = Column(String)
     name = Column(String)
     file_path = Column(String)
     file_format = Column(String)
 
-    def __init__(self, operation_id, user_id, project_id, session_name, name, path, file_format="PNG"):
-        self.fk_from_operation = operation_id
+    def __init__(self, user_id, project_id, session_name, name, path, file_format="PNG"):
         self.fk_for_user = user_id
         self.fk_in_project = project_id
         self.session_name = session_name
@@ -452,17 +449,14 @@ class ResultFigure(Base, Exportable):
         self.file_format = file_format.lower()  # some platforms have difficulties if it's not lower case
 
     def __repr__(self):
-        return "<ResultFigure(%s, %s, %s, %s, %s, %s, %s)>" % (self.fk_from_operation, self.fk_for_user,
-                                                               self.fk_in_project, self.session_name, self.name,
-                                                               self.file_path, self.file_format)
+        return "<ResultFigure(%s, %s, %s, %s, %s, %s)>" % (self.fk_for_user, self.fk_in_project, self.session_name,
+                                                           self.name, self.file_path, self.file_format)
 
     def to_dict(self):
         """
         Overwrite superclass method with required additional data.
         """
-        _, base_dict = super(ResultFigure, self).to_dict(excludes=['id', 'fk_from_operation', 'fk_for_user',
-                                                                   'fk_in_project', 'operation', 'project'])
-        base_dict['fk_from_operation'] = self.operation.gid if self.operation is not None else None
+        _, base_dict = super(ResultFigure, self).to_dict(excludes=['id', 'fk_for_user', 'fk_in_project', 'project'])
         base_dict['fk_in_project'] = self.project.gid
         return self.__class__.__name__, base_dict
 
@@ -470,7 +464,6 @@ class ResultFigure(Base, Exportable):
         """
         Add specific attributes from a input dictionary.
         """
-        self.fk_from_operation = dictionary['fk_op_id']
         self.fk_for_user = dictionary['fk_user_id']
         self.fk_in_project = dictionary['fk_project_id']
         self.session_name = dictionary['session_name']

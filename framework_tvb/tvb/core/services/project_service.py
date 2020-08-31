@@ -35,10 +35,8 @@ Service Layer for the Project entity.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
 import formencode
 from tvb.basic.logger.builder import get_logger
-from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.load import load_entity_by_gid
@@ -236,7 +234,6 @@ class ProjectService:
                 result["additional"] = one_op[10]
                 result["visible"] = True if one_op[11] > 0 else False
                 result['operation_tag'] = one_op[12]
-                result['figures'] = None
                 if not result['group']:
                     datatype_results = dao.get_results_for_operation(result['id'])
                     result['results'] = []
@@ -247,16 +244,6 @@ class ProjectService:
                         else:
                             self.logger.warning("Could not retrieve datatype %s" % str(dt))
 
-                    operation_figures = dao.get_figures_for_operation(result['id'])
-
-                    # Compute the full path to the figure / image on disk
-                    for figure in operation_figures:
-                        figures_folder = self.structure_helper.get_images_folder(figure.project.name)
-                        figure_full_path = os.path.join(figures_folder, figure.file_path)
-                        # Compute the path available from browser
-                        figure.figure_path = utils.path2url_part(figure_full_path)
-
-                    result['figures'] = operation_figures
                 else:
                     result['results'] = None
                 operations.append(result)

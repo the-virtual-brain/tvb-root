@@ -347,7 +347,6 @@ class FlowController(BaseController):
                                                                submit_url, should_reset)
         if (errors is not None) and (template_specification is not None):
             template_specification[common.KEY_ERRORS] = errors
-        template_specification[common.KEY_OPERATION_ID] = adapter_instance.operation_id
         return template_specification
 
     def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, session_reset=True,

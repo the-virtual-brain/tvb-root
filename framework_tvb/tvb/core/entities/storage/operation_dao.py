@@ -469,12 +469,10 @@ class OperationDAO(RootDAO):
         try:
             figure = self.session.query(ResultFigure).filter_by(id=figure_id).one()
             figure.project
-            figure.operation
             return figure
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return None
-
 
     def get_previews(self, project_id, user_id=None, selected_session_name='all_sessions'):
         """
@@ -509,13 +507,11 @@ class OperationDAO(RootDAO):
                 # Force loading of project and operation - needed to compute image path
                 for figure in figures_list:
                     figure.project
-                    figure.operation
                 result[session_name] = figures_list
             return result, previews_info
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return {}, {}
-
 
     def _get_previews_info(self, project_id, user_id):
         """
@@ -540,7 +536,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return {}
 
-
     def get_figure_count(self, project_id, user_id):
         """
         Used to generate sequential image names.
@@ -554,16 +549,3 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return {}
-
-
-    def get_figures_for_operation(self, operation_id):
-        """Retrieve Figure entities, resulted after executing an operation."""
-        try:
-            result = self.session.query(ResultFigure).filter_by(fk_from_operation=operation_id).all()
-            for figure in result:
-                figure.project
-                figure.operation
-            return result
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-            return None
