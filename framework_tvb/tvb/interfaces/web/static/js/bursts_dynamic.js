@@ -489,17 +489,11 @@ function onLeftInputTreeChange(){
     onModelChanged(state.model);
 }
 
-function onIntegratorInputTreeChange(){
-    var state = getSubmitableData('integrator_input_tree');
-    debouncedOnIntegratorChanged(state);
-}
-
 function main(dynamic_gid){
     dynamicPage.dynamic_gid = dynamic_gid;
     $('.field-adapters').hide(); // hide expand range buttons. Careful as this class is used for other things as well
     // listen for changes of the input trees
     $('#left_input_tree').find('select').change(onLeftInputTreeChange); // intentionally omit <input>. We only need to listen for model type changes
-    // $('#integrator_input_tree').find('input, select').change(onIntegratorInputTreeChange);
     $('#base_spatio_temporal_form').submit(onSubmit);
     onLeftInputTreeChange();
     dynamicPage.phasePlane = new TVBUI.PhasePlane('#phasePlane');

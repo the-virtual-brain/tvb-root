@@ -325,7 +325,7 @@ class FlowController(BaseController):
             # Store input data in session, for informing user of it.
             step = self.algorithm_service.get_category_by_id(step_key)
             if not step.rawinput:
-                self.context.add_adapter_to_session(None, None, copy.deepcopy(data))
+                self.context.add_adapter_to_session(None, copy.deepcopy(data))
             if isinstance(result, list):
                 result = "Launched %s operations." % len(result)
             common.set_important_message(str(result))
@@ -529,7 +529,7 @@ class FlowController(BaseController):
         """Redirect to Operation Input selection page,
         with input data already selected."""
         operation = OperationService.load_operation(operation_id)
-        self.context.add_adapter_to_session(operation.algorithm, None, None)
+        self.context.add_adapter_to_session(operation.algorithm, None)
         category_id = operation.algorithm.fk_category
         algo_id = operation.fk_from_algo
         raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id) + "?not_reset=True")

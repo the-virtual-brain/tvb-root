@@ -44,12 +44,8 @@ class SelectedAdapterContext(object):
     """
     
     KEY_CURRENT_ADAPTER_INFO = "currentAdapterInfo"
-    _KEY_INPUT_TREE = "inputList"
-    _KEY_CURRENT_STEP = "currentStepCategoryId"
     _KEY_CURRENT_SUBSTEP = "currentAlgoGroupId"
     _KEY_SELECTED_DATA = 'defaultData'
-    KEY_PORTLET_CONFIGURATION = 'portletConfig'
-    KEY_TREE_DEFAULT = "defaultTree"
     KEY_VIEW_MODEL = "viewModel"
 
     def add_view_model_to_session(self, view_model):
@@ -64,7 +60,7 @@ class SelectedAdapterContext(object):
         """
         return common.get_from_session(self.KEY_VIEW_MODEL)
 
-    def add_adapter_to_session(self, algorithm, input_tree, default_data=None):
+    def add_adapter_to_session(self, algorithm, default_data=None):
         """
         Put in session information about currently selected adapter.
         Will be used by filters and efficiency load.
@@ -80,55 +76,10 @@ class SelectedAdapterContext(object):
             
         if default_data is not None: 
             adapter_info[self._KEY_SELECTED_DATA] = default_data
-        if input_tree is not None:
-            adapter_info[self._KEY_INPUT_TREE] = input_tree
         if algorithm is not None:
-            adapter_info[self._KEY_CURRENT_STEP] = algorithm.fk_category
             adapter_info[self._KEY_CURRENT_SUBSTEP] = algorithm.id
                 
         common.add2session(self.KEY_CURRENT_ADAPTER_INFO, adapter_info)
-     
-     
-    def add_portlet_to_session(self, portlet_interface):
-        """
-        Add a portlet configuration to the session. Used for applying filters on
-        portlet configurations.
-        """
-        full_description = common.get_from_session(self.KEY_CURRENT_ADAPTER_INFO)
-        if full_description is None or full_description is {}:
-            raise Exception("Should not add portlet interface to session")
-        full_description[self.KEY_PORTLET_CONFIGURATION] = portlet_interface
-    
-    
-    def get_current_input_tree(self):
-        """
-        Get from session previously selected InputTree.
-        """
-        full_description = common.get_from_session(self.KEY_CURRENT_ADAPTER_INFO)
-        if full_description is not None and self._KEY_INPUT_TREE in full_description:
-            return full_description[self._KEY_INPUT_TREE]
-        return None
-    
-    def get_session_tree_for_key(self, tree_session_key):
-        """
-        Get from session previously selected InputTree stored under the :param tree_session_key.
-        """
-        if tree_session_key == self.KEY_TREE_DEFAULT:
-            return self.get_current_input_tree()
-        full_description = common.get_from_session(self.KEY_CURRENT_ADAPTER_INFO)
-        if full_description is not None and tree_session_key in full_description:
-            return full_description[tree_session_key]
-        return None
-    
-    
-    def get_current_step(self):
-        """
-        Get from session previously selected step (category ID).
-        """
-        full_description = common.get_from_session(self.KEY_CURRENT_ADAPTER_INFO)
-        if full_description is not None and self._KEY_CURRENT_STEP in full_description:
-            return full_description[self._KEY_CURRENT_STEP]
-        return None
     
     def get_current_substep(self):
         """
