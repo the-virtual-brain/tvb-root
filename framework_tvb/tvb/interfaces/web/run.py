@@ -35,6 +35,7 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
+from tvb.core.data_encryption_handler import FoldersQueueConsumer, DataEncryptionHandler
 
 STARTUP_TIC = time.time()
 
@@ -75,6 +76,9 @@ from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.controllers.hpc_controller import HPCController
+from cherrypy.lib.sessions import RamSession
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.interfaces.web.controllers.common import KEY_PROJECT
 
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[1])
@@ -85,10 +89,48 @@ PARAM_RESET_DB = "reset"
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
 
+class CleanupSessionHandler(RamSession):
+    def __init__(self, id=None, **kwargs):
+        super(CleanupSessionHandler, self).__init__(id, **kwargs)
+        self.file_helper = FilesHelper()
+
+    def clean_up(self):
+        """Clean up expired sessions."""
+
+        now = self.now()
+        for _id, (data, expiration_time) in self.cache.copy().items():
+            if expiration_time <= now:
+                if KEY_PROJECT in data:
+                    selectedProject = data[KEY_PROJECT]
+                    project_folder = self.file_helper.get_project_folder(selectedProject)
+                    DataEncryptionHandler.set_project_inactive(project_folder)
+                try:
+                    del self.cache[_id]
+                except KeyError:
+                    pass
+                try:
+                    if self.locks[_id].acquire(blocking=False):
+                        lock = self.locks.pop(_id)
+                        lock.release()
+                except KeyError:
+                    pass
+
+        # added to remove obsolete lock objects
+        for _id in list(self.locks):
+            locked = (
+                    _id not in self.cache
+                    and self.locks[_id].acquire(blocking=False)
+            )
+            if locked:
+                lock = self.locks.pop(_id)
+                lock.release()
+
+
 def init_cherrypy(arguments=None):
     #### Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
+    CONFIGUER["/"]["tools.sessions.storage_class"] = CleanupSessionHandler
     for module in arguments:
         module_inst = importlib.import_module(str(module))
         module_path = os.path.dirname(os.path.abspath(module_inst.__file__))
