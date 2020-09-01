@@ -203,7 +203,7 @@ class FlowController(BaseController):
     @expose_page
     @settings
     @context_selected
-    def default(self, step_key, adapter_key, cancel=False, back_page=None, not_reset=False, **data):
+    def default(self, step_key, adapter_key, cancel=False, back_page=None, **data):
         """
         Render a specific adapter.
         'data' are arguments for POST
@@ -225,13 +225,8 @@ class FlowController(BaseController):
             template_specification = self.execute_post(project.id, submit_link, step_key, algorithm, **data)
             self._populate_section(algorithm, template_specification, is_burst)
         else:
-            if (('Referer' not in cherrypy.request.headers or
-                 ('Referer' in cherrypy.request.headers and 'step' not in cherrypy.request.headers['Referer']))
-                    and 'View' in algorithm.algorithm_category.displayname):
-                # Avoid reset in case of Visualizers, as a supplementary GET
-                not_reset = True
             template_specification = self.get_template_for_adapter(project.id, step_key, algorithm,
-                                                                   submit_link, not not_reset, is_burst=is_burst)
+                                                                   submit_link, is_burst=is_burst)
         if template_specification is None:
             raise cherrypy.HTTPRedirect('/tvb')
 
@@ -322,10 +317,6 @@ class FlowController(BaseController):
 
             result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
                                                             project_id, view_model=view_model)
-            # Store input data in session, for informing user of it.
-            step = self.algorithm_service.get_category_by_id(step_key)
-            if not step.rawinput:
-                self.context.add_adapter_to_session(None, copy.deepcopy(data))
             if isinstance(result, list):
                 result = "Launched %s operations." % len(result)
             common.set_important_message(str(result))
@@ -342,21 +333,14 @@ class FlowController(BaseController):
             common.set_error_message(message)
             self.logger.warning("%s \n %s" % (message, errors))
 
-        previous_step = self.context.get_current_substep()
-        should_reset = previous_step is None or data.get(common.KEY_ADAPTER) != previous_step
-        template_specification = self.get_template_for_adapter(project_id, step_key, algorithm,
-                                                               submit_url, should_reset)
+        template_specification = self.get_template_for_adapter(project_id, step_key, algorithm, submit_url)
         if (errors is not None) and (template_specification is not None):
             template_specification[common.KEY_ERRORS] = errors
         return template_specification
 
-    def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, session_reset=True,
-                                 is_burst=True):
+    def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, is_burst=True):
         """ Get Input HTML Interface template or a given adapter """
         try:
-            if session_reset:
-                self.context.clean_from_session()
-
             group = None
             category = self.algorithm_service.get_category_by_id(step_key)
             title = "Fill parameters for step " + category.displayname.lower()
@@ -367,8 +351,10 @@ class FlowController(BaseController):
 
             adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
             vm = self.context.get_view_model_from_session()
-            if vm:
+            if vm and type(vm) == adapter_form.get_view_model():
                 adapter_form.fill_from_trait(vm)
+            else:
+                self.context.clean_from_session()
             template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form),
                                           title=title)
 
@@ -512,11 +498,8 @@ class FlowController(BaseController):
         else:
             submit_link = self.get_url_adapter(algorithm.fk_category, algorithm.id, back_page)
 
-        current_step = self.context.get_current_substep()
-        if current_step is None or str(current_step) != str(algorithm_id):
-            self.context.clean_from_session()
         template_specification = self.get_template_for_adapter(project_id, algorithm.fk_category, algorithm,
-                                                               submit_link, is_upload)
+                                                               submit_link)
         if template_specification is None:
             return ""
         template_specification[common.KEY_DISPLAY_MENU] = not is_upload
@@ -526,13 +509,11 @@ class FlowController(BaseController):
     @handle_error(redirect=True)
     @context_selected
     def reloadoperation(self, operation_id, **_):
-        """Redirect to Operation Input selection page,
-        with input data already selected."""
+        """Redirect to Operation Input selection page, with input data already selected."""
         operation = OperationService.load_operation(operation_id)
-        self.context.add_adapter_to_session(operation.algorithm, None)
         category_id = operation.algorithm.fk_category
         algo_id = operation.fk_from_algo
-        raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id) + "?not_reset=True")
+        raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id))
 
     @cherrypy.expose
     @handle_error(redirect=True)

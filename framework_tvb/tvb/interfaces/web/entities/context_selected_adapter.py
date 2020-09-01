@@ -32,6 +32,7 @@
 Used by FlowController.
 It will store in current user's session information about 
 
+.. moduleauthor:: Adrian Dordea <adrian.dordea@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
@@ -42,10 +43,7 @@ class SelectedAdapterContext(object):
     """
     Responsible for storing/retrieving/removing from session info about currently selected algorithm.
     """
-    
-    KEY_CURRENT_ADAPTER_INFO = "currentAdapterInfo"
-    _KEY_CURRENT_SUBSTEP = "currentAlgoGroupId"
-    _KEY_SELECTED_DATA = 'defaultData'
+
     KEY_VIEW_MODEL = "viewModel"
 
     def add_view_model_to_session(self, view_model):
@@ -60,59 +58,8 @@ class SelectedAdapterContext(object):
         """
         return common.get_from_session(self.KEY_VIEW_MODEL)
 
-    def add_adapter_to_session(self, algorithm, default_data=None):
-        """
-        Put in session information about currently selected adapter.
-        Will be used by filters and efficiency load.
-        """
-        previous_algo = self.get_current_substep()  
-        current_algo = algorithm.id if algorithm is not None else (default_data[common.KEY_ADAPTER]
-                                                                   if default_data is not None else None)
-        if current_algo is None or str(current_algo) != str(previous_algo):
-            self.clean_from_session()
-            adapter_info = {}
-        else:
-            adapter_info = common.get_from_session(self.KEY_CURRENT_ADAPTER_INFO)
-            
-        if default_data is not None: 
-            adapter_info[self._KEY_SELECTED_DATA] = default_data
-        if algorithm is not None:
-            adapter_info[self._KEY_CURRENT_SUBSTEP] = algorithm.id
-                
-        common.add2session(self.KEY_CURRENT_ADAPTER_INFO, adapter_info)
-    
-    def get_current_substep(self):
-        """
-        Get from session previously selected step (algo-group ID).
-        """
-        full_description = common.get_from_session(self.KEY_CURRENT_ADAPTER_INFO)
-        if full_description is not None and self._KEY_CURRENT_SUBSTEP in full_description:
-            return full_description[self._KEY_CURRENT_SUBSTEP]
-        selected_data_step = self.get_current_default(common.KEY_ADAPTER)
-        if full_description is not None and selected_data_step is not None:
-            return selected_data_step
-        return None
-    
-    def get_current_default(self, param_name=None):
-        """
-        Read from session previously stored default data.
-        :param param_name: When None, return full dictionary with defaults.
-        """
-        full_description = common.get_from_session(self.KEY_CURRENT_ADAPTER_INFO)
-        if full_description is None or self._KEY_SELECTED_DATA not in full_description:
-            return None
-        full_default = full_description[self._KEY_SELECTED_DATA]
-        if param_name is None:
-            return full_default
-        if full_default is not None and param_name in full_default:
-            return full_default[param_name]
-        return None
-    
     def clean_from_session(self):
         """
         Remove info about selected algo from session
         """
-        common.remove_from_session(self.KEY_CURRENT_ADAPTER_INFO)
-        
-
-
+        common.remove_from_session(self.KEY_VIEW_MODEL)
