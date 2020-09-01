@@ -830,10 +830,13 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         filter_senders = np.unique(senders).tolist()
     else:
         filter_senders = np.unique(flatten_list(filter_senders)).tolist()
+    exclude_senders = ensure_list(exclude_senders)
     for sender in exclude_senders:
         filter_senders.remove(sender)
+    variables = ensure_list(variables)
     if len(variables) is None:
         variables = list(events.keys())
+    dims_names = ensure_list(dims_names)
     coords = OrderedDict()
     coords[dims_names[0]] = variables
     coords[dims_names[1]] = filter_senders
@@ -868,6 +871,7 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         from xarray import DataArray
         return DataArray(data, dims=list(coords.keys()), coords=coords, name=name)
     except:
+        # Return a dictionary as a plan B'
         return {"data": data, "dims": list(coords.keys()), "coords": coords, "name": name}
 
 
