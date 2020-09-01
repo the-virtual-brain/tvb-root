@@ -35,10 +35,15 @@ Service Layer for the Project entity.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import os
+
 import formencode
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
+from tvb.core.entities.file.exceptions import FileStructureException
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
@@ -46,16 +51,14 @@ from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.context_overlay import CommonDetails, DataTypeOverlayDetails, OperationOverlayDetails
-from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.transient.structure_entities import StructureNode, DataTypeMetaData
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.removers_factory import get_remover
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.services.exceptions import StructureException, ProjectServiceException
+from tvb.core.services.data_encryption_handler import encryption_handler
 from tvb.core.services.exceptions import RemoveDataTypeException
+from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
 from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 
@@ -115,6 +118,11 @@ class ProjectService:
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
                 self.structure_helper.rename_project_structure(current_proj.name, new_name)
+                project_folder = self.structure_helper.get_project_folder(current_proj)
+                encrypted_path = encryption_handler.compute_encrypted_folder_path(project_folder)
+                if os.path.exists(encrypted_path):
+                    os.rename(encrypted_path, encryption_handler.compute_encrypted_folder_path(
+                        os.path.join(os.path.basename(project_folder), new_name)))
             current_proj.name = new_name
             current_proj.description = data["description"]
         # Commit to make sure we have a valid ID
@@ -309,6 +317,14 @@ class ProjectService:
                 dao.remove_entity(burst.__class__, burst.id)
 
             self.structure_helper.remove_project_structure(project2delete.name)
+
+            project_folder = self.structure_helper.get_project_folder(project2delete)
+            encrypted_path = encryption_handler.compute_encrypted_folder_path(project_folder)
+            if os.path.exists(encrypted_path):
+                if os.path.isdir(encrypted_path):
+                    self.structure_helper.remove_folder(encrypted_path)
+                else:
+                    os.remove(encrypted_path)
             dao.delete_project(project_id)
             self.logger.debug("Deleted project: id=" + str(project_id) + ' name=' + project2delete.name)
 
