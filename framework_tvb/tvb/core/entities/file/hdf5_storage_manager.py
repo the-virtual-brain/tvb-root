@@ -35,20 +35,21 @@ Persistence of data in HDF5 format.
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-import os
 import copy
+import os
 import threading
+from datetime import datetime
+
 import h5py as hdf5
 import numpy as numpy
 import tvb.core.utils as utils
-from datetime import datetime
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataFileException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import GenericMetaData
-from tvb.core.data_encryption_handler import DataEncryptionHandler
+from tvb.core.services.data_encryption_handler import encryption_handler
 
 # Create logger for this module
 LOG = get_logger(__name__)
@@ -129,7 +130,7 @@ class HDF5StorageManager(object):
         finally:
             # Now close file
             self.close_file()
-            DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
     def append_data(self, dataset_name, data_list, grow_dimension=-1, close_file=True, where=ROOT_NODE_PATH):
         """
@@ -174,7 +175,7 @@ class HDF5StorageManager(object):
                 data_buffer.flush_buffered_data()
         if close_file:
             self.close_file()
-            DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
     def remove_data(self, dataset_name, where=ROOT_NODE_PATH):
         """
@@ -304,7 +305,7 @@ class HDF5StorageManager(object):
                 node.attrs[key_to_store] = processed_value
         finally:
             self.close_file()
-            DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
     @staticmethod
     def serialize_bool(value):

@@ -43,6 +43,7 @@ from tvb.core.decorators import synchronized
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
 from tvb.core.entities.transient.structure_entities import GenericMetaData
+from tvb.core.services.data_encryption_handler import encryption_handler
 
 LOCK_CREATE_FOLDER = Lock()
 
@@ -117,6 +118,9 @@ class FilesHelper(object):
                 raise IOError("Path exists %s " % new_full_name)
 
             os.rename(path, new_full_name)
+            encrypted_path = encryption_handler.compute_encrypted_folder_path(folder)
+            if os.path.exists(encrypted_path):
+                os.rename(encrypted_path, encryption_handler.compute_encrypted_folder_path(new_full_name))
             return path, new_full_name
         except Exception:
             self.logger.exception("Could not rename node!")
@@ -131,6 +135,13 @@ class FilesHelper(object):
                     shutil.rmtree(complete_path)
                 else:
                     os.remove(complete_path)
+
+            encrypted_path = encryption_handler.compute_encrypted_folder_path(complete_path)
+            if os.path.exists(encrypted_path):
+                if os.path.isdir(encrypted_path):
+                    shutil.rmtree(encrypted_path)
+                else:
+                    os.remove(encrypted_path)
             self.logger.debug("Project folders were removed for " + project_name)
         except OSError:
             self.logger.exception("A problem occurred while removing folder.")

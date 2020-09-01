@@ -33,52 +33,48 @@ Launches the web server and configure the controllers for UI.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+from tvb.core.services.data_encryption_handler import encryption_handler, FoldersQueueConsumer
 import time
-
-from tvb.core.data_encryption_handler import FoldersQueueConsumer, DataEncryptionHandler
 
 STARTUP_TIC = time.time()
 
 import os
-import sys
-import cherrypy
-import webbrowser
 import importlib
 from subprocess import Popen, PIPE
+import sys
+import webbrowser
+
+import cherrypy
 from cherrypy import Tool
-from tvb.basic.profile import TvbProfile
-
-if __name__ == '__main__':
-    TvbProfile.set_profile(sys.argv[1])
-
+from cherrypy.lib.sessions import RamSession
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
+from tvb.config.init.initializer import initialize, reset
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
-from tvb.config.init.initializer import initialize, reset
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.hpc_operation_service import HPCOperationService
-from tvb.interfaces.web.request_handler import RequestHandler
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.users_controller import UserController
-from tvb.interfaces.web.controllers.help.help_controller import HelpController
-from tvb.interfaces.web.controllers.project.project_controller import ProjectController
-from tvb.interfaces.web.controllers.project.figure_controller import FigureController
-from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.interfaces.web.controllers.settings_controller import SettingsController
-from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
-from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 from tvb.interfaces.web.controllers.burst.dynamic_model_controller import DynamicModelController
-from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
-from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
-from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
-from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
+from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
-from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
-from tvb.interfaces.web.controllers.hpc_controller import HPCController
-from cherrypy.lib.sessions import RamSession
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.interfaces.web.controllers.common import KEY_PROJECT
+from tvb.interfaces.web.controllers.flow_controller import FlowController
+from tvb.interfaces.web.controllers.help.help_controller import HelpController
+from tvb.interfaces.web.controllers.hpc_controller import HPCController
+from tvb.interfaces.web.controllers.project.figure_controller import FigureController
+from tvb.interfaces.web.controllers.project.project_controller import ProjectController
+from tvb.interfaces.web.controllers.settings_controller import SettingsController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
+from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
+from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
+from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
+from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
+from tvb.interfaces.web.controllers.users_controller import UserController
+from tvb.interfaces.web.request_handler import RequestHandler
 
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[1])
@@ -103,7 +99,7 @@ class CleanupSessionHandler(RamSession):
                 if KEY_PROJECT in data:
                     selectedProject = data[KEY_PROJECT]
                     project_folder = self.file_helper.get_project_folder(selectedProject)
-                    DataEncryptionHandler.set_project_inactive(project_folder)
+                    encryption_handler.set_project_inactive(project_folder)
                 try:
                     del self.cache[_id]
                 except KeyError:

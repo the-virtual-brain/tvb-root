@@ -49,7 +49,7 @@ from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.authorization import AuthorizationManager
-from tvb.core.data_encryption_handler import DataEncryptionHandler
+from tvb.core.services.data_encryption_handler import encryption_handler
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.texture_to_json import color_texture_to_list
@@ -186,7 +186,7 @@ class UserController(BaseController):
             self.logger.debug("User " + user.username + " is just logging out!")
         current_project = common.get_current_project()
         if current_project is not None and TvbProfile.current.web.ENCRYPT_STORAGE:
-            DataEncryptionHandler.set_project_inactive(self.file_helper.get_project_folder(current_project))
+            encryption_handler.set_project_inactive(self.file_helper.get_project_folder(current_project))
         SimulatorContext().clean_project_data_from_session()
         common.set_info_message("Thank you for using The Virtual Brain!")
 

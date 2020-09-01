@@ -48,7 +48,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.data_encryption_handler import DataEncryptionHandler
+from tvb.core.services.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.import_service import ImportService
