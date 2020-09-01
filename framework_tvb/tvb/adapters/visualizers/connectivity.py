@@ -284,7 +284,9 @@ class ConnectivityViewer(ABCSpaceDisplayer):
                              pointsLabels=connectivity.ordered_labels, conductionSpeed=1,
                              connectivity_entity=connectivity,
                              base_selection=connectivity.saved_selection_labels,
-                             hemisphereOrderUrl=path_hemisphere_order_indices)
+                             hemisphereOrderUrl=path_hemisphere_order_indices,
+                             leftHemisphereCount=(connectivity.hemispheres == 0).sum()
+                             )
         global_params.update(self.build_params_for_selectable_connectivity(connectivity))
         return global_params, global_pages
 
@@ -371,18 +373,21 @@ class Connectivity2DViewer(object):
         if input_data.number_of_regions <= 3:
             raise LaunchException('The connectivity matrix you selected has fewer nodes than acceptable for display!')
 
-        half = input_data.number_of_regions // 2
         normalized_weights = self._normalize_weights(input_data.ordered_weights)
-        weights = Connectivity2DViewer._get_weights(normalized_weights)
+        weights = Connectivity2DViewer._get_weights(normalized_weights, input_data.hemispheres)
 
         # Compute shapes and colors ad adjacent data
         norm_rays, min_ray, max_ray = self._normalize_rays(rays, input_data.number_of_regions)
         colors, step = self._prepare_colors(colors, input_data.number_of_regions, step)
 
-        right_json = self._get_json(input_data.ordered_labels[half:], input_data.ordered_centres[half:], weights[1],
-                                    math.pi, 1, 2, norm_rays[half:], colors[half:], X_CANVAS_SMALL, Y_CANVAS_SMALL)
-        left_json = self._get_json(input_data.ordered_labels[:half], input_data.ordered_centres[:half], weights[0],
-                                   math.pi, 1, 2, norm_rays[:half], colors[:half], X_CANVAS_SMALL, Y_CANVAS_SMALL)
+        right_json = self._get_json(input_data.ordered_labels[input_data.hemispheres],
+                                    input_data.ordered_centres[input_data.hemispheres], weights[1],
+                                    math.pi, 1, 2, numpy.asarray(norm_rays)[input_data.hemispheres],
+                                    numpy.asarray(colors)[input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
+        left_json = self._get_json(input_data.ordered_labels[~input_data.hemispheres],
+                                   input_data.ordered_centres[~input_data.hemispheres], weights[0],
+                                   math.pi, 1, 2, numpy.asarray(norm_rays)[~input_data.hemispheres],
+                                   numpy.asarray(colors)[~input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
         full_json = self._get_json(input_data.ordered_labels, input_data.ordered_centres, normalized_weights,
                                    math.pi, 0, 1, norm_rays, colors, X_CANVAS_FULL, Y_CANVAS_FULL)
 
@@ -438,20 +443,19 @@ class Connectivity2DViewer(object):
         return json.dumps(result_json)
 
     @staticmethod
-    def _get_weights(weights):
+    def _get_weights(weights, hemispheres):
         """
         Method used for calculating the weights for the right and for the 
         left hemispheres. Those matrixes are obtained from
         a weights matrix which contains data related to both hemispheres.
         """
-        half = len(weights) // 2
-        l_aux, r_aux = weights[:half], weights[half:]
+        l_aux, r_aux = weights[~hemispheres], weights[hemispheres]
         r_weights = []
         l_weights = []
-        for i in range(half):
-            l_weights.append(l_aux[i][:half])
-        for i in range(half, len(weights)):
-            r_weights.append(r_aux[i - half][half:])
+        for i in range(len(l_aux)):
+            l_weights.append(l_aux[i][~hemispheres])
+        for i in range(len(l_aux), len(weights)):
+            r_weights.append(r_aux[i - len(l_aux)][hemispheres])
         return l_weights, r_weights
 
     def point2json(self, node_lbl, x_coord, y_coord, adjacencies, angle, shape_dimension, shape_color):
