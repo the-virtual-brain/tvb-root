@@ -466,7 +466,6 @@ class Kuramoto(Model):
 
         where :math:`I` is the input via local and long range connectivity,
         passing first through the Kuramoto coupling function,
-        :py:class:tvb.simulator.coupling.Kuramoto.
 
         """
 

@@ -102,7 +102,7 @@ class Hopfield(Model):
         label=":math:`\\tau_{\\theta}`",
         default=numpy.array([5.]),
         domain=Range(lo = 0.01, hi = 100., step = 0.01),
-        doc="""The slow time-scale for threshold calculus :math:`\theta`, state-variable of the model.""")
+        doc="""The slow time-scale for threshold calculus :math:`\\theta`, state-variable of the model.""")
 
     dynamic = NArray(
         dtype=int,

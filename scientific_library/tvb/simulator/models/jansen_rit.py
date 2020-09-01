@@ -75,13 +75,13 @@ class JansenRit(ModelNumbaDfun):
 
     # Define traited attributes for this model, these represent possible kwargs.
     A = NArray(
-        label="A",
+        label=":math:`A`",
         default=numpy.array([3.25]),
         domain=Range(lo=2.6, hi=9.75, step=0.05),
         doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""")
 
     B = NArray(
-        label="B",
+        label=":math:`B`",
         default=numpy.array([22.0]),
         domain=Range(lo=17.6, hi=110.0, step=0.2),
         doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""")

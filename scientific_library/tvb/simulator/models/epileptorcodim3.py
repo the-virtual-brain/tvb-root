@@ -63,84 +63,84 @@ class EpileptorCodim3(ModelNumbaDfun):
     """
 
     mu1_start = NArray(
-        label="mu1 start",
+        label=":math:`mu_1 start`",
         default=numpy.array([-0.02285]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu2_start = NArray(
-        label="mu2 start",
+        label=":math:`mu_2 start`",
         default=numpy.array([0.3448]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     nu_start = NArray(
-        label="nu start",
+        label=":math:`nu start`",
         default=numpy.array([0.2014]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu1_stop = NArray(
-        label="mu1 stop",
+        label=":math:`mu_1 stop`",
         default=numpy.array([-0.07465]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu1 parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu2_stop = NArray(
-        label="mu2 stop",
+        label=":math:`mu_2 stop`",
         default=numpy.array([0.3351]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     nu_stop = NArray(
-        label="nu stop",
+        label=":math:`nu stop`",
         default=numpy.array([0.2053]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     b = NArray(
-        label="b",
+        label=":math:`b`",
         default=numpy.array([1.0]),
         doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type")
 
     R = NArray(
-        label="R",
+        label=":math:`R`",
         default=numpy.array([0.4]),
         domain=Range(lo=0.0, hi=2.5),
         doc="Radius in unfolding")
 
     c = NArray(
-        label="c",
+        label=":math:`c`",
         default=numpy.array([0.001]),
         domain=Range(lo=0.0, hi=0.01),
         doc="Speed of the slow variable")
 
     dstar = NArray(
-        label="dstar",
+        label=":math:`d^*`",
         default=numpy.array([0.3]),
         domain=Range(lo=-0.1, hi=0.5),
         doc="Threshold for the inversion of the slow variable")
 
     Ks = NArray(
-        label="Ks",
+        label=":math:`K_s`",
         default=numpy.array([0.0]),
         doc="Slow permittivity coupling strength, the default is no coupling")
 
     N = NArray(
         dtype=int,
-        label="N",
+        label=":math:`N`",
         default=numpy.array([1]),
         doc="The branch of the resting state, default is 1")
 
     modification = NArray(
         dtype=bool,
-        label="modification",
+        label=":math:`modification`",
         default=numpy.array([True]),
         doc="When modification is True, then use the modification to stabilise the system for negative values of "
             "dstar. If modification is False, then don't use the modification. The default value is True ")
@@ -246,22 +246,22 @@ class EpileptorCodim3(ModelNumbaDfun):
         The equations were taken from [Saggioetal_2017]
         cf. Eqns. (4) and (7), page 17
 
-        The state variables x and y correspond to the fast subsystem and the
-        state variable z corresponds to the slow subsystem.
+        The state variables :math:`x` and :math:`y` correspond to the fast subsystem and the
+        state variable :math:`z` corresponds to the slow subsystem.
 
         .. math::
                 \dot{x} &= -y \\
                 \dot{y} &= x^3 - \mu_{2} x - \mu_{1} - y(\nu + b x + x^2) \\
                 \dot{z} &= -c(\sqrt{x-x_{s}^2+y^2} - d^*)
 
-        If the bool modification is True, then the equation for \dot{z} will
-        been modified to ensure stability for negative dstar
+        If the bool modification is True, then the equation for :math:`\dot{z}` will
+        been modified to ensure stability for negative :math:`d^x`
 
         .. math::
             \dot{z} = -c(\sqrt{x-x_{s}^2+y^2} - d^* + 0.1(z-0.5)^7)
 
         Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
-        sphere of radius R parametrised by the unit vectors E and F.
+        sphere of radius :math:`R` parametrised by the unit vectors :math:`E` and :math:`F`.
 
         .. math::
             \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
@@ -595,20 +595,20 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         The equations were taken from [Saggioetal_2017]
         cf. Eqns. (4) and (7), page 17 and 21
 
-        The state variables x and y correspond to the fast subsystem and the
+        The state variables :math:`x` and :math:`y` correspond to the fast subsystem and the
         state variable z corresponds to the slow subsystem. The state
-        variables uA and uB correspond to the transition of the offset and
+        variables :math:`uA` and :math:`uB` correspond to the transition of the offset and
         onset bifurcations.
 
             .. math::
                 \dot{x} &= -y \\
                 \dot{y} &= x^3 - \mu_2 x - \mu_1 - y(\nu + b x + x^2) \\
                 \dot{z} &= -c(\sqrt{x-x_{s}^2+y^2} - d^*)\\
-                \dot(uA) &= cA\\
-                \dot(uB) &= cB\\
+                (\dot{u}A) &= cA\\
+                (\dot{u}B) &= cB\\
 
-        If the bool modification is True, then the equation for zdot will
-        been modified to ensure stability for negative dstar
+        If the bool modification is True, then the equation for :math:`\dot{z}` will
+        been modified to ensure stability for negative :math:`d^*`
 
             .. math::
                     \dot{z} = -c(\sqrt{x-x_{s}^2+y^2} - d^* + 0.1(z-0.5)^7)

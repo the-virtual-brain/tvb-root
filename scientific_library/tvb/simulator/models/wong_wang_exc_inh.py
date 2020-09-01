@@ -123,7 +123,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
         doc="""Excitatory population recurrence weight""")
 
     J_N = NArray(
-        label=r":math:`J_{N}`",
+        label=r":math:`J_N`",
         default=numpy.array([0.15, ]),
         domain=Range(lo=0.001, hi=0.5, step=0.001),
         doc="""[nA] NMDA current""")

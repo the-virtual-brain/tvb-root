@@ -160,104 +160,104 @@ class Epileptor(ModelNumbaDfun):
     """
 
     a = NArray(
-        label="a",
+        label=":math:`a`",
         default=numpy.array([1.0]),
         doc="Coefficient of the cubic term in the first state variable")
 
     b = NArray(
-        label="b",
+        label=":math:`b`",
         default=numpy.array([3.0]),
         doc="Coefficient of the squared term in the first state variabel")
 
     c = NArray(
-        label="c",
+        label=":math:`c`",
         default=numpy.array([1.0]),
         doc="Additive coefficient for the second state variable, \
         called :math:`y_{0}` in Jirsa paper")
 
     d = NArray(
-        label="d",
+        label=":math:`d`",
         default=numpy.array([5.0]),
         doc="Coefficient of the squared term in the second state variable")
 
     r = NArray(
-        label="r",
+        label=":math:`r`",
         domain=Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the third state variable, \
         called :math:`1/\\tau_{0}` in Jirsa paper")
 
     s = NArray(
-        label="s",
+        label=":math:`s`",
         default=numpy.array([4.0]),
         doc="Linear coefficient in the third state variable")
 
     x0 = NArray(
-        label="x0",
+        label=":math:`x_0`",
         domain=Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
         doc="Epileptogenicity parameter")
 
     Iext = NArray(
-        label="Iext",
+        label=":math:`I_{ext}`",
         domain=Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
         doc="External input current to the first population")
 
     slope = NArray(
-        label="slope",
+        label=":math:`slope`",
         domain=Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
         doc="Linear coefficient in the first state variable")
 
     Iext2 = NArray(
-        label="Iext2",
+        label=":math:`I_{ext2}`",
         domain=Range(lo=0.0, hi=1.0, step=0.05),
         default=numpy.array([0.45]),
         doc="External input current to the second population")
 
     tau = NArray(
-        label="tau",
+        label=":math:`\\tau`",
         default=numpy.array([10.0]),
         doc="Temporal scaling coefficient in fifth state variable")
 
     aa = NArray(
-        label="aa",
+        label=":math:`aa`",
         default=numpy.array([6.0]),
         doc="Linear coefficient in fifth state variable")
 
     bb = NArray(
-        label="bb",
+        label=":math:`bb`",
         default=numpy.array([2.0]),
         doc="Linear coefficient of lowpass excitatory coupling in fourth state variable")
 
     Kvf = NArray(
-        label="K_vf",
+        label=":math:`K_{vf}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a very fast time scale.")
 
     Kf = NArray(
-        label="K_f",
+        label=":math:`K_{f}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Correspond to the coupling scaling on a fast time scale.")
 
     Ks = NArray(
-        label="K_s",
+        label=":math:`K_{s}`",
         default=numpy.array([0.0]),
         domain=Range(lo=-4.0, hi=4.0, step=0.1),
         doc="Permittivity coupling, that is from the fast time scale toward the slow time scale")
 
     tt = NArray(
-        label="tt",
+        label=":math:`K_{tt}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.001, hi=10.0, step=0.001),
         doc="Time scaling of the whole system")
 
     modification = NArray(
         dtype=bool,
-        label="modification",
+        label=":math:`modification`",
         default=numpy.array([False]),
         doc="When modification is True, then use nonlinear influence on z. \
         The default value is False, i.e., linear influence.")
@@ -411,72 +411,72 @@ class Epileptor2D(ModelNumbaDfun):
     """
 
     a = NArray(
-        label="a",
+        label=":math:`a`",
         default=numpy.array([1.0]),
         doc="Coefficient of the cubic term in the first state-variable.")
 
     b = NArray(
-        label="b",
+        label=":math:`b`",
         default=numpy.array([3.0]),
         doc="Coefficient of the squared term in the first state-variable.")
 
     c = NArray(
-        label="c",
+        label=":math:`c`",
         default=numpy.array([1.0]),
         doc="Additive coefficient for the second state-variable x_{2}, \
         called :math:`y_{0}` in Jirsa paper.")
 
     d = NArray(
-        label="d",
+        label=":math:`d`",
         default=numpy.array([5.0]),
         doc="Coefficient of the squared term in the second state-variable x_{2}.")
 
     r = NArray(
-        label="r",
+        label=":math:`r`",
         domain=Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the slow state-variable, \
         called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor).")
 
     x0 = NArray(
-        label="x0",
+        label=":math:`x_0`",
         domain=Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
         doc="Epileptogenicity parameter.")
 
     Iext = NArray(
-        label="Iext",
+        label=":math:`I_{ext}`",
         domain=Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
         doc="External input current to the first state-variable.")
 
     slope = NArray(
-        label="slope",
+        label=":math:`slope`",
         domain=Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
         doc="Linear coefficient in the first state-variable.")
 
     Kvf = NArray(
-        label="K_vf",
+        label=":math:`K_{vf}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a very fast time scale.")
 
     Ks = NArray(
-        label="K_s",
+        label=":math:`K_{s}`",
         default=numpy.array([0.0]),
         domain=Range(lo=-4.0, hi=4.0, step=0.1),
         doc="Permittivity coupling, that is from the fast time scale toward the slow time scale.")
 
     tt = NArray(
-        label="tt",
+        label=":math:`tt`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.001, hi=1.0, step=0.001),
         doc="Time scaling of the whole system to the system in real time.")
 
     modification = NArray(
         dtype=bool,
-        label="modification",
+        label=":math:`modification`",
         default=numpy.array([False]),
         doc="When modification is True, then use nonlinear influence on z. \
         The default value is False, i.e., linear influence.")

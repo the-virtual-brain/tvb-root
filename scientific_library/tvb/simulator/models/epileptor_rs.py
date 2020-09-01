@@ -97,163 +97,163 @@ class EpileptorRestingState(ModelNumbaDfun):
     """
 
     a = NArray(
-        label="a",
+        label=":math:`a`",
         default=numpy.array([1.0]),
         doc="Coefficient of the cubic term in the first state-variable x1.")
 
     b = NArray(
-        label="b",
+        label=":math:`b`",
         default=numpy.array([3.0]),
         doc="Coefficient of the squared term in the first state-variable x1.")
 
     c = NArray(
-        label="c",
+        label=":math:`c`",
         default=numpy.array([1.0]),
         doc="Additive coefficient for the second state-variable y1, \
         called :math:'y_{0}' in Jirsa et al. (2014).")
 
     d = NArray(
-        label="d",
+        label=":math:`d`",
         default=numpy.array([5.0]),
         doc="Coefficient of the squared term in the second state-variable y1.")
 
     r = NArray(
-        label="r",
+        label=":math:`r`",
         domain=Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the third state-variable z, \
         called :math:'1/\tau_{0}' in Jirsa et al. (2014).")
 
     s = NArray(
-        label="s",
+        label=":math:`s`",
         default=numpy.array([4.0]),
         doc="Linear coefficient in the third state-variable z.")
 
     x0 = NArray(
-        label="x0",
+        label=":math:`x_0`",
         domain=Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
         doc="Epileptogenicity parameter.")
 
     Iext = NArray(
-        label="Iext",
+        label=":math:`I_{ext}`",
         domain=Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
         doc="External input current to the first population (x1, y1).")
 
     slope = NArray(
-        label="slope",
+        label=":math:`slope`",
         domain=Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
         doc="Linear coefficient in the first state-variable x1.")
 
     Iext2 = NArray(
-        label="Iext2",
+        label=":math:`I_{ext2}`",
         domain=Range(lo=0.0, hi=1.0, step=0.05),
         default=numpy.array([0.45]),
         doc="External input current to the second population (x2, y2).")
 
     tau = NArray(
-        label="tau",
+        label=":math:`/tau`",
         default=numpy.array([10.0]),
         doc="Temporal scaling coefficient in the fifth state-variable y2.")
 
     aa = NArray(
-        label="aa",
+        label=":math:`aa`",
         default=numpy.array([6.0]),
         doc="Linear coefficient in the fifth state-variable y2.")
         
     bb = NArray(
-        label="bb",
+        label=":math:`bb`",
         default=numpy.array([2.0]),
         doc="Linear coefficient of lowpass excitatory coupling in the fourth \
         state-variable x2.")
 
     Kvf = NArray(
-        label="K_vf",
+        label=":math:`K_{vf}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a very fast time scale.")
 
     Kf = NArray(
-        label="K_f",
+        label=":math:`K_f`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a fast time scale.")
 
     Ks = NArray(
-        label="K_s",
+        label=":math:`K_s`",
         default=numpy.array([0.0]),
         domain=Range(lo=-4.0, hi=4.0, step=0.1),
         doc="Permittivity coupling, that is from the very fast time scale \
         toward the slow time scale.")
 
     tt = NArray(
-        label="tt",
+        label=":math:`tt`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.001, hi=10.0, step=0.001),
         doc="Time scaling of the Epileptor.")
         
     # Generic-2D's parameters
     tau_rs = NArray(
-        label=r":math:'\tau_rs'",
+        label=r":math:`\tau_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=1.0, hi=5.0, step=0.01),
         doc="Temporal scaling coefficient in the third population (x_rs, y_rs).")
         
     I_rs = NArray(
-        label=":math:'I_rs'",
+        label=":math:`I_{rs}`",
         default=numpy.array([0.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.01),
         doc="External input current to the third population (x_rs, y_rs).")
         
     a_rs = NArray(
-        label=":math:'a_rs'",
+        label=":math:`a_{rs}`",
         default=numpy.array([-2.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.01),
         doc="Vertical shift of the configurable nullcline \
         in the state-variable y_rs.")
         
     b_rs = NArray(
-        label=":math:'b_rs'",
+        label=":math:`b_{rs}`",
         default=numpy.array([-10.0]),
         domain=Range(lo=-20.0, hi=15.0, step=0.01),
         doc="Linear coefficient of the state-variable y_rs.")
         
     d_rs = NArray(
-        label=":math:'d_rs'",
+        label=":math:`d_{rs}`",
         default=numpy.array([0.02]),
         domain=Range(lo=0.0001, hi=1.0, step=0.0001),
         doc="Temporal scaling of the whole third system (x_rs, y_rs).")
         
     e_rs = NArray(
-        label=":math:'e_rs'",
+        label=":math:`e_{rs}`",
         default=numpy.array([3.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Coefficient of the squared term in the sixth state-variable x_rs.")
     
     f_rs = NArray(
-        label=":math:'f_rs'",
+        label=":math:`f_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Coefficient of the cubic term in the sixth state-variable x_rs.")
 
     alpha_rs = NArray(
-        label=r":math:'\alpha_rs'",
+        label=r":math:`\alpha_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Constant parameter to scale the rate of feedback from the \
         slow variable y_rs to the fast variable x_rs.")
         
     beta_rs = NArray(
-        label=r":math:'\beta_rs'",
+        label=r":math:`\beta_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Constant parameter to scale the rate of feedback from the \
         slow variable y_rs to itself.")
         
     gamma_rs = NArray(
-        label=r":math:'\gamma_rs'",
+        label=r":math:`\gamma_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=-1.0, hi=1.0, step=0.1),
         doc="Constant parameter to reproduce FHN dynamics where \
@@ -261,7 +261,7 @@ class EpileptorRestingState(ModelNumbaDfun):
         Note: It scales both I_rs and the long-range coupling term.")
         
     K_rs = NArray(
-        label=r":math:'K_rs'",
+        label=r":math:`K_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=10.0, step=0.001),
         doc="Coupling scaling on a fast time scale.")
@@ -269,7 +269,7 @@ class EpileptorRestingState(ModelNumbaDfun):
 
     # Combination 2 models
     p = NArray(
-        label=r":math:'p'",
+        label=r":math:`p`",
         default=numpy.array([0.]),
         domain=Range(lo=-1.0, hi=1.0, step=0.1),
         doc="Linear coefficient.")
