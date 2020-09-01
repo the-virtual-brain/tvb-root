@@ -511,6 +511,11 @@ class FlowController(BaseController):
     def reloadoperation(self, operation_id, **_):
         """Redirect to Operation Input selection page, with input data already selected."""
         operation = OperationService.load_operation(operation_id)
+        # Reload previous parameters in session
+        adapter_instance = ABCAdapter.build_adapter(operation.algorithm)
+        view_model = adapter_instance.load_view_model(operation)
+        self.context.add_view_model_to_session(view_model)
+        # Display the inputs tree for the current op
         category_id = operation.algorithm.fk_category
         algo_id = operation.fk_from_algo
         raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id))
