@@ -72,7 +72,6 @@
 
 	{% with %}
 		{% set nodeCount = pointsLabels | length %}
-		{% set halfNodeCount = (nodeCount / 2) | int %}
 
 		<section id="scrollable-matrix-section" class="view-column matrix-controller col-2">
 
@@ -155,10 +154,10 @@
 				<div id="div-matrix-weights" class="matrix-viewer">
 
 					<div class="matrix-table">
-						{{ mwq.draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, halfNodeCount, 0, halfNodeCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('leftRightQuarter', 2, pointsLabels, 0, halfNodeCount, halfNodeCount, nodeCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarter', 1, pointsLabels, halfNodeCount, nodeCount, 0, halfNodeCount, 'w') }}
-						{{ mwq.draw2DConnectivityMatrix('rightHemisphere', 3, pointsLabels, halfNodeCount, nodeCount, halfNodeCount, nodeCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('leftHemisphere', 0, pointsLabels, 0, leftHemisphereCount, 0, leftHemisphereCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('leftRightQuarter', 2, pointsLabels, 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarter', 1, pointsLabels, leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 'w') }}
+						{{ mwq.draw2DConnectivityMatrix('rightHemisphere', 3, pointsLabels, leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 'w') }}
 					</div>
 
 					{{ drawMatrixLegendArea('weights-legend') }}
@@ -168,10 +167,10 @@
 				<!--! Matrices: Tracts -->
 				<div id="div-matrix-tracts" class="matrix-viewer">
 					<div class="matrix-table">
-						{{ mwq.draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, halfNodeCount, 0, halfNodeCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('leftRightQuarterTracts', 2, pointsLabels, 0, halfNodeCount, halfNodeCount, nodeCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarterTracts', 1, pointsLabels, halfNodeCount, nodeCount, 0, halfNodeCount, 't') }}
-						{{ mwq.draw2DConnectivityMatrix('rightHemisphereTracts', 3, pointsLabels, halfNodeCount, nodeCount, halfNodeCount, nodeCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('leftHemisphereTracts', 0, pointsLabels, 0, leftHemisphereCount, 0, leftHemisphereCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('leftRightQuarterTracts', 2, pointsLabels, 0, leftHemisphereCount, leftHemisphereCount, nodeCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('rightLeftQuarterTracts', 1, pointsLabels, leftHemisphereCount, nodeCount, 0, leftHemisphereCount, 't') }}
+						{{ mwq.draw2DConnectivityMatrix('rightHemisphereTracts', 3, pointsLabels, leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount, 't') }}
 					</div>
 
 					{{ drawMatrixLegendArea('tracts-legend') }}
@@ -181,10 +180,10 @@
 			</div>
 
 			{% with %}
-				{% set start_points_x = ([0, halfNodeCount, 0, halfNodeCount] | string) %}
-				{% set end_points_x = ([halfNodeCount, nodeCount, halfNodeCount, nodeCount] | string) %}
-				{% set start_points_y = ([0, halfNodeCount, halfNodeCount, 0] | string) %}
-				{% set end_points_y = ([halfNodeCount, nodeCount, nodeCount, halfNodeCount] | string) %}
+				{% set start_points_x = ([0, leftHemisphereCount, 0, leftHemisphereCount] | string) %}
+				{% set end_points_x = ([leftHemisphereCount, nodeCount, leftHemisphereCount, nodeCount] | string) %}
+				{% set start_points_y = ([0, leftHemisphereCount, leftHemisphereCount, 0] | string) %}
+				{% set end_points_y = ([leftHemisphereCount, nodeCount, nodeCount, leftHemisphereCount] | string) %}
 
 				<script type="text/javascript">
 					$(document).ready(function() {
