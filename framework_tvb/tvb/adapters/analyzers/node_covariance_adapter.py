@@ -166,9 +166,9 @@ class NodeCovarianceAdapter(ABCAdapter):
 
         covariance_index.fk_source_gid = self.input_time_series_index.gid
         covariance_index.subtype = type(covariance_index).__name__
-        covariance_index.array_data_min = array_metadata.min
-        covariance_index.array_data_max = array_metadata.max
-        covariance_index.array_data_mean = array_metadata.mean
+        covariance_index.array_data_min = str(array_metadata.min)
+        covariance_index.array_data_max = str(array_metadata.max)
+        covariance_index.array_data_mean = str(array_metadata.mean)
         covariance_index.array_is_finite = array_metadata.is_finite
         covariance_index.array_has_complex = array_metadata.has_complex
         covariance_index.shape = json.dumps(covariance_h5.array_data.shape)
