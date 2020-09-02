@@ -143,6 +143,3 @@ class DataTypeDto(BaseDto):
             self.type = datatype.display_type
             self.create_date = datatype.create_date
             self.subject = datatype.subject
-
-            if datatype.get_extra_info():
-                self.update(datatype.get_extra_info())

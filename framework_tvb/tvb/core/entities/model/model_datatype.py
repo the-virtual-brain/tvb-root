@@ -121,10 +121,7 @@ class DataType(HasTraitsIndex):
     fixed_generic_attributes = False
 
     def get_extra_info(self):
-        pass
-
-    def get_lazy_load_field(self):
-        None
+        return {}
 
     def __init__(self, gid=None, **kwargs):
 

@@ -52,8 +52,8 @@ class DatatypeFacade:
 
     @staticmethod
     def get_operation_result(datatype_gid):
-        data_type = dao.get_datatype_by_gid(datatype_gid)
-        if data_type is None:
+        extra_info = dao.get_datatype_extra_info(datatype_gid)
+        if extra_info is None:
             return None
 
-        return DataTypeDto(data_type)
+        return extra_info

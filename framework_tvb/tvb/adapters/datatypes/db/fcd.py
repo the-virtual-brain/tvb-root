@@ -49,9 +49,6 @@ class FcdIndex(DataTypeMatrix):
         labels_dict["labels_dimensions"] = self.source.labels_dimensions
         return labels_dict
 
-    def get_lazy_load_field(self):
-        return "source"
-
     def fill_from_has_traits(self, datatype):
         # type: (Fcd)  -> None
         super(FcdIndex, self).fill_from_has_traits(datatype)
