@@ -55,6 +55,12 @@ class FourierSpectrumIndex(DataTypeMatrix):
         self.max_frequency = datatype.max_frequency
         self.fk_source_gid = datatype.source.gid.hex
 
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
+
 
 class WaveletCoefficientsIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
@@ -83,6 +89,12 @@ class WaveletCoefficientsIndex(DataTypeMatrix):
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
         self.fk_source_gid = datatype.source.gid.hex
 
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
+
 
 class CoherenceSpectrumIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
@@ -100,6 +112,12 @@ class CoherenceSpectrumIndex(DataTypeMatrix):
         self.nfft = datatype.nfft
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
         self.fk_source_gid = datatype.source.gid.hex
+
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
 
 
 class ComplexCoherenceSpectrumIndex(DataTypeMatrix):
@@ -124,3 +142,9 @@ class ComplexCoherenceSpectrumIndex(DataTypeMatrix):
         self.frequency_step = datatype.freq_step
         self.max_frequency = datatype.max_freq
         self.fk_source_gid = datatype.source.gid.hex
+
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict

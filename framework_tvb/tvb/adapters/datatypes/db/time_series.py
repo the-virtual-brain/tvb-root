@@ -61,8 +61,8 @@ class TimeSeriesIndex(DataType):
 
     def get_extra_info(self):
         labels_dict = {}
-        labels_dict["labels_ordering"] = self.source.labels_ordering
-        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        labels_dict["labels_ordering"] = self.labels_ordering
+        labels_dict["labels_dimensions"] = self.labels_dimensions
         return labels_dict
 
     def get_lazy_load_field(self):
