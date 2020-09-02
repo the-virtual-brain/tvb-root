@@ -339,5 +339,4 @@ class SimulatorAdapter(ABCAdapter):
             result_h5[m_name].close()
         self.log.debug("%s: Adapter simulation finished!!" % str(self))
         results.extend(result_indexes.values())
-        # DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(ts_h5_path))
         return results
