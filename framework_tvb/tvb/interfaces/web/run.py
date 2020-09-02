@@ -97,9 +97,8 @@ class CleanupSessionHandler(RamSession):
         for _id, (data, expiration_time) in self.cache.copy().items():
             if expiration_time <= now:
                 if KEY_PROJECT in data:
-                    selectedProject = data[KEY_PROJECT]
-                    project_folder = self.file_helper.get_project_folder(selectedProject)
-                    encryption_handler.set_project_inactive(project_folder)
+                    selected_project = data[KEY_PROJECT]
+                    encryption_handler.set_project_inactive(selected_project)
                 try:
                     del self.cache[_id]
                 except KeyError:

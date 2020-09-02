@@ -132,7 +132,6 @@ class FilesHelper(object):
                 else:
                     os.remove(complete_path)
 
-
             self.logger.debug("Project folders were removed for " + project_name)
         except OSError:
             self.logger.exception("A problem occurred while removing folder.")

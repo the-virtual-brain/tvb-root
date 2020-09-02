@@ -45,10 +45,12 @@ from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.data_encryption_handler import encryption_handler
 
 LOGGER = get_logger(__name__)
 
@@ -79,6 +81,9 @@ class OperationExecutor(Thread):
         run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.core.operation_async_launcher',
                       str(operation_id), TvbProfile.CURRENT_PROFILE_NAME]
 
+        current_operation = dao.get_operation_by_id(operation_id)
+        project_folder = FilesHelper().get_project_folder(current_operation.project)
+        encryption_handler.inc_running_op_count(project_folder)
         # In the exceptional case where the user pressed stop while the Thread startup is done,
         # We should no longer launch the operation.
         if self.stopped() is False:
@@ -113,6 +118,9 @@ class OperationExecutor(Thread):
                                                       "Operation failed unexpectedly! Please check the log files.")
 
             del launched_process
+
+        encryption_handler.dec_running_op_count(project_folder)
+        encryption_handler.check_and_delete(project_folder)
 
         # Give back empty spot now that you finished your operation
         CURRENT_ACTIVE_THREADS.remove(self)

@@ -41,6 +41,7 @@ from syncrypto import Crypto, Syncrypto
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
+from tvb.core.entities.file.files_helper import FilesHelper
 
 LOGGER = get_logger(__name__)
 
@@ -59,6 +60,8 @@ class DataEncryptionHandlerMeta(type):
 
 
 class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
+    fie_helper = FilesHelper()
+
     # Queue used to push projects which need synchronisation
     sync_project_queue = Queue()
 
@@ -68,8 +71,13 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     # Dict used to count how the project usage
     users_project_usage = {}
 
+    running_operations = {}
+
     # Dict used to keep projects which are marked for deletion
     marked_for_delete = set()
+
+    # Linked projects
+    linked_projects = {}
 
     lock = Lock()
 
@@ -78,6 +86,9 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
     def _project_active_count(self, folder):
         return self.users_project_usage[folder] if folder in self.users_project_usage else 0
+
+    def _running_op_count(self, folder):
+        return self.running_operations[folder] if folder in self.running_operations else 0
 
     @synchronized(lock)
     def inc_project_usage_count(self, folder):
@@ -93,6 +104,21 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             return
         count -= 1
         self.users_project_usage[folder] = count
+
+    @synchronized(lock)
+    def inc_running_op_count(self, folder):
+        count = self._running_op_count(folder)
+        count += 1
+        self.running_operations[folder] = count
+
+    @synchronized(lock)
+    def dec_running_op_count(self, folder):
+        count = self._running_op_count(folder)
+        if count == 1:
+            self.running_operations.pop(folder)
+            return
+        count -= 1
+        self.running_operations[folder] = count
 
     @synchronized(lock)
     def inc_queue_count(self, folder):
@@ -117,7 +143,8 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         #   3. Nobody is using it
         if self._queue_count(folder) == 0 \
                 and folder in self.marked_for_delete \
-                and self._project_active_count(folder) == 0:
+                and self._project_active_count(folder) == 0 \
+                and self._running_op_count(folder) == 0:
             self.marked_for_delete.remove(folder)
             shutil.rmtree(folder)
 
@@ -138,22 +165,40 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         if os.path.exists(trash_path):
             shutil.rmtree(trash_path)
 
-    def set_project_active(self, project_folder):
+    def set_project_active(self, project, linked_dt=None):
         if not TvbProfile.current.web.ENCRYPT_STORAGE:
             return
-        self.inc_project_usage_count(project_folder)
-        self.push_folder_to_sync(project_folder)
+        project_folder = self.fie_helper.get_project_folder(project)
+        projects = set()
+        if linked_dt is None:
+            linked_dt = []
+        for dt_path in linked_dt:
+            project_path = self.fie_helper.get_project_folder_from_h5(dt_path)
+            projects.add(project_path)
+        if len(linked_dt) > 0:
+            self.linked_projects[project_folder] = projects
+        projects.add(project_folder)
 
-    def set_project_inactive(self, project_folder):
+        for project_folder in projects:
+            self.inc_project_usage_count(project_folder)
+            self.push_folder_to_sync(project_folder)
+
+    def set_project_inactive(self, project):
         if not TvbProfile.current.web.ENCRYPT_STORAGE:
             return
-        self.dec_project_usage_count(project_folder)
-        if self._queue_count(project_folder) > 0 or self._project_active_count(project_folder) > 0:
-            self.marked_for_delete.add(project_folder)
-            LOGGER.info("Project {} still in use. Marked for deletion.".format(project_folder))
-            return
-        LOGGER.info("Remove project: {}".format(project_folder))
-        shutil.rmtree(project_folder)
+        project_folder = self.fie_helper.get_project_folder(project)
+        projects = self.linked_projects.pop(project_folder) if project_folder in self.linked_projects else set()
+        projects.add(project_folder)
+        for project_folder in projects:
+            self.dec_project_usage_count(project_folder)
+            if self._queue_count(project_folder) > 0 \
+                    or self._project_active_count(project_folder) > 0 \
+                    or self._running_op_count(project_folder) > 0:
+                self.marked_for_delete.add(project_folder)
+                LOGGER.info("Project {} still in use. Marked for deletion.".format(project_folder))
+                continue
+            LOGGER.info("Remove project: {}".format(project_folder))
+            shutil.rmtree(project_folder)
 
     def push_folder_to_sync(self, project_folder):
         if not TvbProfile.current.web.ENCRYPT_STORAGE or self._queue_count(project_folder) > 2:
