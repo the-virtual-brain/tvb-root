@@ -33,6 +33,7 @@ import os
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
+from tvb.interfaces.rest.commons.files_helper import save_temporary_file
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.access_permissions.permissions import ProjectAccessPermission
@@ -56,7 +57,7 @@ class FireSimulationResource(RestResource):
         """
         file = self.extract_file_from_request(request_file_key=RequestFileKey.SIMULATION_FILE_KEY.value,
                                               file_extension=FilesHelper.TVB_ZIP_FILE_EXTENSION)
-        zip_path = FilesHelper.save_temporary_file(file)
+        zip_path = save_temporary_file(file)
         result = FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
 
         if len(result) == 0:
