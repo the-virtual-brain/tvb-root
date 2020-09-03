@@ -38,6 +38,7 @@ from queue import Queue
 from threading import Lock
 
 from syncrypto import Crypto, Syncrypto
+from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
@@ -60,6 +61,8 @@ class DataEncryptionHandlerMeta(type):
 
 
 class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
+    CRYPTO_PASS = "CRYPTO_PASS"
+
     fie_helper = FilesHelper()
 
     # Queue used to push projects which need synchronisation
@@ -160,8 +163,10 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         if not TvbProfile.current.web.ENCRYPT_STORAGE:
             return
         encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
-        # TODO: Fetch Password file
-        crypto = Crypto("some_dummy_password")
+        crypto_pass = os.environ[DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
+        if crypto_pass is None:
+            raise TVBException("Storage encryption/decryption is not possible because password is not provided.")
+        crypto = Crypto(crypto_pass)
         syncro = Syncrypto(crypto, encrypted_folder, folder)
         syncro.sync_folder()
         trash_path = os.path.join(encrypted_folder, "_syncrypto", "trash")
