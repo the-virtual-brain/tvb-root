@@ -14,6 +14,9 @@ RUN apt-get -y update && apt-get -y install build-essential gcc
 RUN apt-get -y update && apt-get -y install texlive-base texlive-formats-extra
 RUN apt-get -y update && apt-get -y install octave postgresql
 
+# Used by syncrypto
+RUN apt-get -y update && apt-get -y install libssl-dev libffi-dev python-dev
+
 USER postgres
 RUN service postgresql start && createdb -O postgres tvb-test && psql --command "ALTER USER postgres WITH PASSWORD 'postgres';"
 
@@ -39,6 +42,8 @@ RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk
 RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
 RUN /opt/conda/envs/tvb-run/bin/pip install typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
+RUN /opt/conda/envs/tvb-run/bin/pip install lockfile
+RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
 
 # Jupyther notebook configurations: set password
 # tvb42
