@@ -292,7 +292,7 @@ class DataTypeMetaData(GenericMetaData):
     KEY_CLASS_NAME = "Type"
     KEY_AUTHOR = "Source_Author"
     KEY_OPERATION_TYPE = "Source_Operation_Category"
-    KEY_DATE = "Creation_Date"
+    KEY_DATE = "create_date"
     KEY_OPERATION_TAG = "user_group"
     KEY_OP_GROUP_ID = "groupId"
     KEY_RELEVANCY = "Relevant"
