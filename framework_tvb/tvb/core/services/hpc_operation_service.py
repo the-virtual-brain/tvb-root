@@ -36,6 +36,8 @@
 import os
 from functools import partial
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
@@ -74,13 +76,20 @@ class HPCOperationService(object):
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
         try:
+            folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
+            if TvbProfile.current.web.ENCRYPT_STORAGE:
+                encryption_handler.inc_project_usage_count(folder)
+                encryption_handler.sync_folders(folder)
             sim_h5_filenames, metric_op, metric_h5_filename = \
                 HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
 
+            if TvbProfile.current.web.ENCRYPT_STORAGE:
+                encryption_handler.sync_folders(folder)
+                encryption_handler.dec_project_usage_count(folder)
+                encryption_handler.check_and_delete(folder)
             operation.mark_complete(STATUS_FINISHED)
             dao.store_entity(operation)
             HPCSchedulerClient().update_db_with_results(operation, sim_h5_filenames, metric_op, metric_h5_filename)
-
         except OperationException as exception:
             HPCOperationService.LOGGER.error(exception)
             HPCOperationService._operation_error(operation)
