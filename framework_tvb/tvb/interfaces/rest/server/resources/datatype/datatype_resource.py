@@ -58,7 +58,7 @@ class GetOperationResultForDatatypeResource(RestResource):
         """
         :return the results of DataType.
         """
-        return self.datatypes_facade.get_operation_result(datatype_gid)
+        return self.datatypes_facade.get_extra_info(datatype_gid)
 
 class GetOperationsForDatatypeResource(RestResource):
 

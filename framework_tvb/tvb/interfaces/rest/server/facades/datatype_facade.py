@@ -51,7 +51,7 @@ class DatatypeFacade:
         return [AlgorithmDto(algorithm) for algorithm in filtered_adapters]
 
     @staticmethod
-    def get_operation_result(datatype_gid):
+    def get_extra_info(datatype_gid):
         extra_info = dao.get_datatype_extra_info(datatype_gid)
         if extra_info is None:
             return None

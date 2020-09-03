@@ -67,6 +67,14 @@ class DataTypeApi(MainApi):
             })))
         return response, AlgorithmDto
 
+    @handle_response
+    def get_extra_info(self, datatype_gid):
+        response = self.secured_request().get(
+            self.build_request_url(RestLink.OPERATION_RESULT.compute_url(True, {
+                LinkPlaceholder.DATATYPE_GID.value: datatype_gid
+            })))
+        return response, dict
+
     def load_datatype_from_file(self, datatype_path):
         datatype, _ = h5.load_with_links(datatype_path)
         return datatype
