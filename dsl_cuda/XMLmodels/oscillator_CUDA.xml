@@ -32,8 +32,8 @@ It scales both I and the long range coupling term.."/>
             <StateVariable name="V" default="" boundaries="-2.0, 4.0"/>
             <StateVariable name="W" default="" boundaries="-6.0, 6.0"/>
 
-            <TimeDerivative name="V" expression="d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V)"/>
-            <TimeDerivative name="W" expression="d * (a + b * V + c * powf(V, 2) - beta * W) / tau"/>
+            <TimeDerivative name="dV" expression="d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V)"/>
+            <TimeDerivative name="dW" expression="d * (a + b * V + c * powf(V, 2) - beta * W) / tau"/>
         </Dynamics>
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)

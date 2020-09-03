@@ -113,6 +113,10 @@ __global__ void ${modelname}(
     float ${state_var.name} = 0.0;
     % endfor
 
+    % for td in (dynamics.time_derivatives):
+    float ${td.name} = 0.0;
+    % endfor /
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
@@ -126,7 +130,7 @@ __global__ void ${modelname}(
     for (unsigned int t = i_step; t < (i_step + n_step); t++)
     {
     //***// This is the loop over nodes, which also should stay the same
-        for (unsigned int i_node = threadIdx.y; i_node < n_node; i_node+=blockDim.y)
+        for (int i_node = 0; i_node < n_node; i_node++)
         {
             % for m in range(len(coupling)):
                 % for cdp in (coupling[m].derived_parameters):
@@ -211,13 +215,13 @@ __global__ void ${modelname}(
 
             // This is dynamics step and the update in the state of the node
             % for i, tim_der in enumerate(dynamics.time_derivatives):
-            ${tim_der.name} += dt * (${tim_der.expression});
+            ${tim_der.name} = dt * (${tim_der.expression});
             % endfor
 
             % if noisepresent:
             // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
             % for ds, td in zip(dynamics.state_variables, dynamics.time_derivatives):
-            ${ds.name} += nsig * curand_normal2(&crndst).x;
+            ${ds.name} += nsig * curand_normal(&crndst) + ${td.name};
             % endfor /
             ##% else:
             ##% for ds, td in zip(dynamics.state_variables, dynamics.time_derivatives):

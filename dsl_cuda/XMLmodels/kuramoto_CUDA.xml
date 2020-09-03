@@ -20,7 +20,7 @@
             <!-- Use PI to select the PI wrapper (ie Kuramoto) -->
             <StateVariable name="V" default="-2, 1" boundaries="PI"/>
 
-            <TimeDerivative name="V" expression="omega + c_0"/>
+            <TimeDerivative name="dV" expression="omega + c_0"/>
         </Dynamics>
 
     </ComponentType>

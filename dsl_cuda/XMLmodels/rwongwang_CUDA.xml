@@ -57,8 +57,8 @@
             <DerivedVariable name="tmp_I_I" expression="(a_I*((w_I__I_0+(J_NMDA * V))-W))-b_I"/>
             <DerivedVariable name="tmp_H_I" expression="tmp_I_I/(1.0-exp(min_d_I*tmp_I_I))"/>
 
-            <TimeDerivative name="V" expression="(imintau_E* V)+(tmp_H_E*(1-V)*gamma_E)"/>
-            <TimeDerivative name="W" expression="(imintau_I* W)+(tmp_H_I*gamma_I)"/>
+            <TimeDerivative name="dV" expression="(imintau_E* V)+(tmp_H_E*(1-V)*gamma_E)"/>
+            <TimeDerivative name="dW" expression="(imintau_I* W)+(tmp_H_I*gamma_I)"/>
         </Dynamics>
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
@@ -79,6 +79,7 @@
         <DerivedVariable name="post" expression="a" description = "post synaptic function for coupling activity"/>
     </Dynamics>
 
+<!--        post coupling expression, needs to be present. If no temporary result needs to be computed enter 'None'-->
         <DerivedParameter name="c_0" expression="None"/>
 
     </ComponentType>

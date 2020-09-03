@@ -8,6 +8,8 @@ import itertools
 import argparse
 import os, sys
 
+from numpy import corrcoef
+
 sys.path.insert(0, os.path.join(os.getcwd(), os.pardir))
 import LEMS2CUDA
 
@@ -42,7 +44,7 @@ class TVB_test:
 		self.states = 1
 
 	def tvb_connectivity(self, speed, global_coupling, dt=0.1):
-		white_matter = connectivity.Connectivity.from_file(source_file="paupau.zip")
+		white_matter = connectivity.Connectivity.from_file(source_file="connectivity_68.zip")
 		white_matter.configure()
 		white_matter.speed = np.array([speed])
 		white_matter_coupling = coupling.Linear(a=global_coupling)
@@ -64,7 +66,7 @@ class TVB_test:
 		parser.add_argument('--node_threads', default=1, type=int)
 		parser.add_argument('--model',
 							choices=['Rwongwang', 'Kuramoto', 'Epileptor', 'Oscillator', \
-									 'Oscillatorref', 'Kuramotoref', 'Rwongwangref'],
+									 'Oscillatorref', 'Kuramotoref', 'Rwongwangref', 'Epileptorref'],
 							help="neural mass model to be used during the simulation",
 							default='Oscillator'
 							)
@@ -74,6 +76,11 @@ class TVB_test:
 							help="Filename to use as GPU kernel definition")
 
 		parser.add_argument('-b', '--bench', default="regular", type=str, help="What to bench: regular, numba, cuda")
+
+		parser.add_argument('-bx', '--blockszx', default="32", type=int, help="Enter block size x")
+		parser.add_argument('-by', '--blockszy', default="32", type=int, help="Enter block size y")
+
+		parser.add_argument('-val', '--validate', default=False, help="Enable validation to refmodels")
 
 		args = parser.parse_args()
 		return args
@@ -123,7 +130,7 @@ class TVB_test:
 		logger.info('result OK')
 
 	def start_cuda(self, logger):
-		logger.info('start Cuda run')
+		# logger.info('start Cuda run')
 		from cuda_run import CudaRun
 		cudarun = CudaRun()
 		tavg_data = cudarun.run_simulation(self.weights, self.lengths, self.params, self.speeds, logger,
@@ -132,9 +139,11 @@ class TVB_test:
 
 		# Todo: fix this for cuda
 		# self.check_results(self.n_nodes, self.n_work_items, tavg_data, self.weights, self.speeds, self.couplings, logger, self.args)
+		return tavg_data
 
 	def set_CUDAmodel_dir(self):
-		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))), os.pardir,'CUDAmodels',
+		# self.args.filename = os.path.join(os.path.join(os.getcwd(), os.pardir), 'CUDAmodels', self.args.model.lower() + '.c')
+		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))), os.pardir, 'CUDAmodels',
 								 self.args.model.lower() + '.c')
 
 	def set_states(self):
@@ -149,48 +158,62 @@ class TVB_test:
 		elif 'epileptor' in self.args.model.lower():
 			self.states = 6
 
+	def compare_with_ref(self, logger, tavg0):
+		self.args.model = self.args.model + 'ref'
+		self.set_CUDAmodel_dir()
+		tavg1 = self.start_cuda(logger)
+
+		# compare output to check if same as template
+		comparison = (tavg0.ravel() == tavg1.ravel())
+		logger.info('Templated version is similar to original %d:', comparison.all())
+		logger.info('Correlation coefficient: %f', corrcoef(tavg0.ravel(), tavg1.ravel())[0, 1])
+
 	def startsim(self):
 
 		tic = time.time()
 		logging.basicConfig(level=logging.DEBUG if self.args.verbose else logging.INFO)
 		logger = logging.getLogger('[TVB_CUDA]')
 
-		logger.info('dt %f', self.dt)
-		logger.info('nstep %d', self.nstep)
-		logger.info('n_inner_steps %f', self.n_inner_steps)
-		if self.args.test and self.args.n_time % 200:
-			logger.warning('rerun w/ a multiple of 200 time steps (-n 200, -n 400, etc) for testing')  # }}}
-
-		# setup data
-		logger.info('weights.shape %s', self.weights.shape)
-		logger.info('lengths.shape %s', self.lengths.shape)
-		logger.info('n_nodes %d', self.n_nodes)
-
-		# couplings and speeds are not derived from the regular TVB connection setup routine.
-		# these parameters are swooped every GPU spawn
-		logger.info('single connectome, %d x %d parameter space', self.ns, self.nc)
-		logger.info('%d total num threads', self.ns * self.nc)
-		logger.info('min_speed %f', self.min_speed)
-		logger.info('real buf_len %d, using power of 2 %d', self.buf_len_, self.buf_len)
+		# logger.info('dt %f', self.dt)
+		# logger.info('nstep %d', self.nstep)
+		# logger.info('n_inner_steps %f', self.n_inner_steps)
+		# if self.args.test and self.args.n_time % 200:
+		# 	logger.warning('rerun w/ a multiple of 200 time steps (-n 200, -n 400, etc) for testing')  # }}}
+		#
+		# # setup data
+		# logger.info('weights.shape %s', self.weights.shape)
+		# logger.info('lengths.shape %s', self.lengths.shape)
+		# logger.info('n_nodes %d', self.n_nodes)
+		#
+		# # couplings and speeds are not derived from the regular TVB connection setup routine.
+		# # these parameters are swooped every GPU spawn
+		# logger.info('single connectome, %d x %d parameter space', self.ns, self.nc)
+		# logger.info('%d total num threads', self.ns * self.nc)
+		# logger.info('min_speed %f', self.min_speed)
+		# logger.info('real buf_len %d, using power of 2 %d', self.buf_len_, self.buf_len)
 
 		self.set_CUDAmodel_dir()
 
 		self.set_states()
 
-		logger.info('number of states %d', self.states)
-		logger.info('filename %s', self.args.filename)
-		logger.info('model %s', self.args.model)
+		# logger.info('number of states %d', self.states)
+		# logger.info('filename %s', self.args.filename)
+		# logger.info('model %s', self.args.model)
 
 		tac = time.time()
-		logger.info("Setup in: {}".format(tac - tic))
+		# logger.info("Setup in: {}".format(tac - tic))
 
-		self.start_cuda(logger)
+		tavg0 = self.start_cuda(logger)
+		toc = time.time()
+
+		if (self.args.validate):
+			self.compare_with_ref(logger, tavg0)
 
 		toc = time.time()
 		elapsed = toc - tic
 		logger.info('Finished python simulation successfully in: %0.3f', elapsed)
-		logger.info('%0.3f M step/s', 1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed)
-		logger.info('finished')
+		# logger.info('%0.3f M step/s', 1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed)
+		# logger.info('finished')
 
 
 if __name__ == '__main__':
