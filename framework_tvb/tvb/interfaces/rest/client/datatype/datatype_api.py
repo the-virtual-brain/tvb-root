@@ -36,11 +36,11 @@ from tvb.basic.neotraits.api import HasTraits
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY, TVBLoader
 from tvb.interfaces.rest.client.client_decorators import handle_response
-from tvb.interfaces.rest.client.helpers.file_helper import save_file
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import ClientException
+from tvb.interfaces.rest.commons.files_helper import save_file
+from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 
 
 class DataTypeApi(MainApi):

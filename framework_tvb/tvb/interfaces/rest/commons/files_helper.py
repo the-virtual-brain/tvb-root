@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -28,6 +28,12 @@
 #
 #
 
+import os
+import tempfile
+
+from tvb.basic.profile import TvbProfile
+from werkzeug.utils import secure_filename
+
 CHUNK_SIZE = 128
 
 
@@ -37,3 +43,20 @@ def save_file(file_path, response):
             if chunk:
                 local_file.write(chunk)
     return file_path
+
+
+def create_temp_folder():
+    temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
+    folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
+
+    return folder
+
+
+def save_temporary_file(file, destination_folder=None):
+    filename = secure_filename(file.filename)
+    if destination_folder is None:
+        destination_folder = create_temp_folder()
+    full_path = os.path.join(destination_folder, filename)
+    file.save(full_path)
+
+    return full_path
