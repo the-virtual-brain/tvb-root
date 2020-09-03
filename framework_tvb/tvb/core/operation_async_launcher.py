@@ -49,7 +49,7 @@ from tvb.core.entities.model.model_operation import has_finished
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.services.data_encryption_handler import FoldersQueueConsumer
+from tvb.core.entities.file.data_encryption_handler import FoldersQueueConsumer
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.burst_service import BurstService
 

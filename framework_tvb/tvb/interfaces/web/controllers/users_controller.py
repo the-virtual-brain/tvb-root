@@ -49,7 +49,7 @@ from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.authorization import AuthorizationManager
-from tvb.core.services.data_encryption_handler import encryption_handler
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.texture_to_json import color_texture_to_list

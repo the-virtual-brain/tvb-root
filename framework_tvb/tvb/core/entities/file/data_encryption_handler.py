@@ -141,12 +141,15 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         #   1. It is not in the queue
         #   2. It is marked for delete
         #   3. Nobody is using it
-        if self._queue_count(folder) == 0 \
-                and folder in self.marked_for_delete \
-                and self._project_active_count(folder) == 0 \
-                and self._running_op_count(folder) == 0:
+        if not self.is_in_usage(folder) \
+                and folder in self.marked_for_delete:
             self.marked_for_delete.remove(folder)
             shutil.rmtree(folder)
+
+    def is_in_usage(self, project_folder):
+        return self._queue_count(project_folder) > 0 \
+               or self._project_active_count(project_folder) > 0 \
+               or self._running_op_count(project_folder) > 0
 
     @staticmethod
     def compute_encrypted_folder_path(project_folder):

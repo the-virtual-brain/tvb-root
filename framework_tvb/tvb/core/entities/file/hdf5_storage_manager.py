@@ -49,7 +49,7 @@ from tvb.core.entities.file.exceptions import FileStructureException, MissingDat
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataFileException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import GenericMetaData
-from tvb.core.services.data_encryption_handler import encryption_handler
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 
 # Create logger for this module
 LOG = get_logger(__name__)

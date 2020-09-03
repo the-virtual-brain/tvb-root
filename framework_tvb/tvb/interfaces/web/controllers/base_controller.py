@@ -45,7 +45,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.services.data_encryption_handler import encryption_handler
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.web.controllers import common

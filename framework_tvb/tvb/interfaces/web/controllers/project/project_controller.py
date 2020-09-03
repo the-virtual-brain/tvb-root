@@ -48,7 +48,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.services.data_encryption_handler import DataEncryptionHandler
+from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.import_service import ImportService
@@ -187,7 +187,7 @@ class ProjectController(BaseController):
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
                 saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
-                if TvbProfile.current.web.ENCRYPT_STORAGE:
+                if TvbProfile.current.web.ENCRYPT_STORAGE and is_create:
                     project_folder = self.file_helper.get_project_folder(saved_project)
                     DataEncryptionHandler.sync_folders(project_folder)
                     shutil.rmtree(project_folder)

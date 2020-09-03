@@ -39,6 +39,7 @@ import os
 
 import formencode
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.file.exceptions import FileStructureException
@@ -56,7 +57,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.removers_factory import get_remover
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.services.data_encryption_handler import encryption_handler
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
@@ -117,12 +118,16 @@ class ProjectService:
                 self.logger.exception("An error has occurred!")
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
-                self.structure_helper.rename_project_structure(current_proj.name, new_name)
                 project_folder = self.structure_helper.get_project_folder(current_proj)
+                if TvbProfile.current.web.ENCRYPT_STORAGE and not encryption_handler.is_in_usage(project_folder):
+                    raise ProjectServiceException(
+                        "A project can not be renamed while sync encryption operations are running")
+                self.structure_helper.rename_project_structure(current_proj.name, new_name)
                 encrypted_path = encryption_handler.compute_encrypted_folder_path(project_folder)
                 if os.path.exists(encrypted_path):
-                    os.rename(encrypted_path, encryption_handler.compute_encrypted_folder_path(
-                        os.path.join(os.path.basename(project_folder), new_name)))
+                    new_encrypted_path = encryption_handler.compute_encrypted_folder_path(
+                        self.structure_helper.get_project_folder(new_name))
+                    os.rename(encrypted_path, new_encrypted_path)
             current_proj.name = new_name
             current_proj.description = data["description"]
         # Commit to make sure we have a valid ID

@@ -67,7 +67,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
-from tvb.core.services.data_encryption_handler import DataEncryptionHandler
+from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
 from tvb.core.data_encryption_handler import DataEncryptionHandler

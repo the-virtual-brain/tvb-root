@@ -50,7 +50,7 @@ from tvb.core.entities.model.model_operation import OperationProcessIdentifier, 
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
-from tvb.core.services.data_encryption_handler import encryption_handler
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 
 LOGGER = get_logger(__name__)
 
