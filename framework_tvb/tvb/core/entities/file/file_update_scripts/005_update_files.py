@@ -43,6 +43,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits._h5core import H5File
 
 LOGGER = get_logger(__name__)
@@ -66,6 +67,16 @@ def _pop_lengths(root_metadata):
 
     return root_metadata
 
+
+def _bytes_ds_to_string_ds(storage_manager, ds_name):
+    bytes_labels = storage_manager.get_data(ds_name)
+    string_labels = []
+    for i in range(len(bytes_labels)):
+        string_labels.append(str(bytes_labels[i]))
+
+    storage_manager.remove_data(ds_name)
+    storage_manager.store_data(ds_name, numpy.asarray(bytes_labels, dtype=object))
+    return storage_manager
 
 def update(input_file):
     """
@@ -110,7 +121,7 @@ def update(input_file):
     root_metadata.pop("module")
     root_metadata.pop('data_version')
 
-    if "TimeSeries" in class_name:
+    if 'TimeSeries' in class_name:
         root_metadata.pop(FIELD_SURFACE_MAPPING)
         root_metadata.pop(FIELD_VOLUME_MAPPING)
 
@@ -124,7 +135,7 @@ def update(input_file):
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
         root_metadata = _pop_lengths(root_metadata)
 
-    elif "Connectivity" in class_name:
+    elif 'Connectivity' in class_name and ('Local' not in class_name):
         root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
         root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
 
@@ -135,7 +146,23 @@ def update(input_file):
 
         if root_metadata['saved_selection'] == 'null':
             root_metadata['saved_selection'] = '[]'
-    elif 'Surface' in class_name:
+
+        for dataset in ['areas', 'centres', 'cortical', 'hemispheres', 'orientations', 'region_labels',
+                        'tract_lengths', 'weights']:
+            conn_metadata = DataSetMetaData.from_array(storage_manager.get_data(dataset)).to_dict()
+            storage_manager.set_metadata(conn_metadata, dataset)
+            if 'Variance' in storage_manager.get_metadata(dataset):
+                storage_manager.remove_metadata('Variance', dataset)
+            storage_manager.remove_metadata('Size', dataset)
+
+        storage_manager.remove_metadata('Mean non zero', 'tract_lengths')
+        storage_manager.remove_metadata('Min. non zero', 'tract_lengths')
+        storage_manager.remove_metadata('Var. non zero', 'tract_lengths')
+        storage_manager.remove_metadata('Mean non zero', 'weights')
+        storage_manager.remove_metadata('Min. non zero', 'weights')
+        storage_manager.remove_metadata('Var. non zero', 'weights')
+
+    elif 'Surface' in class_name and ('Projection' not in class_name):
         root_metadata['edge_max_length'] = float(root_metadata['edge_max_length'])
         root_metadata['edge_mean_length'] = float(root_metadata['edge_mean_length'])
         root_metadata['edge_min_length'] = float(root_metadata['edge_min_length'])
@@ -168,16 +195,31 @@ def update(input_file):
         labels_metadata = {'Maximum': '', 'Mean': '', 'Minimum': ''}
         storage_manager.set_metadata(labels_metadata, 'labels')
 
-        bytes_labels = storage_manager.get_data('labels')
-        string_labels = []
-        for i in range(len(bytes_labels)):
-            string_labels.append(str(bytes_labels[i], 'utf-8'))
-
-        # storage_manager.remove_data('labels')
-        # storage_manager.store_data('labels', numpy.asarray(bytes_labels, dtype=object))
+        storage_manager = _bytes_ds_to_string_ds(storage_manager, 'labels')
 
         if 'MEG' in class_name:
             storage_manager.remove_metadata('Size', 'orientations')
             storage_manager.remove_metadata('Variance', 'orientations')
+    elif 'Projection' in class_name:
+        root_metadata['written_by'] = "tvb.adapters.datatypes.h5.projections_h5.ProjectionMatrixH5"
+        root_metadata['projection_type'] = root_metadata["projection_type"].replace("\"", '')
+        root_metadata['sensors'] = "urn:uuid:" + root_metadata['sensors']
+        root_metadata['sources'] = "urn:uuid:" + root_metadata['sources']
+
+        storage_manager.remove_metadata('Size', 'projection_data')
+        storage_manager.remove_metadata('Variance', 'projection_data')
+    elif 'LocalConnectivity' in class_name:
+        root_metadata['cutoff'] = float(root_metadata['cutoff'])
+        root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
+
+        storage_manager.remove_metadata('shape', 'matrix')
+
+        storage_manager = _bytes_ds_to_string_ds(storage_manager, 'matrixdata')
+        # storage_manager = _bytes_ds_to_string_ds(storage_manager, 'matrixdata')
+        # storage_manager = _bytes_ds_to_string_ds(storage_manager, 'matrixdata')
+        # storage_manager = _bytes_ds_to_string_ds(storage_manager, 'matrixdata')
+    elif 'Volume' in class_name:
+        root_metadata['operation_tag'] = ''
+        root_metadata['voxel_unit'] = root_metadata["voxel_unit"].replace("\"", '')
 
     storage_manager.set_metadata(root_metadata)
