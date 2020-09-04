@@ -36,6 +36,7 @@ Upgrade script from H5 version 4 to version 5 (for tvb release 2.0)
 """
 import os
 import sys
+import numpy
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -55,6 +56,15 @@ def _lowercase_first_character(string):
     handles empty strings and None values
     """
     return string[:1].lower() + string[1:] if string else ''
+
+
+def _pop_lengths(root_metadata):
+    root_metadata.pop('length_1d')
+    root_metadata.pop('length_2d')
+    root_metadata.pop('length_3d')
+    root_metadata.pop('length_4d')
+
+    return root_metadata
 
 
 def update(input_file):
@@ -93,9 +103,7 @@ def update(input_file):
     h5_class = REGISTRY.get_h5file_for_datatype(datatype_class)
     root_metadata[H5File.KEY_WRITTEN_BY] = h5_class.__module__ + '.' + h5_class.__name__
 
-    root_metadata['operation_tag'] = ''
     root_metadata['user_tag_1'] = ''
-
     root_metadata['gid'] = "urn:uuid:" + root_metadata['gid']
 
     root_metadata.pop("type")
@@ -114,11 +122,8 @@ def update(input_file):
         root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
         root_metadata['region_mapping'] = "urn:uuid:" + root_metadata['region_mapping']
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        root_metadata = _pop_lengths(root_metadata)
 
-        root_metadata.pop('length_1d')
-        root_metadata.pop('length_2d')
-        root_metadata.pop('length_3d')
-        root_metadata.pop('length_4d')
     elif "Connectivity" in class_name:
         root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
         root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
@@ -130,5 +135,49 @@ def update(input_file):
 
         if root_metadata['saved_selection'] == 'null':
             root_metadata['saved_selection'] = '[]'
+    elif 'Surface' in class_name:
+        root_metadata['edge_max_length'] = float(root_metadata['edge_max_length'])
+        root_metadata['edge_mean_length'] = float(root_metadata['edge_mean_length'])
+        root_metadata['edge_min_length'] = float(root_metadata['edge_min_length'])
+
+        root_metadata['number_of_split_slices'] = int(root_metadata['number_of_split_slices'])
+        root_metadata['number_of_triangles'] = int(root_metadata['number_of_triangles'])
+        root_metadata['number_of_vertices'] = int(root_metadata['number_of_vertices'])
+
+        root_metadata["surface_type"] = root_metadata["surface_type"].replace("\"", '')
+    elif 'RegionMapping' in class_name:
+        root_metadata = _pop_lengths(root_metadata)
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('nr_dimensions')
+
+        root_metadata['operation_tag'] = ''
+        root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
+    elif 'Sensors' in class_name:
+        root_metadata['number_of_sensors'] = int(root_metadata['number_of_sensors'])
+        root_metadata['sensors_type'] = root_metadata["sensors_type"].replace("\"", '')
+        root_metadata['has_orientation'] = "bool:" + root_metadata['has_orientation'][:1].upper() \
+                                           + root_metadata['has_orientation'][1:]
+
+        storage_manager.remove_metadata('Size', 'labels')
+        storage_manager.remove_metadata('Size', 'locations')
+        storage_manager.remove_metadata('Variance', 'locations')
+
+        labels_metadata = {'Maximum': '', 'Mean': '', 'Minimum': ''}
+        storage_manager.set_metadata(labels_metadata, 'labels')
+
+        bytes_labels = storage_manager.get_data('labels')
+        string_labels = []
+        for i in range(len(bytes_labels)):
+            string_labels.append(str(bytes_labels[i], 'utf-8'))
+
+        # storage_manager.remove_data('labels')
+        # storage_manager.store_data('labels', numpy.asarray(bytes_labels, dtype=object))
+
+        if 'MEG' in class_name:
+            storage_manager.remove_metadata('Size', 'orientations')
+            storage_manager.remove_metadata('Variance', 'orientations')
 
     storage_manager.set_metadata(root_metadata)
