@@ -111,10 +111,10 @@ class HPCOperationService(object):
     def check_operations_job():
         operations = dao.get_operations()
         if operations is None or len(operations) == 0:
-            HPCOperationService.LOGGER.info("There aren't any simulations in status PENDING or RUNNING")
             return
 
         for operation in operations:
+            HPCOperationService.LOGGER.info("Start processing operation {}".format(operation.id))
             try:
                 op_ident = dao.get_operation_process_for_operation(operation.id)
                 if op_ident is not None:
