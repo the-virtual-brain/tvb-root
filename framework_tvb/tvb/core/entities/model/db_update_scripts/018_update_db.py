@@ -33,8 +33,15 @@ Change of DB structure to TVB 2.0
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from tvb.basic.exceptions import TVBException
+from sqlalchemy import inspect
+from sqlalchemy.engine import reflection
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.storage import SA_SESSIONMAKER
+from sqlalchemy.sql import text
+from tvb.core.neotraits.db import Base
+
+
+meta = Base.metadata
 
 LOGGER = get_logger(__name__)
 
@@ -42,8 +49,31 @@ LOGGER = get_logger(__name__)
 def upgrade(migrate_engine):
     """
     """
-    raise TVBException("Not yet implemented project update logic!")
+    meta.bind = migrate_engine
 
+    session = SA_SESSIONMAKER()
+    inspector = reflection.Inspector.from_engine(session.connection())
+
+    try:
+        for table in inspector.get_table_names():
+            new_table_name = table
+            new_table_name = new_table_name.lower()
+            if 'mapped' in new_table_name:
+                for i in range(len(new_table_name)):
+                    if new_table_name[i] == '_':
+                        new_table_name[i+1] = new_table_name[i+1].upper()
+
+                new_table_name.replace('_', '')
+                new_table_name.replace('MAPPED', '')
+                new_table_name.replace('DATA', '')
+                new_table_name.append('Index')
+
+                session.execute(text("""ALTER TABLE "{}" RENAME TO "{}"; """.format(table, new_table_name)))
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
 
 def downgrade(_):
     """

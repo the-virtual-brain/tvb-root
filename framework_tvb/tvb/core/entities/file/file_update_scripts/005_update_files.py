@@ -45,6 +45,7 @@ from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits._h5core import H5File
+from tvb.core.neotraits.h5 import STORE_STRING
 
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
@@ -72,11 +73,23 @@ def _bytes_ds_to_string_ds(storage_manager, ds_name):
     bytes_labels = storage_manager.get_data(ds_name)
     string_labels = []
     for i in range(len(bytes_labels)):
-        string_labels.append(str(bytes_labels[i]))
+        string_labels.append(str(bytes_labels[i], 'utf-8'))
 
     storage_manager.remove_data(ds_name)
-    storage_manager.store_data(ds_name, numpy.asarray(bytes_labels, dtype=object))
+    storage_manager.store_data(ds_name, numpy.asarray(string_labels).astype(STORE_STRING))
     return storage_manager
+
+
+def _migrate_dataset_metadata(dataset_list, storage_manager):
+    for dataset in dataset_list:
+        conn_metadata = DataSetMetaData.from_array(storage_manager.get_data(dataset)).to_dict()
+        storage_manager.set_metadata(conn_metadata, dataset)
+        metadata = storage_manager.get_metadata(dataset)
+        if 'Variance' in metadata:
+            storage_manager.remove_metadata('Variance', dataset)
+        if 'Size' in metadata:
+            storage_manager.remove_metadata('Size',dataset)
+
 
 def update(input_file):
     """
@@ -147,13 +160,8 @@ def update(input_file):
         if root_metadata['saved_selection'] == 'null':
             root_metadata['saved_selection'] = '[]'
 
-        for dataset in ['areas', 'centres', 'cortical', 'hemispheres', 'orientations', 'region_labels',
-                        'tract_lengths', 'weights']:
-            conn_metadata = DataSetMetaData.from_array(storage_manager.get_data(dataset)).to_dict()
-            storage_manager.set_metadata(conn_metadata, dataset)
-            if 'Variance' in storage_manager.get_metadata(dataset):
-                storage_manager.remove_metadata('Variance', dataset)
-            storage_manager.remove_metadata('Size', dataset)
+        _migrate_dataset_metadata(['areas', 'centres', 'cortical', 'hemispheres', 'orientations', 'region_labels',
+                                   'tract_lengths', 'weights'], storage_manager)
 
         storage_manager.remove_metadata('Mean non zero', 'tract_lengths')
         storage_manager.remove_metadata('Min. non zero', 'tract_lengths')
@@ -162,7 +170,7 @@ def update(input_file):
         storage_manager.remove_metadata('Min. non zero', 'weights')
         storage_manager.remove_metadata('Var. non zero', 'weights')
 
-    elif 'Surface' in class_name and ('Projection' not in class_name):
+    elif class_name in ['BrainSkull', 'CorticalSurface', 'SkinAir', 'BrainSkull', 'SkullSkin', 'EEGCap', 'FaceSurface']:
         root_metadata['edge_max_length'] = float(root_metadata['edge_max_length'])
         root_metadata['edge_mean_length'] = float(root_metadata['edge_mean_length'])
         root_metadata['edge_min_length'] = float(root_metadata['edge_min_length'])
@@ -172,6 +180,21 @@ def update(input_file):
         root_metadata['number_of_vertices'] = int(root_metadata['number_of_vertices'])
 
         root_metadata["surface_type"] = root_metadata["surface_type"].replace("\"", '')
+
+        storage_manager.store_data('split_triangles', [])
+
+        _migrate_dataset_metadata(['split_triangles', 'triangle_normals', 'triangles', 'vertex_normals', 'vertices'],
+                                  storage_manager)
+
+        root_metadata['zero_based_triangles'] = "bool:" + root_metadata['zero_based_triangles'][:1].upper() \
+                                                + root_metadata['zero_based_triangles'][1:]
+        root_metadata['bi_hemispheric'] = "bool:" + root_metadata['bi_hemispheric'][:1].upper() \
+                                          + root_metadata['bi_hemispheric'][1:]
+        root_metadata['valid_for_simulations'] = "bool:" + root_metadata['valid_for_simulations'][:1].upper() \
+                                                 + root_metadata['valid_for_simulations'][1:]
+
+        root_metadata['operation_tag'] = ''
+
     elif 'RegionMapping' in class_name:
         root_metadata = _pop_lengths(root_metadata)
         root_metadata.pop('label_x')
@@ -182,6 +205,9 @@ def update(input_file):
 
         root_metadata['operation_tag'] = ''
         root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
+        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+
+        _migrate_dataset_metadata(['array_data'], storage_manager)
     elif 'Sensors' in class_name:
         root_metadata['number_of_sensors'] = int(root_metadata['number_of_sensors'])
         root_metadata['sensors_type'] = root_metadata["sensors_type"].replace("\"", '')
@@ -197,9 +223,15 @@ def update(input_file):
 
         storage_manager = _bytes_ds_to_string_ds(storage_manager, 'labels')
 
+        datasets = ['labels', 'locations']
+
         if 'MEG' in class_name:
             storage_manager.remove_metadata('Size', 'orientations')
             storage_manager.remove_metadata('Variance', 'orientations')
+            datasets.append('orientations')
+        root_metadata['operation_tag'] = ''
+
+        _migrate_dataset_metadata(datasets, storage_manager)
     elif 'Projection' in class_name:
         root_metadata['written_by'] = "tvb.adapters.datatypes.h5.projections_h5.ProjectionMatrixH5"
         root_metadata['projection_type'] = root_metadata["projection_type"].replace("\"", '')
@@ -208,16 +240,22 @@ def update(input_file):
 
         storage_manager.remove_metadata('Size', 'projection_data')
         storage_manager.remove_metadata('Variance', 'projection_data')
+        root_metadata['operation_tag'] = ''
+
+        _migrate_dataset_metadata(['projection_data'], storage_manager)
     elif 'LocalConnectivity' in class_name:
         root_metadata['cutoff'] = float(root_metadata['cutoff'])
         root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
 
         storage_manager.remove_metadata('shape', 'matrix')
 
-        storage_manager = _bytes_ds_to_string_ds(storage_manager, 'matrixdata')
-        # storage_manager = _bytes_ds_to_string_ds(storage_manager, 'matrixdata')
-        # storage_manager = _bytes_ds_to_string_ds(storage_manager, 'matrixdata')
-        # storage_manager = _bytes_ds_to_string_ds(storage_manager, 'matrixdata')
+        matrix_metadata = storage_manager.get_metadata('matrix')
+        matrix_metadata['Shape'] = str(matrix_metadata['Shape'], 'utf-8')
+        matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
+        matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
+        storage_manager.set_metadata(matrix_metadata, 'matrix')
+
+        root_metadata['operation_tag'] = ''
     elif 'Volume' in class_name:
         root_metadata['operation_tag'] = ''
         root_metadata['voxel_unit'] = root_metadata["voxel_unit"].replace("\"", '')
