@@ -92,18 +92,18 @@ class CoSimulator(Simulator):
 
         super(CoSimulator, self)._configure_integrator_noise()
 
-    def preconfigure(self):
-        if self.tvb_spikeNet_interface is not None:
-            # TODO: decide if this is really necessary...
-            if self.integrator.dt >= 2 * self.tvb_spikeNet_interface.spikeNet_min_delay:
-                self.integrator.dt = int(numpy.round(self.integrator.dt /
-                                                     self.tvb_spikeNet_interface.spikeNet_min_delay)) * \
-                                     self.tvb_spikeNet_interface.spikeNet_min_delay
-            else:
-                raise ValueError("TVB integration time step dt=%f "
-                                 "is not equal or greater than twice the Spiking Network minimum delay min_delay=%f!" %
-                                 (self.integrator.dt, self.tvb_spikeNet_interface.spikeNet_min_delay))
-        super(CoSimulator, self).preconfigure()
+    # def preconfigure(self):
+    #     if self.tvb_spikeNet_interface is not None:
+    #         # TODO: decide if this is really necessary...
+    #         if self.integrator.dt >= 2 * self.tvb_spikeNet_interface.spikeNet_min_delay:
+    #             self.integrator.dt = int(numpy.round(self.integrator.dt /
+    #                                                  self.tvb_spikeNet_interface.spikeNet_min_delay)) * \
+    #                                  self.tvb_spikeNet_interface.spikeNet_min_delay
+    #         else:
+    #             raise ValueError("TVB integration time step dt=%f "
+    #                              "is not equal or greater than twice the Spiking Network minimum delay min_delay=%f!" %
+    #                              (self.integrator.dt, self.tvb_spikeNet_interface.spikeNet_min_delay))
+    #     super(CoSimulator, self).preconfigure()
 
     def _configure_spikeNet_interface(self):
         # TODO: Shall we implement a parallel implentation for multiple modes for SpikeNet as well?!
