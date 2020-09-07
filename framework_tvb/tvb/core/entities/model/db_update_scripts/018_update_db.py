@@ -59,14 +59,16 @@ def upgrade(migrate_engine):
             new_table_name = table
             new_table_name = new_table_name.lower()
             if 'mapped' in new_table_name:
+                new_table_name = list(new_table_name)
                 for i in range(len(new_table_name)):
                     if new_table_name[i] == '_':
-                        new_table_name[i+1] = new_table_name[i+1].upper()
+                        new_table_name[i + 1] = new_table_name[i + 1].upper()
 
-                new_table_name.replace('_', '')
-                new_table_name.replace('MAPPED', '')
-                new_table_name.replace('DATA', '')
-                new_table_name.append('Index')
+                new_table_name = "".join(new_table_name)
+                new_table_name = new_table_name.replace('_', '')
+                new_table_name = new_table_name.replace('mapped', '')
+                new_table_name = new_table_name.replace('Data', '')
+                new_table_name = new_table_name + 'Index'
 
                 session.execute(text("""ALTER TABLE "{}" RENAME TO "{}"; """.format(table, new_table_name)))
         session.commit()
