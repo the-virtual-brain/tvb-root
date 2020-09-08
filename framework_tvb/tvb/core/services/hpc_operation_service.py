@@ -75,24 +75,30 @@ class HPCOperationService(object):
         # TODO: Handle login
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
+
+        operation = dao.get_operation_by_id(operation.id)
+        folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
+        if TvbProfile.current.web.ENCRYPT_STORAGE:
+            encryption_handler.inc_project_usage_count(folder)
+            encryption_handler.sync_folders(folder)
+
         try:
-            folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
-            if TvbProfile.current.web.ENCRYPT_STORAGE:
-                encryption_handler.inc_project_usage_count(folder)
-                encryption_handler.sync_folders(folder)
             sim_h5_filenames, metric_op, metric_h5_filename = \
                 HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
 
+            operation.mark_complete(STATUS_FINISHED)
+            dao.store_entity(operation)
+            HPCSchedulerClient().update_db_with_results(operation, sim_h5_filenames, metric_op, metric_h5_filename)
+
+        except OperationException as exception:
+            HPCOperationService.LOGGER.error(exception)
+            HPCOperationService._operation_error(operation)
+
+        finally:
             if TvbProfile.current.web.ENCRYPT_STORAGE:
                 encryption_handler.sync_folders(folder)
                 encryption_handler.dec_project_usage_count(folder)
                 encryption_handler.check_and_delete(folder)
-            operation.mark_complete(STATUS_FINISHED)
-            dao.store_entity(operation)
-            HPCSchedulerClient().update_db_with_results(operation, sim_h5_filenames, metric_op, metric_h5_filename)
-        except OperationException as exception:
-            HPCOperationService.LOGGER.error(exception)
-            HPCOperationService._operation_error(operation)
 
     @staticmethod
     def handle_hpc_status_changed(operation, simulator_gid, new_status):
