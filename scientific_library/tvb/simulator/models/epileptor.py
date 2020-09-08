@@ -396,10 +396,10 @@ class Epileptor2D(ModelNumbaDfun):
         
         with
             h =
-                \begin{cases}
-                x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
-                4 (x_{1,i} - x_{0}) & \text{else }
-                \end{cases}
+            \begin{cases}
+            x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
+            4 (x_{1,i} - x_{0}) & \text{else }
+            \end{cases}
 
         References:
             [Proixetal_2014] Proix, T.; Bartolomei, F; Chauvel, P; Bernard, C; Jirsa, V.K. *
@@ -530,6 +530,19 @@ class Epileptor2D(ModelNumbaDfun):
         r"""
         Computes the derivatives of the state-variables of the Epileptor 2D
         with respect to time.
+
+        Equations and default parameters are taken from [Proixetal_2014]:
+
+        .. math::
+            \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
+            \dot{z_{i}} &=& r(h - z_{i})
+
+        with
+            h =
+            \begin{cases}
+            x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
+            4 (x_{1,i} - x_{0}) & \text{else }
+            \end{cases}
         """
 
         x_ = x.reshape(x.shape[:-1]).T

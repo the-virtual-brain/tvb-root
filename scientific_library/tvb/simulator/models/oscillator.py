@@ -573,6 +573,14 @@ class SupHopf(ModelNumbaDfun):
         r"""
         Computes the derivatives of the state-variables of supHopf
         with respect to time.
+
+        The equations of the supHopf equations read as follows:
+
+        .. math::
+            \dot{x}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})x_{i} - {\omega}{i}y_{i} \\
+            \dot{y}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})y_{i} + {\omega}{i}x_{i}
+
+        where a is the local bifurcation parameter and omega the angular frequency.
         """
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
