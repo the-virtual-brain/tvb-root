@@ -48,7 +48,7 @@ def configure_matjax_doc(available_models):
         models_docs.append({
             'name': clz_name.replace(' ', '_'),
             'inline_description': _dfun_math_directives_to_matjax(clz),
-            'description': clz.__doc__
+            'description': _format_doc(clz.__doc__)
         })
 
     return models_docs
@@ -60,8 +60,7 @@ def _dfun_math_directives_to_matjax(model):
     It converts them in html text that will be interpreted by mathjax
     The parsing is simplistic, not a full rst parser.
     """
-    def format_doc(doc):
-        return _multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::', '')
+
 
     try:
         doc = model.dfun.__doc__
@@ -69,7 +68,7 @@ def _dfun_math_directives_to_matjax(model):
         doc = None
 
     if doc is not None:
-        return format_doc(doc)
+        return _format_doc(doc)
 
     # try the parent __doc__
     try:
@@ -78,10 +77,12 @@ def _dfun_math_directives_to_matjax(model):
         doc = None
 
     if doc is not None:
-        return format_doc('Documentation is missing. Copy-ed from parent\n' + doc)
+        return _format_doc('Documentation is missing. Copy-ed from parent\n' + doc)
 
     return 'Documentation is missing. '
 
+def _format_doc(doc):
+    return _multiline_math_directives_to_matjax(doc).replace('&', '&amp;').replace('.. math::', '')
 
 def _multiline_math_directives_to_matjax(doc):
     """

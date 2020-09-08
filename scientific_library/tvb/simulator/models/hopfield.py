@@ -82,12 +82,12 @@ class Hopfield(Model):
     dfun dynamic equation
         .. math::
             \dot{x_{i}} &= 1 / \tau_{x} (-x_{i} + c_0(i)) \\
-            \dot{\\theta_{i}} &= 1 / \tau_{\theta_{i}} (-\theta + c_1(i))
+            \dot{\theta_{i}} &= 1 / \tau_{\theta_{i}} (-\theta + c_1(i))
 
 
     .. figure :: img/Hopfield_01_mode_0_pplane.svg
 
-        The phase-plane for the Hopfield model.
+    The phase-plane for the Hopfield model.
 
     """
 
@@ -102,7 +102,7 @@ class Hopfield(Model):
         label=":math:`\\tau_{\\theta}`",
         default=numpy.array([5.]),
         domain=Range(lo = 0.01, hi = 100., step = 0.01),
-        doc="""The slow time-scale for threshold calculus :math:`\theta`, state-variable of the model.""")
+        doc="""The slow time-scale for threshold calculus :math:`\\theta`, state-variable of the model.""")
 
     dynamic = NArray(
         dtype=int,

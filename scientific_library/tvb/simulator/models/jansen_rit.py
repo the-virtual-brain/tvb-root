@@ -75,13 +75,13 @@ class JansenRit(ModelNumbaDfun):
 
     # Define traited attributes for this model, these represent possible kwargs.
     A = NArray(
-        label="A",
+        label=":math:`A`",
         default=numpy.array([3.25]),
         domain=Range(lo=2.6, hi=9.75, step=0.05),
         doc="""Maximum amplitude of EPSP [mV]. Also called average synaptic gain.""")
 
     B = NArray(
-        label="B",
+        label=":math:`B`",
         default=numpy.array([22.0]),
         domain=Range(lo=17.6, hi=110.0, step=0.2),
         doc="""Maximum amplitude of IPSP [mV]. Also called average synaptic gain.""")
@@ -204,36 +204,6 @@ class JansenRit(ModelNumbaDfun):
     cvar = numpy.array([1, 2], dtype=numpy.int32)
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
-        r"""
-        The dynamic equations were taken from [JR_1995]_
-
-        .. math::
-            \dot{y_0} &= y_3 \\
-            \dot{y_3} &= A a\,S[y_1 - y_2] - 2a\,y_3 - 2a^2\, y_0 \\
-            \dot{y_1} &= y_4\\
-            \dot{y_4} &= A a \,[p(t) + \alpha_2 J S[\alpha_1 J\,y_0]+ c_0]
-                        -2a\,y - a^2\,y_1 \\
-            \dot{y_2} &= y_5 \\
-            \dot{y_5} &= B b (\alpha_4 J\, S[\alpha_3 J \,y_0]) - 2 b\, y_5
-                        - b^2\,y_2 \\
-            S[v] &= \frac{2\, \nu_{max}}{1 + \exp^{r(v_0 - v)}}
-
-
-        :math:`p(t)` can be any arbitrary function, including white noise or
-        random numbers taken from a uniform distribution, representing a pulse
-        density with an amplitude varying between 120 and 320
-
-        For Evoked Potentials, a transient component of the input,
-        representing the impulse density attribuable to a brief visual input is
-        applied. Time should be in seconds.
-
-        .. math::
-            p(t) = q\,(\frac{t}{w})^n \, \exp{-\frac{t}{w}} \\
-            q = 0.5 \\
-            n = 7 \\
-            w = 0.005 [s]
-
-        """
         y0, y1, y2, y3, y4, y5 = state_variables
 
         # NOTE: This is assumed to be \sum_j u_kj * S[y_{1_j} - y_{2_j}]
@@ -265,6 +235,36 @@ class JansenRit(ModelNumbaDfun):
         ])
 
     def dfun(self, y, c, local_coupling=0.0):
+        r"""
+        The dynamic equations were taken from [JR_1995]_
+
+        .. math::
+            \dot{y_0} &= y_3 \\
+            \dot{y_3} &= A a\,S[y_1 - y_2] - 2a\,y_3 - 2a^2\, y_0 \\
+            \dot{y_1} &= y_4\\
+            \dot{y_4} &= A a \,[p(t) + \alpha_2 J S[\alpha_1 J\,y_0]+ c_0]
+                        -2a\,y - a^2\,y_1 \\
+            \dot{y_2} &= y_5 \\
+            \dot{y_5} &= B b (\alpha_4 J\, S[\alpha_3 J \,y_0]) - 2 b\, y_5
+                        - b^2\,y_2 \\
+            S[v] &= \frac{2\, \nu_{max}}{1 + \exp^{r(v_0 - v)}}
+
+
+        :math:`p(t)` can be any arbitrary function, including white noise or
+        random numbers taken from a uniform distribution, representing a pulse
+        density with an amplitude varying between 120 and 320
+
+        For Evoked Potentials, a transient component of the input,
+        representing the impulse density attribuable to a brief visual input is
+        applied. Time should be in seconds.
+
+        .. math::
+            p(t) = q\,(\frac{t}{w})^n \, \exp{-\frac{t}{w}} \\
+            q = 0.5 \\
+            n = 7 \\
+            w = 0.005 [s]
+
+        """
         src =  local_coupling*(y[1] - y[2])[:, 0]
         y_ = y.reshape(y.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
@@ -391,7 +391,6 @@ class ZetterbergJansen(Model):
         domain=Range(lo=0.0, hi=200, step=10.0),
         doc="""Connectivity constant (interneurons to pyramidal)""")
 
-
     gamma_5 = NArray(
         label=r":math:`\gamma_5`",
         default=numpy.array([15.0]),
@@ -480,7 +479,10 @@ class ZetterbergJansen(Model):
     kiki = None  # self.ki **2
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        magic_exp_number = 709
+        """
+        Zetterberg et al derived a model inspired by the Wilson-Cowan equations. It served as a basis for the later,
+        better known Jansen-Rit model.
+        """
 
         v1 = state_variables[0, :]
         y1 = state_variables[1, :]

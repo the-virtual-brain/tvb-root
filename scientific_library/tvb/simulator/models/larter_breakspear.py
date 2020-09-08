@@ -197,16 +197,16 @@ class LarterBreakspear(Model):
             \dot{V}_k & = - (g_{Ca} + (1 - C) \, r_{NMDA} \, a_{ee} \, Q_V + C \, r_{NMDA} \, a_{ee} \, \langle Q_V\rangle^{k}) \, m_{Ca} \, (V - VCa) \\
                            & \,\,- g_K \, W \, (V - VK) -  g_L \, (V - VL) \\
                            & \,\,- (g_{Na} \, m_{Na} + (1 - C) \, a_{ee} \, Q_V + C \, a_{ee} \, \langle Q_V\rangle^{k}) \,(V - VNa) \\
-                           & \,\,- a_{ie} \, Z \, Q_Z + a_{ne} \, I, \\
+                           & \,\,- a_{ie} \, Z \, Q_Z + a_{ne} \, I \\
                            & \\
-            \dot{W}_k & = \phi \, \dfrac{m_K - W}{\tau_{K}},\\
+            \dot{W}_k & = \phi \, \dfrac{m_K - W}{\tau_{K}} \\
                            & \nonumber\\
-            \dot{Z}_k &= b (a_{ni}\, I + a_{ei}\,V\,Q_V),\\
-            Q_{V}   &= Q_{V_{max}} \, (1 + \tanh\left(\dfrac{V_{k} - VT}{\delta_{V}}\right)),\\
-            Q_{Z}   &= Q_{Z_{max}} \, (1 + \tanh\left(\dfrac{Z_{k} - ZT}{\delta_{Z}}\right)),
+            \dot{Z}_k &= b (a_{ni}\, I + a_{ei}\,V\,Q_V) \\
+            Q_{V}   &= Q_{V_{max}} \, (1 + \tanh\left(\dfrac{V_{k} - VT}{\delta_{V}}\right)) \\
+            Q_{Z}   &= Q_{Z_{max}} \, (1 + \tanh\left(\dfrac{Z_{k} - ZT}{\delta_{Z}}\right))
 
-        See Equations (7), (3), (6) and (2) respectively in [Breaksetal_2003_a]_.
-        Pag: 705-706
+    See Equations (7), (3), (6) and (2) respectively in [Breaksetal_2003_a]_.
+    Pag: 705-706
 
     """
 
@@ -446,13 +446,13 @@ class LarterBreakspear(Model):
             \dot{V}_k & = - (g_{Ca} + (1 - C) \, r_{NMDA} \, a_{ee} \, Q_V + C \, r_{NMDA} \, a_{ee} \, \langle Q_V\rangle^{k}) \, m_{Ca} \, (V - VCa) \\
                            & \,\,- g_K \, W \, (V - VK) -  g_L \, (V - VL) \\
                            & \,\,- (g_{Na} \, m_{Na} + (1 - C) \, a_{ee} \, Q_V + C \, a_{ee} \, \langle Q_V\rangle^{k}) \,(V - VNa) \\
-                           & \,\,- a_{ie} \, Z \, Q_Z + a_{ne} \, I, \\
+                           & \,\,- a_{ie} \, Z \, Q_Z + a_{ne} \, I \\
                            & \\
-            \dot{W}_k & = \phi \, \dfrac{m_K - W}{\tau_{K}},\\
+            \dot{W}_k & = \phi \, \dfrac{m_K - W}{\tau_{K}} \\
                            & \nonumber\\
-            \dot{Z}_k &= b (a_{ni}\, I + a_{ei}\,V\,Q_V),\\
-            Q_{V}   &= Q_{V_{max}} \, (1 + \tanh\left(\dfrac{V_{k} - VT}{\delta_{V}}\right)),\\
-            Q_{Z}   &= Q_{Z_{max}} \, (1 + \tanh\left(\dfrac{Z_{k} - ZT}{\delta_{Z}}\right)),
+            \dot{Z}_k &= b (a_{ni}\, I + a_{ei}\,V\,Q_V) \\
+            Q_{V}   &= Q_{V_{max}} \, (1 + \tanh\left(\dfrac{V_{k} - VT}{\delta_{V}}\right)) \\
+            Q_{Z}   &= Q_{Z_{max}} \, (1 + \tanh\left(\dfrac{Z_{k} - ZT}{\delta_{Z}}\right))
 
         """
         V, W, Z = state_variables
