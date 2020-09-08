@@ -147,6 +147,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         if self.is_in_usage(folder):
             LOGGER.info("Project {} still in use.".format(folder))
             return
+        LOGGER.info("Remove folder {}".format(folder))
         shutil.rmtree(folder)
 
     def is_in_usage(self, project_folder):
