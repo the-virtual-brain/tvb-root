@@ -479,7 +479,10 @@ class ZetterbergJansen(Model):
     kiki = None  # self.ki **2
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        magic_exp_number = 709
+        """
+        Zetterberg et al derived a model inspired by the Wilson-Cowan equations. It served as a basis for the later,
+        better known Jansen-Rit model.
+        """
 
         v1 = state_variables[0, :]
         y1 = state_variables[1, :]
