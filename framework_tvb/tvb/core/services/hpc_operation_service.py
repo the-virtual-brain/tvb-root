@@ -94,11 +94,10 @@ class HPCOperationService(object):
             HPCOperationService.LOGGER.error(exception)
             HPCOperationService._operation_error(operation)
 
-        finally:
-            if TvbProfile.current.web.ENCRYPT_STORAGE:
-                encryption_handler.sync_folders(folder)
-                encryption_handler.dec_project_usage_count(folder)
-                encryption_handler.check_and_delete(folder)
+        if TvbProfile.current.web.ENCRYPT_STORAGE:
+            encryption_handler.sync_folders(folder)
+            encryption_handler.dec_project_usage_count(folder)
+            encryption_handler.set_project_inactive(operation.project)
 
     @staticmethod
     def handle_hpc_status_changed(operation, simulator_gid, new_status):

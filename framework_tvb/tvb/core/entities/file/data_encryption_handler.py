@@ -144,11 +144,11 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         #   1. It is not in the queue
         #   2. It is marked for delete
         #   3. Nobody is using it
-        if self.is_in_usage(folder):
-            LOGGER.info("Project {} still in use.".format(folder))
-            return
-        LOGGER.info("Remove folder {}".format(folder))
-        shutil.rmtree(folder)
+        if not self.is_in_usage(folder) \
+                and folder in self.marked_for_delete:
+            self.marked_for_delete.remove(folder)
+            LOGGER.info("Remove folder {}".format(folder))
+            shutil.rmtree(folder)
 
     def is_in_usage(self, project_folder):
         return self._queue_count(project_folder) > 0 \
@@ -164,8 +164,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         if not TvbProfile.current.web.ENCRYPT_STORAGE:
             return
         encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
-        crypto_pass = os.environ[
-            DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
+        crypto_pass = os.environ[DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
         if crypto_pass is None:
             raise TVBException("Storage encryption/decryption is not possible because password is not provided.")
         crypto = Crypto(crypto_pass)
@@ -201,7 +200,14 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         projects.add(project_folder)
         for project_folder in projects:
             self.dec_project_usage_count(project_folder)
-            self.check_and_delete(project_folder)
+            if self._queue_count(project_folder) > 0 \
+                    or self._project_active_count(project_folder) > 0 \
+                    or self._running_op_count(project_folder) > 0:
+                self.marked_for_delete.add(project_folder)
+                LOGGER.info("Project {} still in use. Marked for deletion.".format(project_folder))
+                continue
+            LOGGER.info("Remove project: {}".format(project_folder))
+            shutil.rmtree(project_folder)
 
     def push_folder_to_sync(self, project_folder):
         if not TvbProfile.current.web.ENCRYPT_STORAGE or self._queue_count(project_folder) > 2:
