@@ -41,7 +41,7 @@ from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.commons.strings import RestNamespace, RestLink, LinkPlaceholder, Strings
 from tvb.interfaces.rest.server.decorators.encoders import CustomFlaskEncoder
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
-    GetOperationsForDatatypeResource, GetOperationResultForDatatypeResource
+    GetOperationsForDatatypeResource, GetExtraInfoForDatatypeResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource, \
@@ -110,7 +110,7 @@ def initialize_flask():
         values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
     name_space_datatypes.add_resource(GetOperationsForDatatypeResource, RestLink.DATATYPE_OPERATIONS.compute_url(
         values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
-    name_space_datatypes.add_resource(GetOperationResultForDatatypeResource, RestLink.OPERATION_RESULT.compute_url(
+    name_space_datatypes.add_resource(GetExtraInfoForDatatypeResource, RestLink.DATATYPE_EXTRA_INFO.compute_url(
         values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
 
     # Operations namespace

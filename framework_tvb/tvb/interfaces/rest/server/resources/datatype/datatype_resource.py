@@ -47,7 +47,7 @@ class RetrieveDatatypeResource(SecuredResource):
         file_name = os.path.basename(h5_file_path)
         return flask.send_file(h5_file_path, as_attachment=True, attachment_filename=file_name)
 
-class GetOperationResultForDatatypeResource(RestResource):
+class GetExtraInfoForDatatypeResource(RestResource):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

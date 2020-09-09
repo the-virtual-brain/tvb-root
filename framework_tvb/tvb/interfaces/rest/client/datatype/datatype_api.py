@@ -70,7 +70,7 @@ class DataTypeApi(MainApi):
     @handle_response
     def get_extra_info(self, datatype_gid):
         response = self.secured_request().get(
-            self.build_request_url(RestLink.OPERATION_RESULT.compute_url(True, {
+            self.build_request_url(RestLink.DATATYPE_EXTRA_INFO.compute_url(True, {
                 LinkPlaceholder.DATATYPE_GID.value: datatype_gid
             })))
         return response, dict
