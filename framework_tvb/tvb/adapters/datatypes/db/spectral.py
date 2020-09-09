@@ -80,7 +80,7 @@ class WaveletCoefficientsIndex(DataTypeMatrix):
         self.q_ratio = datatype.q_ratio
         self.sample_period = datatype.sample_period
         self.number_of_scales = datatype.frequencies.shape[0]
-        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
+        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequencies)
         self.fk_source_gid = datatype.source.gid.hex
 
 
