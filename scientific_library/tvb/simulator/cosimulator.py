@@ -205,10 +205,12 @@ class CoSimulator(Simulator):
             setattr(self.model, target_parameter, self._spike_stimulus_fun(target_parameter, step - 1))
 
     def update_non_state_variables(self, state, node_coupling, local_coupling):
-        state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                      use_numba=self.use_numba)
-        if state is not None:
-            self.bound_and_clamp(state)
+        temp_state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
+                                                           use_numba=self.use_numba)
+        if temp_state is not None:
+            state = temp_state
+            self.bound_and_clamp(temp_state)
+
         return state
 
     def __call__(self, simulation_length=None, random_state=None, configure_spiking_simulator=True):
