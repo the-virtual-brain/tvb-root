@@ -75,11 +75,6 @@ def do_operation_launch(operation_id):
         # p = profiler.Profiler("/Users/lia.domide/TVB/profiler/")
         # p.run(OperationService().initiate_prelaunch, curent_operation, adapter_instance, {}, **PARAMS)
 
-        if curent_operation.fk_operation_group:
-            dt_group = dao.get_datatypegroup_by_op_group_id(curent_operation.fk_operation_group)
-            if dt_group.fk_parent_burst:
-                adapter_instance.generic_attributes.parent_burst = dt_group.fk_parent_burst
-
         OperationService().initiate_prelaunch(curent_operation, adapter_instance)
         if curent_operation.fk_operation_group:
             parent_burst = dao.get_generic_entity(BurstConfiguration, curent_operation.fk_operation_group,

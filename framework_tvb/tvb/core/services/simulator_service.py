@@ -167,6 +167,10 @@ class SimulatorService(object):
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
 
+            ga = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
+                                                          operation_group, burst_config.gid)
+            session_stored_simulator.generic_attributes = ga
+
             for param1_value in range_param1.get_range_values():
                 for param2_value in range_param2_values:
                     # Copy, but generate a new GUID for every Simulator in PSE
