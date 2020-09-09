@@ -47,6 +47,18 @@ class RetrieveDatatypeResource(SecuredResource):
         file_name = os.path.basename(h5_file_path)
         return flask.send_file(h5_file_path, as_attachment=True, attachment_filename=file_name)
 
+class GetExtraInfoForDatatypeResource(RestResource):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.datatypes_facade = DatatypeFacade()
+
+    @check_permission(DataTypeAccessPermission, 'datatype_gid')
+    def get(self, datatype_gid):
+        """
+        :return the results of DataType.
+        """
+        return self.datatypes_facade.get_extra_info(datatype_gid)
 
 class GetOperationsForDatatypeResource(RestResource):
 
