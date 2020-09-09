@@ -51,8 +51,8 @@ class Generic2dOscillator(ModelNumbaDfun):
     Equations:
 
     .. math::
-                \dot{V} &= d \, \tau (-f V^3 + e V^2 + g V + \alpha W + \gamma I), \\
-                \dot{W} &= \dfrac{d}{\tau}\,\,(c V^2 + b V - \beta W + a),
+            \dot{V} &= d \, \tau (-f V^3 + e V^2 + g V + \alpha W + \gamma I) \\
+            \dot{W} &= \dfrac{d}{\tau}\,\,(c V^2 + b V - \beta W + a)
 
     See:
 
@@ -329,24 +329,6 @@ class Generic2dOscillator(ModelNumbaDfun):
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
-        r"""
-        The two state variables :math:`V` and :math:`W` are typically considered
-        to represent a function of the neuron's membrane potential, such as the
-        firing rate or dendritic currents, and a recovery variable, respectively.
-        If there is a time scale hierarchy, then typically :math:`V` is faster
-        than :math:`W` corresponding to a value of :math:`\tau` greater than 1.
-
-        The equations of the generic 2D population model read
-
-        .. math::
-                \dot{V} &= d \, \tau (-f V^3 + e V^2 + g V + \alpha W + \gamma I), \\
-                \dot{W} &= \dfrac{d}{\tau}\,\,(c V^2 + b V - \beta W + a),
-
-        where external currents :math:`I` provide the entry point for local,
-        long-range connectivity and stimulation.
-
-        """
-
         V = state_variables[0, :]
         W = state_variables[1, :]
 
@@ -379,6 +361,23 @@ class Generic2dOscillator(ModelNumbaDfun):
         return derivative
 
     def dfun(self, vw, c, local_coupling=0.0):
+        r"""
+        The two state variables :math:`V` and :math:`W` are typically considered
+        to represent a function of the neuron's membrane potential, such as the
+        firing rate or dendritic currents, and a recovery variable, respectively.
+        If there is a time scale hierarchy, then typically :math:`V` is faster
+        than :math:`W` corresponding to a value of :math:`\tau` greater than 1.
+
+        The equations of the generic 2D population model read
+
+        .. math::
+                \dot{V} &= d \, \tau (-f V^3 + e V^2 + g V + \alpha W + \gamma I) \\
+                \dot{W} &= \dfrac{d}{\tau}\,\,(c V^2 + b V - \beta W + a)
+
+        where external currents :math:`I` provide the entry point for local,
+        long-range connectivity and stimulation.
+
+        """
         lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
@@ -467,7 +466,6 @@ class Kuramoto(Model):
 
         where :math:`I` is the input via local and long range connectivity,
         passing first through the Kuramoto coupling function,
-        :py:class:tvb.simulator.coupling.Kuramoto.
 
         """
 
@@ -512,8 +510,8 @@ class SupHopf(ModelNumbaDfun):
     The equations of the supHopf equations read as follows:
     
     .. math::
-        \dot{x}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})x_{i} - omega{i}y_{i} \\
-        \dot{y}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})y_{i} + omega{i}x_{i}
+        \dot{x}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})x_{i} - {\omega}{i}y_{i} \\
+        \dot{y}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})y_{i} + {\omega}{i}x_{i}
     
     where a is the local bifurcation parameter and omega the angular frequency.
     """
@@ -553,16 +551,11 @@ class SupHopf(ModelNumbaDfun):
     _nvar = 2                                           # number of state-variables
     cvar = numpy.array([0, 1], dtype=numpy.int32)       # coupling variables
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, 
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
                     array=numpy.array, where=numpy.where, concat=numpy.concatenate):
-        r"""
-        Computes the derivatives of the state-variables of supHopf
-        with respect to time.
-        """
-
         y = state_variables
         ydot = numpy.empty_like(state_variables)
-        
+
         # long-range coupling
         c_0 = coupling[0]
         c_1 = coupling[1]
@@ -570,13 +563,25 @@ class SupHopf(ModelNumbaDfun):
         # short-range (local) coupling
         lc_0 = local_coupling * y[0]
 
-        #supHopf's equations in Cartesian coordinates:
-        ydot[0] = (self.a - y[0]**2 - y[1]**2) * y[0] - self.omega * y[1] + c_0 + lc_0
-        ydot[1] = (self.a - y[0]**2 - y[1]**2) * y[1] + self.omega * y[0] + c_1
+        # supHopf's equations in Cartesian coordinates:
+        ydot[0] = (self.a - y[0] ** 2 - y[1] ** 2) * y[0] - self.omega * y[1] + c_0 + lc_0
+        ydot[1] = (self.a - y[0] ** 2 - y[1] ** 2) * y[1] + self.omega * y[0] + c_1
 
         return ydot
 
     def dfun(self, x, c, local_coupling=0.0):
+        r"""
+        Computes the derivatives of the state-variables of supHopf
+        with respect to time.
+
+        The equations of the supHopf equations read as follows:
+
+        .. math::
+            \dot{x}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})x_{i} - {\omega}{i}y_{i} \\
+            \dot{y}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})y_{i} + {\omega}{i}x_{i}
+
+        where a is the local bifurcation parameter and omega the angular frequency.
+        """
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         lc_0 = local_coupling * x[0, :, 0]

@@ -63,84 +63,84 @@ class EpileptorCodim3(ModelNumbaDfun):
     """
 
     mu1_start = NArray(
-        label="mu1 start",
+        label=":math:`mu_1 start`",
         default=numpy.array([-0.02285]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation parameter mu1 at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu2_start = NArray(
-        label="mu2 start",
+        label=":math:`mu_2 start`",
         default=numpy.array([0.3448]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     nu_start = NArray(
-        label="nu start",
+        label=":math:`nu start`",
         default=numpy.array([0.2014]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the offset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu1_stop = NArray(
-        label="mu1 stop",
+        label=":math:`mu_1 stop`",
         default=numpy.array([-0.07465]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu1 parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     mu2_stop = NArray(
-        label="mu2 stop",
+        label=":math:`mu_2 stop`",
         default=numpy.array([0.3351]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation mu2 parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     nu_stop = NArray(
-        label="nu stop",
+        label=":math:`nu stop`",
         default=numpy.array([0.2053]),
         domain=Range(lo=-1.0, hi=1.0),
         doc="The bifurcation nu parameter at the onset point for the given class, default for class c2s "
             "(Saddle-Node at onset and Saddle-Homoclinic at offset)")
 
     b = NArray(
-        label="b",
+        label=":math:`b`",
         default=numpy.array([1.0]),
         doc="Unfolding type of the degenerate Takens-Bogdanov bifurcation, default is a focus type")
 
     R = NArray(
-        label="R",
+        label=":math:`R`",
         default=numpy.array([0.4]),
         domain=Range(lo=0.0, hi=2.5),
         doc="Radius in unfolding")
 
     c = NArray(
-        label="c",
+        label=":math:`c`",
         default=numpy.array([0.001]),
         domain=Range(lo=0.0, hi=0.01),
         doc="Speed of the slow variable")
 
     dstar = NArray(
-        label="dstar",
+        label=":math:`d^*`",
         default=numpy.array([0.3]),
         domain=Range(lo=-0.1, hi=0.5),
         doc="Threshold for the inversion of the slow variable")
 
     Ks = NArray(
-        label="Ks",
+        label=":math:`K_s`",
         default=numpy.array([0.0]),
         doc="Slow permittivity coupling strength, the default is no coupling")
 
     N = NArray(
         dtype=int,
-        label="N",
+        label=":math:`N`",
         default=numpy.array([1]),
         doc="The branch of the resting state, default is 1")
 
     modification = NArray(
         dtype=bool,
-        label="modification",
+        label=":math:`modification`",
         default=numpy.array([True]),
         doc="When modification is True, then use the modification to stabilise the system for negative values of "
             "dstar. If modification is False, then don't use the modification. The default value is True ")
@@ -172,80 +172,6 @@ class EpileptorCodim3(ModelNumbaDfun):
     L = None
     M = None
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
-        r"""
-        The equations were taken from [Saggioetal_2017]
-        cf. Eqns. (4) and (7), page 17
-
-        The state variables x and y correspond to the fast subsystem and the
-        state variable z corresponds to the slow subsystem.
-
-            .. math::
-                \dot{x} &= -y \\
-                \dot{y} &= x^3 - \mu_2 x - \mu_1 - y(\nu + b x + x^2) \\
-                \dot{z} &= -c(\sqrt{(x-x_s}^2+y^2} - d^*)
-
-        If the bool modification is True, then the equation for zdot will
-        been modified to ensure stability for negative dstar
-
-            .. math::
-                    \dot{z} = -c(\sqrt{(x-x_s}^2+y^2} - d^* + 0.1(z-0.5)^7)
-
-        Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
-        sphere of radius R parametrised by the unit vectors E and F.
-
-            .. math::
-                \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
-
-        And where :math:`x_s` is the x-coordinate of the resting state
-        (stable equilibrium). This is computed by finding the solution of
-
-            .. math::
-                x_s^3 - mu_2*x_s - mu_1 = 0
-
-        And taking the branch which corresponds to the resting state.
-        If :math:`x_s` is complex, we take the real part.
-
-        """
-
-        x = state_variables[0, :]
-        y = state_variables[1, :]
-        z = state_variables[2, :]
-
-        # Computes the values of mu2,mu1 and nu given the great arc (E,F,R) and the value of the slow variable z
-        mu2 = self.R * (self.E[0] * numpy.cos(z) + self.F[0] * numpy.sin(z))
-        mu1 = -self.R * (self.E[1] * numpy.cos(z) + self.F[1] * numpy.sin(z))
-        nu = self.R * (self.E[2] * numpy.cos(z) + self.F[2] * numpy.sin(z))
-
-        # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
-        if self.N == 1:
-            xs = (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
-        elif self.N == 2:
-            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                1.0 / 3.0)
-        elif self.N == 3:
-            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
-                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
-                1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
-                1.0 / 3.0)
-        xs = numpy.real(xs)
-
-        xdot = -y
-        ydot = x ** 3 - mu2 * x - mu1 - y * (nu + self.b * x + x ** 2)
-        if self.modification:
-            zdot = -self.c * (
-                numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + 0.1 * (z - 0.5) ** 7 + self.Ks * coupling[0, :])
-        else:
-            zdot = -self.c * (numpy.sqrt(
-                (x - xs) ** 2 + y ** 2) - self.dstar + self.Ks * coupling[0, :])
-
-        derivative = numpy.array([xdot, ydot, zdot])
-        return derivative
-
     def update_derived_parameters(self):
         r"""
         The equations were taken from [Saggioetal_2017]
@@ -274,8 +200,81 @@ class EpileptorCodim3(ModelNumbaDfun):
         self.F = numpy.cross(numpy.cross(A, B), A)
         self.F = self.F / numpy.linalg.norm(self.F)
 
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+        x = state_variables[0, :]
+        y = state_variables[1, :]
+        z = state_variables[2, :]
+
+        # Computes the values of mu2,mu1 and nu given the great arc (E,F,R) and the value of the slow variable z
+        mu2 = self.R * (self.E[0] * numpy.cos(z) + self.F[0] * numpy.sin(z))
+        mu1 = -self.R * (self.E[1] * numpy.cos(z) + self.F[1] * numpy.sin(z))
+        nu = self.R * (self.E[2] * numpy.cos(z) + self.F[2] * numpy.sin(z))
+
+        # Computes x_s, which is the solution to x_s^3 - mu2*x_s - mu1 = 0
+        if self.N == 1:
+            xs = (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) + (mu1 / 2.0 - numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0)
+        elif self.N == 2:
+            xs = -1.0 / 2.0 * (1.0 - 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
+                         1.0 + 1j * 3 ** (1.0 / 2.0)) * (
+                             mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
+                         1.0 / 3.0)
+        elif self.N == 3:
+            xs = -1.0 / 2.0 * (1.0 + 1j * 3 ** (1.0 / 2.0)) * (mu1 / 2.0 + numpy.sqrt(
+                mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (1.0 / 3.0) - 1.0 / 2.0 * (
+                         1.0 - 1j * 3 ** (1.0 / 2.0)) * (
+                             mu1 / 2.0 - numpy.sqrt(mu1 ** 2 / 4.0 - mu2 ** 3 / 27.0 + 0 * 1j)) ** (
+                         1.0 / 3.0)
+        xs = numpy.real(xs)
+
+        xdot = -y
+        ydot = x ** 3 - mu2 * x - mu1 - y * (nu + self.b * x + x ** 2)
+        if self.modification:
+            zdot = -self.c * (
+                    numpy.sqrt((x - xs) ** 2 + y ** 2) - self.dstar + 0.1 * (z - 0.5) ** 7 + self.Ks * coupling[0, :])
+        else:
+            zdot = -self.c * (numpy.sqrt(
+                (x - xs) ** 2 + y ** 2) - self.dstar + self.Ks * coupling[0, :])
+
+        derivative = numpy.array([xdot, ydot, zdot])
+        return derivative
+
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        """"The dfun using numba for speed"""
+        r"""
+        The equations were taken from [Saggioetal_2017]
+        cf. Eqns. (4) and (7), page 17
+
+        The state variables :math:`x` and :math:`y` correspond to the fast subsystem and the
+        state variable :math:`z` corresponds to the slow subsystem.
+
+        .. math::
+                \dot{x} &= -y \\
+                \dot{y} &= x^3 - \mu_{2} x - \mu_{1} - y(\nu + b x + x^2) \\
+                \dot{z} &= -c(\sqrt{x-x_{s}^2+y^2} - d^*)
+
+        If the bool modification is True, then the equation for :math:`\dot{z}` will
+        been modified to ensure stability for negative :math:`d^x`
+
+        .. math::
+            \dot{z} = -c(\sqrt{x-x_{s}^2+y^2} - d^* + 0.1(z-0.5)^7)
+
+        Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
+        sphere of radius :math:`R` parametrised by the unit vectors :math:`E` and :math:`F`.
+
+        .. math::
+            \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
+
+        And where :math:`x_s` is the x-coordinate of the resting state
+        (stable equilibrium). This is computed by finding the solution of
+
+            .. math::
+                x_s^3 - mu_2*x_s - mu_1 = 0
+
+        And taking the branch which corresponds to the resting state.
+        If :math:`x_s` is complex, we take the real part.
+        """
         state_variables_ = state_variables.reshape(state_variables.shape[:-1]).T
         coupling_ = coupling.reshape(coupling.shape[:-1]).T
         derivative = _numba_dfun(state_variables_, coupling_, self.E[0], self.E[1], self.E[2], self.F[0], self.F[1],
@@ -498,58 +497,44 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
     L = None
     M = None
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+    def update_derived_parameters(self):
         r"""
-        The equations were taken from [Saggioetal_2017]
-        cf. Eqns. (4) and (7), page 17 and 21
+        The equations were adapted from [Saggioetal_2017]
+        cf. Eqn. (7), page 17 and page 21
 
-        The state variables x and y correspond to the fast subsystem and the
-        state variable z corresponds to the slow subsystem. The state
-        variables uA and uB correspond to the transition of the offset and
-        onset bifurcations.
-
-            .. math::
-                \dot{x} &= -y \\
-                \dot{y} &= x^3 - \mu_2 x - \mu_1 - y(\nu + b x + x^2) \\
-                \dot{z} &= -c(\sqrt{(x-x_s}^2+y^2} - d^*)\\
-                \dot(uA) &= cA\\
-                \dot(uB) &= cB\\
-
-        If the bool modification is True, then the equation for zdot will
-        been modified to ensure stability for negative dstar
+        We parametrize the great arc on the sphere of radius R between the
+        points Ain and Aend with the vectors G and H. This great arc is used
+        for the offset point of the burster, given by the vector A.
 
             .. math::
-                    \dot{z} = -c(\sqrt{(x-x_s}^2+y^2} - d^* + 0.1(z-0.5)^7)
+                G &= Ain/\|Ain\| \\
+                H &= ((Ain \times Aend) \times Ain)/\|(Ain \times Aend) \times Ain\|
 
-        Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
-        sphere of radius R parametrised by the unit vectors E and F.
-
-            .. math::
-                \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
-
-        Where the unit vectors E and F are given by:
+        We also parametrize the great arc on the sphere of radius R between the
+        points Bin and Bend with the vectors L and M. This great arc is used
+        for the onset point of the burster, given by the vector B.
 
             .. math::
-                E &= A/\|A\| \\
-                F &= ((A \times B) \times A)/\|(A \times B) \times A\|
-
-        The vectors A and B transition across a great arc of the same sphere
-        of radius R parametrised by G, H and L, M respectively.
-
-            .. math::
-                A &= R(G \cos(uA) + H \sin(uA))
-                B &= R(L \cos(uB) + M \sin(uB))
-
-        Finally :math:`x_s` is the x-coordinate of the resting state
-        (stable equilibrium). This is computed by finding the solution of
-
-            .. math::
-                x_s^3 - mu_2*x_s - mu_1 = 0
-
-        And taking the branch which corresponds to the resting state.
-        If :math:`x_s` is complex, we take the real part.
-
+                L &= Bin/\|Bin\| \\
+                M &= ((Bin \times Bend) \times Bin)/\|(Bin \times Bend) \times Bin\|
         """
+
+        Ain = numpy.array([self.mu2_Ain[0], -self.mu1_Ain[0], self.nu_Ain[0]])
+        Bin = numpy.array([self.mu2_Bin[0], -self.mu1_Bin[0], self.nu_Bin[0]])
+        Aend = numpy.array(
+            [self.mu2_Aend[0], -self.mu1_Aend[0], self.nu_Aend[0]])
+        Bend = numpy.array(
+            [self.mu2_Bend[0], -self.mu1_Bend[0], self.nu_Bend[0]])
+
+        self.G = Ain / numpy.linalg.norm(Ain)
+        self.H = numpy.cross(numpy.cross(Ain, Aend), Ain)
+        self.H = self.H / numpy.linalg.norm(self.H)
+
+        self.L = Bin / numpy.linalg.norm(Bin)
+        self.M = numpy.cross(numpy.cross(Bin, Bend), Bin)
+        self.M = self.M / numpy.linalg.norm(self.M)
+
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         x = state_variables[0, :]
         y = state_variables[1, :]
         z = state_variables[2, :]
@@ -605,45 +590,58 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         derivative = numpy.array([xdot, ydot, zdot, uAdot, uBdot])
         return derivative
 
-    def update_derived_parameters(self):
-        r"""
-        The equations were adapted from [Saggioetal_2017]
-        cf. Eqn. (7), page 17 and page 21
-
-        We parametrize the great arc on the sphere of radius R between the
-        points Ain and Aend with the vectors G and H. This great arc is used
-        for the offset point of the burster, given by the vector A.
-
-            .. math::
-                G &= Ain/\|Ain\| \\
-                H &= ((Ain \times Aend) \times Ain)/\|(Ain \times Aend) \times Ain\|
-
-        We also parametrize the great arc on the sphere of radius R between the
-        points Bin and Bend with the vectors L and M. This great arc is used
-        for the onset point of the burster, given by the vector B.
-
-            .. math::
-                L &= Bin/\|Bin\| \\
-                M &= ((Bin \times Bend) \times Bin)/\|(Bin \times Bend) \times Bin\|
-        """
-
-        Ain = numpy.array([self.mu2_Ain[0], -self.mu1_Ain[0], self.nu_Ain[0]])
-        Bin = numpy.array([self.mu2_Bin[0], -self.mu1_Bin[0], self.nu_Bin[0]])
-        Aend = numpy.array(
-            [self.mu2_Aend[0], -self.mu1_Aend[0], self.nu_Aend[0]])
-        Bend = numpy.array(
-            [self.mu2_Bend[0], -self.mu1_Bend[0], self.nu_Bend[0]])
-
-        self.G = Ain / numpy.linalg.norm(Ain)
-        self.H = numpy.cross(numpy.cross(Ain, Aend), Ain)
-        self.H = self.H / numpy.linalg.norm(self.H)
-
-        self.L = Bin / numpy.linalg.norm(Bin)
-        self.M = numpy.cross(numpy.cross(Bin, Bend), Bin)
-        self.M = self.M / numpy.linalg.norm(self.M)
-
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        """"The dfun using numba for speed"""
+        r"""
+        The equations were taken from [Saggioetal_2017]
+        cf. Eqns. (4) and (7), page 17 and 21
+
+        The state variables :math:`x` and :math:`y` correspond to the fast subsystem and the
+        state variable z corresponds to the slow subsystem. The state
+        variables :math:`uA` and :math:`uB` correspond to the transition of the offset and
+        onset bifurcations.
+
+            .. math::
+                \dot{x} &= -y \\
+                \dot{y} &= x^3 - \mu_2 x - \mu_1 - y(\nu + b x + x^2) \\
+                \dot{z} &= -c(\sqrt{x-x_{s}^2+y^2} - d^*)\\
+                (\dot{u}A) &= cA\\
+                (\dot{u}B) &= cB\\
+
+        If the bool modification is True, then the equation for :math:`\dot{z}` will
+        been modified to ensure stability for negative :math:`d^*`
+
+            .. math::
+                    \dot{z} = -c(\sqrt{x-x_{s}^2+y^2} - d^* + 0.1(z-0.5)^7)
+
+        Where :math:`\mu_1, \mu_2` and :math:`\nu` lie on a great arc of a
+        sphere of radius R parametrised by the unit vectors E and F.
+
+            .. math::
+                \begin{pmatrix}\mu_2 & -\mu_1 & \nu \end{pmatrix} = R(E \cos z + F \sin z)
+
+        Where the unit vectors E and F are given by:
+
+            .. math::
+                E &= A/\|A\| \\
+                F &= ((A \times B) \times A)/\|(A \times B) \times A\|
+
+        The vectors A and B transition across a great arc of the same sphere
+        of radius R parametrised by G, H and L, M respectively.
+
+            .. math::
+                A &= R(G \cos(uA) + H \sin(uA))
+                B &= R(L \cos(uB) + M \sin(uB))
+
+        Finally :math:`x_s` is the x-coordinate of the resting state
+        (stable equilibrium). This is computed by finding the solution of
+
+            .. math::
+                x_s^3 - mu_2*x_s - mu_1 = 0
+
+        And taking the branch which corresponds to the resting state.
+        If :math:`x_s` is complex, we take the real part.
+
+        """
         state_variables_ = state_variables.reshape(state_variables.shape[:-1]).T
         coupling_ = coupling.reshape(coupling.shape[:-1]).T
         derivative = _numba_dfun_slowmod(state_variables_, coupling_, self.G[0], self.G[1], self.G[2], self.H[0],

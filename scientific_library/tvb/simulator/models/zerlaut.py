@@ -126,14 +126,14 @@ class ZerlautAdaptationFirstOrder(Model):
 
     .. automethod:: Zerlaut_adaptation_first_order.__init__
 
-    The general formulation for the \textit{\textbf{Zerlaut_adaptation_first_order}} model as a
+    The general formulation for the Zerlaut adaptation first order model as a
     dynamical unit at a node $k$ in a BNM with $l$ nodes reads:
 
     .. math::
-            T\dot{E}_k &= F_e-E_k  \\
-            T\dot{I}_k &= F_i-I_k  \\
-            dot{W}_k &= W_k/tau_w-b*E_k  \\
-            F_\lambda = Erfc(V^{eff}_{thre}-\mu_V/\sqrt(2)\sigma_V)
+        T\dot{E}_k &= F_e-E_k \\
+        T\dot{I}_k &= F_i-I_k \\
+        dot{W}_k &= W_k/tau_w-b*E_k \\
+        F_\lambda = Erfc(V^{eff}_{thre}-\mu_V/\sqrt(2)\sigma_V)
 
     """
 
@@ -358,7 +358,7 @@ class ZerlautAdaptationFirstOrder(Model):
     def dfun(self, state_variables, coupling, local_coupling=0.00):
         r"""
         .. math::
-            T \dot{\nu_\mu} &= -F_\mu(\nu_e,\nu_i) + \nu_\mu ,\all\mu\in\{e,i\}\\
+            T \dot{\nu_\mu} &= -F_\mu(\nu_e,\nu_i) + \nu_\mu ,{\forall}\mu\in\{e,i\}\\
             dot{W}_k &= W_k/tau_w-b*E_k  \\
 
         """
@@ -571,7 +571,7 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
     dynamical unit at a node $k$ in a BNM with $l$ nodes reads:
 
     .. math::
-        \forall \mu,\lambda,\eta \in \{e,i\}^3\, ,
+        \forall \mu,\lambda,\eta \in \{e,i\}^3\,
         \left\{
         \begin{split}
         T \, \frac{\partial \nu_\mu}{\partial t} = & (\mathcal{F}_\mu - \nu_\mu )
@@ -637,7 +637,7 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
     def dfun(self, state_variables, coupling, local_coupling=0.00):
         r"""
         .. math::
-            \forall \mu,\lambda,\eta \in \{e,i\}^3\, ,
+            \forall \mu,\lambda,\eta \in \{e,i\}^3\,
             \left\{
             \begin{split}
             T \, \frac{\partial \nu_\mu}{\partial t} = & (\mathcal{F}_\mu - \nu_\mu )
