@@ -79,6 +79,9 @@ def _bytes_ds_to_string_ds(storage_manager, ds_name):
     storage_manager.store_data(ds_name, numpy.asarray(string_labels).astype(STORE_STRING))
     return storage_manager
 
+# def _set_parent_burst():
+
+
 
 def _migrate_dataset_metadata(dataset_list, storage_manager):
     for dataset in dataset_list:
@@ -193,8 +196,6 @@ def update(input_file):
         root_metadata['valid_for_simulations'] = "bool:" + root_metadata['valid_for_simulations'][:1].upper() \
                                                  + root_metadata['valid_for_simulations'][1:]
 
-        root_metadata['operation_tag'] = ''
-
     elif 'RegionMapping' in class_name:
         root_metadata = _pop_lengths(root_metadata)
         root_metadata.pop('label_x')
@@ -203,7 +204,6 @@ def update(input_file):
         root_metadata.pop('dimensions_labels')
         root_metadata.pop('nr_dimensions')
 
-        root_metadata['operation_tag'] = ''
         root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
 
@@ -229,7 +229,6 @@ def update(input_file):
             storage_manager.remove_metadata('Size', 'orientations')
             storage_manager.remove_metadata('Variance', 'orientations')
             datasets.append('orientations')
-        root_metadata['operation_tag'] = ''
 
         _migrate_dataset_metadata(datasets, storage_manager)
     elif 'Projection' in class_name:
@@ -240,7 +239,6 @@ def update(input_file):
 
         storage_manager.remove_metadata('Size', 'projection_data')
         storage_manager.remove_metadata('Variance', 'projection_data')
-        root_metadata['operation_tag'] = ''
 
         _migrate_dataset_metadata(['projection_data'], storage_manager)
     elif 'LocalConnectivity' in class_name:
@@ -254,10 +252,61 @@ def update(input_file):
         matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
         matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
         storage_manager.set_metadata(matrix_metadata, 'matrix')
-
-        root_metadata['operation_tag'] = ''
     elif 'Volume' in class_name:
-        root_metadata['operation_tag'] = ''
-        root_metadata['voxel_unit'] = root_metadata["voxel_unit"].replace("\"", '')
+        root_metadata['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
 
+    if class_name == 'CoherenceSpectrum':
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+        _pop_lengths(root_metadata)
+
+        root_metadata['nfft'] = int(root_metadata['nfft'])
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
+        array_data = storage_manager.get_data('array_data')
+        storage_manager.remove_data('array_data')
+        storage_manager.store_data('array_data', numpy.asarray(array_data, dtype=numpy.float64))
+        _migrate_dataset_metadata(['array_data', 'frequency'], storage_manager)
+
+    if  class_name == 'ComplexCoherenceSpectrum':
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+        _pop_lengths(root_metadata)
+
+        root_metadata['epoch_length'] = float(root_metadata['epoch_length'])
+        root_metadata['segment_length'] = float(root_metadata['segment_length'])
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
+        root_metadata['windowing_function'] = root_metadata['windowing_function'].replace("\"", '')
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
+        _migrate_dataset_metadata(['array_data', 'cross_spectrum'], storage_manager)
+
+    if class_name == 'WaveletCoefficients':
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+        _pop_lengths(root_metadata)
+
+        root_metadata['q_ratio'] = float(root_metadata['q_ratio'])
+        root_metadata['sample_period'] = float(root_metadata['sample_period'])
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
+        root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
+        root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
+
+        _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
+
+    root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
