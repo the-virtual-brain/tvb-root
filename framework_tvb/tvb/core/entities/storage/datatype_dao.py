@@ -376,7 +376,7 @@ class DatatypeDAO(RootDAO):
 
 
     def get_datatype_extra_info(self, datatype_gid):
-        datatype = self.get_datatype_by_gid(datatype_gid, True, True)
+        datatype = self.get_datatype_by_gid(datatype_gid, False, True)
         return datatype.get_extra_info()
 
     def get_datatype_by_gid(self, gid, load_lazy=True, load_lazy_extra_info=False):
@@ -397,8 +397,8 @@ class DatatypeDAO(RootDAO):
                 result_dt.parent_operation.algorithm.algorithm_category
                 result_dt.parent_operation.operation_group
                 result_dt._parent_burst
-                if load_lazy_extra_info:
-                    result_dt.get_extra_info()
+            if load_lazy_extra_info:
+                result_dt.get_extra_info()
 
             return result_dt
         except NoResultFound as excep:
