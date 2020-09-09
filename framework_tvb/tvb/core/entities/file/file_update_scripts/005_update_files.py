@@ -125,10 +125,13 @@ def update(input_file):
     root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(':', '-')
     root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(' ', ',')
 
-    datatype_class = getattr(sys.modules[root_metadata["module"]],
+    try:
+        datatype_class = getattr(sys.modules[root_metadata["module"]],
                              root_metadata["type"])
-    h5_class = REGISTRY.get_h5file_for_datatype(datatype_class)
-    root_metadata[H5File.KEY_WRITTEN_BY] = h5_class.__module__ + '.' + h5_class.__name__
+        h5_class = REGISTRY.get_h5file_for_datatype(datatype_class)
+        root_metadata[H5File.KEY_WRITTEN_BY] = h5_class.__module__ + '.' + h5_class.__name__
+    except KeyError:
+        pass
 
     root_metadata['user_tag_1'] = ''
     root_metadata['gid'] = "urn:uuid:" + root_metadata['gid']
@@ -307,6 +310,98 @@ def update(input_file):
         root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
 
         _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
+
+    if class_name == 'CrossCorrelation':
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        _migrate_dataset_metadata(['array_data', 'time'], storage_manager)
+
+    if class_name == 'Fcd':
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+        _pop_lengths(root_metadata)
+
+        root_metadata['sp'] = float(root_metadata['sp'])
+        root_metadata['sw'] = float(root_metadata['sw'])
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
+    if class_name == 'ConnectivityMeasure':
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        _pop_lengths(root_metadata)
+
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        _migrate_dataset_metadata(['array_data'], storage_manager)
+
+    if class_name == 'FourierSpectrum':
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+        _pop_lengths(root_metadata)
+
+        root_metadata['segment_length'] = float(root_metadata['segment_length'])
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
+                                   'normalised_average_power', 'phase', 'power'], storage_manager)
+
+    if class_name == 'IndependentComponents':
+        root_metadata['n_components'] = int(root_metadata['n_components'])
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
+        _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
+                                   'normalised_component_time_series', 'prewhitening_matrix',
+                                   'unmixing_matrix'], storage_manager)
+
+    if class_name == 'CorrelationCoefficients':
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+        _pop_lengths(root_metadata)
+
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        _migrate_dataset_metadata(['array_data'], storage_manager)
+
+    if class_name == 'PrincipalComponents':
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        _migrate_dataset_metadata(['component_time_series', 'fractions',
+                                   'norm_source', 'normalised_component_time_series',
+                                   'weights'], storage_manager)
+
+    if class_name == 'Covariance':
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+        _pop_lengths(root_metadata)
+
+        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        _migrate_dataset_metadata(['array_data'], storage_manager)
+
+    if class_name == 'DatatypeMeasure':
+        root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
+
+    if class_name == 'StimuliRegion':
+        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+
+    if class_name == 'StimuliSurface':
+        root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
