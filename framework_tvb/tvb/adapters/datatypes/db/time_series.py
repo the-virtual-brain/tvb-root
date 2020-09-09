@@ -59,6 +59,12 @@ class TimeSeriesIndex(DataType):
     has_volume_mapping = Column(Boolean, nullable=False, default=False)
     has_surface_mapping = Column(Boolean, nullable=False, default=False)
 
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.labels_ordering
+        labels_dict["labels_dimensions"] = self.labels_dimensions
+        return labels_dict
+
     def fill_from_has_traits(self, datatype):
         # type: (TimeSeries)  -> None
         super(TimeSeriesIndex, self).fill_from_has_traits(datatype)

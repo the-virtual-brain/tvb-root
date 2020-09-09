@@ -120,6 +120,9 @@ class DataType(HasTraitsIndex):
     # Transient info
     fixed_generic_attributes = False
 
+    def get_extra_info(self):
+        return {}
+
     def __init__(self, gid=None, **kwargs):
 
         self.gid = gid

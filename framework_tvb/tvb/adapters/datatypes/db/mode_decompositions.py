@@ -49,6 +49,12 @@ class PrincipalComponentsIndex(DataType):
         super(PrincipalComponentsIndex, self).fill_from_has_traits(datatype)
         self.fk_source_gid = datatype.source.gid
 
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
+
 
 class IndependentComponentsIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
@@ -69,6 +75,12 @@ class IndependentComponentsIndex(DataType):
         self.shape = json.dumps(datatype.unmixing_matrix.shape)
         self.ndim = len(datatype.unmixing_matrix.shape)
         self.array_has_complex = numpy.iscomplex(datatype.unmixing_matrix).any().item()
+
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
 
     @property
     def parsed_shape(self):
