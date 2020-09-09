@@ -209,8 +209,9 @@ class CoSimulator(Simulator):
                                                       use_numba=self.use_numba)
         if state is not None:
             self.bound_and_clamp(state)
+        return state
 
-    def __call__(self, simulation_length=None, random_state=None):
+    def __call__(self, simulation_length=None, random_state=None, configure_spiking_simulator=True):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
 
@@ -220,115 +221,111 @@ class CoSimulator(Simulator):
         :param random_state:  State of NumPy RNG to use for stochastic integration.
         :return: Iterator over monitor outputs.
         """
-        if self.tvb_spikeNet_interface is None:
-            for data in super(CoSimulator, self).__call__(simulation_length, random_state):
-                yield data
-        else:
-            self.calls += 1
-            if simulation_length is not None:
-                self.simulation_length = simulation_length
+        self.calls += 1
+        if simulation_length is not None:
+            self.simulation_length = simulation_length
 
-            # Intialization
-            self._guesstimate_runtime()
-            self._calculate_storage_requirement()
-            self._handle_random_state(random_state)
-            n_reg = self.connectivity.number_of_regions
-            local_coupling = self._prepare_local_coupling()
-            stimulus = self._prepare_stimulus()
-            state = self.current_state
+        # Intialization
+        self._guesstimate_runtime()
+        self._calculate_storage_requirement()
+        self._handle_random_state(random_state)
+        n_reg = self.connectivity.number_of_regions
+        local_coupling = self._prepare_local_coupling()
+        stimulus = self._prepare_stimulus()
+        state = self.current_state
 
-            # Do for initial condition, i.e., prepare step t0 -> t1:
-            init_step = self.current_step + 1  # the first step in the loop
-            node_coupling = self._loop_compute_node_coupling(init_step)
-            self._loop_update_stimulus(init_step, stimulus)
-            if self._spike_stimulus_fun:
-                self._apply_spike_stimulus(init_step)
+        # Do for initial condition, i.e., prepare step t0 -> t1:
+        init_step = self.current_step + 1  # the first step in the loop
+        node_coupling = self._loop_compute_node_coupling(init_step)
+        self._loop_update_stimulus(init_step, stimulus)
+        if self._spike_stimulus_fun:
+            self._apply_spike_stimulus(init_step)
 
-            # Update any non-state variables and apply any boundaries again to the modified initial condition:
-            self.update_non_state_variables(state, node_coupling, local_coupling)
+        # Update any non-state variables and apply any boundaries again to the modified initial condition:
+        state = self.update_non_state_variables(state, node_coupling, local_coupling)
 
-            if self.tvb_spikeNet_interface is not None:
-                # NOTE!!!: we don't update TVB from spikeNet initial condition,
-                # since there is no output yet from spikeNet
-
-                # spikeNet simulation preparation:
+        if self.tvb_spikeNet_interface is not None:
+            # NOTE!!!: we don't update TVB from spikeNet initial condition,
+            # since there is no output yet from spikeNet
+            # spikeNet simulation preparation:
+            if configure_spiking_simulator:
                 self.configure_spiking_simulator()
-                # A flag to skip unnecessary steps when TVB does NOT couple to Spiking Simulator
-                coupleTVBstateToSpikeNet = len(self.tvb_spikeNet_interface.tvb_to_spikeNet_interfaces) > 0
-                # A flag to skip unnecessary steps when Spiking Simulator does NOT update TVB state
-                updateTVBstateFromSpikeNet = len(self.tvb_spikeNet_interface.spikeNet_to_tvb_interfaces) > 0
+            # A flag to skip unnecessary steps when TVB does NOT couple to Spiking Simulator
+            coupleTVBstateToSpikeNet = len(self.tvb_spikeNet_interface.tvb_to_spikeNet_interfaces) > 0
+            # A flag to skip unnecessary steps when Spiking Simulator does NOT update TVB state
+            updateTVBstateFromSpikeNet = len(self.tvb_spikeNet_interface.spikeNet_to_tvb_interfaces) > 0
 
-            # integration loop
-            n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
-            if self.PRINT_PROGRESSION_MESSAGE:
-                self._tic = time.time()
-                self._tic_ratio = 0.1
-                self._tic_point = self._tic_ratio * n_steps
-            end_step = init_step + n_steps
-            for step in range(init_step, end_step):
-                if self.tvb_spikeNet_interface is not None:
-                    # 1. Update spikeNet with TVB state t_(step-1)
-                    #    ...and integrate it for one time step
-                    if coupleTVBstateToSpikeNet:
-                        # TVB state t_(step-1) -> SpikeNet (state or parameter)
-                        # Communicate TVB state to some SpikeNet device (TVB proxy) or TVB coupling to SpikeNet nodes,
-                        # including any necessary conversions from TVB state to SpikeNet variables,
-                        # in a model specific manner
-                        # TODO: find what is the general treatment of local coupling, if any!
-                        #  Is this addition correct in all cases?
-                        self.tvb_spikeNet_interface.tvb_state_to_spikeNet(state, node_coupling + local_coupling,
-                                                                          stimulus)
-
-                    # 2. Integrate Spiking Network to get the new Spiking Network state t_step
-                    self.run_spiking_simulator(self.integrator.dt)
-
-                # 3. Integrate TVB to get the new TVB state t_step
-                state = self.integrator.scheme(state, self._dfun, node_coupling, local_coupling, stimulus)
-
-                if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
-                    raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
-
-                # 4. Prepare next TVB time step integration
-
-                # Prepare coupling and stimulus, if any, at time t_step, i.e., for next time iteration
-                # and, therefore, for the new TVB state t_step+1:
-                node_coupling = self._loop_compute_node_coupling(step + 1)
-                self._loop_update_stimulus(step + 1, stimulus)
-                if self._spike_stimulus_fun:
-                    self._apply_spike_stimulus(step + 1)
-
-                # Update any non-state variables and apply any boundaries again to the new state t_step:
-                self.update_non_state_variables(state, node_coupling, local_coupling)
-
-                # 5. Update the new TVB state t_step with the new spikeNet state t_step
-                if self.tvb_spikeNet_interface is not None and updateTVBstateFromSpikeNet:
-                    # SpikeNet state t_(step) -> TVB state t_(step)
-                    # Update the new TVB state variable with the new SpikeNet state,
-                    # including any necessary conversions from SpikeNet variables to TVB state,
+        # integration loop
+        n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        if self.PRINT_PROGRESSION_MESSAGE:
+            self._tic = time.time()
+            self._tic_ratio = 0.1
+            self._tic_point = self._tic_ratio * n_steps
+        end_step = init_step + n_steps
+        for step in range(init_step, end_step):
+            if self.tvb_spikeNet_interface is not None:
+                # 1. Update spikeNet with TVB state t_(step-1)
+                #    ...and integrate it for one time step
+                if coupleTVBstateToSpikeNet:
+                    # TVB state t_(step-1) -> SpikeNet (state or parameter)
+                    # Communicate TVB state to some SpikeNet device (TVB proxy) or TVB coupling to SpikeNet nodes,
+                    # including any necessary conversions from TVB state to SpikeNet variables,
                     # in a model specific manner
-                    state = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_state(state)
-                    # TODO: Deprecate this since we have introduced TVB non-state variables
-                    # SpikeNet state t_(step)-> TVB model parameter at time t_(step)
-                    # Couple the SpikeNet state to some TVB model parameter,
-                    # including any necessary conversions in a model specific manner
-                    # !!! Deprecate it since we have introduced dynamic non-state variables !!!
-                    # self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
-                    self.bound_and_clamp(state)
-                    # Update any non-state variables and apply any boundaries again to the modified new state t_step:
-                    self.update_non_state_variables(state, node_coupling, local_coupling)
+                    # TODO: find what is the general treatment of local coupling, if any!
+                    #  Is this addition correct in all cases?
+                    self.tvb_spikeNet_interface.tvb_state_to_spikeNet(state, node_coupling + local_coupling,
+                                                                      stimulus)
 
-                # Now direct the new state t_step to history buffer and monitors
-                self._loop_update_history(step, n_reg, state)
-                output = self._loop_monitor_output(step, state)
-                if output is not None:
-                    yield output
-                if self.PRINT_PROGRESSION_MESSAGE:
-                    self._print_progression_message(step, n_steps)
+                # 2. Integrate Spiking Network to get the new Spiking Network state t_step
+                self.run_spiking_simulator(self.integrator.dt)
 
-            self.current_state = state
-            self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
+            # 3. Integrate TVB to get the new TVB state t_step
+            state = self.integrator.scheme(state, self._dfun, node_coupling, local_coupling, stimulus)
 
-    # TODO: adjust function to compute fine scale resources' requirements as well, ...if you can! :)
+            if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
+                raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
+
+            # 4. Prepare next TVB time step integration
+
+            # Prepare coupling and stimulus, if any, at time t_step, i.e., for next time iteration
+            # and, therefore, for the new TVB state t_step+1:
+            node_coupling = self._loop_compute_node_coupling(step + 1)
+            self._loop_update_stimulus(step + 1, stimulus)
+            if self._spike_stimulus_fun:
+                self._apply_spike_stimulus(step + 1)
+
+            # Update any non-state variables and apply any boundaries again to the new state t_step:
+            state = self.update_non_state_variables(state, node_coupling, local_coupling)
+
+            # 5. Update the new TVB state t_step with the new spikeNet state t_step
+            if self.tvb_spikeNet_interface is not None and updateTVBstateFromSpikeNet:
+                # SpikeNet state t_(step) -> TVB state t_(step)
+                # Update the new TVB state variable with the new SpikeNet state,
+                # including any necessary conversions from SpikeNet variables to TVB state,
+                # in a model specific manner
+                state = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_state(state)
+                # TODO: Deprecate this since we have introduced TVB non-state variables
+                # SpikeNet state t_(step)-> TVB model parameter at time t_(step)
+                # Couple the SpikeNet state to some TVB model parameter,
+                # including any necessary conversions in a model specific manner
+                # !!! Deprecate it since we have introduced dynamic non-state variables !!!
+                # self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
+                self.bound_and_clamp(state)
+                # Update any non-state variables and apply any boundaries again to the modified new state t_step:
+                state = self.update_non_state_variables(state, node_coupling, local_coupling)
+
+            # Now direct the new state t_step to history buffer and monitors
+            self._loop_update_history(step, n_reg, state)
+            output = self._loop_monitor_output(step, state)
+            if output is not None:
+                yield output
+            if self.PRINT_PROGRESSION_MESSAGE:
+                self._print_progression_message(step, n_steps)
+
+        self.current_state = state
+        self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
+
+# TODO: adjust function to compute fine scale resources' requirements as well, ...if you can! :)
 
     def run(self, **kwds):
         """Convenience method to call the simulator with **kwds and collect output data."""
