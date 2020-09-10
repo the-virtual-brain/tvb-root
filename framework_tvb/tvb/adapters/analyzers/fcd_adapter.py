@@ -38,7 +38,6 @@ Adapter that uses the traits model to generate interfaces for FCD Analyzer.
 
 import json
 import uuid
-
 import numpy as np
 from scipy import linalg
 from scipy.spatial.distance import pdist
@@ -48,7 +47,6 @@ from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
-from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5
 from tvb.basic.neotraits.api import HasTraits, Attr, Float
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
@@ -241,6 +239,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             [fcd, fcd_segmented, eigvect_dict, eigval_dict] = self._compute_fcd_matrix(ts_h5)
             connectivity_gid = ts_h5.connectivity.load()
+            connectivity = self.load_traited_by_gid(connectivity_gid)
 
         result = []  # list to store: fcd index, fcd_segmented index (eventually), and connectivity measure indexes
 
@@ -270,23 +269,12 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
                 for ep in eigvect_dict[mode][var].keys():
                     for eig in range(3):
                         cm_data = eigvect_dict[mode][var][ep][eig]
-                        cm_index = ConnectivityMeasureIndex()
-                        cm_index.type = ConnectivityMeasure.__name__
-                        cm_index.fk_connectivity_gid = connectivity_gid.hex
-                        cm_index.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n " \
-                                         "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
-
-                        storage_path = h5.path_for(self.storage_path, ConnectivityMeasureH5, cm_index.gid)
-                        with ConnectivityMeasureH5(storage_path) as f:
-                            f.array_data.store(cm_data)
-                            f.connectivity.store(connectivity_gid)
-                            f.title.store(cm_index.title)
-                            f.gid.store(uuid.UUID(cm_index.gid))
-                            cm_array_metadata = f.array_data.get_cached_metadata()
-
-                        cm_index.array_data_min = cm_array_metadata.min
-                        cm_index.array_data_max = cm_array_metadata.max
-                        cm_index.array_data_mean = cm_array_metadata.mean
+                        measure = ConnectivityMeasure()
+                        measure.connectivity = connectivity
+                        measure.array_data = cm_data
+                        measure.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n " \
+                                        "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
+                        cm_index = h5.store_complete(measure, self.storage_path)
                         result.append(cm_index)
         return result
 

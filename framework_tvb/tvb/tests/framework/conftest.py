@@ -233,8 +233,9 @@ def connectivity_factory():
 
 @pytest.fixture()
 def connectivity_index_factory(connectivity_factory, operation_factory):
-    def build(data=4, op=None):
-        conn = connectivity_factory(data)
+    def build(data=4, op=None, conn=None):
+        if conn is None:
+            conn = connectivity_factory(data)
         if op is None:
             op = operation_factory()
 
