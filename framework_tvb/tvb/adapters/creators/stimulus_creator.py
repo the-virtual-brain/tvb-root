@@ -73,6 +73,11 @@ class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
         label=StimuliSurface.surface.label
     )
 
+    display_name = Str(
+        label='Display name',
+        required=False
+    )
+
 
 class SurfaceStimulusCreatorForm(ABCAdapterForm):
     NAME_SPATIAL_PARAMS_DIV = 'spatial_params'
@@ -176,11 +181,9 @@ class SurfaceStimulusCreator(ABCAdapter):
         """
         Used for creating a `StimuliSurface` instance
         """
+        self.generic_attributes.user_tag_1 = view_model.display_name
         stimuli_surface = self.prepare_stimuli_surface_from_view_model(view_model, view_model.surface)
-        stimuli_surface_index = StimuliSurfaceIndex()
-        stimuli_surface_index.fill_from_has_traits(stimuli_surface)
-
-        h5.store_complete(stimuli_surface, self.storage_path)
+        stimuli_surface_index = h5.store_complete(stimuli_surface, self.storage_path)
         return stimuli_surface_index
 
     def get_required_memory_size(self, view_model):
@@ -290,12 +293,9 @@ class RegionStimulusCreator(ABCAdapter):
         stimuli_region.connectivity.gid = view_model.connectivity
         stimuli_region.weight = view_model.weight
         stimuli_region.temporal = view_model.temporal
-
-        stimuli_region_idx = StimuliRegionIndex()
-        stimuli_region_idx.fill_from_has_traits(stimuli_region)
         self.generic_attributes.user_tag_1 = view_model.display_name
 
-        h5.store_complete(stimuli_region, self.storage_path)
+        stimuli_region_idx = h5.store_complete(stimuli_region, self.storage_path)
         return stimuli_region_idx
 
     def get_required_disk_size(self, view_model):
