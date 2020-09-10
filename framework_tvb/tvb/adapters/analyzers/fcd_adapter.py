@@ -272,7 +272,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
                         measure = ConnectivityMeasure()
                         measure.connectivity = connectivity
                         measure.array_data = cm_data
-                        measure.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n " \
+                        measure.title = "Epoch # %d, eigenvalue = %s, variable = %s, " \
                                         "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
                         cm_index = h5.store_complete(measure, self.storage_path)
                         result.append(cm_index)
