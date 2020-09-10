@@ -90,6 +90,7 @@ class FlowController(BaseController):
         self.context = SelectedAdapterContext()
         self.files_helper = FilesHelper()
         self.operation_services = OperationService()
+        self.simulator_controller = SimulatorController()
 
         analyze_category, groups = self.algorithm_service.get_analyze_groups()
         adapters_list = []
@@ -536,7 +537,7 @@ class FlowController(BaseController):
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
             operation = OperationService.load_operation(int(first_op.id))
-        SimulatorController().copy_simulator_configuration(operation.burst.id)
+        self.simulator_controller.copy_simulator_configuration(operation.burst.id)
 
         raise cherrypy.HTTPRedirect("/burst/")
 
@@ -550,7 +551,7 @@ class FlowController(BaseController):
         is_group = int(is_group) != 0
         if isinstance(remove_after_stop, str):
             remove_after_stop = bool(remove_after_stop)
-        return SimulatorController.cancel_or_remove_operation(operation_id, is_group, remove_after_stop)
+        return self.simulator_controller.cancel_or_remove_operation(operation_id, is_group, remove_after_stop)
 
     def fill_default_attributes(self, template_dictionary, title='-'):
         """
