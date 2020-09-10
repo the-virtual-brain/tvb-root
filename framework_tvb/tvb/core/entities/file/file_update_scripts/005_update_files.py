@@ -34,6 +34,7 @@ Upgrade script from H5 version 4 to version 5 (for tvb release 2.0)
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+import json
 import os
 import sys
 import numpy
@@ -79,9 +80,6 @@ def _bytes_ds_to_string_ds(storage_manager, ds_name):
     storage_manager.store_data(ds_name, numpy.asarray(string_labels).astype(STORE_STRING))
     return storage_manager
 
-# def _set_parent_burst():
-
-
 
 def _migrate_dataset_metadata(dataset_list, storage_manager):
     for dataset in dataset_list:
@@ -92,6 +90,25 @@ def _migrate_dataset_metadata(dataset_list, storage_manager):
             storage_manager.remove_metadata('Variance', dataset)
         if 'Size' in metadata:
             storage_manager.remove_metadata('Size',dataset)
+
+
+def _migrate_one_stimuli_param(root_metadata, param_name):
+    param = json.loads(root_metadata[param_name])
+    new_param = dict()
+    new_param['type'] = param['__mapped_class']
+    new_param['parameters'] = param['parameters']
+    root_metadata[param_name] = json.dumps(new_param)
+
+
+def _migrate_stimuli(root_metadata, storage_manager, datasets):
+    _migrate_one_stimuli_param(root_metadata, 'spatial')
+    _migrate_one_stimuli_param(root_metadata, 'temporal')
+
+    for dataset in datasets:
+        weights = eval(root_metadata[dataset])
+        storage_manager.store_data(dataset, weights)
+        _migrate_dataset_metadata([dataset], storage_manager)
+        root_metadata.pop(dataset)
 
 
 def update(input_file):
@@ -399,9 +416,11 @@ def update(input_file):
 
     if class_name == 'StimuliRegion':
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        _migrate_stimuli(root_metadata, storage_manager, ['weight'])
 
     if class_name == 'StimuliSurface':
         root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
+        _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
