@@ -171,7 +171,7 @@ def update(input_file):
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
         root_metadata = _pop_lengths(root_metadata)
 
-    elif 'Connectivity' in class_name and ('Local' not in class_name):
+    elif class_name == 'Connectivity':
         root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
         root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
 
@@ -421,6 +421,11 @@ def update(input_file):
     if class_name == 'StimuliSurface':
         root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
         _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
+
+    if class_name == 'ConnectivityAnnotations':
+        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
+        _migrate_dataset_metadata(['region_annotations'], storage_manager)
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
