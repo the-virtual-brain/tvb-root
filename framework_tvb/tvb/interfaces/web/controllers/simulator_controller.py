@@ -273,7 +273,8 @@ class SimulatorController(BurstBaseController):
 
         if remove_after_stop:
             current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-            if current_burst is not None and burst_config is not None and current_burst.id == burst_config.id:
+            if (current_burst is not None and burst_config is not None and current_burst.id == burst_config.id and
+                    (current_burst.fk_simulation == operation_id or current_burst.fk_operation_group == operation_id)):
                 common.remove_from_session(common.KEY_BURST_CONFIG)
                 project = common.get_current_project()
                 common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(project.id))

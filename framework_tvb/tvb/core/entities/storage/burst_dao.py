@@ -112,3 +112,15 @@ class BurstDAO(RootDAO):
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
         return burst
+
+    def get_burst_for_direct_operation_id(self, operation_id):
+        burst = None
+        try:
+            burst = self.session.query(BurstConfiguration
+                                       ).filter(or_(BurstConfiguration.fk_simulation == operation_id,
+                                                    BurstConfiguration.fk_operation_group == operation_id)).first()
+        except NoResultFound:
+            self.logger.debug("No direct burst found for operation id = %s" % (operation_id,))
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+        return burst
