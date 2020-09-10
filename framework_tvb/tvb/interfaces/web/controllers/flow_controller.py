@@ -35,7 +35,6 @@ given action are described here.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import copy
 import json
 import cherrypy
 import formencode
@@ -92,6 +91,23 @@ class FlowController(BaseController):
         self.files_helper = FilesHelper()
         self.operation_services = OperationService()
 
+        analyze_category, groups = self.algorithm_service.get_analyze_groups()
+        adapters_list = []
+        for adapter_group in groups:
+
+            if len(adapter_group.children) > 1:
+                ids = [str(child.id) for child in adapter_group.children]
+                ids = ','.join(ids)
+                adapter_link = '/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids
+            else:
+                adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
+
+            adapters_list.append({common.KEY_TITLE: adapter_group.name,
+                                  'link': adapter_link,
+                                  'description': adapter_group.description,
+                                  'subsection': adapter_group.children[0].subsection_name})
+        self.analyze_adapters = adapters_list
+
     @expose_page
     @settings
     @context_selected
@@ -104,22 +120,7 @@ class FlowController(BaseController):
             step_name = analyze_category.displayname.lower()
             template_specification = dict(mainContent="header_menu", section_name=step_name, controlPage=None,
                                           title="Select an analyzer", displayControl=False)
-            adapters_list = []
-            for adapter_group in groups:
-
-                if len(adapter_group.children) > 1:
-                    ids = [str(child.id) for child in adapter_group.children]
-                    ids = ','.join(ids)
-                    adapter_link = '/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids
-                else:
-                    adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
-
-                adapters_list.append({common.KEY_TITLE: adapter_group.name,
-                                      'link': adapter_link,
-                                      'description': adapter_group.description,
-                                      'subsection': adapter_group.children[0].subsection_name})
-            self.analyze_adapters = adapters_list
-            template_specification[common.KEY_SUBMENU_LIST] = adapters_list
+            template_specification[common.KEY_SUBMENU_LIST] = self.analyze_adapters
             return self.fill_default_attributes(template_specification)
 
         except ValueError:
