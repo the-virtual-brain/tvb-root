@@ -281,6 +281,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
                             f.array_data.store(cm_data)
                             f.connectivity.store(connectivity_gid)
                             f.title.store(cm_index.title)
+                            f.gid.store(uuid.UUID(cm_index.gid))
                             cm_array_metadata = f.array_data.get_cached_metadata()
 
                         cm_index.array_data_min = cm_array_metadata.min
