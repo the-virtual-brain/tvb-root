@@ -97,12 +97,10 @@ class BurstDAO(RootDAO):
             burst = None
         return burst
 
-    def get_burst_for_operation_id(self, operation_id):
+    def get_burst_for_operation_id(self, operation_id, is_group=False):
         burst = None
         try:
-            burst = self.session.query(BurstConfiguration
-                                       ).filter(or_(BurstConfiguration.fk_simulation == operation_id,
-                                                    BurstConfiguration.fk_operation_group == operation_id)).first()
+            burst = self.get_burst_for_direct_operation_id(operation_id, is_group)
             if not burst:
                 burst = self.session.query(BurstConfiguration
                                            ).join(DataType, DataType.fk_parent_burst == BurstConfiguration.gid
@@ -113,12 +111,15 @@ class BurstDAO(RootDAO):
             self.logger.exception(excep)
         return burst
 
-    def get_burst_for_direct_operation_id(self, operation_id):
+    def get_burst_for_direct_operation_id(self, operation_id, is_group=False):
         burst = None
         try:
-            burst = self.session.query(BurstConfiguration
-                                       ).filter(or_(BurstConfiguration.fk_simulation == operation_id,
-                                                    BurstConfiguration.fk_operation_group == operation_id)).first()
+            if is_group:
+                burst = self.session.query(BurstConfiguration
+                                           ).filter(BurstConfiguration.fk_operation_group == operation_id).first()
+            else:
+                burst = self.session.query(BurstConfiguration
+                                           ).filter(BurstConfiguration.fk_simulation == operation_id).first()
         except NoResultFound:
             self.logger.debug("No direct burst found for operation id = %s" % (operation_id,))
         except SQLAlchemyError as excep:

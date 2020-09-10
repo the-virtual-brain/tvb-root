@@ -268,7 +268,7 @@ class SimulatorController(BurstBaseController):
         operations from that group.
         """
         # Load before we remove, to have its data in memory here
-        burst_config = BurstService.get_burst_for_operation_id(operation_id)
+        burst_config = BurstService.get_burst_for_operation_id(operation_id, is_group)
         result = OperationService.stop_operation(operation_id, is_group, remove_after_stop)
 
         if remove_after_stop:
