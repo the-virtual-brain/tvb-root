@@ -47,7 +47,7 @@ class PrincipalComponentsIndex(DataType):
     def fill_from_has_traits(self, datatype):
         # type: (PrincipalComponents)  -> None
         super(PrincipalComponentsIndex, self).fill_from_has_traits(datatype)
-        self.fk_source_gid = datatype.source.gid
+        self.fk_source_gid = datatype.source.gid.hex
 
     def get_extra_info(self):
         labels_dict = {}

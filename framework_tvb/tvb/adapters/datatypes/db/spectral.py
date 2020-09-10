@@ -51,8 +51,8 @@ class FourierSpectrumIndex(DataTypeMatrix):
         super(FourierSpectrumIndex, self).fill_from_has_traits(datatype)
         self.segment_length = datatype.segment_length
         self.windowing_function = datatype.windowing_function
-        self.frequency_step = datatype.frequency_step
-        self.max_frequency = datatype.max_frequency
+        self.frequency_step = datatype.freq_step
+        self.max_frequency = datatype.max_freq
         self.fk_source_gid = datatype.source.gid.hex
 
     def get_extra_info(self):
