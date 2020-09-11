@@ -101,6 +101,9 @@ __global__ void Oscillator(
     float V = 0.0;
     float W = 0.0;
 
+    float dV = 0.0;
+    float dW = 0.0;
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
@@ -114,7 +117,7 @@ __global__ void Oscillator(
     for (unsigned int t = i_step; t < (i_step + n_step); t++)
     {
     //***// This is the loop over nodes, which also should stay the same
-        for (unsigned int i_node = threadIdx.y; i_node < n_node; i_node+=blockDim.y)
+        for (int i_node = 0; i_node < n_node; i_node++)
         {
             c_0 = 0.0f;
 
@@ -146,12 +149,12 @@ __global__ void Oscillator(
             c_0 *= global_coupling;
 
             // This is dynamics step and the update in the state of the node
-            V += dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V));
-            W += dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
+            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V));
+            dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
 
             // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
-            V += nsig * curand_normal2(&crndst).x;
-            W += nsig * curand_normal2(&crndst).x;
+            V += nsig * curand_normal(&crndst) + dV;
+            W += nsig * curand_normal(&crndst) + dW;
 
             // Wrap it within the limits of the model
             V = wrap_it_V(V);

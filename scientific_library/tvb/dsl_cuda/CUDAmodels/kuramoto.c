@@ -72,6 +72,8 @@ __global__ void Kuramoto(
 
     float V = 0.0;
 
+    float dV = 0.0;
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
@@ -85,7 +87,7 @@ __global__ void Kuramoto(
     for (unsigned int t = i_step; t < (i_step + n_step); t++)
     {
     //***// This is the loop over nodes, which also should stay the same
-        for (unsigned int i_node = threadIdx.y; i_node < n_node; i_node+=blockDim.y)
+        for (int i_node = 0; i_node < n_node; i_node++)
         {
             c_0 = 0.0f;
 
@@ -116,10 +118,10 @@ __global__ void Kuramoto(
             c_0 *= global_coupling * rec_n;
 
             // This is dynamics step and the update in the state of the node
-            V += dt * (omega + c_0);
+            dV = dt * (omega + c_0);
 
             // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
-            V += nsig * curand_normal2(&crndst).x;
+            V += nsig * curand_normal(&crndst) + dV;
 
             // Wrap it within the limits of the model
             V = wrap_it_PI(V);

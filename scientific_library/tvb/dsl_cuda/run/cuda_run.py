@@ -121,7 +121,8 @@ class CudaRun:
 
 		# run simulation#{{{
 		# logger.info('submitting work')
-		for i in range(nstep):
+		import tqdm
+		for i in tqdm.trange(nstep):
 
 			# event = events[i % 32]
 			# stream = streams[i % 32]

@@ -1,6 +1,3 @@
-from tvb.simulator.lab import *
-import numpy as np
-import numpy.random as rgn
 import math
 import time
 import logging
@@ -8,12 +5,11 @@ import itertools
 import argparse
 import os, sys
 
+import numpy as np
 from numpy import corrcoef
 
-sys.path.insert(0, os.path.join(os.getcwd(), os.pardir))
-import LEMS2CUDA
-
-rgn.seed(79)
+from tvb.simulator.lab import *
+from tvb.dsl_cuda import LEMS2CUDA
 
 class TVB_test:
 
@@ -131,7 +127,8 @@ class TVB_test:
 
 	def start_cuda(self, logger):
 		# logger.info('start Cuda run')
-		from cuda_run import CudaRun
+		import pycuda.autoinit
+		from tvb.dsl_cuda.run.cuda_run import CudaRun
 		cudarun = CudaRun()
 		tavg_data = cudarun.run_simulation(self.weights, self.lengths, self.params, self.speeds, logger,
 										   self.args, self.n_nodes, self.n_work_items, self.n_params, self.nstep,
@@ -212,16 +209,19 @@ class TVB_test:
 		toc = time.time()
 		elapsed = toc - tic
 		logger.info('Finished python simulation successfully in: %0.3f', elapsed)
-		# logger.info('%0.3f M step/s', 1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed)
+		logger.info('%0.3f M step/s', 1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed)
 		# logger.info('finished')
 
 
 if __name__ == '__main__':
 
+	np.random.seed(79)
+
 	example = TVB_test()
 
 	# start templating the model specified on cli
-	LEMS2CUDA.cuda_templating(example.args.model, '../../dsl_cuda/XMLmodels/')
+	here = os.path.abspath(os.path.dirname(__file__))
+	LEMS2CUDA.cuda_templating(example.args.model, os.path.join(here, '..', 'XMLmodels'))
 
 	# start simulation with templated model
 	example.startsim()

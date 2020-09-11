@@ -3,8 +3,8 @@ from mako.template import Template
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.pardir))
-from lems.model.model import Model
+#sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.pardir))
+from tvb.dsl_cuda.lems.model.model import Model
 
 
 def default_lems_folder():
