@@ -44,11 +44,11 @@ VERSION = "2.0.10"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Popa, Paula Sansz Leon, Marmaduke Woodman"
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "BeautifulSoup4", "cherrypy", "cryptography", "flask", "flask-restplus",
-                            "formencode", "gevent", "h5py", "Jinja2", "networkx", "nibabel", "numpy", "Pillow",
-                            "psutil", "pyAesCrypt", "python-keycloak", "pyunicore",
-                            "scikit-learn", "scipy", "simplejson", "sqlalchemy", "sqlalchemy-migrate",
-                            "tvb-data", "tvb-gdist", "tvb-library"]
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "cherrypy", "cryptography", "flask", "flask-restplus", "formencode",
+                            "gevent", "h5py", "Jinja2", "nibabel", "numpy", "pandas", "Pillow",
+                            "psutil", "pyAesCrypt", "python-keycloak", "pyunicore", "requests", "scikit-learn",
+                            "scipy", "simplejson", "six", "sqlalchemy", "sqlalchemy-migrate",
+                            "tvb-data", "tvb-gdist", "tvb-library", "werkzeug"]
 
 # Packaging tvb-framework with REST server inside
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
@@ -61,10 +61,10 @@ setuptools.setup(name="tvb-framework",
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],
-                                 'test': ["pytest", "pytest-benchmark", "pytest-mock"]},
+                                 'test': ["pytest", "pytest-benchmark", "pytest-mock", "BeautifulSoup4"]},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,
-                 license="GPL v3",
+                 license="GPL-3.0-or-later",
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',
