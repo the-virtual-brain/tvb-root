@@ -34,7 +34,7 @@ Change of DB structure to TVB 2.0
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 from migrate import create_column, drop_column, ForeignKeyConstraint
-from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, MetaData, Table, func
+from sqlalchemy import Column, String, Integer, Float, Boolean, Date, Table
 from sqlalchemy.engine import reflection
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
@@ -61,7 +61,7 @@ CONN_DELETED_COLUMNS = [Column('_cortical', String), Column('_delays', String), 
                         Column('_region_labels', String), Column('_saved_selection', String), Column('_speed', String),
                         Column('_parent_connectivity', String), Column('_areas', String)]
 
-DATATYPE_DELETED_COLUMN = Column('gid', String)
+DATATYPE_DELETED_COLUMNS = [Column('gid', String), Column('create_date', Date)]
 
 
 COLUMN_8_OLD = Column('_source', String)
@@ -93,12 +93,6 @@ COLUMN_23_NEW = Column('number_of_connections', Integer, nullable=False)
 COLUMN_24_OLD = Column('_undirected', Integer)
 COLUMN_24_NEW = Column('undirected', Boolean)
 COLUMN_25 = Column('_weights', String)
-
-# CONN_COLUMN_4 = Column('_tract_lengths', Float)
-
-
-
-
 COLUMN_46 = Column('has_surface_mapping', Boolean, nullable=False)
 
 
@@ -167,10 +161,6 @@ def upgrade(migrate_engine):
     finally:
         session.close()
 
-    # MIGRATING Datatype
-
-
-
     # CREATING HasTraitsIndex
     # meta = MetaData(bind=migrate_engine)
 
@@ -206,25 +196,46 @@ def upgrade(migrate_engine):
                                         WHEN HasTraitsIndex.type_ = 'CoherenceSpectrum' THEN 'CoherenceSpectrumIndex'
                                      END
                             """))
-        session.execute(text("""DELETE FROM "HasTraitsIndex WHERE type_ = 'SimulationState'"""))
+        session.execute(text("""DELETE FROM "HasTraitsIndex" WHERE type_ = 'SimulationState'"""))
         session.commit()
     except Exception:
         session.close()
     finally:
         session.close()
 
-    table = Table('', meta, autoload=True)
+    # MIGRATING Datatype
+    datatype_table = meta.tables['DataType']
+    for column in DATATYPE_DELETED_COLUMNS:
+        drop_column(column, datatype_table)
 
-    # MIGRATING BurstConfiguration #
-    # projects = dao.get_all_projects()
-    #
-    # for project in projects:
-    #     conn_indxs = dao.get_values_of_datatype(project.id, ConnectivityIndex)
-    #     for conn_indx in conn_indxs:
-    #         conn_h5 = h5.load_from_index(conn_indx)
-    #         weights = conn_h5.weights
-    #         tracts = conn_h5.tract_lengths
-
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""UPDATE "DataType" SET type =
+                        (SELECT HTI.type_
+                        FROM "HasTraitsIndex" HTI, "DataType" DT
+                        WHERE HTI.id = DT.id);"""))
+        session.execute(text("""UPDATE "DataType" 
+                                    SET module =
+                                     CASE
+                                        WHEN DataType.type = 'ConnectivityIndex' THEN 'tvb.adapters.datatypes.db.connectivity'
+                                        WHEN DataType.type = 'SurfaceIndex' THEN 'tvb.adapters.datatypes.db.surface'
+                                        WHEN DataType.type = 'SensorsIndex' THEN 'tvb.adapters.datatypes.db.sensors'
+                                        WHEN DataType.type = 'ConnectivityAnnotationsIndex' THEN
+                                        'tvb.adapters.datatypes.db.annotation'
+                                        WHEN DataType.type = 'RegionMappingIndex' THEN 
+                                        'tvb.adapters.datatypes.db.region_mapping'
+                                        WHEN DataType.type  = 'ProjectionMatrixIndex' THEN 'tvb.adapters.datatypes.db.projections'
+                                        WHEN DataType.type = 'LocalConnectivityIndex' THEN 'tvb.adapters.datatypes.db.local_connectivity'
+                                        WHEN DataType.type = 'TimeSeriesRegionIndex' THEN 'tvb.adapters.datatypes.db.time_series'
+                                        WHEN DataType.type in('ComplexCoherenceSpectrumIndex', 'CoherenceSpectrumIndex')  THEN
+                                        'tvb.adapters.datatypes.db.spectral'
+                                     END
+                            """))
+        session.commit()
+    except:
+        return False
+    finally:
+        session.close()
 
     burst_config_table = meta.tables['BurstConfiguration']
     for column in BURST_COLUMNS:
@@ -240,8 +251,7 @@ def upgrade(migrate_engine):
         session.execute(text(
             """UPDATE "BurstConfiguration" SET
             fk_simulation = (SELECT O.id FROM "OPERATIONS" O, "DataType" D
-             WHERE O.id = D.fk_from_operation AND module = 'tvb.datatypes.time_series')"""))
-
+             WHERE O.id = D.fk_from_operation AND module = 'tvb.adapters.datatypes.db.time_series')"""))
         session.commit()
     except Exception:
         session.close()
@@ -291,10 +301,6 @@ def upgrade(migrate_engine):
 
     for column in CONN_DELETED_COLUMNS:
         drop_column(column, conn_table)
-
-
-
-
 
 
 def downgrade(_):

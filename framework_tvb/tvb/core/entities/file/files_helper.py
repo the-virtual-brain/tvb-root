@@ -435,6 +435,14 @@ class FilesHelper(object):
                     n_files += 1
         return int(round(total_size / 1024.))
 
+    @staticmethod
+    def get_all_h5_paths():
+        h5_files = []
+        for path, subdirs, files in os.walk(TvbProfile.current.TVB_STORAGE):
+            for name in files:
+                if name.endswith('.h5'):
+                    h5_files.append(os.path.join(path, name))
+        return h5_files
 
 class TvbZip(ZipFile):
     def __init__(self, dest_path, mode="r"):
