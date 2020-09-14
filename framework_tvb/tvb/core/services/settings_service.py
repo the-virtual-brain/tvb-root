@@ -41,7 +41,7 @@ from sqlalchemy import create_engine
 from tvb.basic.config import stored
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.services.exceptions import InvalidSettingsException
+from tvb.core.services.exceptions import InvalidSettingsException, InvalidStorageException
 from tvb.core.utils import get_matlab_executable, hash_password
 
 
@@ -175,12 +175,13 @@ class SettingsService(object):
     def save_settings(self, **data):
         """
         Check if new settings are correct.  Make necessary changes, then save new data in configuration file.
-        
+
         :returns: two boolean values
                     -there were any changes to the configuration;
                     -a reset should be performed on the TVB relaunch.
         """
         new_storage = data[self.KEY_STORAGE]
+        self.check_tvb_folder(new_storage)
         previous_storage = TvbProfile.current.TVB_STORAGE
 
         new_db = data[self.KEY_SELECTED_DB]
@@ -237,3 +238,12 @@ class SettingsService(object):
             TvbProfile.current.manager.write_config_data(file_data)
             os.chmod(TvbProfile.current.TVB_CONFIG_FILE, 0o644)
         return anything_changed, first_run or db_changed
+
+    def check_tvb_folder(self, storage_path):
+        """
+        Check if the storage folder exists and is empty.
+        """
+        if storage_path:
+            if os.path.isdir(storage_path):
+                if os.listdir(storage_path):
+                    raise InvalidStorageException('TVB Storage should be empty, please set another folder.')
