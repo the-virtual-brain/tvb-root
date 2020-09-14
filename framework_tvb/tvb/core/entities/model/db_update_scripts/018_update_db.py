@@ -33,29 +33,36 @@ Change of DB structure to TVB 2.0
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from migrate import alter_column, create_column, drop_column
-from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey
+from migrate import create_column, drop_column, ForeignKeyConstraint
+from sqlalchemy import Column, String, Integer, Float, Boolean, ForeignKey, MetaData, Table, func
 from sqlalchemy.engine import reflection
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_operation import Operation, OperationGroup
-from tvb.core.entities.storage import SA_SESSIONMAKER
+from tvb.core.entities.storage import SA_SESSIONMAKER, dao
 from sqlalchemy.sql import text
-from tvb.core.neotraits.db import Base
-
+from tvb.core.neotraits.db import Base, HasTraitsIndex
+from tvb.core.neocom import h5
 
 meta = Base.metadata
 
 LOGGER = get_logger(__name__)
 
-COLUMN_1_OLD = Column('_dynamic_ids', String)
-COLUMN_1_NEW = Column('dynamic_ids', String, nullable=False)
-COLUMN_2 = Column('range_1', String)
-COLUMN_3 = Column('range_2', String)
-COLUMN_4_OLD = Column('_simulator_configuration', String)
-COLUMN_4_NEW = Column('simulator_gid', String)
-COLUMN_5 = Column('fk_simulation', Integer, ForeignKey(Operation.id))
-COLUMN_6 = Column('fk_operation_group', Integer, ForeignKey(OperationGroup.id))
-COLUMN_7 = Column('fk_metric_operation_group', Integer, ForeignKey(Operation.id))
+
+BURST_COLUMNS = [Column('range1', String), Column('range2', String), Column('fk_simulation', Integer),
+Column('fk_operation_group', Integer), Column('fk_metric_operation_group', Integer)]
+BURST_DELETED_COLUMN = Column('workflows_number', Integer)
+
+CONN_COLUMNS = [Column('weights_min', Float), Column('weights_max', Float), Column('weights_mean', Float),
+                Column('tract_lengths_min', Float), Column('tract_lengths_max', Float),
+                Column('tract_lengths_mean', Float), Column('has_cortical_mask', Boolean),
+                Column('has_hemispheres_mask', Boolean)]
+CONN_DELETED_COLUMNS = [Column('_cortical', String), Column('_delays', String), Column('_centres', String),
+                        Column('_idelays', String), Column('_hemispheres', String), Column('_orientations', String),
+                        Column('_region_labels', String), Column('_saved_selection', String), Column('_speed', String),
+                        Column('_parent_connectivity', String), Column('_areas', String)]
+
+DATATYPE_DELETED_COLUMN = Column('gid', String)
+
 
 COLUMN_8_OLD = Column('_source', String)
 COLUMN_8_NEW = Column('fk_source_gid', String(32), nullable=False)
@@ -74,7 +81,6 @@ COLUMN_16_NEW = Column('windowing_function', String, nullable=False)
 COLUMN_17 = Column('frequency_step', Float, nullable=False)
 COLUMN_18 = Column('max_frequency', Float, nullable=False)
 
-
 COLUMN_19_OLD = Column('_connectivity', String)
 COLUMN_19_NEW = Column('fk_connectivity_gid', String(32))
 COLUMN_20 = Column('_region_annotations', String)
@@ -87,26 +93,11 @@ COLUMN_23_NEW = Column('number_of_connections', Integer, nullable=False)
 COLUMN_24_OLD = Column('_undirected', Integer)
 COLUMN_24_NEW = Column('undirected', Boolean)
 COLUMN_25 = Column('_weights', String)
-COLUMN_26 = Column('weights_min', Float)
-COLUMN_27 = Column('weights_max', Float)
-COLUMN_28 = Column('weights_mean', Float)
-COLUMN_29 = Column('_tract_lengths', Float)
-COLUMN_30 = Column('tract_lengths_min', Float)
-COLUMN_31 = Column('tract_lengths_max', Float)
-COLUMN_32 = Column('tract_lengths_mean', Float)
-COLUMN_33 = Column('has_cortical_mask', Float)
-COLUMN_34 = Column('has_hemispheres_mask', Float)
-COLUMN_35 = Column('_cortical', String)
-COLUMN_36 = Column('_delays', String)
-COLUMN_37 = Column('_centres', String)
-COLUMN_38 = Column('_idelays', String)
-COLUMN_39 = Column('_hemispheres', String)
-COLUMN_40 = Column('_orientations', String)
-COLUMN_41 = Column('_region_labels', String)
-COLUMN_42 = Column('_saved_selection', String)
-COLUMN_43 = Column('_speed', String)
-COLUMN_44 = Column('_parent_connectivity', String)
-COLUMN_45 = Column('_areas', String)
+
+# CONN_COLUMN_4 = Column('_tract_lengths', Float)
+
+
+
 
 COLUMN_46 = Column('has_surface_mapping', Boolean, nullable=False)
 
@@ -115,13 +106,35 @@ def upgrade(migrate_engine):
     """
     """
     meta.bind = migrate_engine
+    session = SA_SESSIONMAKER()
+
+    # Renaming tables which wouldn't be correctly renamed by the next renamings
+    try:
+        session.execute(text("""ALTER TABLE "BURST_CONFIGURATIONS"
+                                RENAME TO "BurstConfiguration"; """))
+        session.execute(text("""ALTER TABLE "MAPPED_STRUCTURAL_MRI_DATA"
+                                RENAME TO "StructuralMRIIndex"; """))
+        session.execute(text("""ALTER TABLE "MAPPED_TIME_SERIES_EEG_DATA"
+                                RENAME TO "TimeSeriesEEGIndex"; """))
+        session.execute(text("""ALTER TABLE "MAPPED_TIME_SERIES_MEG_DATA"
+                                RENAME TO "TimeSeriesMEGIndex"; """))
+        session.execute(text("""ALTER TABLE "MAPPED_TIME_SERIES_SEEG_DATA"
+                                RENAME TO "TimeSeriesSEEGIndex"; """))
+        session.execute(text("""ALTER TABLE "DATA_TYPES"
+                                RENAME TO "DataType"; """))
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
 
     session = SA_SESSIONMAKER()
     inspector = reflection.Inspector.from_engine(session.connection())
 
     try:
+        # Dropping tables which don't exist in the new version
+
         session.execute(text("""DROP TABLE "MAPPED_ARRAY_DATA";"""))
-        session.execute(text("""DROP TABLE "DATA_TYPES";"""))
         session.execute(text("""DROP TABLE "MAPPED_LOOK_UP_TABLE_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_DATATYPE_MEASURE_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_SPATIAL_PATTERN_DATA";"""))
@@ -131,6 +144,7 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "WORKFLOW_STEPS";"""))
         session.execute(text("""DROP TABLE "WORKFLOW_VIEW_STEPS";"""))
 
+        # This for renames the other tables replacing the "MAPPED_ ... _DATA" name structure with the "Ïndex" suffix
         for table in inspector.get_table_names():
             new_table_name = table
             new_table_name = new_table_name.lower()
@@ -145,19 +159,7 @@ def upgrade(migrate_engine):
                 new_table_name = new_table_name.replace('mapped', '')
                 new_table_name = new_table_name.replace('Data', '')
                 new_table_name = new_table_name + 'Index'
-
                 session.execute(text("""ALTER TABLE "{}" RENAME TO "{}"; """.format(table, new_table_name)))
-
-        session.execute(text("""ALTER TABLE "BURST_CONFIGURATIONS"
-                                RENAME TO "BurstConfiguration"; """))
-        session.execute(text("""ALTER TABLE "StructuralMriIndex"
-                                RENAME TO "StructuralMRIIndex"; """))
-        session.execute(text("""ALTER TABLE "TimeSeriesEegIndex"
-                                RENAME TO "TimeSeriesEEGIndex"; """))
-        session.execute(text("""ALTER TABLE "TimeSeriesMegIndex"
-                                RENAME TO "TimeSeriesMEGIndex"; """))
-        session.execute(text("""ALTER TABLE "TimeSeriesSeegIndex"
-                                RENAME TO "TimeSeriesSEEGIndex"; """))
 
         session.commit()
     except Exception:
@@ -165,70 +167,132 @@ def upgrade(migrate_engine):
     finally:
         session.close()
 
+    # MIGRATING Datatype
+
+
+
+    # CREATING HasTraitsIndex
+    # meta = MetaData(bind=migrate_engine)
+
+    table = Table('HasTraitsIndex', meta, autoload=True)
+    for constraint in table._sorted_constraints:
+        if not isinstance(constraint.name, str):
+            constraint.name = None
+
+    meta.create_all()
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""INSERT into "HasTraitsIndex" (id, gid, type_, title, create_date)
+                            SELECT D.id, D.gid, D.type, NULL, D.create_date
+                            FROM "Datatype" D"""))
+        session.commit()
+        session.execute(text("""UPDATE "HasTraitsIndex" 
+                                    SET type_ =
+                                     CASE
+                                        WHEN HasTraitsIndex.type_ in ('CorticalSurface', 'BrainSkull', 'SkullSkin',
+                                          'SkinAir', 'EEGCap', 'FaceSurface', 'WhiteMatterSurface') THEN 'SurfaceIndex'
+                                        WHEN HasTraitsIndex.type_ = 'LocalConnectivity' THEN 'LocalConnectivityIndex'
+                                        WHEN HasTraitsIndex.type_ in ('SensorsInternal', 'SensorsMEG', 'SensorsEEG') 
+                                           THEN 'SensorsIndex'
+                                        WHEN HasTraitsIndex.type_ in ('ProjectionSurfaceEEG', 'ProjectionSurfaceMEG',
+                                         'ProjectionSurfaceSEEG') THEN 'ProjectionMatrixIndex'
+                                        WHEN HasTraitsIndex.type_ = 'Connectivity' THEN 'ConnectivityIndex'
+                                        WHEN HasTraitsIndex.type_ = 'RegionMapping' THEN 'RegionMappingIndex'
+                                        WHEN HasTraitsIndex.type_ = 'ConnectivityAnnotations' THEN
+                                         'ConnectivityAnnotationsIndex'
+                                        WHEN HasTraitsIndex.type_ = 'TimeSeriesRegion' THEN 'TimeSeriesRegionIndex'
+                                        WHEN HasTraitsIndex.type_ = 'ComplexCoherenceSpectrum'
+                                         THEN 'ComplexCoherenceSpectrumIndex'
+                                        WHEN HasTraitsIndex.type_ = 'CoherenceSpectrum' THEN 'CoherenceSpectrumIndex'
+                                     END
+                            """))
+        session.execute(text("""DELETE FROM "HasTraitsIndex WHERE type_ = 'SimulationState'"""))
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
+
+    table = Table('', meta, autoload=True)
+
+    # MIGRATING BurstConfiguration #
+    # projects = dao.get_all_projects()
+    #
+    # for project in projects:
+    #     conn_indxs = dao.get_values_of_datatype(project.id, ConnectivityIndex)
+    #     for conn_indx in conn_indxs:
+    #         conn_h5 = h5.load_from_index(conn_indx)
+    #         weights = conn_h5.weights
+    #         tracts = conn_h5.tract_lengths
+
+
     burst_config_table = meta.tables['BurstConfiguration']
-    alter_column(COLUMN_1_OLD, table=burst_config_table, name=COLUMN_1_NEW.name)
-    create_column(COLUMN_2, burst_config_table)
-    create_column(COLUMN_3, burst_config_table)
-    alter_column(COLUMN_4_OLD, table=burst_config_table, name=COLUMN_4_NEW.name)
-    create_column(COLUMN_5, burst_config_table)
-    create_column(COLUMN_6, burst_config_table)
-    create_column(COLUMN_7, burst_config_table)
+    for column in BURST_COLUMNS:
+        create_column(column, burst_config_table)
 
-    # session = SA_SESSIONMAKER()
-    # try:
-    #     session.execute(text("""UPDATE "BurstConfiguration" SET fk_simulation =
-    #      (SELECT )"""))
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""ALTER TABLE "BurstConfiguration"
+                                RENAME COLUMN _dynamic_ids TO dynamic_ids"""))
+        session.execute(text("""ALTER TABLE "BurstConfiguration"
+                                RENAME COLUMN _simulator_configuration TO simulator_gid"""))
 
-    coherence_spectrum_table = meta.tables['CoherenceSpectrumIndex']
-    alter_column(COLUMN_8_OLD, table=coherence_spectrum_table, name=COLUMN_8_NEW.name)
-    alter_column(COLUMN_9_OLD, table=coherence_spectrum_table, name=COLUMN_9_NEW.name)
-    drop_column(COLUMN_10, table=coherence_spectrum_table)
-    create_column(COLUMN_11, table=coherence_spectrum_table)
-    create_column(COLUMN_12, table=coherence_spectrum_table)
+        session.execute(text(
+            """UPDATE "BurstConfiguration" SET
+            fk_simulation = (SELECT O.id FROM "OPERATIONS" O, "DataType" D
+             WHERE O.id = D.fk_from_operation AND module = 'tvb.datatypes.time_series')"""))
 
-    complex_coherence_spectrum_table = meta.tables['ComplexCoherenceSpectrumIndex']
-    alter_column(COLUMN_8_OLD, table=complex_coherence_spectrum_table, name=COLUMN_8_NEW.name)
-    drop_column(COLUMN_13, table=complex_coherence_spectrum_table)
-    alter_column(COLUMN_14_OLD, table=complex_coherence_spectrum_table, name=COLUMN_14_NEW.name)
-    alter_column(COLUMN_15_OLD, table=complex_coherence_spectrum_table, name=COLUMN_15_NEW.name)
-    alter_column(COLUMN_16_OLD, table=complex_coherence_spectrum_table, name=COLUMN_16_NEW.name)
-    create_column(COLUMN_17, table=complex_coherence_spectrum_table)
-    create_column(COLUMN_18, table=complex_coherence_spectrum_table)
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
 
-    connectivity_annotations_table = meta.tables['ConnectivityAnnotationsIndex']
-    alter_column(COLUMN_19_OLD, table=connectivity_annotations_table, name=COLUMN_19_NEW.name)
-    drop_column(COLUMN_20, table=connectivity_annotations_table)
-    create_column(COLUMN_21, table=connectivity_annotations_table)
+    # Drop old column
+    drop_column(BURST_DELETED_COLUMN, burst_config_table)
 
-    connectivity_table = meta.tables['ConnectivityIndex']
-    alter_column(COLUMN_22_OLD, table=connectivity_table, name=COLUMN_22_NEW.name)
-    alter_column(COLUMN_23_OLD, table=connectivity_table, name=COLUMN_23_NEW.name)
-    alter_column(COLUMN_24_OLD, table=connectivity_table, name=COLUMN_24_NEW.name)
-    drop_column(COLUMN_25, table=connectivity_table)
-    create_column(COLUMN_26, table=connectivity_table)
-    create_column(COLUMN_27, table=connectivity_table)
-    create_column(COLUMN_28, table=connectivity_table)
-    drop_column(COLUMN_29, table=connectivity_table)
-    create_column(COLUMN_30, table=connectivity_table)
-    create_column(COLUMN_31, table=connectivity_table)
-    create_column(COLUMN_32, table=connectivity_table)
-    create_column(COLUMN_33, table=connectivity_table)
-    create_column(COLUMN_34, table=connectivity_table)
-    drop_column(COLUMN_35, table=connectivity_table)
-    drop_column(COLUMN_36, table=connectivity_table)
-    drop_column(COLUMN_37, table=connectivity_table)
-    drop_column(COLUMN_38, table=connectivity_table)
-    drop_column(COLUMN_39, table=connectivity_table)
-    drop_column(COLUMN_40, table=connectivity_table)
-    drop_column(COLUMN_41, table=connectivity_table)
-    drop_column(COLUMN_42, table=connectivity_table)
-    drop_column(COLUMN_43, table=connectivity_table)
-    drop_column(COLUMN_44, table=connectivity_table)
-    drop_column(COLUMN_45, table=connectivity_table)
+    # Create constraints only after the rows are populated
+    fk_burst_config_constraint_1 = ForeignKeyConstraint(
+        ["fk_simulation"],
+        ["OPERATIONS.id"],
+        table=burst_config_table)
+    fk_burst_config_constraint_2 = ForeignKeyConstraint(
+        ["fk_operation_group"],
+        ["OPERATION_GROUPS.id"],
+        table=burst_config_table)
+    fk_burst_config_constraint_3 = ForeignKeyConstraint(
+        ["fk_metric_operation_group"],
+        ["OPERATION_GROUPS.id"],
+        table=burst_config_table)
 
-    connectivity_measure_table = meta.tables['ConnectivityMeasureIndex']
-    alter_column(COLUMN_19_OLD, table=connectivity_measure_table, name=COLUMN_19_NEW)
-    create_column(COLUMN_46, table=connectivity_measure_table)
+    fk_burst_config_constraint_1.create()
+    fk_burst_config_constraint_2.create()
+    fk_burst_config_constraint_3.create()
+
+    # MIGRATING ConnectivityIndex #
+
+    conn_table = meta.tables['ConnectivityIndex']
+    for column in CONN_COLUMNS:
+        create_column(column, conn_table)
+
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""ALTER TABLE "ConnectivityIndex"
+                                RENAME COLUMN _number_of_regions TO number_of_regions"""))
+        session.execute(text("""ALTER TABLE "ConnectivityIndex"
+                                RENAME COLUMN _number_of_connections TO number_of_connections"""))
+        session.execute(text("""ALTER TABLE "ConnectivityIndex"
+                                RENAME COLUMN _undirected TO undirected"""))
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
+
+    for column in CONN_DELETED_COLUMNS:
+        drop_column(column, conn_table)
+
+
 
 
 
