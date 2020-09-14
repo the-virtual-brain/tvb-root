@@ -40,13 +40,13 @@ import os
 import shutil
 import setuptools
 
-VERSION = "2.0.10"
+VERSION = "2.0.9.1"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Popa, Paula Sansz Leon, Marmaduke Woodman"
 
 TVB_INSTALL_REQUIREMENTS = ["allensdk", "cherrypy", "cryptography", "flask", "flask-restplus", "formencode",
                             "gevent", "h5py", "Jinja2", "nibabel", "numpy", "pandas", "Pillow",
-                            "psutil", "pyAesCrypt", "python-keycloak", "pyunicore", "requests", "scikit-learn",
+                            "psutil", "pyAesCrypt", "python-keycloak", "requests", "scikit-learn",
                             "scipy", "simplejson", "six", "sqlalchemy", "sqlalchemy-migrate",
                             "tvb-data", "tvb-gdist", "tvb-library", "werkzeug"]
 
@@ -61,6 +61,7 @@ setuptools.setup(name="tvb-framework",
                  include_package_data=True,
                  install_requires=TVB_INSTALL_REQUIREMENTS,
                  extras_require={'postgres': ["psycopg2"],
+                                 'hpc': ["pyunicore"],
                                  'test': ["pytest", "pytest-benchmark", "pytest-mock", "BeautifulSoup4"]},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,
