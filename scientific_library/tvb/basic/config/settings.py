@@ -203,6 +203,8 @@ class HPCSettings(object):
     # Specify if the current process is executing an operation (via hpcLauncher)
     IN_OPERATION_EXECUTION_PROCESS = False
 
+    CAN_RUN_HPC = True
+
     def __init__(self, manager):
         self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
         self.BACKGROUND_JOB_INTERVAL = manager.get_attribute(stored.KEY_HPC_INTERVAL, 60, int)
