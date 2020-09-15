@@ -34,7 +34,7 @@ setup(
     name='tvb_bin',
     packages=find_packages(),
     version="2.0",
-    license="GPL v3",
+    license="GPL-3.0-or-later",
     author="TVB Team"
 )
 

@@ -121,8 +121,8 @@ class BurstService(object):
         return operation
 
     @staticmethod
-    def get_burst_for_operation_id(operation_id):
-        return dao.get_burst_for_operation_id(operation_id)
+    def get_burst_for_operation_id(operation_id, is_group=False):
+        return dao.get_burst_for_operation_id(operation_id, is_group)
 
     def rename_burst(self, burst_id, new_name):
         """

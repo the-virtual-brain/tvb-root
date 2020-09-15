@@ -39,11 +39,11 @@ import os
 import shutil
 import setuptools
 
-LIBRARY_VERSION = "2.0.9"
+LIBRARY_VERSION = "2.0.10"
 
 LIBRARY_TEAM = "Marmaduke Woodman, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
-LIBRARY_REQUIRED_PACKAGES = ["matplotlib", "networkx", "numba", "numexpr", "numpy", "scipy", "typing"]
+LIBRARY_REQUIRED_PACKAGES = ["mako", "matplotlib", "networkx", "numba", "numexpr", "numpy", "scipy", "six", "typing"]
 
 LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", "tvb-gdist", "tvb-data"]
 
@@ -59,7 +59,7 @@ setuptools.setup(name='tvb-library',
                  extras_require={"test": LIBRARY_REQUIRED_EXTRA},
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,
-                 license="GPL v3",
+                 license="GPL-3.0-or-later",
                  author=LIBRARY_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',

@@ -43,8 +43,8 @@ from tvb.adapters.simulator.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel, \
-    AdditiveNoiseViewModel, BoldViewModel, RawViewModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel
+from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel, RawViewModel
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -261,22 +261,21 @@ class SimulatorController(BurstBaseController):
 
         return self.cancel_or_remove_operation(op_id, is_group, remove_after_stop)
 
-    @staticmethod
-    def cancel_or_remove_operation(operation_id, is_group, remove_after_stop=False):
+    def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):
         """
         Stop the operation given by operation_id. If is_group is true stop all the
         operations from that group.
         """
         # Load before we remove, to have its data in memory here
-        burst_config = BurstService.get_burst_for_operation_id(operation_id)
+        burst_config = BurstService.get_burst_for_operation_id(operation_id, is_group)
         result = OperationService.stop_operation(operation_id, is_group, remove_after_stop)
 
         if remove_after_stop:
             current_burst = common.get_from_session(common.KEY_BURST_CONFIG)
-            if current_burst is not None and burst_config is not None and current_burst.id == burst_config.id:
-                common.remove_from_session(common.KEY_BURST_CONFIG)
-                project = common.get_current_project()
-                common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(project.id))
+            if (current_burst is not None and burst_config is not None and current_burst.id == burst_config.id and
+                    ((current_burst.fk_simulation == operation_id and not is_group) or
+                     (current_burst.fk_operation_group == operation_id and is_group))):
+                self.reset_simulator_configuration()
         return result
 
     @expose_page

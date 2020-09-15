@@ -33,9 +33,10 @@
 """
 import os
 import shutil
-
 import numpy
+import pytest
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
+from tvb.basic.config.settings import HPCSettings
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
 from tvb.core.entities.storage import dao
@@ -56,6 +57,7 @@ def _request_passfile_dummy(simulator_gid, op_id, base_url, passfile_folder):
     pass
 
 
+@pytest.mark.skipif(not HPCSettings.CAN_RUN_HPC, reason="pyunicore not installed")
 class TestHPCSchedulerClient(BaseTestCase):
 
     def setup_method(self):

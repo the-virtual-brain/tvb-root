@@ -516,7 +516,7 @@ class OperationService:
         else:
             result = BackendClientFactory.stop_operation(operation_id)
             if remove_after_stop:
-                burst_config = dao.get_burst_for_operation_id(operation_id)
+                burst_config = dao.get_burst_for_direct_operation_id(operation_id)
                 ProjectService().remove_operation(operation_id)
                 if burst_config is not None:
                     result = dao.remove_entity(BurstConfiguration, burst_config.id) or result

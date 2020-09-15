@@ -29,7 +29,6 @@
 #
 
 import os
-
 from tvb.adapters.analyzers.cross_correlation_adapter import CrossCorrelateAdapter, PearsonCorrelationCoefficientAdapter
 from tvb.adapters.analyzers.fcd_adapter import FunctionalConnectivityDynamicsAdapter
 from tvb.adapters.analyzers.fmri_balloon_adapter import BalloonModelAdapter
@@ -199,10 +198,11 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_fcd_adapter(self, tmpdir, time_series_region_index_factory,
+    def test_fcd_adapter(self, tmpdir, time_series_region_index_factory, connectivity_index_factory,
                          connectivity_factory, region_mapping_factory, surface_factory):
         storage_folder = str(tmpdir)
         connectivity = connectivity_factory()
+        connectivity_index_factory(conn=connectivity)
         surface = surface_factory()
         region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
         ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)

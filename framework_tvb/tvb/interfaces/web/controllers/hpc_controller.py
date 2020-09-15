@@ -34,11 +34,10 @@ REST endpoints that we use while running simulations on HPC nodes.
 .. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
-import json
-import os
-from http import HTTPStatus
 
+import os
 import cherrypy
+from http import HTTPStatus
 from cherrypy.lib.static import serve_file
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import OperationPossibleStatus

@@ -99,10 +99,9 @@ class Field(object):
 
     @property
     def value(self):
-        # TODO: to be reviewed in task TVB-2669 / avoid need for this check and the ones in FloatField.value
-        if str(self.data) == self.unvalidated_data:
+        if self.data is not None:
             return self.data
-        return self.data or self.unvalidated_data
+        return self.unvalidated_data
 
     def __repr__(self):
         return '<{}>(name={})'.format(type(self).__name__, self.name)
@@ -139,12 +138,6 @@ class SimpleFloatField(Field):
             self.data = float(self.unvalidated_data)
         else:
             self.data = None
-
-    @property
-    def value(self):
-        if self.data == 0:
-            return self.data
-        return super(SimpleFloatField, self).value
 
 
 class TraitField(Field):
@@ -395,11 +388,6 @@ class FloatField(TraitField):
         else:
             self.data = None
 
-    @property
-    def value(self):
-        if self.data == 0:
-            return self.data
-        return super(FloatField, self).value
 
 class ArrayField(TraitField):
     template = 'form_fields/str_field.html'
