@@ -12,7 +12,7 @@ jobs:
       - name: Run tests
         run: >
           docker run --rm -v $PWD:/work -w /work/scientific_library tvb/lib-ci 
-          pytest -Wignore --profiling-svg
+          pytest -Wignore --profile-svg
 
       - name: archive test profiles
         uses: actions/upload-artifact@v2
