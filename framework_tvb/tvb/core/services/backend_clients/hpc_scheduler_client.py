@@ -39,9 +39,6 @@ import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
-
-import pyunicore.client as unicore_client
-from pyunicore.client import Job, Storage, Client
 from requests import HTTPError
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
@@ -57,6 +54,12 @@ from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler
+
+try:
+    import pyunicore.client as unicore_client
+    from pyunicore.client import Job, Storage, Client
+except ImportError:
+    HPCSettings.CAN_RUN_HPC = False
 
 LOGGER = get_logger(__name__)
 
@@ -126,11 +129,10 @@ class HPCSchedulerClient(BackendClient):
         inputs_in_container = os.path.join('/root/.data', EncryptionHandler(simulator_gid).current_enc_dirname)
 
         # Build job configuration JSON
-        my_job = {}
-        my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
-        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, base_url,
-                                                inputs_in_container, HPCSchedulerClient.HOME_FOLDER_MOUNT, operation_id]
-        my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
+        my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
+                  HPCSettings.UNICORE_ARGS_KEY: [simulator_gid, available_space, is_group_launch, base_url,
+                                                 inputs_in_container, HPCSchedulerClient.HOME_FOLDER_MOUNT,
+                                                 operation_id], HPCSettings.UNICORE_RESOURCER_KEY: {"CPUs": "1"}}
 
         return my_job, bash_entrypoint
 

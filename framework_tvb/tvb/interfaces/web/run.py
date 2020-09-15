@@ -33,12 +33,8 @@ Launches the web server and configure the controllers for UI.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import importlib
-import time
-from subprocess import Popen, PIPE
 
-from tvb.core.services.hpc_operation_service import HPCOperationService
-from tvb.interfaces.web.controllers.hpc_controller import HPCController
+import time
 
 STARTUP_TIC = time.time()
 
@@ -46,6 +42,8 @@ import os
 import sys
 import cherrypy
 import webbrowser
+import importlib
+from subprocess import Popen, PIPE
 from cherrypy import Tool
 from tvb.basic.profile import TvbProfile
 
@@ -57,6 +55,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
 from tvb.config.init.initializer import initialize, reset
 from tvb.core.services.exceptions import InvalidSettingsException
+from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.request_handler import RequestHandler
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.users_controller import UserController
@@ -75,6 +74,11 @@ from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import S
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.hpc_controller import HPCController
+
+
+if __name__ == '__main__':
+    TvbProfile.set_profile(sys.argv[1])
 
 LOGGER = get_logger('tvb.interfaces.web.run')
 CONFIG_EXISTS = not TvbProfile.is_first_run()
@@ -123,12 +127,12 @@ def init_cherrypy(arguments=None):
     # ----------------- End register additional request handlers ----------------
 
     # Register housekeeping job
-    if TvbProfile.current.hpc.IS_HPC_RUN:
+    if TvbProfile.current.hpc.IS_HPC_RUN and TvbProfile.current.hpc.CAN_RUN_HPC:
         cherrypy.engine.housekeeper = cherrypy.process.plugins.BackgroundTask(
             TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
         cherrypy.engine.housekeeper.start()
 
-    #### HTTP Server is fired now ######  
+    # HTTP Server is fired now ######
     cherrypy.engine.start()
 
 
