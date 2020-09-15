@@ -35,7 +35,6 @@ given action are described here.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-import copy
 import json
 import cherrypy
 import formencode
@@ -91,6 +90,24 @@ class FlowController(BaseController):
         self.context = SelectedAdapterContext()
         self.files_helper = FilesHelper()
         self.operation_services = OperationService()
+        self.simulator_controller = SimulatorController()
+
+        analyze_category, groups = self.algorithm_service.get_analyze_groups()
+        adapters_list = []
+        for adapter_group in groups:
+
+            if len(adapter_group.children) > 1:
+                ids = [str(child.id) for child in adapter_group.children]
+                ids = ','.join(ids)
+                adapter_link = '/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids
+            else:
+                adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
+
+            adapters_list.append({common.KEY_TITLE: adapter_group.name,
+                                  'link': adapter_link,
+                                  'description': adapter_group.description,
+                                  'subsection': adapter_group.children[0].subsection_name})
+        self.analyze_adapters = adapters_list
 
     @expose_page
     @settings
@@ -104,22 +121,7 @@ class FlowController(BaseController):
             step_name = analyze_category.displayname.lower()
             template_specification = dict(mainContent="header_menu", section_name=step_name, controlPage=None,
                                           title="Select an analyzer", displayControl=False)
-            adapters_list = []
-            for adapter_group in groups:
-
-                if len(adapter_group.children) > 1:
-                    ids = [str(child.id) for child in adapter_group.children]
-                    ids = ','.join(ids)
-                    adapter_link = '/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids
-                else:
-                    adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
-
-                adapters_list.append({common.KEY_TITLE: adapter_group.name,
-                                      'link': adapter_link,
-                                      'description': adapter_group.description,
-                                      'subsection': adapter_group.children[0].subsection_name})
-            self.analyze_adapters = adapters_list
-            template_specification[common.KEY_SUBMENU_LIST] = adapters_list
+            template_specification[common.KEY_SUBMENU_LIST] = self.analyze_adapters
             return self.fill_default_attributes(template_specification)
 
         except ValueError:
@@ -535,7 +537,7 @@ class FlowController(BaseController):
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
             operation = OperationService.load_operation(int(first_op.id))
-        SimulatorController().copy_simulator_configuration(operation.burst.id)
+        self.simulator_controller.copy_simulator_configuration(operation.burst.id)
 
         raise cherrypy.HTTPRedirect("/burst/")
 
@@ -549,7 +551,7 @@ class FlowController(BaseController):
         is_group = int(is_group) != 0
         if isinstance(remove_after_stop, str):
             remove_after_stop = bool(remove_after_stop)
-        return SimulatorController.cancel_or_remove_operation(operation_id, is_group, remove_after_stop)
+        return self.simulator_controller.cancel_or_remove_operation(operation_id, is_group, remove_after_stop)
 
     def fill_default_attributes(self, template_dictionary, title='-'):
         """

@@ -30,7 +30,7 @@ import os
 import shutil
 import setuptools
 
-CONTRIB_VERSION = "2.0.9"
+CONTRIB_VERSION = "2.0.10"
 CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn"]
 TEAM = "Stuart Knock, Dionysios Perdikis, Paula Sanz Leon, Bogdan Valean, Marmaduke Woodman"
 
@@ -44,7 +44,7 @@ setuptools.setup(name='tvb-contrib',
                  install_requires=CONTRIB_DEPENDENCIES,
                  description='A package with TVB contributed additions to the simulator, useful for scripting.',
                  long_description=DESCRIPTION,
-                 license="GPL v3",
+                 license="GPL-3.0-or-later",
                  author=TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',

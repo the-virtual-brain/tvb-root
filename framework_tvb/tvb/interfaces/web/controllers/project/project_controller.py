@@ -76,7 +76,7 @@ class ProjectController(BaseController):
     def __init__(self):
         super(ProjectController, self).__init__()
         self.project_service = ProjectService()
-
+        self.flow_controller = FlowController()
 
     @expose_page
     @settings
@@ -396,7 +396,7 @@ class ProjectController(BaseController):
         template_specification = self.fill_overlay_attributes(template_specification, "DataType Details",
                                                               overlay_title, "project/details_datatype_overlay",
                                                               overlay_class, tabs, overlay_indexes)
-        template_specification = FlowController().fill_default_attributes(template_specification)
+        template_specification = self.flow_controller.fill_default_attributes(template_specification)
         if has_operations_warning:
             template_specification[common.KEY_MESSAGE] = 'Not all operations could be loaded for this input DataType.' \
                                                          ' Contact the admin to check the logs!'
@@ -462,7 +462,7 @@ class ProjectController(BaseController):
 
         template_specification = self.fill_overlay_attributes(template_specification, "Details", "Operation",
                                                               "project/details_operation_overlay", overlay_class)
-        return FlowController().fill_default_attributes(template_specification)
+        return self.flow_controller.fill_default_attributes(template_specification)
 
 
     def _compute_operation_details(self, entity_gid, is_group=False):
@@ -539,13 +539,11 @@ class ProjectController(BaseController):
         to upload certain data into the application.
         """
         upload_algorithms = self.algorithm_service.get_upload_algorithms()
-
-        flow_controller = FlowController()
         algorithms_interface = {}
         tabs = []
 
         for algorithm in upload_algorithms:
-            adapter_template = flow_controller.get_adapter_template(project_id, algorithm.id, True, None)
+            adapter_template = self.flow_controller.get_adapter_template(project_id, algorithm.id, True, None)
             algorithms_interface['template_for_algo_' + str(algorithm.id)] = adapter_template
             tabs.append(OverlayTabDefinition(algorithm.displayname, algorithm.subsection_name,
                                              description=algorithm.description))
@@ -557,7 +555,7 @@ class ProjectController(BaseController):
         template_specification['projectId'] = project_id
         template_specification['algorithmsInterface'] = algorithms_interface
 
-        return flow_controller.fill_default_attributes(template_specification)
+        return self.flow_controller.fill_default_attributes(template_specification)
 
 
     @expose_fragment("overlay")
@@ -569,7 +567,7 @@ class ProjectController(BaseController):
         template_specification = self.fill_overlay_attributes(None, "Upload", "Project structure",
                                                               "project/upload_project_overlay", "dialog-upload")
 
-        return FlowController().fill_default_attributes(template_specification)
+        return self.flow_controller.fill_default_attributes(template_specification)
 
 
     @expose_page
@@ -589,7 +587,7 @@ class ProjectController(BaseController):
 
         project = self.project_service.find_project(project_id)
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
-        FlowController().execute_post(project.id, success_link, algorithm.fk_category, algorithm, **data)
+        self.flow_controller.execute_post(project.id, success_link, algorithm.fk_category, algorithm, **data)
 
         raise cherrypy.HTTPRedirect(success_link)
 
