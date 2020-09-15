@@ -57,7 +57,7 @@ def _request_passfile_dummy(simulator_gid, op_id, base_url, passfile_folder):
     pass
 
 
-@pytest.mark.skipif(not HPCSettings.CAN_RUN_HPC, "pyunicore not installed")
+@pytest.mark.skipif(not HPCSettings.CAN_RUN_HPC, reason="pyunicore not installed")
 class TestHPCSchedulerClient(BaseTestCase):
 
     def setup_method(self):
