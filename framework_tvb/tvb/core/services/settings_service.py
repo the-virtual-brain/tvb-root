@@ -243,7 +243,8 @@ class SettingsService(object):
         """
         Check if the storage folder exists and is empty.
         """
-        if storage_path:
-            if os.path.isdir(storage_path):
-                if os.listdir(storage_path):
-                    raise InvalidStorageException('TVB Storage should be empty, please set another folder.')
+        if storage_path and TvbProfile.is_first_run():
+            for dirpath, dirnames, files in os.walk(storage_path):
+                if files:
+                    if os.listdir(storage_path):
+                        raise InvalidStorageException('TVB Storage should be empty, please set another folder.')
