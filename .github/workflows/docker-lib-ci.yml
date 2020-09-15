@@ -5,7 +5,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+
       - name: Build image
         run: docker build -f scientific_library/Dockerfile -t tvb/lib-ci scientific_library
+
       - name: Run tests
-        run: docker run --rm -v $PWD:/work -w /work/scientific_library tvb/lib-ci pytest -Wignore -n8
+        run: |
+          docker run --rm -v $PWD:/work -w /work/scientific_library tvb/lib-ci 
+          pytest -Wignore --profiling-svg
+
+      - name: archive test profiles
+        uses: actions/upload-artifact@v2
+        with:
+          name: test-profile
+          path: prof/*
+
