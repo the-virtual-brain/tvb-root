@@ -10,7 +10,7 @@ jobs:
         run: docker build -f scientific_library/Dockerfile -t tvb/lib-ci scientific_library
 
       - name: Run tests
-        run: |
+        run: >
           docker run --rm -v $PWD:/work -w /work/scientific_library tvb/lib-ci 
           pytest -Wignore --profiling-svg
 
