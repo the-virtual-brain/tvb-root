@@ -35,13 +35,12 @@
 import os
 import subprocess
 import threading
-from time import sleep
-
 import cherrypy
 import formencode
+from time import sleep
 from formencode import validators
 from tvb.basic.profile import TvbProfile
-from tvb.core.services.exceptions import InvalidSettingsException, InvalidStorageException
+from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.settings_service import SettingsService
 from tvb.core.utils import check_matlab_version
 from tvb.interfaces.web.controllers import common
@@ -83,9 +82,6 @@ class SettingsController(UserController):
                 # It will continue reloading when CherryPy restarts.
             except formencode.Invalid as excep:
                 template_specification[common.KEY_ERRORS] = excep.unpack_errors()
-            except InvalidStorageException as excep:
-                self.logger.error('Invalid settings!  Exception %s was raised' % (str(excep)))
-                common.set_error_message(excep.message)
             except InvalidSettingsException as excep:
                 self.logger.error('Invalid settings!  Exception %s was raised' % (str(excep)))
                 common.set_error_message(excep.message)
