@@ -43,7 +43,6 @@ from tvb.core.decorators import synchronized
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
 from tvb.core.entities.transient.structure_entities import GenericMetaData
-from tvb.core.services.data_encryption_handler import encryption_handler
 
 LOCK_CREATE_FOLDER = Lock()
 

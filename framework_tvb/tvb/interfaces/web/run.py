@@ -33,8 +33,9 @@ Launches the web server and configure the controllers for UI.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from tvb.core.services.data_encryption_handler import encryption_handler, FoldersQueueConsumer
 import time
+
+from tvb.core.entities.file.data_encryption_handler import encryption_handler, FoldersQueueConsumer
 
 STARTUP_TIC = time.time()
 
