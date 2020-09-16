@@ -34,23 +34,35 @@ Upgrade script from H5 version 4 to version 5 (for tvb release 2.0)
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+
 import json
 import os
 import sys
 import numpy
+from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel
+from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
+from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
+from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
+from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits._h5core import H5File
 from tvb.core.neotraits.h5 import STORE_STRING
 
+
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
 FIELD_VOLUME_MAPPING = "has_volume_mapping"
+
+REBUILDABLE_TABLES = ['Connectivity', 'CorrelationCoeficient', 'Covariance', 'CrossCorelation', 'TimeSeriesRegion',
+                      'Fcd', 'FourierSpectrum']
 
 
 def _lowercase_first_character(string):
@@ -157,7 +169,10 @@ def update(input_file):
     root_metadata.pop("module")
     root_metadata.pop('data_version')
 
-    if 'TimeSeries' in class_name:
+    dependent_attributes = {}
+    view_model_class = None
+
+    if 'TimeSeriesRegion' in class_name:
         root_metadata.pop(FIELD_SURFACE_MAPPING)
         root_metadata.pop(FIELD_VOLUME_MAPPING)
 
@@ -171,6 +186,10 @@ def update(input_file):
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
         root_metadata = _pop_lengths(root_metadata)
 
+        dependent_attributes['connectivity'] = root_metadata['connectivity']
+        # dependent_attributes['region_mapping'] = root_metadata['region_mapping']
+        view_model_class = SimulatorAdapterModel
+
     elif class_name == 'Connectivity':
         root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
         root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
@@ -183,8 +202,21 @@ def update(input_file):
         if root_metadata['saved_selection'] == 'null':
             root_metadata['saved_selection'] = '[]'
 
-        _migrate_dataset_metadata(['areas', 'centres', 'cortical', 'hemispheres', 'orientations', 'region_labels',
-                                   'tract_lengths', 'weights'], storage_manager)
+        metadata = ['areas', 'centres', 'orientations', 'region_labels',
+                                   'tract_lengths', 'weights']
+        try:
+            storage_manager.get_metadata('cortical')
+            metadata.append('cortical')
+        except MissingDataSetException:
+            pass
+
+        try:
+            storage_manager.get_metadata('hemispheres')
+            metadata.append('hemispheres')
+        except MissingDataSetException:
+            pass
+
+        _migrate_dataset_metadata(metadata, storage_manager)
 
         storage_manager.remove_metadata('Mean non zero', 'tract_lengths')
         storage_manager.remove_metadata('Min. non zero', 'tract_lengths')
@@ -192,6 +224,8 @@ def update(input_file):
         storage_manager.remove_metadata('Mean non zero', 'weights')
         storage_manager.remove_metadata('Min. non zero', 'weights')
         storage_manager.remove_metadata('Var. non zero', 'weights')
+
+        view_model_class = ZIPConnectivityImporterModel
 
     elif class_name in ['BrainSkull', 'CorticalSurface', 'SkinAir', 'BrainSkull', 'SkullSkin', 'EEGCap', 'FaceSurface']:
         root_metadata['edge_max_length'] = float(root_metadata['edge_max_length'])
@@ -216,6 +250,8 @@ def update(input_file):
         root_metadata['valid_for_simulations'] = "bool:" + root_metadata['valid_for_simulations'][:1].upper() \
                                                  + root_metadata['valid_for_simulations'][1:]
 
+        view_model_class = ZIPSurfaceImporterModel
+
     elif 'RegionMapping' in class_name:
         root_metadata = _pop_lengths(root_metadata)
         root_metadata.pop('label_x')
@@ -228,6 +264,8 @@ def update(input_file):
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
+
+        view_model_class = RegionMappingImporterModel
     elif 'Sensors' in class_name:
         root_metadata['number_of_sensors'] = int(root_metadata['number_of_sensors'])
         root_metadata['sensors_type'] = root_metadata["sensors_type"].replace("\"", '')
@@ -251,6 +289,7 @@ def update(input_file):
             datasets.append('orientations')
 
         _migrate_dataset_metadata(datasets, storage_manager)
+        view_model_class = SensorsImporterModel
     elif 'Projection' in class_name:
         root_metadata['written_by'] = "tvb.adapters.datatypes.h5.projections_h5.ProjectionMatrixH5"
         root_metadata['projection_type'] = root_metadata["projection_type"].replace("\"", '')
@@ -261,6 +300,7 @@ def update(input_file):
         storage_manager.remove_metadata('Variance', 'projection_data')
 
         _migrate_dataset_metadata(['projection_data'], storage_manager)
+
     elif 'LocalConnectivity' in class_name:
         root_metadata['cutoff'] = float(root_metadata['cutoff'])
         root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
@@ -429,3 +469,41 @@ def update(input_file):
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
+
+    if class_name in REBUILDABLE_TABLES:
+        with h5_class(input_file) as f:
+            datatype = REGISTRY.get_datatype_for_h5file(f)()
+            f.load_into(datatype)
+            generic_attributes = f.load_generic_attributes()
+            datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
+
+            for attr_name, attr_value in dependent_attributes.items():
+                datatype = dao.get_datatype_by_gid(attr_value.replace('-', ''))
+                setattr(datatype, attr_name, attr_value)
+
+            view_model = view_model_class()
+            view_model.generic_attributes = generic_attributes
+
+            op_id = input_file.split('\\')[-2]
+            operation = dao.get_operation_by_id(int(op_id))
+
+            vm_attributes = [i for i in view_model_class.__dict__.keys() if i[:1] != '_']
+            op_parameters = eval(operation.view_model_gid)
+
+            for attr in vm_attributes:
+                if attr in op_parameters:
+                    setattr(view_model, attr, op_parameters[attr])
+
+            h5.store_view_model(view_model, os.path.dirname(input_file))
+
+            operation.view_model_gid = view_model.gid.hex
+            dao.store_entity(operation)
+
+            datatype_index.fill_from_has_traits(datatype)
+            datatype_index.fill_from_generic_attributes(generic_attributes)
+
+        dao.store_entity(datatype_index)
+
+
+
+        
