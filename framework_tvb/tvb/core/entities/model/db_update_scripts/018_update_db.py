@@ -32,16 +32,17 @@
 Change of DB structure to TVB 2.0
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-from migrate import create_column, drop_column, ForeignKeyConstraint
-from sqlalchemy import Column, String, Integer, Float, Boolean, Date, Table
+import uuid
+
+from migrate import create_column, drop_column, ForeignKeyConstraint, UniqueConstraint
+from sqlalchemy import Column, String, Integer
 from sqlalchemy.engine import reflection
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.storage import SA_SESSIONMAKER, dao
+from tvb.core.entities.storage import SA_SESSIONMAKER
 from sqlalchemy.sql import text
-from tvb.core.neotraits.db import Base, HasTraitsIndex
-from tvb.core.neocom import h5
+from tvb.core.neotraits.db import Base
 
 meta = Base.metadata
 
@@ -52,48 +53,34 @@ BURST_COLUMNS = [Column('range1', String), Column('range2', String), Column('fk_
 Column('fk_operation_group', Integer), Column('fk_metric_operation_group', Integer)]
 BURST_DELETED_COLUMN = Column('workflows_number', Integer)
 
-CONN_COLUMNS = [Column('weights_min', Float), Column('weights_max', Float), Column('weights_mean', Float),
-                Column('tract_lengths_min', Float), Column('tract_lengths_max', Float),
-                Column('tract_lengths_mean', Float), Column('has_cortical_mask', Boolean),
-                Column('has_hemispheres_mask', Boolean)]
-CONN_DELETED_COLUMNS = [Column('_cortical', String), Column('_delays', String), Column('_centres', String),
-                        Column('_idelays', String), Column('_hemispheres', String), Column('_orientations', String),
-                        Column('_region_labels', String), Column('_saved_selection', String), Column('_speed', String),
-                        Column('_parent_connectivity', String), Column('_areas', String)]
+OP_DELETED_COLUMN = Column('meta_data', String)
 
-DATATYPE_DELETED_COLUMNS = [Column('gid', String), Column('create_date', Date)]
+USER_COLUMNS = [Column('gid', String), Column('display_name', String)]
 
 
-COLUMN_8_OLD = Column('_source', String)
-COLUMN_8_NEW = Column('fk_source_gid', String(32), nullable=False)
-COLUMN_9_OLD = Column('_nfft', Integer)
-COLUMN_9_NEW = Column('nfft', Integer, nullable=False)
-COLUMN_10 = Column('_frequency', String)
-COLUMN_11 = Column('frequencies_min', Float)
-COLUMN_12 = Column('frequencies_max', Float)
-COLUMN_13 = Column('_cross_spectrum', String)
-COLUMN_14_OLD = Column('_epoch_length', Float)
-COLUMN_14_NEW = Column('epoch_length', Float, nullable=False)
-COLUMN_15_OLD = Column('_segment_length', Float)
-COLUMN_15_NEW = Column('segment_length', Float, nullable=False)
-COLUMN_16_OLD = Column('_windowing_function', String)
-COLUMN_16_NEW = Column('windowing_function', String, nullable=False)
-COLUMN_17 = Column('frequency_step', Float, nullable=False)
-COLUMN_18 = Column('max_frequency', Float, nullable=False)
+def migrate_range_params(ranges):
+    new_ranges = []
+    for range in ranges:
+        list_range = eval(range)
 
-COLUMN_19_OLD = Column('_connectivity', String)
-COLUMN_19_NEW = Column('fk_connectivity_gid', String(32))
-COLUMN_20 = Column('_region_annotations', String)
-COLUMN_21 = Column('annotations_length', Integer)
+        # in the range param name all the characters between the first and last underscores (including them)
+        # must be deleted and replaced with a dot
+        param_name = list_range[0]
+        first_us = param_name.index('_')
+        last_us = param_name.rfind('_')
+        string_to_be_replaced = param_name[first_us:last_us + 1]
+        param_name = '"' + param_name.replace(string_to_be_replaced, '.') + '"'
 
-COLUMN_22_OLD = Column('_number_of_regions', Integer)
-COLUMN_22_NEW = Column('number_of_regions', Integer, nullable=False)
-COLUMN_23_OLD = Column('_number_of_connections', Integer)
-COLUMN_23_NEW = Column('number_of_connections', Integer, nullable=False)
-COLUMN_24_OLD = Column('_undirected', Integer)
-COLUMN_24_NEW = Column('undirected', Boolean)
-COLUMN_25 = Column('_weights', String)
-COLUMN_46 = Column('has_surface_mapping', Boolean, nullable=False)
+        # in the old version the range was a list of all values that the param had, but in the new one we
+        # need only the minimum, maximum and step value
+        param_range = list_range[1]
+        range_dict = dict()
+        range_dict['"' + 'lo' + '"'] = param_range[0]
+        range_dict['"' + 'hi' + '"'] = param_range[-1]
+        range_dict['"' + 'step' + '"'] = param_range[1] - param_range[0]
+
+        new_ranges.append([param_name, range_dict])
+    return new_ranges
 
 
 def upgrade(migrate_engine):
@@ -114,8 +101,6 @@ def upgrade(migrate_engine):
                                 RENAME TO "TimeSeriesMEGIndex"; """))
         session.execute(text("""ALTER TABLE "MAPPED_TIME_SERIES_SEEG_DATA"
                                 RENAME TO "TimeSeriesSEEGIndex"; """))
-        session.execute(text("""ALTER TABLE "DATA_TYPES"
-                                RENAME TO "DataType"; """))
         session.commit()
     except Exception:
         session.close()
@@ -155,87 +140,21 @@ def upgrade(migrate_engine):
                 new_table_name = new_table_name + 'Index'
                 session.execute(text("""ALTER TABLE "{}" RENAME TO "{}"; """.format(table, new_table_name)))
 
+        # Dropping ALGORITHMS and ALGORITHM CATEGORIES as they will be automatically generated at launching
+        session.execute(text("""DROP TABLE "ALGORITHMS";"""))
+        session.execute(text("""DROP TABLE "ALGORITHM_CATEGORIES";"""))
+        session.execute(text("""DROP TABLE "TimeSeriesIndex";"""))
+        session.execute(text("""DROP TABLE "TimeSeriesRegionIndex";"""))
+        session.execute(text("""DROP TABLE "ConnectivityIndex";"""))
+        session.execute(text("""DROP TABLE "DATA_TYPES";"""))
+
         session.commit()
     except Exception:
         session.close()
     finally:
         session.close()
 
-    # CREATING HasTraitsIndex
-    # meta = MetaData(bind=migrate_engine)
-
-    table = Table('HasTraitsIndex', meta, autoload=True)
-    for constraint in table._sorted_constraints:
-        if not isinstance(constraint.name, str):
-            constraint.name = None
-
-    meta.create_all()
-    session = SA_SESSIONMAKER()
-    try:
-        session.execute(text("""INSERT into "HasTraitsIndex" (id, gid, type_, title, create_date)
-                            SELECT D.id, D.gid, D.type, NULL, D.create_date
-                            FROM "Datatype" D"""))
-        session.commit()
-        session.execute(text("""UPDATE "HasTraitsIndex" 
-                                    SET type_ =
-                                     CASE
-                                        WHEN HasTraitsIndex.type_ in ('CorticalSurface', 'BrainSkull', 'SkullSkin',
-                                          'SkinAir', 'EEGCap', 'FaceSurface', 'WhiteMatterSurface') THEN 'SurfaceIndex'
-                                        WHEN HasTraitsIndex.type_ = 'LocalConnectivity' THEN 'LocalConnectivityIndex'
-                                        WHEN HasTraitsIndex.type_ in ('SensorsInternal', 'SensorsMEG', 'SensorsEEG') 
-                                           THEN 'SensorsIndex'
-                                        WHEN HasTraitsIndex.type_ in ('ProjectionSurfaceEEG', 'ProjectionSurfaceMEG',
-                                         'ProjectionSurfaceSEEG') THEN 'ProjectionMatrixIndex'
-                                        WHEN HasTraitsIndex.type_ = 'Connectivity' THEN 'ConnectivityIndex'
-                                        WHEN HasTraitsIndex.type_ = 'RegionMapping' THEN 'RegionMappingIndex'
-                                        WHEN HasTraitsIndex.type_ = 'ConnectivityAnnotations' THEN
-                                         'ConnectivityAnnotationsIndex'
-                                        WHEN HasTraitsIndex.type_ = 'TimeSeriesRegion' THEN 'TimeSeriesRegionIndex'
-                                        WHEN HasTraitsIndex.type_ = 'ComplexCoherenceSpectrum'
-                                         THEN 'ComplexCoherenceSpectrumIndex'
-                                        WHEN HasTraitsIndex.type_ = 'CoherenceSpectrum' THEN 'CoherenceSpectrumIndex'
-                                     END
-                            """))
-        session.execute(text("""DELETE FROM "HasTraitsIndex" WHERE type_ = 'SimulationState'"""))
-        session.commit()
-    except Exception:
-        session.close()
-    finally:
-        session.close()
-
-    # MIGRATING Datatype
-    datatype_table = meta.tables['DataType']
-    for column in DATATYPE_DELETED_COLUMNS:
-        drop_column(column, datatype_table)
-
-    session = SA_SESSIONMAKER()
-    try:
-        session.execute(text("""UPDATE "DataType" SET type =
-                        (SELECT HTI.type_
-                        FROM "HasTraitsIndex" HTI, "DataType" DT
-                        WHERE HTI.id = DT.id);"""))
-        session.execute(text("""UPDATE "DataType" 
-                                    SET module =
-                                     CASE
-                                        WHEN DataType.type = 'ConnectivityIndex' THEN 'tvb.adapters.datatypes.db.connectivity'
-                                        WHEN DataType.type = 'SurfaceIndex' THEN 'tvb.adapters.datatypes.db.surface'
-                                        WHEN DataType.type = 'SensorsIndex' THEN 'tvb.adapters.datatypes.db.sensors'
-                                        WHEN DataType.type = 'ConnectivityAnnotationsIndex' THEN
-                                        'tvb.adapters.datatypes.db.annotation'
-                                        WHEN DataType.type = 'RegionMappingIndex' THEN 
-                                        'tvb.adapters.datatypes.db.region_mapping'
-                                        WHEN DataType.type  = 'ProjectionMatrixIndex' THEN 'tvb.adapters.datatypes.db.projections'
-                                        WHEN DataType.type = 'LocalConnectivityIndex' THEN 'tvb.adapters.datatypes.db.local_connectivity'
-                                        WHEN DataType.type = 'TimeSeriesRegionIndex' THEN 'tvb.adapters.datatypes.db.time_series'
-                                        WHEN DataType.type in('ComplexCoherenceSpectrumIndex', 'CoherenceSpectrumIndex')  THEN
-                                        'tvb.adapters.datatypes.db.spectral'
-                                     END
-                            """))
-        session.commit()
-    except:
-        return False
-    finally:
-        session.close()
+    # Migrating BurstConfiguration
 
     burst_config_table = meta.tables['BurstConfiguration']
     for column in BURST_COLUMNS:
@@ -252,6 +171,27 @@ def upgrade(migrate_engine):
             """UPDATE "BurstConfiguration" SET
             fk_simulation = (SELECT O.id FROM "OPERATIONS" O, "DataType" D
              WHERE O.id = D.fk_from_operation AND module = 'tvb.adapters.datatypes.db.time_series')"""))
+
+        ranges = session.execute(text("""SELECT OG.id, OG.range1, OG.range2
+                            FROM "OPERATION_GROUPS" OG""")).fetchall()
+        ranges_1 = []
+        ranges_2 = []
+
+        for r in ranges:
+            ranges_1.append(str(r[1]))
+            ranges_2.append(str(r[2]))
+
+        new_ranges_1 = migrate_range_params(ranges_1)
+        new_ranges_2 = migrate_range_params(ranges_2)
+
+        #TODO: Fix this query to update the range params, for some reason it doesn't work
+
+        # for i in range(len(ranges_1)):
+        #     session.execute(text(
+        #         """UPDATE "BurstConfiguration" SET
+        #         range1 = """ + str(new_ranges_1[i]) + """,
+        #         range2 = """ + str(new_ranges_2[i]) + """
+        #         WHERE fk_operation_group = """ + str(ranges[i][0])))
         session.commit()
     except Exception:
         session.close()
@@ -279,28 +219,40 @@ def upgrade(migrate_engine):
     fk_burst_config_constraint_2.create()
     fk_burst_config_constraint_3.create()
 
-    # MIGRATING ConnectivityIndex #
-
-    conn_table = meta.tables['ConnectivityIndex']
-    for column in CONN_COLUMNS:
-        create_column(column, conn_table)
+    # MIGRATING USERS #
+    users_table = meta.tables['USERS']
+    for column in USER_COLUMNS:
+        create_column(column, users_table)
 
     session = SA_SESSIONMAKER()
     try:
-        session.execute(text("""ALTER TABLE "ConnectivityIndex"
-                                RENAME COLUMN _number_of_regions TO number_of_regions"""))
-        session.execute(text("""ALTER TABLE "ConnectivityIndex"
-                                RENAME COLUMN _number_of_connections TO number_of_connections"""))
-        session.execute(text("""ALTER TABLE "ConnectivityIndex"
-                                RENAME COLUMN _undirected TO undirected"""))
+        user_ids = eval(str(session.execute(text("""SELECT U.id
+                            FROM "USERS" U """)).fetchall()))
+
+        for id in user_ids:
+            session.execute(text("""UPDATE "USERS" SET display_name = username,
+                gid ='""" + uuid.uuid4().hex + """' WHERE id = """ + str(id[0])))
         session.commit()
     except Exception:
         session.close()
     finally:
         session.close()
 
-    for column in CONN_DELETED_COLUMNS:
-        drop_column(column, conn_table)
+    UniqueConstraint("gid", table=users_table)
+    # MIGRATING Operations #
+
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""ALTER TABLE "OPERATIONS"
+                                RENAME COLUMN parameters TO view_model_gid"""))
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
+
+    op_table = meta.tables['OPERATIONS']
+    drop_column(OP_DELETED_COLUMN, op_table)
 
 
 def downgrade(_):
