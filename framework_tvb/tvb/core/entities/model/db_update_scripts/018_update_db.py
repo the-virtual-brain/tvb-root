@@ -112,7 +112,6 @@ def upgrade(migrate_engine):
 
     try:
         # Dropping tables which don't exist in the new version
-
         session.execute(text("""DROP TABLE "MAPPED_ARRAY_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_LOOK_UP_TABLE_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_DATATYPE_MEASURE_DATA";"""))
@@ -123,7 +122,19 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "WORKFLOW_STEPS";"""))
         session.execute(text("""DROP TABLE "WORKFLOW_VIEW_STEPS";"""))
 
-        # This for renames the other tables replacing the "MAPPED_ ... _DATA" name structure with the "Ïndex" suffix
+        # Dropping tables which will be repopulated from the H5 files
+        session.execute(text("""DROP TABLE "MAPPED_COHERENCE_SPECTRUM_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_COMPLEX_COHERENCE_SPECTRUM_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_ANNOTATIONS_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_MEASURE_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_CORRELATION_COEFFICIENTS_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_COVARIANCE_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_CROSS_CORRELATION_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_FCD_DATA"""))
+        session.execute(text("""DROP TABLE "MAPPED_FOURIER_SPECTRUM_DATA"""))
+
+        # This for renaming the other tables replacing the "MAPPED_ ... _DATA" name structure with the "Index" suffix
         for table in inspector.get_table_names():
             new_table_name = table
             new_table_name = new_table_name.lower()
@@ -145,7 +156,6 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "ALGORITHM_CATEGORIES";"""))
         session.execute(text("""DROP TABLE "TimeSeriesIndex";"""))
         session.execute(text("""DROP TABLE "TimeSeriesRegionIndex";"""))
-        session.execute(text("""DROP TABLE "ConnectivityIndex";"""))
         session.execute(text("""DROP TABLE "DATA_TYPES";"""))
 
         session.commit()
@@ -154,8 +164,42 @@ def upgrade(migrate_engine):
     finally:
         session.close()
 
-    # Migrating BurstConfiguration
+    # MIGRATING USERS #
+    users_table = meta.tables['USERS']
+    for column in USER_COLUMNS:
+        create_column(column, users_table)
 
+    session = SA_SESSIONMAKER()
+    try:
+        user_ids = eval(str(session.execute(text("""SELECT U.id
+                            FROM "USERS" U """)).fetchall()))
+
+        for id in user_ids:
+            session.execute(text("""UPDATE "USERS" SET display_name = username,
+                gid ='""" + uuid.uuid4().hex + """' WHERE id = """ + str(id[0])))
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
+
+    UniqueConstraint("gid", table=users_table)
+    # MIGRATING Operations #
+
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""ALTER TABLE "OPERATIONS"
+                                RENAME COLUMN parameters TO view_model_gid"""))
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
+
+    op_table = meta.tables['OPERATIONS']
+    drop_column(OP_DELETED_COLUMN, op_table)
+
+    # Migrating BurstConfiguration
     burst_config_table = meta.tables['BurstConfiguration']
     for column in BURST_COLUMNS:
         create_column(column, burst_config_table)
@@ -218,41 +262,6 @@ def upgrade(migrate_engine):
     fk_burst_config_constraint_1.create()
     fk_burst_config_constraint_2.create()
     fk_burst_config_constraint_3.create()
-
-    # MIGRATING USERS #
-    users_table = meta.tables['USERS']
-    for column in USER_COLUMNS:
-        create_column(column, users_table)
-
-    session = SA_SESSIONMAKER()
-    try:
-        user_ids = eval(str(session.execute(text("""SELECT U.id
-                            FROM "USERS" U """)).fetchall()))
-
-        for id in user_ids:
-            session.execute(text("""UPDATE "USERS" SET display_name = username,
-                gid ='""" + uuid.uuid4().hex + """' WHERE id = """ + str(id[0])))
-        session.commit()
-    except Exception:
-        session.close()
-    finally:
-        session.close()
-
-    UniqueConstraint("gid", table=users_table)
-    # MIGRATING Operations #
-
-    session = SA_SESSIONMAKER()
-    try:
-        session.execute(text("""ALTER TABLE "OPERATIONS"
-                                RENAME COLUMN parameters TO view_model_gid"""))
-        session.commit()
-    except Exception:
-        session.close()
-    finally:
-        session.close()
-
-    op_table = meta.tables['OPERATIONS']
-    drop_column(OP_DELETED_COLUMN, op_table)
 
 
 def downgrade(_):

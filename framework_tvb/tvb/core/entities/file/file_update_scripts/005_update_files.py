@@ -39,10 +39,27 @@ import json
 import os
 import sys
 import numpy
+from tvb.adapters.analyzers.fcd_adapter import FCDAdapterModel
+from tvb.adapters.analyzers.ica_adapter import ICAAdapterModel
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel
+from tvb.adapters.analyzers.node_coherence_adapter import NodeCoherenceModel
+from tvb.adapters.analyzers.node_complex_coherence_adapter import NodeComplexCoherenceModel
+from tvb.adapters.analyzers.node_covariance_adapter import NodeCovarianceAdapterModel
+from tvb.adapters.analyzers.pca_adapter import PCAAdapterModel
+from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel
+from tvb.adapters.creators.stimulus_creator import RegionStimulusCreatorModel, SurfaceStimulusCreatorModel
+from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
+from tvb.adapters.uploaders.brco_importer import BRCOImporterModel
+from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterModel
+from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterModel
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel
+from tvb.adapters.visualizers.annotations_viewer import ConnectivityAnnotationsViewModel
+from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualizerModel
+from tvb.adapters.visualizers.fourier_spectrum import FourierSpectrumModel
+from tvb.adapters.visualizers.wavelet_spectrogram import WaveletSpectrogramVisualizerModel
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -61,7 +78,8 @@ LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
 FIELD_VOLUME_MAPPING = "has_volume_mapping"
 
-REBUILDABLE_TABLES = ['Connectivity', 'CorrelationCoeficient', 'Covariance', 'CrossCorelation', 'TimeSeriesRegion',
+REBUILDABLE_TABLES = ['CoherenceSpectrum', 'ComplexCoherenceSpectrum', 'ConnectivityAnnotations', 'Connectivity',
+                      'ConnectivityMeasure', 'CorrelationCoeficient', 'Covariance', 'CrossCorelation',
                       'Fcd', 'FourierSpectrum']
 
 
@@ -127,6 +145,8 @@ def update(input_file):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
+    os.rename(input_file, input_file.replace('-', ''))
+    input_file = input_file.replace('-', '')
 
     if not os.path.isfile(input_file):
         raise IncompatibleFileManagerException("Not yet implemented update for file %s" % input_file)
@@ -172,25 +192,7 @@ def update(input_file):
     dependent_attributes = {}
     view_model_class = None
 
-    if 'TimeSeriesRegion' in class_name:
-        root_metadata.pop(FIELD_SURFACE_MAPPING)
-        root_metadata.pop(FIELD_VOLUME_MAPPING)
-
-        root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
-        root_metadata['sample_period'] = float(root_metadata['sample_period'])
-        root_metadata['start_time'] = float(root_metadata['start_time'])
-
-        root_metadata["sample_period_unit"] = root_metadata["sample_period_unit"].replace("\"", '')
-        root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
-        root_metadata['region_mapping'] = "urn:uuid:" + root_metadata['region_mapping']
-        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
-        root_metadata = _pop_lengths(root_metadata)
-
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
-        # dependent_attributes['region_mapping'] = root_metadata['region_mapping']
-        view_model_class = SimulatorAdapterModel
-
-    elif class_name == 'Connectivity':
+    if class_name == 'Connectivity':
         root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
         root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
 
@@ -252,7 +254,7 @@ def update(input_file):
 
         view_model_class = ZIPSurfaceImporterModel
 
-    elif 'RegionMapping' in class_name:
+    elif class_name == 'RegionMapping':
         root_metadata = _pop_lengths(root_metadata)
         root_metadata.pop('label_x')
         root_metadata.pop('label_y')
@@ -300,8 +302,9 @@ def update(input_file):
         storage_manager.remove_metadata('Variance', 'projection_data')
 
         _migrate_dataset_metadata(['projection_data'], storage_manager)
+        view_model_class = ProjectionMatrixImporterModel
 
-    elif 'LocalConnectivity' in class_name:
+    elif class_name == 'LocalConnectivity':
         root_metadata['cutoff'] = float(root_metadata['cutoff'])
         root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
 
@@ -312,6 +315,26 @@ def update(input_file):
         matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
         matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
         storage_manager.set_metadata(matrix_metadata, 'matrix')
+
+        view_model_class = LocalConnectivityCreatorModel
+    elif class_name == 'TimeSeriesRegion':
+        root_metadata.pop(FIELD_SURFACE_MAPPING)
+        root_metadata.pop(FIELD_VOLUME_MAPPING)
+
+        root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
+        root_metadata['sample_period'] = float(root_metadata['sample_period'])
+        root_metadata['start_time'] = float(root_metadata['start_time'])
+
+        root_metadata["sample_period_unit"] = root_metadata["sample_period_unit"].replace("\"", '')
+        root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
+        root_metadata['region_mapping'] = "urn:uuid:" + root_metadata['region_mapping']
+        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        root_metadata = _pop_lengths(root_metadata)
+
+        dependent_attributes['connectivity'] = root_metadata['connectivity']
+        dependent_attributes['region_mapping'] = root_metadata['region_mapping']
+        view_model_class = SimulatorAdapterModel
+
     elif 'Volume' in class_name:
         root_metadata['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
 
@@ -330,7 +353,9 @@ def update(input_file):
         array_data = storage_manager.get_data('array_data')
         storage_manager.remove_data('array_data')
         storage_manager.store_data('array_data', numpy.asarray(array_data, dtype=numpy.float64))
+
         _migrate_dataset_metadata(['array_data', 'frequency'], storage_manager)
+        view_model_class = NodeCoherenceModel
 
     if  class_name == 'ComplexCoherenceSpectrum':
         root_metadata.pop('aggregation_functions')
@@ -349,6 +374,7 @@ def update(input_file):
         root_metadata['source'] = "urn:uuid:" + root_metadata['source']
 
         _migrate_dataset_metadata(['array_data', 'cross_spectrum'], storage_manager)
+        view_model_class = NodeComplexCoherenceModel
 
     if class_name == 'WaveletCoefficients':
         root_metadata.pop('aggregation_functions')
@@ -367,10 +393,12 @@ def update(input_file):
         root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
 
         _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
+        view_model_class = WaveletSpectrogramVisualizerModel
 
     if class_name == 'CrossCorrelation':
         root_metadata['source'] = "urn:uuid:" + root_metadata['source']
         _migrate_dataset_metadata(['array_data', 'time'], storage_manager)
+        view_model_class = CrossCorrelationVisualizerModel
 
     if class_name == 'Fcd':
         root_metadata.pop('aggregation_functions')
@@ -385,7 +413,7 @@ def update(input_file):
         root_metadata['sw'] = float(root_metadata['sw'])
         root_metadata['source'] = "urn:uuid:" + root_metadata['source']
 
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        view_model_class = FCDAdapterModel
 
     if class_name == 'ConnectivityMeasure':
         root_metadata.pop('aggregation_functions')
@@ -397,7 +425,9 @@ def update(input_file):
 
         root_metadata['source'] = "urn:uuid:" + root_metadata['source']
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+
         _migrate_dataset_metadata(['array_data'], storage_manager)
+        view_model_class = ConnectivityMeasureImporterModel
 
     if class_name == 'FourierSpectrum':
         root_metadata.pop('aggregation_functions')
@@ -410,8 +440,10 @@ def update(input_file):
 
         root_metadata['segment_length'] = float(root_metadata['segment_length'])
         root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
         _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
                                    'normalised_average_power', 'phase', 'power'], storage_manager)
+        view_model_class = FourierSpectrumModel
 
     if class_name == 'IndependentComponents':
         root_metadata['n_components'] = int(root_metadata['n_components'])
@@ -420,6 +452,7 @@ def update(input_file):
         _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
                                    'normalised_component_time_series', 'prewhitening_matrix',
                                    'unmixing_matrix'], storage_manager)
+        view_model_class = ICAAdapterModel
 
     if class_name == 'CorrelationCoefficients':
         root_metadata.pop('aggregation_functions')
@@ -431,13 +464,17 @@ def update(input_file):
         _pop_lengths(root_metadata)
 
         root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
         _migrate_dataset_metadata(['array_data'], storage_manager)
+        view_model_class = CrossCorrelationVisualizerModel
 
     if class_name == 'PrincipalComponents':
         root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
         _migrate_dataset_metadata(['component_time_series', 'fractions',
                                    'norm_source', 'normalised_component_time_series',
                                    'weights'], storage_manager)
+        view_model_class = PCAAdapterModel
 
     if class_name == 'Covariance':
         root_metadata.pop('aggregation_functions')
@@ -449,23 +486,34 @@ def update(input_file):
         _pop_lengths(root_metadata)
 
         root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+
         _migrate_dataset_metadata(['array_data'], storage_manager)
+        view_model_class = NodeCovarianceAdapterModel
 
     if class_name == 'DatatypeMeasure':
         root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
+        view_model_class = TimeseriesMetricsAdapterModel
 
     if class_name == 'StimuliRegion':
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+
         _migrate_stimuli(root_metadata, storage_manager, ['weight'])
+        view_model_class = RegionStimulusCreatorModel
 
     if class_name == 'StimuliSurface':
         root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
+
         _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
+        view_model_class = SurfaceStimulusCreatorModel
 
     if class_name == 'ConnectivityAnnotations':
         root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
         root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
+        h5_class = ConnectivityAnnotationsH5
+
         _migrate_dataset_metadata(['region_annotations'], storage_manager)
+        dependent_attributes['connectivity'] = root_metadata['connectivity']
+        view_model_class = BRCOImporterModel
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
@@ -478,8 +526,9 @@ def update(input_file):
             datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
 
             for attr_name, attr_value in dependent_attributes.items():
-                datatype = dao.get_datatype_by_gid(attr_value.replace('-', ''))
-                setattr(datatype, attr_name, attr_value)
+                dependent_datatype_index = dao.get_datatype_by_gid(attr_value.replace('-', '').replace('urn:uuid:', ''))
+                dependent_datatype = h5.load_from_index(dependent_datatype_index)
+                setattr(datatype, attr_name, dependent_datatype)
 
             view_model = view_model_class()
             view_model.generic_attributes = generic_attributes
@@ -501,6 +550,7 @@ def update(input_file):
 
             datatype_index.fill_from_has_traits(datatype)
             datatype_index.fill_from_generic_attributes(generic_attributes)
+            datatype_index.fk_from_operation = operation.id
 
         dao.store_entity(datatype_index)
 
