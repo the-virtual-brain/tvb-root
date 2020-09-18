@@ -148,16 +148,20 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
     root_metadata.pop(FIELD_SURFACE_MAPPING)
     root_metadata.pop(FIELD_VOLUME_MAPPING)
     _pop_lengths(root_metadata)
+    metadata = ['data', 'time']
 
-    root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
+    if class_name != 'TimeSeriesVolume':
+        root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
+        root_metadata['sample_rate'] = float(root_metadata['sample_rate'])
+    else:
+        metadata.pop(1)
+
     root_metadata['sample_period'] = float(root_metadata['sample_period'])
-    root_metadata['sample_rate'] = float(root_metadata['sample_rate'])
     root_metadata['start_time'] = float(root_metadata['start_time'])
 
     root_metadata["sample_period_unit"] = root_metadata["sample_period_unit"].replace("\"", '')
     root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
-    root_metadata = _pop_lengths(root_metadata)
-    _migrate_dataset_metadata(['data', 'time'], storage_manager)
+    _migrate_dataset_metadata(metadata, storage_manager)
 
     if class_name == 'TimeSeriesRegion':
         root_metadata['region_mapping'] = GID_PREFIX + root_metadata['region_mapping']
@@ -169,6 +173,10 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
     elif class_name in ['TimeSeriesEEG', 'TimeSeriesMEG', 'TimeSeriesSEEG']:
         root_metadata['sensors'] = GID_PREFIX + root_metadata['sensors']
+    else:
+        root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
+        root_metadata.pop('nr_dimensions')
+        root_metadata.pop('sample_rate')
 
     return dependent_attributes
 
@@ -365,11 +373,12 @@ def update(input_file):
         view_model_class = LocalConnectivityCreatorModel
         dependent_attributes['surface'] = root_metadata['surface']
     elif 'TimeSeries' in class_name:
-        dependent_attributes = _migrate_time_series(root_metadata, storage_manager, class_name)
+        dependent_attributes = _migrate_time_series(root_metadata, storage_manager, class_name, dependent_attributes)
         view_model_class = SimulatorAdapterModel
 
     elif 'Volume' in class_name:
         root_metadata['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
+        _migrate_dataset_metadata(['origin', 'voxel_size'], storage_manager)
 
     if class_name == 'CoherenceSpectrum':
         root_metadata.pop('aggregation_functions')
