@@ -36,8 +36,7 @@ Change of DB structure to TVB 2.0
 """
 import json
 import uuid
-
-from migrate import create_column, drop_column, ForeignKeyConstraint, UniqueConstraint
+from migrate import create_column, drop_column, UniqueConstraint
 from sqlalchemy import Column, String, Integer
 from sqlalchemy.engine import reflection
 from tvb.basic.logger.builder import get_logger
@@ -59,55 +58,12 @@ OP_DELETED_COLUMN = Column('meta_data', String)
 USER_COLUMNS = [Column('gid', String), Column('display_name', String)]
 
 
-def migrate_range_params(ranges):
-    new_ranges = []
-    for range in ranges:
-        list_range = eval(range)
-
-        # in the range param name all the characters between the first and last underscores (including them)
-        # must be deleted and replaced with a dot
-        param_name = list_range[0]
-        first_us = param_name.index('_')
-        last_us = param_name.rfind('_')
-        string_to_be_replaced = param_name[first_us:last_us + 1]
-        param_name = '"' + param_name.replace(string_to_be_replaced, '.') + '"'
-
-        # in the old version the range was a list of all values that the param had, but in the new one we
-        # need only the minimum, maximum and step value
-        param_range = list_range[1]
-        range_dict = dict()
-        range_dict['"' + 'lo' + '"'] = param_range[0]
-        range_dict['"' + 'hi' + '"'] = param_range[-1]
-        range_dict['"' + 'step' + '"'] = param_range[1] - param_range[0]
-
-        new_ranges.append([param_name, range_dict])
-    return new_ranges
-
-
 def upgrade(migrate_engine):
     """
     """
     meta.bind = migrate_engine
-    session = SA_SESSIONMAKER()
-
-    # Renaming tables which wouldn't be correctly renamed by the next renamings
-    try:
-        session.execute(text("""ALTER TABLE "MAPPED_STRUCTURAL_MRI_DATA"
-                                RENAME TO "StructuralMRIIndex"; """))
-        session.execute(text("""ALTER TABLE "MAPPED_TIME_SERIES_EEG_DATA"
-                                RENAME TO "TimeSeriesEEGIndex"; """))
-        session.execute(text("""ALTER TABLE "MAPPED_TIME_SERIES_MEG_DATA"
-                                RENAME TO "TimeSeriesMEGIndex"; """))
-        session.execute(text("""ALTER TABLE "MAPPED_TIME_SERIES_SEEG_DATA"
-                                RENAME TO "TimeSeriesSEEGIndex"; """))
-        session.commit()
-    except Exception:
-        session.close()
-    finally:
-        session.close()
 
     session = SA_SESSIONMAKER()
-    inspector = reflection.Inspector.from_engine(session.connection())
 
     try:
         # Dropping tables which don't exist in the new version
@@ -145,29 +101,12 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_SURFACE_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_VOLUME_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_SENSORS_DATA" """))
+        session.execute(text("""DROP TABLE "MAPPED_STRUCTURAL_MRI_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_SURFACE_DATA" """))
         session.execute(text("""DROP TABLE "DATA_TYPES";"""))
 
-        # This for renaming the other tables replacing the "MAPPED_ ... _DATA" name structure with the "Index" suffix
-        for table in inspector.get_table_names():
-            new_table_name = table
-            new_table_name = new_table_name.lower()
-            if 'mapped' in new_table_name:
-                new_table_name = list(new_table_name)
-                for i in range(len(new_table_name)):
-                    if new_table_name[i] == '_':
-                        new_table_name[i + 1] = new_table_name[i + 1].upper()
-
-                new_table_name = "".join(new_table_name)
-                new_table_name = new_table_name.replace('_', '')
-                new_table_name = new_table_name.replace('mapped', '')
-                new_table_name = new_table_name.replace('Data', '')
-                new_table_name = new_table_name + 'Index'
-                session.execute(text("""ALTER TABLE "{}" RENAME TO "{}"; """.format(table, new_table_name)))
-
-        session.commit()
-    except Exception:
-        session.close()
+    except Exception as excep:
+        LOGGER.exception(excep)
     finally:
         session.close()
 
@@ -185,14 +124,14 @@ def upgrade(migrate_engine):
             session.execute(text("""UPDATE "USERS" SET display_name = username,
                 gid ='""" + uuid.uuid4().hex + """' WHERE id = """ + str(id[0])))
         session.commit()
-    except Exception:
-        session.close()
+    except Exception as excep:
+        LOGGER.exception(excep)
     finally:
         session.close()
 
     UniqueConstraint("gid", table=users_table)
-    # MIGRATING Operations #
 
+    # MIGRATING Operations #
     session = SA_SESSIONMAKER()
     try:
         burst_ref_metadata = session.execute(text("""SELECT id, parameters, meta_data FROM "OPERATIONS"
@@ -209,8 +148,8 @@ def upgrade(migrate_engine):
         session.execute(text("""ALTER TABLE "OPERATIONS"
                                 RENAME COLUMN parameters TO view_model_gid"""))
         session.commit()
-    except Exception:
-        session.close()
+    except Exception as excep:
+        LOGGER.exception(excep)
     finally:
         session.close()
 
