@@ -78,6 +78,7 @@ from tvb.core.neotraits.h5 import STORE_STRING
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
 FIELD_VOLUME_MAPPING = "has_volume_mapping"
+GID_PREFIX = "urn:uuid:"
 
 REBUILDABLE_TABLES = ['CoherenceSpectrum', 'ComplexCoherenceSpectrum', 'ConnectivityAnnotations', 'Connectivity',
                       'ConnectivityMeasure', 'CorrelationCoeficient', 'Covariance', 'CrossCorrelation',
@@ -159,15 +160,15 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
     _migrate_dataset_metadata(['data', 'time'], storage_manager)
 
     if class_name == 'TimeSeriesRegion':
-        root_metadata['region_mapping'] = "urn:uuid:" + root_metadata['region_mapping']
-        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        root_metadata['region_mapping'] = GID_PREFIX + root_metadata['region_mapping']
+        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
         dependent_attributes['connectivity'] = root_metadata['connectivity']
         dependent_attributes['region_mapping'] = root_metadata['region_mapping']
     elif class_name == 'TimeSeriesSurface':
-        root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
+        root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
     elif class_name in ['TimeSeriesEEG', 'TimeSeriesMEG', 'TimeSeriesSEEG']:
-        root_metadata['sensors'] = "urn:uuid:" + root_metadata['sensors']
+        root_metadata['sensors'] = GID_PREFIX + root_metadata['sensors']
 
     return dependent_attributes
 
@@ -176,7 +177,7 @@ def _create_new_burst(project_id, root_metadata):
     burst_config = BurstConfiguration(project_id)
     burst_config.name = 'simulation_' + str(dao.get_max_burst_id() + 1)
     dao.store_entity(burst_config)
-    root_metadata['parent_burst'] = "urn:uuid:" + burst_config.gid
+    root_metadata['parent_burst'] = GID_PREFIX + burst_config.gid
     return burst_config.gid
 
 
@@ -219,7 +220,7 @@ def update(input_file):
         pass
 
     root_metadata['user_tag_1'] = ''
-    root_metadata['gid'] = "urn:uuid:" + root_metadata['gid']
+    root_metadata['gid'] = GID_PREFIX + root_metadata['gid']
 
     root_metadata.pop("type")
     root_metadata.pop("module")
@@ -304,8 +305,8 @@ def update(input_file):
         root_metadata.pop('dimensions_labels')
         root_metadata.pop('nr_dimensions')
 
-        root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
-        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
+        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
         dependent_attributes['connectivity'] = root_metadata['connectivity']
@@ -339,8 +340,8 @@ def update(input_file):
     elif 'Projection' in class_name:
         root_metadata['written_by'] = "tvb.adapters.datatypes.h5.projections_h5.ProjectionMatrixH5"
         root_metadata['projection_type'] = root_metadata["projection_type"].replace("\"", '')
-        root_metadata['sensors'] = "urn:uuid:" + root_metadata['sensors']
-        root_metadata['sources'] = "urn:uuid:" + root_metadata['sources']
+        root_metadata['sensors'] = GID_PREFIX + root_metadata['sensors']
+        root_metadata['sources'] = GID_PREFIX + root_metadata['sources']
 
         storage_manager.remove_metadata('Size', 'projection_data')
         storage_manager.remove_metadata('Variance', 'projection_data')
@@ -351,7 +352,7 @@ def update(input_file):
     elif class_name == 'LocalConnectivity':
         changed_values['surface'] = root_metadata['surface']
         root_metadata['cutoff'] = float(root_metadata['cutoff'])
-        root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
+        root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
 
         storage_manager.remove_metadata('shape', 'matrix')
 
@@ -380,7 +381,7 @@ def update(input_file):
         _pop_lengths(root_metadata)
 
         root_metadata['nfft'] = int(root_metadata['nfft'])
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         array_data = storage_manager.get_data('array_data')
         storage_manager.remove_data('array_data')
@@ -401,10 +402,10 @@ def update(input_file):
 
         root_metadata['epoch_length'] = float(root_metadata['epoch_length'])
         root_metadata['segment_length'] = float(root_metadata['segment_length'])
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         root_metadata['windowing_function'] = root_metadata['windowing_function'].replace("\"", '')
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         _migrate_dataset_metadata(['array_data', 'cross_spectrum'], storage_manager)
         view_model_class = NodeComplexCoherenceModel
@@ -421,7 +422,7 @@ def update(input_file):
 
         root_metadata['q_ratio'] = float(root_metadata['q_ratio'])
         root_metadata['sample_period'] = float(root_metadata['sample_period'])
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
         root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
@@ -431,7 +432,7 @@ def update(input_file):
 
     if class_name == 'CrossCorrelation':
         changed_values['datatype'] = root_metadata['source']
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
         _migrate_dataset_metadata(['array_data', 'time'], storage_manager)
         view_model_class = CrossCorrelationVisualizerModel
         dependent_attributes['source'] = root_metadata['source']
@@ -447,7 +448,7 @@ def update(input_file):
 
         root_metadata['sp'] = float(root_metadata['sp'])
         root_metadata['sw'] = float(root_metadata['sw'])
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         view_model_class = FCDAdapterModel
         dependent_attributes['source'] = root_metadata['source']
@@ -460,8 +461,8 @@ def update(input_file):
         root_metadata.pop('label_y')
         _pop_lengths(root_metadata)
 
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
-        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = ConnectivityMeasureImporterModel
@@ -477,7 +478,7 @@ def update(input_file):
         _pop_lengths(root_metadata)
 
         root_metadata['segment_length'] = float(root_metadata['segment_length'])
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
                                    'normalised_average_power', 'phase', 'power'], storage_manager)
@@ -486,7 +487,7 @@ def update(input_file):
 
     if class_name == 'IndependentComponents':
         root_metadata['n_components'] = int(root_metadata['n_components'])
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
                                    'normalised_component_time_series', 'prewhitening_matrix',
@@ -502,13 +503,13 @@ def update(input_file):
         root_metadata.pop(DataTypeMetaData.KEY_TITLE)
         _pop_lengths(root_metadata)
 
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = CrossCorrelationVisualizerModel
 
     if class_name == 'PrincipalComponents':
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         _migrate_dataset_metadata(['component_time_series', 'fractions',
                                    'norm_source', 'normalised_component_time_series',
@@ -524,7 +525,7 @@ def update(input_file):
         root_metadata.pop(DataTypeMetaData.KEY_TITLE)
         _pop_lengths(root_metadata)
 
-        root_metadata['source'] = "urn:uuid:" + root_metadata['source']
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = NodeCovarianceAdapterModel
@@ -536,19 +537,19 @@ def update(input_file):
         dependent_attributes['source'] = root_metadata['source']
 
     if class_name == 'StimuliRegion':
-        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
         _migrate_stimuli(root_metadata, storage_manager, ['weight'])
         view_model_class = RegionStimulusCreatorModel
 
     if class_name == 'StimuliSurface':
-        root_metadata['surface'] = "urn:uuid:" + root_metadata['surface']
+        root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
 
         _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
         view_model_class = SurfaceStimulusCreatorModel
 
     if class_name == 'ConnectivityAnnotations':
-        root_metadata['connectivity'] = "urn:uuid:" + root_metadata['connectivity']
+        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
         root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
         h5_class = ConnectivityAnnotationsH5
 
@@ -613,7 +614,7 @@ def update(input_file):
 
                 if 'time_series' in op_parameters:
                     ts = dao.get_datatype_by_gid(op_parameters['time_series'].replace('-', '').replace('urn:uuid:', ''))
-                    root_metadata['parent_burst'] = "urn:uuid:" + ts.fk_parent_burst
+                    root_metadata['parent_burst'] = GID_PREFIX + ts.fk_parent_burst
                     storage_manager.set_metadata(root_metadata)
 
                 for attr in vm_attributes:
