@@ -34,6 +34,7 @@ Change of DB structure to TVB 2.0
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+import json
 import uuid
 
 from migrate import create_column, drop_column, ForeignKeyConstraint, UniqueConstraint
@@ -91,8 +92,6 @@ def upgrade(migrate_engine):
 
     # Renaming tables which wouldn't be correctly renamed by the next renamings
     try:
-        session.execute(text("""ALTER TABLE "BURST_CONFIGURATIONS"
-                                RENAME TO "BurstConfiguration"; """))
         session.execute(text("""ALTER TABLE "MAPPED_STRUCTURAL_MRI_DATA"
                                 RENAME TO "StructuralMRIIndex"; """))
         session.execute(text("""ALTER TABLE "MAPPED_TIME_SERIES_EEG_DATA"
@@ -123,16 +122,25 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "WORKFLOW_VIEW_STEPS";"""))
 
         # Dropping tables which will be repopulated from the H5 files
-        session.execute(text("""DROP TABLE "MAPPED_COHERENCE_SPECTRUM_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_COMPLEX_COHERENCE_SPECTRUM_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_ANNOTATIONS_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_MEASURE_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_CORRELATION_COEFFICIENTS_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_COVARIANCE_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_CROSS_CORRELATION_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_FCD_DATA"""))
-        session.execute(text("""DROP TABLE "MAPPED_FOURIER_SPECTRUM_DATA"""))
+        session.execute(text("""DROP TABLE "BURST_CONFIGURATIONS";"""))
+        session.execute(text("""DROP TABLE "MAPPED_COHERENCE_SPECTRUM_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_COMPLEX_COHERENCE_SPECTRUM_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_ANNOTATIONS_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_MEASURE_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_CORRELATION_COEFFICIENTS_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_COVARIANCE_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_CROSS_CORRELATION_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_FCD_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_FOURIER_SPECTRUM_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_LOCAL_CONNECTIVITY_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_REGION_MAPPING_DATA";"""))
+        session.execute(text("""DROP TABLE "ALGORITHMS";"""))
+        session.execute(text("""DROP TABLE "ALGORITHM_CATEGORIES";"""))
+        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_REGION_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_SURFACE_DATA" """))
+        session.execute(text("""DROP TABLE "DATA_TYPES";"""))
 
         # This for renaming the other tables replacing the "MAPPED_ ... _DATA" name structure with the "Index" suffix
         for table in inspector.get_table_names():
@@ -150,13 +158,6 @@ def upgrade(migrate_engine):
                 new_table_name = new_table_name.replace('Data', '')
                 new_table_name = new_table_name + 'Index'
                 session.execute(text("""ALTER TABLE "{}" RENAME TO "{}"; """.format(table, new_table_name)))
-
-        # Dropping ALGORITHMS and ALGORITHM CATEGORIES as they will be automatically generated at launching
-        session.execute(text("""DROP TABLE "ALGORITHMS";"""))
-        session.execute(text("""DROP TABLE "ALGORITHM_CATEGORIES";"""))
-        session.execute(text("""DROP TABLE "TimeSeriesIndex";"""))
-        session.execute(text("""DROP TABLE "TimeSeriesRegionIndex";"""))
-        session.execute(text("""DROP TABLE "DATA_TYPES";"""))
 
         session.commit()
     except Exception:
@@ -188,6 +189,17 @@ def upgrade(migrate_engine):
 
     session = SA_SESSIONMAKER()
     try:
+        burst_ref_metadata = session.execute(text("""SELECT id, parameters, meta_data FROM "OPERATIONS"
+                WHERE meta_data like "%Burst_Reference%" """)).fetchall()
+
+        for metadata in burst_ref_metadata:
+            parameters_dict = eval(str(metadata[1]))
+            metadata_dict = eval(str(metadata[2]))
+            parameters_dict['parent_burst_id'] = metadata_dict['Burst_Reference']
+
+            session.execute(text("""UPDATE "OPERATIONS" SET parameters = '""" + json.dumps(parameters_dict) +
+                                 """' WHERE id = """ + str(metadata[0])))
+
         session.execute(text("""ALTER TABLE "OPERATIONS"
                                 RENAME COLUMN parameters TO view_model_gid"""))
         session.commit()
@@ -198,70 +210,6 @@ def upgrade(migrate_engine):
 
     op_table = meta.tables['OPERATIONS']
     drop_column(OP_DELETED_COLUMN, op_table)
-
-    # Migrating BurstConfiguration
-    burst_config_table = meta.tables['BurstConfiguration']
-    for column in BURST_COLUMNS:
-        create_column(column, burst_config_table)
-
-    session = SA_SESSIONMAKER()
-    try:
-        session.execute(text("""ALTER TABLE "BurstConfiguration"
-                                RENAME COLUMN _dynamic_ids TO dynamic_ids"""))
-        session.execute(text("""ALTER TABLE "BurstConfiguration"
-                                RENAME COLUMN _simulator_configuration TO simulator_gid"""))
-
-        session.execute(text(
-            """UPDATE "BurstConfiguration" SET
-            fk_simulation = (SELECT O.id FROM "OPERATIONS" O, "DataType" D
-             WHERE O.id = D.fk_from_operation AND module = 'tvb.adapters.datatypes.db.time_series')"""))
-
-        ranges = session.execute(text("""SELECT OG.id, OG.range1, OG.range2
-                            FROM "OPERATION_GROUPS" OG""")).fetchall()
-        ranges_1 = []
-        ranges_2 = []
-
-        for r in ranges:
-            ranges_1.append(str(r[1]))
-            ranges_2.append(str(r[2]))
-
-        new_ranges_1 = migrate_range_params(ranges_1)
-        new_ranges_2 = migrate_range_params(ranges_2)
-
-        #TODO: Fix this query to update the range params, for some reason it doesn't work
-
-        # for i in range(len(ranges_1)):
-        #     session.execute(text(
-        #         """UPDATE "BurstConfiguration" SET
-        #         range1 = """ + str(new_ranges_1[i]) + """,
-        #         range2 = """ + str(new_ranges_2[i]) + """
-        #         WHERE fk_operation_group = """ + str(ranges[i][0])))
-        session.commit()
-    except Exception:
-        session.close()
-    finally:
-        session.close()
-
-    # Drop old column
-    drop_column(BURST_DELETED_COLUMN, burst_config_table)
-
-    # Create constraints only after the rows are populated
-    fk_burst_config_constraint_1 = ForeignKeyConstraint(
-        ["fk_simulation"],
-        ["OPERATIONS.id"],
-        table=burst_config_table)
-    fk_burst_config_constraint_2 = ForeignKeyConstraint(
-        ["fk_operation_group"],
-        ["OPERATION_GROUPS.id"],
-        table=burst_config_table)
-    fk_burst_config_constraint_3 = ForeignKeyConstraint(
-        ["fk_metric_operation_group"],
-        ["OPERATION_GROUPS.id"],
-        table=burst_config_table)
-
-    fk_burst_config_constraint_1.create()
-    fk_burst_config_constraint_2.create()
-    fk_burst_config_constraint_3.create()
 
 
 def downgrade(_):
