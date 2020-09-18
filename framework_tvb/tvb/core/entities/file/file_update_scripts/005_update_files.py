@@ -143,21 +143,18 @@ def _migrate_stimuli(root_metadata, storage_manager, datasets):
         root_metadata.pop(dataset)
 
 
+def _create_new_burst(project_id, root_metadata):
+    burst_config = BurstConfiguration(project_id)
+    burst_config.name = 'simulation_' + str(dao.get_max_burst_id() + 1)
+    dao.store_entity(burst_config)
+    root_metadata['parent_burst'] = "urn:uuid:" + burst_config.gid
+    return burst_config.gid
+
+
 def update(input_file):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
-    replaced_input_file = input_file.replace('-', '')
-    replaced_input_file = replaced_input_file.replace('BrainSkull', 'Surface')
-    replaced_input_file = replaced_input_file.replace('CorticalSurface', 'Surface')
-    replaced_input_file = replaced_input_file.replace('SkinAir', 'Surface')
-    replaced_input_file = replaced_input_file.replace('BrainSkull', 'Surface')
-    replaced_input_file = replaced_input_file.replace('SkullSkin', 'Surface')
-    replaced_input_file = replaced_input_file.replace('EEGCap', 'Surface')
-    replaced_input_file = replaced_input_file.replace('FaceSurface', 'Surface')
-    os.rename(input_file, replaced_input_file)
-    input_file = replaced_input_file
-
     if not os.path.isfile(input_file):
         raise IncompatibleFileManagerException("Not yet implemented update for file %s" % input_file)
 
@@ -547,6 +544,24 @@ def update(input_file):
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
 
+    split_path = input_file.split('\\')
+    op_id = split_path[-2]
+
+    try:
+        op_id = int(op_id)
+    except ValueError:
+        # If op_id is not an integer it means that the we migrate only one file, not the whole storage.
+
+        # TODO: Do we need to create a BurstConfig when we import a TimeSeriesH5? Right now it is not created.
+        # project_name = split_path[-3]
+        # project_id = dao.get_project_by_name(project_name).id
+        # _create_new_burst(project_id, root_metadata)
+        # storage_manager.set_metadata(root_metadata)
+        # ts = dao.get_datatype_by_gid(root_metadata['gid'].replace('-', '').replace('urn:uuid:', ''))
+        # ts.fk_parent_burst = burst_gid
+        # dao.store_entity(ts)
+        return
+
     if class_name in REBUILDABLE_TABLES:
         with h5_class(input_file) as f:
             datatype = REGISTRY.get_datatype_for_h5file(f)()
@@ -567,21 +582,18 @@ def update(input_file):
                         has_vm = True
                         break
 
-            op_id = input_file.split('\\')[-2]
             if has_vm is False:
                 view_model = view_model_class()
                 view_model.generic_attributes = generic_attributes
 
-                operation = dao.get_operation_by_id(int(op_id))
+                operation = dao.get_operation_by_id(op_id)
                 vm_attributes = [i for i in view_model_class.__dict__.keys() if i[:1] != '_']
                 op_parameters = eval(operation.view_model_gid)
 
                 # Check if datatype is a TimeSeries
                 if 'parent_burst_id' in op_parameters:
-                    burst_config = BurstConfiguration(operation.fk_launched_in)
-                    dao.store_entity(burst_config)
-                    generic_attributes.parent_burst = burst_config.gid
-                    root_metadata['parent_burst'] = "urn:uuid:" + burst_config.gid
+                    burst_gid = _create_new_burst(operation.fk_launched_in, root_metadata)
+                    generic_attributes.parent_burst = burst_gid
                     storage_manager.set_metadata(root_metadata)
 
                 if 'time_series' in op_parameters:
