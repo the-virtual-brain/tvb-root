@@ -139,6 +139,12 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "ALGORITHM_CATEGORIES";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_REGION_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_EEG_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_MEG_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_SEEG_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_SURFACE_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_VOLUME_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_SENSORS_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_SURFACE_DATA" """))
         session.execute(text("""DROP TABLE "DATA_TYPES";"""))
 

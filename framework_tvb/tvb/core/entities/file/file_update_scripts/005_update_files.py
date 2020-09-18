@@ -39,6 +39,7 @@ import json
 import os
 import sys
 import numpy
+from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.adapters.analyzers.fcd_adapter import FCDAdapterModel
 from tvb.adapters.analyzers.ica_adapter import ICAAdapterModel
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel
@@ -49,8 +50,10 @@ from tvb.adapters.analyzers.pca_adapter import PCAAdapterModel
 from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreatorModel, SurfaceStimulusCreatorModel
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
+from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5
 from tvb.adapters.uploaders.brco_importer import BRCOImporterModel
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterModel
+from tvb.adapters.uploaders.nifti_importer import NIFTIImporterModel
 from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterModel
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
@@ -82,7 +85,8 @@ GID_PREFIX = "urn:uuid:"
 
 REBUILDABLE_TABLES = ['CoherenceSpectrum', 'ComplexCoherenceSpectrum', 'ConnectivityAnnotations', 'Connectivity',
                       'ConnectivityMeasure', 'CorrelationCoeficient', 'Covariance', 'CrossCorrelation',
-                      'Fcd', 'FourierSpectrum', 'TimeSeriesRegion', 'BrainSkull', 'CorticalSurface', 'SkinAir',
+                      'Fcd', 'FourierSpectrum', 'TimeSeriesRegion', 'TimeSeriesEEG', 'TimeSeriesMEG', 'TimeSeriesSEEG',
+                      'TimeSeriesSurface', 'TimeSeriesVolume', 'BrainSkull', 'CorticalSurface', 'SkinAir',
                       'BrainSkull', 'SkullSkin', 'EEGCap', 'FaceSurface', 'RegionMapping', 'LocalConnectivity']
 
 
@@ -153,8 +157,10 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
     if class_name != 'TimeSeriesVolume':
         root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
         root_metadata['sample_rate'] = float(root_metadata['sample_rate'])
+        view_model_class = SimulatorAdapterModel
     else:
         metadata.pop(1)
+        view_model_class = NIFTIImporterModel
 
     root_metadata['sample_period'] = float(root_metadata['sample_period'])
     root_metadata['start_time'] = float(root_metadata['start_time'])
@@ -171,14 +177,17 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
         dependent_attributes['region_mapping'] = root_metadata['region_mapping']
     elif class_name == 'TimeSeriesSurface':
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
+        dependent_attributes['surface'] = root_metadata['surface']
     elif class_name in ['TimeSeriesEEG', 'TimeSeriesMEG', 'TimeSeriesSEEG']:
         root_metadata['sensors'] = GID_PREFIX + root_metadata['sensors']
+        dependent_attributes['sensors'] = root_metadata['sensors']
     else:
         root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
+        dependent_attributes['volume'] = root_metadata['volume']
         root_metadata.pop('nr_dimensions')
         root_metadata.pop('sample_rate')
 
-    return dependent_attributes
+    return dependent_attributes, view_model_class
 
 
 def _create_new_burst(project_id, root_metadata):
@@ -193,6 +202,18 @@ def update(input_file):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
+
+    replaced_input_file = input_file.replace('-', '')
+    replaced_input_file = replaced_input_file.replace('BrainSkull', 'Surface')
+    replaced_input_file = replaced_input_file.replace('CorticalSurface', 'Surface')
+    replaced_input_file = replaced_input_file.replace('SkinAir', 'Surface')
+    replaced_input_file = replaced_input_file.replace('BrainSkull', 'Surface')
+    replaced_input_file = replaced_input_file.replace('SkullSkin', 'Surface')
+    replaced_input_file = replaced_input_file.replace('EEGCap', 'Surface')
+    replaced_input_file = replaced_input_file.replace('FaceSurface', 'Surface')
+    os.rename(input_file, replaced_input_file)
+    input_file = replaced_input_file
+
     if not os.path.isfile(input_file):
         raise IncompatibleFileManagerException("Not yet implemented update for file %s" % input_file)
 
@@ -238,6 +259,7 @@ def update(input_file):
     changed_values = {}
     view_model_class = None
 
+    # HERE STARTS THE PART WHICH IS SPECIFIC TO EACH H5 FILE #
     if class_name == 'Connectivity':
         root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
         root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
@@ -274,7 +296,6 @@ def update(input_file):
         storage_manager.remove_metadata('Var. non zero', 'weights')
 
         view_model_class = ZIPConnectivityImporterModel
-
     elif class_name in ['BrainSkull', 'CorticalSurface', 'SkinAir', 'BrainSkull', 'SkullSkin', 'EEGCap', 'FaceSurface']:
         root_metadata['edge_max_length'] = float(root_metadata['edge_max_length'])
         root_metadata['edge_mean_length'] = float(root_metadata['edge_mean_length'])
@@ -304,7 +325,6 @@ def update(input_file):
             changed_values['zero_based_triangles'] = False
 
         view_model_class = ZIPSurfaceImporterModel
-
     elif class_name == 'RegionMapping':
         root_metadata = _pop_lengths(root_metadata)
         root_metadata.pop('label_x')
@@ -356,7 +376,6 @@ def update(input_file):
 
         _migrate_dataset_metadata(['projection_data'], storage_manager)
         view_model_class = ProjectionMatrixImporterModel
-
     elif class_name == 'LocalConnectivity':
         changed_values['surface'] = root_metadata['surface']
         root_metadata['cutoff'] = float(root_metadata['cutoff'])
@@ -373,13 +392,20 @@ def update(input_file):
         view_model_class = LocalConnectivityCreatorModel
         dependent_attributes['surface'] = root_metadata['surface']
     elif 'TimeSeries' in class_name:
-        dependent_attributes = _migrate_time_series(root_metadata, storage_manager, class_name, dependent_attributes)
-        view_model_class = SimulatorAdapterModel
-
+        dependent_attributes, view_model_class = _migrate_time_series(root_metadata, storage_manager,
+                                                                      class_name, dependent_attributes)
     elif 'Volume' in class_name:
         root_metadata['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
         _migrate_dataset_metadata(['origin', 'voxel_size'], storage_manager)
-
+    elif class_name == 'StructuralMRI':
+        _pop_lengths(root_metadata)
+        root_metadata.pop('label_x')
+        root_metadata.pop('label_y')
+        root_metadata.pop('aggregation_functions')
+        root_metadata.pop('dimensions_labels')
+        root_metadata.pop('nr_dimensions')
+        root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
+        _migrate_dataset_metadata(['array_data'], storage_manager)
     if class_name == 'CoherenceSpectrum':
         root_metadata.pop('aggregation_functions')
         root_metadata.pop('dimensions_labels')
@@ -437,6 +463,7 @@ def update(input_file):
         root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
 
         _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
+        dependent_attributes['source'] = root_metadata['source']
         view_model_class = WaveletSpectrogramVisualizerModel
 
     if class_name == 'CrossCorrelation':
@@ -444,6 +471,7 @@ def update(input_file):
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
         _migrate_dataset_metadata(['array_data', 'time'], storage_manager)
         view_model_class = CrossCorrelationVisualizerModel
+
         dependent_attributes['source'] = root_metadata['source']
 
     if class_name == 'Fcd':
@@ -565,6 +593,12 @@ def update(input_file):
         _migrate_dataset_metadata(['region_annotations'], storage_manager)
         dependent_attributes['connectivity'] = root_metadata['connectivity']
         view_model_class = BRCOImporterModel
+
+    if class_name == 'ValueWrapper':
+        root_metadata['data_type'] = root_metadata['data_type'].replace("\"", '')
+        root_metadata['written_by'] = "tvb.adapters.datatypes.h5.mapped_value_h5.ValueWrapperH5"
+        h5_class = ValueWrapperH5
+        view_model_class = BaseBCTModel
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
