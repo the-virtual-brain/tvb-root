@@ -78,7 +78,7 @@ class HPCOperationService(object):
 
         operation = dao.get_operation_by_id(operation.id)
         folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
-        if TvbProfile.current.web.ENCRYPT_STORAGE:
+        if encryption_handler.encryption_enabled():
             encryption_handler.inc_project_usage_count(folder)
             encryption_handler.sync_folders(folder)
 
@@ -95,7 +95,7 @@ class HPCOperationService(object):
             HPCOperationService._operation_error(operation)
 
         finally:
-            if TvbProfile.current.web.ENCRYPT_STORAGE:
+            if encryption_handler.encryption_enabled():
                 encryption_handler.sync_folders(folder)
                 encryption_handler.set_project_inactive(operation.project)
 

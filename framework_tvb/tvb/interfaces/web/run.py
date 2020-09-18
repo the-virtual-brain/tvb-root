@@ -35,7 +35,8 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
-from tvb.core.entities.file.data_encryption_handler import encryption_handler, FoldersQueueConsumer
+from tvb.core.entities.file.data_encryption_handler import encryption_handler, FoldersQueueConsumer, \
+    DataEncryptionHandler
 
 STARTUP_TIC = time.time()
 
@@ -220,7 +221,7 @@ def start_tvb(arguments, browser=True):
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
-    if TvbProfile.current.web.ENCRYPT_STORAGE:
+    if DataEncryptionHandler.encryption_enabled():
         queue_consumer = FoldersQueueConsumer()
         queue_consumer.start()
 

@@ -68,7 +68,6 @@ class BaseController(object):
         self.user_service = UserService()
         self.project_service = ProjectService()
         self.algorithm_service = AlgorithmService()
-        self.file_helper = FilesHelper()
         self.analyze_category_link = '/flow/step_analyzers'
         self.analyze_adapters = None
 

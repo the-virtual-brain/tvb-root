@@ -185,8 +185,8 @@ class UserController(BaseController):
         if user is not None:
             self.logger.debug("User " + user.username + " is just logging out!")
         current_project = common.get_current_project()
-        if current_project is not None and TvbProfile.current.web.ENCRYPT_STORAGE:
-            encryption_handler.set_project_inactive(self.file_helper.get_project_folder(current_project))
+        if current_project is not None and encryption_handler.encryption_enabled():
+            encryption_handler.set_project_inactive(current_project)
         SimulatorContext().clean_project_data_from_session()
         common.set_info_message("Thank you for using The Virtual Brain!")
 

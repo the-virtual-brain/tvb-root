@@ -119,7 +119,7 @@ class ProjectService:
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
                 project_folder = self.structure_helper.get_project_folder(current_proj)
-                if TvbProfile.current.web.ENCRYPT_STORAGE and not encryption_handler.is_in_usage(project_folder):
+                if encryption_handler.encryption_enabled() and not encryption_handler.is_in_usage(project_folder):
                     raise ProjectServiceException(
                         "A project can not be renamed while sync encryption operations are running")
                 self.structure_helper.rename_project_structure(current_proj.name, new_name)

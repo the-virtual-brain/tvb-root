@@ -46,6 +46,7 @@ from simplejson import JSONEncoder
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
@@ -81,6 +82,7 @@ class ProjectController(BaseController):
         super(ProjectController, self).__init__()
         self.project_service = ProjectService()
         self.flow_controller = FlowController()
+        self.file_helper = FilesHelper()
 
     @expose_page
     @settings
@@ -187,7 +189,7 @@ class ProjectController(BaseController):
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
                 saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
-                if TvbProfile.current.web.ENCRYPT_STORAGE and is_create:
+                if DataEncryptionHandler.encryption_enabled() and is_create:
                     project_folder = self.file_helper.get_project_folder(saved_project)
                     DataEncryptionHandler.sync_folders(project_folder)
                     shutil.rmtree(project_folder)

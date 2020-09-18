@@ -37,7 +37,13 @@ import threading
 from queue import Queue
 from threading import Lock
 
-from syncrypto import Crypto, Syncrypto
+from tvb.basic.config.settings import HPCSettings
+from tvb.core.services.exceptions import InvalidSettingsException
+
+try:
+    from syncrypto import Crypto, Syncrypto
+except ImportError:
+    HPCSettings.CAN_ENCRYPT_STORAGE = False
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -161,10 +167,11 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
     @staticmethod
     def sync_folders(folder):
-        if not TvbProfile.current.web.ENCRYPT_STORAGE:
+        if not DataEncryptionHandler.encryption_enabled():
             return
         encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
-        crypto_pass = os.environ[DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
+        crypto_pass = os.environ[
+            DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
         if crypto_pass is None:
             raise TVBException("Storage encryption/decryption is not possible because password is not provided.")
         crypto = Crypto(crypto_pass)
@@ -175,7 +182,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             shutil.rmtree(trash_path)
 
     def set_project_active(self, project, linked_dt=None):
-        if not TvbProfile.current.web.ENCRYPT_STORAGE:
+        if not self.encryption_enabled():
             return
         project_folder = self.fie_helper.get_project_folder(project)
         projects = set()
@@ -193,7 +200,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             self.push_folder_to_sync(project_folder)
 
     def set_project_inactive(self, project):
-        if not TvbProfile.current.web.ENCRYPT_STORAGE:
+        if not self.encryption_enabled():
             return
         project_folder = self.fie_helper.get_project_folder(project)
         projects = self.linked_projects.pop(project_folder) if project_folder in self.linked_projects else set()
@@ -210,10 +217,19 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             shutil.rmtree(project_folder)
 
     def push_folder_to_sync(self, project_folder):
-        if not TvbProfile.current.web.ENCRYPT_STORAGE or self._queue_count(project_folder) > 2:
+        if not self.encryption_enabled() or self._queue_count(project_folder) > 2:
             return
         self.inc_queue_count(project_folder)
         self.sync_project_queue.put(project_folder)
+
+    @staticmethod
+    def encryption_enabled():
+        if not TvbProfile.current.web.ENCRYPT_STORAGE:
+            return False
+        if not TvbProfile.current.hpc.CAN_ENCRYPT_STORAGE:
+            raise InvalidSettingsException(
+                "We can not enable STORAGE ENCRYPTION. Most probably syncrypto is not installed!")
+        return True
 
 
 class FoldersQueueConsumer(threading.Thread):
@@ -225,7 +241,7 @@ class FoldersQueueConsumer(threading.Thread):
         self.marked_stop = True
 
     def run(self):
-        if not TvbProfile.current.web.ENCRYPT_STORAGE:
+        if not DataEncryptionHandler.encryption_enabled():
             return
         while True:
             if encryption_handler.sync_project_queue.empty():
