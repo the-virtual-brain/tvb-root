@@ -12,11 +12,16 @@ jobs:
       - name: Run tests
         run: >
           docker run --rm -v $PWD:/work -w /work/scientific_library tvb/lib-ci 
-          pytest -Wignore --profile-svg
+          pytest -Wignore --profile
+
+      - name: Generate profile SVG
+        run: >
+          docker run --rm -v $PWD:/work -w /work/scientific_library tvb/lib-ci
+          gprof2dot.py --root='simulator:366:__call__' -o prof.svg prof/combined.prof
 
       - name: archive test profiles
         uses: actions/upload-artifact@v2
         with:
           name: test-profile.svg
-          path: scientific_library/prof/combined.svg
+          path: scientific_library/prof.svg
 
