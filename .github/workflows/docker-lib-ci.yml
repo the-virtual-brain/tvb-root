@@ -17,6 +17,6 @@ jobs:
       - name: archive test profiles
         uses: actions/upload-artifact@v2
         with:
-          name: test-profile
-          path: scientific_library/prof/*
+          name: test-profile.svg
+          path: scientific_library/prof/combined.svg
 
