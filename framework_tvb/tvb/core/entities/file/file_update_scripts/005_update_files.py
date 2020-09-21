@@ -49,6 +49,7 @@ from tvb.adapters.analyzers.node_covariance_adapter import NodeCovarianceAdapter
 from tvb.adapters.analyzers.pca_adapter import PCAAdapterModel
 from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreatorModel, SurfaceStimulusCreatorModel
+from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5
 from tvb.adapters.uploaders.brco_importer import BRCOImporterModel
@@ -63,6 +64,7 @@ from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualize
 from tvb.adapters.visualizers.fourier_spectrum import FourierSpectrumModel
 from tvb.adapters.visualizers.wavelet_spectrogram import WaveletSpectrogramVisualizerModel
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -76,7 +78,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits._h5core import H5File
 from tvb.core.neotraits.h5 import STORE_STRING
-
+from tvb.datatypes.sensors import SensorTypes
 
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
@@ -192,6 +194,11 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
     return dependent_attributes, view_model_class
 
 
+def _migrate_volume(root_metadata, storage_manager):
+    root_metadata['voxel_unit'] = str(root_metadata['Voxel_unit'], 'utf-8').replace("\"", '')
+    _migrate_dataset_metadata(['origin', 'voxel_size'], storage_manager)
+
+
 def _create_new_burst(project_id, root_metadata):
     burst_config = BurstConfiguration(project_id)
     burst_config.name = 'simulation_' + str(dao.get_max_burst_id() + 1)
@@ -220,6 +227,12 @@ def update(input_file):
         replaced_input_file = replaced_input_file.replace('SkullSkin', 'Surface')
         replaced_input_file = replaced_input_file.replace('EEGCap', 'Surface')
         replaced_input_file = replaced_input_file.replace('FaceSurface', 'Surface')
+        replaced_input_file = replaced_input_file.replace('SensorsEEG', 'Sensors')
+        replaced_input_file = replaced_input_file.replace('SensorsMEG', 'Sensors')
+        replaced_input_file = replaced_input_file.replace('SensorsInternal', 'Sensors')
+        replaced_input_file = replaced_input_file.replace('ProjectionSurfaceEEG', 'ProjectionMatrix')
+        replaced_input_file = replaced_input_file.replace('ProjectionSurfaceMEG', 'ProjectionMatrix')
+        replaced_input_file = replaced_input_file.replace('ProjectionSurfaceSEEG', 'ProjectionMatrix')
         os.rename(input_file, replaced_input_file)
         input_file = replaced_input_file
     except ValueError:
@@ -369,6 +382,11 @@ def update(input_file):
             storage_manager.remove_metadata('Size', 'orientations')
             storage_manager.remove_metadata('Variance', 'orientations')
             datasets.append('orientations')
+            changed_values['sensors_type'] = SensorTypes.TYPE_MEG.value
+        elif 'EEG' in class_name:
+            changed_values['sensors_type'] = SensorTypes.TYPE_EEG.value
+        else:
+            changed_values['sensors_type'] = SensorTypes.TYPE_INTERNAL.value
 
         _migrate_dataset_metadata(datasets, storage_manager)
         view_model_class = SensorsImporterModel
@@ -382,10 +400,12 @@ def update(input_file):
         storage_manager.remove_metadata('Size', 'projection_data')
         storage_manager.remove_metadata('Variance', 'projection_data')
 
-        changed_values['surface'] = root_metadata['surface']
-
+        changed_values['projection_file'] = input_file
         _migrate_dataset_metadata(['projection_data'], storage_manager)
+
         view_model_class = ProjectionMatrixImporterModel
+        dependent_attributes['sensors'] = root_metadata['sensors']
+        dependent_attributes['sources'] = root_metadata['sources']
 
     elif class_name == 'LocalConnectivity':
         root_metadata['cutoff'] = float(root_metadata['cutoff'])
@@ -399,6 +419,8 @@ def update(input_file):
         matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
         storage_manager.set_metadata(matrix_metadata, 'matrix')
 
+        changed_values['surface'] = root_metadata['surface']
+
         view_model_class = LocalConnectivityCreatorModel
         dependent_attributes['surface'] = root_metadata['surface']
 
@@ -406,14 +428,30 @@ def update(input_file):
         dependent_attributes, view_model_class = _migrate_time_series(root_metadata, storage_manager,
                                                                       class_name, dependent_attributes)
     elif 'Volume' in class_name:
-        root_metadata['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
-        _migrate_dataset_metadata(['origin', 'voxel_size'], storage_manager)
+        _migrate_volume(root_metadata, storage_manager)
 
     elif class_name == 'StructuralMRI':
         _pop_lengths(root_metadata)
         _pop_common_metadata(root_metadata)
+
+        storage_manager_volume = HDF5StorageManager(folder, 'Volume_' + root_metadata['volume'] + '.h5')
+        root_metadata_volume = storage_manager_volume.get_metadata()
+        _migrate_volume(root_metadata_volume, storage_manager_volume)
+
+        volume = VolumeIndex()
+        volume.gid = root_metadata['volume']
+        volume.gid = volume.gid.replace('-', '')
+        volume.voxel_size = 0
+        volume.voxel_unit = 0
+        volume.origin = 0
+        volume.fk_from_operation = 1
+        dao.store_entity(volume)
+
         root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
+        dependent_attributes['volume'] = root_metadata['volume']
+
         _migrate_dataset_metadata(['array_data'], storage_manager)
+        view_model_class = NIFTIImporterModel
 
     elif class_name == 'CoherenceSpectrum':
         _pop_common_metadata(root_metadata)
@@ -459,6 +497,8 @@ def update(input_file):
         root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
         root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
 
+        changed_values['input_data'] = root_metadata['source']
+
         dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
         view_model_class = WaveletSpectrogramVisualizerModel
@@ -481,18 +521,25 @@ def update(input_file):
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         dependent_attributes['source'] = root_metadata['source']
+        _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = FCDAdapterModel
 
     elif class_name == 'ConnectivityMeasure':
         _pop_common_metadata(root_metadata)
         _pop_lengths(root_metadata)
-
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
-        dependent_attributes['source'] = root_metadata['source']
+        changed_values['data_file'] = input_file
+        changed_values['connectivity'] = root_metadata['connectivity']
+
+        dependent_attributes['connectivity'] = root_metadata['connectivity']
         _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = ConnectivityMeasureImporterModel
+
+        # if there is an FCDH5 in this same folder, then the view model class is not this one
+        for file in os.listdir(folder):
+            if 'Fcd' in file:
+                view_model_class = None
 
     elif class_name == 'FourierSpectrum':
         _pop_common_metadata(root_metadata)
@@ -501,6 +548,7 @@ def update(input_file):
 
         root_metadata['segment_length'] = float(root_metadata['segment_length'])
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
+        changed_values['input_data'] = root_metadata['source']
 
         dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
@@ -511,6 +559,7 @@ def update(input_file):
         root_metadata['n_components'] = int(root_metadata['n_components'])
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
+        dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
                                    'normalised_component_time_series', 'prewhitening_matrix',
                                    'unmixing_matrix'], storage_manager)
@@ -523,12 +572,16 @@ def update(input_file):
 
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
+        changed_values['datatype'] = root_metadata['source']
+
+        dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = CrossCorrelationVisualizerModel
 
     elif class_name == 'PrincipalComponents':
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
+        dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['component_time_series', 'fractions',
                                    'norm_source', 'normalised_component_time_series',
                                    'weights'], storage_manager)
@@ -541,24 +594,28 @@ def update(input_file):
 
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
+        dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = NodeCovarianceAdapterModel
-        dependent_attributes['source'] = root_metadata['source']
 
     elif class_name == 'DatatypeMeasure':
         root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
         view_model_class = TimeseriesMetricsAdapterModel
-        dependent_attributes['source'] = root_metadata['source']
+        dependent_attributes['analyzed_datatype'] = root_metadata['analyzed_datatype']
+        h5_class = DatatypeMeasureH5
 
     elif class_name == 'StimuliRegion':
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
+        dependent_attributes['connectivity'] = root_metadata['connectivity']
+        changed_values['weight'] = root_metadata['weight']
         _migrate_stimuli(root_metadata, storage_manager, ['weight'])
         view_model_class = RegionStimulusCreatorModel
 
     elif class_name == 'StimuliSurface':
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
 
+        dependent_attributes['connectivity'] = root_metadata['connectivity']
         _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
         view_model_class = SurfaceStimulusCreatorModel
 
@@ -577,9 +634,13 @@ def update(input_file):
         h5_class = ValueWrapperH5
         view_model_class = BaseBCTModel
 
+    # TODO: SimulationState does not exist anymore, SimulationHistory is in it's place and that needs to be created
+    # somehow
+    elif class_name == 'SimulationState':
+        return
+
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
-
 
     if storage_migrate is False:
         return
@@ -601,13 +662,13 @@ def update(input_file):
         # Check if it's needed to create a ViewModel H5
         files_in_op_dir = os.listdir(os.path.join(input_file, os.pardir))
         has_vm = False
-        if len(files_in_op_dir) > 2:
+        if len(files_in_op_dir) > 2 and view_model_class is not None:
             for file in files_in_op_dir:
                 if view_model_class.__name__ in file:
                     has_vm = True
                     break
 
-        if has_vm is False:
+        if has_vm is False and view_model_class is not None:
 
             # Get the VM attributes and the operation parameters from the version 4 DB
             view_model = view_model_class()
@@ -615,7 +676,12 @@ def update(input_file):
 
             operation = dao.get_operation_by_id(op_id)
             vm_attributes = [i for i in view_model_class.__dict__.keys() if i[:1] != '_']
-            op_parameters = eval(operation.view_model_gid)
+
+            try:
+                op_parameters = eval(operation.view_model_gid)
+            except NameError:
+                operation.view_model_gid = operation.view_model_gid.replace('null', '\"null\"')
+                op_parameters = eval(operation.view_model_gid)
 
             # Create a new burst if datatype is a TimeSeries and assign it
             if 'parent_burst_id' in op_parameters:
@@ -641,7 +707,7 @@ def update(input_file):
                     setattr(view_model, attr, changed_values[attr])
 
             # Store the ViewModel and the Operation
-            h5.store_view_model(view_model, os.path.dirname(input_file))
+
             operation.view_model_gid = view_model.gid.hex
             dao.store_entity(operation)
 

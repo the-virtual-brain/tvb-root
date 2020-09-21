@@ -89,6 +89,7 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_CROSS_CORRELATION_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_FCD_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_FOURIER_SPECTRUM_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_INDEPENDENT_COMPONENTS_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_LOCAL_CONNECTIVITY_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_REGION_MAPPING_DATA";"""))
         session.execute(text("""DROP TABLE "ALGORITHMS";"""))
@@ -103,6 +104,8 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_SENSORS_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_STRUCTURAL_MRI_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_SURFACE_DATA" """))
+        session.execute(text("""DROP TABLE "MAPPED_VOLUME_DATA" """))
+        session.execute(text("""DROP TABLE "MAPPED_WAVELET_COEFFICIENTS_DATA";"""))
         session.execute(text("""DROP TABLE "DATA_TYPES";"""))
 
     except Exception as excep:
