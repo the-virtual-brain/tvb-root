@@ -103,9 +103,7 @@ class CosimHistoryUpdate(CosimUpdate):
 
     def update(self, step, update=None):
         if step % self.istep == 0:
-            start_time_idx = (step - self.istep + 1) % self.n_time
-            end_time_idx = step % self.n_time + 1
-            self.history.buffer[start_time_idx:end_time_idx,
+            self.history.buffer[(step - self.istep + 1) % self.n_time:step % self.n_time + 1,
                                 self.voi,
                                 self.proxy_inds] = self._update(update)
 
