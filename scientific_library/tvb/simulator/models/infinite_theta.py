@@ -115,8 +115,7 @@ class MontbrioPazoRoxin(Model):
     stvar = numpy.array([1], dtype=numpy.int32)
     
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r = state_variables[0, :]
-        V = state_variables[1, :]
+        r, V = state_variables
         
         #[State_variables, nodes]
         I = self.I
@@ -231,10 +230,7 @@ class CoombesByrne(Model):
     cvar = numpy.array([0,1,2,3], dtype=numpy.int32)
     
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r = state_variables[0, :]
-        V = state_variables[1, :]
-        g = state_variables[2, :]
-        q = state_variables[3, :]
+        r, V, g, q = state_variables
         
         #[State_variables, nodes]
         Delta = self.Delta
@@ -338,8 +334,7 @@ class CoombesByrne2D(Model):
     cvar = numpy.array([0,1], dtype=numpy.int32)
     
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r = state_variables[0, :]
-        V = state_variables[1, :]
+        r, V = state_variables
         
         #[State_variables, nodes]
         Delta = self.Delta
@@ -482,10 +477,7 @@ class GastSchmidtKnosche_SD(Model):
     cvar = numpy.array([0,1,2,3], dtype=numpy.int32)
     
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r = state_variables[0, :]
-        V = state_variables[1, :]
-        A = state_variables[2, :]
-        B = state_variables[3, :]
+        r, V, A, B = state_variables
         
         #[State_variables, nodes]
         I = self.I
@@ -639,10 +631,7 @@ class GastSchmidtKnosche_SF(Model):
     cvar = numpy.array([0,1,2,3], dtype=numpy.int32)
     
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r = state_variables[0, :]
-        V = state_variables[1, :]
-        A = state_variables[2, :]
-        B = state_variables[3, :]
+        r, V, A, B = state_variables
         
         #[State_variables, nodes]
         I = self.I
@@ -829,14 +818,7 @@ class DumontGutkin(Model):
     cvar = numpy.array([0,1,4,5], dtype=numpy.int32)
     
     def dfun(self, state_variables, coupling, local_coupling=0.0):
-        r_e = state_variables[0, :]
-        V_e = state_variables[1, :]
-        s_ee = state_variables[2, :]
-        s_ei = state_variables[3, :]
-        r_i = state_variables[4, :]
-        V_i = state_variables[5, :]
-        s_ie = state_variables[6, :]
-        s_ii = state_variables[7, :]
+        r_e, V_e, s_ee, s_ei, r_i, V_i, s_ie, s_ii = state_variables
         
         #[State_variables, nodes]
         Delta_e = self.Delta_e
