@@ -15,8 +15,8 @@ class CosimUpdate(HasTraits):
         required=True,
     )
 
-
-class CosimStateUpdate(CosimUpdate):
+    number_of_proxy_nodes = Attr(field_type=int, required=True,
+                                 default=0)
 
     voi = NArray(
         dtype=int,
@@ -25,12 +25,19 @@ class CosimStateUpdate(CosimUpdate):
              "should be updated (i.e., overwriten) during cosimulation."),
         required=False)
 
+    def configure(self, simulator):
+        self.number_of_proxy_nodes = len(self.proxy_inds)
+
+
+class CosimStateUpdate(CosimUpdate):
+
     exclusive = Attr(
         field_type=bool,
         default=False, required=False,
         doc="1, when the proxy nodes substitute TVB nodes and their mutual connections should be removed.")
 
     def configure(self, simulator):
+        super(CosimStateUpdate, self).configure()
         if self.voi is None or self.voi.size == 0:
             self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
 
@@ -67,15 +74,6 @@ class CosimHistoryUpdate(CosimUpdate):
         required=True,
         doc="""A tvb.simulator.history""")
 
-    voi = NArray(
-        dtype=int,
-        label="Cosimulation model coupling variables",
-        doc=("Indices of model's coupling variables that "
-             "should be updated (i.e., overwriten) during cosimulation. "
-             "Note that the indices should start at zero, so that if a model offers VOIs V, W and "
-             "V+W, and W is selected, and this monitor should record W, then the correct index is 0."),
-        required=False)
-
     period = Float(
         label="Updating period (ms)",
         required=False,
@@ -93,10 +91,10 @@ class CosimHistoryUpdate(CosimUpdate):
                     1024 Hz => 0.9765625 ms ; 512 Hz => 1.953125 ms.""")
 
     def configure(self, simulator):
+        super(CosimHistoryUpdate, self).configure()
         self.history = simulator.history
         if self.voi is None or self.voi.size == 0:
             self.voi = numpy.r_[:len(simulator.model.cvar)]
-        self.configure_input_update()
         self.dt = simulator.integrator.dt
         self.istep = iround(self.period / self.dt)
         if self.istep > self.history.n_time:
