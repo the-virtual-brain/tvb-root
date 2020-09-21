@@ -34,9 +34,9 @@ Models based on Wong-Wang's work.
 """
 
 from numba import guvectorize, float64
-from tvb.simulator.models.reduced_wong_wang_exc_io import ReducedWongWangExcIO
-from tvb.simulator.models.base import numpy, ModelNumbaDfun
-from tvb.basic.neotraits.api import NArray, Final, List, Range
+from tvb.contrib.cosimulation.models.reduced_wong_wang_exc_io import ReducedWongWangExcIO
+from tvb.simulator.models.base import numpy
+from tvb.basic.neotraits.api import NArray, Range
 
 
 @guvectorize([(float64[:],)*11], '(n),(m)' + ',()'*8 + '->(n)', nopython=True)
