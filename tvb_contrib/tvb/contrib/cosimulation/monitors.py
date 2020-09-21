@@ -143,8 +143,8 @@ class CosimHistoryMonitor(Monitor):
             start_step = step - self.istep + 1
             end_step = step + 1
             output = []
-            for step in range(start_step, end_step):
-                output.append(self.history.query(step)[0][self.voi][:, self.proxy_inds])
+            for _step in range(start_step, end_step):
+                output.append(self.history.query(_step)[0][self.voi][:, self.proxy_inds])
             return [numpy.arange(start_step, end_step) * self.dt, numpy.array(output)]
 
 
