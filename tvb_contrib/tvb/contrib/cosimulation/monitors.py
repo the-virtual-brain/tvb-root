@@ -126,7 +126,8 @@ class CosimHistoryMonitor(Monitor):
             output = []
             for _step in range(start_step, end_step):
                 output.append(self.history.query(_step)[0][self.voi][:, self.proxy_inds])
-            return [numpy.arange(start_step, end_step) * self.dt, numpy.array(output)]
+            return [numpy.arange(start_step, end_step) * self.dt,
+                    numpy.array(output)]
 
 
 class CosimHistoryMonitorToFile(CosimHistoryMonitor):
@@ -192,7 +193,8 @@ class CosimCouplingMonitor(Monitor):
         """
         Records from current node coupling.
         """
-        return [step * self.dt, self.coupling(step, self.history)[self.voi][:, self.proxy_inds]]
+        return [numpy.array([step * self.dt]),
+                self.coupling(step, self.history)[self.voi][:, self.proxy_inds]]
 
 
 class CosimCouplingMonitorToFile(CosimCouplingMonitor):
