@@ -9,40 +9,11 @@ from tvb.simulator.history import BaseHistory, SparseHistory
 
 class CosimUpdate(HasTraits):
 
-    update_from = Attr(field_type=str, required=True,
-                       default="memory")  # other options are "file", "mpi"
-
-    update_path = Attr(field_type=os.PathLike, required=False, default="")
-
     proxy_inds = NArray(
         dtype=numpy.int,
         label="Indices of TVB proxy nodes",
         required=True,
     )
-
-    _update = None
-
-    @abc.abstractmethod
-    def update_from_file(self, update=None):
-        """Read past states for proxy nodes from some file of a given format
-           return new_states of shape [n_time, n_cosim_cvars, number_of_proxy_nodes, nmodes]"""
-        pass
-
-    @abc.abstractmethod
-    def update_from_mpi(self, update=None):
-        """ Read past states for proxy nodes from some MPI channel of a given type
-            return new_states of shape [n_time, n_cosim_cvars, number_of_proxy_nodes, nmodes]"""
-        pass
-
-    def configure_input_update(self):
-        # TODO: add a check for the record_path if record_to != "memory", and possibly for creating a default path/file
-        self.update_from = self.update_from.lower()
-        if self.update_from == "file":
-            self._update = self.update_from_file
-        elif self.update_from == "mpi":
-            self._update = self.update_from_mpi
-        else:
-            self._update = lambda input: input
 
 
 class CosimStateUpdate(CosimUpdate):
@@ -63,9 +34,28 @@ class CosimStateUpdate(CosimUpdate):
         if self.voi is None or self.voi.size == 0:
             self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
 
+    def _update(self, data):
+        return data
+
     def update(self, state, update=None):
         state[self.voi, self.proxy_inds] = self._update(update)
         return state
+
+
+class CosimStateUpdateFromFile(CosimStateUpdate):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def _update(self, data=None):
+        raise NotImplementedError
+
+
+class CosimStateUpdateFromMPI(CosimStateUpdate):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def _update(self, data=None):
+        raise NotImplementedError
 
 
 class CosimHistoryUpdate(CosimUpdate):
@@ -121,6 +111,22 @@ class CosimHistoryUpdate(CosimUpdate):
             self.history.buffer[start_time_idx:end_time_idx,
                                 self.voi,
                                 self.proxy_inds] = self._update(update)
+
+
+class CosimHistoryUpdateFromFile(CosimHistoryUpdate):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def _update(self, data=None):
+        raise NotImplementedError
+
+
+class CosimHistoryUpdateFromMPI(CosimHistoryUpdate):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def _update(self, data=None):
+        raise NotImplementedError
 
 
 class CosimToTVBInterfaces(HasTraits):

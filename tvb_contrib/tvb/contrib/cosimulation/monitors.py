@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import abc
 import numpy
 from tvb.basic.neotraits.api import Attr, NArray
 from tvb.simulator.common import iround
@@ -15,15 +14,8 @@ class CosimMonitor(Monitor):
         over the TVB proxy nodes at each sampling period. Time steps that are not modulo ``istep``
         are stored temporarily in the ``_stock`` attribute and then that temporary
         store is returned when time step is modulo ``istep``.
-        The output can be returned like any other TVB monitor or written to file or to some MPI channel,
-        depending on user input to record_to and record_path attributes.
 
     """
-
-    record_to = Attr(field_type=str, required=True,
-                     default="memory")  # other options are "file", "mpi"
-
-    record_path = Attr(field_type=os.PathLike, required=False, default="")
 
     proxy_inds = NArray(
         dtype=numpy.int,
@@ -31,38 +23,14 @@ class CosimMonitor(Monitor):
         required=True,
     )
 
+    number_of_proxy_nodes = Attr(field_type=int, required=True,
+                                 default=0)
+
     def __init__(self, **kwargs):
         super(CosimMonitor, self).__init__(**kwargs)
 
-    @abc.abstractmethod
-    def record_to_file(self, step, state):
-        """Write to some file of a given format
-           return 0 for success or None"""
-        pass
-
-    @abc.abstractmethod
-    def record_to_mpi(self, step, state):
-        """Write to some MPI channel of a given type
-           return 0 for success or None"""
-        pass
-
-    def configure_record(self):
-        # TODO: add a check for the record_path if record_to != "memory", and possibly for creating a default path/file
-        self.record_to = self.record_to.lower()
-        if self.record_to == "file":
-            self.record = self.record_to_file
-        elif self.record_to == "mpi":
-            self.record = self.record_to_mpi()
-
-    def configure_stock_size(self, simulator):
-        self.number_of_proxy_nodes = len(self.proxy_inds)
-        stock_size = (self.istep, self.voi.shape[0],
-                      self.number_of_proxy_nodes,
-                      simulator.model.number_of_modes)
-        self.log.debug("CosimMonitor stock_size is %s" % (str(stock_size), ))
-        self._stock = numpy.zeros(stock_size)
-
     def config_for_sim(self, simulator):
+        self.number_of_proxy_nodes = len(self.proxy_inds)
         super(CosimMonitor, self).config_for_sim(simulator)
 
 
@@ -72,8 +40,6 @@ class CosimStateMonitor(CosimMonitor):
         the nodes at each sampling period. Time steps that are not modulo ``istep``
         are stored temporarily in the ``_stock`` attribute and then that temporary
         store is returned when time step is modulo ``istep``.
-        The output can be returned like any other TVB monitor or written to file or to some MPI channel,
-        depending on user input to record_to and record_path attributes.
 
     """
 
@@ -82,8 +48,11 @@ class CosimStateMonitor(CosimMonitor):
 
     def config_for_sim(self, simulator):
         super(CosimStateMonitor, self).config_for_sim(simulator)
-        self.configure_stock_size()
-        self.configure_record()
+        stock_size = (self.istep, self.voi.shape[0],
+                      self.number_of_proxy_nodes,
+                      simulator.model.number_of_modes)
+        self.log.debug("CosimMonitor stock_size is %s" % (str(stock_size),))
+        self._stock = numpy.zeros(stock_size)
 
     def sample(self, step, state):
         """
@@ -97,14 +66,28 @@ class CosimStateMonitor(CosimMonitor):
             return [time, self._stock]
 
 
+class CosimStateMonitorToFile(CosimStateMonitor):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def record(self, step, state):
+        raise NotImplementedError
+
+
+class CosimStateMonitorToMPI(CosimStateMonitor):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def record(self, step, state):
+        raise NotImplementedError
+
+
 class CosimHistoryMonitor(Monitor):
     """
         Monitors the history for the model's coupling variable/s of interest
         over TVB proxy nodes at each sampling period. Time steps that are not modulo ``istep``
         are stored temporarily in the ``_stock`` attribute and then that temporary
         store is returned when time step is modulo ``istep``.
-        The output can be returned like any other TVB monitor or written to file or to some MPI channel,
-        depending on user input to record_to and record_path attributes.
 
     """
 
@@ -131,8 +114,6 @@ class CosimHistoryMonitor(Monitor):
         self.voi = self.variables_of_interest
         if self.voi is None or self.voi.size == 0:
             self.voi = numpy.r_[:len(simulator.model.cvar)]
-        self.configure_stock_size(simulator)
-        self.configure_output_recorder()
 
     def sample(self, step, state):
         """
@@ -148,12 +129,26 @@ class CosimHistoryMonitor(Monitor):
             return [numpy.arange(start_step, end_step) * self.dt, numpy.array(output)]
 
 
+class CosimHistoryMonitorToFile(CosimHistoryMonitor):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def record(self, step, state):
+        raise NotImplementedError
+
+
+class CosimHistoryMonitorToMPI(CosimHistoryMonitor):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def record(self, step, state):
+        raise NotImplementedError
+
+
 class CosimCouplingMonitor(Monitor):
     """
         Monitors the current node coupling for the model's coupling variable/s of interest
         over TVB proxy nodes at each sampling period.
-        The output can be returned like any other TVB monitor or written to file or to some MPI channel,
-        depending on user input to record_to and record_path attributes.
 
     """
 
@@ -192,11 +187,25 @@ class CosimCouplingMonitor(Monitor):
         self.voi = self.variables_of_interest
         if self.voi is None or self.voi.size == 0:
             self.voi = numpy.r_[:len(simulator.model.cvar)]
-        self.configure_stock_size(simulator)
-        self.configure_output_recorder()
 
     def sample(self, step, state):
         """
         Records from current node coupling.
         """
         return [step * self.dt, self.coupling(step, self.history)[self.voi][:, self.proxy_inds]]
+
+
+class CosimCouplingMonitorToFile(CosimCouplingMonitor):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def record(self, step, state):
+        raise NotImplementedError
+
+
+class CosimCouplingMonitorToMPI(CosimCouplingMonitor):
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    def record(self, step, state):
+        raise NotImplementedError
