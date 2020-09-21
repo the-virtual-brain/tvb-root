@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import abc
 import numpy
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, NArray, List
 from tvb.simulator.common import iround
