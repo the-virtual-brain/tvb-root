@@ -155,15 +155,6 @@ class CoSimulator(Simulator):
             self.log.info(print_this)
             self._tic_point += self._tic_ratio * n_steps
 
-    def update_non_state_variables(self, state, node_coupling, local_coupling):
-        temp_state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                           use_numba=self.use_numba)
-        if temp_state is not None:
-            state = temp_state
-            self.bound_and_clamp(temp_state)
-
-        return state
-
     def _loop_monitor_output(self, step, state):
         observed = self.model.observe(state)
         return_flag = False
@@ -250,8 +241,7 @@ class CoSimulator(Simulator):
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
             # Update any non-state variables and apply any boundaries again to the modified state:
-            state = self.update_non_state_variables(state, node_coupling, local_coupling)
-            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
+            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             if self.cosim_to_tvb_interfaces:
                 state = self._loop_cosim_update(step, state, cosim_state_updates, cosim_history_updates)
             self._loop_update_history(step, n_reg, state)

@@ -105,7 +105,6 @@ class Integrator(HasTraits):
         label="The values of the state variables which are clamped ",
         required=False)
 
-
     @abc.abstractmethod
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         """
@@ -126,6 +125,38 @@ class Integrator(HasTraits):
 
     def clamp_state(self, X):
         X[self.clamped_state_variable_indices] = self.clamped_state_variable_values
+
+    def bound_and_clamp(self, state):
+        # If there is a state boundary...
+        if self.state_variable_boundaries is not None:
+            # ...use the integrator's bound_state
+            self.bound_state(state)
+        # If there is a state clamping...
+        if self.clamped_state_variable_values is not None:
+            # ...use the integrator's clamp_state
+            self.clamp_state(state)
+
+    def integrate_with_update(self, X, model, coupling, local_coupling, stimulus):
+
+        temp = model.update_non_integrated_variables_before_integration(X, coupling, local_coupling, stimulus)
+        if temp is not None:
+            X = temp
+            self.bound_and_clamp(X)
+
+        X[model.state_variable_mask] = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
+        self.bound_and_clamp(X)
+
+        temp = model.update_non_integrated_variables_after_integration(X)
+        if temp is not None:
+            X = temp
+            self.bound_and_clamp(X)
+
+        return X
+
+    def integrate(self, X, model, coupling, local_coupling, stimulus):
+        X[model.state_variable_mask] = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
+        self.bound_and_clamp(X)
+        return X
 
     def __str__(self):
         return simple_gen_astr(self, 'dt')
