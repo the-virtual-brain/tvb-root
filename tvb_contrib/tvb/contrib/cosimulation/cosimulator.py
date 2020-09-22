@@ -314,9 +314,10 @@ class CoSimulator(Simulator):
                             xl.append(x)
                     if len(data) > 1:
                         self.send_data_to_cosimulator(data[1:])
-                cosim_state_updates, cosim_history_updates = self.receive_data_from_cosimulator()
-                kwds["cosim_state_updates"] = cosim_state_updates
-                kwds["cosim_history_updates"] = cosim_history_updates
+                if self.cosim_to_tvb_interfaces:
+                    cosim_state_updates, cosim_history_updates = self.receive_data_from_cosimulator()
+                    kwds["cosim_state_updates"] = cosim_state_updates
+                    kwds["cosim_history_updates"] = cosim_history_updates
         elapsed_wall_time = time.time() - wall_time_start
         self.log.info("%.3f s elapsed, %.3fx real time", elapsed_wall_time,
                       elapsed_wall_time * 1e3 / self.simulation_length)
@@ -373,9 +374,10 @@ class SequentialCosimulator(CoSimulator):
                     if len(data) > 1:
                         self.send_data_to_cosimulator(data[1:])
                 self.run_cosimulator()
-                cosim_state_updates, cosim_history_updates = self.receive_data_from_cosimulator()
-                kwds["cosim_state_updates"] = cosim_state_updates
-                kwds["cosim_history_updates"] = cosim_history_updates
+                if self.cosim_to_tvb_interfaces:
+                    cosim_state_updates, cosim_history_updates = self.receive_data_from_cosimulator()
+                    kwds["cosim_state_updates"] = cosim_state_updates
+                    kwds["cosim_history_updates"] = cosim_history_updates
         elapsed_wall_time = time.time() - wall_time_start
         self.log.info("%.3f s elapsed, %.3fx real time", elapsed_wall_time,
                       elapsed_wall_time * 1e3 / self.simulation_length)
