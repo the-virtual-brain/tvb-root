@@ -146,19 +146,12 @@ class CosimHistoryMonitorToMPI(CosimHistoryMonitor):
         raise NotImplementedError
 
 
-class CosimCouplingMonitor(Monitor):
+class CosimCouplingMonitor(CosimHistoryMonitor):
     """
         Monitors the current node coupling for the model's coupling variable/s of interest
         over TVB proxy nodes at each sampling period.
 
     """
-
-    history = Attr(
-        field_type=BaseHistory,
-        label="Simulator's history",
-        default=SparseHistory(),
-        required=True,
-        doc="""A tvb.simulator.history""")
 
     coupling = Attr(
         field_type=Coupling,
@@ -180,21 +173,21 @@ class CosimCouplingMonitor(Monitor):
                 between returns by the record method. This method is called from within
                 the the Simulator's configure() method.
         """
-        self.history = simulator.history
+        super(CosimCouplingMonitor, self).config_for_sim(simulator)
         self.coupling = simulator.coupling
-        self.dt = simulator.integrator.dt
-        self.period = self.dt
-        self.istep = 1.0
-        self.voi = self.variables_of_interest
-        if self.voi is None or self.voi.size == 0:
-            self.voi = numpy.r_[:len(simulator.model.cvar)]
 
     def sample(self, step, state):
         """
-        Records from current node coupling.
+        Records from node coupling.
         """
-        return [numpy.array([step * self.dt]),
-                self.coupling(step, self.history)[self.voi][:, self.proxy_inds]]
+        if step % self.istep == 0:
+            start_step = step - self.istep + 1
+            end_step = step + 1
+            output = []
+            for _step in range(start_step, end_step):
+                output.append(self.coupling(_step, self.history)[self.voi][:, self.proxy_inds])
+            return [numpy.arange(start_step, end_step) * self.dt,
+                    numpy.array(output)]
 
 
 class CosimCouplingMonitorToFile(CosimCouplingMonitor):
