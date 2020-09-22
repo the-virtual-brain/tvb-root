@@ -8,6 +8,8 @@ from tvb.contrib.scripts.utils.data_structure_utils import flatten_list
 
 class CosimModel(Model):
 
+    """CosimModel base class"""
+
     cosim_vars = NArray(
         dtype=int,
         label="Cosimulation model state variables",
@@ -39,7 +41,7 @@ class CosimModel(Model):
 
     def from_model(self, model):
         """
-        Copy the value of an instance without proxy
+        Copy the value of an instance of a TVB Model class
         :param model: TVB model
         """
         for key, value in vars(model).items():
@@ -65,29 +67,34 @@ class CosimModel(Model):
 
     @property
     def tot_cosim_vars_proxy_inds(self):
+        """ All the unique proxy region nodes indices for state variables updated from cosimulation. """
         if not self._tot_cosim_vars_proxy_inds:
             self._tot_cosim_vars_proxy_inds = numpy.unique(flatten_list(self.cosim_vars_proxy_inds))
         return self._tot_cosim_vars_proxy_inds
 
     @property
     def tot_cosim_cvars_proxy_inds(self):
+        """ All the unique proxy region nodes indices for coupling variables updated from cosimulation. """
         if not self._tot_cosim_cvars_proxy_inds:
             self._tot_cosim_cvars_proxy_inds = numpy.unique(flatten_list(self.cosim_cvars_proxy_inds))
         return self._tot_cosim_cvars_proxy_inds
 
     @property
     def n_cosim_vars_proxy_inds(self):
+        """ The total number of proxy region nodes for state variables updated from cosimulation. """
         if not self._n_cosim_vars_proxy_inds:
             self._n_cosim_vars_proxy_inds = len(self.tot_cosim_vars_proxy_inds)
         return self._n_cosim_vars_proxy_inds
 
     @property
     def n_cosim_cvars_proxy_inds(self):
+        """ The total number of proxy region nodes for coupling variables updated from cosimulation. """
         if not self._n_cosim_cvars_proxy_inds:
             self._n_cosim_cvars_proxy_inds = len(self.tot_cosim_cvars_proxy_inds)
         return self._n_cosim_cvars_proxy_inds
 
     def configure(self):
+        "Configure base CosimModel and compute the cosimulation related attributes."
         super(CosimModel).configure()
         self._cosim_nvar = len(self.cosim_vars)
         self._cosim_ncvar = len(self.cosim_cvars)

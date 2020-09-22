@@ -6,6 +6,12 @@ from tvb.contrib.cosimulation.monitors import CosimStateMonitor, CosimHistoryMon
 
 class TVBtoCosimInterfaces(HasTraits):
 
+    """This class holds lists of
+       - state_interfaces,
+       - history_interfaces,
+       - and coupling_interfaces,
+       monitors"""
+
     state_interfaces = List(of=CosimStateMonitor)
     history_interfaces = List(of=CosimHistoryMonitor)
     coupling_interfaces = List(of=CosimCouplingMonitor)

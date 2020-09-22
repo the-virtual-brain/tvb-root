@@ -82,10 +82,14 @@ class CoSimulator(Simulator):
     PRINT_PROGRESSION_MESSAGE = True
 
     def _eliminate_exclusive_proxy_nodes_connectivity(self, proxy_inds):
-        # ...set the respective connectivity weights among them to zero:
+        """This method will set the proxy nodes mutual connectivity to zero"""
         self.connectivity.weights[proxy_inds][:, proxy_inds] = 0.0
 
     def _configure_cosim_interfaces(self):
+        """This method will run all the configuration methods of all TVB <-> Cosimulator interfaces,
+           as well as generated a CosimModel class from the original Model class,
+           and set the cosim_(c)vars and cosim_(c)vars_proxy_inds properties of the CosimModel class,
+           based on the respective vois and proxy_inds of all cosim_to_tvb_interfaces."""
         if self.tvb_to_cosim_interfaces:
             for state_interface in self.tvb_to_cosim_interfaces.state_interfaces:
                 state_interface.config_for_sim(self)
@@ -129,7 +133,6 @@ class CoSimulator(Simulator):
             The configured Simulator instance.
 
         """
-        # Set TVB - spikeNet interface:
         if not self.use_numba or self.model.number_of_modes > 1:
             self.use_numba = False
             if hasattr(self.model, "_numpy_dfun"):
@@ -156,6 +159,9 @@ class CoSimulator(Simulator):
             self._tic_point += self._tic_ratio * n_steps
 
     def _loop_record_monitors(self, step, observed, monitors, return_flag=False):
+        """This method recordd from a sequence of monitors,
+           returnd outputs, if any,
+           and sets a return_flag to True, if there is at least one output returned."""
         outputs = []
         for monitor in monitors:
             output = monitor.record(step, observed)
@@ -165,39 +171,48 @@ class CoSimulator(Simulator):
         return outputs, return_flag
 
     def _loop_cosim_monitor_ouput(self, step, observed, return_outputs=[], return_flag=False):
+        """This method records from all cosimulation monitors"""
         cosim_state_output, return_flag = self._loop_record_monitors(step, observed,
                                                                      self.tvb_to_cosim_interfaces.state_interfaces,
                                                                      return_flag)
         if len(cosim_state_output):
-            return_outputs.append(cosim_state_output)
+            return_outputs += cosim_state_output
         cosim_history_output, return_flag = self._loop_record_monitors(step, observed,
                                                                        self.tvb_to_cosim_interfaces.history_interfaces,
                                                                        return_flag)
         if len(cosim_history_output):
-            return_outputs.append(cosim_history_output)
+            return_outputs += cosim_history_output
         cosim_coupling_output, return_flag = self._loop_record_monitors(step, observed,
                                                                         self.tvb_to_cosim_interfaces.coupling_interfaces,
                                                                         return_flag)
         if len(cosim_coupling_output):
-            return_outputs.append(cosim_coupling_output)
+            return_outputs += cosim_coupling_output
         return return_outputs, return_flag
 
     def _loop_monitor_output(self, step, state):
+        """This method computes the observed state,
+           records from all TVB monitors, and then, all cosimulation monitors,
+           and returns:
+            - either None if none of the above monitors returns an ouput,
+            - (monitor_outputs, ) if only TVB monitors return an output,
+            - (None, cosim_outputs) if only cosimulation monitors return an ouput,
+            - (monitor_outputs, cosim_outputs) if all types of monitors returns an output"""
         observed = self.model.observe(state)
         return_outputs, return_flag = self._loop_record_monitors(step, observed, self.monitors)
         if self.tvb_to_cosim_interfaces:
-            if not return_flag:
-                return_outputs = [None]
             cosim_outputs, return_flag = self._loop_cosim_monitor_ouput(step, observed, [], return_flag)
             if return_flag:
-                # return a tuple of (monitors, state_interfaces, history_interfaces, coupling_interfaces) outputs
-                return tuple(return_outputs + cosim_outputs)
+                # return a tuple of (monitors, cosim_monitors) outputs
+                return tuple([return_outputs, cosim_outputs])
         else:
             if return_flag:
-                # return only monitors" outputs
+                # return only (monitors,) outputs
                 return tuple([return_outputs])
 
     def _loop_cosim_update_state(self, state, cosim_state_updates=[]):
+        """This method updates the state from the cosimulator, if there are any state cosim to tvb interfaces.
+            If there is an update, the updated state gets again through the bound_and_clamp method.
+        """
         new_state = numpy.array(state)
         for ii, state_interface in enumerate(self.cosim_to_tvb_interfaces.state_interfaces):
             try:
@@ -210,6 +225,10 @@ class CoSimulator(Simulator):
         return new_state
 
     def _loop_update_history(self, step, n_reg, state, cosim_state_updates=[], cosim_history_updates=[]):
+        """This method
+            - first (optionally) updates the state from cosimulation,
+            - then updates TVB history buffer with the current state,
+            - and finally (optionally) updates history from cosimulation."""
         if self.cosim_to_tvb_interfaces:
             state = self._loop_cosim_update_state(state, cosim_state_updates)
         super(CoSimulator, self)._loop_update_history(step, n_reg, state)
@@ -269,17 +288,30 @@ class CoSimulator(Simulator):
 # TODO: adjust function to compute fine scale resources' requirements as well, ...if you can! :)
 
     def send_initial_condition_to_cosimulator(self):
+        """This method sends the initial condition to the co-simulator."""
         data, return_flag = self._loop_cosim_monitor_ouput(self.current_step, self.current_state)
         if return_flag:
             self.send_data_to_cosimulator(data)
 
     def receive_data_from_cosimulator(self):
+        """This method receives data from the other simulator in the format,
+           (cosim_state_updates, cosim_history_updates),
+           where cosim_state_updates (cosim_history_updates) are lists of data
+           that correspond to the cosim_to_tvb_interfaces.state_interfaces(history_interfaces), respectively,
+           in the same order."""
         return [], []
 
     def send_data_to_cosimulator(self, data):
+        """This method sends TVB output data to the other simulator."""
         pass
 
     def prepare_run(self, **kwds):
+        """This method sets
+            - sync_time (default = self.integrator.dt),
+            - current_time = self.current_step * self.integrator.dt,
+            - and end_time = current_time + simulation_length,
+            from optional user kwds,
+            as well as updates kwds by setting kwds["simulation_length"] = sync_time."""
         sync_time = kwds.pop("sync_time", self.integrator.dt)
         simulation_length = kwds.pop("simulation_length", self.integrator.dt)
         current_time = self.current_step * self.integrator.dt
@@ -289,10 +321,10 @@ class CoSimulator(Simulator):
 
     def run(self, **kwds):
         """Convenience method to call the simulator with **kwds and collect output data.
-            Inherit SequentialCosimulator and modify this method to
-            (a) send TVB data to the other simulator
-            (b) call the other simulator as well,
-            (c) receive data from the other simulator,
+            The method is modified to
+            (a) (optionally) send initial condition TVB data to the other simulator,
+            (b) (optionally) send TVB data to the other simulator,
+            (c) (optionally) receive data from the other simulator.
             """
         sync_time, current_time, end_time, kwds = self.prepare_run(**kwds)
         ts, xs = [], []
@@ -330,27 +362,33 @@ class CoSimulator(Simulator):
 class SequentialCosimulator(CoSimulator):
 
     def configure_cosimulator(self, *args, **kwargs):
+        """This method configures the other simulator."""
         pass
 
     def configure(self, full_configure=True, *args, **kwargs):
+        """This method (optionally) configures the other simulator, besides TVB."""
         configure_cosimulator = kwargs.pop("configure_cosimulator", False)
         super(SequentialCosimulator, self).configure(full_configure=True)
         if configure_cosimulator:
             self.configure_cosimulator(*args, **kwargs)
 
     def run_cosimulator(self, sync_time):
+        """This method runs the other simulator for sync_time."""
         pass
 
     def cleanup_cosimulator(self):
+        """This method cleans up the other simulator."""
         pass
 
     def run(self, sync_time=None,
             send_initial_condition_to_cosimulator=False, cleanup_cosimulator=False, **kwds):
         """Convenience method to call the simulator with **kwds and collect output data.
-            Inherit SequentialCosimulator and modify this method to
-            (a) send TVB data to the other simulator
-            (b) call the other simulator as well,
-            (c) receive data from the other simulator,
+            The method is modified to
+            (a) (optionally) send initial condition TVB data to the other simulator,
+            (b) (optionally) send TVB data to the other simulator,
+            (c) run the other simulator,
+            (d) (optionally) receive data from the other simulator,
+            (e) cleanup the other simulator.
             """
         sync_time, current_time, end_time, kwds = self.prepare_run(**kwds)
         ts, xs = [], []
