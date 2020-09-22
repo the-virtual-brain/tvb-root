@@ -279,24 +279,27 @@ class CoSimulator(Simulator):
     def send_data_to_cosimulator(self, data):
         pass
 
-    def run(self, sync_time=None, send_initial_condition_to_cosimulator=False, **kwds):
+    def prepare_run(self, **kwds):
+        sync_time = kwds.pop("sync_time", self.integrator.dt)
+        simulation_length = kwds.pop("simulation_length", self.integrator.dt)
+        current_time = self.current_step * self.integrator.dt
+        end_time = current_time + simulation_length
+        kwds["simulation_length"] = sync_time
+        return sync_time, current_time, end_time, kwds
+
+    def run(self, **kwds):
         """Convenience method to call the simulator with **kwds and collect output data.
             Inherit SequentialCosimulator and modify this method to
             (a) send TVB data to the other simulator
             (b) call the other simulator as well,
             (c) receive data from the other simulator,
             """
-        if sync_time is None:
-            sync_time = self.integrator.dt
-        simulation_length = kwds["simulation_length"]
-        current_time = self.current_step * self.integrator.dt
-        end_time = current_time + simulation_length
-        kwds["simulation_length"] = sync_time
+        sync_time, current_time, end_time, kwds = self.prepare_run(**kwds)
         ts, xs = [], []
         for _ in self.monitors:
             ts.append([])
             xs.append([])
-        if send_initial_condition_to_cosimulator and self.tvb_to_cosim_interfaces:
+        if kwds.pop("send_initial_condition_to_cosimulator", False) and self.tvb_to_cosim_interfaces:
             self.send_initial_condition_to_cosimulator()
         self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
         wall_time_start = time.time()
@@ -328,7 +331,8 @@ class SequentialCosimulator(CoSimulator):
     def configure_cosimulator(self, *args, **kwargs):
         pass
 
-    def configure(self, full_configure=True, configure_cosimulator=False, *args, **kwargs):
+    def configure(self, full_configure=True, *args, **kwargs):
+        configure_cosimulator = kwargs.pop("configure_cosimulator", False)
         super(SequentialCosimulator, self).configure(full_configure=True)
         if configure_cosimulator:
             self.configure_cosimulator(*args, **kwargs)
@@ -347,18 +351,14 @@ class SequentialCosimulator(CoSimulator):
             (b) call the other simulator as well,
             (c) receive data from the other simulator,
             """
-        if sync_time is None:
-            sync_time = self.integrator.dt
-        simulation_length = kwds["simulation_length"]
-        current_time = self.current_step * self.integrator.dt
-        end_time = current_time + simulation_length
-        kwds["simulation_length"] = sync_time
+        sync_time, current_time, end_time, kwds = self.prepare_run(**kwds)
         ts, xs = [], []
         for _ in self.monitors:
             ts.append([])
             xs.append([])
-        if send_initial_condition_to_cosimulator and self.tvb_to_cosim_interfaces:
+        if kwds.pop("send_initial_condition_to_cosimulator", False) and self.tvb_to_cosim_interfaces:
             self.send_initial_condition_to_cosimulator()
+        cleanup_cosimulator = kwds.pop("cleanup_cosimulator", False)
         self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
         wall_time_start = time.time()
         while current_time < end_time:
