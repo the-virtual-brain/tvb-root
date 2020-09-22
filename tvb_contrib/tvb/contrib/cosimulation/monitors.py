@@ -62,7 +62,7 @@ class CosimStateMonitor(CosimMonitor):
         """
         self._stock[((step % self.istep) - 1), :, :] = state[self.voi][:, self.proxy_inds]
         if step % self.istep == 0:
-            time = numpy.arange(numpy.maximum(0, step - self.istep + 1), step + 1) * self.dt
+            time = numpy.arange(step - self.istep + 1, step + 1) * self.dt
             return [time, self._stock]
 
 
@@ -121,7 +121,7 @@ class CosimHistoryMonitor(Monitor):
         when the step corresponds to the sample/synchronization period.
         """
         if step % self.istep == 0:
-            start_step = numpy.maximum(0, step - self.istep + 1)
+            start_step = step - self.istep + 1
             end_step = step + 1
             output = []
             for _step in range(start_step, end_step):
@@ -181,7 +181,7 @@ class CosimCouplingMonitor(CosimHistoryMonitor):
         Records from node coupling.
         """
         if step % self.istep == 0:
-            start_step = numpy.maximum(0, step - self.istep + 1)
+            start_step = step - self.istep + 1
             end_step = step + 1
             output = []
             for _step in range(start_step, end_step):
