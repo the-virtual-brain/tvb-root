@@ -269,8 +269,8 @@ class CoSimulator(Simulator):
 # TODO: adjust function to compute fine scale resources' requirements as well, ...if you can! :)
 
     def send_initial_condition_to_cosimulator(self):
-        data = self._loop_cosim_monitor_ouput(self.current_step, self.current_state)
-        if data is not None:
+        data, return_flag = self._loop_cosim_monitor_ouput(self.current_step, self.current_state)
+        if return_flag:
             self.send_data_to_cosimulator(data)
 
     def receive_data_from_cosimulator(self):
