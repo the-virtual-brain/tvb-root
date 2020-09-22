@@ -188,7 +188,7 @@ class CoSimulator(Simulator):
             if return_flag:
                 return return_outputs
 
-    def _loop_cosim_update(self, step, state, cosim_state_updates=[], cosim_history_updates=[]):
+    def _loop_cosim_update_state(self, state, cosim_state_updates=[]):
         new_state = numpy.array(state)
         for ii, state_interface in enumerate(self.cosim_to_tvb_interfaces.state_interfaces):
             try:
@@ -198,13 +198,19 @@ class CoSimulator(Simulator):
             new_state = state_interface.update(state, update_state)
         if any(new_state != state):
             self.bound_and_clamp(new_state)
-        for history_interface in self.cosim_to_tvb_interfaces.history_interfaces:
-            try:
-                history_update = cosim_history_updates.pop(0)
-            except:
-                history_update = None
-            history_interface.update(step, history_update)
         return new_state
+
+    def _loop_update_history(self, step, n_reg, state, cosim_state_updates=[], cosim_history_updates=[]):
+        if self.cosim_to_tvb_interfaces:
+            state = self._loop_cosim_update_state(state, cosim_state_updates)
+        super(CoSimulator, self)._loop_update_history(step, n_reg, state)
+        if self.cosim_to_tvb_interfaces:
+            for history_interface in self.cosim_to_tvb_interfaces.history_interfaces:
+                try:
+                    history_update = cosim_history_updates.pop(0)
+                except:
+                    history_update = None
+                history_interface.update(step, history_update)
 
     def __call__(self, simulation_length=None, random_state=None,
                  cosim_state_updates=[], cosim_history_updates=[]):
@@ -240,11 +246,8 @@ class CoSimulator(Simulator):
             # needs implementing by history + coupling?
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
-            # Update any non-state variables and apply any boundaries again to the modified state:
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
-            if self.cosim_to_tvb_interfaces:
-                state = self._loop_cosim_update(step, state, cosim_state_updates, cosim_history_updates)
-            self._loop_update_history(step, n_reg, state)
+            self._loop_update_history(step, n_reg, state, cosim_state_updates, cosim_history_updates)
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output
