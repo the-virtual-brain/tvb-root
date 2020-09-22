@@ -155,38 +155,47 @@ class CoSimulator(Simulator):
             self.log.info(print_this)
             self._tic_point += self._tic_ratio * n_steps
 
+    def _loop_record_monitors(self, step, observed, monitors, return_flag=False):
+        outputs = []
+        for monitor in monitors:
+            output = monitor.record(step, observed)
+            if output is not None:
+                outputs.append(output)
+                return_flag = True
+        return outputs, return_flag
+
+    def _loop_cosim_monitor_ouput(self, step, observed, return_outputs=[], return_flag=False):
+        cosim_state_output, return_flag = self._loop_record_monitors(step, observed,
+                                                                     self.tvb_to_cosim_interfaces.state_interfaces,
+                                                                     return_flag)
+        if len(cosim_state_output):
+            return_outputs.append(cosim_state_output)
+        cosim_history_output, return_flag = self._loop_record_monitors(step, observed,
+                                                                       self.tvb_to_cosim_interfaces.history_interfaces,
+                                                                       return_flag)
+        if len(cosim_history_output):
+            return_outputs.append(cosim_history_output)
+        cosim_coupling_output, return_flag = self._loop_record_monitors(step, observed,
+                                                                        self.tvb_to_cosim_interfaces.coupling_interfaces,
+                                                                        return_flag)
+        if len(cosim_coupling_output):
+            return_outputs.append(cosim_coupling_output)
+        return return_outputs, return_flag
+
     def _loop_monitor_output(self, step, state):
         observed = self.model.observe(state)
-        return_flag = False
-        return_outputs = []
-        output = [monitor.record(step, observed) for monitor in self.monitors]
-        return_outputs.append(output)
-        if any(outputi is not None for outputi in output):
-            return_flag = True
+        return_outputs, return_flag = self._loop_record_monitors(step, observed, self.monitors)
         if self.tvb_to_cosim_interfaces:
-            cosim_state_output = []
-            cosim_state_output.append([monitor.record(step, observed)
-                                       for monitor in self.tvb_to_cosim_interfaces.state_interfaces])
-            return_outputs.append(cosim_state_output)
-            if any(outputi is not None for outputi in cosim_state_output):
-                return_flag = True
-            cosim_history_output = []
-            cosim_history_output.append([monitor.record(step, observed)
-                                         for monitor in self.tvb_to_cosim_interfaces.history_interfaces])
-            return_outputs.append(cosim_history_output)
-            if any(outputi is not None for outputi in cosim_history_output):
-                return_flag = True
-            cosim_coupling_output = []
-            cosim_coupling_output.append([monitor.record(step, observed)
-                                          for monitor in self.tvb_to_cosim_interfaces.coupling_interfaces])
-            return_outputs.append(cosim_coupling_output)
-            if any(outputi is not None for outputi in cosim_coupling_output):
-                return_flag = True
+            if not return_flag:
+                return_outputs = [None]
+            cosim_outputs, return_flag = self._loop_cosim_monitor_ouput(step, observed, [], return_flag)
             if return_flag:
-                return tuple(return_outputs)
+                # return a tuple of (monitors, state_interfaces, history_interfaces, coupling_interfaces) outputs
+                return tuple(return_outputs + cosim_outputs)
         else:
             if return_flag:
-                return return_outputs
+                # return only monitors" outputs
+                return tuple([return_outputs])
 
     def _loop_cosim_update_state(self, state, cosim_state_updates=[]):
         new_state = numpy.array(state)
@@ -259,10 +268,59 @@ class CoSimulator(Simulator):
 
 # TODO: adjust function to compute fine scale resources' requirements as well, ...if you can! :)
 
-    def run(self, **kwds):
-        """Convenience method to call the simulator with **kwds and collect output data."""
+    def send_initial_condition_to_cosimulator(self):
+        data = self._loop_cosim_monitor_ouput(self.current_step, self.current_state)
+        if data is not None:
+            self.send_data_to_cosimulator(data)
+
+    def receive_data_from_cosimulator(self):
+        return [], []
+
+    def send_data_to_cosimulator(self, data):
+        pass
+
+    def run(self, sync_time=None, send_initial_condition_to_cosimulator=False, **kwds):
+        """Convenience method to call the simulator with **kwds and collect output data.
+            Inherit SequentialCosimulator and modify this method to
+            (a) send TVB data to the other simulator
+            (b) call the other simulator as well,
+            (c) receive data from the other simulator,
+            """
+        if sync_time is None:
+            sync_time = self.integrator.dt
+        simulation_length = kwds["simulation_length"]
+        current_time = self.current_step * self.integrator.dt
+        end_time = current_time + simulation_length
+        kwds["simulation_length"] = sync_time
+        ts, xs = [], []
+        for _ in self.monitors:
+            ts.append([])
+            xs.append([])
+        if send_initial_condition_to_cosimulator and self.tvb_to_cosim_interfaces:
+            self.send_initial_condition_to_cosimulator()
         self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
-        return super(CoSimulator, self).run(**kwds)
+        wall_time_start = time.time()
+        while current_time < end_time:
+            for data in self(**kwds):
+                current_time += sync_time
+                if data is not None:
+                    for tl, xl, t_x in zip(ts, xs, data[0]):
+                        if t_x is not None:
+                            t, x = t_x
+                            tl.append(t)
+                            xl.append(x)
+                    if len(data) > 1:
+                        self.send_data_to_cosimulator(data[1:])
+                cosim_state_updates, cosim_history_updates = self.receive_data_from_cosimulator()
+                kwds["cosim_state_updates"] = cosim_state_updates
+                kwds["cosim_history_updates"] = cosim_history_updates
+        elapsed_wall_time = time.time() - wall_time_start
+        self.log.info("%.3f s elapsed, %.3fx real time", elapsed_wall_time,
+                      elapsed_wall_time * 1e3 / self.simulation_length)
+        for i in range(len(ts)):
+            ts[i] = numpy.array(ts[i])
+            xs[i] = numpy.array(xs[i])
+        return list(zip(ts, xs))
 
 
 class SequentialCosimulator(CoSimulator):
@@ -278,49 +336,42 @@ class SequentialCosimulator(CoSimulator):
     def run_cosimulator(self, sync_time):
         pass
 
-    def receive_data_from_cosimulator(self):
-        return [], []
-
-    def send_data_to_cosimulator(self, data):
-        pass
-
     def cleanup_cosimulator(self):
         pass
 
-    def run_first_step(self, sync_time):
-        # Optionally send the initial condition of TVB...
-        self.run_cosimulator()
-        return self.receive_data_from_cosimulator(sync_time)
-
-    def run(self, sync_time, cleanup_cosimulator=False, **kwds):
+    def run(self, sync_time=None,
+            send_initial_condition_to_cosimulator=False, cleanup_cosimulator=False, **kwds):
         """Convenience method to call the simulator with **kwds and collect output data.
             Inherit SequentialCosimulator and modify this method to
             (a) send TVB data to the other simulator
             (b) call the other simulator as well,
             (c) receive data from the other simulator,
             """
+        if sync_time is None:
+            sync_time = self.integrator.dt
         simulation_length = kwds["simulation_length"]
-        current_time = (self.current_step -1) * self.integrator.dt
+        current_time = self.current_step * self.integrator.dt
         end_time = current_time + simulation_length
         kwds["simulation_length"] = sync_time
         ts, xs = [], []
         for _ in self.monitors:
             ts.append([])
             xs.append([])
+        if send_initial_condition_to_cosimulator and self.tvb_to_cosim_interfaces:
+            self.send_initial_condition_to_cosimulator()
+        self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
         wall_time_start = time.time()
-        # Run first the cosimulator for sync_time
-        cosim_state_updates, cosim_history_updates = self.run_first_step(sync_time)
-        kwds["cosim_state_updates"] = cosim_state_updates
-        kwds["cosim_history_updates"] = cosim_history_updates
         while current_time < end_time:
             for data in self(**kwds):
                 current_time += sync_time
-                for tl, xl, t_x in zip(ts, xs, data[0]):
-                    if t_x is not None:
-                        t, x = t_x
-                        tl.append(t)
-                        xl.append(x)
-                self.send_data_to_cosimulator(data[1:])
+                if data is not None:
+                    for tl, xl, t_x in zip(ts, xs, data[0]):
+                        if t_x is not None:
+                            t, x = t_x
+                            tl.append(t)
+                            xl.append(x)
+                    if len(data) > 1:
+                        self.send_data_to_cosimulator(data[1:])
                 self.run_cosimulator()
                 cosim_state_updates, cosim_history_updates = self.receive_data_from_cosimulator()
                 kwds["cosim_state_updates"] = cosim_state_updates
