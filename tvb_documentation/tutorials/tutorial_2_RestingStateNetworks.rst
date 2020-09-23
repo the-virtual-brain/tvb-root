@@ -31,7 +31,7 @@ the resting state literature.
 This tutorial is a work in progress and will be continuously expanded over
 the next several months. For a tutorial on the same topic which uses the scripting
 interface, with TVB as a Python library, please see `the resting state network
-scripting tutorial <http://nbviewer.jupyter.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s2_ModelingRestingStateNetworks.ipynb>`_.
+scripting tutorial <https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/tutorials/tutorial_s5_ModelingRestingStateNetworks.ipynb>`_.
 
 All of the model configurations and data shown in the following are available
 as a TVB project in the RestingStateNetworks.zip file in the `TVB sharing area
