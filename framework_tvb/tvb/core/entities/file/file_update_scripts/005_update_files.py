@@ -38,7 +38,10 @@ Upgrade script from H5 version 4 to version 5 (for tvb release 2.0)
 import json
 import os
 import sys
+from datetime import datetime
+
 import numpy
+from sqlalchemy import DateTime
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.adapters.analyzers.fcd_adapter import FCDAdapterModel
 from tvb.adapters.analyzers.ica_adapter import ICAAdapterModel
@@ -64,6 +67,7 @@ from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualize
 from tvb.adapters.visualizers.fourier_spectrum import FourierSpectrumModel
 from tvb.adapters.visualizers.wavelet_spectrogram import WaveletSpectrogramVisualizerModel
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
+from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -78,6 +82,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits._h5core import H5File
 from tvb.core.neotraits.h5 import STORE_STRING
+from tvb.core.utils import COMPLEX_TIME_FORMAT
 from tvb.datatypes.sensors import SensorTypes
 
 LOGGER = get_logger(__name__)
@@ -199,12 +204,24 @@ def _migrate_volume(root_metadata, storage_manager):
     _migrate_dataset_metadata(['origin', 'voxel_size'], storage_manager)
 
 
-def _create_new_burst(project_id, root_metadata):
-    burst_config = BurstConfiguration(project_id)
-    burst_config.name = 'simulation_' + str(dao.get_max_burst_id() + 1)
-    dao.store_entity(burst_config)
+def _create_new_burst(burst_params, root_metadata):
+    burst_config = BurstConfiguration(burst_params['fk_project'])
+    burst_config.datatypes_number = burst_params['datatypes_number']
+    burst_config.dynamic_ids = burst_params['dynamic_ids']
+    burst_config.error_message = burst_params['error_message']
+    burst_config.finish_time = datetime.strptime(burst_params['finish_time'], '%Y-%m-%d %H:%M:%S.%f')
+    burst_config.fk_metric_operation_group = burst_params['fk_metric_operation_group']
+    burst_config.fk_operation_group = burst_params['fk_operation_group']
+    burst_config.fk_project = burst_params['fk_project']
+    burst_config.fk_simulation = burst_params['fk_simulation']
+    burst_config.name = burst_params['name']
+    burst_config.range_1 = burst_params['range_1']
+    burst_config.range_2 = burst_params['range_2']
+    burst_config.start_time = datetime.strptime(burst_params['start_time'], '%Y-%m-%d %H:%M:%S.%f')
+    burst_config.status = burst_params['status']
     root_metadata['parent_burst'] = GID_PREFIX + burst_config.gid
-    return burst_config.gid
+
+    return burst_config
 
 
 def update(input_file):
@@ -364,6 +381,19 @@ def update(input_file):
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = RegionMappingImporterModel
+
+    elif class_name == 'RegionVolumeMapping':
+        _pop_lengths(root_metadata)
+        _pop_common_metadata(root_metadata)
+
+        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
+        root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
+
+        dependent_attributes['connectivity'] = root_metadata['connectivity']
+        dependent_attributes['volume'] = root_metadata['volume']
+
+        _migrate_dataset_metadata(['array_data'], storage_manager)
+        view_model_class = NIFTIImporterModel
 
     elif 'Sensors' in class_name:
         root_metadata['number_of_sensors'] = int(root_metadata['number_of_sensors'])
@@ -615,7 +645,8 @@ def update(input_file):
     elif class_name == 'StimuliSurface':
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
 
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
+        changed_values['focal_points_surface'] = eval(root_metadata['focal_points_surface'])
+        changed_values['focal_points_triangles'] = eval(root_metadata['focal_points_triangles'])
         _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
         view_model_class = SurfaceStimulusCreatorModel
 
@@ -652,6 +683,7 @@ def update(input_file):
         f.load_into(datatype)
         generic_attributes = f.load_generic_attributes()
         datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
+        datatype_index.create_date = root_metadata['create_date']
 
         # Get the dependent datatypes
         for attr_name, attr_value in dependent_attributes.items():
@@ -685,8 +717,17 @@ def update(input_file):
 
             # Create a new burst if datatype is a TimeSeries and assign it
             if 'parent_burst_id' in op_parameters:
-                burst_gid = _create_new_burst(operation.fk_launched_in, root_metadata)
-                generic_attributes.parent_burst = burst_gid
+                burst_params = dao.get_burst_for_migration(str(op_parameters['parent_burst_id']))
+                burst_config = _create_new_burst(burst_params, root_metadata)
+                burst_config.simulator_gid = view_model.gid.hex
+                generic_attributes.parent_burst = burst_config.gid
+
+                # Creating BurstConfigH5
+                with BurstConfigurationH5(os.path.join(input_file, os.pardir, 'BurstConfiguration_'
+                                                                              + burst_config.gid + ".h5")) as f:
+                    f.store(burst_config)
+
+                dao.store_entity(burst_config)
                 storage_manager.set_metadata(root_metadata)
 
             # Get parent_burst
@@ -695,19 +736,20 @@ def update(input_file):
                 root_metadata['parent_burst'] = GID_PREFIX + ts.fk_parent_burst
                 storage_manager.set_metadata(root_metadata)
 
-            # Set the view model attributes
+            # Set the view model attributes from op_parameters
             for attr in vm_attributes:
-                if attr not in changed_values:
-                    if attr in op_parameters:
-                        try:
-                            setattr(view_model, attr, op_parameters[attr])
-                        except (TraitTypeError, TraitAttributeError):
-                            pass
-                else:
-                    setattr(view_model, attr, changed_values[attr])
+                if attr not in changed_values and attr in op_parameters:
+                    try:
+                        setattr(view_model, attr, op_parameters[attr])
+                    except (TraitTypeError, TraitAttributeError):
+                        pass
+
+            # Set the view model attributes which couldn't be found in op_parameters
+            for attr in changed_values:
+                setattr(view_model, attr, changed_values[attr])
 
             # Store the ViewModel and the Operation
-
+            h5.store_view_model(view_model, os.path.dirname(input_file))
             operation.view_model_gid = view_model.gid.hex
             dao.store_entity(operation)
 

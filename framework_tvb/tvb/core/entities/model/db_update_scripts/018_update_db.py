@@ -36,9 +36,8 @@ Change of DB structure to TVB 2.0
 """
 import json
 import uuid
-from migrate import create_column, drop_column, UniqueConstraint
+from migrate import create_column, drop_column, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy import Column, String, Integer
-from sqlalchemy.engine import reflection
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import SA_SESSIONMAKER
 from sqlalchemy.sql import text
@@ -58,6 +57,31 @@ OP_DELETED_COLUMN = Column('meta_data', String)
 USER_COLUMNS = [Column('gid', String), Column('display_name', String)]
 
 
+def migrate_range_params(ranges):
+    new_ranges = []
+    for range in ranges:
+        list_range = eval(range)
+
+        # in the range param name all the characters between the first and last underscores (including them)
+        # must be deleted and replaced with a dot
+        param_name = list_range[0]
+        first_us = param_name.index('_')
+        last_us = param_name.rfind('_')
+        string_to_be_replaced = param_name[first_us:last_us + 1]
+        param_name = "\"" + param_name.replace(string_to_be_replaced, '.') + "\""
+
+        # in the old version the range was a list of all values that the param had, but in the new one we
+        # need only the minimum, maximum and step value
+        param_range = list_range[1]
+        range_dict = dict()
+        range_dict['\"lo\"'] = param_range[0]
+        range_dict['\"hi\"'] = param_range[-1]
+        range_dict['\"step\"'] = param_range[1] - param_range[0]
+
+        new_ranges.append([param_name, range_dict])
+    return new_ranges
+
+
 def upgrade(migrate_engine):
     """
     """
@@ -66,6 +90,9 @@ def upgrade(migrate_engine):
     session = SA_SESSIONMAKER()
 
     try:
+        session.execute(text("""ALTER TABLE "BURST_CONFIGURATIONS"
+                                        RENAME TO "BurstConfiguration"; """))
+
         # Dropping tables which don't exist in the new version
         session.execute(text("""DROP TABLE "MAPPED_ARRAY_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_LOOK_UP_TABLE_DATA";"""))
@@ -78,7 +105,6 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "WORKFLOW_VIEW_STEPS";"""))
 
         # Dropping tables which will be repopulated from the H5 files
-        session.execute(text("""DROP TABLE "BURST_CONFIGURATIONS";"""))
         session.execute(text("""DROP TABLE "MAPPED_COHERENCE_SPECTRUM_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_COMPLEX_COHERENCE_SPECTRUM_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_CONNECTIVITY_ANNOTATIONS_DATA";"""))
@@ -92,6 +118,7 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_INDEPENDENT_COMPONENTS_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_LOCAL_CONNECTIVITY_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_REGION_MAPPING_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_REGION_VOLUME_MAPPING_DATA";"""))
         session.execute(text("""DROP TABLE "ALGORITHMS";"""))
         session.execute(text("""DROP TABLE "ALGORITHM_CATEGORIES";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_DATA";"""))
@@ -102,12 +129,12 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_SURFACE_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_VOLUME_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_SENSORS_DATA" """))
+        session.execute(text("""DROP TABLE "MAPPED_SPATIO_TEMPORAL_PATTERN_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_STRUCTURAL_MRI_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_SURFACE_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_VOLUME_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_WAVELET_COEFFICIENTS_DATA";"""))
-        session.execute(text("""DROP TABLE "DATA_TYPES";"""))
-
+        session.commit()
     except Exception as excep:
         LOGGER.exception(excep)
     finally:
@@ -134,11 +161,90 @@ def upgrade(migrate_engine):
 
     UniqueConstraint("gid", table=users_table)
 
+    # Migrating BurstConfiguration
+    burst_config_table = meta.tables['BurstConfiguration']
+    for column in BURST_COLUMNS:
+        create_column(column, burst_config_table)
+
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""ALTER TABLE "BurstConfiguration"
+                                RENAME COLUMN _dynamic_ids TO dynamic_ids"""))
+        session.execute(text("""ALTER TABLE "BurstConfiguration"
+                                RENAME COLUMN _simulator_configuration TO simulator_gid"""))
+
+        ranges = session.execute(text("""SELECT OG.id, OG.range1, OG.range2
+                            FROM "OPERATION_GROUPS" OG""")).fetchall()
+        ranges_1 = []
+        ranges_2 = []
+
+        for r in ranges:
+            ranges_1.append(str(r[1]))
+            ranges_2.append(str(r[2]))
+
+        new_ranges_1 = migrate_range_params(ranges_1)
+        new_ranges_2 = migrate_range_params(ranges_2)
+        operation_groups = session.execute(text("""SELECT * FROM "OPERATION_GROUPS" """)).fetchall()
+
+        for op_g in operation_groups:
+            op = eval(str(session.execute(text("""SELECT fk_operation_group, parameters, meta_data 
+            FROM "OPERATIONS" O WHERE O.fk_operation_group = """ + str(op_g[0]))).fetchone()))
+            burst_id = eval(op[2])['Burst_Reference']
+
+            if 'time_series' in op[1]:
+                session.execute(
+                    text("""UPDATE "BurstConfiguration" SET fk_metric_operation_group = """ + str(op[0]) +
+                         """ WHERE BurstConfiguration.id = """ + str(burst_id)))
+            else:
+                session.execute(
+                    text("""UPDATE "BurstConfiguration" SET fk_operation_group = """ + str(op[0]) +
+                         """ WHERE BurstConfiguration.id = """ + str(burst_id)))
+
+        for i in range(len(ranges_1)):
+            session.execute(text(
+                """UPDATE "BurstConfiguration" SET
+                range1 = '""" + str(new_ranges_1[i]).replace('\'', '') + """',
+                range2 = '""" + str(new_ranges_2[i]).replace('\'', '') + """'
+                WHERE fk_operation_group = """ + str(ranges[i][0])))
+
+        session.execute(text(
+            """UPDATE "BurstConfiguration" SET
+            fk_simulation = (SELECT O.id FROM "OPERATIONS" O, "DATA_TYPES" D
+            WHERE O.id = D.fk_from_operation AND module = 'tvb.datatypes.time_series')"""))
+
+        session.execute(text("""DROP TABLE "DATA_TYPES";"""))
+        session.commit()
+    except Exception:
+        session.close()
+    finally:
+        session.close()
+
+    # Drop old column
+    drop_column(BURST_DELETED_COLUMN, burst_config_table)
+
+    # Create constraints only after the rows are populated
+    fk_burst_config_constraint_1 = ForeignKeyConstraint(
+        ["fk_simulation"],
+        ["OPERATIONS.id"],
+        table=burst_config_table)
+    fk_burst_config_constraint_2 = ForeignKeyConstraint(
+        ["fk_operation_group"],
+        ["OPERATION_GROUPS.id"],
+        table=burst_config_table)
+    fk_burst_config_constraint_3 = ForeignKeyConstraint(
+        ["fk_metric_operation_group"],
+        ["OPERATION_GROUPS.id"],
+        table=burst_config_table)
+
+    fk_burst_config_constraint_1.create()
+    fk_burst_config_constraint_2.create()
+    fk_burst_config_constraint_3.create()
+
     # MIGRATING Operations #
     session = SA_SESSIONMAKER()
     try:
         burst_ref_metadata = session.execute(text("""SELECT id, parameters, meta_data FROM "OPERATIONS"
-                WHERE meta_data like "%Burst_Reference%" """)).fetchall()
+                    WHERE meta_data like "%Burst_Reference%" """)).fetchall()
 
         for metadata in burst_ref_metadata:
             parameters_dict = eval(str(metadata[1]))
@@ -149,7 +255,7 @@ def upgrade(migrate_engine):
                                  """' WHERE id = """ + str(metadata[0])))
 
         session.execute(text("""ALTER TABLE "OPERATIONS"
-                                RENAME COLUMN parameters TO view_model_gid"""))
+                                    RENAME COLUMN parameters TO view_model_gid"""))
         session.commit()
     except Exception as excep:
         LOGGER.exception(excep)

@@ -125,3 +125,28 @@ class BurstDAO(RootDAO):
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
         return burst
+
+    def get_burst_for_migration(self, burst_id):
+        """
+        This method is supposed to only be used when migrating from version 4 to version 5.
+        It finds a BurstConfig in the old format (when it did not inherit from HasTraitsIndex), deletes it
+        and returns its parameters.
+        """
+        burst_params = self.session.execute("""SELECT * FROM BurstConfiguration WHERE id = """ + burst_id).fetchone()
+        burst_params_dict = {}
+        burst_params_dict['datatypes_number'] = burst_params[0]
+        burst_params_dict['dynamic_ids'] = burst_params[1]
+        burst_params_dict['range_1'] = burst_params[2]
+        burst_params_dict['range_2'] = burst_params[3]
+        burst_params_dict['fk_project'] = burst_params[5]
+        burst_params_dict['name'] = burst_params[6]
+        burst_params_dict['status'] = burst_params[7]
+        burst_params_dict['error_message'] = burst_params[8]
+        burst_params_dict['start_time'] = burst_params[9]
+        burst_params_dict['finish_time'] = burst_params[10]
+        burst_params_dict['fk_simulation'] = burst_params[12]
+        burst_params_dict['fk_operation_group'] = burst_params[13]
+        burst_params_dict['fk_metric_operation_group'] = burst_params[14]
+        self.session.execute("""DELETE FROM BurstConfiguration WHERE id = """ + burst_id)
+        self.session.commit()
+        return burst_params_dict
