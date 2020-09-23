@@ -82,7 +82,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits._h5core import H5File
 from tvb.core.neotraits.h5 import STORE_STRING
-from tvb.core.utils import COMPLEX_TIME_FORMAT
+from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
 from tvb.datatypes.sensors import SensorTypes
 
 LOGGER = get_logger(__name__)
@@ -231,7 +231,7 @@ def update(input_file):
 
     # The first step is to check based on the path if this function call is part of the migration of the whole storage
     # folder or just one datatype (in the first case the second to last element in the path is a number
-    split_path = input_file.split('\\')
+    split_path = input_file.split(os.path.sep)
     storage_migrate = True
     try:
         # Change file names only for storage migration
@@ -638,15 +638,15 @@ def update(input_file):
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
         dependent_attributes['connectivity'] = root_metadata['connectivity']
-        changed_values['weight'] = root_metadata['weight']
+        changed_values['weight'] =numpy.asarray(eval(root_metadata['weight']), dtype=numpy.float64)
         _migrate_stimuli(root_metadata, storage_manager, ['weight'])
         view_model_class = RegionStimulusCreatorModel
 
     elif class_name == 'StimuliSurface':
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
 
-        changed_values['focal_points_surface'] = eval(root_metadata['focal_points_surface'])
-        changed_values['focal_points_triangles'] = eval(root_metadata['focal_points_triangles'])
+        dependent_attributes['surface'] = root_metadata['surface']
+        changed_values['focal_points_triangles'] = numpy.asarray(eval(root_metadata['focal_points_triangles']), dtype=numpy.int)
         _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
         view_model_class = SurfaceStimulusCreatorModel
 
@@ -718,17 +718,18 @@ def update(input_file):
             # Create a new burst if datatype is a TimeSeries and assign it
             if 'parent_burst_id' in op_parameters:
                 burst_params = dao.get_burst_for_migration(str(op_parameters['parent_burst_id']))
-                burst_config = _create_new_burst(burst_params, root_metadata)
-                burst_config.simulator_gid = view_model.gid.hex
-                generic_attributes.parent_burst = burst_config.gid
+                if burst_params is not None:
+                    burst_config = _create_new_burst(burst_params, root_metadata)
+                    burst_config.simulator_gid = view_model.gid.hex
+                    generic_attributes.parent_burst = burst_config.gid
 
-                # Creating BurstConfigH5
-                with BurstConfigurationH5(os.path.join(input_file, os.pardir, 'BurstConfiguration_'
+                    # Creating BurstConfigH5
+                    with BurstConfigurationH5(os.path.join(input_file, os.pardir, 'BurstConfiguration_'
                                                                               + burst_config.gid + ".h5")) as f:
-                    f.store(burst_config)
+                        f.store(burst_config)
 
-                dao.store_entity(burst_config)
-                storage_manager.set_metadata(root_metadata)
+                    dao.store_entity(burst_config)
+                    storage_manager.set_metadata(root_metadata)
 
             # Get parent_burst
             if 'time_series' in op_parameters:

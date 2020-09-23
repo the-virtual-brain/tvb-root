@@ -133,6 +133,10 @@ class BurstDAO(RootDAO):
         and returns its parameters.
         """
         burst_params = self.session.execute("""SELECT * FROM BurstConfiguration WHERE id = """ + burst_id).fetchone()
+
+        if burst_params is None:
+            return None
+
         burst_params_dict = {}
         burst_params_dict['datatypes_number'] = burst_params[0]
         burst_params_dict['dynamic_ids'] = burst_params[1]
