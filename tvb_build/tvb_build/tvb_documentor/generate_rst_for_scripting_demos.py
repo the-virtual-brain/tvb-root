@@ -38,7 +38,7 @@ import glob
 here = os.path.abspath(os.path.dirname(__file__))
 demo_folder = os.path.sep.join([here, '..', '..', '..', 'tvb_documentation', 'demos'])
 
-nburl = 'http://nbviewer.ipython.org/url/docs.thevirtualbrain.org/demos'
+nburl = 'https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos'
 
 demos = []
 for ipynb_fname in glob.glob(os.path.join(demo_folder, '*.ipynb')):
