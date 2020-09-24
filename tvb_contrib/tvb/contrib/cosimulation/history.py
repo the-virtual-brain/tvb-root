@@ -16,8 +16,9 @@ class CosimHistory(DenseHistory):
 
     buffer = NDArray(('n_time', 'n_var', 'n_node', 'n_mode'), 'f', read_only=False)
 
-    def __init__(self, weights, delays, cvars, n_mode, n_var=None):
+    def __init__(self, weights, delays, cvars, n_mode, bound_and_clamp, n_var=None):
         super(CosimHistory, self).__init__(weights, delays, cvars, n_mode)
+        self.bound_and_clamp = bound_and_clamp
         if n_var is None:
             # Assuming all state variables are also coupling variables:
             self.n_var = self.n_cvar
@@ -48,3 +49,4 @@ class CosimHistory(DenseHistory):
            - and for the specified time steps."""
         for step, new_state in zip(steps, new_states):
             self.buffer[step % self.n_time, vois, proxy_inds] = new_state
+            self.bound_and_clamp(self.buffer[step % self.n_time])

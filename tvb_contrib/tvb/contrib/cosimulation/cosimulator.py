@@ -142,7 +142,8 @@ class CoSimulator(Simulator):
                 self.connectivity.idelays,
                 self.model.cvar,
                 self.model.number_of_modes,
-                self.model.nvar,
+                self.bound_and_clamp,
+                self.model.nvar
             )
         else:
             # create history query implementation
@@ -263,19 +264,13 @@ class CoSimulator(Simulator):
                 return_flag = True
         return outputs, return_flag
 
-    def _loop_cosim_monitor_ouput(self, step, observed, return_outputs=[], return_flag=False):
+    def _loop_cosim_monitor_output(self, step, observed, return_outputs=[], return_flag=False):
         """This method records from all cosimulation monitors"""
-        cosim_state_output, return_flag = self._loop_record_monitors(step, observed,
-                                                                     self.tvb_to_cosim_interfaces.state_interfaces,
-                                                                     return_flag)
-        if len(cosim_state_output):
-            return_outputs += cosim_state_output
-
-        cosim_history_output, return_flag = self._loop_record_monitors(step, observed,
-                                                                        self.tvb_to_cosim_interfaces.history_interfaces,
-                                                                        return_flag)
-        if len(cosim_history_output):
-            return_outputs += cosim_history_output
+        cosim_output, return_flag = self._loop_record_monitors(step, observed,
+                                                               self.tvb_to_cosim_interfaces.interfaces,
+                                                               return_flag)
+        if len(cosim_output):
+            return_outputs += cosim_output
         return return_outputs, return_flag
 
     def _loop_monitor_output(self, step, state):
@@ -289,7 +284,7 @@ class CoSimulator(Simulator):
         observed = self.model.observe(state)
         return_outputs, return_flag = self._loop_record_monitors(step, observed, self.monitors)
         if self.tvb_to_cosim_interfaces:
-            cosim_outputs, return_flag = self._loop_cosim_monitor_ouput(step, observed, [], return_flag)
+            cosim_outputs, return_flag = self._loop_cosim_monitor_output(step, observed, [], return_flag)
             if return_flag:
                 # return a tuple of (monitors, cosim_monitors) outputs
                 return tuple([return_outputs, cosim_outputs])
@@ -365,7 +360,7 @@ class CoSimulator(Simulator):
 
     def send_initial_condition_to_cosimulator(self):
         """This method sends the initial condition to the co-simulator."""
-        data, return_flag = self._loop_cosim_monitor_ouput(self.current_step, self.current_state)
+        data, return_flag = self._loop_cosim_monitor_output(self.current_step, self.current_state)
         if return_flag:
             self.send_data_to_cosimulator(data)
 
