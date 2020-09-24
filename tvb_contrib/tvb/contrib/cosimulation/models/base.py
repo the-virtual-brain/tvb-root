@@ -21,23 +21,10 @@ class CosimModel(Model):
                                  doc=("Indices of proxy nodes' per cosimulation state variable, "
                                       "the state of which is updated (i.e., overwritten) during cosimulation."),)
 
-    cosim_cvars = NArray(
-        dtype=int,
-        label="Cosimulation coupling variables",
-        doc=("Indices of coupling variables that"
-             "should be updated (i.e., overwriten) during cosimulation."),
-        required=False)
-
-    cosim_cvars_proxy_inds = List(of=NArray,
-                                 doc=("Indices of proxy nodes' per cosimulation coupling variable, "
-                                      "the state of which is updated (i.e., overwritten) during cosimulation."), )
 
     _cosim_nvar = None
-    _cosim_ncvar = None
     _tot_cosim_vars_proxy_inds = None
-    _tot_cosim_cvars_proxy_inds = None
     _n_cosim_vars_proxy_inds = None
-    _n_cosim_cvars_proxy_inds = None
 
     def from_model(self, model):
         """
@@ -59,25 +46,11 @@ class CosimModel(Model):
         return self._cosim_nvar
 
     @property
-    def cosim_ncvar(self):
-        """ The number of coupling variables in this model that are updated from cosimulation. """
-        if not self._cosim_ncvar:
-            self._cosim_ncvar = len(numpy.unique(flatten_list(self.cosim_cvars)))
-        return self._cosim_ncvar
-
-    @property
     def tot_cosim_vars_proxy_inds(self):
         """ All the unique proxy region nodes indices for state variables updated from cosimulation. """
         if not self._tot_cosim_vars_proxy_inds:
             self._tot_cosim_vars_proxy_inds = numpy.unique(flatten_list(self.cosim_vars_proxy_inds))
         return self._tot_cosim_vars_proxy_inds
-
-    @property
-    def tot_cosim_cvars_proxy_inds(self):
-        """ All the unique proxy region nodes indices for coupling variables updated from cosimulation. """
-        if not self._tot_cosim_cvars_proxy_inds:
-            self._tot_cosim_cvars_proxy_inds = numpy.unique(flatten_list(self.cosim_cvars_proxy_inds))
-        return self._tot_cosim_cvars_proxy_inds
 
     @property
     def n_cosim_vars_proxy_inds(self):
@@ -86,22 +59,12 @@ class CosimModel(Model):
             self._n_cosim_vars_proxy_inds = len(self.tot_cosim_vars_proxy_inds)
         return self._n_cosim_vars_proxy_inds
 
-    @property
-    def n_cosim_cvars_proxy_inds(self):
-        """ The total number of proxy region nodes for coupling variables updated from cosimulation. """
-        if not self._n_cosim_cvars_proxy_inds:
-            self._n_cosim_cvars_proxy_inds = len(self.tot_cosim_cvars_proxy_inds)
-        return self._n_cosim_cvars_proxy_inds
-
     def configure(self):
         "Configure base CosimModel and compute the cosimulation related attributes."
         super(CosimModel).configure()
         self._cosim_nvar = len(self.cosim_vars)
-        self._cosim_ncvar = len(self.cosim_cvars)
         self._tot_cosim_cvars_proxy_inds = numpy.unique(flatten_list(self.cosim_cvars_proxy_inds))
-        self._tot_cosim_vars_proxy_inds = numpy.unique(flatten_list(self.cosim_vars_proxy_inds))
         self._n_cosim_vars_proxy_inds = len(self.tot_cosim_vars_proxy_inds)
-        self._n_cosim_cvars_proxy_inds = len(self.tot_cosim_cvars_proxy_inds)
 
 
 class CosimModelNumbaDfun(CosimModel, ModelNumbaDfun):
