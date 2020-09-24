@@ -1,224 +1,156 @@
 # -*- coding: utf-8 -*-
-import os
 import numpy
-from tvb.basic.neotraits.api import Attr, NArray
+from tvb.basic.neotraits.api import Attr, Float
+from tvb.basic.neotraits.ex import TraitAttributeError
 from tvb.simulator.common import iround
-from tvb.simulator.monitors import Monitor
-from tvb.simulator.history import BaseHistory, SparseHistory
+from tvb.simulator.history import BaseHistory
 from tvb.simulator.coupling import Coupling, Linear
+from tvb.simulator.monitors import Monitor
+from tvb.contrib.cosimulation.history import CosimHistory
 
 
 class CosimMonitor(Monitor):
 
-    """Cosimulation Monitor base class."""
+    """Class that wraps around any TVB Monitor class"""
 
-    proxy_inds = NArray(
-        dtype=numpy.int,
-        label="Indices of TVB proxy nodes",
-        required=True,
-    )
-
-    number_of_proxy_nodes = Attr(field_type=int, required=True,
-                                 default=0)
-
-    def __init__(self, **kwargs):
-        super(CosimMonitor, self).__init__(**kwargs)
-
-    def config_for_sim(self, simulator):
-        """Method to configure the Monitor
-           and compute the number_of_proxy_nodes, from user defined proxy_inds"""
-        self.number_of_proxy_nodes = len(self.proxy_inds)
-        super(CosimMonitor, self).config_for_sim(simulator)
-
-
-class CosimStateMonitor(CosimMonitor):
-    """ CosimStateMonitor class:
-        Monitors the value for the model's variable/s of interest over all
-        the nodes at each sampling period. Time steps that are not modulo ``istep``
-        are stored temporarily in the ``_stock`` attribute and then that temporary
-        store is returned when time step is modulo ``istep``.
-
-    """
-
-    def __init__(self, **kwargs):
-        super(CosimStateMonitor, self).__init__(**kwargs)
+    def from_tvb_monitor(self, monitor, simulator):
+        """
+        Create a CosimMonitor by copying the attributes of an instance of a TVB Monitor class
+        :param
+            model: TVB monitor
+            simulator: TVB co-simulator
+        """
+        self._tvb_monitor_class = monitor.__class__
+        for key, value in vars(monitor).items():
+            try:
+                setattr(self, key, value)
+            except TraitAttributeError:
+                # variable final don't need to copy
+                pass
+        self.configure()
 
     def config_for_sim(self, simulator):
-        """Method to
-           - configure the Monitor
-           - compute the number_of_proxy_nodes, from user defined proxy_inds,
-           - and determine initialize _stock buffer."""
-        super(CosimStateMonitor, self).config_for_sim(simulator)
-        stock_size = (self.istep, self.voi.shape[0],
-                      self.number_of_proxy_nodes,
-                      simulator.model.number_of_modes)
-        self.log.debug("CosimMonitor stock_size is %s" % (str(stock_size),))
-        self._stock = numpy.zeros(stock_size)
+        """Configure monitor for given simulator.
+            Grab the Simulator's integration step size.
+            Set the monitor's variables
+            of interest based on the Monitor's 'variables_of_interest' attribute, if
+            it was specified, otherwise use the ones specified
+            for the Model. Calculate the number of integration steps (isteps)
+            between returns by the record method. This method is called from within
+            the the Simulator's configure() method.
+        """
+        self._tvb_monitor_class.config_for_sim(self, simulator)
 
     def sample(self, step, state):
+        """Sample using the TVB Monitor class sampling method"""
+        return self._tvb_monitor_class.sample(step, state)
+
+
+class CosimHistoryMonitor(CosimMonitor):
+
+    """Class that wraps around any TVB Monitor class in order to impose recording only every period = sync_time,
+       when the TVB state is assumed to be updated by the other co-simulator,
+       for the time [current_time - sync_time, current_time]."""
+
+    sync_time = Float(
+        label="Cosimulation monitor synchronization time (ms)",  # order = 10
+        default=0.9765625,  # ms. 0.9765625 => 1024Hz #ms, 0.5 => 2000Hz
+        required=True,
+        doc="""Cosimulation monitor synchronization time in milliseconds, must be an integral multiple
+                of integration-step size. As a guide: 2048 Hz => 0.48828125 ms ;  
+                1024 Hz => 0.9765625 ms ; 512 Hz => 1.953125 ms.""")
+
+    history = Attr(
+        field_type=CosimHistory,
+        label="Cosimulation history",
+        default=None,
+        required=True,
+        doc="""A history of the whole TVB state for the cosimulation synchronization time.""")
+
+    def from_tvb_monitor(self, monitor, simulator, sync_time):
         """
-        Samples from current state for
-        - state variables of indices voi,
-        - and region nodes of indices proxy_inds,
-        if integration step corresponds to sampling period, Otherwise
-        just update the monitor's stock. When the step corresponds to the sample/synchronization
-        period, the ``_stock`` is returned.
+        Create a CosimMonitor by copying the attributes of an instance of a TVB Monitor class
+        :param
+            model: TVB monitor
+            sync_time: cosimulation synchronization time
+            simulator: TVB co-simulator
         """
-        # Store the current state into stock
-        self._stock[((step % self.istep) - 1), :, :] = state[self.voi][:, self.proxy_inds]
-        if step % self.istep == 0:
-            # Create the time vector and sample, if step % istep == 0
-            time = numpy.arange(step - self.istep + 1, step + 1) * self.dt
-            return [time, self._stock]
+        self.sync_time = sync_time
+        self.history = simulator.history
+        super(CosimHistoryMonitor, self).from_tvb_monitor(monitor, simulator)
 
-
-class CosimStateMonitorToFile(CosimStateMonitor):
-    """ CosimStateMonitorToFile class:
-            Monitors the value for the model's variable/s of interest over all
-            the nodes at each sampling period. Time steps that are not modulo ``istep``
-            are stored temporarily in the ``_stock`` attribute and then that temporary
-            store is returned when time step is modulo ``istep``.
-
-            Records to a file by overloading the record method.
-
+    def config_for_sim(self, simulator):
+        """Configure monitor for given simulator.
+                    Grab the Simulator's integration step size.
+                    Set the monitor's variables
+                    of interest based on the Monitor's 'variables_of_interest' attribute, if
+                    it was specified, otherwise use the cvar specified
+                    for the Model. Calculate the number of integration steps (isteps)
+                    between returns by the record method. This method is called from within
+                    the the Simulator's configure() method.
         """
+        self._tvb_monitor_class.config_for_sim(self, simulator)
+        self.history = simulator.history
+        if self.istep > self.history.n_time:
+            raise ValueError("Monitor period %g cannot be longer than "
+                             "the history buffer time length %g!"
+                             % (self.period, self.dt * self.history.n_time))
+        self.sync_istep = iround(self.sync_time / simulator.integrator.dt)
+        if self.sync_istep > self.history.n_time:
+            raise ValueError("Synchronization time %g for cosimulation update cannot "
+                             "be longer than the history buffer time length %g!"
+                             % (self.sync_time, self.dt * self.history.n_time))
 
-    path = Attr(field_type=os.PathLike, required=False, default="")
+    def sample(self, step, state):
+        """Force sampling every sync_time and for all output (for vois only) generated during sync_time."""
+        # If step % sync_istep is 0...
+        if step % self.sync_istep == 0:
+            # ...compute the last ...
+            end_step = step + 1
+            # ...and first step of the sampling period...
+            start_step = end_step - self.sync_istep
+            # ...and loop through the sampling period...
+            time = []
+            data = []
+            for _step in range(start_step, end_step):
+                # ...to provide states to the sample method of the TVB monitor...
+                _output = self._tvb_monitor_class.sample(self,
+                                                        _step,
+                                                        self.history.query_state(_step))
+                if _output is not None:
+                    time.append(_output[0])
+                    data.append(_output[1])
+            if len(time) > 0:
+                # ...and form the final output of record, if any...
+                return [time, data]
 
-    def record(self, step, state):
-        """Method to record monitor output to a file."""
-        raise NotImplementedError
 
-
-class CosimStateMonitorToMPI(CosimStateMonitor):
-    """ CosimStateMonitorToMPI class:
-            Monitors the value for the model's variable/s of interest over all
-            the nodes at each sampling period. Time steps that are not modulo ``istep``
-            are stored temporarily in the ``_stock`` attribute and then that temporary
-            store is returned when time step is modulo ``istep``.
-
-            Records to a MPI port by overloading the record method.
+class CouplingMonitor(Monitor):
     """
+        Monitor that at every period time computes and returns node coupling
+        for all past and present time steps equal to period time.
 
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def record(self, step, state):
-        """Method to record monitor output to a MPI port."""
-        raise NotImplementedError
-
-
-class CosimHistoryMonitor(Monitor):
-    """ CosimHistoryMonitor class:
-        Monitors the history for the model's coupling variable/s of interest
-        over TVB proxy nodes at each sampling period. Time steps that are not modulo ``istep``
-        are stored temporarily in the ``_stock`` attribute and then that temporary
-        store is returned when time step is modulo ``istep``.
     """
 
     history = Attr(
         field_type=BaseHistory,
         label="Simulator history",
-        default=SparseHistory(),
-        required=True,
-        doc="""A tvb.simulator.history""")
-
-    def config_for_sim(self, simulator):
-        """Configure monitor for given simulator and compute the number_of_proxy_nodes, from user defined proxy_inds.
-
-                Grab the Simulator's integration step size and history instance.
-                Set the monitor's variables
-                of interest based on the Monitor's 'variables_of_interest' attribute, if
-                it was specified, otherwise use the cvar specified
-                for the Model. Calculate the number of integration steps (isteps)
-                between returns by the record method. This method is called from within
-                the Simulator's configure() method.
-        """
-        self.voi = self.variables_of_interest
-        if self.voi is None or self.voi.size == 0:
-            self.voi = numpy.r_[:len(simulator.model.cvar)]
-        self.history = simulator.history
-        self.dt = simulator.integrator.dt
-        self.istep = iround(self.period / self.dt)
-        if self.istep > self.history.n_time:
-            raise ValueError("Synchronization time %g for cosimulation update cannot "
-                             "be longer than the history buffer time length %g!"
-                             % (self.period, self.dt * self.n_time))
-
-    def sample(self, step, state):
-        """
-        Samples from history's current state for the time length of the sampling period and for
-        - state variables of indices voi,
-        - and region nodes of indices proxy_inds,
-        if integration step corresponds to sampling period.
-        """
-        # If step % istep is 0...
-        if step % self.istep == 0:
-            # ...compute the first ...
-            start_step = step - self.istep + 1
-            # ...and last step of the sampling period...
-            end_step = step + 1
-            # ...and loop through the sampling period by quering the history's current_state:
-            output = []
-            for _step in range(start_step, end_step):
-                output.append(self.history.query(_step)[0][self.voi][:, self.proxy_inds])
-            # Finally, form the time vector and return the sample:
-            return [numpy.arange(start_step, end_step) * self.dt,
-                    numpy.array(output)]
-
-
-class CosimHistoryMonitorToFile(CosimHistoryMonitor):
-
-    """ CosimHistoryMonitorToFile class:
-            Monitors the history for the model's coupling variable/s of interest
-            over TVB proxy nodes at each sampling period. Time steps that are not modulo ``istep``
-            are stored temporarily in the ``_stock`` attribute and then that temporary
-            store is returned when time step is modulo ``istep``.
-            Records to a file by overloading the record method.
-    """
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def record(self, step, state):
-        """Method to record monitor output to a file."""
-        raise NotImplementedError
-
-
-class CosimHistoryMonitorToMPI(CosimHistoryMonitor):
-
-    """ CosimHistoryMonitorToFile class:
-            Monitors the history for the model's coupling variable/s of interest
-            over TVB proxy nodes at each sampling period. Time steps that are not modulo ``istep``
-            are stored temporarily in the ``_stock`` attribute and then that temporary
-            store is returned when time step is modulo ``istep``.
-            Records to a MPI port by overloading the record method.
-    """
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def record(self, step, state):
-        """Method to record monitor output to a MPI port."""
-        raise NotImplementedError
-
-
-class CosimCouplingMonitor(CosimHistoryMonitor):
-    """
-        Monitors the current node coupling for the model's coupling variable/s of interest
-        over TVB proxy nodes at each sampling period.
-
-    """
+        default=None,
+        required=False,
+        doc="""Simulator history.""")
 
     coupling = Attr(
         field_type=Coupling,
         label="Simulator's Long-range coupling function",
         default=Linear(),
-        required=True,
+        required=False,
         doc="""The coupling function is applied to the activity propagated
             between regions by the ``Long-range connectivity`` before it enters the local
             dynamic equations of the Model. Its primary purpose is to 'rescale' the
             incoming activity to a level appropriate to Model.""")
 
     def config_for_sim(self, simulator):
-        """Configure monitor for given simulator and compute the number_of_proxy_nodes, from user defined proxy_inds.
+        """Configure monitor for given simulator.
 
                 Grab the Simulator's integration step size, history and coupling instances.
                 Set the monitor's variables
@@ -228,42 +160,78 @@ class CosimCouplingMonitor(CosimHistoryMonitor):
                 between returns by the record method. This method is called from within
                 the the Simulator's configure() method.
         """
-        super(CosimCouplingMonitor, self).config_for_sim(simulator)
+        self.dt = simulator.integrator.dt
+        self.istep = iround(self.period / self.dt)
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.cvar)]
+        self.history = simulator.history
+        if self.istep > self.history.n_time:
+            raise ValueError("Synchronization time %g for cosimulation update cannot "
+                             "be longer than the history buffer time length %g!"
+                             % (self.period, self.dt * self.history.n_time))
         self.coupling = simulator.coupling
 
     def sample(self, step, state):
         """
-        Samples after computing node coupling from history for the time length of the sampling period and for
-        - state variables of indices voi,
-        - and region nodes of indices proxy_inds,
+        Computes and samples node coupling from history
+        for the time length of the sampling period
+        and for state variables of indices voi,
         if integration step corresponds to sampling period.
         """
         # If step % istep is 0...
         if step % self.istep == 0:
-            # ...compute the first ...
-            start_step = step - self.istep + 1
-            # ...and last step of the sampling period...
+            # ...compute the last ...
             end_step = step + 1
+            # ...and first step of the sampling period...
+            start_step = end_step - self.sync_istep
             # ...and loop through the sampling period by computing node coupling from history:
             output = []
             for _step in range(start_step, end_step):
-                output.append(self.coupling(_step, self.history)[self.voi][:, self.proxy_inds])
+                output.append(self.coupling(_step, self.history)[self.voi])
             # Finally, form the time vector and return the sample:
             return [numpy.arange(start_step, end_step) * self.dt,
                     numpy.array(output)]
 
 
-class CosimCouplingMonitorToFile(CosimCouplingMonitor):
+class CouplingCosimMonitor(CouplingMonitor, CosimHistoryMonitor):
 
-    path = Attr(field_type=os.PathLike, required=False, default="")
+    @property
+    def sync_time(self):
+        return self.period
 
-    def record(self, step, state):
-        raise NotImplementedError
+    def from_tvb_monitor(self, monitor, simulator, sync_time):
+        """
+        Create a CosimTVBMonitor by copying the attributes of an instance of a TVB Monitor class
+        :param
+            model: TVB monitor
+            sync_time: cosimulation synchronization time
+            simulator: TVB co-simulator
+            Force period to be equal to sync_time.
+        """
+        self.period = sync_time
+        self.history = simulator.history
+        self.coupling = simulator.coupling
+        super(CosimHistoryMonitor, self).from_tvb_monitor(monitor, simulator)
 
+    def config_for_sim(self, simulator):
+        """Configure monitor for given simulator.
 
-class CosimCouplingMonitorToMPI(CosimCouplingMonitor):
+                Grab the Simulator's integration step size, history and coupling instances.
+                Set the monitor's variables
+                of interest based on the Monitor's 'variables_of_interest' attribute, if
+                it was specified, otherwise use the cvar specified
+                for the Model. Calculate the number of integration steps (isteps)
+                between returns by the record method. This method is called from within
+                the the Simulator's configure() method.
+        """
+        CouplingMonitor.config_for_sim(self, simulator)
 
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def record(self, step, state):
-        raise NotImplementedError
+    def sample(self, step, state):
+        """
+                Computes and samples node coupling from history
+                for the time length of sync_time
+                and for state variables of indices voi,
+                if integration step corresponds to sync_time period.
+        """
+        CouplingMonitor.sample(self, step, state)
