@@ -42,12 +42,14 @@ import numpy
 
 from tvb.basic.neotraits.api import Attr
 from tvb.simulator.simulator import Simulator
-from tvb.simulator import models
+from tvb.simulator.common import numpy_add_at
+from tvb.simulator.history import SparseHistory
 from tvb.simulator.models.base import ModelNumbaDfun
+from tvb.contrib.cosimulation.history import CosimHistory
+from tvb.contrib.cosimulation.monitors import CosimHistoryMonitor
 from tvb.contrib.cosimulation.tvb_to_cosim_interfaces import TVBtoCosimInterfaces
 from tvb.contrib.cosimulation.cosim_to_tvb_interfaces import CosimToTVBInterfaces
 from tvb.contrib.cosimulation.models.base import CosimModel, CosimModelNumbaDfun
-from tvb.contrib.cosimulation.models.wilson_cowan_constraint import WilsonCowan
 
 
 class CoSimulator(Simulator):
@@ -66,55 +68,140 @@ class CoSimulator(Simulator):
         required=False,
         doc="""Interfaces from TVB to a cosimulation outlet (i.e., translator level or another simulator""")
 
-    model = Attr(
-        field_type=models.Model,
-        label="Local dynamic model",
-        default=WilsonCowan(),
-        required=True,
-        doc="""A tvb.simulator.Model object which describe the local dynamic
-            equations, their parameters, and, to some extent, where connectivity
-            (local and long-range) enters and which state-variables the Monitors
-            monitor. By default the 'WilsonCowan' model with constraints is used. Read the
-            Scientific documentation to learn more about this model.""")
-
     use_numba = True
 
     PRINT_PROGRESSION_MESSAGE = True
 
-    def _eliminate_exclusive_proxy_nodes_connectivity(self, proxy_inds):
-        """This method will set the proxy nodes mutual connectivity to zero"""
-        self.connectivity.weights[proxy_inds][:, proxy_inds] = 0.0
+    def _configure_history(self, initial_conditions):
+        """
+        Set initial conditions for the simulation using either the provided
+        initial_conditions or, if none are provided, the model's initial()
+        method. This method is called durin the Simulator's __init__().
 
-    def _configure_cosim_interfaces(self):
-        """This method will run all the configuration methods of all TVB <-> Cosimulator interfaces,
-           as well as generated a CosimModel class from the original Model class,
-           and set the cosim_(c)vars and cosim_(c)vars_proxy_inds properties of the CosimModel class,
-           based on the respective vois and proxy_inds of all cosim_to_tvb_interfaces."""
-        if self.tvb_to_cosim_interfaces:
-            for state_interface in self.tvb_to_cosim_interfaces.state_interfaces:
-                state_interface.config_for_sim(self)
-            for history_interface in self.tvb_to_cosim_interfaces.history_interfaces:
-                history_interface.config_for_sim(self)
-        if self.cosim_to_tvb_interfaces:
-            if isinstance(self.model, ModelNumbaDfun):
-                self.model = CosimModelNumbaDfun.from_model(self.model)
+        Any initial_conditions that are provided as an argument are expected
+        to have dimensions 1, 2, and 3 with shapse corresponding to the number
+        of state_variables, nodes and modes, respectively. If the provided
+        inital_conditions are shorter in time (dim=0) than the required history
+        the model's initial() method is called to make up the difference.
+
+        """
+        rng = numpy.random
+        if hasattr(self.integrator, 'noise'):
+            rng = self.integrator.noise.random_stream
+        # Default initial conditions
+        if initial_conditions is None:
+            n_time, n_svar, n_node, n_mode = self.good_history_shape
+            self.log.info('Preparing initial history of shape %r using model.initial()', self.good_history_shape)
+            if self.surface is not None:
+                n_node = self.number_of_nodes
+            history = self.model.initial(self.integrator.dt, (n_time, n_svar, n_node, n_mode), rng)
+        # ICs provided
+        else:
+            # history should be [timepoints, state_variables, nodes, modes]
+            self.log.info('Using provided initial history of shape %r', initial_conditions.shape)
+            n_time, n_svar, n_node, n_mode = ic_shape = initial_conditions.shape
+            nr = self.connectivity.number_of_regions
+            if self.surface is not None and n_node == nr:
+                initial_conditions = initial_conditions[:, :, self._regmap]
+                return self._configure_history(initial_conditions)
+            elif ic_shape[1:] != self.good_history_shape[1:]:
+                raise ValueError("Incorrect history sample shape %s, expected %s"
+                                 % (ic_shape[1:], self.good_history_shape[1:]))
             else:
-                self.model = CosimModel.from_model(self.model)
-            for state_interface in self.cosim_to_tvb_interfaces.state_interfaces:
-                state_interface.config_for_sim(self)
-                self.model.cosim_vars.append(state_interface.voi)
-                self.model.cosim_vars_proxy_inds.append(state_interface.proxy_inds)
-                if state_interface.exclusive:
-                    self._eliminate_exclusive_proxy_nodes_connectivity(state_interface.proxy_inds)
-            self.connectivity.configure()
-            for history_interface in self.cosim_to_tvb_interfaces.history_interfaces:
-                history_interface.config_for_sim(self)
-                self.model.cosim_cvars.append(history_interface.voi)
-                self.model.cosim_cvars_proxy_inds.append(history_interface.proxy_inds)
-            self.model.configure()
-            self.model.update_derived_parameters()
+                if ic_shape[0] >= self.horizon:
+                    self.log.debug("Using last %d time-steps for history.", self.horizon)
+                    history = initial_conditions[-self.horizon:, :, :, :].copy()
+                else:
+                    self.log.debug('Padding initial conditions with model.initial')
+                    history = self.model.initial(self.integrator.dt, self.good_history_shape, rng)
+                    shift = self.current_step % self.horizon
+                    history = numpy.roll(history, -shift, axis=0)
+                    history[:ic_shape[0], :, :, :] = initial_conditions
+                    history = numpy.roll(history, shift, axis=0)
+                self.current_step += ic_shape[0] - 1
 
-    def configure(self, full_configure=True):
+        # Make sure that history values are bounded
+        for it in range(history.shape[0]):
+            self.bound_and_clamp(history[it])
+        self.log.info('Final initial history shape is %r', history.shape)
+
+        # create initial state from history
+        self.current_state = history[self.current_step % self.horizon].copy()
+        self.log.debug('initial state has shape %r' % (self.current_state.shape, ))
+        if self.surface is not None and history.shape[2] > self.connectivity.number_of_regions:
+            n_reg = self.connectivity.number_of_regions
+            (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
+            region_history = numpy.zeros((nt, ns, n_reg, nm))
+            numpy_add_at(region_history.transpose(ax), self._regmap, history.transpose(ax))
+            region_history /= numpy.bincount(self._regmap).reshape((-1, 1))
+            history = region_history
+        if self.cosim_to_tvb_interfaces and len(self.cosim_to_tvb_interfaces.history_interfaces):
+            # create history query implementation
+            self.history = CosimHistory(
+                self.connectivity.weights,
+                self.connectivity.idelays,
+                self.model.cvar,
+                self.model.number_of_modes,
+                self.model.nvar,
+            )
+        else:
+            # create history query implementation
+            self.history = SparseHistory(
+                self.connectivity.weights,
+                self.connectivity.idelays,
+                self.model.cvar,
+                self.model.number_of_modes
+            )
+        # initialize its buffer
+        self.history.initialize(history)
+
+    def _configure_cosimulation(self, sync_time=None):
+        """This method will run all the configuration methods of all TVB <-> Cosimulator interfaces,
+           If there are any Cosimulator -> TVB update interfaces:
+            - remove connectivity among region nodes modelled exclusively in the other co-simulator.
+           If any of the Cosimulator -> TVB update interfaces update the current state:
+            - generate a CosimModel class from the original Model class
+            - set the cosim_vars and cosim_vars_proxy_inds properties of the CosimModel class,
+              based on the respective vois and proxy_inds of all cosim_to_tvb_interfaces.
+           If any of the Cosimulator -> TVB update interfaces update history:
+            - convert TVB Monitor classes to CosimMonitor ones,
+              with sync_time = max(cosim_to_tvb_interfaces.sync_time),
+           """
+        if self.tvb_to_cosim_interfaces:
+            self.tvb_to_cosim_interfaces.configure(self)
+        self._update_state = False
+        if self.cosim_to_tvb_interfaces:
+            self.cosim_to_tvb_interfaces.configure(self)
+            reconfigure_connectivity = False
+            for interface in self.cosim_to_tvb_interfaces.interfaces:
+                if interface.exclusive:
+                    reconfigure_connectivity = True
+                    self.connectivity.weights[interface.proxy_inds][:, interface.proxy_inds] = 0.0
+            if reconfigure_connectivity:
+                self.connectivity.configure()
+            if len(self.cosim_to_tvb_interfaces.state_interfaces):
+                self._update_state = True
+                if isinstance(self.model, ModelNumbaDfun):
+                    self.model = CosimModelNumbaDfun.from_model(self.model)
+                else:
+                    self.model = CosimModel.from_model(self.model)
+                self.model.cosim_vars = self.cosim_to_tvb_interfaces.state_vois
+                self.model.cosim_vars_proxy_inds = self.cosim_to_tvb_interfaces.state_proxy_inds
+                self.model.configure()
+                self.model.update_derived_parameters()
+            if len(self.cosim_to_tvb_interfaces.history_interfaces):
+                if sync_time is None:
+                    if self.tvb_to_cosim_interfaces is None \
+                            or len(self.tvb_to_cosim_interfaces.history_interfaces) == 0:
+                        raise ValueError("sync_time for TVB monitors is not given and "
+                                         "cannot be inferred from TVB to Cosim interfaces!")
+                    else:
+                        sync_time = numpy.max(self.tvb_to_cosim_interfaces.sync_times)
+                for i_monitor, monitor in enumerate(self.monitors):
+                    if not isinstance(monitor, CosimHistoryMonitor):
+                        self.monitors[i_monitor] = CosimHistoryMonitor.from_tvb_monitor(monitor, self, sync_time)
+
+    def configure(self, full_configure=True, sync_time=None):
         """Configure simulator and its components.
 
         The first step of configuration is to run the configure methods of all
@@ -140,26 +227,32 @@ class CoSimulator(Simulator):
             self._spatial_param_reshape = (-1, 1)
 
         super(CoSimulator, self).configure(full_configure=full_configure)
-        self._configure_cosim_interfaces()
+        self._configure_cosimulation(sync_time)
         return self
 
-    def _print_progression_message(self, step, n_steps):
-        if step - self.current_step >= self._tic_point:
-            toc = time.time() - self._tic
-            if toc > 600:
-                if toc > 7200:
-                    time_string = "%0.1f hours" % (toc / 3600)
-                else:
-                    time_string = "%0.1f min" % (toc / 60)
-            else:
-                time_string = "%0.1f sec" % toc
-            print_this = "\r...%0.1f%% done in %s" % \
-                         (100.0 * (step - self.current_step) / n_steps, time_string)
-            self.log.info(print_this)
-            self._tic_point += self._tic_ratio * n_steps
+    def _loop_update_state(self, state):
+        new_state = numpy.array(state)
+        for state_interface in self.cosim_to_tvb_interfaces.state_interfaces:
+            new_state = state_interface.update(new_state)
+        if numpy.any(new_state != state):
+            self.bound_and_clamp(new_state)
+        return new_state
+
+    def _loop_update_history(self, step, n_reg, state, cosim_updates=[]):
+        """This method
+            - first updates TVB history buffer with the current state,
+            - and then (optionally) updates history from cosimulation."""
+        super(CoSimulator, self)._loop_update_history(step, n_reg, state)
+        if self.cosim_to_tvb_interfaces:
+            for interface in self.cosim_to_tvb_interfaces.interfaces:
+                try:
+                    update = cosim_updates.pop(0)
+                except:
+                    update = None
+                interface.update(step, update)
 
     def _loop_record_monitors(self, step, observed, monitors, return_flag=False):
-        """This method recordd from a sequence of monitors,
+        """This method records from a sequence of monitors,
            returnd outputs, if any,
            and sets a return_flag to True, if there is at least one output returned."""
         outputs = []
@@ -177,16 +270,12 @@ class CoSimulator(Simulator):
                                                                      return_flag)
         if len(cosim_state_output):
             return_outputs += cosim_state_output
+
         cosim_history_output, return_flag = self._loop_record_monitors(step, observed,
-                                                                       self.tvb_to_cosim_interfaces.history_interfaces,
-                                                                       return_flag)
+                                                                        self.tvb_to_cosim_interfaces.history_interfaces,
+                                                                        return_flag)
         if len(cosim_history_output):
             return_outputs += cosim_history_output
-        cosim_coupling_output, return_flag = self._loop_record_monitors(step, observed,
-                                                                        self.tvb_to_cosim_interfaces.coupling_interfaces,
-                                                                        return_flag)
-        if len(cosim_coupling_output):
-            return_outputs += cosim_coupling_output
         return return_outputs, return_flag
 
     def _loop_monitor_output(self, step, state):
@@ -209,53 +298,38 @@ class CoSimulator(Simulator):
                 # return only (monitors,) outputs
                 return tuple([return_outputs])
 
-    def _loop_cosim_update_state(self, state, cosim_state_updates=[]):
-        """This method updates the state from the cosimulator, if there are any state cosim to tvb interfaces.
-            If there is an update, the updated state gets again through the bound_and_clamp method.
-        """
-        new_state = numpy.array(state)
-        for ii, state_interface in enumerate(self.cosim_to_tvb_interfaces.state_interfaces):
-            try:
-                update_state = cosim_state_updates.pop(0)
-            except:
-                update_state = None
-            new_state = state_interface.update(state, update_state)
-        if any(new_state != state):
-            self.bound_and_clamp(new_state)
-        return new_state
+    def _print_progression_message(self, step, n_steps):
+        if step - self.current_step >= self._tic_point:
+            toc = time.time() - self._tic
+            if toc > 600:
+                if toc > 7200:
+                    time_string = "%0.1f hours" % (toc / 3600)
+                else:
+                    time_string = "%0.1f min" % (toc / 60)
+            else:
+                time_string = "%0.1f sec" % toc
+            print_this = "\r...%0.1f%% done in %s" % \
+                         (100.0 * (step - self.current_step) / n_steps, time_string)
+            self.log.info(print_this)
+            self._tic_point += self._tic_ratio * n_steps
 
-    def _loop_update_history(self, step, n_reg, state, cosim_state_updates=[], cosim_history_updates=[]):
-        """This method
-            - first (optionally) updates the state from cosimulation,
-            - then updates TVB history buffer with the current state,
-            - and finally (optionally) updates history from cosimulation."""
-        if self.cosim_to_tvb_interfaces:
-            state = self._loop_cosim_update_state(state, cosim_state_updates)
-        super(CoSimulator, self)._loop_update_history(step, n_reg, state)
-        if self.cosim_to_tvb_interfaces:
-            for history_interface in self.cosim_to_tvb_interfaces.history_interfaces:
-                try:
-                    history_update = cosim_history_updates.pop(0)
-                except:
-                    history_update = None
-                history_interface.update(step, history_update)
-
-    def __call__(self, simulation_length=None, random_state=None,
-                 cosim_state_updates=[], cosim_history_updates=[]):
+    def __call__(self, simulation_length=None, random_state=None, cosim_updates=[]):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
 
         See the run method for a convenient way to collect all output in one call.
 
-        :param simulation_length: Length of the simulation to perform in ms.
-        :param random_state:  State of NumPy RNG to use for stochastic integration.
+        :param simulation_length: Length of the simulation to perform in ms,
+        :param random_state:  State of NumPy RNG to use for stochastic integration,
+        :param sync_time: co-simulation synchronization time in ms,
+        :param cosim_updates: data from the other co-simulator to update TVB state and history
         :return: Iterator over monitor outputs.
         """
         self.calls += 1
         if simulation_length is not None:
             self.simulation_length = simulation_length
 
-        # Intialization
+        # Initialization
         self._guesstimate_runtime()
         self._calculate_storage_requirement()
         self._handle_random_state(random_state)
@@ -275,7 +349,9 @@ class CoSimulator(Simulator):
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, n_reg, state, cosim_state_updates, cosim_history_updates)
+            if self._update_state:
+                state = self._loop_update_state(state)
+            self._loop_update_history(step, n_reg, state, cosim_updates)
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output
@@ -295,11 +371,10 @@ class CoSimulator(Simulator):
 
     def receive_data_from_cosimulator(self):
         """This method receives data from the other simulator in the format,
-           (cosim_state_updates, cosim_history_updates),
-           where cosim_state_updates (cosim_history_updates) are lists of data
-           that correspond to the cosim_to_tvb_interfaces.state_interfaces(history_interfaces), respectively,
+           where cosim_updates are lists of data
+           that correspond to the cosim_to_tvb_interfaces.history_interfaces,
            in the same order."""
-        return [], []
+        return []
 
     def send_data_to_cosimulator(self, data):
         """This method sends TVB output data to the other simulator."""
@@ -312,51 +387,12 @@ class CoSimulator(Simulator):
             - and end_time = current_time + simulation_length,
             from optional user kwds,
             as well as updates kwds by setting kwds["simulation_length"] = sync_time."""
-        sync_time = kwds.pop("sync_time", self.integrator.dt)
+        sync_time = kwds.get("sync_time", self.integrator.dt)
         simulation_length = kwds.pop("simulation_length", self.integrator.dt)
         current_time = self.current_step * self.integrator.dt
         end_time = current_time + simulation_length
         kwds["simulation_length"] = sync_time
         return sync_time, current_time, end_time, kwds
-
-    def run(self, **kwds):
-        """Convenience method to call the simulator with **kwds and collect output data.
-            The method is modified to
-            (a) (optionally) send initial condition TVB data to the other simulator,
-            (b) (optionally) send TVB data to the other simulator,
-            (c) (optionally) receive data from the other simulator.
-            """
-        sync_time, current_time, end_time, kwds = self.prepare_run(**kwds)
-        ts, xs = [], []
-        for _ in self.monitors:
-            ts.append([])
-            xs.append([])
-        if kwds.pop("send_initial_condition_to_cosimulator", False) and self.tvb_to_cosim_interfaces:
-            self.send_initial_condition_to_cosimulator()
-        self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
-        wall_time_start = time.time()
-        while current_time < end_time:
-            for data in self(**kwds):
-                current_time += sync_time
-                if data is not None:
-                    for tl, xl, t_x in zip(ts, xs, data[0]):
-                        if t_x is not None:
-                            t, x = t_x
-                            tl.append(t)
-                            xl.append(x)
-                    if len(data) > 1:
-                        self.send_data_to_cosimulator(data[1:])
-                if self.cosim_to_tvb_interfaces:
-                    cosim_state_updates, cosim_history_updates = self.receive_data_from_cosimulator()
-                    kwds["cosim_state_updates"] = cosim_state_updates
-                    kwds["cosim_history_updates"] = cosim_history_updates
-        elapsed_wall_time = time.time() - wall_time_start
-        self.log.info("%.3f s elapsed, %.3fx real time", elapsed_wall_time,
-                      elapsed_wall_time * 1e3 / self.simulation_length)
-        for i in range(len(ts)):
-            ts[i] = numpy.array(ts[i])
-            xs[i] = numpy.array(xs[i])
-        return list(zip(ts, xs))
 
 
 class SequentialCosimulator(CoSimulator):
@@ -413,9 +449,7 @@ class SequentialCosimulator(CoSimulator):
                         self.send_data_to_cosimulator(data[1:])
                 self.run_cosimulator()
                 if self.cosim_to_tvb_interfaces:
-                    cosim_state_updates, cosim_history_updates = self.receive_data_from_cosimulator()
-                    kwds["cosim_state_updates"] = cosim_state_updates
-                    kwds["cosim_history_updates"] = cosim_history_updates
+                    kwds["cosim_updates"] = self.receive_data_from_cosimulator()
         elapsed_wall_time = time.time() - wall_time_start
         self.log.info("%.3f s elapsed, %.3fx real time", elapsed_wall_time,
                       elapsed_wall_time * 1e3 / self.simulation_length)
@@ -428,4 +462,47 @@ class SequentialCosimulator(CoSimulator):
 
 
 class ParallelCosimulator(CoSimulator):
-    pass
+
+    def receive_data_from_cosimulator(self):
+        """This method receives data from the other simulator in the format,
+           where cosim_updates are lists of data
+           that correspond to the cosim_to_tvb_interfaces.history_interfaces,
+           in the same order."""
+        return []
+
+    def run(self, **kwds):
+        """Convenience method to call the simulator with **kwds and collect output data.
+            The method is modified to
+            (a) (optionally) send initial condition TVB data to the other simulator,
+            (b) (optionally) send TVB data to the other simulator,
+            (c) (optionally) receive data from the other simulator.
+            """
+        sync_time, current_time, end_time, kwds = self.prepare_run(**kwds)
+        ts, xs = [], []
+        for _ in self.monitors:
+            ts.append([])
+            xs.append([])
+        if kwds.pop("send_initial_condition_to_cosimulator", False) and self.tvb_to_cosim_interfaces:
+            self.send_initial_condition_to_cosimulator()
+        self.PRINT_PROGRESSION_MESSAGE = kwds.pop("print_progression_message", True)
+        wall_time_start = time.time()
+        while current_time < end_time:
+            for data in self(**kwds):
+                current_time += sync_time
+                if data is not None:
+                    for tl, xl, t_x in zip(ts, xs, data[0]):
+                        if t_x is not None:
+                            t, x = t_x
+                            tl.append(t)
+                            xl.append(x)
+                    if len(data) > 1:
+                        self.send_data_to_cosimulator(data[1:])
+                if self.cosim_to_tvb_interfaces:
+                    kwds["cosim_updates"] = self.receive_data_from_cosimulator()
+        elapsed_wall_time = time.time() - wall_time_start
+        self.log.info("%.3f s elapsed, %.3fx real time", elapsed_wall_time,
+                      elapsed_wall_time * 1e3 / self.simulation_length)
+        for i in range(len(ts)):
+            ts[i] = numpy.array(ts[i])
+            xs[i] = numpy.array(xs[i])
+        return list(zip(ts, xs))
