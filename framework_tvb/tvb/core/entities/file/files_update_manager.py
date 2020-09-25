@@ -70,7 +70,6 @@ class FilesUpdateManager(UpdateManager):
                                                  TvbProfile.current.version.DATA_VERSION)
         self.files_helper = FilesHelper()
 
-
     def get_file_data_version(self, file_path):
         """
         Return the data version for the given file.
@@ -80,7 +79,6 @@ class FilesUpdateManager(UpdateManager):
         """
         manager = self._get_manager(file_path)
         return manager.get_file_data_version()
-
 
     def is_file_up_to_date(self, file_path):
         """
@@ -100,12 +98,11 @@ class FilesUpdateManager(UpdateManager):
             return True
         return False
 
-
-    def upgrade_file(self, input_file_name):
+    def upgrade_file(self, input_file_name, datatype=None):
         """
         Upgrades the given file to the latest data version. The file will be upgraded
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
-        
+
         :param input_file_name the path to the file which needs to be upgraded
         :return True, when update was needed and running it was successful.
         False, the the file is already up to date.
@@ -120,19 +117,60 @@ class FilesUpdateManager(UpdateManager):
         for script_name in self.get_update_scripts(file_version):
             self.run_update_script(script_name, input_file=input_file_name)
 
-        # TODO: Don't forget to check if sizes will be correct after db rebuilding
-
-        # if datatype:
-        #     # Compute and update the disk_size attribute of the DataType in DB:
-        #     datatype.disk_size = self.files_helper.compute_size_on_disk(input_file_name)
-        #     dao.store_entity(datatype)
+        if datatype:
+            # Compute and update the disk_size attribute of the DataType in DB:
+            datatype.disk_size = self.files_helper.compute_size_on_disk(input_file_name)
+            dao.store_entity(datatype)
 
         return True
 
-
-    def __upgrade_datatype_list(self, file_paths):
+    def __upgrade_datatype_list(self, datatypes):
         """
         Upgrade a list of DataTypes to the current version.
+
+        :param datatypes: The list of DataTypes that should be upgraded.
+
+        :returns: (nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault) a two-tuple of integers representing
+            the number of DataTypes for which the upgrade worked fine, and the number of DataTypes for which
+            some kind of fault occurred
+        """
+        nr_of_dts_upgraded_fine = 0
+        nr_of_dts_upgraded_fault = 0
+        no_of_dts_ignored = 0
+
+        for datatype in datatypes:
+            try:
+                from tvb.basic.traits.types_mapped import MappedType
+
+                specific_datatype = dao.get_datatype_by_gid(datatype.gid, load_lazy=False)
+
+                if specific_datatype is None:
+                    datatype.invalid = True
+                    dao.store_entity(datatype)
+                    nr_of_dts_upgraded_fault += 1
+                elif isinstance(specific_datatype, MappedType):
+                    update_was_needed = self.upgrade_file(specific_datatype.get_storage_file_path(), specific_datatype)
+                    if update_was_needed:
+                        nr_of_dts_upgraded_fine += 1
+                    else:
+                        no_of_dts_ignored += 1
+                else:
+                    # Ignore DataTypeGroups
+                    self.log.debug("We will ignore, due to type: " + str(specific_datatype))
+                    no_of_dts_ignored += 1
+
+            except Exception as ex:
+                # The file/class is missing for some reason. Just mark the DataType as invalid.
+                datatype.invalid = True
+                dao.store_entity(datatype)
+                nr_of_dts_upgraded_fault += 1
+                self.log.exception(ex)
+
+        return nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault, no_of_dts_ignored
+
+    def __upgrade_h5_list(self, h5_files):
+        """
+        Upgrade a list of DataTypes to the current version (only from version 4 to 5).
 
         :returns: (nr_of_dts_upgraded_fine, nr_of_dts_ignored) a two-tuple of integers representing
             the number of DataTypes for which the upgrade worked fine, and the number of DataTypes for which
@@ -141,7 +179,7 @@ class FilesUpdateManager(UpdateManager):
         nr_of_dts_upgraded_fine = 0
         nr_of_dts_ignored = 0
 
-        for path in file_paths:
+        for path in h5_files:
             update_was_needed = self.upgrade_file(path)
 
             if update_was_needed:
@@ -150,7 +188,6 @@ class FilesUpdateManager(UpdateManager):
                 nr_of_dts_ignored += 1
 
         return nr_of_dts_upgraded_fine, nr_of_dts_ignored
-
 
     def run_all_updates(self):
         """
@@ -174,14 +211,27 @@ class FilesUpdateManager(UpdateManager):
             no_ignored = 0
             start_time = datetime.now()
 
-            file_paths = self.files_helper.get_all_h5_paths()
-            count_ok, count_ignored = self.__upgrade_datatype_list(file_paths)
-            no_ok += count_ok
-            no_ignored += count_ignored
+            if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < 4:
+                # Read DataTypes in pages to limit the memory consumption
+                for current_idx in range(0, total_count, self.DATA_TYPES_PAGE_SIZE):
+                    datatypes_for_page = dao.get_all_datatypes(current_idx, self.DATA_TYPES_PAGE_SIZE)
+                    count_ok, count_error, count_ignored = self.__upgrade_datatype_list(datatypes_for_page)
+                    no_ok += count_ok
+                    no_error += count_error
+                    no_ignored += count_ignored
 
-            self.log.info("Updated H5 files: %d [fine:%d, ignored:%d of total:%d, in: %s min]" % (
-                count_ok + count_ignored, no_ok, no_ignored, total_count,
-                int((datetime.now() - start_time).seconds / 60)))
+                    self.log.info("Updated H5 files so far: %d [fine:%d, error:%d, ignored:%d of total:%d, in: %s min]" % (
+                        current_idx + len(datatypes_for_page), no_ok, no_error, no_ignored, total_count,
+                        int((datetime.now() - start_time).seconds / 60)))
+            else:
+                file_paths = self.files_helper.get_all_h5_paths()
+                total_count = len(file_paths)
+                count_ok, count_ignored = self.__upgrade_h5_list(file_paths)
+                no_ok += count_ok
+                no_ignored += count_ignored
+
+                self.log.info("Updated H5 files in total: %d [fine:%d, ignored:%d in: %s min]" % (
+                    total_count, no_ok, no_ignored, int((datetime.now() - start_time).seconds / 60)))
 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
