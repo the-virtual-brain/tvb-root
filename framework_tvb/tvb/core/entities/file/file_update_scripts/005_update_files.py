@@ -172,15 +172,11 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
     return dependent_attributes
 
 
-def _migrate_volume(root_metadata, storage_manager):
-    root_metadata['voxel_unit'] = str(root_metadata['Voxel_unit'], 'utf-8').replace("\"", '')
-    _migrate_dataset_metadata(['origin', 'voxel_size'], storage_manager)
-
-
 def _create_new_burst(burst_params, root_metadata):
     burst_config = BurstConfiguration(burst_params['fk_project'])
     burst_config.datatypes_number = burst_params['datatypes_number']
-    burst_config.dynamic_ids = burst_params['dynamic_ids']
+    burst_co
+    nfig.dynamic_ids = burst_params['dynamic_ids']
     burst_config.error_message = burst_params['error_message']
     burst_config.finish_time = datetime.strptime(burst_params['finish_time'], '%Y-%m-%d %H:%M:%S.%f')
     burst_config.fk_metric_operation_group = burst_params['fk_metric_operation_group']
@@ -282,18 +278,22 @@ def update(input_file):
     import_service = ImportService()
     algorithm = ''
 
-    operation_xml_parameters = {} # params that are needed for the view_model but are not in the Operation.xml file
-    additional_params = {} # params that can't be jsonified with json.dumps
+    operation_xml_parameters = {}  # params that are needed for the view_model but are not in the Operation.xml file
+    additional_params = {}  # params that can't be jsonified with json.dumps
     has_vm = False
     operation = None
     # Take information out from the Operation.xml file
     if OPERATION_XML in files_in_folder:
         operation_file_path = os.path.join(folder, OPERATION_XML)
         project = dao.get_project_by_name(split_path[-3])
-        xml_operation, operation_xml_parameters, algorithm =\
+        xml_operation, operation_xml_parameters, algorithm = \
             import_service.build_operation_from_file(project, operation_file_path)
         operation = dao.get_operation_by_id(op_id)
-        operation_xml_parameters = eval(operation_xml_parameters)
+        try:
+            operation_xml_parameters = eval(operation_xml_parameters)
+        except NameError:
+            operation_xml_parameters = operation_xml_parameters.replace('null', '\"null\"')
+            operation_xml_parameters = eval(operation_xml_parameters)
         os.remove(operation_file_path)
     else:
         has_vm = True
@@ -447,31 +447,23 @@ def update(input_file):
 
     elif 'TimeSeries' in class_name:
         dependent_attributes = _migrate_time_series(root_metadata, storage_manager,
-                                                                      class_name, dependent_attributes)
+                                                    class_name, dependent_attributes)
     elif 'Volume' in class_name:
-        _migrate_volume(root_metadata, storage_manager)
+        root_metadata['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
+
+        if operation_xml_parameters['connectivity'] == '':
+            operation_xml_parameters['connectivity'] = None
+
+        _migrate_dataset_metadata(['origin', 'voxel_size'], storage_manager)
 
     elif class_name == 'StructuralMRI':
         _pop_lengths(root_metadata)
         _pop_common_metadata(root_metadata)
 
-        storage_manager_volume = HDF5StorageManager(folder, 'Volume_' + root_metadata['volume'] + '.h5')
-        root_metadata_volume = storage_manager_volume.get_metadata()
-        _migrate_volume(root_metadata_volume, storage_manager_volume)
-
-        volume = VolumeIndex()
-        volume.gid = root_metadata['volume']
-        volume.gid = volume.gid.replace('-', '')
-        volume.voxel_size = 0
-        volume.voxel_unit = 0
-        volume.origin = 0
-        volume.fk_from_operation = 1
-        dao.store_entity(volume)
-
         root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
-        dependent_attributes['volume'] = root_metadata['volume']
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
+        dependent_attributes['volume'] = root_metadata['volume']
 
     elif class_name == 'ComplexCoherenceSpectrum':
         _pop_lengths(root_metadata)

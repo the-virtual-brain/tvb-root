@@ -36,7 +36,7 @@ import os
 import shutil
 from threading import Lock
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
-
+from pathlib import Path
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
@@ -466,7 +466,8 @@ class FilesHelper(object):
             # Go through the operation folders in numerical order
             for op in operation_int_names:
                 op_folder = os.path.join(project_full_path, str(op))
-                for file in os.listdir(op_folder):
+                file_paths = sorted(Path(op_folder).iterdir(), key=os.path.getmtime)
+                for file in file_paths:
                     file_full_path = os.path.join(op_folder, file)
 
                     # Add to the list if it's a H5 file
