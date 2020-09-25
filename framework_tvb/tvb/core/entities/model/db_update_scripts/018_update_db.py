@@ -243,16 +243,13 @@ def upgrade(migrate_engine):
     # MIGRATING Operations #
     session = SA_SESSIONMAKER()
     try:
-        burst_ref_metadata = session.execute(text("""SELECT id, parameters, meta_data FROM "OPERATIONS"
+        burst_ref_metadata = session.execute(text("""SELECT id, meta_data FROM "OPERATIONS"
                     WHERE meta_data like "%Burst_Reference%" """)).fetchall()
 
         for metadata in burst_ref_metadata:
-            parameters_dict = eval(str(metadata[1]))
-            metadata_dict = eval(str(metadata[2]))
-            parameters_dict['parent_burst_id'] = metadata_dict['Burst_Reference']
-
-            session.execute(text("""UPDATE "OPERATIONS" SET parameters = '""" + json.dumps(parameters_dict) +
-                                 """' WHERE id = """ + str(metadata[0])))
+            metadata_dict = eval(str(metadata[1]))
+            session.execute(text("""UPDATE "OPERATIONS" SET parameters = '""" +
+                                 json.dumps(metadata_dict['Burst_Reference']) + """' WHERE id = """ + str(metadata[0])))
 
         session.execute(text("""ALTER TABLE "OPERATIONS"
                                     RENAME COLUMN parameters TO view_model_gid"""))

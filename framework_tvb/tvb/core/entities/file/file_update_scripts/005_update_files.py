@@ -40,11 +40,12 @@ import os
 import sys
 from datetime import datetime
 import numpy
-from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -175,8 +176,7 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
 def _create_new_burst(burst_params, root_metadata):
     burst_config = BurstConfiguration(burst_params['fk_project'])
     burst_config.datatypes_number = burst_params['datatypes_number']
-    burst_co
-    nfig.dynamic_ids = burst_params['dynamic_ids']
+    burst_config.dynamic_ids = burst_params['dynamic_ids']
     burst_config.error_message = burst_params['error_message']
     burst_config.finish_time = datetime.strptime(burst_params['finish_time'], '%Y-%m-%d %H:%M:%S.%f')
     burst_config.fk_metric_operation_group = burst_params['fk_metric_operation_group']
@@ -294,7 +294,6 @@ def update(input_file):
         except NameError:
             operation_xml_parameters = operation_xml_parameters.replace('null', '\"null\"')
             operation_xml_parameters = eval(operation_xml_parameters)
-        os.remove(operation_file_path)
     else:
         has_vm = True
 
@@ -446,6 +445,11 @@ def update(input_file):
         dependent_attributes['connectivity'] = root_metadata['connectivity']
 
     elif 'TimeSeries' in class_name:
+        del operation_xml_parameters['']
+        if operation_xml_parameters['surface'] == '':
+            operation_xml_parameters['surface'] = None
+        if operation_xml_parameters['stimulus'] == '':
+            operation_xml_parameters['stimulus'] = None
         dependent_attributes = _migrate_time_series(root_metadata, storage_manager,
                                                     class_name, dependent_attributes)
     elif 'Volume' in class_name:
@@ -592,32 +596,34 @@ def update(input_file):
         _migrate_dataset_metadata(['array_data'], storage_manager)
         dependent_attributes['connectivity'] = root_metadata['connectivity']
 
+    # TODO: Make sure DatatypeMeasureH5 is converted after a DatatypeMeasure class is created and then remove the return
     elif class_name == 'DatatypeMeasure':
         root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
         h5_class = DatatypeMeasureH5
         dependent_attributes['analyzed_datatype'] = root_metadata['analyzed_datatype']
+        return
 
     elif class_name == 'StimuliRegion':
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
+        additional_params['weight'] = numpy.asarray(eval(root_metadata['weight']), dtype=numpy.float64)
         _migrate_stimuli(root_metadata, storage_manager, ['weight'])
         dependent_attributes['connectivity'] = root_metadata['connectivity']
-        additional_params['weight'] = numpy.asarray(eval(root_metadata['weight']), dtype=numpy.float64)
 
     elif class_name == 'StimuliSurface':
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
-        _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
-        dependent_attributes['surface'] = root_metadata['surface']
         additional_params['focal_points_triangles'] = numpy.asarray(eval(root_metadata['focal_points_triangles']),
                                                                     dtype=numpy.int)
+        _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
+        dependent_attributes['surface'] = root_metadata['surface']
 
     elif class_name == 'ValueWrapper':
         root_metadata['data_type'] = root_metadata['data_type'].replace("\"", '')
         root_metadata['written_by'] = "tvb.adapters.datatypes.h5.mapped_value_h5.ValueWrapperH5"
         h5_class = ValueWrapperH5
 
-    # TODO: SimulationState does not exist anymore, SimulationHistory is in it's place and that needs to be created
     elif class_name == 'SimulationState':
-        pass
+        os.remove(input_file)
+        return
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
@@ -641,6 +647,13 @@ def update(input_file):
             setattr(datatype, attr_name, dependent_datatype)
 
         if has_vm is False:
+            # Get parent_burst when needed
+            if 'time_series' in operation_xml_parameters:
+                ts = dao.get_datatype_by_gid(
+                    operation_xml_parameters['time_series'].replace('-', '').replace('urn:uuid:', ''))
+                root_metadata['parent_burst'] = GID_PREFIX + ts.fk_parent_burst
+                storage_manager.set_metadata(root_metadata)
+
             alg_json = json.loads(algorithm)
             algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
             operation.algorithm = algorithm
@@ -649,14 +662,22 @@ def update(input_file):
             operation_xml_parameters = json.dumps(operation_xml_parameters)
             operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
             operation_entity, _ = import_service.import_operation(operation_data.operation)
-            vm_gid = import_service.create_view_model(operation, operation_data, folder, additional_params)
+            possible_burst_id = operation.view_model_gid
+            vm = import_service.create_view_model(operation, operation_data, folder, additional_params)
 
-            op_parameters = {}
-            if 'parent_burst_id' in op_parameters:
-                burst_params = dao.get_burst_for_migration(str(op_parameters['parent_burst_id']))
+            if 'TimeSeries' in class_name:
+                alg = SimulatorAdapter().view_model_to_has_traits(vm)
+                alg.preconfigure()
+                alg.configure()
+                simulation_history = SimulationHistory()
+                simulation_history.populate_from(alg)
+                history_index = h5.store_complete(simulation_history, folder, vm.generic_attributes)
+                dao.store_entity(history_index)
+
+                burst_params = dao.get_burst_for_migration(possible_burst_id)
                 if burst_params is not None:
                     burst_config = _create_new_burst(burst_params, root_metadata)
-                    burst_config.simulator_gid = vm_gid.hex
+                    burst_config.simulator_gid = vm.gid.hex
                     generic_attributes.parent_burst = burst_config.gid
 
                     # Creating BurstConfigH5
@@ -665,13 +686,10 @@ def update(input_file):
                         f.store(burst_config)
 
                     dao.store_entity(burst_config)
+                    root_metadata['parent_burst'] = GID_PREFIX + burst_config.gid
                     storage_manager.set_metadata(root_metadata)
 
-            # Get parent_burst
-            if 'time_series' in op_parameters:
-                ts = dao.get_datatype_by_gid(op_parameters['time_series'].replace('-', '').replace('urn:uuid:', ''))
-                root_metadata['parent_burst'] = GID_PREFIX + ts.fk_parent_burst
-                storage_manager.set_metadata(root_metadata)
+            os.remove(os.path.join(folder, OPERATION_XML))
 
         # Populate datatype
         datatype_index.fill_from_has_traits(datatype)

@@ -356,7 +356,7 @@ class ImportService(object):
         operation_entity.view_model_disk_size = view_model_disk_size
         operation_entity.view_model_gid = view_model.gid.hex
         dao.store_entity(operation_entity)
-        return view_model.gid
+        return view_model
 
     def import_project_operations(self, project, import_path):
         """
