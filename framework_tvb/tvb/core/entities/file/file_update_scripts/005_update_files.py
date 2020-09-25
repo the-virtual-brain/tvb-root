@@ -66,7 +66,6 @@ from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel
 from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualizerModel
 from tvb.adapters.visualizers.fourier_spectrum import FourierSpectrumModel
 from tvb.adapters.visualizers.wavelet_spectrogram import WaveletSpectrogramVisualizerModel
-from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -303,9 +302,25 @@ def update(input_file):
     root_metadata.pop('data_version')
 
     dependent_attributes = {} # where is the case the datatype will have a dict of the datatype it depends on
-    changed_values = {} # where there are changes between the view model class attributes and the OPERATIONS.parameters
     # attr in the old DB, those changed will be marked in this dict
-    view_model_class = None
+
+    files_in_folder = os.listdir(folder)
+    import_service = ImportService()
+    algorithm = ''
+
+    operation_xml_parameters = {}
+    additional_params = {}
+    has_vm = False
+    if OPERATION_XML in files_in_folder:
+        operation_file_path = os.path.join(folder, OPERATION_XML)
+        project = dao.get_project_by_name(split_path[-3])
+        xml_operation, operation_xml_parameters, algorithm = import_service.build_operation_from_file(project, operation_file_path)
+        operation = dao.get_operation_by_id(op_id)
+        operation.import_file = operation_file_path
+        operation_xml_parameters = eval(operation_xml_parameters)
+        os.remove(operation_file_path)
+    else:
+        has_vm = True
 
     # HERE STARTS THE PART WHICH IS SPECIFIC TO EACH H5 FILE #
 
@@ -359,9 +374,9 @@ def update(input_file):
         root_metadata["surface_type"] = root_metadata["surface_type"].replace("\"", '')
 
         if root_metadata['zero_based_triangles'] == 'bool:True':
-            changed_values['zero_based_triangles'] = True
+            operation_xml_parameters['zero_based_triangles'] = True
         else:
-            changed_values['zero_based_triangles'] = False
+            operation_xml_parameters['zero_based_triangles'] = False
 
         storage_manager.store_data('split_triangles', [])
 
@@ -381,6 +396,7 @@ def update(input_file):
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
         view_model_class = RegionMappingImporterModel
+        algorithm = algorithm.replace('RegionMapping_Importer', 'RegionMappingImporter')
 
     elif class_name == 'RegionVolumeMapping':
         _pop_lengths(root_metadata)
@@ -412,14 +428,15 @@ def update(input_file):
             storage_manager.remove_metadata('Size', 'orientations')
             storage_manager.remove_metadata('Variance', 'orientations')
             datasets.append('orientations')
-            changed_values['sensors_type'] = SensorTypes.TYPE_MEG.value
+            operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_MEG.value
         elif 'EEG' in class_name:
-            changed_values['sensors_type'] = SensorTypes.TYPE_EEG.value
+            operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_EEG.value
         else:
-            changed_values['sensors_type'] = SensorTypes.TYPE_INTERNAL.value
+            operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_INTERNAL.value
 
         _migrate_dataset_metadata(datasets, storage_manager)
         view_model_class = SensorsImporterModel
+        algorithm = algorithm.replace('Sensors_Importer', 'SensorsImporter')
 
     elif 'Projection' in class_name:
         root_metadata['sensors'] = GID_PREFIX + root_metadata['sensors']
@@ -430,12 +447,14 @@ def update(input_file):
         storage_manager.remove_metadata('Size', 'projection_data')
         storage_manager.remove_metadata('Variance', 'projection_data')
 
-        changed_values['projection_file'] = input_file
+        operation_xml_parameters['projection_file'] = input_file
         _migrate_dataset_metadata(['projection_data'], storage_manager)
 
         view_model_class = ProjectionMatrixImporterModel
         dependent_attributes['sensors'] = root_metadata['sensors']
         dependent_attributes['sources'] = root_metadata['sources']
+
+        algorithm = algorithm.replace('BrainstormGainMatrixImporter', 'ProjectionMatrixSurfaceEEGImporter')
 
     elif class_name == 'LocalConnectivity':
         root_metadata['cutoff'] = float(root_metadata['cutoff'])
@@ -449,7 +468,7 @@ def update(input_file):
         matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
         storage_manager.set_metadata(matrix_metadata, 'matrix')
 
-        changed_values['surface'] = root_metadata['surface']
+        operation_xml_parameters['surface'] = root_metadata['surface']
 
         view_model_class = LocalConnectivityCreatorModel
         dependent_attributes['surface'] = root_metadata['surface']
@@ -527,14 +546,14 @@ def update(input_file):
         root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
         root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
 
-        changed_values['input_data'] = root_metadata['source']
+        operation_xml_parameters['input_data'] = root_metadata['source']
 
         dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
         view_model_class = WaveletSpectrogramVisualizerModel
 
     elif class_name == 'CrossCorrelation':
-        changed_values['datatype'] = root_metadata['source']
+        operation_xml_parameters['datatype'] = root_metadata['source']
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
         dependent_attributes['source'] = root_metadata['source']
@@ -559,8 +578,8 @@ def update(input_file):
         _pop_lengths(root_metadata)
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
-        changed_values['data_file'] = input_file
-        changed_values['connectivity'] = root_metadata['connectivity']
+        operation_xml_parameters['data_file'] = input_file
+        operation_xml_parameters['connectivity'] = root_metadata['connectivity']
 
         dependent_attributes['connectivity'] = root_metadata['connectivity']
         _migrate_dataset_metadata(['array_data'], storage_manager)
@@ -578,7 +597,7 @@ def update(input_file):
 
         root_metadata['segment_length'] = float(root_metadata['segment_length'])
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
-        changed_values['input_data'] = root_metadata['source']
+        operation_xml_parameters['input_data'] = root_metadata['source']
 
         dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
@@ -602,7 +621,7 @@ def update(input_file):
 
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
-        changed_values['datatype'] = root_metadata['source']
+        operation_xml_parameters['datatype'] = root_metadata['source']
 
         dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['array_data'], storage_manager)
@@ -638,7 +657,7 @@ def update(input_file):
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
         dependent_attributes['connectivity'] = root_metadata['connectivity']
-        changed_values['weight'] =numpy.asarray(eval(root_metadata['weight']), dtype=numpy.float64)
+        additional_params['weight'] = numpy.asarray(eval(root_metadata['weight']), dtype=numpy.float64)
         _migrate_stimuli(root_metadata, storage_manager, ['weight'])
         view_model_class = RegionStimulusCreatorModel
 
@@ -646,7 +665,7 @@ def update(input_file):
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
 
         dependent_attributes['surface'] = root_metadata['surface']
-        changed_values['focal_points_triangles'] = numpy.asarray(eval(root_metadata['focal_points_triangles']), dtype=numpy.int)
+        additional_params['focal_points_triangles'] = numpy.asarray(eval(root_metadata['focal_points_triangles']), dtype=numpy.int)
         _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
         view_model_class = SurfaceStimulusCreatorModel
 
@@ -692,35 +711,38 @@ def update(input_file):
             setattr(datatype, attr_name, dependent_datatype)
 
         # Check if it's needed to create a ViewModel H5
-        files_in_op_dir = os.listdir(os.path.join(input_file, os.pardir))
-        has_vm = False
-        if len(files_in_op_dir) > 2 and view_model_class is not None:
-            for file in files_in_op_dir:
-                if view_model_class.__name__ in file:
-                    has_vm = True
-                    break
+        # files_in_op_dir = os.listdir(os.path.join(input_file, os.pardir))
+        # has_vm = False
+        # if len(files_in_op_dir) > 2 and view_model_class is not None:
+        #     for file in files_in_op_dir:
+        #         if view_model_class.__name__ in file:
+        #             has_vm = True
+        #             break
 
-        if has_vm is False and view_model_class is not None:
+        if has_vm is False:
+            alg_json = json.loads(algorithm)
+            algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
+            operation.algorithm = algorithm
+            operation.fk_from_algo = algorithm.id
 
-            # Get the VM attributes and the operation parameters from the version 4 DB
-            view_model = view_model_class()
-            view_model.generic_attributes = generic_attributes
+            operation_xml_parameters = json.dumps(operation_xml_parameters)
+            operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
+            operation_entity, _ = import_service.import_operation(operation_data.operation)
+            vm_gid = import_service.create_view_model(operation, operation_data, folder, additional_params)
 
-            operation = dao.get_operation_by_id(op_id)
-            vm_attributes = [i for i in view_model_class.__dict__.keys() if i[:1] != '_']
-
-            try:
-                op_parameters = eval(operation.view_model_gid)
-            except NameError:
-                operation.view_model_gid = operation.view_model_gid.replace('null', '\"null\"')
-                op_parameters = eval(operation.view_model_gid)
+            op_parameters = {}
+            # try:
+            #     op_parameters = eval(operation.view_model_gid)
+            # except NameError:
+            #     operation.view_model_gid = operation.view_model_gid.replace('null', '\"null\"')
+            #     op_parameters = eval(operation.view_model_gid)
 
             # Create a new burst if datatype is a TimeSeries and assign it
             if 'parent_burst_id' in op_parameters:
                 burst_params = dao.get_burst_for_migration(str(op_parameters['parent_burst_id']))
                 if burst_params is not None:
                     burst_config = _create_new_burst(burst_params, root_metadata)
-                    burst_config.simulator_gid = view_model.gid.hex
+                    burst_config.simulator_gid = vm_gid.hex
                     generic_attributes.parent_burst = burst_config.gid
 
                     # Creating BurstConfigH5
@@ -737,22 +759,22 @@ def update(input_file):
                 root_metadata['parent_burst'] = GID_PREFIX + ts.fk_parent_burst
                 storage_manager.set_metadata(root_metadata)
 
-            # Set the view model attributes from op_parameters
-            for attr in vm_attributes:
-                if attr not in changed_values and attr in op_parameters:
-                    try:
-                        setattr(view_model, attr, op_parameters[attr])
-                    except (TraitTypeError, TraitAttributeError):
-                        pass
-
-            # Set the view model attributes which couldn't be found in op_parameters
-            for attr in changed_values:
-                setattr(view_model, attr, changed_values[attr])
-
-            # Store the ViewModel and the Operation
-            h5.store_view_model(view_model, os.path.dirname(input_file))
-            operation.view_model_gid = view_model.gid.hex
-            dao.store_entity(operation)
+            # # Set the view model attributes from op_parameters
+            # for attr in vm_attributes:
+            #     if attr not in changed_values and attr in op_parameters:
+            #         try:
+            #             setattr(view_model, attr, op_parameters[attr])
+            #         except (TraitTypeError, TraitAttributeError):
+            #             pass
+            #
+            # # Set the view model attributes which couldn't be found in op_parameters
+            # for attr in changed_values:
+            #     setattr(view_model, attr, changed_values[attr])
+            #
+            # # Store the ViewModel and the Operation
+            # h5.store_view_model(view_model, os.path.dirname(input_file))
+            # operation.view_model_gid = view_model.gid.hex
+            # dao.store_entity(operation)
 
         # Populate datatype
         datatype_index.fill_from_has_traits(datatype)

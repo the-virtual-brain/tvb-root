@@ -386,7 +386,7 @@ class Operation(Base, Exportable):
         self.additional_info = dictionary['additional_info']
         self.gid = dictionary['gid']
 
-        return self, dictionary['parameters']
+        return self, dictionary['parameters'], dictionary['fk_from_algo']
 
     def _parse_status(self, status):
         """
