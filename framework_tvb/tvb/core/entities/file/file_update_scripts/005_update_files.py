@@ -39,36 +39,12 @@ import json
 import os
 import sys
 from datetime import datetime
-
 import numpy
-from sqlalchemy import DateTime
-from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
-from tvb.adapters.analyzers.fcd_adapter import FCDAdapterModel
-from tvb.adapters.analyzers.ica_adapter import ICAAdapterModel
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel
-from tvb.adapters.analyzers.node_coherence_adapter import NodeCoherenceModel
-from tvb.adapters.analyzers.node_complex_coherence_adapter import NodeComplexCoherenceModel
-from tvb.adapters.analyzers.node_covariance_adapter import NodeCovarianceAdapterModel
-from tvb.adapters.analyzers.pca_adapter import PCAAdapterModel
-from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel
-from tvb.adapters.creators.stimulus_creator import RegionStimulusCreatorModel, SurfaceStimulusCreatorModel
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5
-from tvb.adapters.uploaders.brco_importer import BRCOImporterModel
-from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterModel
-from tvb.adapters.uploaders.nifti_importer import NIFTIImporterModel
-from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterModel
-from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel
-from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
-from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
-from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel
-from tvb.adapters.visualizers.cross_correlation import CrossCorrelationVisualizerModel
-from tvb.adapters.visualizers.fourier_spectrum import FourierSpectrumModel
-from tvb.adapters.visualizers.wavelet_spectrogram import WaveletSpectrogramVisualizerModel
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -134,7 +110,7 @@ def _migrate_dataset_metadata(dataset_list, storage_manager):
         if 'Variance' in metadata:
             storage_manager.remove_metadata('Variance', dataset)
         if 'Size' in metadata:
-            storage_manager.remove_metadata('Size',dataset)
+            storage_manager.remove_metadata('Size', dataset)
 
 
 def _migrate_one_stimuli_param(root_metadata, param_name):
@@ -165,10 +141,8 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
     if class_name != 'TimeSeriesVolume':
         root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
         root_metadata['sample_rate'] = float(root_metadata['sample_rate'])
-        view_model_class = SimulatorAdapterModel
     else:
         metadata.pop(1)
-        view_model_class = NIFTIImporterModel
 
     root_metadata['sample_period'] = float(root_metadata['sample_period'])
     root_metadata['start_time'] = float(root_metadata['start_time'])
@@ -195,7 +169,7 @@ def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_a
         root_metadata.pop('nr_dimensions')
         root_metadata.pop('sample_rate')
 
-    return dependent_attributes, view_model_class
+    return dependent_attributes
 
 
 def _migrate_volume(root_metadata, storage_manager):
@@ -252,6 +226,7 @@ def update(input_file):
         os.rename(input_file, replaced_input_file)
         input_file = replaced_input_file
     except ValueError:
+        op_id = None
         storage_migrate = False
 
     if not os.path.isfile(input_file):
@@ -283,40 +258,41 @@ def update(input_file):
     root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(':', '-')
     root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(' ', ',')
 
-    # OBTAIN THE MODULE (for a few datatypes the old module doesn't exist anymore, in those cases the attr
+    # OBTAIN THE MODULE (for a few data types the old module doesn't exist anymore, in those cases the attr
     # will be set later
     try:
         datatype_class = getattr(sys.modules[root_metadata["module"]],
-                             root_metadata["type"])
+                                 root_metadata["type"])
         h5_class = REGISTRY.get_h5file_for_datatype(datatype_class)
         root_metadata[H5File.KEY_WRITTEN_BY] = h5_class.__module__ + '.' + h5_class.__name__
     except KeyError:
-        pass
+        h5_class = None
 
     # Other general modifications
     root_metadata['user_tag_1'] = ''
     root_metadata['gid'] = GID_PREFIX + root_metadata['gid']
-
     root_metadata.pop("type")
     root_metadata.pop("module")
     root_metadata.pop('data_version')
 
-    dependent_attributes = {} # where is the case the datatype will have a dict of the datatype it depends on
+    dependent_attributes = {}  # where is the case the datatype will have a dict of the datatype it depends on
     # attr in the old DB, those changed will be marked in this dict
 
     files_in_folder = os.listdir(folder)
     import_service = ImportService()
     algorithm = ''
 
-    operation_xml_parameters = {}
-    additional_params = {}
+    operation_xml_parameters = {} # params that are needed for the view_model but are not in the Operation.xml file
+    additional_params = {} # params that can't be jsonified with json.dumps
     has_vm = False
+    operation = None
+    # Take information out from the Operation.xml file
     if OPERATION_XML in files_in_folder:
         operation_file_path = os.path.join(folder, OPERATION_XML)
         project = dao.get_project_by_name(split_path[-3])
-        xml_operation, operation_xml_parameters, algorithm = import_service.build_operation_from_file(project, operation_file_path)
+        xml_operation, operation_xml_parameters, algorithm =\
+            import_service.build_operation_from_file(project, operation_file_path)
         operation = dao.get_operation_by_id(op_id)
-        operation.import_file = operation_file_path
         operation_xml_parameters = eval(operation_xml_parameters)
         os.remove(operation_file_path)
     else:
@@ -354,7 +330,6 @@ def update(input_file):
         storage_manager.remove_metadata('Var. non zero', 'weights')
 
         _migrate_dataset_metadata(metadata, storage_manager)
-        view_model_class = ZIPConnectivityImporterModel
 
     elif class_name in ['BrainSkull', 'CorticalSurface', 'SkinAir', 'BrainSkull', 'SkullSkin', 'EEGCap', 'FaceSurface']:
         root_metadata['edge_max_length'] = float(root_metadata['edge_max_length'])
@@ -382,7 +357,6 @@ def update(input_file):
 
         _migrate_dataset_metadata(['split_triangles', 'triangle_normals', 'triangles', 'vertex_normals', 'vertices'],
                                   storage_manager)
-        view_model_class = ZIPSurfaceImporterModel
 
     elif class_name == 'RegionMapping':
         _pop_lengths(root_metadata)
@@ -391,11 +365,9 @@ def update(input_file):
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
 
+        _migrate_dataset_metadata(['array_data'], storage_manager)
         dependent_attributes['connectivity'] = root_metadata['connectivity']
         dependent_attributes['surface'] = root_metadata['surface']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        view_model_class = RegionMappingImporterModel
         algorithm = algorithm.replace('RegionMapping_Importer', 'RegionMappingImporter')
 
     elif class_name == 'RegionVolumeMapping':
@@ -405,11 +377,9 @@ def update(input_file):
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
         root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
 
+        _migrate_dataset_metadata(['array_data'], storage_manager)
         dependent_attributes['connectivity'] = root_metadata['connectivity']
         dependent_attributes['volume'] = root_metadata['volume']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        view_model_class = NIFTIImporterModel
 
     elif 'Sensors' in class_name:
         root_metadata['number_of_sensors'] = int(root_metadata['number_of_sensors'])
@@ -435,7 +405,6 @@ def update(input_file):
             operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_INTERNAL.value
 
         _migrate_dataset_metadata(datasets, storage_manager)
-        view_model_class = SensorsImporterModel
         algorithm = algorithm.replace('Sensors_Importer', 'SensorsImporter')
 
     elif 'Projection' in class_name:
@@ -448,12 +417,10 @@ def update(input_file):
         storage_manager.remove_metadata('Variance', 'projection_data')
 
         operation_xml_parameters['projection_file'] = input_file
-        _migrate_dataset_metadata(['projection_data'], storage_manager)
 
-        view_model_class = ProjectionMatrixImporterModel
+        _migrate_dataset_metadata(['projection_data'], storage_manager)
         dependent_attributes['sensors'] = root_metadata['sensors']
         dependent_attributes['sources'] = root_metadata['sources']
-
         algorithm = algorithm.replace('BrainstormGainMatrixImporter', 'ProjectionMatrixSurfaceEEGImporter')
 
     elif class_name == 'LocalConnectivity':
@@ -461,7 +428,6 @@ def update(input_file):
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
 
         storage_manager.remove_metadata('shape', 'matrix')
-
         matrix_metadata = storage_manager.get_metadata('matrix')
         matrix_metadata['Shape'] = str(matrix_metadata['Shape'], 'utf-8')
         matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
@@ -469,12 +435,18 @@ def update(input_file):
         storage_manager.set_metadata(matrix_metadata, 'matrix')
 
         operation_xml_parameters['surface'] = root_metadata['surface']
-
-        view_model_class = LocalConnectivityCreatorModel
         dependent_attributes['surface'] = root_metadata['surface']
 
+    elif class_name == 'ConnectivityAnnotations':
+        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
+        root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
+        h5_class = ConnectivityAnnotationsH5
+
+        _migrate_dataset_metadata(['region_annotations'], storage_manager)
+        dependent_attributes['connectivity'] = root_metadata['connectivity']
+
     elif 'TimeSeries' in class_name:
-        dependent_attributes, view_model_class = _migrate_time_series(root_metadata, storage_manager,
+        dependent_attributes = _migrate_time_series(root_metadata, storage_manager,
                                                                       class_name, dependent_attributes)
     elif 'Volume' in class_name:
         _migrate_volume(root_metadata, storage_manager)
@@ -500,12 +472,41 @@ def update(input_file):
         dependent_attributes['volume'] = root_metadata['volume']
 
         _migrate_dataset_metadata(['array_data'], storage_manager)
-        view_model_class = NIFTIImporterModel
 
-    elif class_name == 'CoherenceSpectrum':
+    elif class_name == 'ComplexCoherenceSpectrum':
+        _pop_lengths(root_metadata)
         _pop_common_metadata(root_metadata)
         root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+        root_metadata['epoch_length'] = float(root_metadata['epoch_length'])
+        root_metadata['segment_length'] = float(root_metadata['segment_length'])
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+        root_metadata['windowing_function'] = root_metadata['windowing_function'].replace("\"", '')
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+
+        _migrate_dataset_metadata(['array_data', 'cross_spectrum'], storage_manager)
+        dependent_attributes['source'] = root_metadata['source']
+
+    elif class_name == 'WaveletCoefficients':
         _pop_lengths(root_metadata)
+        _pop_common_metadata(root_metadata)
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+        root_metadata['q_ratio'] = float(root_metadata['q_ratio'])
+        root_metadata['sample_period'] = float(root_metadata['sample_period'])
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+        root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
+        root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
+
+        operation_xml_parameters['input_data'] = root_metadata['source']
+
+        _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
+        dependent_attributes['source'] = root_metadata['source']
+
+    elif class_name == 'CoherenceSpectrum':
+        _pop_lengths(root_metadata)
+        _pop_common_metadata(root_metadata)
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
 
         root_metadata['nfft'] = int(root_metadata['nfft'])
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
@@ -513,44 +514,9 @@ def update(input_file):
         array_data = storage_manager.get_data('array_data')
         storage_manager.remove_data('array_data')
         storage_manager.store_data('array_data', numpy.asarray(array_data, dtype=numpy.float64))
-        dependent_attributes['source'] = root_metadata['source']
 
         _migrate_dataset_metadata(['array_data', 'frequency'], storage_manager)
-        view_model_class = NodeCoherenceModel
-
-    elif class_name == 'ComplexCoherenceSpectrum':
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-        _pop_lengths(root_metadata)
-
-        root_metadata['epoch_length'] = float(root_metadata['epoch_length'])
-        root_metadata['segment_length'] = float(root_metadata['segment_length'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        root_metadata['windowing_function'] = root_metadata['windowing_function'].replace("\"", '')
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
         dependent_attributes['source'] = root_metadata['source']
-        _migrate_dataset_metadata(['array_data', 'cross_spectrum'], storage_manager)
-        view_model_class = NodeComplexCoherenceModel
-
-    elif class_name == 'WaveletCoefficients':
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-        _pop_lengths(root_metadata)
-
-        root_metadata['q_ratio'] = float(root_metadata['q_ratio'])
-        root_metadata['sample_period'] = float(root_metadata['sample_period'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
-        root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
-
-        operation_xml_parameters['input_data'] = root_metadata['source']
-
-        dependent_attributes['source'] = root_metadata['source']
-        _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
-        view_model_class = WaveletSpectrogramVisualizerModel
 
     elif class_name == 'CrossCorrelation':
         operation_xml_parameters['datatype'] = root_metadata['source']
@@ -558,20 +524,70 @@ def update(input_file):
 
         dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['array_data', 'time'], storage_manager)
-        view_model_class = CrossCorrelationVisualizerModel
 
     elif class_name == 'Fcd':
+        _pop_lengths(root_metadata)
         _pop_common_metadata(root_metadata)
         root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-        _pop_lengths(root_metadata)
 
         root_metadata['sp'] = float(root_metadata['sp'])
         root_metadata['sw'] = float(root_metadata['sw'])
         root_metadata['source'] = GID_PREFIX + root_metadata['source']
 
-        dependent_attributes['source'] = root_metadata['source']
         _migrate_dataset_metadata(['array_data'], storage_manager)
-        view_model_class = FCDAdapterModel
+        dependent_attributes['source'] = root_metadata['source']
+
+    elif class_name == 'FourierSpectrum':
+        _pop_lengths(root_metadata)
+        _pop_common_metadata(root_metadata)
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+        root_metadata['segment_length'] = float(root_metadata['segment_length'])
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+        operation_xml_parameters['input_data'] = root_metadata['source']
+
+        _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
+                                   'normalised_average_power', 'phase', 'power'], storage_manager)
+        dependent_attributes['source'] = root_metadata['source']
+
+    elif class_name == 'IndependentComponents':
+        root_metadata['n_components'] = int(root_metadata['n_components'])
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+
+        _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
+                                   'normalised_component_time_series', 'prewhitening_matrix',
+                                   'unmixing_matrix'], storage_manager)
+        dependent_attributes['source'] = root_metadata['source']
+
+    elif class_name == 'CorrelationCoefficients':
+        _pop_lengths(root_metadata)
+        _pop_common_metadata(root_metadata)
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+
+        operation_xml_parameters['datatype'] = root_metadata['source']
+
+        _migrate_dataset_metadata(['array_data'], storage_manager)
+        dependent_attributes['source'] = root_metadata['source']
+
+    elif class_name == 'PrincipalComponents':
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+
+        _migrate_dataset_metadata(['component_time_series', 'fractions',
+                                   'norm_source', 'normalised_component_time_series',
+                                   'weights'], storage_manager)
+        dependent_attributes['source'] = root_metadata['source']
+
+    elif class_name == 'Covariance':
+        _pop_common_metadata(root_metadata)
+        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+        _pop_lengths(root_metadata)
+
+        root_metadata['source'] = GID_PREFIX + root_metadata['source']
+
+        _migrate_dataset_metadata(['array_data'], storage_manager)
+        dependent_attributes['source'] = root_metadata['source']
 
     elif class_name == 'ConnectivityMeasure':
         _pop_common_metadata(root_metadata)
@@ -581,113 +597,35 @@ def update(input_file):
         operation_xml_parameters['data_file'] = input_file
         operation_xml_parameters['connectivity'] = root_metadata['connectivity']
 
+        _migrate_dataset_metadata(['array_data'], storage_manager)
         dependent_attributes['connectivity'] = root_metadata['connectivity']
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        view_model_class = ConnectivityMeasureImporterModel
-
-        # if there is an FCDH5 in this same folder, then the view model class is not this one
-        for file in os.listdir(folder):
-            if 'Fcd' in file:
-                view_model_class = None
-
-    elif class_name == 'FourierSpectrum':
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-        _pop_lengths(root_metadata)
-
-        root_metadata['segment_length'] = float(root_metadata['segment_length'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-        operation_xml_parameters['input_data'] = root_metadata['source']
-
-        dependent_attributes['source'] = root_metadata['source']
-        _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
-                                   'normalised_average_power', 'phase', 'power'], storage_manager)
-        view_model_class = FourierSpectrumModel
-
-    elif class_name == 'IndependentComponents':
-        root_metadata['n_components'] = int(root_metadata['n_components'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        dependent_attributes['source'] = root_metadata['source']
-        _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
-                                   'normalised_component_time_series', 'prewhitening_matrix',
-                                   'unmixing_matrix'], storage_manager)
-        view_model_class = ICAAdapterModel
-
-    elif class_name == 'CorrelationCoefficients':
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-        _pop_lengths(root_metadata)
-
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        operation_xml_parameters['datatype'] = root_metadata['source']
-
-        dependent_attributes['source'] = root_metadata['source']
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        view_model_class = CrossCorrelationVisualizerModel
-
-    elif class_name == 'PrincipalComponents':
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        dependent_attributes['source'] = root_metadata['source']
-        _migrate_dataset_metadata(['component_time_series', 'fractions',
-                                   'norm_source', 'normalised_component_time_series',
-                                   'weights'], storage_manager)
-        view_model_class = PCAAdapterModel
-
-    elif class_name == 'Covariance':
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-        _pop_lengths(root_metadata)
-
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        dependent_attributes['source'] = root_metadata['source']
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        view_model_class = NodeCovarianceAdapterModel
 
     elif class_name == 'DatatypeMeasure':
         root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
-        view_model_class = TimeseriesMetricsAdapterModel
-        dependent_attributes['analyzed_datatype'] = root_metadata['analyzed_datatype']
         h5_class = DatatypeMeasureH5
+        dependent_attributes['analyzed_datatype'] = root_metadata['analyzed_datatype']
 
     elif class_name == 'StimuliRegion':
         root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
-
+        _migrate_stimuli(root_metadata, storage_manager, ['weight'])
         dependent_attributes['connectivity'] = root_metadata['connectivity']
         additional_params['weight'] = numpy.asarray(eval(root_metadata['weight']), dtype=numpy.float64)
-        _migrate_stimuli(root_metadata, storage_manager, ['weight'])
-        view_model_class = RegionStimulusCreatorModel
 
     elif class_name == 'StimuliSurface':
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
-
-        dependent_attributes['surface'] = root_metadata['surface']
-        additional_params['focal_points_triangles'] = numpy.asarray(eval(root_metadata['focal_points_triangles']), dtype=numpy.int)
         _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
-        view_model_class = SurfaceStimulusCreatorModel
-
-    elif class_name == 'ConnectivityAnnotations':
-        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
-        root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
-        h5_class = ConnectivityAnnotationsH5
-
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
-        _migrate_dataset_metadata(['region_annotations'], storage_manager)
-        view_model_class = BRCOImporterModel
+        dependent_attributes['surface'] = root_metadata['surface']
+        additional_params['focal_points_triangles'] = numpy.asarray(eval(root_metadata['focal_points_triangles']),
+                                                                    dtype=numpy.int)
 
     elif class_name == 'ValueWrapper':
         root_metadata['data_type'] = root_metadata['data_type'].replace("\"", '')
         root_metadata['written_by'] = "tvb.adapters.datatypes.h5.mapped_value_h5.ValueWrapperH5"
         h5_class = ValueWrapperH5
-        view_model_class = BaseBCTModel
 
     # TODO: SimulationState does not exist anymore, SimulationHistory is in it's place and that needs to be created
-    # somehow
     elif class_name == 'SimulationState':
-        return
+        pass
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
@@ -710,15 +648,6 @@ def update(input_file):
             dependent_datatype = h5.load_from_index(dependent_datatype_index)
             setattr(datatype, attr_name, dependent_datatype)
 
-        # Check if it's needed to create a ViewModel H5
-        # files_in_op_dir = os.listdir(os.path.join(input_file, os.pardir))
-        # has_vm = False
-        # if len(files_in_op_dir) > 2 and view_model_class is not None:
-        #     for file in files_in_op_dir:
-        #         if view_model_class.__name__ in file:
-        #             has_vm = True
-        #             break
-
         if has_vm is False:
             alg_json = json.loads(algorithm)
             algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
@@ -731,13 +660,6 @@ def update(input_file):
             vm_gid = import_service.create_view_model(operation, operation_data, folder, additional_params)
 
             op_parameters = {}
-            # try:
-            #     op_parameters = eval(operation.view_model_gid)
-            # except NameError:
-            #     operation.view_model_gid = operation.view_model_gid.replace('null', '\"null\"')
-            #     op_parameters = eval(operation.view_model_gid)
-
-            # Create a new burst if datatype is a TimeSeries and assign it
             if 'parent_burst_id' in op_parameters:
                 burst_params = dao.get_burst_for_migration(str(op_parameters['parent_burst_id']))
                 if burst_params is not None:
@@ -747,7 +669,7 @@ def update(input_file):
 
                     # Creating BurstConfigH5
                     with BurstConfigurationH5(os.path.join(input_file, os.pardir, 'BurstConfiguration_'
-                                                                              + burst_config.gid + ".h5")) as f:
+                                                                                  + burst_config.gid + ".h5")) as f:
                         f.store(burst_config)
 
                     dao.store_entity(burst_config)
@@ -758,23 +680,6 @@ def update(input_file):
                 ts = dao.get_datatype_by_gid(op_parameters['time_series'].replace('-', '').replace('urn:uuid:', ''))
                 root_metadata['parent_burst'] = GID_PREFIX + ts.fk_parent_burst
                 storage_manager.set_metadata(root_metadata)
-
-            # # Set the view model attributes from op_parameters
-            # for attr in vm_attributes:
-            #     if attr not in changed_values and attr in op_parameters:
-            #         try:
-            #             setattr(view_model, attr, op_parameters[attr])
-            #         except (TraitTypeError, TraitAttributeError):
-            #             pass
-            #
-            # # Set the view model attributes which couldn't be found in op_parameters
-            # for attr in changed_values:
-            #     setattr(view_model, attr, changed_values[attr])
-            #
-            # # Store the ViewModel and the Operation
-            # h5.store_view_model(view_model, os.path.dirname(input_file))
-            # operation.view_model_gid = view_model.gid.hex
-            # dao.store_entity(operation)
 
         # Populate datatype
         datatype_index.fill_from_has_traits(datatype)
