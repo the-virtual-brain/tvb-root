@@ -36,10 +36,10 @@
 import os
 import shutil
 import pytest
-from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.basic.profile import TvbProfile
+from tvb.config.profile_settings import TestSQLiteProfile
 from tvb.core.services.settings_service import SettingsService, InvalidSettingsException
-
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 TEST_CONFIG_FILE = os.path.expanduser(os.path.join("~", 'tvb.tests.framework.configuration'))
 
@@ -53,20 +53,20 @@ class TestSettingsService(BaseTestCase):
                      SettingsService.KEY_PORT: 8081,
                      SettingsService.KEY_MAX_DISK_SPACE_USR: 2 ** 8}
 
-
     def setup_method(self):
         """
         Prepare the usage of a different config file for this class only.
         """
         if os.path.exists(TEST_CONFIG_FILE):
             os.remove(TEST_CONFIG_FILE)
+        if os.path.exists(TestSQLiteProfile.DEFAULT_STORAGE):
+            shutil.rmtree(TestSQLiteProfile.DEFAULT_STORAGE)
 
         self.old_config_file = TvbProfile.current.TVB_CONFIG_FILE
         TvbProfile.current.__class__.TVB_CONFIG_FILE = TEST_CONFIG_FILE
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
         self.settings_service = SettingsService()
-        
-            
+
     def teardown_method(self):
         """
         Restore configuration file
@@ -76,8 +76,6 @@ class TestSettingsService(BaseTestCase):
 
         TvbProfile.current.__class__.TVB_CONFIG_FILE = self.old_config_file
         TvbProfile._build_profile_class(TvbProfile.CURRENT_PROFILE_NAME)
-    
-
 
     def test_check_db_url_invalid(self):
         """
@@ -85,8 +83,7 @@ class TestSettingsService(BaseTestCase):
         """
         with pytest.raises(InvalidSettingsException):
             self.settings_service.check_db_url("this-url-should-be-invalid")
-        
-    
+
     def test_get_free_disk_space(self):
         """
         Check that no exception is raised during the query for free disk space.
@@ -95,8 +92,7 @@ class TestSettingsService(BaseTestCase):
         """
         disk_space = self.settings_service.get_disk_free_space(TvbProfile.current.TVB_STORAGE)
         assert disk_space > 0, "Disk space should never be negative."
-    
-            
+
     def test_first_run_save(self):
         """
         Check that before setting something, all flags are pointing towards empty.
@@ -118,8 +114,7 @@ class TestSettingsService(BaseTestCase):
         assert not first_run, "Invalid First_Run flag!!"
         assert os.path.exists(TEST_CONFIG_FILE)
         assert not len(TvbProfile.current.manager.stored_settings) == 0
-        
-        
+
     def test_read_stored_settings(self):
         """
         Test to see that keys from the configuration dict is updated with
@@ -147,7 +142,6 @@ class TestSettingsService(BaseTestCase):
             else:
                 assert initial_configurations[key]['value'] == value['value']
 
-                    
     def test_update_settings(self):
         """
         Test update of settings: correct flags should be returned, and check storage folder renamed
@@ -189,4 +183,3 @@ class TestSettingsService(BaseTestCase):
 
         shutil.rmtree(os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED'))
         os.remove(os.path.join(TvbProfile.current.TVB_STORAGE, "test_rename-xxx43"))
-
