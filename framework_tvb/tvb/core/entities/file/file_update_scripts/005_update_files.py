@@ -105,8 +105,8 @@ def _bytes_ds_to_string_ds(storage_manager, ds_name):
 
 def _migrate_dataset_metadata(dataset_list, storage_manager):
     for dataset in dataset_list:
-        conn_metadata = DataSetMetaData.from_array(storage_manager.get_data(dataset)).to_dict()
-        storage_manager.set_metadata(conn_metadata, dataset)
+        metadata = DataSetMetaData.from_array(storage_manager.get_data(dataset)).to_dict()
+        storage_manager.set_metadata(metadata, dataset)
         metadata = storage_manager.get_metadata(dataset)
         if 'Variance' in metadata:
             storage_manager.remove_metadata('Variance', dataset)
@@ -205,22 +205,25 @@ def update(input_file):
     try:
         # Change file names only for storage migration
         op_id = int(split_path[-2])
-        replaced_input_file = input_file.replace('-', '')
-        replaced_input_file = replaced_input_file.replace('BrainSkull', 'Surface')
-        replaced_input_file = replaced_input_file.replace('CorticalSurface', 'Surface')
-        replaced_input_file = replaced_input_file.replace('SkinAir', 'Surface')
-        replaced_input_file = replaced_input_file.replace('BrainSkull', 'Surface')
-        replaced_input_file = replaced_input_file.replace('SkullSkin', 'Surface')
-        replaced_input_file = replaced_input_file.replace('EEGCap', 'Surface')
-        replaced_input_file = replaced_input_file.replace('FaceSurface', 'Surface')
-        replaced_input_file = replaced_input_file.replace('SensorsEEG', 'Sensors')
-        replaced_input_file = replaced_input_file.replace('SensorsMEG', 'Sensors')
-        replaced_input_file = replaced_input_file.replace('SensorsInternal', 'Sensors')
-        replaced_input_file = replaced_input_file.replace('ProjectionSurfaceEEG', 'ProjectionMatrix')
-        replaced_input_file = replaced_input_file.replace('ProjectionSurfaceMEG', 'ProjectionMatrix')
-        replaced_input_file = replaced_input_file.replace('ProjectionSurfaceSEEG', 'ProjectionMatrix')
-        os.rename(input_file, replaced_input_file)
-        input_file = replaced_input_file
+
+        file_basename = os.path.basename(input_file)
+        replaced_basename = file_basename.replace('-', '')
+        replaced_basename = replaced_basename.replace('BrainSkull', 'Surface')
+        replaced_basename = replaced_basename.replace('CorticalSurface', 'Surface')
+        replaced_basename = replaced_basename.replace('SkinAir', 'Surface')
+        replaced_basename = replaced_basename.replace('BrainSkull', 'Surface')
+        replaced_basename = replaced_basename.replace('SkullSkin', 'Surface')
+        replaced_basename = replaced_basename.replace('EEGCap', 'Surface')
+        replaced_basename = replaced_basename.replace('FaceSurface', 'Surface')
+        replaced_basename = replaced_basename.replace('SensorsEEG', 'Sensors')
+        replaced_basename = replaced_basename.replace('SensorsMEG', 'Sensors')
+        replaced_basename = replaced_basename.replace('SensorsInternal', 'Sensors')
+        replaced_basename = replaced_basename.replace('ProjectionSurfaceEEG', 'ProjectionMatrix')
+        replaced_basename = replaced_basename.replace('ProjectionSurfaceMEG', 'ProjectionMatrix')
+        replaced_basename = replaced_basename.replace('ProjectionSurfaceSEEG', 'ProjectionMatrix')
+        new_file_path = os.path.join(input_file, os.pardir, replaced_basename)
+        os.rename(input_file, new_file_path)
+        input_file = new_file_path
     except ValueError:
         op_id = None
         storage_migrate = False
@@ -311,8 +314,8 @@ def update(input_file):
         if root_metadata['saved_selection'] == 'null':
             root_metadata['saved_selection'] = '[]'
 
-        metadata = ['areas', 'centres', 'orientations', 'region_labels', 'tract_lengths', 'weights']
-        extra_metadata = ['cortical', 'hemispheres']
+        metadata = ['centres', 'region_labels', 'tract_lengths', 'weights']
+        extra_metadata = ['orientations', 'areas', 'cortical', 'hemispheres', 'orientations']
 
         for mt in extra_metadata:
             try:
@@ -320,6 +323,9 @@ def update(input_file):
                 metadata.append(mt)
             except MissingDataSetException:
                 pass
+
+        if operation_xml_parameters['normalization'] == 'none':
+            del operation_xml_parameters['normalization']
 
         storage_manager.remove_metadata('Mean non zero', 'tract_lengths')
         storage_manager.remove_metadata('Min. non zero', 'tract_lengths')
@@ -426,7 +432,7 @@ def update(input_file):
         root_metadata['cutoff'] = float(root_metadata['cutoff'])
         root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
 
-        storage_manager.remove_metadata('shape', 'matrix')
+        # storage_manager.remove_metadata('shape', 'matrix')
         matrix_metadata = storage_manager.get_metadata('matrix')
         matrix_metadata['Shape'] = str(matrix_metadata['Shape'], 'utf-8')
         matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
