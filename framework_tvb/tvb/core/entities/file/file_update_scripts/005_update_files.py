@@ -439,6 +439,13 @@ def update(input_file):
         matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
         storage_manager.set_metadata(matrix_metadata, 'matrix')
 
+        equation = eval(root_metadata['equation'])
+        equation['type'] = equation['__mapped_class']
+        del equation['__mapped_class']
+        del equation['__mapped_module']
+
+        root_metadata['equation'] = json.dumps(equation)
+
         operation_xml_parameters['surface'] = root_metadata['surface']
         dependent_attributes['surface'] = root_metadata['surface']
 
@@ -451,10 +458,10 @@ def update(input_file):
         dependent_attributes['connectivity'] = root_metadata['connectivity']
 
     elif 'TimeSeries' in class_name:
-        del operation_xml_parameters['']
-        if operation_xml_parameters['surface'] == '':
+        operation_xml_parameters.pop('', None)
+        if 'surface' in operation_xml_parameters and operation_xml_parameters['surface'] == '':
             operation_xml_parameters['surface'] = None
-        if operation_xml_parameters['stimulus'] == '':
+        if 'stimulus' in operation_xml_parameters and operation_xml_parameters['stimulus'] == '':
             operation_xml_parameters['stimulus'] = None
         dependent_attributes = _migrate_time_series(root_metadata, storage_manager,
                                                     class_name, dependent_attributes)
