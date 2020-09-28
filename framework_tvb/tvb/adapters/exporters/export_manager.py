@@ -198,7 +198,7 @@ class ExportManager(object):
         project_datatypes = dao.get_datatypes_in_project(project.id, only_visible=optimize_size)
         to_be_exported_folders = []
         considered_op_ids = []
-        folders_to_exclude = self._get_op_with_errors()
+        folders_to_exclude = self._get_op_with_errors(project.id)
 
         if optimize_size:
             # take only the DataType with visibility flag set ON
@@ -240,15 +240,14 @@ class ExportManager(object):
         return result_path
 
     @staticmethod
-    def _get_op_with_errors():
+    def _get_op_with_errors(project_id):
         """
         Get the operation folders with error base name as list.
         """
-        operations = dao.get_operations_in_group(None)
+        operations = dao.get_operations_with_error_in_project(project_id)
         op_with_errors = []
         for op in operations:
-            if op.status == STATUS_ERROR:
-                op_with_errors.append(op.id)
+            op_with_errors.append(op.id)
         return op_with_errors
 
     def _build_data_export_folder(self, data):
