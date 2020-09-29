@@ -35,18 +35,17 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 .. moduleauthor:: Paula Sanz Leon <paula@tvb.invalid>
 
 """
-import uuid
+
 import numpy
-from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.h5.spectral_h5 import ComplexCoherenceSpectrumH5
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
 
 
 class NodeComplexCoherenceModel(ViewModel, NodeComplexCoherence):
@@ -86,7 +85,7 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
         return NodeComplexCoherence()
 
 
-class NodeComplexCoherenceAdapter(ABCAsynchronous):
+class NodeComplexCoherenceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeComplexCoherence algorithm. """
 
     _ui_name = "Complex Coherence of Nodes"
@@ -134,7 +133,7 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         """
         Do any configuration needed before launching and create an instance of the algorithm.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -148,49 +147,14 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         # type: (NodeComplexCoherenceModel) -> [ComplexCoherenceSpectrumIndex]
         """
         Launch algorithm and build results.
-
-        :returns: the `ComplexCoherenceSpectrum` built with the given time-series
         """
-        # ------- Prepare a ComplexCoherenceSpectrum object for result -------##
-        complex_coherence_spectrum_index = ComplexCoherenceSpectrumIndex()
-        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
+        # TODO ---------- Iterate over slices and compose final result ------------##
+        self.algorithm.time_series = h5.load_from_index(self.input_time_series_index)
+        ht_result = self.algorithm.evaluate()
+        self.log.debug("got ComplexCoherenceSpectrum result")
+        self.log.debug("ComplexCoherenceSpectrum segment_length is %s" % (str(ht_result.segment_length)))
+        self.log.debug("ComplexCoherenceSpectrum epoch_length is %s" % (str(ht_result.epoch_length)))
+        self.log.debug("ComplexCoherenceSpectrum windowing_function is %s" % (str(ht_result.windowing_function)))
+        # LOG.debug("ComplexCoherenceSpectrum frequency vector is %s" % (str(ht_result.frequency)))
 
-        dest_path = h5.path_for(self.storage_path, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_index.gid)
-        spectra_h5 = ComplexCoherenceSpectrumH5(dest_path)
-        spectra_h5.gid.store(uuid.UUID(complex_coherence_spectrum_index.gid))
-        spectra_h5.source.store(time_series_h5.gid.load())
-
-        # ------------------- NOTE: Assumes 4D TimeSeries. -------------------##
-        input_shape = time_series_h5.data.shape
-        node_slice = [slice(input_shape[0]), slice(input_shape[1]), slice(input_shape[2]), slice(input_shape[3])]
-
-        # ---------- Iterate over slices and compose final result ------------##
-        small_ts = TimeSeries()
-        small_ts.sample_period = time_series_h5.sample_period.load()
-        small_ts.sample_period_unit = time_series_h5.sample_period_unit.load()
-        small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
-        self.algorithm.time_series = small_ts
-
-        partial_result = self.algorithm.evaluate()
-        self.log.debug("got partial_result")
-        self.log.debug("partial segment_length is %s" % (str(partial_result.segment_length)))
-        self.log.debug("partial epoch_length is %s" % (str(partial_result.epoch_length)))
-        self.log.debug("partial windowing_function is %s" % (str(partial_result.windowing_function)))
-        # LOG.debug("partial frequency vector is %s" % (str(partial_result.frequency)))
-
-        spectra_h5.write_data_slice(partial_result)
-        spectra_h5.segment_length.store(partial_result.segment_length)
-        spectra_h5.epoch_length.store(partial_result.epoch_length)
-        spectra_h5.windowing_function.store(partial_result.windowing_function)
-        # spectra.frequency = partial_result.frequency
-        spectra_h5.close()
-        time_series_h5.close()
-
-        complex_coherence_spectrum_index.fk_source_gid = self.input_time_series_index.gid
-        complex_coherence_spectrum_index.epoch_length = partial_result.epoch_length
-        complex_coherence_spectrum_index.segment_length = partial_result.segment_length
-        complex_coherence_spectrum_index.windowing_function = partial_result.windowing_function
-        complex_coherence_spectrum_index.frequency_step = partial_result.freq_step
-        complex_coherence_spectrum_index.max_frequency = partial_result.max_freq
-
-        return complex_coherence_spectrum_index
+        return h5.store_complete(ht_result, self.storage_path)

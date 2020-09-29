@@ -37,9 +37,11 @@ import shutil
 import zipfile
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
+from tvb.core.services.exceptions import ImportException
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -86,12 +88,12 @@ class TVBImporter(ABCUploader):
     def get_output(self):
         return []
 
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         """
         Overwrite method in order to return the correct number of stored datatypes.
         """
         self.nr_of_datatypes = 0
-        msg, _ = ABCUploader._prelaunch(self, operation, uid=None, **kwargs)
+        msg, _ = ABCUploader._prelaunch(self, operation, view_model, uid, available_disk_space)
         return msg, self.nr_of_datatypes
 
     def launch(self, view_model):
@@ -104,6 +106,7 @@ class TVBImporter(ABCUploader):
         if view_model.data_file is None:
             raise LaunchException("Please select file which contains data to import")
 
+        service = ImportService()
         if os.path.exists(view_model.data_file):
             if zipfile.is_zipfile(view_model.data_file):
                 current_op = dao.get_operation_by_id(self.operation_id)
@@ -111,7 +114,7 @@ class TVBImporter(ABCUploader):
                 # Creates a new TMP folder where to extract data
                 tmp_folder = os.path.join(self.storage_path, "tmp_import")
                 FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
-                operations = ImportService().import_project_operations(current_op.project, self.storage_path)
+                operations = service.import_project_operations(current_op.project, tmp_folder)
                 shutil.rmtree(tmp_folder)
                 self.nr_of_datatypes += len(operations)
 
@@ -125,18 +128,16 @@ class TVBImporter(ABCUploader):
                 if manager.is_valid_hdf5_file():
                     datatype = None
                     try:
-                        service = ImportService()
-                        datatype = service.load_datatype_from_file(folder, h5file, self.operation_id,
-                                                                   final_storage=self.storage_path)
-                        service.store_datatype(datatype)
+                        datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
+                        service.store_datatype(datatype, view_model.data_file)
                         self.nr_of_datatypes += 1
-                    except Exception as excep:
-                        # If import operation failed delete file from disk.
-                        if datatype is not None and os.path.exists(datatype.get_storage_file_path()):
-                            os.remove(datatype.get_storage_file_path())
+                    except ImportException as excep:
                         self.log.exception(excep)
-                        raise LaunchException("Invalid file received as input. Most probably incomplete "
-                                              "meta-data ...  " + str(excep))
+                        if datatype is not None:
+                            target_path = h5.path_for_stored_index(datatype)
+                            if os.path.exists(target_path):
+                                os.remove(target_path)
+                        raise LaunchException("Invalid file received as input. " + str(excep))
                 else:
                     raise LaunchException("Uploaded file: %s is neither in ZIP or HDF5 format" % view_model.data_file)
 

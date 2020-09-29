@@ -32,20 +32,29 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
+
 import os
 import tvb_data
 import shutil
 import pytest
+from PIL import Image
+from time import sleep
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
+from tvb.core import utils
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.load import try_get_last_datatype
+from tvb.core.services.figure_service import FigureService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.exceptions import ProjectImportException
+from tvb.core.services.exceptions import ImportException
+from tvb.core.utils import no_matlab
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.services.figure_service_test import IMG_DATA
 
 
 class TestImportService(BaseTestCase):
@@ -75,16 +84,18 @@ class TestImportService(BaseTestCase):
 
         self.delete_project_folders()
 
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_import_export(self, user_factory, project_factory, value_wrapper_factory):
         """
         Test the import/export mechanism for a project structure.
         The project contains the following data types: Connectivity, Surface, MappedArray and ValueWrapper.
         """
         test_user = user_factory()
-        test_project = project_factory(test_user, "TestImportExport")
+        test_project = project_factory(test_user, "TestImportExport", "test_desc")
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(test_user, test_project, zip_path)
         value_wrapper = value_wrapper_factory(test_user, test_project)
+        ProjectService.set_datatype_visibility(value_wrapper.gid, False)
 
         result = self.get_all_datatypes()
         expected_results = {}
@@ -105,7 +116,7 @@ class TestImportService(BaseTestCase):
         self.import_service.import_project_structure(self.zip_path, test_user.id)
         result = self.project_service.retrieve_projects_for_user(test_user.id)[0]
         assert len(result) == 1, "There should be only one project."
-        assert result[0].name == "GeneratedProject", "The project name is not correct."
+        assert result[0].name == "TestImportExport", "The project name is not correct."
         assert result[0].description == "test_desc", "The project description is not correct."
         test_project = result[0]
 
@@ -122,6 +133,7 @@ class TestImportService(BaseTestCase):
         assert value_wrapper.data_value == new_val.data_value, "Data value incorrect"
         assert value_wrapper.data_type == new_val.data_type, "Data type incorrect"
         assert value_wrapper.data_name == new_val.data_name, "Data name incorrect"
+        assert False == new_val.visible, "Visibility incorrectly restored"
 
     def test_import_export_existing(self, user_factory, project_factory):
         """
@@ -139,5 +151,68 @@ class TestImportService(BaseTestCase):
         self.zip_path = ExportManager().export_project(test_project)
         assert self.zip_path is not None, "Exported file is none"
 
-        with pytest.raises(ProjectImportException):
+        with pytest.raises(ImportException):
             self.import_service.import_project_structure(self.zip_path, test_user.id)
+
+    def test_export_import_burst(self, user_factory, project_factory, simulation_launch):
+        """
+        Test that fk_parent_burst is correctly preserved after export/import
+        """
+        test_user = user_factory()
+        test_project = project_factory(test_user, "TestIESim")
+        sim_op = simulation_launch(test_user, test_project, simulation_length=10)
+        tries = 5
+        while not sim_op.has_finished and tries > 0:
+            sleep(5)
+            tries = tries - 1
+            sim_op = dao.get_operation_by_id(sim_op.id)
+        assert sim_op.has_finished, "Simulation did not finish in the given time"
+
+        self.zip_path = ExportManager().export_project(test_project)
+        assert self.zip_path is not None, "Exported file is none"
+        self.project_service.remove_project(test_project.id)
+
+        self.import_service.import_project_structure(self.zip_path, test_user.id)
+        retrieved_project = self.project_service.retrieve_projects_for_user(test_user.id)[0][0]
+        ts = try_get_last_datatype(retrieved_project.id, TimeSeriesRegionIndex)
+        bursts = dao.get_bursts_for_project(retrieved_project.id)
+        assert 1 == len(bursts)
+        assert ts.fk_parent_burst == bursts[0].gid
+
+    def test_export_import_figures(self, user_factory, project_factory):
+        """
+        Test that ResultFigure instances are correctly restores after an export+import project
+        """
+        # Prepare data
+        user = user_factory()
+        project = project_factory(user, "TestImportExportFigures")
+        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'paupau.zip')
+        TestFactory.import_zip_connectivity(user, project, zip_path)
+
+        figure_service = FigureService()
+        figure_service.store_result_figure(project, user, "png", IMG_DATA, "bla")
+        figure_service.store_result_figure(project, user, "png", IMG_DATA, "bla")
+        figures = list(figure_service.retrieve_result_figures(project, user)[0].values())[0]
+        assert 2 == len(figures)
+
+        # export, delete and the import project
+        self.zip_path = ExportManager().export_project(project)
+        assert self.zip_path is not None, "Exported file is none"
+        self.project_service.remove_project(project.id)
+
+        self.import_service.import_project_structure(self.zip_path, user.id)
+
+        # Check that state is as before export: one operation, one DT, 2 figures
+        retrieved_project = self.project_service.retrieve_projects_for_user(user.id)[0][0]
+        count_operations = dao.get_filtered_operations(retrieved_project.id, None, is_count=True)
+        assert 1 == count_operations
+        count_datatypes = dao.count_datatypes(retrieved_project.id, DataType)
+        assert 1 == count_datatypes
+
+        figures = list(figure_service.retrieve_result_figures(retrieved_project, user)[0].values())[0]
+        assert 2 == len(figures)
+        assert "bla" in figures[0].name
+        assert "bla" in figures[1].name
+        image_path = utils.url2path(figures[0].file_path)
+        img_data = Image.open(image_path).load()
+        assert img_data is not None

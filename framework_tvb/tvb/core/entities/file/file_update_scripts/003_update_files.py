@@ -46,7 +46,7 @@ def update_localconnectivity_metadata(folder, file_name):
     service = ImportService()
     operation_id = int(os.path.split(folder)[1])
 
-    dt = service.load_datatype_from_file(folder, file_name, operation_id, move=False)
+    dt = service.load_datatype_from_file(os.path.join(folder, file_name), operation_id)
     info_dict = {"dtype": dt.matrix.dtype.str,
                  "format": dt.matrix.format,
                  "Shape": str(dt.matrix.shape),

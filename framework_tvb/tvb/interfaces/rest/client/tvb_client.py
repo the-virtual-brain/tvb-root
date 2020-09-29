@@ -237,3 +237,9 @@ class TVBClient:
         operation if it has finished and an empty list, if the operation is still running, has failed or simply has no results.
         """
         return self.operation_api.get_operations_results(operation_gid)
+
+    def get_extra_info(self, datatype_gid):
+        """
+        Given an datatype gid, this function returns a dict containing the extra information of the datatype.
+        """
+        return self.datatype_api.get_extra_info(datatype_gid)

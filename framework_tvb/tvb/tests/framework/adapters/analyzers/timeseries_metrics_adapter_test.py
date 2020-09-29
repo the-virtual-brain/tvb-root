@@ -36,10 +36,10 @@ import os
 import tvb_data
 import json
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.config import ALGORITHMS
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel, \
-    ALGORITHMS
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel
 from tvb.tests.framework.core.factory import TestFactory
 
 
@@ -75,6 +75,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         time_series_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
         ts_metric_adapter = TimeseriesMetricsAdapter()
+        ts_metric_adapter.storage_path = FilesHelper().get_project_folder(self.test_project, "42")
         view_model = TimeseriesMetricsAdapterModel()
         view_model.time_series = time_series_index.gid
 

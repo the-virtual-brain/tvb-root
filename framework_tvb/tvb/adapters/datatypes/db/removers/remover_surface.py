@@ -27,9 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.adapters.datatypes.db.fcd import FcdIndex
+
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliSurfaceIndex
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesSurfaceIndex
 from tvb.core.entities.storage import dao
@@ -51,15 +52,25 @@ class SurfaceRemover(ABCRemover):
             associated_rm = dao.get_generic_entity(RegionMappingIndex, self.handled_datatype.gid, 'fk_surface_gid')
             associated_lc = dao.get_generic_entity(LocalConnectivityIndex, self.handled_datatype.gid, 'fk_surface_gid')
             associated_stim = dao.get_generic_entity(StimuliSurfaceIndex, self.handled_datatype.gid, 'fk_surface_gid')
-            error_msg = "Surface cannot be removed because is still used by a "
+            associated_pms = dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                    'fk_brain_skull_gid')
+            associated_pms.extend(dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                         'fk_skull_skin_gid'))
+            associated_pms.extend(dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                         'fk_skin_air_gid'))
+            associated_pms.extend(dao.get_generic_entity(ProjectionMatrixIndex, self.handled_datatype.gid,
+                                                         'fk_source_gid'))
+            error_msg = "Surface cannot be removed because is still used by %d %s entities "
 
             if len(associated_ts) > 0:
-                raise RemoveDataTypeException(error_msg + " TimeSeriesSurface.")
+                raise RemoveDataTypeException(error_msg % (len(associated_ts), "TimeSeriesSurface"))
             if len(associated_rm) > 0:
-                raise RemoveDataTypeException(error_msg + " RegionMapping.")
+                raise RemoveDataTypeException(error_msg % (len(associated_rm), "RegionMapping"))
             if len(associated_lc) > 0:
-                raise RemoveDataTypeException(error_msg + " LocalConnectivity.")
+                raise RemoveDataTypeException(error_msg % (len(associated_lc), " LocalConnectivity"))
             if len(associated_stim) > 0:
-                raise RemoveDataTypeException(error_msg + " StimuliSurfaceData.")
+                raise RemoveDataTypeException(error_msg % (len(associated_stim), "StimuliSurface"))
+            if len(associated_pms) > 0:
+                raise RemoveDataTypeException(error_msg % (len(associated_pms), "ProjectionMatrix"))
 
         ABCRemover.remove_datatype(self, skip_validation)

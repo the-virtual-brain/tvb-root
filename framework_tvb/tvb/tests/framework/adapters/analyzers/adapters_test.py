@@ -41,12 +41,12 @@ from tvb.adapters.analyzers.pca_adapter import PCAAdapter
 from tvb.adapters.analyzers.wavelet_adapter import ContinuousWaveletTransformAdapter
 from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5, CorrelationCoefficientsH5
-from tvb.adapters.datatypes.h5.mapped_value_h5 import DatatypeMeasureH5
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5, IndependentComponentsH5
 from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5, CoherenceSpectrumH5, \
     ComplexCoherenceSpectrumH5
 from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -198,10 +198,11 @@ class TestAdapters(TransactionalTestCase):
         result_h5 = h5.path_for(storage_folder, ComplexCoherenceSpectrumH5, complex_coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
-    def test_fcd_adapter(self, tmpdir, time_series_region_index_factory,
+    def test_fcd_adapter(self, tmpdir, time_series_region_index_factory, connectivity_index_factory,
                          connectivity_factory, region_mapping_factory, surface_factory):
         storage_folder = str(tmpdir)
         connectivity = connectivity_factory()
+        connectivity_index_factory(conn=connectivity)
         surface = surface_factory()
         region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
         ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)

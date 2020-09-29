@@ -37,15 +37,13 @@ from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, Surfac
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.equations import TemporalApplicableEquation, FiniteSupportEquation
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
-# TODO: THESE TESTS WORK BUT WHEN RUNNING THEM, THEY CREATE H5 FILES IN THE SAME FOLDER AS
-#  THIS FILE AND THEY REMAIN THERE
 class TestStimulusCreator(TransactionalTestCase):
 
     def transactional_setup_method(self):
@@ -71,6 +69,7 @@ class TestStimulusCreator(TransactionalTestCase):
     def test_create_stimulus_region(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
         region_stimulus_creator = RegionStimulusCreator()
+        region_stimulus_creator.storage_path = FilesHelper().get_project_folder(self.test_project, "42")
 
         view_model = region_stimulus_creator.get_view_model_class()()
         view_model.connectivity = self.connectivity.gid
@@ -96,8 +95,8 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 2.0
 
-        FlowService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id,
-                                     view_model=view_model)
+        OperationService().fire_operation(region_stimulus_creator, self.test_user, self.test_project.id,
+                                          view_model=view_model)
         region_stimulus_index = TestFactory.get_entity(self.test_project, StimuliRegionIndex)
 
         assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
@@ -106,6 +105,7 @@ class TestStimulusCreator(TransactionalTestCase):
 
     def test_create_stimulus_surface(self):
         surface_stimulus_creator = SurfaceStimulusCreator()
+        surface_stimulus_creator.storage_path = FilesHelper().get_project_folder(self.test_project, "42")
 
         view_model = surface_stimulus_creator.get_view_model_class()()
         view_model.surface = self.surface.gid
@@ -138,8 +138,8 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 0.0
 
-        FlowService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id,
-                                     view_model=view_model)
+        OperationService().fire_operation(surface_stimulus_creator, self.test_user, self.test_project.id,
+                                          view_model=view_model)
         surface_stimulus_index = TestFactory.get_entity(self.test_project, StimuliSurfaceIndex)
 
         assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'

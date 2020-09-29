@@ -36,7 +36,6 @@ from datetime import datetime
 import numpy
 from tvb.core import utils
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
@@ -100,24 +99,15 @@ class Field(object):
 
     @property
     def value(self):
-        if str(self.data) == self.unvalidated_data:
+        if self.data is not None:
             return self.data
-        return self.data or self.unvalidated_data
+        return self.unvalidated_data
 
     def __repr__(self):
         return '<{}>(name={})'.format(type(self).__name__, self.name)
 
     def __str__(self):
         return jinja_env.get_template(self.template).render(field=self)
-
-
-class SimpleBoolField(Field):
-    template = 'form_fields/bool_field.html'
-
-    def _from_post(self):
-        if self.unvalidated_data is None:
-            self.data = False
-        self.data = bool(self.unvalidated_data)
 
 
 class SimpleStrField(Field):
@@ -133,21 +123,6 @@ class SimpleHiddenField(Field):
     template = 'form_fields/hidden_field.html'
 
 
-class SimpleIntField(Field):
-    template = 'form_fields/number_field.html'
-    min = None
-    max = None
-
-    def _from_post(self):
-        super(SimpleIntField, self)._from_post()
-        if self.unvalidated_data is None or self.unvalidated_data.strip() == '':
-            if self.required:
-                raise ValueError('Field required')
-            self.data = None
-        else:
-            self.data = int(self.unvalidated_data)
-
-
 class SimpleFloatField(Field):
     template = 'form_fields/number_field.html'
     input_type = "number"
@@ -157,119 +132,12 @@ class SimpleFloatField(Field):
 
     def _from_post(self):
         super(SimpleFloatField, self)._from_post()
-        if self.unvalidated_data is None or self.unvalidated_data.strip() == '':
-            if self.required:
-                raise ValueError('Field required')
-            self.data = None
-        else:
-            self.data = float(self.unvalidated_data)
-
-
-class DataTypeSelectField(Field):
-    template = 'form_fields/datatype_select_field.html'
-    missing_value = 'explicit-None-value'
-
-    def __init__(self, datatype_index, form, name=None, disabled=False, required=False, label='', doc='',
-                 conditions=None, draw_dynamic_conditions_buttons=True, dynamic_conditions=None, has_all_option=False,
-                 show_only_all_option=False):
-        super(DataTypeSelectField, self).__init__(form, name, disabled, required, label, doc)
-        self.datatype_index = datatype_index
-        self.conditions = conditions
-        self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
-        self.dynamic_conditions = dynamic_conditions
-        self.has_all_option = has_all_option
-        self.show_only_all_option = show_only_all_option
-
-    @property
-    def get_dynamic_filters(self):
-        return FilterChain().get_filters_for_type(self.datatype_index)
-
-    def _get_values_from_db(self):
-        all_conditions = FilterChain()
-        all_conditions += self.conditions
-        all_conditions += self.dynamic_conditions
-        filtered_datatypes, count = dao.get_values_of_datatype(self.owner.project_id,
-                                                               self.datatype_index,
-                                                               all_conditions)
-        return filtered_datatypes
-
-    def options(self):
-        if not self.owner.project_id:
-            raise ValueError('A project_id is required in order to query the DB')
-
-        filtered_datatypes = self._get_values_from_db()
-
-        if not self.required:
-            choice = None
-            yield Option(
-                id='{}_{}'.format(self.name, None),
-                value=self.missing_value,
-                label=str(choice).title(),
-                checked=self.data is None
-            )
-
-        if not self.show_only_all_option:
-            for i, datatype in enumerate(filtered_datatypes):
-                yield Option(
-                    id='{}_{}'.format(self.name, i),
-                    value=datatype[2],
-                    label=self._prepare_display_name(datatype),
-                    checked=self.data == datatype[2]
-                )
-
-        if self.has_all_option:
-            if not self.owner.draw_ranges:
-                raise ValueError("The owner form should draw ranges inputs in order to support 'All' option")
-
-            all_values = ''
-            for fdt in filtered_datatypes:
-                all_values += str(fdt[2]) + ','
-
-            choice = "All"
-            yield Option(
-                id='{}_{}'.format(self.name, choice),
-                value=all_values[:-1],
-                label=choice,
-                checked=self.data is choice
-            )
-
-    def get_dt_from_db(self):
-        return dao.get_datatype_by_gid(self.data)
-
-    def _prepare_display_name(self, value):
-        # TODO remove duplicate with TraitedDataTypeSelectField
-        """
-        Populate meta-data fields for data_list (list of DataTypes).
-
-        Private method, to be called recursively.
-        It will receive a list of Attributes, and it will populate 'options'
-        entry with data references from DB.
-        """
-        # Here we only populate with DB data, actual
-        # XML check will be done after select and submit.
-        entity_gid = value[2]
-        actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
-        display_name = actual_entity[0].display_name
-        display_name += ' - ' + (value[3] or "None ")
-        if value[5]:
-            display_name += ' - From: ' + str(value[5])
-        else:
-            display_name += utils.date2string(value[4])
-        if value[6]:
-            display_name += ' - ' + str(value[6])
-        display_name += ' - ID:' + str(value[0])
-
-        return display_name
-
-    def _from_post(self):
-        if self.unvalidated_data == self.missing_value:
+        if self.unvalidated_data and len(self.unvalidated_data) == 0:
             self.unvalidated_data = None
-
-        if self.required and not self.unvalidated_data:
-            raise ValueError('Field required')
-
-        # TODO: ensure is in choices
-        self.data = self.unvalidated_data
+        if self.unvalidated_data:
+            self.data = float(self.unvalidated_data)
+        else:
+            self.data = None
 
 
 class TraitField(Field):
@@ -340,7 +208,7 @@ class TraitDataTypeSelectField(TraitField):
     missing_value = 'explicit-None-value'
 
     def __init__(self, trait_attribute, form, name=None, conditions=None, draw_dynamic_conditions_buttons=True,
-                 dynamic_conditions=None, has_all_option=False):
+                 dynamic_conditions=None, has_all_option=False, show_only_all_option=False):
         super(TraitDataTypeSelectField, self).__init__(trait_attribute, form, name)
         if issubclass(type(trait_attribute), DataTypeGidAttr):
             type_to_query = trait_attribute.linked_datatype
@@ -355,14 +223,21 @@ class TraitDataTypeSelectField(TraitField):
         self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
         self.dynamic_conditions = dynamic_conditions
         self.has_all_option = has_all_option
+        self.show_only_all_option = show_only_all_option
 
     def from_trait(self, trait, f_name):
         if hasattr(trait, f_name):
             self.data = getattr(trait, f_name)
+            if isinstance(self.data, uuid.UUID):
+                self.data = self.data.hex
 
     @property
     def get_dynamic_filters(self):
         return FilterChain().get_filters_for_type(self.datatype_index)
+
+    @property
+    def get_form_filters(self):
+        return self.conditions
 
     def _get_values_from_db(self):
         all_conditions = FilterChain()
@@ -388,13 +263,14 @@ class TraitDataTypeSelectField(TraitField):
                 checked=self.data is None
             )
 
-        for i, datatype in enumerate(filtered_datatypes):
-            yield Option(
-                id='{}_{}'.format(self.name, i),
-                value=datatype[2],
-                label=self._prepare_display_name(datatype),
-                checked=self.data == datatype[2]
-            )
+        if not self.show_only_all_option:
+            for i, datatype in enumerate(filtered_datatypes):
+                yield Option(
+                    id='{}_{}'.format(self.name, i),
+                    value=datatype[2],
+                    label=self._prepare_display_name(datatype),
+                    checked=self.data == datatype[2]
+                )
 
         if self.has_all_option:
             if not self.owner.draw_ranges:
@@ -428,7 +304,7 @@ class TraitDataTypeSelectField(TraitField):
         entity_gid = value[2]
         actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
         display_name = actual_entity[0].display_name
-        display_name += ' - ' + (value[3] or "None ")   # Subject
+        display_name += ' - ' + (value[3] or "None ")  # Subject
         if value[5]:
             display_name += ' - From: ' + str(value[5])
         else:

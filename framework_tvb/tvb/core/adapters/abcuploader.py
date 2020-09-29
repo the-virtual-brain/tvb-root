@@ -29,18 +29,29 @@
 #
 
 """
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
 import os
 import numpy
 from abc import ABCMeta
+import pyAesCrypt
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 from scipy import io as scipy_io
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCSynchronous, ABCAdapterForm
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neotraits.forms import StrField
+from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapterForm, ABCAdapter
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.neotraits.forms import StrField, TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+
+
+ENCRYPTED_PASSWORD_NAME = 'encrypted_password.pem'
+ENCRYPTED_DATA_SUFFIX = '_encrypted'
+DECRYPTED_DATA_SUFFIX = '_decrypted'
 
 
 class ABCUploaderForm(ABCAdapterForm):
@@ -48,6 +59,12 @@ class ABCUploaderForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(ABCUploaderForm, self).__init__(prefix, project_id)
         self.subject_field = StrField(UploaderViewModel.data_subject, self, name='Data_Subject')
+        # Show Encryption field only when the current TVB installation is capable of decryption
+        supports_encrypted_files = (TvbProfile.current.UPLOAD_KEY_PATH is not None
+                                    and os.path.exists(TvbProfile.current.UPLOAD_KEY_PATH))
+        if supports_encrypted_files:
+            self.encrypted_aes_key = TraitUploadField(UploaderViewModel.encrypted_aes_key, '.pem', self,
+                                                      name='encrypted_aes_key')
         self.temporary_files = []
 
     @staticmethod
@@ -63,21 +80,93 @@ class ABCUploaderForm(ABCAdapterForm):
         return None
 
 
-class ABCUploader(ABCSynchronous, metaclass=ABCMeta):
+class ABCUploader(ABCAdapter, metaclass=ABCMeta):
     """
-    Base class of the uploaders
+    Base class of the uploading algorithms
     """
     LOGGER = get_logger(__name__)
+    launch_mode = AdapterLaunchModeEnum.SYNC_DIFF_MEM
 
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         """
         Before going with the usual prelaunch, get from input parameters the 'subject'.
         """
-
-        self.meta_data.update({DataTypeMetaData.KEY_SUBJECT: view_model.data_subject})
         self.generic_attributes.subject = view_model.data_subject
 
-        return ABCSynchronous._prelaunch(self, operation, uid, available_disk_space, view_model, **kwargs)
+        trait_upload_field_names = list(self.get_form_class().get_upload_information().keys())
+        if view_model.encrypted_aes_key is not None:
+            for upload_field_name in trait_upload_field_names:
+                self._decrypt_content(view_model, upload_field_name)
+
+        return ABCAdapter._prelaunch(self, operation, view_model, uid, available_disk_space)
+
+    @staticmethod
+    def get_path_to_encrypt(input_path):
+        start_extension = input_path.rfind('.')
+        path_to_encrypt = input_path[:start_extension]
+        extension = input_path[start_extension:]
+
+        return path_to_encrypt + ENCRYPTED_DATA_SUFFIX + extension
+
+    @staticmethod
+    def encrypt_password(public_key, symmetric_key):
+
+        encrypted_symmetric_key = public_key.encrypt(
+            symmetric_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        return encrypted_symmetric_key
+
+    @staticmethod
+    def save_encrypted_password(encrypted_password, path_to_encrypted_password):
+
+        with open(os.path.join(path_to_encrypted_password, ENCRYPTED_PASSWORD_NAME), 'wb') as f:
+            f.write(encrypted_password)
+
+    @staticmethod
+    def _decrypt_content(view_model, trait_upload_field_name):
+        if TvbProfile.current.UPLOAD_KEY_PATH is None or not os.path.exists(TvbProfile.current.UPLOAD_KEY_PATH):
+            raise LaunchException("We can not process Encrypted files at this moment, "
+                                  "due to missing PK for decryption! Please contact the administrator!")
+
+        upload_path = getattr(view_model, trait_upload_field_name)
+
+        # Get the encrypted password
+        with open(view_model.encrypted_aes_key, 'rb') as f:
+            encrypted_password = f.read()
+
+        # Read the private key
+        with open(TvbProfile.current.UPLOAD_KEY_PATH, "rb") as key_file:
+            private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+
+        # Decrypt the password using the private key
+        decrypted_password = private_key.decrypt(
+            encrypted_password,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        decrypted_password = decrypted_password.decode()
+
+        # Get path to decrypted file
+        decrypted_download_path = upload_path.replace(ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX)
+
+        # Use the decrypted password to decrypt the message
+        pyAesCrypt.decryptFile(upload_path, decrypted_download_path, decrypted_password,
+                               TvbProfile.current.hpc.CRYPT_BUFFER_SIZE)
+        view_model.__setattr__(trait_upload_field_name, decrypted_download_path)
 
     def get_required_memory_size(self, view_model):
         """

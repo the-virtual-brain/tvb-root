@@ -39,11 +39,13 @@ from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImpo
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.neocom import h5
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.services.user_service import UserService
@@ -93,15 +95,19 @@ def import_conn_zip(project_id, zip_path):
     view_model = ZIPConnectivityImporterModel()
     view_model.uploaded = zip_path
 
-    FlowService().fire_operation(importer, project.administrator, project_id, view_model=view_model)
+    OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)
 
 
 def fire_simulation(project_id, simulator):
     project = dao.get_project_by_id(project_id)
     assert isinstance(simulator, Simulator)
     # Load the SimulatorAdapter algorithm from DB
-    cached_simulator_algorithm = FlowService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                                                 IntrospectionRegistry.SIMULATOR_CLASS)
+    cached_simulator_algorithm = AlgorithmService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
+                                                                                      IntrospectionRegistry.SIMULATOR_CLASS)
+
+    simulator_model = SimulatorAdapterModel()
+    simulator_model.connectivity = simulator.connectivity.gid
+    simulator_model.simulation_length = simulator.simulation_length
 
     # Instantiate a SimulatorService and launch the configured simulation
     simulator_service = SimulatorService()
@@ -111,8 +117,7 @@ def fire_simulation(project_id, simulator):
     dao.store_entity(burst)
 
     launched_operation = simulator_service.async_launch_and_prepare_simulation(burst, project.administrator, project,
-                                                                               cached_simulator_algorithm, simulator,
-                                                                               None)
+                                                                               cached_simulator_algorithm, simulator_model)
     LOG.info("Operation launched ....")
     return launched_operation
 

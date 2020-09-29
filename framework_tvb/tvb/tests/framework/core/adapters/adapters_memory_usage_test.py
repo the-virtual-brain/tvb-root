@@ -33,34 +33,30 @@
 """
 
 import json
-import os
 import pytest
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import ViewModelH5
-from tvb.tests.framework.adapters.testadapter3 import TestAdapterHugeMemoryRequired, TestAdapterHDDRequired, \
-    TestAdapterHugeMemoryRequiredForm
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.model import model_operation
+from tvb.core.entities.model.model_operation import Operation, STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.services.operation_service import OperationService
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.adapters.testadapter3 import *
 
 
 class TestAdapterMemoryUsage(TransactionalTestCase):
     """
     Test class for the module handling methods computing required memory for an adapter to run.
     """
-    
+
     def transactional_setup_method(self):
         """
         Reset the database before each test.
         """
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(admin=self.test_user)
-    
-    
+
     def test_adapter_memory(self, test_adapter_factory):
         test_adapter_factory(adapter_class=TestAdapterHDDRequired)
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
@@ -83,15 +79,13 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         view_model.test = 5
 
         # Prepare operation for launch
-        operation = model_operation.Operation(self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
-                                              json.dumps({'gid': view_model.gid.hex}), json.dumps({}), status=model_operation.STATUS_STARTED)
+        operation = Operation(view_model.gid.hex, self.test_user.id, self.test_project.id, adapter.stored_adapter.id,
+                              status=STATUS_STARTED)
         operation = dao.store_entity(operation)
 
         # Store ViewModel in H5
         parent_folder = FilesHelper().get_project_folder(self.test_project, str(operation.id))
-        view_model_path = os.path.join(parent_folder, h5.path_for(parent_folder, ViewModelH5, view_model.gid))
-        with ViewModelH5(view_model_path, view_model) as view_model_h5:
-            view_model_h5.store(view_model)
+        h5.store_view_model(view_model, parent_folder)
 
         # Launch operation
         with pytest.raises(NoMemoryAvailableException):

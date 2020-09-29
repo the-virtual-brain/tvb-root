@@ -32,15 +32,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import os
+import tvb_data.obj
 from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities.storage import dao
 from tvb.datatypes.surfaces import EEG_CAP, FACE
-import tvb_data.obj
 
 DATA_FILE_EEG_CAP = os.path.join(os.path.dirname(tvb_data.obj.__file__), "eeg_cap.obj")
 DATA_FILE_FACE = os.path.join(os.path.dirname(tvb_data.obj.__file__), "face_surface.obj")
@@ -55,23 +55,20 @@ def update():
     This update was done for release 1.0.2.
     """
     projects_count = dao.get_all_projects(is_count=True)
-    
+
     for page_start in range(0, projects_count, PAGE_SIZE):
         projects_page = dao.get_all_projects(page_start=page_start, page_size=PAGE_SIZE)
-        
+
         for project in projects_page:
             try:
                 user = dao.get_system_user()
                 adapter = ObjSurfaceImporter()
-                FlowService().fire_operation(adapter, user, project.id, visible=False,
-                                             surface_type=EEG_CAP, data_file=DATA_FILE_EEG_CAP)
+                OperationService().fire_operation(adapter, user, project.id, visible=False,
+                                                  surface_type=EEG_CAP, data_file=DATA_FILE_EEG_CAP)
                 adapter = ObjSurfaceImporter()
-                FlowService().fire_operation(adapter, user, project.id, visible=False,
-                                             surface_type=FACE, data_file=DATA_FILE_FACE)
+                OperationService().fire_operation(adapter, user, project.id, visible=False,
+                                                  surface_type=FACE, data_file=DATA_FILE_FACE)
             except Exception as excep:
                 LOGGER.exception(excep)
-                
+
     TvbProfile.current.manager.add_entries_to_config_file({stored.KEY_MATLAB_EXECUTABLE: get_matlab_executable()})
-    
-    
-    

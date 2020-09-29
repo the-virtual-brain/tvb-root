@@ -32,14 +32,17 @@ The ProjectionMatrices DataTypes.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+from enum import Enum
 
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import surfaces, sensors
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
 
-EEG_POLYMORPHIC_IDENTITY = "projEEG"
-MEG_POLYMORPHIC_IDENTITY = "projMEG"
-SEEG_POLYMORPHIC_IDENTITY = "projSEEG"
+
+class ProjectionsType(Enum):
+    EEG = "projEEG"
+    MEG = "projMEG"
+    SEEG = "projSEEG"
 
 
 class ProjectionMatrix(HasTraits):
@@ -104,7 +107,7 @@ class ProjectionSurfaceEEG(ProjectionMatrix):
     Specific projection, from a CorticalSurface to EEG sensors.
     """
 
-    projection_type = Attr(field_type=str, default=EEG_POLYMORPHIC_IDENTITY)
+    projection_type = Attr(field_type=str, default=ProjectionsType.EEG.value)
 
     sensors = Attr(field_type=sensors.SensorsEEG)
 
@@ -119,7 +122,7 @@ class ProjectionSurfaceMEG(ProjectionMatrix):
     Specific projection, from a CorticalSurface to MEG sensors.
     """
 
-    projection_type = Attr(field_type=str, default=MEG_POLYMORPHIC_IDENTITY)
+    projection_type = Attr(field_type=str, default=ProjectionsType.MEG.value)
 
     sensors = Attr(field_type=sensors.SensorsMEG)
 
@@ -133,10 +136,25 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
     Specific projection, from a CorticalSurface to SEEG sensors.
     """
 
-    projection_type = Attr(field_type=str, default=SEEG_POLYMORPHIC_IDENTITY)
+    projection_type = Attr(field_type=str, default=ProjectionsType.SEEG.value)
 
     sensors = Attr(field_type=sensors.SensorsInternal)
 
     @classmethod
     def from_file(cls, source_file='projection_seeg_588_surface_16k.npy', matlab_data_name=None, is_brainstorm=False):
         return ProjectionMatrix.from_file.__func__(cls, source_file, matlab_data_name, is_brainstorm)
+
+
+def make_proj_matrix(proj_type):
+    """
+    Build a ProjectionMatrix instance, based on an input type
+    :param proj_type: one of the supported subtypes
+    :return: Instance of the corresponding projectiion matrix class, or None
+    """
+    if proj_type == ProjectionsType.EEG.value:
+        return ProjectionSurfaceEEG()
+    elif proj_type == ProjectionsType.MEG.value:
+        return ProjectionSurfaceMEG()
+    elif proj_type == ProjectionsType.SEEG.value:
+        return ProjectionSurfaceSEEG()
+    return None

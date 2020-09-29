@@ -159,7 +159,9 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
         self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
-        conn_filter = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
+        conn_filter = FilterChain(
+            fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_surface_mapping'],
+            operations=["==", "=="], values=[1, True])
         self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
                                                              name='connectivity_measure', conditions=conn_filter)
         self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
@@ -409,14 +411,14 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
     def launch(self, view_model):
         # type: (SurfaceViewerModel) -> dict
-        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface)
         connectivity_measure_index = None
         region_map_index = None
 
         if view_model.connectivity_measure:
-            connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+            connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure)
         if view_model.region_map:
-            region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
+            region_map_index = self.load_entity_by_gid(view_model.region_map)
 
         surface_h5 = h5.h5_file_for_index(surface_index)
         region_map_gid = region_map_index.gid if region_map_index is not None else None
@@ -436,7 +438,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
         shell_surface_index = None
         if view_model.shell_surface:
-            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface_index)
 
@@ -486,7 +488,7 @@ class RegionMappingViewer(SurfaceViewer):
 
     def launch(self, view_model):
         # type: (BaseSurfaceViewerModel) -> dict
-        region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
+        region_map_index = self.load_entity_by_gid(view_model.region_map)
         surface_gid = region_map_index.fk_surface_gid
 
         surface_viewer_model = SurfaceViewerModel(surface=uuid.UUID(surface_gid),
@@ -516,6 +518,11 @@ class ConnectivityMeasureOnSurfaceViewerForm(BaseSurfaceViewerForm):
     def get_input_name():
         return 'connectivity_measure'
 
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_surface_mapping'],
+                           operations=["==", "=="], values=[1, True])
+
 
 class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
     """
@@ -534,14 +541,14 @@ class ConnectivityMeasureOnSurfaceViewer(SurfaceViewer):
     def launch(self, view_model):
         # type: (BaseSurfaceViewerModel) -> dict
 
-        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+        connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure)
         cm_connectivity_gid = connectivity_measure_index.fk_connectivity_gid
         cm_connectivity_index = dao.get_datatype_by_gid(cm_connectivity_gid)
 
         region_map_index = None
         rm_connectivity_index = None
         if view_model.region_map:
-            region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
+            region_map_index = self.load_entity_by_gid(view_model.region_map)
             rm_connectivity_gid = region_map_index.fk_connectivity_gid
             rm_connectivity_index = dao.get_datatype_by_gid(rm_connectivity_gid)
 

@@ -45,7 +45,7 @@ class VersionSettings(object):
     """
 
     # Current release number
-    BASE_VERSION = "2.0.6"
+    BASE_VERSION = "2.0.10"
 
     # Current DB version. Increment this and create a new xxx_update_db.py migrate script
     DB_STRUCTURE_VERSION = 18
@@ -184,6 +184,35 @@ class ClusterSettings(object):
         return None
 
 
+class HPCSettings(object):
+    """
+    HPC related specifications
+    """
+    HPC_LAUNCHER_SH_SCRIPT = "hpcLauncher"
+
+    UNICORE_RESOURCER_KEY = 'Resources'
+    UNICORE_ARGS_KEY = 'Arguments'
+    UNICORE_EXE_KEY = 'Executable'
+
+    JOB_STATUS_KEY = 'status'
+    JOB_MOUNT_POINT_KEY = 'mountPoint'
+
+    CRYPT_BUFFER_SIZE = 64 * 1024
+    CRYPT_PASS_SIZE = 64
+
+    # Specify if the current process is executing an operation (via hpcLauncher)
+    IN_OPERATION_EXECUTION_PROCESS = False
+
+    CAN_RUN_HPC = True
+
+    def __init__(self, manager):
+        self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)
+        self.BACKGROUND_JOB_INTERVAL = manager.get_attribute(stored.KEY_HPC_INTERVAL, 60, int)
+        self.HPC_COMPUTE_SITE = manager.get_attribute(stored.KEY_HPC_COMPUTE_SITE)
+        self.CRYPT_DATADIR = manager.get_attribute(stored.KEY_CRYPT_DATADIR)
+        self.CRYPT_PASSDIR = manager.get_attribute(stored.KEY_CRYPT_PASSDIR)
+
+
 class WebSettings(object):
     """
     Web related specifications
@@ -280,8 +309,8 @@ class WebAdminSettings(object):
         # Admin's email used when creating first user
         self.ADMINISTRATOR_EMAIL = manager.get_attribute(stored.KEY_ADMIN_EMAIL, self.DEFAULT_ADMIN_EMAIL)
 
-        # Admins GID
-        self.ADMINISTRATOR_GIDS = manager.get_attribute(stored.KEY_ADMIN_GIDS, "").split(",")
+        # Admins group
+        self.ADMINISTRATORS_GROUP = manager.get_attribute(stored.KEY_ADMINS_GROUP, "")
 
 
 class DBSettings(object):

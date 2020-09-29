@@ -127,7 +127,6 @@ class TestsTransactional(BaseTestCase):
             "Added user should have been deleted even without explicit commit call.." \
             "Expected %s but got %s" % (initial_user_count, final_user_count)
 
-    @pytest.mark.skipif
     def test_multi_threaded_access(self):
         """
         Test that there is no problem with multiple threads accessing dao. Since cfg.MAX_THREADS_NO is set to 20 we just

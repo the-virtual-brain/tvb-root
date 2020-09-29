@@ -35,26 +35,28 @@ Unit-test for mat_timeseries_importer and mat_parser.
 """
 
 import os
+
 import tvb_data
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterModel, RegionTimeSeriesImporter
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class TestMatTimeSeriesImporter(TransactionalTestCase):
+class TestMatTimeSeriesImporter(BaseTestCase):
     base_pth = os.path.join(os.path.dirname(tvb_data.__file__), 'berlinSubjects', 'QL_20120814')
     bold_path = os.path.join(base_pth, 'QL_BOLD_regiontimecourse.mat')
     connectivity_path = os.path.join(base_pth, 'QL_20120814_Connectivity.zip')
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         self.test_user = TestFactory.create_user('Mat_Timeseries_User')
         self.test_project = TestFactory.create_project(self.test_user, "Mat_Timeseries_Project")
         self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project,
                                                                 self.connectivity_path)
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_bold(self):
@@ -64,7 +66,7 @@ class TestMatTimeSeriesImporter(TransactionalTestCase):
         view_model.data_subject = "QL"
         view_model.datatype = self.connectivity.gid
 
-        TestFactory.launch_importer(RegionTimeSeriesImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(RegionTimeSeriesImporter, view_model, self.test_user, self.test_project, False)
 
         tsr = TestFactory.get_entity(self.test_project, TimeSeriesRegionIndex)
         assert (661, 1, 68, 1) == (tsr.data_length_1d, tsr.data_length_2d, tsr.data_length_3d, tsr.data_length_4d)

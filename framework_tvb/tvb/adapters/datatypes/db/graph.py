@@ -28,12 +28,20 @@
 #
 #
 
-from sqlalchemy import Column, Integer, ForeignKey, String
+"""
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+"""
+
+import json
+from sqlalchemy import Column, Integer, ForeignKey, String, Boolean
 from sqlalchemy.orm import relationship
-from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex, RegionMappingIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
+from tvb.core.entities.storage import dao
+from tvb.datatypes.graph import Covariance, CorrelationCoefficients, ConnectivityMeasure
 
 
 class CovarianceIndex(DataTypeMatrix):
@@ -57,10 +65,16 @@ class CorrelationCoefficientsIndex(DataTypeMatrix):
 
     labels_ordering = Column(String)
 
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
+
     def fill_from_has_traits(self, datatype):
         # type: (CorrelationCoefficients)  -> None
         super(CorrelationCoefficientsIndex, self).fill_from_has_traits(datatype)
-        self.labels_ordering = datatype.labels_ordering
+        self.labels_ordering = json.dumps(datatype.labels_ordering)
         self.fk_source_gid = datatype.source.gid.hex
 
 
@@ -72,7 +86,36 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
     connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
                                 primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid)
 
+    has_surface_mapping = Column(Boolean, nullable=False, default=False)
+
     def fill_from_has_traits(self, datatype):
         # type: (ConnectivityMeasure)  -> None
         super(ConnectivityMeasureIndex, self).fill_from_has_traits(datatype)
         self.fk_connectivity_gid = datatype.connectivity.gid.hex
+        self.title = datatype.title
+
+        self.has_volume_mapping = False
+        self.has_surface_mapping = False
+
+        no_reg = datatype.connectivity.number_of_regions
+        if not (no_reg in self.parsed_shape):
+            return
+
+        rm_list = dao.get_generic_entity(RegionMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
+        if rm_list:
+            self.has_surface_mapping = True
+
+        rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
+        if rvm_list:
+            self.has_volume_mapping = True
+
+
+    @property
+    def display_name(self):
+        """
+        Overwrite from superclass and add number of regions field
+        """
+        result = super(ConnectivityMeasureIndex, self).display_name
+        if self.title:
+            result = result + " - " + (self.title if len(self.title) < 50 else self.title[:46] + "...")
+        return result

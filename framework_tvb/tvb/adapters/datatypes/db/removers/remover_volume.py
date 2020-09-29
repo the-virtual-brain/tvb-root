@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
@@ -45,12 +46,10 @@ class VolumeRemover(ABCRemover):
         Called when a Surface is to be removed.
         """
         if not skip_validation:
-            associated_ts = dao.get_generic_entity(TimeSeriesVolumeIndex, self.handled_datatype.gid,
-                                                   'fk_volume_gid')
-            associated_rvm = dao.get_generic_entity(RegionVolumeMappingIndex, self.handled_datatype.gid,
-                                                    'fk_volume_gid')
-            associated_s_mri = dao.get_generic_entity(StructuralMRIIndex, self.handled_datatype.gid,
-                                                      'fk_volume_gid')
+            key = 'fk_volume_gid'
+            associated_ts = dao.get_generic_entity(TimeSeriesVolumeIndex, self.handled_datatype.gid, key)
+            associated_rvm = dao.get_generic_entity(RegionVolumeMappingIndex, self.handled_datatype.gid, key)
+            associated_s_mri = dao.get_generic_entity(StructuralMRIIndex, self.handled_datatype.gid, key)
 
             error_msg = "Volume cannot be removed because is still used by a "
 

@@ -36,18 +36,19 @@ Adapter that uses the traits module to generate interfaces for BalloonModel Anal
 """
 
 import uuid
+
 import numpy
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.analyzers.fmri_balloon import BalloonModel
 from tvb.basic.neotraits.api import Float, Attr
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.neocom import h5
+from tvb.core.neotraits.db import prepare_array_shape_meta
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
-from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
-from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neocom import h5
 
 
 class BalloonModelAdapterModel(ViewModel):
@@ -128,7 +129,7 @@ class BalloonModelAdapterForm(ABCAdapterForm):
         return BalloonModel()
 
 
-class BalloonModelAdapter(ABCAsynchronous):
+class BalloonModelAdapter(ABCAdapter):
     """
     TVB adapter for calling the BalloonModel algorithm.
     """
@@ -149,7 +150,7 @@ class BalloonModelAdapter(ABCAsynchronous):
         Store the input shape to be later used to estimate memory usage. Also
         create the algorithm instance.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -249,6 +250,7 @@ class BalloonModelAdapter(ABCAsynchronous):
         result_index.labels_ordering = self.input_time_series_index.labels_ordering
         result_index.labels_dimensions = self.input_time_series_index.labels_dimensions
         result_index.has_volume_mapping = self.input_time_series_index.has_volume_mapping
+        result_index.has_surface_mapping = self.input_time_series_index.has_surface_mapping
         result_index.title = self.input_time_series_index.title
 
     def _fill_result_h5(self, result_h5, input_h5):

@@ -51,3 +51,6 @@ class SensorsIndex(DataType):
         """
         previous = "Sensors"
         return previous + " [" + str(self.number_of_sensors) + "] - " + str(self.sensors_type)
+
+    def get_subtype_attr(self):
+        return self.sensors_type

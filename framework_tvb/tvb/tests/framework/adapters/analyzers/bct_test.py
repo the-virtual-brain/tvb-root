@@ -36,12 +36,10 @@ import pytest
 import os
 import tvb_data
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
-from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.entities.model.model_operation import Algorithm, STATUS_FINISHED
-from tvb.core.services.operation_service import OperationService
+from tvb.core.entities.model.model_operation import Algorithm
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.utils import get_matlab_executable
+from tvb.core.utils import no_matlab
 from tvb.core.entities.storage import dao
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -52,7 +50,7 @@ class TestBCT(TransactionalTestCase):
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
 
-    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
@@ -79,31 +77,22 @@ class TestBCT(TransactionalTestCase):
         """
         self.clean_database(True)
 
-    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_bct_all(self):
         """
         Iterate all BCT algorithms and execute them.
         """
-        service = OperationService()
+
+        view_model = BaseBCTModel()
+        view_model.connectivity = self.connectivity.gid
         algo_category = dao.get_category_by_id(self.bct_adapters[0].stored_adapter.fk_category)
+
         for adapter_instance in self.bct_adapters:
-            algorithm = adapter_instance.stored_adapter
-            view_model = BaseBCTModel()
-            view_model.connectivity = self.connectivity.gid
-
-            # Avoid the scheduled execution, as this is asynch, thus launch it immediately
-            operation = service.prepare_operations(self.test_user.id, self.test_project, algorithm, algo_category,
-                                                   {}, True, view_model=view_model)[0][0]
-            service.initiate_prelaunch(operation, adapter_instance)
-
-            operation = dao.get_operation_by_id(operation.id)
-            # Check that operation status after execution is success.
-            assert STATUS_FINISHED == operation.status
-            # Make sure at least one result exists for each BCT algorithm
-            results = dao.get_generic_entity(DataType, operation.id, 'fk_from_operation')
+            results = TestFactory.launch_synchronously(self.test_user, self.test_project, adapter_instance,
+                                                       view_model, algo_category)
             assert len(results) > 0
 
-    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_bct_descriptions(self):
         """
         Iterate all BCT algorithms and check that description has been extracted from *.m files.

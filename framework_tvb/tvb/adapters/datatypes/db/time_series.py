@@ -36,6 +36,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_datatype import DataType
 
 
@@ -57,6 +58,12 @@ class TimeSeriesIndex(DataType):
     labels_dimensions = Column(String, nullable=False)
     has_volume_mapping = Column(Boolean, nullable=False, default=False)
     has_surface_mapping = Column(Boolean, nullable=False, default=False)
+
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.labels_ordering
+        labels_dict["labels_dimensions"] = self.labels_dimensions
+        return labels_dict
 
     def fill_from_has_traits(self, datatype):
         # type: (TimeSeries)  -> None
@@ -98,13 +105,15 @@ class TimeSeriesIndex(DataType):
     def accepted_filters():
         filters = DataType.accepted_filters()
         filters.update(
-            {'datatype_class.data_ndim': {'type': 'int', 'display': 'No of Dimensions', 'operations': ['==', '<', '>']},
-             'datatype_class.sample_period': {'type': 'float', 'display': 'Sample Period',
-                                              'operations': ['==', '<', '>']},
-             'datatype_class.sample_rate': {'type': 'float', 'display': 'Sample Rate', 'operations': ['==', '<', '>']},
-             'datatype_class.title': {'type': 'string', 'display': 'Title', 'operations': ['==', '!=', 'like']}
+            {FilterChain.datatype + '.data_ndim':
+                 {'type': 'int', 'display': 'No of Dimensions', 'operations': ['==', '<', '>']},
+             FilterChain.datatype + '.sample_period':
+                 {'type': 'float', 'display': 'Sample Period', 'operations': ['==', '<', '>']},
+             FilterChain.datatype + '.sample_rate':
+                 {'type': 'float', 'display': 'Sample Rate', 'operations': ['==', '<', '>']},
+             FilterChain.datatype + '.title':
+                 {'type': 'string', 'display': 'Title', 'operations': ['==', '!=', 'like']}
              })
-
         return filters
 
     def get_data_shape(self):

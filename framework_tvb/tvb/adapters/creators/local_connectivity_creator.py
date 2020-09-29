@@ -33,25 +33,25 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
-from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
+from tvb.basic.neotraits.api import Attr
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField, FormField, SelectField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
-from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
+from tvb.core.neotraits.forms import ScalarField, FormField, SelectField, TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.surfaces import Surface, CORTICAL
 
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(LocalConnectivitySelectorForm, self).__init__(prefix, project_id)
-        self.existentEntitiesSelect = DataTypeSelectField(self.get_required_datatype(), self,
-                                                          name='existentEntitiesSelect',
-                                                          label='Load Local Connectivity')
+        traited_attr = Attr(self.get_required_datatype(), label='Load Local Connectivity', required=False)
+        self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, self, name='existentEntitiesSelect')
 
     @staticmethod
     def get_required_datatype():
@@ -124,7 +124,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
             lc_equation = LocalConnectivity.equation.default
         self.spatial.data = type(lc_equation)
         self.spatial.subform_field = FormField(get_form_for_equation(type(lc_equation)), self,
-                                                self.NAME_EQUATION_PARAMS_DIV)
+                                               self.NAME_EQUATION_PARAMS_DIV)
         self.spatial.subform_field.form.fill_from_trait(lc_equation)
 
     def get_rendering_dict(self):
@@ -132,7 +132,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
                 'equation_params_div': self.NAME_EQUATION_PARAMS_DIV, 'legend': 'Local connectivity parameters'}
 
 
-class LocalConnectivityCreator(ABCAsynchronous):
+class LocalConnectivityCreator(ABCAdapter):
     """
     The purpose of this adapter is create a LocalConnectivity.
     """
@@ -158,8 +158,8 @@ class LocalConnectivityCreator(ABCAsynchronous):
         local_connectivity = LocalConnectivity()
         local_connectivity.cutoff = view_model.cutoff
         if not self.surface_index:
-            self.surface_index = self.load_entity_by_gid(view_model.surface.hex)
-        surface = h5.load_from_index(self.surface_index, dt_class=CorticalSurface)
+            self.surface_index = self.load_entity_by_gid(view_model.surface)
+        surface = h5.load_from_index(self.surface_index)
         local_connectivity.surface = surface
         local_connectivity.equation = view_model.equation
         local_connectivity.compute_sparse_matrix()
@@ -173,7 +173,7 @@ class LocalConnectivityCreator(ABCAsynchronous):
         Returns the required disk size to be able to run the adapter. (in kB)
         """
         if view_model.surface:
-            self.surface_index = self.load_entity_by_gid(view_model.surface.hex)
+            self.surface_index = self.load_entity_by_gid(view_model.surface)
             points_no = view_model.cutoff / self.surface_index.edge_mean_length
             disk_size_b = self.surface_index.number_of_vertices * points_no * points_no * 8
             return self.array_size2kb(disk_size_b)

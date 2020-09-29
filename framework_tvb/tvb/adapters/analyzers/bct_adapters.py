@@ -36,9 +36,8 @@ from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
@@ -102,14 +101,14 @@ class BaseUnidirectedBCTForm(BaseBCTForm):
         return FilterChain(fields=[FilterChain.datatype + '.undirected'], operations=["=="], values=['1'])
 
 
-class BaseBCT(ABCAsynchronous):
+class BaseBCT(ABCAdapter):
     """
     Interface between Brain Connectivity Toolbox of Olaf Sporns and TVB Framework.
     This adapter requires BCT deployed locally, and Matlab or Octave installed separately of TVB.
     """
 
     def __init__(self):
-        ABCAsynchronous.__init__(self)
+        ABCAdapter.__init__(self)
         self.matlab_worker = MatlabWorker()
 
     @staticmethod
@@ -130,7 +129,7 @@ class BaseBCT(ABCAsynchronous):
         return 0
 
     def get_connectivity(self, view_model):
-        conn_index = load_entity_by_gid(view_model.connectivity.hex)
+        conn_index = self.load_entity_by_gid(view_model.connectivity)
         return h5.load_from_index(conn_index)
 
     def execute_matlab(self, matlab_code, data):

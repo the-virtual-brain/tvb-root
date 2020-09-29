@@ -33,14 +33,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import numpy
 import json
+
+import numpy
+from tvb.adapters.visualizers.pse import PSEGroupModel, PSEModel, KEY_GID
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.transient.pse import PSEGroupModel, PSEModel, KEY_GID
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 

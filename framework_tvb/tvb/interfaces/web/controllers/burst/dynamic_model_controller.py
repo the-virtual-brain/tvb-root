@@ -46,6 +46,7 @@ from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
 from tvb.core.entities.storage import dao
 import tvb.core.entities.model.model_burst as model_burst
 from tvb.core.neotraits.forms import SimpleStrField
@@ -53,9 +54,10 @@ from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
+from tvb.interfaces.web.controllers.burst.matjax import configure_matjax_doc
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
-from tvb.simulator import models, integrators
+from tvb.simulator import models
 
 
 class Dynamic(object):
@@ -66,7 +68,7 @@ class Dynamic(object):
         if model is None:
             model = models.Generic2dOscillator()
         if integrator is None:
-            integrator = integrators.HeunDeterministic()
+            integrator = HeunDeterministicViewModel()
 
         model.configure()
         self.model = model
@@ -141,6 +143,7 @@ class DynamicModelController(BurstBaseController):
         model_name_fragment = _InputTreeFragment()
         model_fragment = SimulatorModelFragment()
         integrator_fragment = SimulatorIntegratorFragment()
+        model_description = configure_matjax_doc(self.available_models)
 
         params = {
             'title': "Dynamic model",
@@ -148,7 +151,8 @@ class DynamicModelController(BurstBaseController):
             'model_name_fragment': self.render_adapter_form(model_name_fragment),
             'model_form': self.render_adapter_form(model_fragment),
             'integrator_form': self.render_adapter_form(integrator_fragment),
-            'dynamic_gid': dynamic_gid
+            'dynamic_gid': dynamic_gid,
+            'model_description': model_description
         }
         self.fill_default_attributes(params)
 
@@ -270,7 +274,7 @@ class DynamicModelController(BurstBaseController):
         Should I call noise.configure() as well?
         similar to simulator.configure_integrator_noise
         """
-        if isinstance(integrator, integrators.IntegratorStochastic):
+        if isinstance(integrator, IntegratorStochasticViewModel):
             shape = (model.nvar, 1, model.number_of_modes)
             if integrator.noise.ntau > 0.0:
                 integrator.noise.configure_coloured(integrator.dt, shape)

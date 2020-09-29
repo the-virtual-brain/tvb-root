@@ -170,7 +170,6 @@ def _adapt_simulation_monitor_params():
 
                 eeg_op.parameters = json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder)
                 LOGGER.debug("New params:" + eeg_op.parameters)
-                files_helper.write_operation_metadata(eeg_op)
 
                 burst = dao.get_burst_for_operation_id(eeg_op.id)
                 if burst is not None:

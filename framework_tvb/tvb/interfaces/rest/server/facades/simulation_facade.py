@@ -33,7 +33,7 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.exceptions import ProjectServiceException
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, InvalidInputException, ServiceException
@@ -59,8 +59,8 @@ class SimulationFacade:
             raise InvalidInputException('No Simulator h5 file found in the archive')
 
         try:
-            simulator_algorithm = FlowService().get_algorithm_by_module_and_class(SimulatorAdapter.__module__,
-                                                                                  SimulatorAdapter.__name__)
+            simulator_algorithm = AlgorithmService().get_algorithm_by_module_and_class(SimulatorAdapter.__module__,
+                                                                                       SimulatorAdapter.__name__)
             simulation = self.simulator_service.prepare_simulation_on_server(user_id=current_user_id,
                                                                              project=project,
                                                                              algorithm=simulator_algorithm,

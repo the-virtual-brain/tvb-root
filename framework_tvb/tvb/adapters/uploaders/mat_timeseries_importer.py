@@ -182,7 +182,7 @@ class RegionTimeSeriesImporter(ABCUploader):
             if view_model.slice:
                 data = data[parse_slice(view_model.slice)]
 
-            datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
+            datatype_index = self.load_entity_by_gid(view_model.datatype)
             ts, ts_idx, ts_h5 = self.ts_builder[self.tstype](self, data.shape, datatype_index)
 
             ts.start_time = view_model.start_time

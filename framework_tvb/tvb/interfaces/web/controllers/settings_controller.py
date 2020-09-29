@@ -35,10 +35,9 @@
 import os
 import subprocess
 import threading
-from time import sleep
-
 import cherrypy
 import formencode
+from time import sleep
 from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.exceptions import InvalidSettingsException

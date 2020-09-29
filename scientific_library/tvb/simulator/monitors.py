@@ -216,10 +216,13 @@ class SpatialAverage(Monitor):
 
     """
     _ui_name = "Spatial average with temporal sub-sample"
+    CORTICAL = "cortical"
+    HEMISPHERES = "hemispheres"
+    REGION_MAPPING = "region mapping"
 
     spatial_mask = NArray(  #TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
-        label="An index mask of nodes into areas",
+        label="Spatial Mask",
         required=False,
         doc="""A vector of length==nodes that assigns an index to each node
             specifying the "region" to which it belongs. The default usage is
@@ -228,12 +231,26 @@ class SpatialAverage(Monitor):
 
     default_mask = Attr(
         str,
-        choices=("cortical", "hemispheres"),
-        default="hemispheres",
+        choices=(CORTICAL, HEMISPHERES, REGION_MAPPING),
+        default=HEMISPHERES,
         label="Default Mask",
+        required=False,
         doc=("Fallback in case spatial mask is none and no surface provided" 
              "to use either connectivity hemispheres or cortical attributes."))
         # order = -1)
+
+    def _support_bool_mask(self, mask):
+        """
+        Ensure we support also the case of a boolean mask (eg: connectivity.cortical) with all values being 1,
+        by transforming them all to 0.
+        Otherwise, the later check not numpy.all(areas == numpy.arange(number_of_areas)) would fail for all regions
+        being cortical or in one hemisphere.
+        """
+        spatial_mask = numpy.array([int(val) for val in mask])
+        unique_mask = numpy.unique(spatial_mask)
+        if len(unique_mask) == 1 and unique_mask[0] == 1:
+            return numpy.zeros(len(spatial_mask), dtype=numpy.int)
+        return spatial_mask
 
     def config_for_sim(self, simulator):
 
@@ -248,20 +265,14 @@ class SpatialAverage(Monitor):
                 self.spatial_mask = simulator.surface.region_mapping
             else:
                 conn = simulator.connectivity
-                if self.default_mask[0] == 'cortical':
-                    if conn is not None and conn.cortical is not None and conn.cortical.size > 0:
-                        ## Use as spatial-mask cortical/non cortical areas
-                        self.spatial_mask = numpy.array([int(c) for c in conn.cortical])
-                    else:
-                        msg = "Must fill Spatial Mask parameter for non-surface simulations when using SpatioTemporal monitor!"
-                        raise Exception(msg)
-                if self.default_mask[0] == 'hemispheres':
-                    if conn is not None and conn.hemispheres is not None and conn.hemispheres.size > 0:
-                        ## Use as spatial-mask left/right hemisphere
-                        self.spatial_mask = numpy.array([int(h) for h in conn.hemispheres])
-                    else:
-                        msg = "Must fill Spatial Mask parameter for non-surface simulations when using SpatioTemporal monitor!"
-                        raise Exception(msg)
+                if self.default_mask == self.CORTICAL:
+                    self.spatial_mask = self._support_bool_mask(conn.cortical)
+                elif self.default_mask == self.HEMISPHERES:
+                    self.spatial_mask = self._support_bool_mask(conn.hemispheres)
+                else:
+                    msg = "Must fill either the Spatial Mask parameter or choose a Default Mask for non-surface" \
+                          " simulations when using SpatioTemporal monitor!"
+                    raise Exception(msg)
 
         number_of_nodes = simulator.number_of_nodes
         if self.spatial_mask.size != number_of_nodes:
@@ -371,8 +382,8 @@ class Projection(Monitor):
 
     region_mapping = Attr(
         RegionMapping,
+        label="Region Mapping",
         required=False,
-        label="region mapping",  #order=3,
         doc="A region mapping specifies how vertices of a surface correspond to given regions in the"
             " connectivity. For iEEG/EEG/MEG monitors, this must be specified when performing a region"
             " simulation but is optional for a surface simulation.")
@@ -570,21 +581,21 @@ class EEG(Projection):
 
     projection = Attr(
         projections_module.ProjectionSurfaceEEG,
-        default=None, label='Projection matrix',  #order=2,
+        default=None, label='Projection matrix',
         doc='Projection matrix to apply to sources.')
 
     reference = Attr(
         str, required=False,
-        label="EEG Reference",  #order=5,
+        label="EEG Reference",
         doc='EEG Electrode to be used as reference, or "average" to '
             'apply an average reference. If none is provided, the '
             'produced time-series are the idealized or reference-free.')
 
-    sensors = Attr(sensors_module.SensorsEEG, required=True, label="EEG Sensors",  #order=1,
+    sensors = Attr(sensors_module.SensorsEEG, required=True, label="EEG Sensors",
                    doc='Sensors to use for this EEG monitor')
 
     sigma = Float(
-        default=1.0,  #order=4,
+        default=1.0,
         label="Conductivity (w/o projection)",
         doc='When a projection matrix is not used, this provides '
             'the value of conductivity in the formula for the single '
@@ -653,7 +664,7 @@ class MEG(Projection):
         sensors_module.SensorsMEG,
         label = "MEG Sensors",
         default = None,
-        required = True,  #order=1,
+        required = True,
         doc="The set of MEG sensors for which the forward solution will be calculated.")
 
 
@@ -710,14 +721,14 @@ class iEEG(Projection):
 
     projection = Attr(
         projections_module.ProjectionSurfaceSEEG,
-        default=None, label='Projection matrix',  #order=2,
+        default=None, label='Projection matrix',
         doc='Projection matrix to apply to sources.')
 
     sigma = Float(label="conductivity", default=1.0)  #, order=4)
 
     sensors = Attr(
         sensors_module.SensorsInternal,
-        label="Internal brain sensors", default=None, required=True,  #order=1,
+        label="Internal brain sensors", default=None, required=True,
         doc="The set of SEEG sensors for which the forward solution will be calculated.")
 
 
@@ -808,7 +819,7 @@ class Bold(Monitor):
         label="Duration (ms)",
         default=20000.,
         doc= """Duration of the hrf kernel""",)
-        #order=-1)
+
 
     _interim_period = None
     _interim_istep = None

@@ -142,7 +142,7 @@ class WilsonCowan(Model):
 
     .. math::
             \dot{E}_k &= \dfrac{1}{\tau_e} (-E_k  + (k_e - r_e E_k) \mathcal{S}_e (\alpha_e \left( c_{ee} E_k - c_{ei} I_k  + P_k - \theta_e + \mathbf{\Gamma}(E_k, E_j, u_{kj}) + W_{\zeta}\cdot E_j + W_{\zeta}\cdot I_j\right) ))\\
-            \dot{I}_k &= \dfrac{1}{\tau_i} (-I_k  + (k_i - r_i I_k) \mathcal{S}_i (\alpha_i \left( c_{ie} E_k - c_{ee} I_k  + Q_k - \theta_i + \mathbf{\Gamma}(E_k, E_j, u_{kj}) + W_{\zeta}\cdot E_j + W_{\zeta}\cdot I_j\right) )),
+            \dot{I}_k &= \dfrac{1}{\tau_i} (-I_k  + (k_i - r_i I_k) \mathcal{S}_i (\alpha_i \left( c_{ie} E_k - c_{ee} I_k  + Q_k - \theta_i + \mathbf{\Gamma}(E_k, E_j, u_{kj}) + W_{\zeta}\cdot E_j + W_{\zeta}\cdot I_j\right) ))
 
     """
 
@@ -153,13 +153,13 @@ class WilsonCowan(Model):
         domain=Range(lo=11.0, hi=16.0, step=0.01),
         doc="""Excitatory to excitatory  coupling coefficient""")
 
-    c_ie = NArray(
+    c_ei = NArray(
         label=":math:`c_{ei}`",
         default=numpy.array([4.0]),
         domain=Range(lo=2.0, hi=15.0, step=0.01),
         doc="""Inhibitory to excitatory coupling coefficient""")
 
-    c_ei = NArray(
+    c_ie = NArray(
         label=":math:`c_{ie}`",
         default=numpy.array([13.0]),
         domain=Range(lo=2.0, hi=22.0, step=0.01),

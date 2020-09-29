@@ -36,7 +36,7 @@ import numpy
 import types
 import typing
 from ._declarative_base import _Attr, MetaType
-from .ex import TraitValueError, TraitTypeError, TraitAttributeError
+from .ex import TraitValueError, TraitTypeError, TraitAttributeError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
 
 if typing.TYPE_CHECKING:
@@ -154,7 +154,7 @@ class Attr(_Attr):
         # (this attr instance is a class field, so the default is for the class)
         # This is consistent with how class fields work before they are assigned and become instance bound
         if self.field_name not in instance.__dict__:
-            if isinstance(self.default, types.FunctionType):
+            if self.field_type != types.FunctionType and isinstance(self.default, types.FunctionType):
                 default = self.default()
             else:
                 default = self.default
@@ -183,7 +183,7 @@ class Attr(_Attr):
             #           getattr with a default value swallows that exception and returns false
             present_value = getattr(instance, self.field_name, None)
             if present_value is not None:
-                raise TraitAttributeError("can't write final attribute")
+                raise TraitFinalAttributeError("can't write final attribute")
 
         value = self._validate_set(instance, value)
 

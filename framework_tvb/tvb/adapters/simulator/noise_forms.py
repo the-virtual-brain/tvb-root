@@ -28,19 +28,20 @@
 #
 #
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict, Linear
-from tvb.basic.neotraits.api import Attr, Range
-from tvb.datatypes.equations import Equation
-from tvb.simulator.noise import Noise, Additive, Multiplicative
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.adapters.simulator.range_parameter import RangeParameter
+from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
+from tvb.basic.neotraits.api import Attr, Range
+from tvb.core.entities.file.simulator.view_model import NoiseViewModel, AdditiveNoiseViewModel, \
+    MultiplicativeNoiseViewModel
+from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neotraits.forms import ScalarField, ArrayField, SelectField
+from tvb.datatypes.equations import Equation
 
 
 def get_form_for_noise(noise_class):
     noise_class_to_form = {
-        Additive: AdditiveNoiseForm,
-        Multiplicative: MultiplicativeNoiseForm,
+        AdditiveNoiseViewModel: AdditiveNoiseForm,
+        MultiplicativeNoiseViewModel: MultiplicativeNoiseForm,
     }
 
     return noise_class_to_form.get(noise_class)
@@ -53,8 +54,8 @@ class NoiseForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(NoiseForm, self).__init__(prefix)
-        self.ntau = ScalarField(Noise.ntau, self)
-        self.noise_seed = ScalarField(Noise.noise_seed, self)
+        self.ntau = ScalarField(NoiseViewModel.ntau, self)
+        self.noise_seed = ScalarField(NoiseViewModel.noise_seed, self)
         # TODO: should we display something for random_stream?
         # self.random_stream = ScalarField(Noise.random_stream)
 
@@ -63,10 +64,10 @@ class AdditiveNoiseForm(NoiseForm):
 
     def __init__(self, prefix=''):
         super(AdditiveNoiseForm, self).__init__(prefix)
-        self.nsig = ArrayField(Additive.nsig, self)
+        self.nsig = ArrayField(AdditiveNoiseViewModel.nsig, self)
 
     def get_range_parameters(self):
-        ntau_range_param = RangeParameter(Noise.ntau.field_name, float, Range(lo=0.0, hi=20.0, step=1.0))
+        ntau_range_param = RangeParameter(NoiseViewModel.ntau.field_name, float, Range(lo=0.0, hi=20.0, step=1.0))
         params_with_range_defined = super(NoiseForm, self).get_range_parameters()
         params_with_range_defined.append(ntau_range_param)
 
@@ -80,16 +81,17 @@ class MultiplicativeNoiseForm(NoiseForm):
         self.equation_choices = get_ui_name_to_equation_dict()
         default_equation = list(self.equation_choices.values())[0]
 
-        self.nsig = ArrayField(Multiplicative.nsig, self)
+        self.nsig = ArrayField(MultiplicativeNoiseViewModel.nsig, self)
         self.equation = SelectField(Attr(Equation, label='Equation', default=default_equation), self, name='equation',
                                     choices=self.equation_choices, subform=get_form_for_equation(default_equation))
 
     def fill_trait(self, datatype):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)
         datatype.nsig = self.nsig.data
-        datatype.b = self.equation.data()
+        if type(datatype.b) != self.equation.data:
+            datatype.b = self.equation.data()
 
     def fill_from_trait(self, trait):
-        # type: (Noise) -> None
+        # type: (NoiseViewModel) -> None
         super(MultiplicativeNoiseForm, self).fill_from_trait(trait)
         self.equation.data = trait.b.__class__

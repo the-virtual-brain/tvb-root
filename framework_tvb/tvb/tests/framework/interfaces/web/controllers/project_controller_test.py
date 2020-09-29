@@ -34,17 +34,16 @@
 
 import pytest
 import cherrypy
-from sqlalchemy.orm.exc import NoResultFound
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 import tvb.interfaces.web.controllers.common as common
+from sqlalchemy.orm.exc import NoResultFound
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
 
 class TestProjectController(BaseTransactionalControllerTest):
     """ Unit tests for ProjectController """
-
 
     def transactional_setup_method(self):
         """
@@ -84,7 +83,7 @@ class TestProjectController(BaseTransactionalControllerTest):
         TestFactory.create_project(self.test_user, 'prj3')
         result = self.project_c.viewall(selected_project_id=project1.id)
         projects_list = result['projectsList']
-        ## Use this old version of SET builder, otherwise it will fain on Python 2.6
+        # Use this old version of SET builder, otherwise it will fain on Python 2.6
         assert set([prj.name for prj in projects_list]) == {'prj1', 'prj2', 'prj3', 'Test'}
         assert result['page_number'] == 1
         assert result[common.KEY_PROJECT].name == 'prj1'
@@ -213,7 +212,7 @@ class TestProjectController(BaseTransactionalControllerTest):
         Verifies result dictionary has the expected keys / values after call to
         `get_operation_details(...`
         """
-        operation = operation_factory(test_user=self.test_user, test_project=self.test_project, parameters='{"test" : "test"}')
+        operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
         result_dict = self.project_c.get_operation_details(operation.gid)
         assert result_dict['entity_gid'] == operation.gid
         assert result_dict['nodeType'] == 'operation'

@@ -41,23 +41,22 @@ import os.path
 
 import numpy
 import numpy as np
-from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Float, Attr, Int
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import Float, Int
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ScalarField, SelectField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
-from tvb.datatypes.volumes import Volume
 from tvb.datatypes.structural import StructuralMRI
-from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
-
+from tvb.datatypes.volumes import Volume
 
 LOGGER = get_logger(__name__)
 
@@ -73,8 +72,8 @@ WEIGHTS_OPTIONS = {
     'projection energy': 3
 }
 
-class AllenConnectModel(ViewModel):
 
+class AllenConnectModel(ViewModel):
     resolution = Int(
         label="Spatial resolution (micron)",
         default=list(RESOLUTION_OPTIONS.values())[2],
@@ -103,6 +102,7 @@ class AllenConnectModel(ViewModel):
         doc="""To build the connectivity select only the experiment where the percentage of infected voxels 
         in the injection structure is greater than: """)
 
+
 class AllenConnectomeBuilderForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
@@ -129,7 +129,7 @@ class AllenConnectomeBuilderForm(ABCAdapterForm):
         return None
 
 
-class AllenConnectomeBuilder(ABCAsynchronous):
+class AllenConnectomeBuilder(ABCAdapter):
     """Handler for uploading a mouse connectivity from Allen dataset using AllenSDK."""
 
     _ui_name = "Allen connectivity builder"
@@ -141,11 +141,10 @@ class AllenConnectomeBuilder(ABCAsynchronous):
     def get_output(self):
         return [ConnectivityIndex, VolumeIndex, RegionVolumeMappingIndex, StructuralMRIIndex]
 
-
     def launch(self, view_model):
         resolution = view_model.resolution
         weighting = view_model.weighting
-        inj_f_thresh = view_model.inj_f_thresh/100.
+        inj_f_thresh = view_model.inj_f_thresh / 100.
         vol_thresh = view_model.vol_thresh
 
         project = dao.get_project_by_id(self.current_project_id)
@@ -174,7 +173,7 @@ class AllenConnectomeBuilder(ABCAsynchronous):
 
         # the method includes in the parcellation only brain regions whose volume is greater than vol_thresh
         projmaps = areas_volume_threshold(cache, projmaps, vol_thresh, resolution)
-        
+
         # the method exclude from the experimental dataset
         # those exps where the injected fraction of pixel in the injection site is lower than than the inj_f_thr 
         projmaps = infected_threshold(cache, projmaps, inj_f_thresh)
@@ -287,8 +286,9 @@ def download_an_construct_matrix(tvb_mcc, weighting, ist2e, transgenic_line):
             for inj_id in range(len(list(projmaps.values()))):
                 index = 0
                 for exp_id in list(projmaps.values())[inj_id]['rows']:
-                    list(projmaps.values())[inj_id]['matrix'][index] = list(projmaps.values())[inj_id]['matrix'][index] / \
-                                                                 injdensity[exp_id]
+                    list(projmaps.values())[inj_id]['matrix'][index] = list(projmaps.values())[inj_id]['matrix'][
+                                                                           index] / \
+                                                                       injdensity[exp_id]
                     index += 1
     return projmaps
 
@@ -317,7 +317,8 @@ def pms_cleaner(projmaps):
                 targ_id += 1
                 if list(projmaps.values())[inj_id]['columns'][targ_id]['structure_id'] not in list(projmaps):
                     del list(projmaps.values())[inj_id]['columns'][targ_id]
-                    list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'], targ_id, 1)
+                    list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'],
+                                                                          targ_id, 1)
                     targ_id = -1
     # 4) Exclude the areas that have NaN values (in all the experiments)
     nan_id = {}
@@ -357,7 +358,8 @@ def pms_cleaner(projmaps):
                     column = list(projmaps.values())[inj_id]['columns'][targ_id]
                     if column['structure_id'] == rem:
                         del list(projmaps.values())[inj_id]['columns'][targ_id]
-                        list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'], targ_id, 1)
+                        list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'],
+                                                                              targ_id, 1)
                         targ_id = -1
                         # evaluate if there are still Nan values in the matrices
         nan_id = {}
@@ -394,29 +396,30 @@ def areas_volume_threshold(tvb_mcc, projmaps, vol_thresh, resolution):
             targ_id += 1
             if list(projmaps.values())[inj_id]['columns'][targ_id]['structure_id'] not in id_ok:
                 del list(projmaps.values())[inj_id]['columns'][targ_id]
-                list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'], targ_id, 1)
+                list(projmaps.values())[inj_id]['matrix'] = np.delete(list(projmaps.values())[inj_id]['matrix'],
+                                                                      targ_id, 1)
                 targ_id = -1
     return projmaps
 
 
-
-# the method includes in the dataset for creating the SC only the experiments whose fraction of infected pixels (in the injection site) 
+# the method includes in the dataset for creating the SC only the experiments whose fraction of infected pixels (in the injection site)
 # is greater than inj_f_threshold
 def infected_threshold(tvb_mcc, projmaps, inj_f_threshold):
-    id_ok=[]
+    id_ok = []
     for ID in projmaps:
-        exp_not_accepted=[]
+        exp_not_accepted = []
         for exp in projmaps[ID]['rows']:
-            inj_info=tvb_mcc.get_structure_unionizes([exp], is_injection=True, structure_ids=[ID],include_descendants=True, hemisphere_ids=[2])
-            if len(inj_info)==0:
+            inj_info = tvb_mcc.get_structure_unionizes([exp], is_injection=True, structure_ids=[ID],
+                                                       include_descendants=True, hemisphere_ids=[2])
+            if len(inj_info) == 0:
                 exp_not_accepted.append(exp)
             else:
-                inj_f=inj_info['sum_projection_pixels'][0]/inj_info['sum_pixels'][0]
-                if inj_f<inj_f_threshold:
-                    exp_not_accepted.append(exp) 
-        if len(exp_not_accepted)<len(projmaps[ID]['rows']):
+                inj_f = inj_info['sum_projection_pixels'][0] / inj_info['sum_pixels'][0]
+                if inj_f < inj_f_threshold:
+                    exp_not_accepted.append(exp)
+        if len(exp_not_accepted) < len(projmaps[ID]['rows']):
             id_ok.append(ID)
-            projmaps[ID]['rows']= list(set(projmaps[ID]['rows']).difference(set(exp_not_accepted)))
+            projmaps[ID]['rows'] = list(set(projmaps[ID]['rows']).difference(set(exp_not_accepted)))
     for checkid in list(projmaps):
         if checkid not in id_ok:
             projmaps.pop(checkid, None)
@@ -427,8 +430,9 @@ def infected_threshold(tvb_mcc, projmaps, inj_f_threshold):
             indextarg += 1
             if list(projmaps.values())[indexinj]['columns'][indextarg]['structure_id'] not in id_ok:
                 del list(projmaps.values())[indexinj]['columns'][indextarg]
-                list(projmaps.values())[indexinj]['matrix'] = np.delete(list(projmaps.values())[indexinj]['matrix'], indextarg, 1)
-                indextarg = -1   
+                list(projmaps.values())[indexinj]['matrix'] = np.delete(list(projmaps.values())[indexinj]['matrix'],
+                                                                        indextarg, 1)
+                indextarg = -1
     return projmaps
 
 

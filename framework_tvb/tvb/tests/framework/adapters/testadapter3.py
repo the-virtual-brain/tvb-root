@@ -32,10 +32,13 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.core.adapters import abcadapter
 from tvb.basic.neotraits.api import Int
+from tvb.core.adapters import abcadapter
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import IntField
 from tvb.core.neotraits.view_model import ViewModel
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
@@ -75,11 +78,12 @@ class TestAdapter3Form(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapter3(abcadapter.ABCAsynchronous):
+class TestAdapter3(abcadapter.ABCAdapter):
     """
     This class is used for testing purposes.
     It will be used as an adapter for testing Groups of operations. For ranges to work, it need to be asynchronous.
     """
+    launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
 
     def __init__(self):
         super(TestAdapter3, self).__init__()
@@ -108,14 +112,12 @@ class TestAdapter3(abcadapter.ABCAsynchronous):
         return 0
 
     def launch(self, view_model):
-        result = DummyDataTypeIndex()
+        result = DummyDataType()
         if view_model.param_5 is not None:
-            result.row1 = view_model.param_5
+            result.row1 = str(view_model.param_5)
         if view_model.param_6 is not None:
-            result.row2 = view_model.param_6
-        result.storage_path = self.storage_path
-        result.string_data = ["data"]
-        return result
+            result.row2 = str(view_model.param_6)
+        return h5.store_complete(result, self.storage_path)
 
 
 class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
@@ -144,10 +146,11 @@ class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapterHugeMemoryRequired(abcadapter.ABCAsynchronous):
+class TestAdapterHugeMemoryRequired(abcadapter.ABCAdapter):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
+    launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
 
     def __init__(self):
         super(TestAdapterHugeMemoryRequired, self).__init__()
@@ -196,10 +199,11 @@ class TestAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapterHDDRequired(abcadapter.ABCSynchronous):
+class TestAdapterHDDRequired(abcadapter.ABCAdapter):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
+    launch_mode = abcadapter.AdapterLaunchModeEnum.SYNC_SAME_MEM
 
     def __init__(self):
         super(TestAdapterHDDRequired, self).__init__()

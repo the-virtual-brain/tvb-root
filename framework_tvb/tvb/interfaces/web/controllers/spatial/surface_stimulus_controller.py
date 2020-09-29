@@ -41,9 +41,8 @@ from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliSurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
-    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
-from tvb.core.entities.load import try_get_last_datatype
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
+from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import Form, SimpleFloatField
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -58,7 +57,6 @@ RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/surface/reload_default'
 CHUNK_SIZE = 20
 
 KEY_SURFACE_STIMULI = "stim-surface"
-KEY_SURFACE_STIMULI_NAME = "stim-surface-name"
 KEY_TMP_FORM = "temporal-form"
 
 
@@ -108,15 +106,6 @@ class SurfaceStimulusController(SpatioTemporalController):
     TEMPORAL_PARAMS_FIELD = 'set_temporal_param'
     base_url = '/spatial/stimulus/surface'
 
-    def __init__(self):
-        SpatioTemporalController.__init__(self)
-        ui_name_to_equation_dict = get_ui_name_to_equation_dict()
-        self.possible_spatial_equations = {GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(GAUSSIAN_EQUATION),
-                                           DOUBLE_GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(
-                                               DOUBLE_GAUSSIAN_EQUATION),
-                                           SIGMOID_EQUATION: ui_name_to_equation_dict.get(SIGMOID_EQUATION)}
-        self.possible_temporal_equations = ui_name_to_equation_dict
-
     @cherrypy.expose
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
@@ -136,9 +125,7 @@ class SurfaceStimulusController(SpatioTemporalController):
     @cherrypy.expose
     def set_surface(self, **param):
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
-        surface_form_field = SurfaceStimulusCreatorForm(self.possible_spatial_equations,
-                                                        self.possible_temporal_equations,
-                                                        common.get_current_project().id).surface
+        surface_form_field = SurfaceStimulusCreatorForm(common.get_current_project().id).surface
         surface_form_field.fill_from_post(param)
         current_surface_stim.surface = surface_form_field.value
         self._reset_focal_points(current_surface_stim)
@@ -166,7 +153,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         display_name_form_field = StimulusSurfaceSelectorForm(common.get_current_project().id).display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
-            common.add2session(KEY_SURFACE_STIMULI_NAME, display_name_form_field.value)
+            current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
+            current_surface_stim.display_name = display_name_form_field.value
 
     def step_1(self):
         """
@@ -176,8 +164,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         project_id = common.get_current_project().id
         surface_stim_selector_form = StimulusSurfaceSelectorForm(project_id)
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
-        surface_stim_creator_form = SurfaceStimulusCreatorForm(self.possible_spatial_equations,
-                                                               self.possible_temporal_equations, project_id)
+        surface_stim_creator_form = SurfaceStimulusCreatorForm(project_id)
         if not hasattr(current_surface_stim, 'surface') or not current_surface_stim.surface:
             default_surface_index = try_get_last_datatype(project_id, SurfaceIndex,
                                                           SurfaceStimulusCreatorForm.get_filters())
@@ -187,7 +174,7 @@ class SurfaceStimulusController(SpatioTemporalController):
             else:
                 current_surface_stim.surface = uuid.UUID(default_surface_index.gid)
         surface_stim_creator_form.fill_from_trait(current_surface_stim)
-        surface_stim_selector_form.display_name.data = common.get_from_session(KEY_SURFACE_STIMULI_NAME)
+        surface_stim_selector_form.display_name.data = current_surface_stim.display_name
 
         template_specification = dict(title="Spatio temporal - Surface stimulus")
         template_specification['surfaceStimulusSelectForm'] = self.render_spatial_form(surface_stim_selector_form)
@@ -211,7 +198,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         template_specification = dict(title="Spatio temporal - Surface stimulus")
         surface_stim_selector_form = StimulusSurfaceSelectorForm(common.get_current_project().id)
-        surface_stim_selector_form.display_name.data = common.get_from_session(KEY_SURFACE_STIMULI_NAME)
+        surface_stim_selector_form.display_name.data = current_surface_stim.display_name
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
         template_specification['surfaceStimulusSelectForm'] = self.render_adapter_form(surface_stim_selector_form)
         template_specification['mainContent'] = 'spatial/stimulus_surface_step2_main'
@@ -255,7 +242,6 @@ class SurfaceStimulusController(SpatioTemporalController):
         new_surface_stim.spatial = SurfaceStimulusCreatorForm.default_spatial()
         self._reset_focal_points(new_surface_stim)
         common.add2session(KEY_SURFACE_STIMULI, new_surface_stim)
-        common.add2session(KEY_SURFACE_STIMULI_NAME, None)
         common.add2session(KEY_TMP_FORM, EquationTemporalPlotForm())
 
     @expose_page
@@ -286,8 +272,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         try:
             current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
             surface_stimulus_creator = ABCAdapter.build_adapter_from_class(SurfaceStimulusCreator)
-            self.flow_service.fire_operation(surface_stimulus_creator, common.get_logged_user(),
-                                             common.get_current_project().id, view_model=current_surface_stim)
+            self.operation_service.fire_operation(surface_stimulus_creator, common.get_logged_user(),
+                                                  common.get_current_project().id, view_model=current_surface_stim)
             common.set_important_message("The operation for creating the stimulus was successfully launched.")
 
         except (NameError, ValueError, SyntaxError):
@@ -303,16 +289,16 @@ class SurfaceStimulusController(SpatioTemporalController):
         """
         Loads the interface for the selected surface stimulus.
         """
-        surface_stim_index = ABCAdapter.load_entity_by_gid(surface_stimulus_gid)
+        surface_stim_index = load_entity_by_gid(surface_stimulus_gid)
         surface_stim_h5_path = h5.path_for_stored_index(surface_stim_index)
         existent_surface_stim = SurfaceStimulusCreatorModel()
         with StimuliSurfaceH5(surface_stim_h5_path) as surface_stim_h5:
             surface_stim_h5.load_into(existent_surface_stim)
 
         existent_surface_stim.surface = uuid.UUID(surface_stim_index.fk_surface_gid)
+        existent_surface_stim.display_name = surface_stim_index.user_tag_1
 
         common.add2session(KEY_SURFACE_STIMULI, existent_surface_stim)
-        common.add2session(KEY_SURFACE_STIMULI_NAME, surface_stim_index.user_tag_1)
         return self.do_step(from_step)
 
     @expose_page

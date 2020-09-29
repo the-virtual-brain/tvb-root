@@ -32,17 +32,18 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 
+from os import path
+
 import pytest
 import tvb_data
-from os import path
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterModel
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterModel
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase, BaseTestCase
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 TEST_SUBJECT_A = "TEST_SUBJECT_A"
@@ -62,20 +63,21 @@ class TestCSVConnectivityParser(BaseTestCase):
                 assert 0 == result_conn[i][i]
 
 
-class TestCSVConnectivityImporter(TransactionalTestCase):
+class TestCSVConnectivityImporter(BaseTestCase):
     """
     Unit-tests for csv connectivity importer.
     """
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
         self.helper = FilesHelper()
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
         """
         Clean-up tests data
         """
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
@@ -95,7 +97,7 @@ class TestCSVConnectivityImporter(TransactionalTestCase):
         view_model.tracts = tracts_tmp
         view_model.data_subject = subject
         view_model.input_data = reference_connectivity_gid
-        TestFactory.launch_importer(CSVConnectivityImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(CSVConnectivityImporter, view_model, self.test_user, self.test_project, False)
 
     def test_happy_flow_import(self):
         """

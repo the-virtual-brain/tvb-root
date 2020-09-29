@@ -74,6 +74,9 @@ class ProjectionMatrixIndex(DataType):
         self.fk_sensors_gid = datatype.sensors.gid.hex
         self.fk_source_gid = datatype.sources.gid.hex
 
+    def get_subtype_attr(self):
+        return self.projection_type
+
     @property
     def display_name(self):
         """

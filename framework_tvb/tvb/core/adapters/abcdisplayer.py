@@ -33,11 +33,12 @@
 import importlib
 import json
 import os
-from threading import Lock
 from abc import ABCMeta
+from threading import Lock
 from uuid import UUID
+
 from six import add_metaclass
-from tvb.core.adapters.abcadapter import ABCSynchronous
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel
@@ -98,13 +99,14 @@ class URLGenerator(object):
 
 
 @add_metaclass(ABCMeta)
-class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
+class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
     """
     Abstract class, for marking Adapters used for UI display only.
     """
     KEY_CONTENT = "mainContent"
     KEY_IS_ADAPTER = "isAdapter"
     VISUALIZERS_ROOT = ''
+    launch_mode = AdapterLaunchModeEnum.SYNC_SAME_MEM
 
     def get_output(self):
         return []
@@ -116,7 +118,7 @@ class ABCDisplayer(ABCSynchronous, metaclass=ABCMeta):
         """
         raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
 
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         """
         Shortcut in case of visualization calls.
         """

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+rm error.er 
+rm output.out
+sed -e "s/bencharg/${1}/;s/mdlrun/${2}/" benchAll.sh | sbatch
+#sleep 2
+
+while [ ! -f ./error.er ] ;
+do
+  sleep 0.2 
+done
+
+if [ $1 == "regular" ]; 
+then
+  #tail -f ./output.out | grep -i -E "INFO|WARNING|ERROR"
+  tail -n 50 -f ./error.er
+else
+  tail -n 50 -f ./error.er
+fi

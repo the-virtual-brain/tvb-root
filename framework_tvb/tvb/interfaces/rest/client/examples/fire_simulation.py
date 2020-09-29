@@ -35,8 +35,8 @@ Example of launching a simulation and an analyzer from within the REST client AP
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, FourierAdapter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
@@ -102,6 +102,18 @@ def fire_simulation_example(tvb_client_instance):
 
         operation_gid = tvb_client_instance.launch_operation(project_gid, FourierAdapter, fourier_model)
         logger.info("Fourier Analyzer operation has launched with gid {}".format(operation_gid))
+
+        data_in_project = tvb_client_instance.get_data_in_project(project_gid)
+        logger.info("We have {} datatypes".format(len(data_in_project)))
+
+        for datatype in data_in_project:
+            if datatype.type == 'FourierSpectrum':
+                ggid = datatype.gid
+
+                extra_info = tvb_client_instance.get_extra_info(ggid)
+                logger.info("The extra information for Fourier {}".format(extra_info))
+
+                break
 
         logger.info("Download the connectivity file...")
         connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid, tvb_client_instance.temp_folder)

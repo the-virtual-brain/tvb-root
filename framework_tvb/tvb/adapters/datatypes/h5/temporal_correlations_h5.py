@@ -27,11 +27,12 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.core.neotraits.h5 import H5File, DataSet, Reference, Json
+from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
+from tvb.core.neotraits.h5 import DataSet, Reference, Json
 from tvb.datatypes.temporal_correlations import CrossCorrelation
 
 
-class CrossCorrelationH5(H5File):
+class CrossCorrelationH5(DataTypeMatrixH5):
 
     def __init__(self, path):
         super(CrossCorrelationH5, self).__init__(path)

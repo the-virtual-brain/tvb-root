@@ -25,7 +25,7 @@ RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simpl
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy==1.1.14 sqlalchemy-migrate==0.11.0 allensdk
-RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako
+RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
 
 # Jupyther notebook configurations: set password
 # tvb42
@@ -38,7 +38,6 @@ RUN wget https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop
-
 
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
 RUN chown $TVB_USER:$TVB_USER $USER_HOME

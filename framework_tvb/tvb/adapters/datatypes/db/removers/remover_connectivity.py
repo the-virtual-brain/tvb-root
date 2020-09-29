@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.adapters.datatypes.db.annotation import ConnectivityAnnotationsIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
@@ -47,11 +48,12 @@ class ConnectivityRemover(ABCRemover):
         """
         key = 'fk_connectivity_gid'
         if not skip_validation:
-            associated_ts = dao.get_generic_entity(TimeSeriesRegionIndex, self.handled_datatype.gid, key)
-            associated_rm = dao.get_generic_entity(RegionMappingIndex, self.handled_datatype.gid, key)
-            associated_stim = dao.get_generic_entity(StimuliRegionIndex, self.handled_datatype.gid, key)
             associated_mes = dao.get_generic_entity(ConnectivityMeasureIndex, self.handled_datatype.gid, key)
+            associated_ann = dao.get_generic_entity(ConnectivityAnnotationsIndex, self.handled_datatype.gid, key)
+            associated_stim = dao.get_generic_entity(StimuliRegionIndex, self.handled_datatype.gid, key)
+            associated_rm = dao.get_generic_entity(RegionMappingIndex, self.handled_datatype.gid, key)
             associated_rvm = dao.get_generic_entity(RegionVolumeMappingIndex, self.handled_datatype.gid, key)
+            associated_ts = dao.get_generic_entity(TimeSeriesRegionIndex, self.handled_datatype.gid, key)
             msg = "Connectivity cannot be removed as it is used by at least one "
 
             if len(associated_ts) > 0:
@@ -64,5 +66,7 @@ class ConnectivityRemover(ABCRemover):
                 raise RemoveDataTypeException(msg + " ConnectivityMeasure.")
             if len(associated_rvm) > 0:
                 raise RemoveDataTypeException(msg + " RegionVolumeMapping.")
+            if len(associated_ann) > 0:
+                raise RemoveDataTypeException(msg + " ConnectivityAnnotations.")
 
         ABCRemover.remove_datatype(self, skip_validation)

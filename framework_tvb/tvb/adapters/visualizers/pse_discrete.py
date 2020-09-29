@@ -33,11 +33,11 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+from tvb.adapters.visualizers.pse import PSEDiscreteGroupModel
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.transient.pse import PSEDiscreteGroupModel
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 

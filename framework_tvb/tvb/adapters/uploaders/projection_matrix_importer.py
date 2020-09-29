@@ -33,12 +33,12 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
@@ -148,10 +148,10 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         if view_model.surface is None:
             raise LaunchException("No source selected. Please initiate upload again and select a source.")
 
-        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface)
         expected_surface_shape = surface_index.number_of_vertices
 
-        sensors_index = self.load_entity_by_gid(view_model.sensors.hex)
+        sensors_index = self.load_entity_by_gid(view_model.sensors)
         expected_sensors_shape = sensors_index.number_of_sensors
 
         self.logger.debug("Reading projection matrix from uploaded file...")
@@ -172,7 +172,7 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
                                                                                            expected_surface_shape))
 
         projection_matrix_type = determine_projection_type(sensors_index)
-        surface_ht = h5.load_from_index(surface_index, CorticalSurface)
+        surface_ht = h5.load_from_index(surface_index)
         sensors_ht = h5.load_from_index(sensors_index)
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,

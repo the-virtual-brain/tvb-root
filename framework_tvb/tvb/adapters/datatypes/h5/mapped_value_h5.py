@@ -29,8 +29,7 @@
 #
 
 from tvb.basic.neotraits.api import Attr, HasTraits
-from tvb.datatypes.time_series import TimeSeries
-from tvb.core.neotraits.h5 import H5File, Scalar, Json, Reference
+from tvb.core.neotraits.h5 import H5File, Scalar
 
 
 class ValueWrapper(HasTraits):
@@ -54,13 +53,3 @@ class ValueWrapperH5(H5File):
         self.data_value = Scalar(ValueWrapper.data_value, self)
         self.data_type = Scalar(ValueWrapper.data_type, self)
         self.data_name = Scalar(ValueWrapper.data_name, self)
-
-
-class DatatypeMeasureH5(H5File):
-
-    def __init__(self, path):
-        super(DatatypeMeasureH5, self).__init__(path)
-        # Actual measure (dictionary Algorithm: single Value)
-        self.metrics = Json(Attr(str), self, name='metrics')
-        # DataType for which the measure was computed.
-        self.analyzed_datatype = Reference(Attr(field_type=TimeSeries), self, "analyzed_datatype")

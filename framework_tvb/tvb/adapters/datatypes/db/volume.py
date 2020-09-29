@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+import json
 from sqlalchemy import Column, Integer, ForeignKey, String
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.datatypes.volumes import Volume
@@ -36,8 +37,26 @@ class VolumeIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
     voxel_unit = Column(String, nullable=False)
+    voxel_size = Column(String, nullable=False)
+    origin = Column(String, nullable=False)
 
     def fill_from_has_traits(self, datatype):
         # type: (Volume)  -> None
         super(VolumeIndex, self).fill_from_has_traits(datatype)
         self.voxel_unit = datatype.voxel_unit
+        self.voxel_size = json.dumps(datatype.voxel_size.tolist())
+        self.origin = json.dumps(datatype.origin.tolist())
+
+    @property
+    def parsed_voxel_size(self):
+        try:
+            return json.loads(self.voxel_size)
+        except:
+            return []
+
+    @property
+    def parsed_origin(self):
+        try:
+            return json.loads(self.origin)
+        except:
+            return []

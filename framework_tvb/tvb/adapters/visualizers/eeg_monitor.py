@@ -42,7 +42,7 @@ from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, replace_nan_values
 from tvb.datatypes.time_series import TimeSeries
 
 
@@ -236,14 +236,14 @@ class EegMonitor(ABCSpaceDisplayer):
         return parameters
 
     def _load_input_indexes(self, view_model):
-        main_time_series_index = self.load_entity_by_gid(view_model.input_data.hex)
+        main_time_series_index = self.load_entity_by_gid(view_model.input_data)
         time_series_index2 = None
         time_series_index3 = None
 
         if view_model.data_2:
-            time_series_index2 = self.load_entity_by_gid(view_model.data_2.hex)
+            time_series_index2 = self.load_entity_by_gid(view_model.data_2)
         if view_model.data_3:
-            time_series_index3 = self.load_entity_by_gid(view_model.data_3.hex)
+            time_series_index3 = self.load_entity_by_gid(view_model.data_3)
         return main_time_series_index, time_series_index2, time_series_index3
 
     def generate_preview(self, view_model, figure_size=None):
@@ -321,16 +321,6 @@ class EegMonitor(ABCSpaceDisplayer):
                 this_label = str(idx + 1) + '.' + this_label
             graph_labels.append(this_label)
 
-    @staticmethod
-    def _replace_nan_values(input_data):
-        """ Replace NAN values with a given values"""
-        is_any_value_nan = False
-        if not numpy.isfinite(input_data).all():
-            for idx in range(len(input_data)):
-                input_data[idx] = numpy.nan_to_num(input_data[idx])
-            is_any_value_nan = True
-        return is_any_value_nan
-
     def compute_required_info(self, list_of_timeseries):
         """Compute average difference between Max and Min."""
         # The values computed by this function will be serialized to json and passed to the client.
@@ -352,7 +342,7 @@ class EegMonitor(ABCSpaceDisplayer):
             channels_per_set.append(int(resulting_shape[1]))
 
             for idx in range(resulting_shape[1]):
-                self.has_nan = self.has_nan or self._replace_nan_values(page_chunk_data[:, idx])
+                self.has_nan = self.has_nan or replace_nan_values(page_chunk_data[:, idx])
                 array_max = numpy.max(page_chunk_data[:, idx])
                 array_min = numpy.min(page_chunk_data[:, idx])
                 translations.append(float((array_max + array_min) / 2))

@@ -38,13 +38,17 @@ The Sensors dataType.
 """
 
 import re
+from enum import Enum
+
 import numpy
 from tvb.basic.readers import FileReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
 
-EEG_POLYMORPHIC_IDENTITY = "EEG"
-MEG_POLYMORPHIC_IDENTITY = "MEG"
-INTERNAL_POLYMORPHIC_IDENTITY = "Internal"
+
+class SensorTypes(Enum):
+    TYPE_EEG = "EEG"
+    TYPE_MEG = "MEG"
+    TYPE_INTERNAL = "Internal"
 
 
 class Sensors(HasTraits):
@@ -190,7 +194,7 @@ class SensorsEEG(Sensors):
         file columns: labels, x, y, z
 
     """
-    sensors_type = Attr(str, default=EEG_POLYMORPHIC_IDENTITY)
+    sensors_type = Attr(str, default=SensorTypes.TYPE_EEG.value)
 
     has_orientation = Attr(bool, default=False)
 
@@ -208,7 +212,7 @@ class SensorsMEG(Sensors):
         file columns: labels, x, y, z,   dx, dy, dz
 
     """
-    sensors_type = Attr(str, default=MEG_POLYMORPHIC_IDENTITY)
+    sensors_type = Attr(str, default=SensorTypes.TYPE_MEG.value)
 
     orientations = NArray(label="Sensor orientations",
                           doc="An array representing the orientation of the MEG SQUIDs")
@@ -230,7 +234,7 @@ class SensorsInternal(Sensors):
     """
     Sensors inside the brain...
     """
-    sensors_type = Attr(str, default=INTERNAL_POLYMORPHIC_IDENTITY)
+    sensors_type = Attr(str, default=SensorTypes.TYPE_INTERNAL.value)
 
     @classmethod
     def from_file(cls, source_file="seeg_39.txt.bz2"):
@@ -260,3 +264,18 @@ class SensorsInternal(Sensors):
     @property
     def grouped_electrodes(self):
         return SensorsInternal.group_sensors_to_electrodes(self.labels)
+
+
+def make_sensors(sensors_type):
+    """
+    Build a Sensors instance, based on an input type
+    :param sensors_type: one of the supported subtypes
+    :return: Instance of the corresponding sensors class, or None
+    """
+    if sensors_type == SensorTypes.TYPE_EEG.value:
+        return SensorsEEG()
+    elif sensors_type == SensorTypes.TYPE_MEG.value:
+        return SensorsMEG()
+    elif sensors_type == SensorTypes.TYPE_INTERNAL.value:
+        return SensorsInternal()
+    return None

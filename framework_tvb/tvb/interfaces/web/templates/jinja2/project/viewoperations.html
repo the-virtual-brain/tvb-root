@@ -4,9 +4,8 @@
 
     {% macro displayOperationResults(operation_row) -%}
         <!--! Function for displaying a given Operation's result column:
-              - list of icons for results,
-              - expand button in case of a group, or
-              - figures in case of Visualizers with saved images.
+              - list of icons for results, or
+              - expand button in case of a group.
         -->
         {% if operation_row['datatype_group_gid'] is not none %}
             <nav class="inline-menu">
@@ -52,16 +51,6 @@
             </div>
         {% endif %}
 
-        {% if operation_row['figures'] is not none %}
-            {% for figure in operation_row['figures'] %}
-                <div class="image-container">
-                    <a href="/project/figure/displayresultfigures/" title="View this figure in your figure list"
-                       class="action action-crosslink crosslink-s-project crosslink-ss-figures">
-                        <div><img src="/flow/readserverstaticfile/{{ figure.figure_path }}"/></div>
-                    </a>
-                </div>
-            {% endfor %}
-        {% endif %}
     {%- endmacro %}
 
     <form id="operationsForm" method="post" action="/project/viewoperations/{{ selectedProject.id }}">
@@ -194,11 +183,11 @@
 
                                 <td class="control">
                                     <div class="action-block block-player">
-                                        {% if not operation['burst_name'] == '-' %}
-                                            <!--! Part of a burst. Redirect to burst page with this one as selected -->
+                                        {% if operation['algorithm'].algorithm_category.displayname == 'Simulate' %}
+                                            <!--! If simulation. Redirect to burst page with this one as a copy -->
                                             <button tabindex='3' type="submit" class="action action-run"
-                                                    onclick="reloadBurstOperation('{{ op_id }}',
-                                                            {{ is_group }}, 'operationsForm')">Reload
+                                                    onclick="reloadBurstOperation('{{ op_id }}', {{ is_group }}, 'operationsForm')">
+                                                Reload
                                             </button>
                                         {% else %}
                                             {% if (not operation['group']) and (not operation['algorithm'].algorithm_category.displayname == 'Create') and (not operation['algorithm'].algorithm_category.rawinput) %}
@@ -217,43 +206,22 @@
                                         {% endif %}
 
                                         {% if operation['status'] == model.STATUS_STARTED %}
-                                            {% if operation['burst_name'] != '-' %}
                                                 <button tabindex='3' type="submit" class="action action-stop"
-                                                        onclick="stopBurstOperation('{{ op_id }}',
-                                                                {{ is_group }})">Stop
+                                                        onclick="cancelOrRemoveOperation('{{ op_id }}', {{ is_group }}, false)">Stop
                                                 </button>
-                                            {% else %}
-                                                <button tabindex='3' type="submit" class="action action-stop"
-                                                        onclick="stopOperation('{{ op_id }}',
-                                                                {{ is_group }})">Stop
-                                                </button>
-                                            {% endif %}
                                         {% else %}
                                             <button tabindex='3' type="submit"
                                                     class="action action-stop action-idle" disabled="disabled">Stop
                                             </button>
                                         {% endif %}
 
-                                        {% if operation['burst_name']!='-' %}
-                                            <!--! Remove burst button. TODO: Once TVB-926 is finished we should have a new icon here. -->
-                                            {% with %}
-                                                {% set ok_callback = 'deleteBurstOperation(' ~ (op_id | string) ~ ', ' ~ (is_group | string) ~ ');' %}
-                                                <button type="submit" class="action action-remove"
-                                                        title="Remove burst"
-                                                        onclick="showQuestionOverlay('Are you sure you want to delete this entire Simulation?', '{{ ok_callback }}'); return false;">
-                                                    O
-                                                </button>
-                                            {% endwith %}
-                                        {% else %}
-                                            {% with %}
-                                                {% set ok_callback = 'deleteOperation(' ~ (op_id | string) ~ ', ' ~ (is_group | string) ~ ');' %}
-                                                <button type="submit" class="action action-remove"
-                                                        title="Remove operation"
-                                                        onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '{{ ok_callback }}'); return false;">
-                                                    B
-                                                </button>
-                                            {% endwith %}
-                                        {% endif %}
+                                        {% with %}
+                                            {% set ok_callback = 'cancelOrRemoveOperation(' ~ (op_id | string) ~ ', ' ~ (is_group | string) ~ ', true);' %}
+                                            <button type="submit" class="action action-remove" title="Remove operation"
+                                                    onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '{{ ok_callback }}'); return false;">
+                                                Remove
+                                            </button>
+                                        {% endwith %}
                                     </div>
                                 </td>
                             {% endwith %}

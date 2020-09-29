@@ -27,6 +27,12 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+"""
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+"""
+
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits.view_model import ViewModel, Str
 
@@ -39,3 +45,8 @@ class UploaderViewModel(ViewModel):
         label='Subject'
     )
 
+    encrypted_aes_key = Str(
+        required=False,
+        label='Encrypted AES Password (if your files come encrypted)',
+        doc='Check our demo notebook on how to produce this key and how we expect your files to be encrypted'
+    )

@@ -52,7 +52,7 @@ class PearsonEdgeBundle(ABCSpaceDisplayer):
     def get_required_memory_size(self, view_model):
         # type: (PearsonCorrelationCoefficientVisualizerModel) -> numpy.ndarray
         """Return required memory."""
-        datatype_index = self.load_entity_by_gid(view_model.datatype.hex)
+        datatype_index = self.load_entity_by_gid(view_model.datatype)
         input_size = (datatype_index.data_length_1d, datatype_index.data_length_2d,
                       datatype_index.data_length_3d, datatype_index.data_length_4d)
         return numpy.prod(input_size) * 8.0
@@ -65,7 +65,7 @@ class PearsonEdgeBundle(ABCSpaceDisplayer):
         with datatype_h5_class(datatype_h5_path) as datatype_h5:
             matrix_shape = datatype_h5.array_data.shape[0:2]
             ts_gid = datatype_h5.source.load()
-        ts_index = self.load_entity_by_gid(ts_gid.hex)
+        ts_index = self.load_entity_by_gid(ts_gid)
         state_list = ts_index.get_labels_for_dimension(1)
         mode_list = list(range(ts_index.data_length_4d))
 

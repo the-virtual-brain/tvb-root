@@ -68,6 +68,9 @@ class SurfaceIndex(DataType):
         self.edge_min_length = datatype.edge_min_length
         self.edge_max_length = datatype.edge_max_length
 
+    def get_subtype_attr(self):
+        return self.surface_type
+
     @property
     def display_name(self):
         """

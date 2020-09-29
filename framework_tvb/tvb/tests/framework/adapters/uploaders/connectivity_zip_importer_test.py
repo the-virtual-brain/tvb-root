@@ -33,29 +33,31 @@
 
 """
 from os import path
+
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestConnectivityZipImporter(TransactionalTestCase):
+class TestConnectivityZipImporter(BaseTestCase):
     """
     Unit-tests for CFF-importer.
     """
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         """
         Reset the database before each test.
         """
         self.test_user = TestFactory.create_user('CFF_User')
         self.test_project = TestFactory.create_project(self.test_user, "CFF_Project")
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
         """
         Clean-up tests data
         """
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_happy_flow_import(self):
@@ -64,6 +66,6 @@ class TestConnectivityZipImporter(TransactionalTestCase):
         """
         zip_path = path.join(path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         dt_count_before = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
-        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
+        TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John", False)
         dt_count_after = TestFactory.get_entity_count(self.test_project, ConnectivityIndex)
         assert dt_count_before + 1 == dt_count_after

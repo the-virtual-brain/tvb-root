@@ -31,6 +31,7 @@
 """
 Backend-side for TS Visualizer of TS Volume DataTypes.
 
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Robert Parcus <betoparcus@gmail.com>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Ciprian Tomoiaga <ciprian.tomoiaga@codemart.ro>
@@ -116,17 +117,17 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         ts_h5 = ts_h5_class(ts_h5_path)
         min_value, max_value = ts_h5.get_min_max_values()
 
-        ts_index = self.load_entity_by_gid(view_model.time_series.hex)
+        ts_index = self.load_entity_by_gid(view_model.time_series)
 
         if isinstance(ts_h5, TimeSeriesVolumeH5):
-            volume_h5_class, volume_h5_path = self._load_h5_of_gid(ts_h5.volume.load().hex)
+            volume_h5_class, volume_h5_path = self._load_h5_of_gid(ts_h5.volume.load())
             volume_h5 = volume_h5_class(volume_h5_path)
             volume_shape = ts_h5.data.shape
         else:
-            rmv_index = self.load_entity_by_gid(ts_h5.region_mapping_volume.load(True).hex)
+            rmv_index = self.load_entity_by_gid(ts_h5.region_mapping_volume.load())
             rmv_h5_class, rmv_h5_path = self._load_h5_of_gid(rmv_index.gid)
             rmv_h5 = rmv_h5_class(rmv_h5_path)
-            volume_index = self.load_entity_by_gid(rmv_h5.volume.load().hex)
+            volume_index = self.load_entity_by_gid(rmv_h5.volume.load())
             volume_h5_class, volume_h5_path = self._load_h5_of_gid(volume_index.gid)
             volume_h5 = volume_h5_class(volume_h5_path)
             volume_shape = [ts_h5.data.shape[0]]
@@ -135,7 +136,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
 
         background_index = None
         if view_model.background:
-            background_index = self.load_entity_by_gid(view_model.background.hex)
+            background_index = self.load_entity_by_gid(view_model.background)
 
         params = dict(title="Volumetric Time Series",
                       ts_title=ts_h5.title.load(),
@@ -225,5 +226,5 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         volume_rm_h5.close()
         connectivity_h5.close()
 
-        result = postprocess_voxel_ts(self, voxel_slices, background, back_min, back_max, label)
+        result = postprocess_voxel_ts(ts_h5, voxel_slices, background, back_min, back_max, label)
         return result

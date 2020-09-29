@@ -97,7 +97,7 @@ class User(Base):
 
     def is_administrator(self):
         """Return a boolean, saying if current user has role Administrator"""
-        return self.role == ROLE_ADMINISTRATOR or self.gid in TvbProfile.current.web.admin.ADMINISTRATOR_GIDS
+        return self.role == ROLE_ADMINISTRATOR
 
     def is_online_help_active(self):
         """

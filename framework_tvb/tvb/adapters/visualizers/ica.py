@@ -29,23 +29,22 @@
 #
 
 """
-A matrix displayer for the Independent Component Analysis.
-It displays the mixing matrix of siae n_features x n_components
+A matrix visualizer for the Independent Component Analysis.
+It displays the mixing matrix of size n_features x n_components
 
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
-
 """
 
-from tvb.adapters.visualizers.matrix_viewer import MappedArraySVGVisualizerMixin
+from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
+from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.basic.logger.builder import get_logger
-from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
+from tvb.core.adapters.arguments_serialisation import slice_str
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.mode_decompositions import IndependentComponents
-
-LOG = get_logger(__name__)
 
 
 class ICAModel(ViewModel):
@@ -93,8 +92,9 @@ class ICAForm(ABCAdapterForm):
         return 'datatype'
 
 
-class ICA(MappedArraySVGVisualizerMixin):
+class ICA(ABCMappedArraySVGVisualizer):
     _ui_name = "Independent Components Analysis Visualizer"
+    _ui_subsection = "ica"
 
     def get_form_class(self):
         return ICAForm
@@ -102,15 +102,23 @@ class ICA(MappedArraySVGVisualizerMixin):
     def launch(self, view_model):
         # type: (ICAModel) -> dict
         """Construct data for visualization and launch it."""
-        # get data from IndependentComponents datatype, convert to json
-        # HACK: dump only a 2D array
-        h5_class, h5_path = self._load_h5_of_gid(view_model.datatype.hex)
-        with h5_class(h5_path) as h5_file:
-            unmixing_matrix = h5_file.unmixing_matrix.load()
-            prewhitening_matrix = h5_file.prewhitening_matrix.load()
+        ica_gid = view_model.datatype
+        ica_index = self.load_entity_by_gid(ica_gid)
 
-        unmixing_matrix = unmixing_matrix[..., view_model.i_svar, view_model.i_mode]
-        prewhitening_matrix = prewhitening_matrix[..., view_model.i_svar, view_model.i_mode]
+        slice_given = slice_str((slice(None), slice(None), slice(view_model.i_svar), slice(view_model.i_mode)))
+        if view_model.i_svar < 0 or view_model.i_svar >= ica_index.parsed_shape[2]:
+            view_model.i_svar = 0
+        if view_model.i_mode < 0 or view_model.i_mode >= ica_index.parsed_shape[3]:
+            view_model.i_mode = 0
+        slice_used = slice_str((slice(None), slice(None), slice(view_model.i_svar), slice(view_model.i_mode)))
+
+        with h5.h5_file_for_index(ica_index) as h5_file:
+            unmixing_matrix = h5_file.unmixing_matrix[..., view_model.i_svar, view_model.i_mode]
+            prewhitening_matrix = h5_file.prewhitening_matrix[..., view_model.i_svar, view_model.i_mode]
         Cinv = unmixing_matrix.dot(prewhitening_matrix)
-        pars = self.compute_params(Cinv, 'ICA region contribution', '(Ellipsis, %d, 0)' % (view_model.i_svar))
+
+        title = 'ICA region contribution -- (Ellipsis, %d, 0)' % (view_model.i_svar)
+        labels = self.extract_source_labels(ica_index)
+        pars = self.compute_params(ica_index, Cinv, title, [labels, labels],
+                                   slice_given, slice_used, slice_given != slice_used)
         return self.build_display_result("matrix/svg_view", pars)
