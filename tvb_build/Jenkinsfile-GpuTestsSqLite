@@ -1,9 +1,8 @@
 pipeline {
-    agent any
+    agent { label 'tvb-gpu' }
 
     environment {
-        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-tests'
-        LATEST_TAG = 'latest'
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-tests:latest'
     }
 
     stages {
@@ -15,28 +14,24 @@ pipeline {
             }
         }
         stage ('Tests on SqLite') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
-                    alwaysPull true
-                }
-            }
             steps {
-                sh '''#!/bin/bash
-                    source activate tvb-run
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    cd ../tvb_bin
-                    bash run_tests.sh
-                    exit 0
-                '''
-                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
+                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
+                    sh '''#!/bin/bash
+                        source activate tvb-run
+                        cd tvb_build
+                        bash install_full_tvb.sh
+                        cd ../tvb_bin
+                        bash run_tests.sh
+                        exit 0
+                    '''
+                }
+                junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
             }
         }
     }
     post {
         changed {
-            mail to: 'lia.domide@codemart.ro',
+            mail to: 'bogdan.valean@codemart.ro lia.domide@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}

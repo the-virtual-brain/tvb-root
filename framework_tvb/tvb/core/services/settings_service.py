@@ -33,10 +33,10 @@ Service layer for saving/editing TVB settings.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
 import os
 import shutil
 import sys
-
 from sqlalchemy import create_engine
 from tvb.basic.config import stored
 from tvb.basic.logger.builder import get_logger
@@ -175,7 +175,7 @@ class SettingsService(object):
     def save_settings(self, **data):
         """
         Check if new settings are correct.  Make necessary changes, then save new data in configuration file.
-        
+
         :returns: two boolean values
                     -there were any changes to the configuration;
                     -a reset should be performed on the TVB relaunch.
@@ -191,13 +191,12 @@ class SettingsService(object):
         matlab_exec = data[self.KEY_MATLAB_EXECUTABLE]
         if matlab_exec == 'None':
             data[self.KEY_MATLAB_EXECUTABLE] = ''
+
+        if TvbProfile.is_first_run() or storage_changed:
+            self._check_tvb_folder(new_storage)
+
         # Storage changed but DB didn't, just copy TVB storage to new one.
         if storage_changed and not db_changed:
-            if os.path.exists(new_storage):
-                if os.access(new_storage, os.W_OK):
-                    shutil.rmtree(new_storage)
-                else:
-                    raise InvalidSettingsException("No Write access on storage folder!!")
             shutil.copytree(previous_storage, new_storage)
 
         if not os.path.isdir(new_storage):
@@ -237,3 +236,24 @@ class SettingsService(object):
             TvbProfile.current.manager.write_config_data(file_data)
             os.chmod(TvbProfile.current.TVB_CONFIG_FILE, 0o644)
         return anything_changed, first_run or db_changed
+
+    def _check_tvb_folder(self, storage_path):
+        """
+        Check if the storage folder is compatible (should be an empty or new folder, with rights to write inside).
+        """
+        if not os.path.exists(storage_path):
+            return True
+
+        if not os.path.isdir(storage_path):
+            raise InvalidSettingsException('TVB Storage should be a folder')
+
+        if not os.access(storage_path, os.W_OK):
+            raise InvalidSettingsException('TVB Storage folder should have write access for tvb process')
+
+        list_content = os.listdir(storage_path)
+        list_content.remove("TEMP")
+        if len(list_content) > 0:
+            raise InvalidSettingsException(
+                'TVB Storage should be empty, please set another folder than {}.'.format(storage_path))
+
+        return True
