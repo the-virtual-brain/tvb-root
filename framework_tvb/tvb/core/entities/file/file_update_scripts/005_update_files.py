@@ -38,6 +38,7 @@ Upgrade script from H5 version 4 to version 5 (for tvb release 2.0)
 import json
 import os
 import sys
+import uuid
 from datetime import datetime
 import numpy
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
@@ -64,7 +65,460 @@ from tvb.datatypes.sensors import SensorTypes
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
 FIELD_VOLUME_MAPPING = "has_volume_mapping"
-GID_PREFIX = "urn:uuid:"
+
+
+def _migrate_connectivity(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
+    root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
+
+    if root_metadata['undirected'] == "0":
+        root_metadata['undirected'] = "bool:False"
+    else:
+        root_metadata['undirected'] = "bool:True"
+
+    if root_metadata['saved_selection'] == 'null':
+        root_metadata['saved_selection'] = '[]'
+
+    metadata = ['centres', 'region_labels', 'tract_lengths', 'weights']
+    extra_metadata = ['orientations', 'areas', 'cortical', 'hemispheres', 'orientations']
+    storage_manager = kwargs['storage_manager']
+
+    for mt in extra_metadata:
+        try:
+            storage_manager.get_metadata(mt)
+            metadata.append(mt)
+        except MissingDataSetException:
+            pass
+
+    if kwargs['operation_xml_parameters']['normalization'] == 'none':
+        del kwargs['operation_xml_parameters']['normalization']
+
+    storage_manager.remove_metadata('Mean non zero', 'tract_lengths')
+    storage_manager.remove_metadata('Min. non zero', 'tract_lengths')
+    storage_manager.remove_metadata('Var. non zero', 'tract_lengths')
+    storage_manager.remove_metadata('Mean non zero', 'weights')
+    storage_manager.remove_metadata('Min. non zero', 'weights')
+    storage_manager.remove_metadata('Var. non zero', 'weights')
+
+    _migrate_dataset_metadata(metadata, storage_manager)
+
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_surface(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['edge_max_length'] = float(root_metadata['edge_max_length'])
+    root_metadata['edge_mean_length'] = float(root_metadata['edge_mean_length'])
+    root_metadata['edge_min_length'] = float(root_metadata['edge_min_length'])
+    root_metadata['number_of_split_slices'] = int(root_metadata['number_of_split_slices'])
+    root_metadata['number_of_triangles'] = int(root_metadata['number_of_triangles'])
+    root_metadata['number_of_vertices'] = int(root_metadata['number_of_vertices'])
+
+    root_metadata['zero_based_triangles'] = "bool:" + root_metadata['zero_based_triangles'][:1].upper() \
+                                            + root_metadata['zero_based_triangles'][1:]
+    root_metadata['bi_hemispheric'] = "bool:" + root_metadata['bi_hemispheric'][:1].upper() \
+                                      + root_metadata['bi_hemispheric'][1:]
+    root_metadata['valid_for_simulations'] = "bool:" + root_metadata['valid_for_simulations'][:1].upper() \
+                                             + root_metadata['valid_for_simulations'][1:]
+
+    root_metadata["surface_type"] = root_metadata["surface_type"].replace("\"", '')
+
+    if root_metadata['zero_based_triangles'] == 'bool:True':
+        kwargs['operation_xml_parameters']['zero_based_triangles'] = True
+    else:
+        kwargs['operation_xml_parameters']['zero_based_triangles'] = False
+
+    kwargs['storage_manager'].store_data('split_triangles', [])
+
+    _migrate_dataset_metadata(['split_triangles', 'triangle_normals', 'triangles', 'vertex_normals', 'vertices'],
+                              kwargs['storage_manager'])
+
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_region_mapping(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+
+    root_metadata['surface'] = _parse_gid(root_metadata['surface'])
+    root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
+
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
+    algorithm = '{"classname": "RegionMappingImporter", "module": "tvb.adapters.uploaders.region_mapping_importer"}'
+
+    return {'algorithm': algorithm, 'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_region_volume_mapping(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+
+    root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
+    root_metadata['volume'] = _parse_gid(root_metadata['volume'])
+
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
+
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_sensors(datasets, **kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['number_of_sensors'] = int(root_metadata['number_of_sensors'])
+    root_metadata['sensors_type'] = root_metadata["sensors_type"].replace("\"", '')
+    root_metadata['has_orientation'] = "bool:" + root_metadata['has_orientation'][:1].upper() \
+                                       + root_metadata['has_orientation'][1:]
+
+    storage_manager = kwargs['storage_manager']
+    storage_manager.remove_metadata('Size', 'labels')
+    storage_manager.remove_metadata('Size', 'locations')
+    storage_manager.remove_metadata('Variance', 'locations')
+    storage_manager = _bytes_ds_to_string_ds(storage_manager, 'labels')
+    _migrate_dataset_metadata(datasets, storage_manager)
+    algorithm = '{"classname": "SensorsImporter", "module": "tvb.adapters.uploaders.sensors_importer"}'
+    kwargs['operation_xml_parameters']['sensors_file'] = kwargs['input_file']
+    return algorithm, kwargs['operation_xml_parameters']
+
+
+def _migrate_eeg_sensors(**kwargs):
+    algorithm, operation_xml_parameters = _migrate_sensors(['labels', 'locations'], **kwargs)
+    operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_EEG.value
+    return {'algorithm': algorithm, 'operation_xml_parameters': operation_xml_parameters}
+
+
+def _migrate_meg_sensors(**kwargs):
+    algorithm, operation_xml_parameters = _migrate_sensors(['labels', 'locations', 'orientations'], **kwargs)
+    operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_MEG.value
+    return {'algorithm': algorithm, 'operation_xml_parameters': operation_xml_parameters}
+
+
+def _migrate_seeg_sensors(**kwargs):
+    algorithm, operation_xml_parameters = _migrate_sensors(['labels', 'locations'], **kwargs)
+    operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_INTERNAL.value
+    return {'algorithm': algorithm, 'operation_xml_parameters': operation_xml_parameters}
+
+
+def _migrate_projection(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['sensors'] = _parse_gid(root_metadata['sensors'])
+    root_metadata['sources'] = _parse_gid(root_metadata['sources'])
+    root_metadata['written_by'] = "tvb.adapters.datatypes.h5.projections_h5.ProjectionMatrixH5"
+    root_metadata['projection_type'] = root_metadata["projection_type"].replace("\"", '')
+
+    storage_manager = kwargs['storage_manager']
+    storage_manager.remove_metadata('Size', 'projection_data')
+    storage_manager.remove_metadata('Variance', 'projection_data')
+
+    kwargs['operation_xml_parameters']['projection_file'] = kwargs['input_file']
+
+    _migrate_dataset_metadata(['projection_data'], storage_manager)
+    algorithm = '{"classname": "ProjectionMatrixSurfaceEEGImporter", "module": ' \
+                '"tvb.adapters.uploaders.projection_matrix_importer"} '
+
+    return {'algorithm': algorithm, 'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_local_connectivity(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['cutoff'] = float(root_metadata['cutoff'])
+    root_metadata['surface'] = _parse_gid(root_metadata['surface'])
+
+    storage_manager = kwargs['storage_manager']
+    matrix_metadata = storage_manager.get_metadata('matrix')
+    matrix_metadata['Shape'] = str(matrix_metadata['Shape'], 'utf-8')
+    matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
+    matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
+    storage_manager.set_metadata(matrix_metadata, 'matrix')
+
+    equation = json.loads(root_metadata['equation'])
+    equation['type'] = equation['__mapped_class']
+    del equation['__mapped_class']
+    del equation['__mapped_module']
+
+    root_metadata['equation'] = json.dumps(equation)
+
+    kwargs['operation_xml_parameters']['surface'] = root_metadata['surface']
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_connectivity_annotations(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
+    root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
+    h5_class = ConnectivityAnnotationsH5
+
+    _migrate_dataset_metadata(['region_annotations'], kwargs['storage_manager'])
+    return {'h5_class': h5_class, 'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_time_series(metadata, **kwargs):
+    root_metadata = kwargs['root_metadata']
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters.pop('', None)
+    if 'surface' in operation_xml_parameters and operation_xml_parameters['surface'] == '':
+        operation_xml_parameters['surface'] = None
+    if 'stimulus' in operation_xml_parameters and operation_xml_parameters['stimulus'] == '':
+        operation_xml_parameters['stimulus'] = None
+
+    root_metadata.pop(FIELD_SURFACE_MAPPING)
+    root_metadata.pop(FIELD_VOLUME_MAPPING)
+    _pop_lengths(kwargs['root_metadata'])
+
+    root_metadata['sample_period'] = float(root_metadata['sample_period'])
+    root_metadata['start_time'] = float(root_metadata['start_time'])
+
+    root_metadata["sample_period_unit"] = root_metadata["sample_period_unit"].replace("\"", '')
+    root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
+    _migrate_dataset_metadata(metadata, kwargs['storage_manager'])
+
+
+def _migrate_time_series_region(**kwargs):
+    _migrate_time_series(['data', 'time'], **kwargs)
+    root_metadata = kwargs['root_metadata']
+    root_metadata['region_mapping'] = _parse_gid(root_metadata['region_mapping'])
+    root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
+
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_time_series_surface(**kwargs):
+    _migrate_time_series(['data', 'time'], **kwargs)
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_time_series_sensors(**kwargs):
+    _migrate_time_series(['data', 'time'], **kwargs)
+    root_metadata = kwargs['root_metadata']
+    root_metadata['sensors'] = _parse_gid(root_metadata['sensors'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_time_series_volume(**kwargs):
+    _migrate_time_series(['data'], **kwargs)
+    root_metadata = kwargs['root_metadata']
+    root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
+    root_metadata['sample_rate'] = float(root_metadata['sample_rate'])
+    root_metadata['volume'] = _parse_gid(root_metadata['volume'])
+    root_metadata['volume'] = root_metadata['volume']
+    root_metadata.pop('nr_dimensions')
+    root_metadata.pop('sample_rate')
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_volume(**kwargs):
+    kwargs['root_metadata']['voxel_unit'] = kwargs['root_metadata']['voxel_unit'].replace("\"", '')
+
+    if kwargs['operation_xml_parameters']['connectivity'] == '':
+        kwargs['operation_xml_parameters']['connectivity'] = None
+
+    _migrate_dataset_metadata(['origin', 'voxel_size'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_structural_mri(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+
+    root_metadata['volume'] = _parse_gid(root_metadata['volume'])
+
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_complex_coherence_spectrum(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+    root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+    root_metadata['epoch_length'] = float(root_metadata['epoch_length'])
+    root_metadata['segment_length'] = float(root_metadata['segment_length'])
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+    root_metadata['windowing_function'] = root_metadata['windowing_function'].replace("\"", '')
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+
+    _migrate_dataset_metadata(['array_data', 'cross_spectrum'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_wavelet_coefficients(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+    root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+    root_metadata['q_ratio'] = float(root_metadata['q_ratio'])
+    root_metadata['sample_period'] = float(root_metadata['sample_period'])
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+    root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
+    root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
+
+    kwargs['operation_xml_parameters']['input_data'] = root_metadata['source']
+
+    _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_coherence_spectrum(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+    kwargs['root_metadata'].pop(DataTypeMetaData.KEY_TITLE)
+
+    root_metadata['nfft'] = int(root_metadata['nfft'])
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+
+    storage_manager = kwargs['storage_manager']
+    array_data = storage_manager.get_data('array_data')
+    storage_manager.remove_data('array_data')
+    storage_manager.store_data('array_data', numpy.asarray(array_data, dtype=numpy.float64))
+
+    _migrate_dataset_metadata(['array_data', 'frequency'], storage_manager)
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_cross_correlation(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    kwargs['operation_xml_parameters']['datatype'] = root_metadata['source']
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+    _migrate_dataset_metadata(['array_data', 'time'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_fcd(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+    root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+    root_metadata['sp'] = float(root_metadata['sp'])
+    root_metadata['sw'] = float(root_metadata['sw'])
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_fourier_spectrum(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+    root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+    root_metadata['segment_length'] = float(root_metadata['segment_length'])
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+    kwargs['operation_xml_parameters']['input_data'] = root_metadata['source']
+
+    _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
+                               'normalised_average_power', 'phase', 'power'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_independent_components(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['n_components'] = int(root_metadata['n_components'])
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+
+    _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
+                               'normalised_component_time_series', 'prewhitening_matrix',
+                               'unmixing_matrix'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_correlation_coefficients(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_lengths(root_metadata)
+    _pop_common_metadata(root_metadata)
+    root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+
+    kwargs['operation_xml_parameters']['datatype'] = root_metadata['source']
+
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_principal_components(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+
+    _migrate_dataset_metadata(['component_time_series', 'fractions',
+                               'norm_source', 'normalised_component_time_series',
+                               'weights'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_covariance(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_common_metadata(root_metadata)
+    root_metadata.pop(DataTypeMetaData.KEY_TITLE)
+    _pop_lengths(root_metadata)
+
+    root_metadata['source'] = _parse_gid(root_metadata['source'])
+
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_connectivity_measure(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    _pop_common_metadata(root_metadata)
+    _pop_lengths(kwargs['root_metadata'])
+    kwargs['root_metadata']['connectivity'] = _parse_gid(root_metadata['connectivity'])
+
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['data_file'] = kwargs['input_file']
+    operation_xml_parameters['connectivity'] = root_metadata['connectivity']
+
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _migrate_datatype_measure(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'h5_class': DatatypeMeasureH5}
+
+
+def _migrate_stimuli_region(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
+    additional_params = {'weight': numpy.asarray(json.loads(root_metadata['weight']), dtype=numpy.float64)}
+    _migrate_stimuli(kwargs['root_metadata'], kwargs['storage_manager'], ['weight'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'additional_params': additional_params}
+
+
+def _migrate_stimuli_surface(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['surface'] = _parse_gid(root_metadata['surface'])
+    additional_params = {'focal_points_triangles': numpy.asarray(
+        json.loads(root_metadata['focal_points_triangles']),
+        dtype=numpy.int)}
+    _migrate_stimuli(kwargs['root_metadata'], kwargs['storage_manager'],
+                     ['focal_points_surface', 'focal_points_triangles'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'additional_params': additional_params}
+
+
+def _migrate_value_wrapper(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['data_type'] = root_metadata['data_type'].replace("\"", '')
+    root_metadata['written_by'] = "tvb.adapters.datatypes.h5.mapped_value_h5.ValueWrapperH5"
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'h5_class': ValueWrapperH5}
+
+
+def _migrate_simulation_state(**kwargs):
+    os.remove(kwargs['input_file'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
+def _parse_gid(old_gid):
+    return uuid.UUID(old_gid).urn
 
 
 def _lowercase_first_character(string):
@@ -127,50 +581,10 @@ def _migrate_stimuli(root_metadata, storage_manager, datasets):
     _migrate_one_stimuli_param(root_metadata, 'temporal')
 
     for dataset in datasets:
-        weights = eval(root_metadata[dataset])
+        weights = json.loads(root_metadata[dataset])
         storage_manager.store_data(dataset, weights)
         _migrate_dataset_metadata([dataset], storage_manager)
         root_metadata.pop(dataset)
-
-
-def _migrate_time_series(root_metadata, storage_manager, class_name, dependent_attributes):
-    root_metadata.pop(FIELD_SURFACE_MAPPING)
-    root_metadata.pop(FIELD_VOLUME_MAPPING)
-    _pop_lengths(root_metadata)
-    metadata = ['data', 'time']
-
-    if class_name != 'TimeSeriesVolume':
-        root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
-        root_metadata['sample_rate'] = float(root_metadata['sample_rate'])
-    else:
-        metadata.pop(1)
-
-    root_metadata['sample_period'] = float(root_metadata['sample_period'])
-    root_metadata['start_time'] = float(root_metadata['start_time'])
-
-    root_metadata["sample_period_unit"] = root_metadata["sample_period_unit"].replace("\"", '')
-    root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
-    _migrate_dataset_metadata(metadata, storage_manager)
-
-    if class_name == 'TimeSeriesRegion':
-        root_metadata['region_mapping'] = GID_PREFIX + root_metadata['region_mapping']
-        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
-
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
-        dependent_attributes['region_mapping'] = root_metadata['region_mapping']
-    elif class_name == 'TimeSeriesSurface':
-        root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
-        dependent_attributes['surface'] = root_metadata['surface']
-    elif class_name in ['TimeSeriesEEG', 'TimeSeriesMEG', 'TimeSeriesSEEG']:
-        root_metadata['sensors'] = GID_PREFIX + root_metadata['sensors']
-        dependent_attributes['sensors'] = root_metadata['sensors']
-    else:
-        root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
-        dependent_attributes['volume'] = root_metadata['volume']
-        root_metadata.pop('nr_dimensions')
-        root_metadata.pop('sample_rate')
-
-    return dependent_attributes
 
 
 def _create_new_burst(burst_params, root_metadata):
@@ -188,9 +602,55 @@ def _create_new_burst(burst_params, root_metadata):
     burst_config.range_2 = burst_params['range_2']
     burst_config.start_time = datetime.strptime(burst_params['start_time'], '%Y-%m-%d %H:%M:%S.%f')
     burst_config.status = burst_params['status']
-    root_metadata['parent_burst'] = GID_PREFIX + burst_config.gid
+    root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
 
     return burst_config
+
+
+datatypes_to_be_migrated = {
+    'Connectivity': _migrate_connectivity,
+    'BrainSkull': _migrate_surface,
+    'CorticalSurface': _migrate_surface,
+    'SkinAir': _migrate_surface,
+    'SkullSkin': _migrate_surface,
+    'EEGCap': _migrate_surface,
+    'FaceSurface': _migrate_surface,
+    'WhiteMatterSurface': _migrate_surface,
+    'RegionMapping': _migrate_region_mapping,
+    'RegionVolumeMapping': _migrate_region_volume_mapping,
+    'SensorsEEG': _migrate_eeg_sensors,
+    'SensorsMEG': _migrate_meg_sensors,
+    'SensorsInternal': _migrate_seeg_sensors,
+    'ProjectionSurfaceEEG': _migrate_projection,
+    'ProjectionSurfaceMEG': _migrate_projection,
+    'ProjectionSurfaceSEEG': _migrate_projection,
+    'LocalConnectivity': _migrate_local_connectivity,
+    'ConnectivityAnnotations': _migrate_connectivity_annotations,
+    'TimeSeriesRegion': _migrate_time_series_region,
+    'TimeSeriesSurface': _migrate_time_series_surface,
+    'TimeSeriesEEG': _migrate_time_series_sensors,
+    'TimeSeriesMEG': _migrate_time_series_sensors,
+    'TimeSeriesSEEG': _migrate_time_series_sensors,
+    'TimeSeriesVolume': _migrate_time_series_volume,
+    'Volume': _migrate_volume,
+    'StructuralMRI': _migrate_structural_mri,
+    'ComplexCoherenceSpectrum': _migrate_complex_coherence_spectrum,
+    'WaveletCoefficients': _migrate_wavelet_coefficients,
+    'CoherenceSpectrum': _migrate_coherence_spectrum,
+    'CrossCorrelation': _migrate_cross_correlation,
+    'Fcd': _migrate_fcd,
+    'FourierSpectrum': _migrate_fourier_spectrum,
+    'IndependentComponents': _migrate_independent_components,
+    'CorrelationCoefficients': _migrate_correlation_coefficients,
+    'PrincipalComponents': _migrate_principal_components,
+    'Covariance': _migrate_covariance,
+    'ConnectivityMeasure': _migrate_connectivity_measure,
+    'DatatypeMeasure': _migrate_datatype_measure,
+    'StimuliRegion': _migrate_stimuli_region,
+    'StimuliSurface': _migrate_stimuli_surface,
+    'ValueWrapper': _migrate_value_wrapper,
+    'SimulationState': _migrate_simulation_state
+}
 
 
 def update(input_file):
@@ -268,14 +728,10 @@ def update(input_file):
         h5_class = None
 
     # Other general modifications
-    root_metadata['user_tag_1'] = ''
-    root_metadata['gid'] = GID_PREFIX + root_metadata['gid']
+    root_metadata['gid'] = _parse_gid(root_metadata['gid'])
     root_metadata.pop("type")
     root_metadata.pop("module")
     root_metadata.pop('data_version')
-
-    dependent_attributes = {}  # where is the case the datatype will have a dict of the datatype it depends on
-    # attr in the old DB, those changed will be marked in this dict
 
     files_in_folder = os.listdir(folder)
     import_service = ImportService()
@@ -293,381 +749,53 @@ def update(input_file):
             import_service.build_operation_from_file(project, operation_file_path)
         operation = dao.get_operation_by_id(op_id)
         try:
-            operation_xml_parameters = eval(operation_xml_parameters)
+            operation_xml_parameters = json.loads(operation_xml_parameters)
         except NameError:
             operation_xml_parameters = operation_xml_parameters.replace('null', '\"null\"')
-            operation_xml_parameters = eval(operation_xml_parameters)
+            operation_xml_parameters = json.load(operation_xml_parameters)
     else:
         has_vm = True
 
-    # HERE STARTS THE PART WHICH IS SPECIFIC TO EACH H5 FILE #
-
-    if class_name == 'Connectivity':
-        root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
-        root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
-
-        if root_metadata['undirected'] == "0":
-            root_metadata['undirected'] = "bool:False"
-        else:
-            root_metadata['undirected'] = "bool:True"
-
-        if root_metadata['saved_selection'] == 'null':
-            root_metadata['saved_selection'] = '[]'
-
-        metadata = ['centres', 'region_labels', 'tract_lengths', 'weights']
-        extra_metadata = ['orientations', 'areas', 'cortical', 'hemispheres', 'orientations']
-
-        for mt in extra_metadata:
-            try:
-                storage_manager.get_metadata(mt)
-                metadata.append(mt)
-            except MissingDataSetException:
-                pass
-
-        if operation_xml_parameters['normalization'] == 'none':
-            del operation_xml_parameters['normalization']
-
-        storage_manager.remove_metadata('Mean non zero', 'tract_lengths')
-        storage_manager.remove_metadata('Min. non zero', 'tract_lengths')
-        storage_manager.remove_metadata('Var. non zero', 'tract_lengths')
-        storage_manager.remove_metadata('Mean non zero', 'weights')
-        storage_manager.remove_metadata('Min. non zero', 'weights')
-        storage_manager.remove_metadata('Var. non zero', 'weights')
-
-        _migrate_dataset_metadata(metadata, storage_manager)
-
-    elif class_name in ['BrainSkull', 'CorticalSurface', 'SkinAir', 'BrainSkull', 'SkullSkin', 'EEGCap', 'FaceSurface']:
-        root_metadata['edge_max_length'] = float(root_metadata['edge_max_length'])
-        root_metadata['edge_mean_length'] = float(root_metadata['edge_mean_length'])
-        root_metadata['edge_min_length'] = float(root_metadata['edge_min_length'])
-        root_metadata['number_of_split_slices'] = int(root_metadata['number_of_split_slices'])
-        root_metadata['number_of_triangles'] = int(root_metadata['number_of_triangles'])
-        root_metadata['number_of_vertices'] = int(root_metadata['number_of_vertices'])
-
-        root_metadata['zero_based_triangles'] = "bool:" + root_metadata['zero_based_triangles'][:1].upper() \
-                                                + root_metadata['zero_based_triangles'][1:]
-        root_metadata['bi_hemispheric'] = "bool:" + root_metadata['bi_hemispheric'][:1].upper() \
-                                          + root_metadata['bi_hemispheric'][1:]
-        root_metadata['valid_for_simulations'] = "bool:" + root_metadata['valid_for_simulations'][:1].upper() \
-                                                 + root_metadata['valid_for_simulations'][1:]
-
-        root_metadata["surface_type"] = root_metadata["surface_type"].replace("\"", '')
-
-        if root_metadata['zero_based_triangles'] == 'bool:True':
-            operation_xml_parameters['zero_based_triangles'] = True
-        else:
-            operation_xml_parameters['zero_based_triangles'] = False
-
-        storage_manager.store_data('split_triangles', [])
-
-        _migrate_dataset_metadata(['split_triangles', 'triangle_normals', 'triangles', 'vertex_normals', 'vertices'],
-                                  storage_manager)
-
-    elif class_name == 'RegionMapping':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-
-        root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
-        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
-        dependent_attributes['surface'] = root_metadata['surface']
-        algorithm = algorithm.replace('RegionMapping_Importer', 'RegionMappingImporter')
-
-    elif class_name == 'RegionVolumeMapping':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-
-        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
-        root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
-        dependent_attributes['volume'] = root_metadata['volume']
-
-    elif 'Sensors' in class_name:
-        root_metadata['number_of_sensors'] = int(root_metadata['number_of_sensors'])
-        root_metadata['sensors_type'] = root_metadata["sensors_type"].replace("\"", '')
-        root_metadata['has_orientation'] = "bool:" + root_metadata['has_orientation'][:1].upper() \
-                                           + root_metadata['has_orientation'][1:]
-
-        storage_manager.remove_metadata('Size', 'labels')
-        storage_manager.remove_metadata('Size', 'locations')
-        storage_manager.remove_metadata('Variance', 'locations')
-        storage_manager = _bytes_ds_to_string_ds(storage_manager, 'labels')
-
-        datasets = ['labels', 'locations']
-
-        if 'MEG' in class_name:
-            storage_manager.remove_metadata('Size', 'orientations')
-            storage_manager.remove_metadata('Variance', 'orientations')
-            datasets.append('orientations')
-            operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_MEG.value
-        elif 'EEG' in class_name:
-            operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_EEG.value
-        else:
-            operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_INTERNAL.value
-
-        _migrate_dataset_metadata(datasets, storage_manager)
-        algorithm = algorithm.replace('Sensors_Importer', 'SensorsImporter')
-
-    elif 'Projection' in class_name:
-        root_metadata['sensors'] = GID_PREFIX + root_metadata['sensors']
-        root_metadata['sources'] = GID_PREFIX + root_metadata['sources']
-        root_metadata['written_by'] = "tvb.adapters.datatypes.h5.projections_h5.ProjectionMatrixH5"
-        root_metadata['projection_type'] = root_metadata["projection_type"].replace("\"", '')
-
-        storage_manager.remove_metadata('Size', 'projection_data')
-        storage_manager.remove_metadata('Variance', 'projection_data')
-
-        operation_xml_parameters['projection_file'] = input_file
-
-        _migrate_dataset_metadata(['projection_data'], storage_manager)
-        dependent_attributes['sensors'] = root_metadata['sensors']
-        dependent_attributes['sources'] = root_metadata['sources']
-        algorithm = algorithm.replace('BrainstormGainMatrixImporter', 'ProjectionMatrixSurfaceEEGImporter')
-
-    elif class_name == 'LocalConnectivity':
-        root_metadata['cutoff'] = float(root_metadata['cutoff'])
-        root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
-
-        # storage_manager.remove_metadata('shape', 'matrix')
-        matrix_metadata = storage_manager.get_metadata('matrix')
-        matrix_metadata['Shape'] = str(matrix_metadata['Shape'], 'utf-8')
-        matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
-        matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
-        storage_manager.set_metadata(matrix_metadata, 'matrix')
-
-        equation = eval(root_metadata['equation'])
-        equation['type'] = equation['__mapped_class']
-        del equation['__mapped_class']
-        del equation['__mapped_module']
-
-        root_metadata['equation'] = json.dumps(equation)
-
-        operation_xml_parameters['surface'] = root_metadata['surface']
-        dependent_attributes['surface'] = root_metadata['surface']
-
-    elif class_name == 'ConnectivityAnnotations':
-        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
-        root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
-        h5_class = ConnectivityAnnotationsH5
-
-        _migrate_dataset_metadata(['region_annotations'], storage_manager)
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
-
-    elif 'TimeSeries' in class_name:
-        operation_xml_parameters.pop('', None)
-        if 'surface' in operation_xml_parameters and operation_xml_parameters['surface'] == '':
-            operation_xml_parameters['surface'] = None
-        if 'stimulus' in operation_xml_parameters and operation_xml_parameters['stimulus'] == '':
-            operation_xml_parameters['stimulus'] = None
-        dependent_attributes = _migrate_time_series(root_metadata, storage_manager,
-                                                    class_name, dependent_attributes)
-    elif 'Volume' in class_name:
-        root_metadata['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
-
-        if operation_xml_parameters['connectivity'] == '':
-            operation_xml_parameters['connectivity'] = None
-
-        _migrate_dataset_metadata(['origin', 'voxel_size'], storage_manager)
-
-    elif class_name == 'StructuralMRI':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-
-        root_metadata['volume'] = GID_PREFIX + root_metadata['volume']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        dependent_attributes['volume'] = root_metadata['volume']
-
-    elif class_name == 'ComplexCoherenceSpectrum':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-
-        root_metadata['epoch_length'] = float(root_metadata['epoch_length'])
-        root_metadata['segment_length'] = float(root_metadata['segment_length'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-        root_metadata['windowing_function'] = root_metadata['windowing_function'].replace("\"", '')
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        _migrate_dataset_metadata(['array_data', 'cross_spectrum'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'WaveletCoefficients':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-
-        root_metadata['q_ratio'] = float(root_metadata['q_ratio'])
-        root_metadata['sample_period'] = float(root_metadata['sample_period'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-        root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
-        root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
-
-        operation_xml_parameters['input_data'] = root_metadata['source']
-
-        _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'CoherenceSpectrum':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-
-        root_metadata['nfft'] = int(root_metadata['nfft'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        array_data = storage_manager.get_data('array_data')
-        storage_manager.remove_data('array_data')
-        storage_manager.store_data('array_data', numpy.asarray(array_data, dtype=numpy.float64))
-
-        _migrate_dataset_metadata(['array_data', 'frequency'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'CrossCorrelation':
-        operation_xml_parameters['datatype'] = root_metadata['source']
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        dependent_attributes['source'] = root_metadata['source']
-        _migrate_dataset_metadata(['array_data', 'time'], storage_manager)
-
-    elif class_name == 'Fcd':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-
-        root_metadata['sp'] = float(root_metadata['sp'])
-        root_metadata['sw'] = float(root_metadata['sw'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'FourierSpectrum':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-
-        root_metadata['segment_length'] = float(root_metadata['segment_length'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-        operation_xml_parameters['input_data'] = root_metadata['source']
-
-        _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
-                                   'normalised_average_power', 'phase', 'power'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'IndependentComponents':
-        root_metadata['n_components'] = int(root_metadata['n_components'])
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
-                                   'normalised_component_time_series', 'prewhitening_matrix',
-                                   'unmixing_matrix'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'CorrelationCoefficients':
-        _pop_lengths(root_metadata)
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        operation_xml_parameters['datatype'] = root_metadata['source']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'PrincipalComponents':
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        _migrate_dataset_metadata(['component_time_series', 'fractions',
-                                   'norm_source', 'normalised_component_time_series',
-                                   'weights'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'Covariance':
-        _pop_common_metadata(root_metadata)
-        root_metadata.pop(DataTypeMetaData.KEY_TITLE)
-        _pop_lengths(root_metadata)
-
-        root_metadata['source'] = GID_PREFIX + root_metadata['source']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        dependent_attributes['source'] = root_metadata['source']
-
-    elif class_name == 'ConnectivityMeasure':
-        _pop_common_metadata(root_metadata)
-        _pop_lengths(root_metadata)
-        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
-
-        operation_xml_parameters['data_file'] = input_file
-        operation_xml_parameters['connectivity'] = root_metadata['connectivity']
-
-        _migrate_dataset_metadata(['array_data'], storage_manager)
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
-
-    # TODO: Make sure DatatypeMeasureH5 is converted after a DatatypeMeasure class is created and then remove the return
-    elif class_name == 'DatatypeMeasure':
-        root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
-        h5_class = DatatypeMeasureH5
-        dependent_attributes['analyzed_datatype'] = root_metadata['analyzed_datatype']
-        return
-
-    elif class_name == 'StimuliRegion':
-        root_metadata['connectivity'] = GID_PREFIX + root_metadata['connectivity']
-        additional_params['weight'] = numpy.asarray(eval(root_metadata['weight']), dtype=numpy.float64)
-        _migrate_stimuli(root_metadata, storage_manager, ['weight'])
-        dependent_attributes['connectivity'] = root_metadata['connectivity']
-
-    elif class_name == 'StimuliSurface':
-        root_metadata['surface'] = GID_PREFIX + root_metadata['surface']
-        additional_params['focal_points_triangles'] = numpy.asarray(eval(root_metadata['focal_points_triangles']),
-                                                                    dtype=numpy.int)
-        _migrate_stimuli(root_metadata, storage_manager, ['focal_points_surface', 'focal_points_triangles'])
-        dependent_attributes['surface'] = root_metadata['surface']
-
-    elif class_name == 'ValueWrapper':
-        root_metadata['data_type'] = root_metadata['data_type'].replace("\"", '')
-        root_metadata['written_by'] = "tvb.adapters.datatypes.h5.mapped_value_h5.ValueWrapperH5"
-        h5_class = ValueWrapperH5
-
-    elif class_name == 'SimulationState':
-        os.remove(input_file)
-        return
+    # Calls the specific method for the current h5 class
+    params = datatypes_to_be_migrated[class_name](root_metadata=root_metadata,
+                                                  storage_manager=storage_manager,
+                                                  operation_xml_parameters=operation_xml_parameters,
+                                                  input_file=input_file)
+
+    operation_xml_parameters = params['operation_xml_parameters']
+    if 'algorithm' not in params:
+        params['algorithm'] = algorithm
+
+    if 'h5_class' not in params:
+        params['h5_class'] = h5_class
+
+    if 'additional_params' in params:
+        additional_params = params['additional_params']
 
     root_metadata['operation_tag'] = ''
     storage_manager.set_metadata(root_metadata)
 
-    if storage_migrate is False:
+    if storage_migrate is False or class_name in ['SimulationState', 'DatatypeMeasure']:
         return
 
-    with h5_class(input_file) as f:
-
+    with params['h5_class'](input_file) as f:
         # Create the corresponding datatype to be stored in db
         datatype = REGISTRY.get_datatype_for_h5file(f)()
         f.load_into(datatype)
-        generic_attributes = f.load_generic_attributes()
         datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
         datatype_index.create_date = root_metadata['create_date']
 
-        # Get the dependent datatypes
-        for attr_name, attr_value in dependent_attributes.items():
-            dependent_datatype_index = dao.get_datatype_by_gid(attr_value.replace('-', '').replace('urn:uuid:', ''))
-            dependent_datatype = h5.load_from_index(dependent_datatype_index)
-            setattr(datatype, attr_name, dependent_datatype)
+        datatype, generic_attributes = h5.load_with_references(input_file)
 
         if has_vm is False:
             # Get parent_burst when needed
             if 'time_series' in operation_xml_parameters:
                 ts = dao.get_datatype_by_gid(
                     operation_xml_parameters['time_series'].replace('-', '').replace('urn:uuid:', ''))
-                root_metadata['parent_burst'] = GID_PREFIX + ts.fk_parent_burst
+                root_metadata['parent_burst'] = _parse_gid(ts.fk_parent_burst)
                 storage_manager.set_metadata(root_metadata)
 
-            alg_json = json.loads(algorithm)
+            alg_json = json.loads(params['algorithm'])
             algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
             operation.algorithm = algorithm
             operation.fk_from_algo = algorithm.id
@@ -699,7 +827,7 @@ def update(input_file):
                         f.store(burst_config)
 
                     dao.store_entity(burst_config)
-                    root_metadata['parent_burst'] = GID_PREFIX + burst_config.gid
+                    root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                     storage_manager.set_metadata(root_metadata)
 
             os.remove(os.path.join(folder, OPERATION_XML))
