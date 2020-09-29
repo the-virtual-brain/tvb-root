@@ -14,22 +14,18 @@ pipeline {
             }
         }
         stage ('Tests on SqLite') {
-            agent {
-                docker {
-                    image '${FULL_DOCKER_IMAGE_NAME}'
-                    alwaysPull true
-                }
-            }
             steps {
-                sh '''#!/bin/bash
-                    source activate tvb-run
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    cd ../tvb_bin
-                    bash run_tests.sh
-                    exit 0
-                '''
-                 junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
+                withDockerContainer(image: "${FULL_DOCKER_IMAGE_NAME}") {
+                    sh '''#!/bin/bash
+                        source activate tvb-run
+                        cd tvb_build
+                        bash install_full_tvb.sh
+                        cd ../tvb_bin
+                        bash run_tests.sh
+                        exit 0
+                    '''
+                }
+                junit 'tvb_bin/TEST_OUTPUT/results_*.xml'
             }
         }
     }
