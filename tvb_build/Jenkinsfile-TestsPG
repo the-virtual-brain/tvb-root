@@ -11,7 +11,6 @@ pipeline {
             steps {
                 script {
                     def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "-f tvb_build/docker/Dockerfile-test tvb_build/docker")
-                    dockerImage.push('${LATEST_TAG}')
                 }
             }
         }
