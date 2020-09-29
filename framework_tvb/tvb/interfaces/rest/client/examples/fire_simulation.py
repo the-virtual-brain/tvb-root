@@ -105,14 +105,15 @@ def fire_simulation_example(tvb_client_instance):
 
         data_in_project = tvb_client_instance.get_data_in_project(project_gid)
         logger.info("We have {} datatypes".format(len(data_in_project)))
-        ggid = None
+
         for datatype in data_in_project:
             if datatype.type == 'FourierSpectrum':
                 ggid = datatype.gid
-                break
 
-        extra_info = tvb_client_instance.get_extra_info(ggid)
-        logger.info("The extra information for Fourier {}".format(extra_info))
+                extra_info = tvb_client_instance.get_extra_info(ggid)
+                logger.info("The extra information for Fourier {}".format(extra_info))
+
+                break
 
         logger.info("Download the connectivity file...")
         connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid, tvb_client_instance.temp_folder)

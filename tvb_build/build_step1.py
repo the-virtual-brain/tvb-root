@@ -156,7 +156,7 @@ def _copy_demos_collapsed(to_copy):
                 if not (sub_folder.startswith('.') or sub_folder.endswith(".rst")):
                     shutil.copy(src, dest)
 
-            if os.path.isdir(src) and not sub_folder.startswith('.') and not os.path.exists(dest):
+            if os.path.isdir(src) and not sub_folder.startswith('.')and not sub_folder == 'sandbox' and not os.path.exists(dest):
                 ignore_patters = shutil.ignore_patterns('.svn', '*.rst')
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
