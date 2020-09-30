@@ -88,6 +88,7 @@ from tvb.core.entities.model.model_project import *
 from tvb.core.entities.model.model_datatype import *
 import decorator
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
 
 LOGGER = get_logger(__name__)
 
@@ -185,6 +186,9 @@ class BaseTestCase(object):
             for f in file_names:
                 if f.endswith('.h5'):
                     fp = os.path.join(dir_path, f)
+                    written_by = H5File.h5_class_from_file(fp)
+                    if written_by is ViewModelH5:
+                        continue
                     total_size += os.path.getsize(fp)
                     n_files += 1
         return int(round(total_size / 1024.)), n_files
