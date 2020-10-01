@@ -136,6 +136,11 @@ class Integrator(HasTraits):
             # ...use the integrator's clamp_state
             self.clamp_state(state)
 
+    def integrate(self, X, model, coupling, local_coupling, stimulus):
+        X[model.state_variable_mask] = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
+        self.bound_and_clamp(X)
+        return X
+
     def integrate_with_update(self, X, model, coupling, local_coupling, stimulus):
 
         temp = model.update_non_integrated_variables_before_integration(X, coupling, local_coupling, stimulus)
@@ -143,19 +148,13 @@ class Integrator(HasTraits):
             X = temp
             self.bound_and_clamp(X)
 
-        X[model.state_variable_mask] = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
-        self.bound_and_clamp(X)
+        X[model.state_variable_mask] = self.integrate(X, model.dfun, coupling, local_coupling, stimulus)
 
         temp = model.update_non_integrated_variables_after_integration(X)
         if temp is not None:
             X = temp
             self.bound_and_clamp(X)
 
-        return X
-
-    def integrate(self, X, model, coupling, local_coupling, stimulus):
-        X[model.state_variable_mask] = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
-        self.bound_and_clamp(X)
         return X
 
     def __str__(self):
