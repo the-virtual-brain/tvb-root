@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-import numpy
-from tvb.simulator.descriptors import Dim, NDArray
-from tvb.simulator.history import DenseHistory
+
+from tvb.simulator.descriptors import StaticAttr, Dim, NDArray
 
 
-class CosimHistory(DenseHistory):
+class CosimHistory(StaticAttr):
 
     """Class for cosimulation history implementation.
        It stores the whole TVB state for the co-simulation synchronization time.
@@ -12,41 +11,49 @@ class CosimHistory(DenseHistory):
        (it usually is equal to the minimum delay of coupling between the co-simulators).
        It is a DenseHistory since the whole state has to be stored for all delays."""
 
-    n_time, n_node, n_var, n_mode = Dim(), Dim(), Dim(), Dim()
+    n_time, n_node, n_var, n_cvar, n_mode = Dim(), Dim(), Dim(), Dim(), Dim()
 
-    buffer = NDArray(('n_time', 'n_var', 'n_node', 'n_mode'), 'f', read_only=False)
+    state_buffer = NDArray(('n_time', 'n_var', 'n_node', 'n_mode'), 'f', read_only=False)
 
-    def __init__(self, weights, delays, cvars, n_mode, bound_and_clamp, n_var=None):
-        super(CosimHistory, self).__init__(weights, delays, cvars, n_mode)
-        self.bound_and_clamp = bound_and_clamp
-        if n_var is None:
-            # Assuming all state variables are also coupling variables:
-            self.n_var = self.n_cvar
-        else:
-            # Not all state variables are coupling variables in the general case.
-            self.n_var = n_var
-            # We need to correct the cvar indices:
-            na = numpy.newaxis
-            self.es_icvar = numpy.array(self.cvars)[na, :, na]
+    coupling_buffer = NDArray(('n_ctime', 'n_cvar', 'n_node', 'n_mode'), 'f', read_only=False)
 
-    def initialize(self, init):
+    def __init__(self,  n_time, n_var, n_cvar, n_node, n_mode):
+        self.n_time = n_time + 1  # state buffer has n past steps and the current one
+        self.n_ctime = 2*self.n_time  # coupling buffer has n-1 past steps, the current one, and n future steps
+        self.n_var = n_var
+        self.n_cvar = n_cvar
+        self.n_node = n_node
+        self.n_mode = n_mode
+
+    def initialize(self, init_state, init_coupling):
         """Initialize CosimHistory from the initial condition."""
-        self.buffer = init[:self.n_time]
+        self.state_buffer = init_state[:self.n_time]
+        self.coupling_buffer = init_coupling
 
-    def query_state(self, step):
-        """This method returns the whole TVB current_state
-           by querying the CosimHistory buffer for a time step."""
-        return self.buffer[(step - 1) % self.n_time]
+    def update_state(self, step, new_state):
+        """This method will update the CosimHistory state buffer
+           with the whole TVB state for a specific time step."""
+        self.state_buffer[step % self.n_time] = new_state
 
-    def update(self, step, new_state):
-        """This method will update the CosimHistory buffer with the whole TVB state for a specific time step."""
-        self.buffer[step % self.n_time] = new_state
-
-    def update_from_cosim(self, steps, new_states, vois, proxy_inds):
-        """This method will update the CosimHistory buffer from input from the other co-simulator, for
+    def update_state_from_cosim(self, steps, new_states, vois, proxy_inds):
+        """This method will update the CosimHistory state buffer from input from the other co-simulator, for
            - the state variables with indices vois,
            - the region nodes with indices proxy_inds,
            - and for the specified time steps."""
         for step, new_state in zip(steps, new_states):
-            self.buffer[step % self.n_time, vois, proxy_inds] = new_state
-            self.bound_and_clamp(self.buffer[step % self.n_time])
+            self.state_buffer[step % self.n_time, vois, proxy_inds] = new_state
+
+    def query_state(self, step):
+        """This method returns the whole TVB current_state
+           by querying the CosimHistory state buffer for a time step."""
+        return self.state_buffer[(step - 1) % self.n_time]
+
+    def update_coupling(self, step, new_node_coupling):
+        """This method will update the CosimHistory coupling buffer
+           with the whole TVB node_coipling for a specific time step."""
+        self.coupling_buffer[step % self.n_ctime] = new_node_coupling
+
+    def query_coupling(self, step):
+        """This method returns the whole TVB current node_coupling
+           by querying the CosimHistory coupling buffer for a time step."""
+        return self.coupling_buffer[(step - 1) % self.n_ctime]
