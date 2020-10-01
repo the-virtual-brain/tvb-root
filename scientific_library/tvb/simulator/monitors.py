@@ -54,6 +54,7 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 
 """
 
+import os
 import abc
 import numpy
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG,
@@ -65,7 +66,6 @@ from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
 from tvb.simulator.common import iround, numpy_add_at
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
-
 
 
 class Monitor(HasTraits):
@@ -97,6 +97,15 @@ class Monitor(HasTraits):
         clsname = self.__class__.__name__
         return '%s(period=%f, voi=%s)' % (clsname, self.period, self.variables_of_interest.tolist())
 
+    def _config_vois(self, simulator):
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
+
+    def _config_time(self, simulator):
+        self.dt = simulator.integrator.dt
+        self.istep = iround(self.period / self.dt)
+
     def config_for_sim(self, simulator):
         """Configure monitor for given simulator.
 
@@ -108,11 +117,8 @@ class Monitor(HasTraits):
         the the Simulator's configure() method.
 
         """
-        self.dt = simulator.integrator.dt
-        self.istep = iround(self.period / self.dt)
-        self.voi = self.variables_of_interest
-        if self.voi is None or self.voi.size == 0:
-            self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
+        self._config_vois(simulator)
+        self._config_time(simulator)
 
     def record(self, step, observed):
         """Record a sample of the observed state at given step.
@@ -174,17 +180,40 @@ class Raw(Monitor):
         required=False)
     # order = -1
 
-    def config_for_sim(self, simulator):
+    def _config_vois(self, simulator):
+        self.voi = numpy.arange(len(simulator.model.variables_of_interest))
+
+    def _config_time(self, simulator):
         if self.period != simulator.integrator.dt:
             self.log.debug('Raw period not equal to integration time step, overriding')
         self.period = simulator.integrator.dt
-        super(Raw, self).config_for_sim(simulator)
         self.istep = 1
-        self.voi = numpy.arange(len(simulator.model.variables_of_interest))
 
     def sample(self, step, state):
         time = step * self.dt
         return [time, state]
+
+
+class RawVoi(Raw):
+    """
+        A monitor that records the output raw data from a tvb simulation:
+        It collects:
+
+            - selected state variables of all modes from class :Model:
+            - all nodes of a region or surface based
+            - all the integration time steps
+
+        """
+
+    _ui_name = "Selected State Variables' Raw recording"
+
+    def _config_vois(self, simulator):
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
+
+    def sample(self, step, state):
+        return super(RawVoi, self).sample(step, state[self.voi])
 
 
 class SubSample(Monitor):
@@ -298,7 +327,6 @@ class SpatialAverage(Monitor):
         self.log.debug("spatial_mean")
         self.log.debug(narray_describe(self.spatial_mean))
 
-
     def sample(self, step, state):
         if step % self.istep == 0:
             time = step * self.dt
@@ -351,14 +379,13 @@ class TemporalAverage(Monitor):
     """
     _ui_name = "Temporal average"
 
-    def config_for_sim(self, simulator):
-        super(TemporalAverage, self).config_for_sim(simulator)
+    def _config_time(self, simulator):
+        super(TemporalAverage, self)._config_time(simulator)
         stock_size = (self.istep, self.voi.shape[0],
                       simulator.number_of_nodes,
                       simulator.model.number_of_modes)
-        self.log.debug("Temporal average stock_size is %s" % (str(stock_size), ))
+        self.log.debug("Temporal average stock_size is %s" % (str(stock_size),))
         self._stock = numpy.zeros(stock_size)
-
 
     def sample(self, step, state):
         """
@@ -514,10 +541,8 @@ class Projection(Monitor):
 
         self.log.info('Projection configured gain shape %s', self.gain.shape)
 
-
     def configure(self, *args, **kwargs):
         self.sensors.configure()
-
 
     def sample(self, step, state):
         "Record state, returning sample at sampling frequency / period."
@@ -563,7 +588,6 @@ class Projection(Monitor):
             self._rmap = self._reg_map_data(self.region_mapping)
 
 
-
 class EEG(Projection):
     """
     Forward solution monitor for electroencephalogy (EEG). If a
@@ -600,7 +624,6 @@ class EEG(Projection):
         doc='When a projection matrix is not used, this provides '
             'the value of conductivity in the formula for the single '
             'sphere approximation of the head (Sarvas 1987).')
-
 
     @classmethod
     def from_file(cls, sensors_fname='eeg_brainstorm_65.txt', projection_fname='projection_eeg_65_surface_16k.npy', **kwargs):
@@ -854,17 +877,19 @@ class Bold(Monitor):
         self.log.debug('Bold HRF shape %s, interim period & istep %d & %d',
                   self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)
 
-    def config_for_sim(self, simulator):
-        super(Bold, self).config_for_sim(simulator)
+    def _config_time(self, simulator):
+        super(Bold, self)._config_time(simulator)
         self.compute_hrf()
         sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
         self._interim_stock = numpy.zeros((self._interim_istep,) + sample_shape)
         self.log.debug("BOLD inner buffer %s %.2f MB" % (
-            self._interim_stock.shape, self._interim_stock.nbytes/2**20))
+            self._interim_stock.shape, self._interim_stock.nbytes / 2 ** 20))
         self._stock = numpy.zeros((self._stock_steps,) + sample_shape)
         self.log.debug("BOLD outer buffer %s %.2f MB" % (
-            self._stock.shape, self._stock.nbytes/2**20))
+            self._stock.shape, self._stock.nbytes / 2 ** 20))
 
+    def config_for_sim(self, simulator):
+        super(Bold, self).config_for_sim(simulator)
 
     def sample(self, step, state):
         # Update the interim-stock at every step
@@ -937,3 +962,46 @@ class ProgressLogger(Monitor):
 
     def sample(self, step, state):
         raise NotImplementedError
+
+
+class Coupling(RawVoi):
+    """
+    A monitor that records the variables_of_interest from node_coupling data from a tvb simulationfor
+    for all the integration time steps.
+
+    """
+
+    _ui_name = "Coupling recording"
+
+    variables_of_interest = NArray(
+        dtype=int,
+        label="Indices of coupling variables to record",
+        required=False)
+
+    def _config_vois(self, simulator):
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.cvar)]
+
+    def sample(self, step, node_coupling):
+        return super(Coupling, self).sample(step, node_coupling)
+
+
+class CouplingTemporalAverage(Coupling, TemporalAverage):
+    """
+    Monitors the averaged value for the model's coupling variable/s of interest over all
+    the nodes at each sampling period. Time steps that are not modulo ``istep``
+    are stored temporarily in the ``_stock`` attribute and then that temporary
+    store is averaged and returned when time step is modulo ``istep``.
+
+    """
+    _ui_name = "Coupling Temporal average"
+
+    def _config_vois(self, simulator):
+        Coupling._config_vois(self, simulator)
+
+    def _config_time(self, simulator):
+        TemporalAverage._config_time(self, simulator)
+
+    def sample(self, step, node_coupling):
+        return TemporalAverage.sample(self, step, node_coupling)
