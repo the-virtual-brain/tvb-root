@@ -349,8 +349,10 @@ class ImportService(object):
     def create_view_model(self, operation_entity, operation_data, new_op_folder, add_params=None):
         view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
         if add_params is not None:
-            for key, value in add_params.items():
-                setattr(view_model, key, value)
+            for element in add_params:
+                key_attr = getattr(view_model, element[0])
+                setattr(key_attr, element[1], element[2])
+
         h5.store_view_model(view_model, new_op_folder)
         view_model_disk_size = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
         operation_entity.view_model_disk_size = view_model_disk_size
@@ -446,17 +448,18 @@ class ImportService(object):
         view_model = ad.get_view_model_class()()
 
         if xml_parameters:
-            params = json.loads(xml_parameters)
             declarative_attrs = type(view_model).declarative_attrs
 
-            for param in params:
+            if isinstance(xml_parameters, str):
+                xml_parameters = json.loads(xml_parameters)
+            for param in xml_parameters:
                 new_param_name = param
                 if param[0] == "_":
                     new_param_name = param[1:]
                 new_param_name = new_param_name.lower()
                 if new_param_name in declarative_attrs:
                     try:
-                        setattr(view_model, new_param_name, params[param])
+                        setattr(view_model, new_param_name, xml_parameters[param])
                     except TraitTypeError:
                         pass
         return view_model

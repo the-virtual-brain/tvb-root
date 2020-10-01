@@ -39,11 +39,13 @@ import json
 import os
 import sys
 import uuid
-from datetime import datetime
+import ast
 import numpy
+from datetime import datetime
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
+from tvb.basic.neotraits._attr import Range
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
@@ -61,6 +63,7 @@ from tvb.core.neotraits._h5core import H5File
 from tvb.core.neotraits.h5 import STORE_STRING
 from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
 from tvb.datatypes.sensors import SensorTypes
+from tvb.datatypes.surfaces import CorticalSurface
 
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
@@ -124,17 +127,24 @@ def _migrate_surface(**kwargs):
 
     root_metadata["surface_type"] = root_metadata["surface_type"].replace("\"", '')
 
+    operation_xml_parameters = kwargs['operation_xml_parameters']
     if root_metadata['zero_based_triangles'] == 'bool:True':
-        kwargs['operation_xml_parameters']['zero_based_triangles'] = True
+        operation_xml_parameters['zero_based_triangles'] = True
     else:
-        kwargs['operation_xml_parameters']['zero_based_triangles'] = False
+        operation_xml_parameters['zero_based_triangles'] = False
+
+    if 'should_center' in operation_xml_parameters:
+        if operation_xml_parameters['should_center'] == 'bool:True':
+            operation_xml_parameters['should_center'] = True
+        else:
+            operation_xml_parameters['should_center'] = False
 
     kwargs['storage_manager'].store_data('split_triangles', [])
 
     _migrate_dataset_metadata(['split_triangles', 'triangle_normals', 'triangles', 'vertex_normals', 'vertices'],
                               kwargs['storage_manager'])
 
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    return {'operation_xml_parameters': operation_xml_parameters}
 
 
 def _migrate_region_mapping(**kwargs):
@@ -239,8 +249,23 @@ def _migrate_local_connectivity(**kwargs):
 
     root_metadata['equation'] = json.dumps(equation)
 
-    kwargs['operation_xml_parameters']['surface'] = root_metadata['surface']
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['surface'] = root_metadata['surface']
+    operation_xml_parameters['cutoff'] = float(operation_xml_parameters['cutoff'])
+    equation_name = operation_xml_parameters['equation']
+    equation = getattr(sys.modules['tvb.datatypes.equations'],
+                       equation_name)()
+    operation_xml_parameters['equation'] = equation
+    parameters = {}
+
+    for xml_param in operation_xml_parameters:
+        if '_parameters_parameters_' in xml_param:
+            new_key = xml_param.replace('_parameters_option_' + equation_name + '_parameters_parameters_', '.parameters.')
+            param_name_start_idx = new_key.rfind('.')
+            param_name = new_key[param_name_start_idx+1:]
+            parameters[param_name] = float(operation_xml_parameters[xml_param])
+    additional_params = [['equation', 'parameters', parameters]]
+    return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
 def _migrate_connectivity_annotations(**kwargs):
@@ -273,30 +298,92 @@ def _migrate_time_series(metadata, **kwargs):
     root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
     _migrate_dataset_metadata(metadata, kwargs['storage_manager'])
 
+    if len(operation_xml_parameters) == 0:
+        return operation_xml_parameters, []
+
+    coupling = getattr(sys.modules['tvb.simulator.coupling'], operation_xml_parameters['coupling'])()
+    operation_xml_parameters['coupling'] = coupling
+
+    model_name = operation_xml_parameters['model']
+    model = getattr(sys.modules['tvb.simulator.models'], model_name)()
+    operation_xml_parameters['model'] = model
+
+    integrator_name = operation_xml_parameters['integrator']
+    integrator = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
+                         integrator_name + 'ViewModel')()
+    operation_xml_parameters['integrator'] = integrator
+
+    monitors = operation_xml_parameters['monitors']
+    for i in range(len(monitors)):
+        monitor = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
+                          operation_xml_parameters['monitors'][i] + 'ViewModel')()
+        operation_xml_parameters['monitors'][i] = monitor
+
+    operation_xml_parameters['conduction_speed'] = float(operation_xml_parameters['simulation_length'])
+    operation_xml_parameters['simulation_length'] = float(operation_xml_parameters['simulation_length'])
+
+    additional_params = []
+    for xml_param in operation_xml_parameters:
+        if 'model_parameters_option_' in xml_param and 'range_parameters' not in xml_param:
+            new_param = xml_param.replace('model_parameters_option_' + model_name + '_', '')
+            list_param = operation_xml_parameters[xml_param]
+
+            if model_name + '_variables_of_interest' not in xml_param:
+                try:
+                    list_param = numpy.asarray(eval(list_param.replace(' ', ', ')))
+                except AttributeError:
+                    list_param = numpy.asarray(list_param)
+
+            additional_params.append(['model', new_param, list_param])
+        elif 'integrator_parameters_option_' in xml_param:
+            new_param = xml_param.replace('integrator_parameters_option_' + integrator_name + '_', '')
+            additional_params.append(['integrator', new_param, float(operation_xml_parameters[xml_param])])
+    return operation_xml_parameters, additional_params
+
 
 def _migrate_time_series_region(**kwargs):
-    _migrate_time_series(['data', 'time'], **kwargs)
+    operation_xml_parameters, additional_params = _migrate_time_series(['data', 'time'], **kwargs)
     root_metadata = kwargs['root_metadata']
     root_metadata['region_mapping'] = _parse_gid(root_metadata['region_mapping'])
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
 
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
 def _migrate_time_series_surface(**kwargs):
-    _migrate_time_series(['data', 'time'], **kwargs)
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    operation_xml_parameters, additional_params = _migrate_time_series(['data', 'time'], **kwargs)
+    surface_gid = operation_xml_parameters['surface']
+    cortical_surface = CortexViewModel()
+    cortical_surface.surface_gid = uuid.UUID(surface_gid)
+    cortical_surface.region_mapping_data =  uuid.UUID(operation_xml_parameters['surface_parameters_region_mapping_data'])
+    cortical_surface.local_connectivity =  uuid.UUID(operation_xml_parameters['surface_parameters_local_connectivity'])
+    cortical_surface.coupling_strength = numpy.asarray(eval(operation_xml_parameters[
+                                                    'surface_parameters_coupling_strength'].replace(' ', ', ')))
+    operation_xml_parameters['surface'] = cortical_surface
+    return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
+
+
+def _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type):
+    setattr(operation_xml_parameters['monitors'][0], 'region_mapping',
+            operation_xml_parameters['monitors_parameters_option_' + sensors_type + '_region_mapping'])
+    setattr(operation_xml_parameters['monitors'][0], 'sensors',
+            operation_xml_parameters['monitors_parameters_option_' + sensors_type + '_sensors'])
+    setattr(operation_xml_parameters['monitors'][0], 'projection',
+            operation_xml_parameters['monitors_parameters_option_' + sensors_type + '_projection'])
 
 
 def _migrate_time_series_sensors(**kwargs):
-    _migrate_time_series(['data', 'time'], **kwargs)
+    sensors_type = kwargs['operation_xml_parameters']['monitors'][0]
+    operation_xml_parameters, additional_params = _migrate_time_series(['data', 'time'], **kwargs)
     root_metadata = kwargs['root_metadata']
     root_metadata['sensors'] = _parse_gid(root_metadata['sensors'])
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+    _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type)
+    return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
 def _migrate_time_series_volume(**kwargs):
-    _migrate_time_series(['data'], **kwargs)
+    operation_xml_parameters, additional_params = _migrate_time_series(['data'], **kwargs)
     root_metadata = kwargs['root_metadata']
     root_metadata['nr_dimensions'] = int(root_metadata['nr_dimensions'])
     root_metadata['sample_rate'] = float(root_metadata['sample_rate'])
@@ -304,17 +391,24 @@ def _migrate_time_series_volume(**kwargs):
     root_metadata['volume'] = root_metadata['volume']
     root_metadata.pop('nr_dimensions')
     root_metadata.pop('sample_rate')
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
 def _migrate_volume(**kwargs):
-    kwargs['root_metadata']['voxel_unit'] = kwargs['root_metadata']['voxel_unit'].replace("\"", '')
+    root_metadata = kwargs['root_metadata']
+    kwargs['root_metadata']['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
 
-    if kwargs['operation_xml_parameters']['connectivity'] == '':
-        kwargs['operation_xml_parameters']['connectivity'] = None
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    if operation_xml_parameters['connectivity'] == '':
+        operation_xml_parameters['connectivity'] = None
+
+    if operation_xml_parameters['apply_corrections'] == 'bool:True':
+        operation_xml_parameters['apply_corrections'] = True
+    else:
+        operation_xml_parameters['apply_corrections'] = False
 
     _migrate_dataset_metadata(['origin', 'voxel_size'], kwargs['storage_manager'])
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    return {'operation_xml_parameters': operation_xml_parameters}
 
 
 def _migrate_structural_mri(**kwargs):
@@ -356,10 +450,17 @@ def _migrate_wavelet_coefficients(**kwargs):
     root_metadata['mother'] = root_metadata['mother'].replace("\"", '')
     root_metadata['normalisation'] = root_metadata['normalisation'].replace("\"", '')
 
-    kwargs['operation_xml_parameters']['input_data'] = root_metadata['source']
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['input_data'] = root_metadata['source']
 
+    range = Range(lo=float(operation_xml_parameters['frequencies_parameters_option_Range_lo']),
+                  hi=float(operation_xml_parameters['frequencies_parameters_option_Range_hi']),
+                  step=float(operation_xml_parameters['frequencies_parameters_option_Range_step']))
+    operation_xml_parameters['frequencies'] = range
+    operation_xml_parameters['sample_period'] = float(operation_xml_parameters['sample_period'])
+    operation_xml_parameters['q_ratio'] = float(operation_xml_parameters['q_ratio'])
     _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'], kwargs['storage_manager'])
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    return {'operation_xml_parameters': operation_xml_parameters}
 
 
 def _migrate_coherence_spectrum(**kwargs):
@@ -375,6 +476,7 @@ def _migrate_coherence_spectrum(**kwargs):
     array_data = storage_manager.get_data('array_data')
     storage_manager.remove_data('array_data')
     storage_manager.store_data('array_data', numpy.asarray(array_data, dtype=numpy.float64))
+    kwargs['operation_xml_parameters']['nfft'] = int(kwargs['operation_xml_parameters']['nfft'])
 
     _migrate_dataset_metadata(['array_data', 'frequency'], storage_manager)
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
@@ -399,6 +501,10 @@ def _migrate_fcd(**kwargs):
     root_metadata['sp'] = float(root_metadata['sp'])
     root_metadata['sw'] = float(root_metadata['sw'])
     root_metadata['source'] = _parse_gid(root_metadata['source'])
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['sp'] = root_metadata['sp']
+    operation_xml_parameters['sw'] = root_metadata['sw']
+
 
     _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
@@ -412,7 +518,14 @@ def _migrate_fourier_spectrum(**kwargs):
 
     root_metadata['segment_length'] = float(root_metadata['segment_length'])
     root_metadata['source'] = _parse_gid(root_metadata['source'])
-    kwargs['operation_xml_parameters']['input_data'] = root_metadata['source']
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['input_data'] = root_metadata['source']
+
+    if operation_xml_parameters['detrend'] == 'on':
+        operation_xml_parameters['detrend'] = True
+    else:
+        operation_xml_parameters['detrend'] = False
+    operation_xml_parameters['segment_length'] = root_metadata['segment_length']
 
     _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
                                'normalised_average_power', 'phase', 'power'], kwargs['storage_manager'])
@@ -427,6 +540,8 @@ def _migrate_independent_components(**kwargs):
     _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
                                'normalised_component_time_series', 'prewhitening_matrix',
                                'unmixing_matrix'], kwargs['storage_manager'])
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['n_components'] = int(operation_xml_parameters['n_components'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -438,7 +553,10 @@ def _migrate_correlation_coefficients(**kwargs):
 
     root_metadata['source'] = _parse_gid(root_metadata['source'])
 
-    kwargs['operation_xml_parameters']['datatype'] = root_metadata['source']
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['datatype'] = root_metadata['source']
+    operation_xml_parameters['t_start'] = float(operation_xml_parameters['t_start'])
+    operation_xml_parameters['t_end'] = float(operation_xml_parameters['t_end'])
 
     _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
@@ -489,20 +607,22 @@ def _migrate_datatype_measure(**kwargs):
 def _migrate_stimuli_region(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
-    additional_params = {'weight': numpy.asarray(json.loads(root_metadata['weight']), dtype=numpy.float64)}
-    _migrate_stimuli(kwargs['root_metadata'], kwargs['storage_manager'], ['weight'])
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'additional_params': additional_params}
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['weight'] = numpy.asarray(json.loads(root_metadata['weight']), dtype=numpy.float64)
+    _migrate_stimuli(root_metadata, kwargs['storage_manager'], ['weight'])
+    return {'operation_xml_parameters': operation_xml_parameters}
 
 
 def _migrate_stimuli_surface(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['surface'] = _parse_gid(root_metadata['surface'])
-    additional_params = {'focal_points_triangles': numpy.asarray(
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    operation_xml_parameters['focal_points_triangles'] = numpy.asarray(
         json.loads(root_metadata['focal_points_triangles']),
-        dtype=numpy.int)}
-    _migrate_stimuli(kwargs['root_metadata'], kwargs['storage_manager'],
+        dtype=numpy.int)
+    _migrate_stimuli(root_metadata, kwargs['storage_manager'],
                      ['focal_points_surface', 'focal_points_triangles'])
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'additional_params': additional_params}
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
 def _migrate_value_wrapper(**kwargs):
@@ -738,7 +858,7 @@ def update(input_file):
     algorithm = ''
 
     operation_xml_parameters = {}  # params that are needed for the view_model but are not in the Operation.xml file
-    additional_params = {}  # params that can't be jsonified with json.dumps
+    additional_params = None  # params that can't be jsonified with json.dumps
     has_vm = False
     operation = None
     # Take information out from the Operation.xml file
@@ -800,11 +920,11 @@ def update(input_file):
             operation.algorithm = algorithm
             operation.fk_from_algo = algorithm.id
 
-            operation_xml_parameters = json.dumps(operation_xml_parameters)
             operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
             operation_entity, _ = import_service.import_operation(operation_data.operation)
             possible_burst_id = operation.view_model_gid
             vm = import_service.create_view_model(operation, operation_data, folder, additional_params)
+            vm.generic_attributes = generic_attributes
 
             if 'TimeSeries' in class_name:
                 alg = SimulatorAdapter().view_model_to_has_traits(vm)
@@ -812,13 +932,15 @@ def update(input_file):
                 alg.configure()
                 simulation_history = SimulationHistory()
                 simulation_history.populate_from(alg)
-                history_index = h5.store_complete(simulation_history, folder, vm.generic_attributes)
-                dao.store_entity(history_index)
+                history_index = h5.store_complete(simulation_history, folder, generic_attributes=vm.generic_attributes)
+                history_index.fk_from_operation = op_id
+                history_index.fk_parent_burst = possible_burst_id
 
                 burst_params = dao.get_burst_for_migration(possible_burst_id)
                 if burst_params is not None:
                     burst_config = _create_new_burst(burst_params, root_metadata)
                     burst_config.simulator_gid = vm.gid.hex
+                    burst_config.fk_simulation = operation.id
                     generic_attributes.parent_burst = burst_config.gid
 
                     # Creating BurstConfigH5
@@ -826,6 +948,8 @@ def update(input_file):
                                                                                   + burst_config.gid + ".h5")) as f:
                         f.store(burst_config)
 
+                    history_index.fk_parent_burst = burst_config.gid
+                    dao.store_entity(history_index)
                     dao.store_entity(burst_config)
                     root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                     storage_manager.set_metadata(root_metadata)

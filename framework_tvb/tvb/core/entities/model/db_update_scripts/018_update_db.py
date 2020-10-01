@@ -181,6 +181,9 @@ def upgrade(migrate_engine):
 
         ranges = session.execute(text("""SELECT OG.id, OG.range1, OG.range2
                             FROM "OPERATION_GROUPS" OG""")).fetchall()
+        session.execute(text(
+            """DELETE FROM "BurstConfiguration" WHERE status = \'error\'"""))
+
         ranges_1 = []
         ranges_2 = []
 
@@ -207,16 +210,12 @@ def upgrade(migrate_engine):
                          """ WHERE BurstConfiguration.id = """ + str(burst_id)))
 
         for i in range(len(ranges_1)):
+
             session.execute(text(
                 """UPDATE "BurstConfiguration" SET
                 range1 = '""" + str(new_ranges_1[i]).replace('\'', '') + """',
                 range2 = '""" + str(new_ranges_2[i]).replace('\'', '') + """'
                 WHERE fk_operation_group = """ + str(ranges[i][0])))
-
-        session.execute(text(
-            """UPDATE "BurstConfiguration" SET
-            fk_simulation = (SELECT O.id FROM "OPERATIONS" O, "DATA_TYPES" D
-            WHERE O.id = D.fk_from_operation AND module = 'tvb.datatypes.time_series')"""))
 
         session.execute(text("""DROP TABLE "DATA_TYPES";"""))
         session.commit()
