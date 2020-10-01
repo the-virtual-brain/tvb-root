@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-from tvb.basic.neotraits.api import HasTraits, List
+from tvb.basic.neotraits.api import HasTraits, Float, List
 
 # -*- coding: utf-8 -*-
 import os
 import numpy
 from tvb.basic.neotraits.api import Attr, NArray
-from tvb.contrib.cosimulation.monitors import CosimMonitor, CouplingMonitor
+from tvb.simulator import monitor
 
 
 class TVBtoCosimInterface(HasTraits):
 
-    """TVBtoCosimInterface base class holding a CosimMonitor class instance."""
+    """TVBtoCosimInterface base class holding a Monitor class instance."""
 
     proxy_inds = NArray(
         dtype=numpy.int,
@@ -23,151 +23,94 @@ class TVBtoCosimInterface(HasTraits):
                                  default=0,
                                  label="Number of TVB proxy nodes")
 
-    monitor = Attr(field_type=CosimMonitor,
+    monitor = Attr(field_type=monitor.Raw,
                    required=True,
                    default=0,
-                   label="Number of TVB proxy nodes")
+                   label="TVB monitor")
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
+
+    record_to = Attr(field_type=str, required=True, default="memory")
+
+    _record = None  # Method to implement recording to memory, file, or MPI port
+
+    def record_to_memory(self, data):
+        """Record input data to memory"""
+        return data
+
+    def record_to_file(self, data):
+        """Record input data to a file.
+        """
+        raise NotImplementedError
+
+    def record_to_mpi(self, data):
+        """Record input data to a MPI port.
+        """
+        raise NotImplementedError
+
+    def _config_recording_target(self):
+        self.record_to = self.record_to.lower()
+        if self.record_to == "file":
+            self._record = self.record_to_file
+        elif self.record_to == "mpi":
+            self._record = self.record_to_mpi
+        else:
+            self._record = self.record_to_memory
+
+    @property
+    def voi(self):
+        return self.monitor.voi
+
+    def _sample(self, step, state):
+        """Record from the TVB Monitor of the interface and return the data only of proxy_inds"""
+        # Get the output by using the original sample method of the TVB monitor:
+        output = self.monitor.__class__.sample(self.monitor, step, state)
+        if output is not None:
+            # Get only proxy data by assuming that the last two dimensions are (region nodes, modes):
+            output[1] = output[1][..., self.proxy_inds, :]
+            return output
 
     def configure(self, simulator):
         """Method to configure the CosimMonitor of the interface
            and compute the number_of_proxy_nodes, from user defined proxy_inds"""
+        self._config_recording_target()
         self.monitor.config_for_sim(simulator)
+        # Overwrite the sample method of the TVB Monitor class:
+        self.monitor.sample = self._sample
         self.number_of_proxy_nodes = len(self.proxy_inds)
         super(TVBtoCosimInterfaces).configure()
 
     def record(self, step, state):
-        """Record from the CosimMonitor of the interface and return the data only of proxy_inds"""
-        output = self.monitor.record(self, step, state)
-        if output is not None:
-            output[1] = output[1][:, :, self.proxy_inds]
-            return output
-
-
-class TVBtoCosimStateInterface(TVBtoCosimInterface):
-    """ TVBtoCosimStateInterface class:
-        Monitors the value for the model's variable/s of interest over all
-        the nodes at each sampling period. Time steps that are not modulo ``istep``
-        are stored temporarily in the ``_stock`` attribute and then that temporary
-        store is returned when time step is modulo ``istep``.
-
-    """
-    pass
-
-
-class TVBtoCosimStateInterfaceToFile(TVBtoCosimStateInterface):
-    """ CosimStateMonitorToFile class:
-            Monitors the value for the model's variable/s of interest over all
-            the nodes at each sampling period. Time steps that are not modulo ``istep``
-            are stored temporarily in the ``_stock`` attribute and then that temporary
-            store is returned when time step is modulo ``istep``.
-
-            Records to a file by overloading the record method.
-
+        """Record a sample of the observed state at the given step to the target destination.
+           Use the TVB Monitor record method to get the data, and pass them to one of the
+           record_to_memory, record_to_file and record_to_mpi methods,
+           depending on the user input of record_to.
         """
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def record(self, step, state=None):
-        """Method to record monitor output to a file."""
-        output = super(TVBtoCosimStateInterfaceToFile, self).record(step, state)
-        # TODO: Record output to file now!
-        raise NotImplementedError
-
-
-class TVBtoCosimStateInterfaceToMPI(TVBtoCosimStateInterface):
-    """ CosimStateMonitorToMPI class:
-            Monitors the value for the model's variable/s of interest over all
-            the nodes at each sampling period. Time steps that are not modulo ``istep``
-            are stored temporarily in the ``_stock`` attribute and then that temporary
-            store is returned when time step is modulo ``istep``.
-
-            Records to a MPI port by overloading the record method.
-    """
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def record(self, step, state=None):
-        """Method to record monitor output to a MPI port."""
-        output = super(TVBtoCosimStateInterfaceToMPI, self).record(step, state)
-        # TODO: Record output to MPI port now!
-        raise NotImplementedError
-
-
-class TVBtoCosimHistoryInterface(TVBtoCosimInterface):
-    """ TVBtoCosimStateInterface class:
-        Monitors the value for the model's variable/s of interest over all
-        the nodes at each sampling period. Time steps that are not modulo ``istep``
-        are stored temporarily in the ``_stock`` attribute and then that temporary
-        store is returned when time step is modulo ``istep``.
-
-    """
-    pass
-
-
-class TVBtoCosimHistoryInterfaceToFile(TVBtoCosimHistoryInterface):
-    """ TVBtoCosimHistoryInterfaceToFile class:
-            Monitors the value for the model's variable/s of interest over all
-            the nodes at each sampling period. Time steps that are not modulo ``istep``
-            are stored temporarily in the ``_stock`` attribute and then that temporary
-            store is returned when time step is modulo ``istep``.
-
-            Records to a file by overloading the record method.
-
-        """
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def record(self, step, state=None):
-        """Method to record monitor output to a file."""
-        output = super(TVBtoCosimHistoryInterfaceToFile, self).record(step, state)
-        # TODO: Record output to file now!
-        raise NotImplementedError
-
-
-class TVBtoCosimHistoryInterfaceToMPI(TVBtoCosimHistoryInterface):
-    """ TVBtoCosimHistoryInterfaceToMPI class:
-            Monitors the value for the model's variable/s of interest over all
-            the nodes at each sampling period. Time steps that are not modulo ``istep``
-            are stored temporarily in the ``_stock`` attribute and then that temporary
-            store is returned when time step is modulo ``istep``.
-
-            Records to a MPI port by overloading the record method.
-    """
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def record(self, step, state=None):
-        """Method to record monitor output to a MPI port."""
-        output = super(TVBtoCosimHistoryInterfaceToMPI, self).record(step, state)
-        # TODO: Record output to MPI port now!
-        raise NotImplementedError
+        return self._record(self.monitor.record(step, state))
 
 
 class TVBtoCosimInterfaces(HasTraits):
 
-    """This class holds lists of
-       - state_interfaces,
-       - history_interfaces (including coupling interfaces),
-       monitors"""
+    """This class holds list of
+        - state_interfaces, and
+        - coupling interfaces"""
 
-    state_interfaces = List(of=TVBtoCosimStateInterface)
-    history_interfaces = List(of=TVBtoCosimHistoryInterface)
+    state_interfaces = List(of=TVBtoCosimInterface)
+    coupling_interfaces = List(of=TVBtoCosimInterface)
+
+    update_non_state_variables = None
+
+    number_of_interfaces = None
+    number_of_state_interfaces = None
+    number_of_coupling_interfaces = None
 
     @property
     def interfaces(self):
-        return self.state_interfaces + self.history_interfaces
-
-    @property
-    def coupling_interfaces(self):
-        return [interfaces for interfaces in self.interfaces if isinstance(interfaces.monitor, CouplingMonitor)]
-
-    @property
-    def sync_times(self):
-        return [history_interface.sync_time for history_interface in self.history_interfaces]
+        return self.state_interfaces + self.coupling_interfaces
 
     @property
     def voi(self):
-        return [interfaces.voi for interfaces in self.interfaces if not isinstance(interfaces, CouplingMonitor)]
+        return [interfaces.voi for interfaces in self.state_interfaces]
 
     @property
     def cvoi(self):
@@ -175,7 +118,7 @@ class TVBtoCosimInterfaces(HasTraits):
 
     @property
     def state_proxy_inds(self):
-        return [interfaces.proxy_inds for interfaces in self.interfaces if not isinstance(interfaces, CouplingMonitor)]
+        return [interfaces.proxy_inds for interfaces in self.state_interfaces]
 
     @property
     def coupling_proxy_inds(self):
@@ -188,5 +131,7 @@ class TVBtoCosimInterfaces(HasTraits):
     def configure(self, simulator):
         for interface in self.interfaces:
             interface.configure(simulator)
+        self.number_of_interfaces = len(self.interfaces)
+        self.number_of_state_interfaces = len(self.state_interfaces)
+        self.number_of_coupling_interfaces = len(self.coupling_interfaces)
         super(TVBtoCosimInterfaces, self).configure()
-

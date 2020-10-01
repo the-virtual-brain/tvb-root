@@ -2,13 +2,12 @@
 import os
 import numpy
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
-from tvb.simulator.common import iround
 from tvb.contrib.cosimulation.history import CosimHistory
 
 
 class CosimUpdate(HasTraits):
 
-    """Base class to update TVB state or history from data from co-simulator"""
+    """Base class to update TVB state or cosimulation history from data from co-simulator"""
 
     proxy_inds = NArray(
         dtype=numpy.int,
@@ -33,14 +32,22 @@ class CosimUpdate(HasTraits):
         doc="1, when the proxy nodes substitute TVB nodes and their mutual connections should be removed.")
 
     def configure(self, simulator):
-        """Method to compute the number_of_proxy_nodes, from user defined proxy_inds"""
+        """Method to ccnfigure CosimUpdate
+           the variables of interest,
+           and the number of proxy nodes"""
         self.number_of_proxy_nodes = len(self.proxy_inds)
         if self.voi is None or self.voi.size == 0:
             self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
         super(CosimUpdate, self).configure()
 
+    def update_from_cosimulator(self):
+        """Method to get update data from co-simulator."""
+        pass
+
 
 class CosimStateUpdate(CosimUpdate):
+
+    """Class to update the current TVB state from data from co-simulator"""
 
     def update_from_cosimulator(self):
         """Method to get update data from co-simulator."""
@@ -51,110 +58,77 @@ class CosimStateUpdate(CosimUpdate):
         return state
 
 
-class CosimStateUpdateFromFile(CosimUpdate):
+class CosimStateUpdateFromFile(CosimStateUpdate):
 
-    """Class for reading data to update state from a file
-       and updating the current TVB state from co-simulator at each time step."""
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def update_from_file(self):
-        """Method to read update data from file."""
-        raise NotImplementedError
-
-    def update(self, state):
-        """This method will update the input state for
-           - state variables of indices voi,
-           - and region nodes of indices proxy_inds,
-           with data read from file by update_from_file() method"""
-        super(CosimStateUpdateFromFile, self).update(state, *self.update_from_file())
-
-
-class CosimStateUpdateFromMPI(CosimUpdate):
-
-    """Class for receving data to update state from a MPI port
-       and updating the current TVB state from co-simulator at each time step."""
+    """Class to update the current TVB state from a file,
+       by implementing the update_from_cosimulator() method accordingly."""
 
     path = Attr(field_type=os.PathLike, required=False, default="")
 
-    def update_from_mpi(self):
-        """Method to receive update data from a MPI port."""
+    def update_from_cosimulator(self):
+        """Method to get update data from co-simulator."""
         raise NotImplementedError
 
-    def update(self, state):
-        """This method will update the input state for
-           - state variables of indices voi,
-           - and region nodes of indices proxy_inds,
-           with data received from a MPI port by update_from_mpi() method"""
-        super(CosimStateUpdateFromMPI, self).update(state, *self.update_from_mpi())
+
+class CosimStateUpdateFromMPI(CosimStateUpdate):
+
+    """"Class to update the current TVB state from a MPI port,
+        by implementing the update_from_cosimulator() method accordingly."""
+
+    def update_from_cosimulator(self):
+        """Method to get update data from co-simulator."""
+        raise NotImplementedError
 
 
-class CosimHistoryUpdate(HasTraits):
+class CosimHistoryUpdate(CosimUpdate):
 
-    """CosimHistoryUpdate class"""
+    """Class to update the cosimulation history from data from co-simulator"""
 
-    history = Attr(
+    cosim_history = Attr(
         field_type=CosimHistory,
         label="Cosimulation history",
         default=None,
         required=True,
-        doc="""A history of the whole TVB state for the cosimulation synchronization time.""")
+        doc="""A history of the whole TVB state and coupling for the cosimulation synchronization time.""")
 
     def configure(self, simulator):
-        """Method to compute the number_of_proxy_nodes, from user defined proxy_inds"""
-        self.history = simulator.history
+        """Method to ccnfigure CosimHistoryUpdate
+        with the TVB's cosimulation history,
+        the variables of interest,
+        and the number of proxy nodes"""
+        self.cosim_history = simulator.cosim_history
         super(CosimHistoryUpdate, self).configure()
+
+    def update(self, steps, new_states=None):
+        """This method will update the input state  for the given time steps and for
+           - state variables of indices voi,
+           - and region nodes of indices proxy_inds,
+           with data optionally read from the update_from_cosimulator() method"""
+        if new_states is None:
+            new_states = self.update_from_cosimulator()
+        self.cosim_history.update_state_from_cosim(steps, new_states, self.voi, self.proxy_inds)
+
+
+class CosimHistoryUpdateFromFile(CosimHistoryUpdate):
+
+    """Class for reading data to update cosimulation history from a file,
+       by implementing the update_from_cosimulator() method accordingly."""
+
+    path = Attr(field_type=os.PathLike, required=False, default="")
 
     def update_from_cosimulator(self):
         """Method to get update data from co-simulator."""
-        pass
-
-    def update(self, times=None, new_states=None):
-        if times is None or new_states is None:
-            times, new_states = self.update_from_cosimulator()
-        # First convert times into simulation steps and then update history
-        # for steps, vois and proxy_inds:
-        self.history.update_from_cosim([iround(time / self.dt) for time in times],
-                                       new_states,
-                                       self.voi, self.proxy_inds)
-
-
-class CosimHistoryUpdateFromFile(CosimUpdate):
-
-    """Class for reading data to update history from a file
-       and updating the current TVB state from co-simulator at each time step."""
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def update_from_file(self):
-        """Method to read update data from file."""
         raise NotImplementedError
 
-    def update(self, state, new_state=None):
-        """This method will update the input state for
-           - state variables of indices voi,
-           - and region nodes of indices proxy_inds,
-           with data read from file by update_from_file() method"""
-        super(CosimHistoryUpdateFromFile, self).update(state, *self.update_from_file())
 
+class CosimHistoryUpdateFromMPI(CosimHistoryUpdate):
 
-class CosimUpdateFromMPI(CosimUpdate):
+    """Class for reading data to update cosimulation history from a MPI port,
+       by implementing the update_from_cosimulator() method accordingly."""
 
-    """Class for receving data to update history from a MPI port
-       and updating the current TVB state from co-simulator at each time step."""
-
-    path = Attr(field_type=os.PathLike, required=False, default="")
-
-    def update_from_mpi(self):
-        """Method to receive update data from a MPI port."""
+    def update_from_cosimulator(self):
+        """Method to get update data from co-simulator."""
         raise NotImplementedError
-
-    def update(self, state, new_state=None):
-        """This method will update the input state for
-           - state variables of indices voi,
-           - and region nodes of indices proxy_inds,
-           with data received from a MPI port by update_from_mpi() method"""
-        super(CosimUpdateFromMPI, self).update(state, *self.update_from_mpi())
 
 
 class CosimToTVBInterfaces(HasTraits):
@@ -163,6 +137,11 @@ class CosimToTVBInterfaces(HasTraits):
 
     state_interfaces = List(of=CosimStateUpdate)
     history_interfaces = List(of=CosimHistoryUpdate)
+
+    update_variables_fun = None
+
+    number_of_state_interfaces = None
+    number_of_history_interfaces = None
 
     @property
     def interfaces(self):
@@ -195,4 +174,6 @@ class CosimToTVBInterfaces(HasTraits):
     def configure(self, simulator):
         for interfaces in self.interfacess:
             interfaces.configure(simulator)
+        self.number_of_state_interfaces = len(self.state_interfaces)
+        self.number_of_history_interfaces = len(self.history_interfaces)
         super(CosimToTVBInterfaces, self).configure()
