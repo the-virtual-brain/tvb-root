@@ -440,6 +440,7 @@ class TvbZip(ZipFile):
 
         for root, dirs, files in os.walk(folder):
             for ex in exclude:
+                ex = str(ex)
                 if ex in dirs:
                     dirs.remove(ex)
                 if ex in files:
