@@ -15,10 +15,10 @@ class MontbrioPazoRoxin(Model):
     The equations of the infinite QIF 2D population model read
 
     .. math::
-            \dot{r} &= 1/tau (Delta/(pi tau) + 2 V r),
-            \dot{V} &= 1/tau (V^2 - tau^2 pi^2 r^2 + eta + J tau r + I), \\
+            \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
+            \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r + I)
     
-    Depending on the parameters cr, cv we couple the neural masses via the
+    Depending on the parameters `cr`, `cv` we couple the neural masses via the
     firing rate and/or the membrane potential.
     """
     
@@ -144,18 +144,24 @@ class MontbrioPazoRoxin(Model):
     
 class CoombesByrne(Model):
     r"""
-    4D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF neurons (Theta-neurons) as in Coombes, Byrne, 2016.
+    4D model describing the Ott-Antonsen reduction of infinitely all-to-all
+    coupled QIF neurons (Theta-neurons) as in Coombes, Byrne, 2016.
     
-    Note: the original equations describe the dynamics of the Kuramoto parameter :math:`Z`. Using the conformal transformation Z=(1-numpy.conj(W))/(1+numpy.conj(W)) and W= pi*r - i*V, 
-    we express the system dynamics in terms of two state variables :math:`r` and :math:`V` representing the average firing rate and the average membrane potential of our QIF neurons. 
-    The conductance variable and its derivative are :math:`g` and :math:`q`.
+    Note: the original equations describe the dynamics of the Kuramoto parameter 
+    :math:`Z`. Using the conformal transformation 
+    :math:`Z=(1-W^\star)/(1+W^\star)` and :math:`W= \pi r - i V`, 
+    we express the system dynamics in terms of two state variables :math:`r` 
+    and :math:`V` representing the average firing rate and the average membrane 
+    potential of our QIF neurons. The conductance variable and its derivative 
+    are :math:`g` and :math:`q`.
 
     The equations of the model read
+    
     .. math::
-            \dot{r} &= Delta/pi + 2 V r - g r^2),
-            \dot{V} &= V^2 - pi^2 r^2 + eta + (v_syn - V) g ,
-            \dot{g} &= alpha q , \\
-            \dot{q} &= alpha (k pi r - g - 2 q)
+            \dot{r} &= \Delta/\pi + 2 V r - g r^2) \\
+            \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
+            \dot{g} &= \alpha q  \\
+            \dot{q} &= \alpha (k \pi r - g - 2 q)
             
     """
     
@@ -176,7 +182,7 @@ class CoombesByrne(Model):
     )
     
     v_syn = NArray(
-        label=":math:`v_syn`",
+        label=":math:`v_{syn}`",
         default=numpy.array([-10.0]),
         domain=Range(lo=-20.0, hi=0.0, step=0.01),
         doc="""QIF membrane reversal potential""",
@@ -263,13 +269,14 @@ class CoombesByrne2D(Model):
     2D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF neurons (Theta-neurons) as in Coombes, Byrne, 2016.
 
     The two state variables :math:`r` and :math:`V` represent the average firing rate and 
-    the average membrane potential of our QIF neurons. The conductance `g` is not dynamical and proportional to `r`.
+    the average membrane potential of our QIF neurons. The conductance :math:`g` is not dynamical and proportional to :math:`r`.
 
     The equations of the model read
+    
     .. math::
-            \dot{r} &= Delta/pi + 2 V r - g r^2),
-            \dot{V} &= V^2 - pi^2 r^2 + eta + (v_syn - V) g
-            g = k pi r,            
+            \dot{r} &= \Delta/\pi + 2 V r - g r^2)\\
+            \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
+            g &= k \pi r
     """
     
     # Define traited attributes for this model, these represent possible kwargs.
@@ -368,11 +375,12 @@ class GastSchmidtKnosche_SD(Model):
     :math:`A` and :math:`B` are respectively the adaptation variable and its derivative.
 
     The equations of the infinite QIF 2D population model read
+    
     .. math::
-            \dot{r} &= 1/tau (Delta/(pi tau) + 2 V r),
-            \dot{V} &= 1/tau (V^2 - tau^2 pi^2 r^2 + eta + J tau r (1 - A) + I), 
-            \dot{A} &= 1/tau_A (B),
-            \dot{B} &= 1/tau_A (-2 B - A + alpha tau_A r), \\
+            \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
+            \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r (1 - A) + I)\\ 
+            \dot{A} &= 1/\tau_A (B)\\
+            \dot{B} &= 1/\tau_A (-2 B - A + \alpha \tau_A r) \\
 
     """
     
@@ -524,11 +532,12 @@ class GastSchmidtKnosche_SF(Model):
     :math:`A` and :math:`B` are respectively the adaptation variable and its derivative.
 
     The equations of the infinite QIF 2D population model read
+    
     .. math::
-            \dot{r} &= 1/tau (Delta/(pi tau) + 2 V r),
-            \dot{V} &= 1/tau (V^2 - tau^2 pi^2 r^2 + eta + J tau r - A + I), 
-            \dot{A} &= 1/tau_A (B),
-            \dot{B} &= 1/tau_A (-2 B - A + alpha tau_A r), \\
+            \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
+            \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r - A + I)\\ 
+            \dot{A} &= 1/\tau_A (B)\\
+            \dot{B} &= 1/\tau_A (-2 B - A + \alpha \tau_A r) \\
 
     """
     
@@ -667,19 +676,21 @@ class GastSchmidtKnosche_SF(Model):
 
 class DumontGutkin(Model):
     r"""
-    8D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF Excitatory E and Inhibitory I Theta-neurons with local synaptic dynamics.
-    As in Dumont, Gutkin 2019
+    8D model describing the Ott-Antonsen reduction of infinitely all-to-all 
+    coupled QIF Excitatory E and Inhibitory I Theta-neurons with local synaptic 
+    dynamics. As in Dumont, Gutkin 2019
 
     State variables :math:`r` and :math:`V` represent the average firing rate and 
     the average membrane potential of our QIF neurons. 
-    The neural masses are coupled through the firing rate of E_i population from node i-th into E_j and I_j subpopulations in node j-th.
+    The neural masses are coupled through the firing rate of :math:`E_i` population from node i-th into :math:`E_j` and :math:`I_j` subpopulations in node j-th.
 
-    The equations of the excitatory infinite QIF 4D population model read (similar for inhibitory)
+    The equations of the excitatory infinite QIF 4D population model read (similar for inhibitory):
+    
     .. math::
-            \dot{r} &= 1/tau (Delta/(pi tau) + 2 V r),
-            \dot{V} &= 1/tau (V^2 + eta + gamma I - tau^2 pi^2 r^2 +tau g - tau s), 
-            \dot{g} &= 1/tau_s (-g +J_ r),
-            \dot{s} &= 1/tau_s (-s), \\
+            \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
+            \dot{V} &= 1/\tau (V^2 + \eta + \gamma I - \tau^2 \pi^2 r^2 + \tau g - \tau s)\\
+            \dot{g} &= 1/\tau_s (-g + J_ r)\\
+            \dot{s} &= 1/\tau_s (-s) \\
 
     """
     
