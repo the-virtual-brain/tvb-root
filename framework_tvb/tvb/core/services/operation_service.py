@@ -92,8 +92,8 @@ class OperationService:
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
         
-        Invoke custom method on an Adapter Instance. Make sure when the  
-        operation has finished that the correct results are stored into DB. 
+        Invoke custom method on an Adapter Instance. Make sure when the
+        operation has finished that the correct results are stored into DB.
         """
         if not isinstance(adapter_instance, ABCAdapter):
             self.logger.warning("Inconsistent Adapter Class:" + str(adapter_instance.__class__))
@@ -209,7 +209,7 @@ class OperationService:
     def prepare_operations(self, user_id, project, algorithm, category,
                            visible=True, existing_dt_group=None, view_model=None, **kwargs):
         """
-        Do all the necessary preparations for storing an operation. If it's the case of a 
+        Do all the necessary preparations for storing an operation. If it's the case of a
         range of values create an operation group and multiple operations for each possible
         instance from the range.
         """
@@ -283,6 +283,9 @@ class OperationService:
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
             dao.store_entity(operation)
+
+            self._update_vm_generic_operation_tag(view_model, operation)
+
             adapter_form = adapter_instance.get_form()
             try:
                 temp_files = adapter_form.temporary_files
@@ -320,6 +323,13 @@ class OperationService:
                 self._handle_exception(excep, {}, "Could not start operation!", operation)
 
         return operations
+
+    @staticmethod
+    def _update_vm_generic_operation_tag(view_model, operation):
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        storage_path = FilesHelper().get_project_folder(project, str(operation.id))
+        view_model.generic_attributes.operation_tag = operation.user_group
+        h5.store_view_model(view_model, storage_path)
 
     def launch_operation(self, operation_id, send_to_cluster=False, adapter_instance=None):
         """

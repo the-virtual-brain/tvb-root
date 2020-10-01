@@ -300,7 +300,7 @@ class TestProjectService(TransactionalTestCase):
 
             ratio = float(actual_disk_size) / project.disk_size
             msg = "Real disk usage: %s The one recorded in the db : %s" % (actual_disk_size, project.disk_size)
-            assert ratio < 1.4, msg
+            assert ratio < 1.7, msg
 
     def test_get_linkable_projects(self):
         """
