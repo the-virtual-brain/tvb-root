@@ -244,6 +244,24 @@ class TestModels(BaseTestCase):
         model = models.ReducedWongWangExcInh()
         self._validate_initialization(model, 2)
 
+    def test_infinite_theta(self):
+        model = models.MontbrioPazoRoxin()
+        self._validate_initialization(model, 2)
+
+        model = models.CoombesByrne()
+        self._validate_initialization(model, 4)
+        
+        model = models.CoombesByrne2D()
+        self._validate_initialization(model, 2)
+        
+        model = models.GastSchmidtKnosche_SD()
+        self._validate_initialization(model, 4)
+
+        model = models.GastSchmidtKnosche_SF()
+        self._validate_initialization(model, 4)
+
+        model = models.DumontGutkin()
+        self._validate_initialization(model, 8)
 
 
 class TestDSLModels(BaseTestCase):
