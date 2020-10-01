@@ -378,9 +378,11 @@ class Simulator(HasTraits):
             state = region_state.transpose((1, 0, 2))                                   # (cvar, node, mode)
         self.history.update(step, state)
 
-    def _loop_monitor_output(self, step, state):
+    def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)
-        output = [monitor.record(step, observed) for monitor in self.monitors]
+        output = [monitor.record(step,
+                                 numpy.where(isinstance(monitor, monitors.Coupling), node_coupling, observed).item())
+                  for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
 
@@ -407,16 +409,18 @@ class Simulator(HasTraits):
         local_coupling = self._prepare_local_coupling()
         stimulus = self._prepare_stimulus()
         state = self.current_state
+        start_step = self.current_step + 1
+        node_coupling = self._loop_compute_node_coupling(start_step)
 
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
-        for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-            # needs implementing by hsitory + coupling?
-            node_coupling = self._loop_compute_node_coupling(step)
+        for step in range(start_step, start_step + n_steps):
+            # needs implementing by history + coupling?
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, n_reg, state)
-            output = self._loop_monitor_output(step, state)
+            node_coupling = self._loop_compute_node_coupling(step)
+            output = self._loop_monitor_output(step, state, node_coupling)
             if output is not None:
                 yield output
 
@@ -495,6 +499,7 @@ class Simulator(HasTraits):
         )
         # initialize its buffer
         self.history.initialize(history)
+        self.initial_conditions = history
 
     def _configure_integrator_noise(self):
         """
