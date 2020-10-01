@@ -11,16 +11,18 @@ conditional_derived_variable and exposures
 
 import xml.etree.ElementTree as xe
 
-from lems.base.base import LEMSBase
+from ..base.base import LEMSBase
 # from lems.model.fundamental import *
-from lems.model.component import *
+from ..model.component import *
 # from lems.model.dynamics import *
 # from lems.model.structure import *
 # from lems.model.simulation import *
 
 # from lems.base.util import make_id
 
-from lems.model.dynamics import *
+from ..model.dynamics import *
+
+from collections import OrderedDict
 
 
 def get_nons_tag_from_node(node):
@@ -80,7 +82,7 @@ class LEMSFileParser(LEMSBase):
         """ List of directories to search for included files.
         @type: list(str) """
 
-        self.tag_parse_table = None
+        self.tag_parse_table = OrderedDict()
         """ Dictionary of xml tags to parse methods
         @type: dict(string -> function) """
 
@@ -735,10 +737,10 @@ class LEMSFileParser(LEMSBase):
         else:
             self.raise_error('A derived parameter must have a name')
 
-        if 'expression' in node.lattrib:
-            expression = node.lattrib['expression']
+        if 'dimension' in node.lattrib:
+            dimension = node.lattrib['dimension']
         else:
-            expression = None
+            dimension = None
 
         if 'value' in node.lattrib:
             value = node.lattrib['value']
@@ -751,7 +753,7 @@ class LEMSFileParser(LEMSBase):
             select = None
 
         self.current_component_type.add_derived_parameter(DerivedParameter(name, value,
-                                                                    expression, select))
+                                                                    dimension, select))
 
     def parse_derived_variable(self, node):
         """
@@ -1052,7 +1054,7 @@ class LEMSFileParser(LEMSBase):
             if self.model.debug: print("Ignoring included LEMS file: %s"%node.lattrib['file'])
         else:
 
-            #TODO: remove this hard coding for reading NeuroML includes...
+            #TODO: remove this hard coding for reading rateML_TVB includes...
             if 'file' not in node.lattrib:
                 if 'href' in node.lattrib:
                     self.model.include_file(node.lattrib['href'], self.include_dirs)
@@ -1605,7 +1607,7 @@ class LEMSFileParser(LEMSBase):
         if 'default' in node.lattrib:
             default = node.lattrib['default']
         else:
-            self.raise_error("State variable '{0}' must specify a default", name)
+            self.raise_error("State variable '{0}' must specify a dimension", name)
 
         if 'boundaries' in node.lattrib:
             boundaries = node.lattrib['boundaries']

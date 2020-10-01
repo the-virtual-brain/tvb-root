@@ -10,7 +10,6 @@ from lems.model.model import Model
 
 def default_lems_folder():
     here = os.path.dirname(os.path.abspath(__file__))
-    print('\n here', here, '\n')
     xmlpath = os.path.join(here, 'XMLmodels')
     return xmlpath
 

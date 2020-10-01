@@ -3,13 +3,12 @@ import time
 import logging
 import itertools
 import argparse
-import os, sys
 
 import numpy as np
 from numpy import corrcoef
 
 from tvb.simulator.lab import *
-from tvb.dsl_cuda import LEMS2CUDA
+from tvb.rateML.rateML_CUDA import LEMS2CUDA
 
 class TVB_test:
 
@@ -127,8 +126,7 @@ class TVB_test:
 
 	def start_cuda(self, logger):
 		# logger.info('start Cuda run')
-		import pycuda.autoinit
-		from tvb.dsl_cuda.run.cuda_run import CudaRun
+		from tvb.rateML.rateML_CUDA import CudaRun
 		cudarun = CudaRun()
 		tavg_data = cudarun.run_simulation(self.weights, self.lengths, self.params, self.speeds, logger,
 										   self.args, self.n_nodes, self.n_work_items, self.n_params, self.nstep,

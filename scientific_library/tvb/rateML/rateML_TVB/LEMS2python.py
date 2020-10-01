@@ -39,15 +39,16 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 import os
 import tvb.simulator.models
 from mako.template import Template
-from tvb.basic.logger.builder import get_logger
-from tvb.dsl.NeuroML.lems.model.model import Model
+# from tvb.basic.logger.builder import get_logger
+from tvb.rateML.rateML_TVB.lems.model.model import Model
 
-logger = get_logger(__name__)
+# logger = get_logger(__name__)
 
 
 def default_lems_folder():
     here = os.path.dirname(os.path.abspath(__file__))
-    xmlpath = os.path.join(here, 'NeuroML', 'XMLmodels')
+    print('here', here)
+    xmlpath = os.path.join(here, '', 'XMLmodels')
     return xmlpath
 
 
@@ -140,11 +141,12 @@ def regTVB_templating(model_filename, folder=None):
                 f.truncate(0)
                 f.seek(0)
                 f.writelines(lines)
-            logger.info("model file generated {}".format(modelfile))
+            # logger.info("model file generated {}".format(modelfile))
     except IOError as e:
-        logger.error('ioerror: %s', e)
+        print('err')
+        # logger.error('ioerror: %s', e)
 
 
 if __name__ == "__main__":
     # example run for ReducedWongWang model
-    regTVB_templating('ReducedWongWangT', './NeuroML/XMLmodels/')
+    regTVB_templating('ReducedWongWangT', './XMLmodels/')

@@ -100,7 +100,7 @@ __global__ void Epileptor(
     const float global_coupling = params(1);
 
     // regular constants
-    const float a = 1.0;
+    const float a = 2.5;
     const float b = 3.0;
     const float c = 1.0;
     const float d = 5.0;
@@ -148,6 +148,13 @@ __global__ void Epileptor(
     float y2 = 0.0;
     float g = 0.0;
 
+    float dx1 = 0.0;
+    float dy1 = 0.0;
+    float dz = 0.0;
+    float dx2 = 0.0;
+    float dy2 = 0.0;
+    float dg = 0.0;
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
@@ -161,7 +168,7 @@ __global__ void Epileptor(
     for (unsigned int t = i_step; t < (i_step + n_step); t++)
     {
     //***// This is the loop over nodes, which also should stay the same
-        for (unsigned int i_node = threadIdx.y; i_node < n_node; i_node+=blockDim.y)
+        for (int i_node = 0; i_node < n_node; i_node++)
         {
             c_pop1 = 0.0f;
             c_pop2 = 0.0f;
@@ -195,7 +202,7 @@ __global__ void Epileptor(
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_pop1 *= global_coupling * coupling;
+            c_pop1 *= global_coupling;
             c_pop2 *= g;
 
             if (x1 < 0.0)
@@ -219,20 +226,20 @@ __global__ void Epileptor(
             else
                 ydot4 = aa * (x2 + 0.25);
             // This is dynamics step and the update in the state of the node
-            x1 += dt * (tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 ));
-            y1 += dt * (tt * (c - d * powf(x1, 2) - y1));
-            z += dt * (tt * (r * (h - z + Ks * c_pop1)));
-            x2 += dt * (tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2));
-            y2 += dt * (tt * (-y2 + ydot4) / tau);
-            g += dt * (tt * (-0.01 * (g - 0.1 * x1) ));
+            dx1 = dt * (tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 ));
+            dy1 = dt * (tt * (c - d * powf(x1, 2) - y1));
+            dz = dt * (tt * (r * (h - z + Ks * c_pop1)));
+            dx2 = dt * (tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2));
+            dy2 = dt * (tt * (-y2 + ydot4) / tau);
+            dg = dt * (tt * (-0.01 * (g - 0.1 * x1) ));
 
             // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
-            x1 += nsig * curand_normal2(&crndst).x;
-            y1 += nsig * curand_normal2(&crndst).x;
-            z += nsig * curand_normal2(&crndst).x;
-            x2 += nsig * curand_normal2(&crndst).x;
-            y2 += nsig * curand_normal2(&crndst).x;
-            g += nsig * curand_normal2(&crndst).x;
+            x1 += nsig * curand_normal(&crndst) + dx1;
+            y1 += nsig * curand_normal(&crndst) + dy1;
+            z += nsig * curand_normal(&crndst) + dz;
+            x2 += nsig * curand_normal(&crndst) + dx2;
+            y2 += nsig * curand_normal(&crndst) + dy2;
+            g += nsig * curand_normal(&crndst) + dg;
 
             // Wrap it within the limits of the model
             x1 = wrap_it_x1(x1);

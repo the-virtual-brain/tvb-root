@@ -52,8 +52,8 @@ __global__ void ${modelname}(
         )
 {
     // work id & size
-    const unsigned int id = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
-    const unsigned int size = blockDim.x * gridDim.x * gridDim.y;
+    const unsigned int id = (gridDim.x * blockDim.x * threadIdx.y) + threadIdx.x;
+    const unsigned int size = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
 #define state(time, i_node) (state_pwi[((time) * ${dynamics.state_variables.__len__()} * n_node + (i_node))*size + id])
