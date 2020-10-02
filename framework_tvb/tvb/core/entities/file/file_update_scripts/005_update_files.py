@@ -41,12 +41,9 @@ import sys
 import uuid
 import numpy
 from datetime import datetime
-from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
-from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
 from tvb.basic.neotraits._attr import Range
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -62,7 +59,6 @@ from tvb.core.neotraits._h5core import H5File
 from tvb.core.neotraits.h5 import STORE_STRING
 from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
 from tvb.datatypes.sensors import SensorTypes
-
 
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
@@ -259,9 +255,10 @@ def _migrate_local_connectivity(**kwargs):
 
     for xml_param in operation_xml_parameters:
         if '_parameters_parameters_' in xml_param:
-            new_key = xml_param.replace('_parameters_option_' + equation_name + '_parameters_parameters_', '.parameters.')
+            new_key = xml_param.replace('_parameters_option_' + equation_name + '_parameters_parameters_',
+                                        '.parameters.')
             param_name_start_idx = new_key.rfind('.')
-            param_name = new_key[param_name_start_idx+1:]
+            param_name = new_key[param_name_start_idx + 1:]
             parameters[param_name] = float(operation_xml_parameters[xml_param])
     additional_params = [['equation', 'parameters', parameters]]
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
@@ -271,10 +268,9 @@ def _migrate_connectivity_annotations(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
     root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
-    h5_class = ConnectivityAnnotationsH5
 
     _migrate_dataset_metadata(['region_annotations'], kwargs['storage_manager'])
-    return {'h5_class': h5_class, 'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
 def _migrate_time_series(metadata, **kwargs):
@@ -354,10 +350,11 @@ def _migrate_time_series_surface(**kwargs):
     surface_gid = operation_xml_parameters['surface']
     cortical_surface = CortexViewModel()
     cortical_surface.surface_gid = uuid.UUID(surface_gid)
-    cortical_surface.region_mapping_data =  uuid.UUID(operation_xml_parameters['surface_parameters_region_mapping_data'])
-    cortical_surface.local_connectivity =  uuid.UUID(operation_xml_parameters['surface_parameters_local_connectivity'])
+    cortical_surface.region_mapping_data = uuid.UUID(operation_xml_parameters['surface_parameters_region_mapping_data'])
+    cortical_surface.local_connectivity = uuid.UUID(operation_xml_parameters['surface_parameters_local_connectivity'])
     cortical_surface.coupling_strength = numpy.asarray(eval(operation_xml_parameters[
-                                                    'surface_parameters_coupling_strength'].replace(' ', ', ')))
+                                                                'surface_parameters_coupling_strength'].replace(' ',
+                                                                                                                ', ')))
     operation_xml_parameters['surface'] = cortical_surface
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
@@ -616,7 +613,7 @@ def _migrate_connectivity_measure(**kwargs):
 def _migrate_datatype_measure(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'h5_class': DatatypeMeasureH5}
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
 def _migrate_stimuli_equation_params(operation_xml_parameters, equation_type):
@@ -675,7 +672,7 @@ def _migrate_value_wrapper(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['data_type'] = root_metadata['data_type'].replace("\"", '')
     root_metadata['written_by'] = "tvb.adapters.datatypes.h5.mapped_value_h5.ValueWrapperH5"
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'h5_class': ValueWrapperH5}
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
 def _migrate_simulation_state(**kwargs):
@@ -847,7 +844,7 @@ def update(input_file):
         replaced_basename = replaced_basename.replace('ProjectionSurfaceEEG', 'ProjectionMatrix')
         replaced_basename = replaced_basename.replace('ProjectionSurfaceMEG', 'ProjectionMatrix')
         replaced_basename = replaced_basename.replace('ProjectionSurfaceSEEG', 'ProjectionMatrix')
-        new_file_path = os.path.join(input_file, os.pardir, replaced_basename)
+        new_file_path = os.path.join(os.path.dirname(input_file), replaced_basename)
         os.rename(input_file, new_file_path)
         input_file = new_file_path
     except ValueError:
@@ -889,9 +886,9 @@ def update(input_file):
         datatype_class = getattr(sys.modules[root_metadata["module"]],
                                  root_metadata["type"])
         h5_class = REGISTRY.get_h5file_for_datatype(datatype_class)
-        root_metadata[H5File.KEY_WRITTEN_BY] = h5_class.__module__ + '.' + h5_class.__name__
+        root_metadata[H5File.KEY_WRITTEN_BY] = h5_class().get_class_path()
     except KeyError:
-        h5_class = None
+        pass
 
     # Other general modifications
     root_metadata['gid'] = _parse_gid(root_metadata['gid'])
@@ -932,9 +929,6 @@ def update(input_file):
     if 'algorithm' not in params:
         params['algorithm'] = algorithm
 
-    if 'h5_class' not in params:
-        params['h5_class'] = h5_class
-
     if 'additional_params' in params:
         additional_params = params['additional_params']
 
@@ -944,67 +938,62 @@ def update(input_file):
     if storage_migrate is False or class_name in ['SimulationState', 'DatatypeMeasure']:
         return
 
-    with params['h5_class'](input_file) as f:
-        # Create the corresponding datatype to be stored in db
-        datatype = REGISTRY.get_datatype_for_h5file(f)()
-        f.load_into(datatype)
-        datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
-        datatype_index.create_date = root_metadata['create_date']
+    # Create the corresponding datatype to be stored in db
+    datatype, generic_attributes = h5.load_with_references(input_file)
+    datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
+    datatype_index.create_date = root_metadata['create_date']
 
-        datatype, generic_attributes = h5.load_with_references(input_file)
+    if has_vm is False:
+        # Get parent_burst when needed
+        if 'time_series' in operation_xml_parameters:
+            burst_gid = _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager)
+            generic_attributes.parent_burst = burst_gid
 
-        if has_vm is False:
-            # Get parent_burst when needed
-            if 'time_series' in operation_xml_parameters:
-                burst_gid = _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager)
-                generic_attributes.parent_burst = burst_gid
+        alg_json = json.loads(params['algorithm'])
+        algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
+        operation.algorithm = algorithm
+        operation.fk_from_algo = algorithm.id
 
+        operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
+        operation_entity, _ = import_service.import_operation(operation_data.operation)
+        possible_burst_id = operation.view_model_gid
+        vm = import_service.create_view_model(operation, operation_data, folder, additional_params)
+        vm.generic_attributes = generic_attributes
 
-            alg_json = json.loads(params['algorithm'])
-            algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
-            operation.algorithm = algorithm
-            operation.fk_from_algo = algorithm.id
+        if 'TimeSeries' in class_name:
+            alg = SimulatorAdapter().view_model_to_has_traits(vm)
+            alg.preconfigure()
+            alg.configure()
+            simulation_history = SimulationHistory()
+            simulation_history.populate_from(alg)
+            history_index = h5.store_complete(simulation_history, folder, generic_attributes=vm.generic_attributes)
+            history_index.fk_from_operation = op_id
+            history_index.fk_parent_burst = possible_burst_id
 
-            operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
-            operation_entity, _ = import_service.import_operation(operation_data.operation)
-            possible_burst_id = operation.view_model_gid
-            vm = import_service.create_view_model(operation, operation_data, folder, additional_params)
-            vm.generic_attributes = generic_attributes
+            burst_params = dao.get_burst_for_migration(possible_burst_id)
+            if burst_params is not None:
+                burst_config = _create_new_burst(burst_params, root_metadata)
+                burst_config.simulator_gid = vm.gid.hex
+                burst_config.fk_simulation = operation.id
+                generic_attributes.parent_burst = burst_config.gid
 
-            if 'TimeSeries' in class_name:
-                alg = SimulatorAdapter().view_model_to_has_traits(vm)
-                alg.preconfigure()
-                alg.configure()
-                simulation_history = SimulationHistory()
-                simulation_history.populate_from(alg)
-                history_index = h5.store_complete(simulation_history, folder, generic_attributes=vm.generic_attributes)
-                history_index.fk_from_operation = op_id
-                history_index.fk_parent_burst = possible_burst_id
+                # Creating BurstConfigH5
+                with BurstConfigurationH5(os.path.join(os.path.dirname(input_file), 'BurstConfiguration_'
+                                                                                    + burst_config.gid + ".h5")) as f:
+                    f.store(burst_config)
 
-                burst_params = dao.get_burst_for_migration(possible_burst_id)
-                if burst_params is not None:
-                    burst_config = _create_new_burst(burst_params, root_metadata)
-                    burst_config.simulator_gid = vm.gid.hex
-                    burst_config.fk_simulation = operation.id
-                    generic_attributes.parent_burst = burst_config.gid
+                history_index.fk_parent_burst = burst_config.gid
+                dao.store_entity(history_index)
+                dao.store_entity(burst_config)
+                root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
+                storage_manager.set_metadata(root_metadata)
 
-                    # Creating BurstConfigH5
-                    with BurstConfigurationH5(os.path.join(input_file, os.pardir, 'BurstConfiguration_'
-                                                                                  + burst_config.gid + ".h5")) as f:
-                        f.store(burst_config)
+        os.remove(os.path.join(folder, OPERATION_XML))
 
-                    history_index.fk_parent_burst = burst_config.gid
-                    dao.store_entity(history_index)
-                    dao.store_entity(burst_config)
-                    root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
-                    storage_manager.set_metadata(root_metadata)
-
-            os.remove(os.path.join(folder, OPERATION_XML))
-
-        # Populate datatype
-        datatype_index.fill_from_has_traits(datatype)
-        datatype_index.fill_from_generic_attributes(generic_attributes)
-        datatype_index.fk_from_operation = op_id
+    # Populate datatype
+    datatype_index.fill_from_has_traits(datatype)
+    datatype_index.fill_from_generic_attributes(generic_attributes)
+    datatype_index.fk_from_operation = op_id
 
     # Finally store new datatype in db
     dao.store_entity(datatype_index)
