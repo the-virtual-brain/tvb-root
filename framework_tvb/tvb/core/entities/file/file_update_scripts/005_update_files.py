@@ -39,7 +39,6 @@ import json
 import os
 import sys
 import uuid
-import ast
 import numpy
 from datetime import datetime
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5
@@ -63,7 +62,7 @@ from tvb.core.neotraits._h5core import H5File
 from tvb.core.neotraits.h5 import STORE_STRING
 from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
 from tvb.datatypes.sensors import SensorTypes
-from tvb.datatypes.surfaces import CorticalSurface
+
 
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
@@ -505,9 +504,24 @@ def _migrate_fcd(**kwargs):
     operation_xml_parameters['sp'] = root_metadata['sp']
     operation_xml_parameters['sw'] = root_metadata['sw']
 
+    storage_manager = kwargs['storage_manager']
+    storage_manager.set_metadata(root_metadata)
 
-    _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    _migrate_dataset_metadata(['array_data'], storage_manager)
+
+    if 'parent_burst' in root_metadata:
+        return {'operation_xml_parameters': operation_xml_parameters}
+
+    # If we encounter an FCD we expect it to have more FCDs and ConnectivityMeasure's
+    # so we can only set parent_burst attribute on all files
+    folder_name = os.path.dirname(kwargs['input_file'])
+    for file_name in os.listdir(folder_name):
+        if file_name != OPERATION_XML and file_name not in kwargs['input_file']:
+            storage_manager = HDF5StorageManager(folder_name, file_name)
+            root_metadata = storage_manager.get_metadata()
+            _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager, True)
+
+    return {'operation_xml_parameters': operation_xml_parameters}
 
 
 def _migrate_fourier_spectrum(**kwargs):
@@ -593,6 +607,7 @@ def _migrate_connectivity_measure(**kwargs):
     operation_xml_parameters = kwargs['operation_xml_parameters']
     operation_xml_parameters['data_file'] = kwargs['input_file']
     operation_xml_parameters['connectivity'] = root_metadata['connectivity']
+    root_metadata['title'] = root_metadata['title'].replace('\\n', '').replace('"', '')
 
     _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
@@ -725,6 +740,17 @@ def _create_new_burst(burst_params, root_metadata):
     root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
 
     return burst_config
+
+
+def _set_parent_burst(time_series_gid, root_metadata, storage_manager, is_ascii=False):
+    ts = dao.get_datatype_by_gid(
+        time_series_gid.replace('-', '').replace('urn:uuid:', ''))
+    burst_gid = _parse_gid(ts.fk_parent_burst)
+    if is_ascii:
+        burst_gid = burst_gid.encode('ascii', 'ignore')
+    root_metadata['parent_burst'] = burst_gid
+    storage_manager.set_metadata(root_metadata)
+    return ts.fk_parent_burst
 
 
 datatypes_to_be_migrated = {
@@ -910,10 +936,9 @@ def update(input_file):
         if has_vm is False:
             # Get parent_burst when needed
             if 'time_series' in operation_xml_parameters:
-                ts = dao.get_datatype_by_gid(
-                    operation_xml_parameters['time_series'].replace('-', '').replace('urn:uuid:', ''))
-                root_metadata['parent_burst'] = _parse_gid(ts.fk_parent_burst)
-                storage_manager.set_metadata(root_metadata)
+                burst_gid = _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager)
+                generic_attributes.parent_burst = burst_gid
+
 
             alg_json = json.loads(params['algorithm'])
             algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
