@@ -619,13 +619,42 @@ def _migrate_datatype_measure(**kwargs):
     return {'operation_xml_parameters': kwargs['operation_xml_parameters'], 'h5_class': DatatypeMeasureH5}
 
 
+def _migrate_stimuli_equation_params(operation_xml_parameters, equation_type):
+    equation_name = operation_xml_parameters[equation_type]
+    equation = getattr(sys.modules['tvb.datatypes.equations'], equation_name)()
+    operation_xml_parameters[equation_type] = equation
+
+    param_dict = {}
+    for xml_param in operation_xml_parameters:
+        if 'parameters_parameters' in xml_param:
+            temporal_param = float(operation_xml_parameters[xml_param])
+            temporal_param_name = xml_param.replace(equation_type + '_parameters_option_' + equation_name + \
+                                                    '_parameters_parameters_', '')
+            param_dict[temporal_param_name] = temporal_param
+    return [equation_type, 'parameters', param_dict]
+
+
+def _migrate_stimuli(datasets, root_metadata, storage_manager):
+    _migrate_one_stimuli_param(root_metadata, 'spatial')
+    _migrate_one_stimuli_param(root_metadata, 'temporal')
+
+    for dataset in datasets:
+        weights = json.loads(root_metadata[dataset])
+        storage_manager.store_data(dataset, weights)
+        _migrate_dataset_metadata([dataset], storage_manager)
+        root_metadata.pop(dataset)
+
+
 def _migrate_stimuli_region(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
     operation_xml_parameters = kwargs['operation_xml_parameters']
+
     operation_xml_parameters['weight'] = numpy.asarray(json.loads(root_metadata['weight']), dtype=numpy.float64)
-    _migrate_stimuli(root_metadata, kwargs['storage_manager'], ['weight'])
-    return {'operation_xml_parameters': operation_xml_parameters}
+    _migrate_stimuli(['weight'], root_metadata, kwargs['storage_manager'])
+    additional_params = [_migrate_stimuli_equation_params(operation_xml_parameters, 'temporal')]
+
+    return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
 def _migrate_stimuli_surface(**kwargs):
@@ -635,9 +664,11 @@ def _migrate_stimuli_surface(**kwargs):
     operation_xml_parameters['focal_points_triangles'] = numpy.asarray(
         json.loads(root_metadata['focal_points_triangles']),
         dtype=numpy.int)
-    _migrate_stimuli(root_metadata, kwargs['storage_manager'],
-                     ['focal_points_surface', 'focal_points_triangles'])
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    _migrate_stimuli(['focal_points_surface', 'focal_points_triangles'], root_metadata, kwargs['storage_manager'])
+    additional_params = [_migrate_stimuli_equation_params(operation_xml_parameters, 'temporal'),
+                         _migrate_stimuli_equation_params(operation_xml_parameters, 'spatial')]
+
+    return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
 def _migrate_value_wrapper(**kwargs):
@@ -709,17 +740,6 @@ def _migrate_one_stimuli_param(root_metadata, param_name):
     new_param['type'] = param['__mapped_class']
     new_param['parameters'] = param['parameters']
     root_metadata[param_name] = json.dumps(new_param)
-
-
-def _migrate_stimuli(root_metadata, storage_manager, datasets):
-    _migrate_one_stimuli_param(root_metadata, 'spatial')
-    _migrate_one_stimuli_param(root_metadata, 'temporal')
-
-    for dataset in datasets:
-        weights = json.loads(root_metadata[dataset])
-        storage_manager.store_data(dataset, weights)
-        _migrate_dataset_metadata([dataset], storage_manager)
-        root_metadata.pop(dataset)
 
 
 def _create_new_burst(burst_params, root_metadata):
