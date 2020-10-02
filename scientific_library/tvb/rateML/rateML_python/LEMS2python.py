@@ -47,7 +47,7 @@ logger = get_logger(__name__)
 
 def default_lems_folder():
     here = os.path.dirname(os.path.abspath(__file__))
-    xmlpath = os.path.join(here, '', 'XMLmodels')
+    xmlpath = os.path.join(here, 'XMLmodels')
     return xmlpath
 
 
@@ -140,7 +140,7 @@ def regTVB_templating(model_filename, folder=None):
                 f.truncate(0)
                 f.seek(0)
                 f.writelines(lines)
-            # logger.info("model file generated {}".format(modelfile))
+            logger.info("model file generated {}".format(modelfile))
     except IOError as e:
         logger.error('ioerror: %s', e)
 
