@@ -55,8 +55,8 @@ __global__ void Rwongwang(
         )
 {
     // work id & size
-    const unsigned int id = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
-    const unsigned int size = blockDim.x * gridDim.x * gridDim.y;
+    const unsigned int id = (gridDim.x * blockDim.x * threadIdx.y) + threadIdx.x;
+    const unsigned int size = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
 #define state(time, i_node) (state_pwi[((time) * 2 * n_node + (i_node))*size + id])
@@ -121,6 +121,9 @@ __global__ void Rwongwang(
     float V = 0.0;
     float W = 0.0;
 
+    float dV = 0.0;
+    float dW = 0.0;
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
@@ -134,7 +137,7 @@ __global__ void Rwongwang(
     for (unsigned int t = i_step; t < (i_step + n_step); t++)
     {
     //***// This is the loop over nodes, which also should stay the same
-        for (unsigned int i_node = threadIdx.y; i_node < n_node; i_node+=blockDim.y)
+        for (int i_node = 0; i_node < n_node; i_node++)
         {
             c_0 = 0.0f;
 
@@ -163,7 +166,6 @@ __global__ void Rwongwang(
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_0 *= None;
             // the dynamic derived variables
             tmp_I_E = a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_0 - JI*W) - b_E;
             tmp_H_E = tmp_I_E/(1.0-exp(min_d_E * tmp_I_E));
@@ -171,12 +173,12 @@ __global__ void Rwongwang(
             tmp_H_I = tmp_I_I/(1.0-exp(min_d_I*tmp_I_I));
 
             // This is dynamics step and the update in the state of the node
-            V += dt * ((imintau_E* V)+(tmp_H_E*(1-V)*gamma_E));
-            W += dt * ((imintau_I* W)+(tmp_H_I*gamma_I));
+            dV = dt * ((imintau_E* V)+(tmp_H_E*(1-V)*gamma_E));
+            dW = dt * ((imintau_I* W)+(tmp_H_I*gamma_I));
 
             // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
-            V += nsig * curand_normal2(&crndst).x;
-            W += nsig * curand_normal2(&crndst).x;
+            V += nsig * curand_normal(&crndst) + dV;
+            W += nsig * curand_normal(&crndst) + dW;
 
             // Wrap it within the limits of the model
             V = wrap_it_V(V);
@@ -203,3 +205,71 @@ __global__ void Rwongwang(
 #undef tavg/*}}}*/
 
 } // kernel integrate
+
+// defaults from Stefan 2007, cf tvb/analyzers/fmri_balloon.py
+#define TAU_S 0.65f
+#define TAU_F 0.41f
+#define TAU_O 0.98f
+#define ALPHA 0.32f
+#define TE 0.04f
+#define V0 4.0f
+#define E0 0.4f
+#define EPSILON 0.5f
+#define NU_0 40.3f
+#define R_0 25.0f
+
+#define RECIP_TAU_S (1.0f / TAU_S)
+#define RECIP_TAU_F (1.0f / TAU_F)
+#define RECIP_TAU_O (1.0f / TAU_O)
+#define RECIP_ALPHA (1.0f / ALPHA)
+#define RECIP_E0 (1.0f / E0)
+
+// "derived parameters"
+#define k1 (4.3f * NU_0 * E0 * TE)
+#define k2 (EPSILON * R_0 * E0 * TE)
+#define k3 (1.0f - EPSILON)
+
+__global__ void bold_update(int n_node, float dt,
+                      // bold.shape = (4, n_nodes, n_threads)
+            float * __restrict__ bold_state,
+                      // nrl.shape = (n_nodes, n_threads)
+            float * __restrict__ neural_state,
+                      // out.shape = (n_nodes, n_threads)
+            float * __restrict__ out)
+{
+    const unsigned int it = (gridDim.x * blockDim.x * threadIdx.y) + threadIdx.x;
+    const unsigned int nt = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
+
+    int var_stride = n_node * nt;
+    for (int i_node=0; i_node < n_node; i_node++)
+    {
+        float *node_bold = bold_state + i_node * nt + it;
+
+        float s = node_bold[0 * var_stride];
+        float f = node_bold[1 * var_stride];
+        float v = node_bold[2 * var_stride];
+        float q = node_bold[3 * var_stride];
+
+        float x = neural_state[i_node * nt + it];
+
+        float ds = x - RECIP_TAU_S * s - RECIP_TAU_F * (f - 1.0f);
+        float df = s;
+        float dv = RECIP_TAU_O * (f - pow(v, RECIP_ALPHA));
+        float dq = RECIP_TAU_O * (f * (1.0f - pow(1.0f - E0, 1.0f / f))
+                * RECIP_E0 - pow(v, RECIP_ALPHA) * (q / v));
+
+        s += dt * ds;
+        f += dt * df;
+        v += dt * dv;
+        q += dt * dq;
+
+        node_bold[0 * var_stride] = s;
+        node_bold[1 * var_stride] = f;
+        node_bold[2 * var_stride] = v;
+        node_bold[3 * var_stride] = q;
+
+        out[i_node * nt + it] = V0 * (    k1 * (1.0f - q    )
+                                        + k2 * (1.0f - q / v)
+                                        + k3 * (1.0f -     v) );
+    } // i_node
+} // kernel
