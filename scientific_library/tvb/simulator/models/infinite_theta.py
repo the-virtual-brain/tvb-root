@@ -548,7 +548,7 @@ class GastSchmidtKnosche_SD(Model):
         derivative[0] = 1/tau * ( Delta / (numpy.pi * tau) + 2 * V * r)
         derivative[1] = 1/tau * ( V**2 - numpy.pi**2 * tau**2 * r**2 + eta + J * tau * r * (1 - A) + I + cr * Coupling_Term_r + cv * Coupling_Term_V)     
         derivative[2] = 1/tau_A * ( B )
-        derivative[3] = 1/tau_A * ( - 2 * B - A + alpha * r)
+        derivative[3] = 1/tau_A * ( - 2 * B - A + alpha * tau_A * r)
         
         
         
