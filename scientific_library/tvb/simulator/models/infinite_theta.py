@@ -6,8 +6,8 @@ import numpy
 
 class MontbrioPazoRoxin(Model):
     r"""
-    2D model describing the Ott-Antonsen reduction of infinitely all-to-all
-    coupled QIF neurons (Theta-neurons) as in Montbrio, Pazo, Roxin, 2015.
+    2D model describing the Ott-Antonsen reduction of infinite all-to-all
+    coupled QIF neurons (Theta-neurons) as in [Montbrio_Pazo_Roxin_2015]_.
 
     The two state variables :math:`r` and :math:`V` represent the average
     firing rate and the average membrane potential of our QIF neurons.
@@ -18,8 +18,12 @@ class MontbrioPazoRoxin(Model):
             \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
             \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r + I)
     
-    Depending on the parameters `cr`, `cv` we couple the neural masses via the
-    firing rate and/or the membrane potential.
+    Input from the network enters in the :math:`V` variable as 
+    :math:`1/\tau(c_r C_r + c_v C_V)` where C is the incomming coupling. In 
+    other words, depending on the parameters :math:`c_r`, :math:`c_v` we couple
+    the neural masses via the firing rate and/or the membrane potential.
+    
+    .. [Montbrio_Pazo_Roxin_2015] Montbrió, E., Pazó, D., & Roxin, A. (2015). Macroscopic description for networks of spiking neurons. *Physical Review X*, 5(2), 021028.
     """
     
     # Define traited attributes for this model, these represent possible kwargs.
@@ -144,12 +148,12 @@ class MontbrioPazoRoxin(Model):
     
 class CoombesByrne(Model):
     r"""
-    4D model describing the Ott-Antonsen reduction of infinitely all-to-all
-    coupled QIF neurons (Theta-neurons) as in Coombes, Byrne, 2016.
+    4D model describing the Ott-Antonsen reduction of infinite all-to-all
+    coupled QIF neurons (Theta-neurons) as in [Coombes_Byrne_2019]_.
     
     Note: the original equations describe the dynamics of the Kuramoto parameter 
     :math:`Z`. Using the conformal transformation 
-    :math:`Z=(1-W^\star)/(1+W^\star)` and :math:`W= \pi r - i V`, 
+    :math:`Z=(1-W^\star)/(1+W^\star)` and :math:`W= \pi r + i V`, 
     we express the system dynamics in terms of two state variables :math:`r` 
     and :math:`V` representing the average firing rate and the average membrane 
     potential of our QIF neurons. The conductance variable and its derivative 
@@ -158,10 +162,12 @@ class CoombesByrne(Model):
     The equations of the model read
     
     .. math::
-            \dot{r} &= \Delta/\pi + 2 V r - g r^2) \\
+            \dot{r} &= \Delta/\pi + 2 V r - g r^2 \\
             \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
             \dot{g} &= \alpha q  \\
-            \dot{q} &= \alpha (k \pi r - g - 2 q)
+            \dot{q} &= \alpha (\kappa \pi r - g - 2 q)
+            
+    .. [Coombes_Byrne_2019] Coombes, S., & Byrne, Á. (2019). Next generation neural mass models. In *Nonlinear Dynamics in Computational Neuroscience* (pp. 1-16). Springer, Cham.
             
     """
     
@@ -266,17 +272,21 @@ class CoombesByrne(Model):
     
 class CoombesByrne2D(Model):
     r"""
-    2D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF neurons (Theta-neurons) as in Coombes, Byrne, 2016.
+    2D model describing the Ott-Antonsen reduction of infinite all-to-all coupled 
+    QIF neurons (Theta-neurons) as in [Coombes_Byrne_2019]_.
 
-    The two state variables :math:`r` and :math:`V` represent the average firing rate and 
-    the average membrane potential of our QIF neurons. The conductance :math:`g` is not dynamical and proportional to :math:`r`.
+    The two state variables :math:`r` and :math:`V` represent the average firing 
+    rate and the average membrane potential of our QIF neurons. The conductance 
+    :math:`g` is not dynamical and proportional to :math:`r`.
 
     The equations of the model read
     
     .. math::
-            \dot{r} &= \Delta/\pi + 2 V r - g r^2)\\
+            \dot{r} &= \Delta/\pi + 2 V r - g r^2\\
             \dot{V} &= V^2 - \pi^2 r^2 + \eta + (v_{syn} - V) g \\
-            g &= k \pi r
+            g &= \kappa \pi r
+    .. [Coombes_Byrne_2019] Coombes, S., & Byrne, Á. (2019). Next generation neural mass models. In *Nonlinear Dynamics in Computational Neuroscience* (pp. 1-16). Springer, Cham.
+
     """
     
     # Define traited attributes for this model, these represent possible kwargs.
@@ -367,8 +377,9 @@ class CoombesByrne2D(Model):
     
 class GastSchmidtKnosche_SD(Model):
     r"""
-    4D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF neurons (Theta-neurons) with Synaptic Depression adaptation mechanisms.
-    As in Gast, Schmidt, Knösche, 2019.
+    4D model describing the Ott-Antonsen reduction of infinite all-to-all 
+    coupled QIF neurons (Theta-neurons) with Synaptic Depression adaptation 
+    mechanisms [Gastetal_2020]_.
 
     The two state variables :math:`r` and :math:`V` represent the average firing rate and 
     the average membrane potential of our QIF neurons.
@@ -380,8 +391,9 @@ class GastSchmidtKnosche_SD(Model):
             \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
             \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r (1 - A) + I)\\ 
             \dot{A} &= 1/\tau_A (B)\\
-            \dot{B} &= 1/\tau_A (-2 B - A + \alpha \tau_A r) \\
+            \dot{B} &= 1/\tau_A (-2 B - A + \alpha  r) \\
 
+    .. [Gastetal_2020] Gast, R., Schmidt, H., & Knösche, T. R. (2020). A mean-field description of bursting dynamics in spiking neural networks with short-term adaptation. *Neural Computation*, 32(9), 1615-1634.
     """
     
     # Define traited attributes for this model, these represent possible kwargs.
@@ -508,7 +520,7 @@ class GastSchmidtKnosche_SD(Model):
         derivative[0] = 1/tau * ( Delta / (numpy.pi * tau) + 2 * V * r)
         derivative[1] = 1/tau * ( V**2 - numpy.pi**2 * tau**2 * r**2 + eta + J * tau * r * (1 - A) + I + cr * Coupling_Term_r + cv * Coupling_Term_V)     
         derivative[2] = 1/tau_A * ( B )
-        derivative[3] = 1/tau_A * ( - 2 * B - A + alpha * tau_A * r)
+        derivative[3] = 1/tau_A * ( - 2 * B - A + alpha * r)
         
         
         
@@ -524,8 +536,7 @@ class GastSchmidtKnosche_SD(Model):
         
 class GastSchmidtKnosche_SF(Model):
     r"""
-    4D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF neurons (Theta-neurons) with Spike-Frequency adaptation mechanisms.
-    As in Gast, Schmidt, Knösche, 2019.
+    4D model describing the Ott-Antonsen reduction of infinite all-to-all coupled QIF neurons (Theta-neurons) with Spike-Frequency adaptation mechanisms [Gastetal_2020]_.
 
     The two state variables :math:`r` and :math:`V` represent the average firing rate and 
     the average membrane potential of our QIF neurons.
@@ -537,8 +548,8 @@ class GastSchmidtKnosche_SF(Model):
             \dot{r} &= 1/\tau (\Delta/(\pi \tau) + 2 V r)\\
             \dot{V} &= 1/\tau (V^2 - \tau^2 \pi^2 r^2 + \eta + J \tau r - A + I)\\ 
             \dot{A} &= 1/\tau_A (B)\\
-            \dot{B} &= 1/\tau_A (-2 B - A + \alpha \tau_A r) \\
-
+            \dot{B} &= 1/\tau_A (-2 B - A + \alpha r) \\
+    .. [Gastetal_2020]	Gast, R., Schmidt, H., & Knösche, T. R. (2020). A mean-field description of bursting dynamics in spiking neural networks with short-term adaptation. Neural Computation, 32(9), 1615-1634.
     """
     
     # Define traited attributes for this model, these represent possible kwargs.
@@ -676,9 +687,9 @@ class GastSchmidtKnosche_SF(Model):
 
 class DumontGutkin(Model):
     r"""
-    8D model describing the Ott-Antonsen reduction of infinitely all-to-all 
+    8D model describing the Ott-Antonsen reduction of infinite all-to-all 
     coupled QIF Excitatory E and Inhibitory I Theta-neurons with local synaptic 
-    dynamics. As in Dumont, Gutkin 2019
+    dynamics [DumontGutkin2019]_.
 
     State variables :math:`r` and :math:`V` represent the average firing rate and 
     the average membrane potential of our QIF neurons. 
@@ -692,6 +703,7 @@ class DumontGutkin(Model):
             \dot{g} &= 1/\tau_s (-g + J_ r)\\
             \dot{s} &= 1/\tau_s (-s) \\
 
+    .. [DumontGutkin2019] Dumont, G., & Gutkin, B. (2019). Macroscopic phase resetting-curves determine oscillatory coherence and signal transfer in inter-coupled neural circuits. PLoS computational biology, 15(5), e1007019.
     """
     
     # Define traited attributes for this model, these represent possible kwargs.
