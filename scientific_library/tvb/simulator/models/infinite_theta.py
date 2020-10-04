@@ -26,6 +26,13 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 
+"""
+   A family of mean field models of infinite populations of all-to-all coupled
+   quadratic integrate and fire neurons (theta-neurons).
+
+.. moduleauthor:: Jan Fousek <jan.fousek@univ-amu.fr>, Giovanni Rabuffo <giovanni.rabuffo@univ-amu.fr>
+"""
+
 from tvb.simulator.models.base import Model
 from tvb.basic.neotraits.api import NArray, List, Range, Final
 
