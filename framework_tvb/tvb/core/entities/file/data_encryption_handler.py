@@ -163,7 +163,9 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
     @staticmethod
     def compute_encrypted_folder_path(project_folder):
-        return "{}_encrypted".format(project_folder)
+        project_name = os.path.basename(project_folder)
+        project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project_name)
+        return "{}_encrypted".format(project_path)
 
     @staticmethod
     def sync_folders(folder):

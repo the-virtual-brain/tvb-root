@@ -50,7 +50,7 @@ LOCK_CREATE_FOLDER = Lock()
 class FilesHelper(object):
     """
     This class manages all Structure related operations, using File storage.
-    It will handle creating meaning-full entities and retrieving existent ones. 
+    It will handle creating meaning-full entities and retrieving existent ones.
     """
     TEMP_FOLDER = "TEMP"
     IMAGES_FOLDER = "IMAGES"
@@ -85,11 +85,15 @@ class FilesHelper(object):
             raise FileStructureException("Could not create Folder" + str(path))
 
     def get_projects_folder(self):
-        return os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER)
+        base_path = TvbProfile.current.TVB_STORAGE
+        if TvbProfile.current.web.ENCRYPT_STORAGE and TvbProfile.current.hpc.CAN_ENCRYPT_STORAGE and TvbProfile.current.web.DECRYPT_PATH:
+            base_path = TvbProfile.current.web.DECRYPT_PATH
+
+        return os.path.join(base_path, self.PROJECTS_FOLDER)
 
     def get_project_folder(self, project, *sub_folders):
         """
-        Retrieve the root path for the given project. 
+        Retrieve the root path for the given project.
         If root folder is not created yet, will create it.
         """
         if hasattr(project, 'name'):

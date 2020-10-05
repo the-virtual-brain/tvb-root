@@ -242,6 +242,7 @@ class WebSettings(object):
         self.admin = WebAdminSettings(manager)
 
         self.ENCRYPT_STORAGE = manager.get_attribute(stored.KEY_ENCRYPT_STORAGE, False, eval)
+        self.DECRYPT_PATH = manager.get_attribute(stored.KEY_DECRYPT_PATH)
 
         self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
