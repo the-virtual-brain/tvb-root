@@ -248,10 +248,12 @@ class CoombesByrne(Model):
     #Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"r": numpy.array([1./numpy.pi, 1./numpy.pi]),
-                "V": numpy.array([0., 0.]),
-                "g": numpy.array([0., 0.]),
-                "q": numpy.array([0., 0.])},
+        default={
+            "r": numpy.array([0., 6.]),
+            "V": numpy.array([-10., 10.]),
+            "g": numpy.array([1., 2.]),
+            "q": numpy.array([-0.5, 0.7])
+        },
         doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
     )
 
@@ -503,10 +505,10 @@ class GastSchmidtKnosche_SD(Model):
     #Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"r": numpy.array([0.0, 0.0]),
-                "V": numpy.array([0.0, 0.0]),
-                "A": numpy.array([0.0, 0.0]),
-                "B": numpy.array([0.0, 0.0])},
+        default={"r": numpy.array([0.0, 4]),
+                "V": numpy.array([-3.0, 0.3]),
+                "A": numpy.array([0.0, 0.4]),
+                "B": numpy.array([-0.2, 0.3])},
         doc="""Expected ranges of the state variables for initial condition generation and phase plane setup.""",
     )
 
