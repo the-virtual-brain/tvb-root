@@ -89,8 +89,9 @@ def _migrate_connectivity(**kwargs):
         except MissingDataSetException:
             pass
 
-    if kwargs['operation_xml_parameters']['normalization'] == 'none':
-        del kwargs['operation_xml_parameters']['normalization']
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+    if 'normalization' in operation_xml_parameters and operation_xml_parameters['normalization'] == 'none':
+        del operation_xml_parameters['normalization']
 
     storage_manager.remove_metadata('Mean non zero', 'tract_lengths')
     storage_manager.remove_metadata('Min. non zero', 'tract_lengths')
@@ -101,7 +102,7 @@ def _migrate_connectivity(**kwargs):
 
     _migrate_dataset_metadata(metadata, storage_manager)
 
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    return {'operation_xml_parameters': operation_xml_parameters}
 
 
 def _migrate_surface(**kwargs):
@@ -236,31 +237,34 @@ def _migrate_local_connectivity(**kwargs):
     matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
     matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
     storage_manager.set_metadata(matrix_metadata, 'matrix')
+    operation_xml_parameters = kwargs['operation_xml_parameters']
 
     equation = json.loads(root_metadata['equation'])
-    equation['type'] = equation['__mapped_class']
-    del equation['__mapped_class']
-    del equation['__mapped_module']
+    additional_params = None
+    if equation is not None:
+        equation['type'] = equation['__mapped_class']
+        del equation['__mapped_class']
+        del equation['__mapped_module']
+        root_metadata['equation'] = json.dumps(equation)
 
-    root_metadata['equation'] = json.dumps(equation)
+        equation_name = operation_xml_parameters['equation']
+        equation = getattr(sys.modules['tvb.datatypes.equations'],
+                           equation_name)()
+        operation_xml_parameters['equation'] = equation
+        operation_xml_parameters['cutoff'] = float(operation_xml_parameters['cutoff'])
+        parameters = {}
 
-    operation_xml_parameters = kwargs['operation_xml_parameters']
+        for xml_param in operation_xml_parameters:
+            if '_parameters_parameters_' in xml_param:
+                new_key = xml_param.replace('_parameters_option_' + equation_name + '_parameters_parameters_',
+                                            '.parameters.')
+                param_name_start_idx = new_key.rfind('.')
+                param_name = new_key[param_name_start_idx + 1:]
+                parameters[param_name] = float(operation_xml_parameters[xml_param])
+        additional_params = [['equation', 'parameters', parameters]]
+
     operation_xml_parameters['surface'] = root_metadata['surface']
-    operation_xml_parameters['cutoff'] = float(operation_xml_parameters['cutoff'])
-    equation_name = operation_xml_parameters['equation']
-    equation = getattr(sys.modules['tvb.datatypes.equations'],
-                       equation_name)()
-    operation_xml_parameters['equation'] = equation
-    parameters = {}
 
-    for xml_param in operation_xml_parameters:
-        if '_parameters_parameters_' in xml_param:
-            new_key = xml_param.replace('_parameters_option_' + equation_name + '_parameters_parameters_',
-                                        '.parameters.')
-            param_name_start_idx = new_key.rfind('.')
-            param_name = new_key[param_name_start_idx + 1:]
-            parameters[param_name] = float(operation_xml_parameters[xml_param])
-    additional_params = [['equation', 'parameters', parameters]]
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
@@ -317,6 +321,31 @@ def _migrate_time_series(metadata, **kwargs):
     operation_xml_parameters['conduction_speed'] = float(operation_xml_parameters['simulation_length'])
     operation_xml_parameters['simulation_length'] = float(operation_xml_parameters['simulation_length'])
 
+    noise_param_name = 'integrator_parameters_option_' + integrator_name + '_noise'
+    noise_type_name = operation_xml_parameters.pop(noise_param_name, None)
+
+    if noise_type_name is not None:
+        noise_type = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
+                             noise_type_name + 'NoiseViewModel')
+        integrator.noise = noise_type()
+
+        integrator_param_base_name = 'integrator_parameters_option_' + integrator_name + '_noise_' + \
+                                     'parameters_option_Multiplicative_'
+        integrator.noise.ntau = float(operation_xml_parameters.pop(integrator_param_base_name + 'ntau'))
+        integrator.noise.noise_seed = int(operation_xml_parameters.pop(integrator_param_base_name +
+                                                                       'random_stream_parameters_option_RandomStream' + \
+                                                                       '_init_seed'))
+        integrator.noise.nsig = numpy.array(eval(operation_xml_parameters.pop(integrator_param_base_name + 'nsig')),
+                                            dtype=numpy.float64)
+        operation_xml_parameters.pop(integrator_param_base_name + 'random_stream')
+
+        if noise_type_name == 'Multiplicative':
+            equation_name = operation_xml_parameters.pop(integrator_param_base_name + 'b')
+            equation_type = getattr(sys.modules['tvb.datatypes.equations'], equation_name)
+            integrator.noise.b = equation_type()
+            operation_xml_parameters.pop(integrator_param_base_name + 'b_parameters_option_' +
+                                         equation_name + '_equation')
+
     additional_params = []
     for xml_param in operation_xml_parameters:
         if 'model_parameters_option_' in xml_param and 'range_parameters' not in xml_param:
@@ -330,9 +359,16 @@ def _migrate_time_series(metadata, **kwargs):
                     list_param = numpy.asarray(list_param)
 
             additional_params.append(['model', new_param, list_param])
+        elif 'noise_parameters' in xml_param:
+            new_param_name = xml_param.replace(integrator_param_base_name +
+                                               'b_parameters_option_' + equation_name +
+                                               '_parameters_parameters_', '')
+            integrator.noise.b.parameters[new_param_name] = float(operation_xml_parameters[xml_param])
+
         elif 'integrator_parameters_option_' in xml_param:
             new_param = xml_param.replace('integrator_parameters_option_' + integrator_name + '_', '')
             additional_params.append(['integrator', new_param, float(operation_xml_parameters[xml_param])])
+
     return operation_xml_parameters, additional_params
 
 
@@ -886,7 +922,7 @@ def update(input_file):
         datatype_class = getattr(sys.modules[root_metadata["module"]],
                                  root_metadata["type"])
         h5_class = REGISTRY.get_h5file_for_datatype(datatype_class)
-        root_metadata[H5File.KEY_WRITTEN_BY] = h5_class().get_class_path()
+        root_metadata[H5File.KEY_WRITTEN_BY] = h5_class.__module__ + '.' + h5_class.__name__
     except KeyError:
         pass
 
