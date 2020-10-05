@@ -36,11 +36,15 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 
 """
 
-import os
+import os, sys
 import tvb.simulator.models
 from mako.template import Template
 from tvb.basic.logger.builder import get_logger
-from tvb.rateML.rateML_python.lems.model.model import Model
+
+# not ideal but avoids modifying  the vendored LEMS itself
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from lems.model.model import Model
+
 
 logger = get_logger(__name__)
 
