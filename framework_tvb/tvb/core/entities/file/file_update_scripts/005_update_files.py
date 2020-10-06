@@ -838,7 +838,7 @@ def _create_new_burst(burst_params, root_metadata):
     burst_config.fk_project = burst_params['fk_project']
     burst_config.fk_simulation = burst_params['fk_simulation']
     burst_config.name = burst_params['name']
-    burst_config.range_1 = burst_params['range_1']
+    burst_config.range_1 = burst_params['range_6']
     burst_config.range_2 = burst_params['range_2']
     burst_config.start_time = datetime.strptime(burst_params['start_time'], '%Y-%m-%d %H:%M:%S.%f')
     burst_config.status = burst_params['status']

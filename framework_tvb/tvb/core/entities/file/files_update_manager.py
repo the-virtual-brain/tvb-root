@@ -47,7 +47,6 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException
 from tvb.core.entities.storage import dao
 
-
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
 
@@ -62,7 +61,6 @@ class FilesUpdateManager(UpdateManager):
     DATA_TYPES_PAGE_SIZE = 500
     STATUS = True
     MESSAGE = "Done"
-
 
     def __init__(self):
         super(FilesUpdateManager, self).__init__(file_update_scripts,
@@ -104,25 +102,30 @@ class FilesUpdateManager(UpdateManager):
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
 
         :param input_file_name the path to the file which needs to be upgraded
-        :return True, when update was needed and running it was successful.
+        :return 0 when update was not necessary, 1 when update was succesful and -1 when it resulted in an error.
         False, the the file is already up to date.
 
         """
         if self.is_file_up_to_date(input_file_name):
             # Avoid running the DB update of size, when H5 is not being changed, to speed-up
-            return False
+            return 0
 
         file_version = self.get_file_data_version(input_file_name)
         self.log.info("Updating from version %s , file: %s " % (file_version, input_file_name))
         for script_name in self.get_update_scripts(file_version):
-            self.run_update_script(script_name, input_file=input_file_name)
+            try:
+                self.run_update_script(script_name, input_file=input_file_name)
+            except Exception as excep:
+                self.log.info('An error appeared when migrating file: ' + input_file_name + '.' + \
+                              ' The exception message: ' + type(excep).__name__ + ': ' + str(excep))
+                return -1
 
         if datatype:
             # Compute and update the disk_size attribute of the DataType in DB:
             datatype.disk_size = self.files_helper.compute_size_on_disk(input_file_name)
             dao.store_entity(datatype)
 
-        return True
+        return 1
 
     def __upgrade_datatype_list(self, datatypes):
         """
@@ -178,16 +181,19 @@ class FilesUpdateManager(UpdateManager):
         """
         nr_of_dts_upgraded_fine = 0
         nr_of_dts_ignored = 0
+        nr_of_dts_failed = 0
 
         for path in h5_files:
-            update_was_needed = self.upgrade_file(path)
+            update_result = self.upgrade_file(path)
 
-            if update_was_needed:
+            if update_result == 1:
                 nr_of_dts_upgraded_fine += 1
-            else:
+            elif update_result == 0:
                 nr_of_dts_ignored += 1
+            else:
+                nr_of_dts_failed += 1
 
-        return nr_of_dts_upgraded_fine, nr_of_dts_ignored
+        return nr_of_dts_upgraded_fine, nr_of_dts_ignored, nr_of_dts_failed
 
     def run_all_updates(self):
         """
@@ -220,18 +226,20 @@ class FilesUpdateManager(UpdateManager):
                     no_error += count_error
                     no_ignored += count_ignored
 
-                    self.log.info("Updated H5 files so far: %d [fine:%d, error:%d, ignored:%d of total:%d, in: %s min]" % (
-                        current_idx + len(datatypes_for_page), no_ok, no_error, no_ignored, total_count,
-                        int((datetime.now() - start_time).seconds / 60)))
+                    self.log.info(
+                        "Updated H5 files so far: %d [fine:%d, error:%d, ignored:%d of total:%d, in: %s min]" % (
+                            current_idx + len(datatypes_for_page), no_ok, no_error, no_ignored, total_count,
+                            int((datetime.now() - start_time).seconds / 60)))
             else:
                 file_paths = self.files_helper.get_all_h5_paths()
                 total_count = len(file_paths)
-                count_ok, count_ignored = self.__upgrade_h5_list(file_paths)
+                count_ok, count_ignored, count_error = self.__upgrade_h5_list(file_paths)
                 no_ok += count_ok
                 no_ignored += count_ignored
+                no_error += count_error
 
-                self.log.info("Updated H5 files in total: %d [fine:%d, ignored:%d in: %s min]" % (
-                    total_count, no_ok, no_ignored, int((datetime.now() - start_time).seconds / 60)))
+                self.log.info("Updated H5 files in total: %d [fine:%d, ignored:%d, failed:%d in: %s min]" % (
+                    total_count, no_ok, no_ignored, no_error, int((datetime.now() - start_time).seconds / 60)))
 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
@@ -253,7 +261,6 @@ class FilesUpdateManager(UpdateManager):
 
             TvbProfile.current.version.DATA_CHECKED_TO_VERSION = TvbProfile.current.version.DATA_VERSION
             TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
-
 
     @staticmethod
     def _get_manager(file_path):
