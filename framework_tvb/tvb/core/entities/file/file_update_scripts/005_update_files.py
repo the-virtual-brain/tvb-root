@@ -300,7 +300,8 @@ def _migrate_time_series(metadata, **kwargs):
     if len(operation_xml_parameters) == 0:
         return operation_xml_parameters, []
 
-    coupling = getattr(sys.modules['tvb.simulator.coupling'], operation_xml_parameters['coupling'])()
+    coupling_name = operation_xml_parameters['coupling']
+    coupling = getattr(sys.modules['tvb.simulator.coupling'], coupling_name)()
     operation_xml_parameters['coupling'] = coupling
 
     model_name = operation_xml_parameters['model']
@@ -314,11 +315,33 @@ def _migrate_time_series(metadata, **kwargs):
 
     monitors = operation_xml_parameters['monitors']
     for i in range(len(monitors)):
+        monitor_name = operation_xml_parameters['monitors'][i]
         monitor = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
-                          operation_xml_parameters['monitors'][i] + 'ViewModel')()
+                          monitor_name + 'ViewModel')()
         operation_xml_parameters['monitors'][i] = monitor
+        # _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type, index)
+        if monitor_name != 'RawRecording':
+            monitor.period = float(operation_xml_parameters['monitors_parameters_option_' + monitor_name + '_period'])
+            monitor.variables_of_interest = numpy.array(
+                eval(operation_xml_parameters['monitors_parameters_option_' + monitor_name +
+                                              '_variables_of_interest']), dtype=numpy.int64)
+            # if monitor_name == 'SpatialAverage':
+            #     monitor.spatial_mask = numpy.array(
+            #         eval(operation_xml_parameters['monitors_parameters_option_SpatialAverage_spatial_mask']),
+            #         dtype=numpy.int64)
+            if monitor_name in ['EEG', 'MEG', 'Internal']:
+                _set_sensors_view_model_attributes(operation_xml_parameters, monitor_name, i)
 
-    operation_xml_parameters['conduction_speed'] = float(operation_xml_parameters['simulation_length'])
+            if monitor_name == 'Bold':
+                hrf_kernel_name = operation_xml_parameters.pop('monitors_parameters_option_Bold_hrf_kernel')
+                hrf_kernel = getattr(sys.modules['tvb.datatypes.equations'], hrf_kernel_name)
+                monitor.hrf_kernel = hrf_kernel()
+                bold_index = i
+
+                operation_xml_parameters.pop('monitors_parameters_option_Bold_hrf_kernel_parameters_option_' +
+                                             hrf_kernel_name + '_equation')
+
+    operation_xml_parameters['conduction_speed'] = float(operation_xml_parameters['conduction_speed'])
     operation_xml_parameters['simulation_length'] = float(operation_xml_parameters['simulation_length'])
 
     noise_param_name = 'integrator_parameters_option_' + integrator_name + '_noise'
@@ -330,7 +353,7 @@ def _migrate_time_series(metadata, **kwargs):
         integrator.noise = noise_type()
 
         integrator_param_base_name = 'integrator_parameters_option_' + integrator_name + '_noise_' + \
-                                     'parameters_option_Multiplicative_'
+                                     'parameters_option_' + noise_type_name + '_'
         integrator.noise.ntau = float(operation_xml_parameters.pop(integrator_param_base_name + 'ntau'))
         integrator.noise.noise_seed = int(operation_xml_parameters.pop(integrator_param_base_name +
                                                                        'random_stream_parameters_option_RandomStream' + \
@@ -339,22 +362,40 @@ def _migrate_time_series(metadata, **kwargs):
                                             dtype=numpy.float64)
         operation_xml_parameters.pop(integrator_param_base_name + 'random_stream')
 
+        replace_for_branch = 'Multiplicative'
         if noise_type_name == 'Multiplicative':
+            replace_for_branch = 'Additive'
             equation_name = operation_xml_parameters.pop(integrator_param_base_name + 'b')
             equation_type = getattr(sys.modules['tvb.datatypes.equations'], equation_name)
             integrator.noise.b = equation_type()
             operation_xml_parameters.pop(integrator_param_base_name + 'b_parameters_option_' +
                                          equation_name + '_equation')
 
+        operation_xml_parameters.pop((integrator_param_base_name + 'random_stream_parameters_option_RandomStream' +
+                                      '_init_seed').replace(noise_type_name, replace_for_branch), None)
+        operation_xml_parameters.pop((integrator_param_base_name + 'ntau').replace(noise_type_name,
+                                                                                   replace_for_branch), None)
+        operation_xml_parameters.pop((integrator_param_base_name + 'random_stream').replace(noise_type_name,
+                                                                                            replace_for_branch), None)
+        operation_xml_parameters.pop((integrator_param_base_name + 'nsig').replace(noise_type_name,
+                                                                                   replace_for_branch), None)
+
     additional_params = []
     for xml_param in operation_xml_parameters:
-        if 'model_parameters_option_' in xml_param and 'range_parameters' not in xml_param:
+        if 'coupling_parameters' in xml_param:
+            new_param = xml_param.replace('coupling_parameters_option_' + coupling_name + '_', '')
+            coupling_param = numpy.asarray(eval(operation_xml_parameters[xml_param]),
+                                           dtype=getattr(coupling, new_param).dtype)
+            additional_params.append(['coupling', new_param, coupling_param])
+
+        elif 'model_parameters_option_' in xml_param and 'range_parameters' not in xml_param:
             new_param = xml_param.replace('model_parameters_option_' + model_name + '_', '')
             list_param = operation_xml_parameters[xml_param]
 
             if model_name + '_variables_of_interest' not in xml_param:
                 try:
-                    list_param = numpy.asarray(eval(list_param.replace(' ', ', ')))
+                    list_param = numpy.asarray(eval(list_param.replace(' ', ', ')),
+                                               dtype=getattr(model, new_param).dtype)
                 except AttributeError:
                     list_param = numpy.asarray(list_param)
 
@@ -368,8 +409,18 @@ def _migrate_time_series(metadata, **kwargs):
         elif 'integrator_parameters_option_' in xml_param:
             new_param = xml_param.replace('integrator_parameters_option_' + integrator_name + '_', '')
             additional_params.append(['integrator', new_param, float(operation_xml_parameters[xml_param])])
+        elif 'hrf_kernel' in xml_param:
+            new_param = xml_param.replace('monitors_parameters_option_Bold_hrf_kernel_parameters_option_' +
+                                          hrf_kernel_name + '_parameters_parameters_', '')
+            operation_xml_parameters['monitors'][bold_index].hrf_kernel.parameters[new_param] = \
+                float(operation_xml_parameters[xml_param])
 
     return operation_xml_parameters, additional_params
+
+
+def _migrate_time_series_simple(**kwargs):
+    operation_xml_parameters, additional_params = _migrate_time_series(['data', 'time'], **kwargs)
+    return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
 def _migrate_time_series_region(**kwargs):
@@ -395,22 +446,20 @@ def _migrate_time_series_surface(**kwargs):
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
-def _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type):
-    setattr(operation_xml_parameters['monitors'][0], 'region_mapping',
+def _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type, index):
+    setattr(operation_xml_parameters['monitors'][index], 'region_mapping',
             operation_xml_parameters['monitors_parameters_option_' + sensors_type + '_region_mapping'])
-    setattr(operation_xml_parameters['monitors'][0], 'sensors',
+    setattr(operation_xml_parameters['monitors'][index], 'sensors',
             operation_xml_parameters['monitors_parameters_option_' + sensors_type + '_sensors'])
-    setattr(operation_xml_parameters['monitors'][0], 'projection',
+    setattr(operation_xml_parameters['monitors'][index], 'projection',
             operation_xml_parameters['monitors_parameters_option_' + sensors_type + '_projection'])
 
 
 def _migrate_time_series_sensors(**kwargs):
-    sensors_type = kwargs['operation_xml_parameters']['monitors'][0]
     operation_xml_parameters, additional_params = _migrate_time_series(['data', 'time'], **kwargs)
     root_metadata = kwargs['root_metadata']
     root_metadata['sensors'] = _parse_gid(root_metadata['sensors'])
 
-    _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type)
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
 
 
@@ -825,6 +874,7 @@ datatypes_to_be_migrated = {
     'ProjectionSurfaceSEEG': _migrate_projection,
     'LocalConnectivity': _migrate_local_connectivity,
     'ConnectivityAnnotations': _migrate_connectivity_annotations,
+    'TimeSeries': _migrate_time_series_simple,
     'TimeSeriesRegion': _migrate_time_series_region,
     'TimeSeriesSurface': _migrate_time_series_surface,
     'TimeSeriesEEG': _migrate_time_series_sensors,
