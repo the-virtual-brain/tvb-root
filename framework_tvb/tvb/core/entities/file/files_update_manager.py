@@ -102,7 +102,7 @@ class FilesUpdateManager(UpdateManager):
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
 
         :param input_file_name the path to the file which needs to be upgraded
-        :return 0 when update was not necessary, 1 when update was succesful and -1 when it resulted in an error.
+        :return 0 when update was not necessary, 1 when update was successful and -1 when it resulted in an error.
         False, the the file is already up to date.
 
         """
@@ -231,6 +231,12 @@ class FilesUpdateManager(UpdateManager):
                             current_idx + len(datatypes_for_page), no_ok, no_error, no_ignored, total_count,
                             int((datetime.now() - start_time).seconds / 60)))
             else:
+                # Migrating the configuration file
+                new_stored_settings = {'ADMINISTRATOR_DISPLAY_NAME': 'Administrator', 'ENABLE_KEYCLOAK_LOGIN': False,
+                                       'KEYCLOAK_WEB_CONFIGURATION': '', 'KEYCLOAK_CONFIG': 'add_keycloak_path_here'}
+                TvbProfile.current.manager.add_entries_to_config_file(new_stored_settings)
+                # new_stored_settings.pop('URL_WEB')
+
                 file_paths = self.files_helper.get_all_h5_paths()
                 total_count = len(file_paths)
                 count_ok, count_ignored, count_error = self.__upgrade_h5_list(file_paths)
