@@ -322,13 +322,16 @@ def _migrate_time_series(metadata, **kwargs):
         # _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type, index)
         if monitor_name != 'RawRecording':
             monitor.period = float(operation_xml_parameters['monitors_parameters_option_' + monitor_name + '_period'])
-            monitor.variables_of_interest = numpy.array(
-                eval(operation_xml_parameters['monitors_parameters_option_' + monitor_name +
-                                              '_variables_of_interest']), dtype=numpy.int64)
-            # if monitor_name == 'SpatialAverage':
-            #     monitor.spatial_mask = numpy.array(
-            #         eval(operation_xml_parameters['monitors_parameters_option_SpatialAverage_spatial_mask']),
-            #         dtype=numpy.int64)
+            variables_of_interest = eval(operation_xml_parameters['monitors_parameters_option_' + monitor_name +
+                                                                  '_variables_of_interest'])
+            if len(variables_of_interest) != 0:
+                monitor.variables_of_interest = numpy.array(variables_of_interest, dtype=numpy.int64)
+            else:
+                monitor.variables_of_interest = numpy.array([i for i in range(len(model.variables_of_interest))])
+            if monitor_name == 'SpatialAverage':
+                spatial_mask = eval(operation_xml_parameters['monitors_parameters_option_SpatialAverage_spatial_mask'])
+                if len(spatial_mask) != 0:
+                    monitor.spatial_mask = numpy.array(spatial_mask, dtype=numpy.int64)
             if monitor_name in ['EEG', 'MEG', 'Internal']:
                 _set_sensors_view_model_attributes(operation_xml_parameters, monitor_name, i)
 
