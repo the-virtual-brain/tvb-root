@@ -332,7 +332,7 @@ def _migrate_time_series(metadata, **kwargs):
                 spatial_mask = eval(operation_xml_parameters['monitors_parameters_option_SpatialAverage_spatial_mask'])
                 if len(spatial_mask) != 0:
                     monitor.spatial_mask = numpy.array(spatial_mask, dtype=numpy.int64)
-            if monitor_name in ['EEG', 'MEG', 'Internal']:
+            if monitor_name in ['EEG', 'MEG', 'iEEG']:
                 _set_sensors_view_model_attributes(operation_xml_parameters, monitor_name, i)
 
             if monitor_name == 'Bold':
@@ -1022,9 +1022,13 @@ def update(input_file):
         additional_params = params['additional_params']
 
     root_metadata['operation_tag'] = ''
+
+    if class_name in ['SimulationState', 'DatatypeMeasure']:
+        return
+
     storage_manager.set_metadata(root_metadata)
 
-    if storage_migrate is False or class_name in ['SimulationState', 'DatatypeMeasure']:
+    if storage_migrate is False:
         return
 
     # Create the corresponding datatype to be stored in db
