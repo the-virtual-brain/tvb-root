@@ -3,9 +3,11 @@
 from __future__ import print_function
 import os.path
 import numpy as np
+import pycuda.autoinit
 import pycuda.driver as drv
 from pycuda.compiler import SourceModule
 import pycuda.gpuarray as gpuarray
+
 import time
 
 here = os.path.dirname(os.path.abspath(__file__))

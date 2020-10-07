@@ -2,7 +2,7 @@
 
 rm error.er 
 rm output.out
-sed -e "s/bencharg/${1}/;s/mdlrun/${2}/" benchAll.sh | sbatch
+sed -e "s/mdlrun/${1}/" submit_sbatch.sh | sbatch
 #sleep 2
 
 while [ ! -f ./error.er ] ;

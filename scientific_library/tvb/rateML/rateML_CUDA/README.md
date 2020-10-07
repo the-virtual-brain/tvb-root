@@ -1,10 +1,10 @@
-﻿# TVB CUDA model generation using LEMS format
+﻿# CUDA model generation using LEMS format
 This readme describes the usage of the code generation for models defined in LEMS based XML to Cuda (C) format.
-The LEMS format PR has been adopted and altered to match TVB model names. 
-In LEMSCUDA.py the function "cuda_templating(Model+'_CUDA', 'path/to/XMLmodels')" will start the code generation.
-It expects a [model+'_CUDA'].xml file to be present in ['path/to/XMLmodels']. 
-The generated file will be placed in ['installpath']'/tvb-hpc/dsl/dsl_cuda/CUDAmodels/'.
-The produced filename is a lower cased [model].py which contains a class named [model].
+The LEMS framework has been adopted and altered to match TVB model names. 
+In LEMS2CUDA.py the function "cuda_templating('Modelname', 'path/to/your/XMLmodels')" will start the code generation.
+It expects a [model+'_CUDA'].xml file to be present in ['path/to/your/XMLmodels']. 
+The generated file will be placed in '~/scientific_libary/tvb/rateML/rateML_CUDA/CUDAmodels/' which is relative to your
+project path.  The produced filename is a lower cased [model+'_CUDA'].c which contains a class named [model].
 
     .. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
     .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
@@ -13,22 +13,31 @@ The produced filename is a lower cased [model].py which contains a class named [
 # The CUDA memory model specification
 ![](GPUmemindex.png)
 
-# Files
-* dsl_cuda/LEMS2CUDA.py   				: python script for initiating model code generation
-* dsl_cuda/NeuroML/XMLmodels            : directory containing LEMS based XML model files
-* dsl_cuda/tmpl8_CUDA.py 				: Mako template converting XML to CUDA
-* dsl_cuda/NeuroML/lems                 : modified pyLEMS library tuned for TVB CUDA generation
-* dsl_cuda/NeuroML/lems/component.py    : maintains constants and exposures
-* dsl_cuda/NeuroML/lems/dynamics.py     : maintains all dynamic attributes
-* dsl_cuda/NeuroML/lems/LEMS.py         : LEMS XML file parser
-* dsl_cuda/NeuroML/lems/expr.py         : expression parser
-* dsl_cuda/TVB_testsuite/               : directory for run parameter based GPU with generated model
+# Files in ~/rateML_CUDA/
+* LEMS2CUDA.py   		    : python script for initiating model code generation
+* tmpl8_CUDA.py 		    : Mako template converting XML to CUDA
+* /XMLmodels                : folder containing LEMS based XML model example files
+* /CUDAmodels               : resulting model folder
+* /lems/                    : modified pyLEMS library tuned for CUDA model generation
+* /lems/component.py        : maintains constants and exposures
+* /lems/dynamics.py         : maintains all dynamic attributes
+* /lems/LEMS.py             : LEMS XML file parser
+* /lems/expr.py             : expression parser
+* /run/                     : folder with example script to run generated model
+* /run/__main__.py          : cuda setup file
+* /run/cuda_run.py          : cuda run file using Pycuda
+* /run/runEx                : SLURM start script
+* /run/submit_sbatch.sh     : SLURM sbatch job submission script
 
-# Prerequisites
+
+# Requirements
 Mako templating
+Pycuda
+tvb-library
+tvb-data
 
 # XML LEMS Definitions 
-Based on http://lems.github.io/LEMS/elements.html but attributes are tuned for TVB CUDA models.
+Based on http://lems.github.io/LEMS/elements.html, a number of attributes are tuned for CUDA models.
 As an example an XML line and its translation to CUDA are given below.
 
 * Constants\
@@ -57,7 +66,7 @@ translates to:
 ```c
     __device__ float wrap_it_x1(float x1)
 {
-    int x1dim[] = {-2.0, 1.0};
+    float x1dim[] = {-2.0, 1.0};
     if (x1 < x1dim[0]) x1 = x1dim[0];
     else if (x1 > x1dim[1]) x1 = x1dim[1];
 
@@ -97,7 +106,7 @@ Define for example global and local coupling: c_0 = coupling.\
 ```
 translates to:
 ```c
-c_pop1 = coupling[0]
+c_pop1 *= global_coupling;
 ```
 
 * Conditional Derived Variables\
@@ -110,23 +119,23 @@ It will not produce an else if {cases[1]} is not present.
 ```
 translates to:
 ```c
-if (x1 < 0.0):
-    ydot0 = -a * x1**2 + b * x1
-else:
-    ydot0 = slope - x2 + 0.6 * (z - 4)**2
+if (x1 < 0.0)
+    ydot0 = -a * x1**2 + b * x1;
+else
+    ydot0 = slope - x2 + 0.6 * (z - 4)**2;
 ```
 
 * Time Derivatives\
 Used to define the models derivates functions solved numerically.\
-Syntax: dx[n] = {expression}. Name field is not used.
+Syntax: {name} = {expression}. Name field should not be equal to state variable name!
 ```xml
-<TimeDerivative name="V" expression="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)"/>
-<TimeDerivative name="W" expression="..."/>
+<TimeDerivative name="dV" expression="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)"/>
+<TimeDerivative name="dW" expression="..."/>
 ```
 translates to:
 ```c
-V = tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)
-W = ...
+dV = tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1);
+dW = ...
 ```
 
 * Coupling function\
@@ -175,17 +184,20 @@ for (unsigned int j_node = 0; j_node < n_node; j_node++)
     } // j_node */
 
     // rec_n is used for the scaling over nodes
-    c_pop1 = global_coupling * coupling;
-    c_pop2 = g;
+    c_pop1 *= global_coupling * coupling;
+    c_pop2 *= g;
 ```
 
 
-# Running an example
-Place an xml model file in directory used for your XML model storage and execute "cuda_templating(Model+'_CUDA',
-'path/to/XMLmodels')" function. The resulting model will be placed in the CUDA model directory.
-The directory 'tvb-hpc/dsl/dsl_cuda/example/' holds an example how to run the model generator and the CUDA model
-on a GPU.
-From this directory, execute './runthings cuda [Modelname]' to start model generation corresponding to an xml file
-and a parameters sweep simulation with the produced model file on a CUDA enabled machine.
-The cuda parameter indicates a cuda simulation is to be started  and the [modelname] paramater is the model 
-that is the target of simulation.
+# Running an example from ~/run folder
+Create a model, name it ['modelname'+'_CUDA'.xml] and execute the "cuda_templating('Modelname',
+'path/to/your/XMLmodels')" function from LEMS2CUDA.py. The resulting model will be placed in the CUDA model 
+folder (tvb/rateML/rateML_CUDA/CUDAmodels). This location is relative to your project path.
+In the folder 'tvb/rateML/rateML_CUDA/run/' an example can be found on how to run the model generator and the CUDA model
+on a GPU. From this folder, execute __main__.py on a CUDA enabled machine or execute 
+'./run_example_on_cluster [Modelname]' on a SLURM cluster with GPU nodes to start model generation and 
+a parameters sweep simulation with the produced model file on a GPU. The sbatch parameters in 'submit_sbatch.sh' 
+should be altered to match the cluster of choice. The block dimensions default to 32x32 which has shown to have 
+the best occupancy, the grid is adjusted accordingly. In the output.out a small report on the success of 
+the simulation is printed. 
+

@@ -1,3 +1,6 @@
+from tvb.simulator.lab import *
+import numpy as np
+import numpy.random as rgn
 import math
 import time
 import logging
@@ -5,11 +8,13 @@ import itertools
 import argparse
 import os, sys
 
-import numpy as np
 from numpy import corrcoef
+np.set_printoptions(threshold=sys.maxsize)
 
-from tvb.simulator.lab import *
-from tvb.rateML.rateML_CUDA import LEMS2CUDA
+sys.path.insert(0, os.path.join(os.getcwd(), os.pardir))
+import LEMS2CUDA
+
+rgn.seed(79)
 
 class TVB_test:
 
@@ -127,7 +132,7 @@ class TVB_test:
 
 	def start_cuda(self, logger):
 		# logger.info('start Cuda run')
-		from tvb.rateML.rateML_CUDA import CudaRun
+		from cuda_run import CudaRun
 		cudarun = CudaRun()
 		tavg_data = cudarun.run_simulation(self.weights, self.lengths, self.params, self.speeds, logger,
 										   self.args, self.n_nodes, self.n_work_items, self.n_params, self.nstep,
@@ -166,7 +171,7 @@ class TVB_test:
 
 	def startsim(self):
 
-		tic = time.time()
+		# tic = time.time()
 		logging.basicConfig(level=logging.DEBUG if self.args.verbose else logging.INFO)
 		logger = logging.getLogger('[TVB_CUDA]')
 
@@ -195,32 +200,36 @@ class TVB_test:
 		# logger.info('number of states %d', self.states)
 		# logger.info('filename %s', self.args.filename)
 		# logger.info('model %s', self.args.model)
+		print('model', self.args.model)
+		print('coupl', self.args.n_coupling)
+		print('speed', self.args.n_speed)
 
-		tac = time.time()
+		# tac = time.time()
 		# logger.info("Setup in: {}".format(tac - tic))
 
 		tavg0 = self.start_cuda(logger)
-		toc = time.time()
 
 		if (self.args.validate==True):
+			logger.info('Start validation')
 			self.compare_with_ref(logger, tavg0)
 
-		toc = time.time()
-		elapsed = toc - tic
-		logger.info('Finished python simulation successfully in: %0.3f', elapsed)
-		logger.info('%0.3f M step/s', 1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed)
+		# logger.info('Finished python simulation successfully in: %0.3f', elapsed)
+		# logger.info('%0.3f M step/s', 1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed)
 		# logger.info('finished')
 
 
 if __name__ == '__main__':
 
-	np.random.seed(79)
-
 	example = TVB_test()
 
+	tic = time.time()
 	# start templating the model specified on cli
-	here = os.path.abspath(os.path.dirname(__file__))
-	LEMS2CUDA.cuda_templating(example.args.model, os.path.join(here, '..', 'XMLmodels'))
+	# LEMS2CUDA.cuda_templating(example.args.model, '../../dsl_cuda/XMLmodels/')
+	LEMS2CUDA.cuda_templating(example.args.model, '../XMLmodels/')
 
 	# start simulation with templated model
 	example.startsim()
+
+	toc = time.time()
+	elapsed = toc - tic
+	print('Finished python simulation successfully in: ', elapsed)

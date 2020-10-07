@@ -1,24 +1,24 @@
 ﻿# TVB model generation using LEMS format
 This readme describes the usage of the code generation for models defined in LEMS based XML to TVB Python format.
-The LEMS format PR has been adopted and altered to match TVB model names. 
-In LEMS2python.py the function "regTVB_templating('Model', '/path/to/modelfolder')" will start the code generation.
-It expects a [model].xml file to be present in the /path/to/modelfolder. 
+The LEMS format has been adopted and altered to match TVB model names. 
+In LEMS2python.py the function "regTVB_templating('Model', '/path/to/your/XMLmodels')" will start the code generation.
+It expects a [model].xml file to be present in the /path/to/your/XMLmodels folder. 
 The generated file will be placed in tvb/simulator/models and __init__.py will be updated with model references in case 
 of a new model being added. In case of model updation the reference will not be updated.
 The produced filename is a lower cased [model].py which contains a class named [model].
 
     .. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
 
-# Files
-* dsl/LEMS2pyton.py 				: python script for initiating model code generation
-* dsl/NeuroML/XMLmodels				: directory containing new XML model files. Contains 5 example XMLs.
-* dsl/tmpl8_regTVB.py				: Mako template converting XML to python
-* dsl/NeuroML/lems                  : modified pyLEMS library tuned for TVB
-* dsl/NeuroML/lems/component.py     : maintains constants and exposures
-* dsl/NeuroML/lems/dynamics.py      : maintains all dynamic attributes
-* dsl/NeuroML/lems/LEMS.py          : LEMS XML file parser
-* dsl/NeuroML/lems/expr.py          : expression parser
-* tvb/simulator/models           	: TVB default model directory for generated results
+# Files in ~/rateML_python/
+* LEMS2pyton.py 			    : python script for initiating model code generation
+* /XMLmodels        			: folder containing new XML model files. Contains 5 example XMLs.
+* ../tvb/simulator/models       : TVB default model folder for generated results
+* tmpl8_regTVB.py   			: Mako template converting XML to python
+* lems                          : modified pyLEMS library tuned for TVB
+* lems/component.py             : maintains constants and exposures
+* lems/dynamics.py              : maintains all dynamic attributes
+* lems/LEMS.py                  : LEMS XML file parser
+* lems/expr.py                  : expression parser
 
 # Prerequisites
 Mako templating
@@ -174,8 +174,5 @@ dx[1] = ...
 ```
 
 # Running
-Place model file in directory and execute regTVB_templating('modelname', '/path/to/modelfolder') function. Resulting model will be in model directory
-and recognized by TVB.
-
-# TODO
-Add CUDA model generation.
+Place an XML model file in folder and execute the regTVB_templating('modelname', '/path/to/your/XMLmodels') function. 
+The resulting models will be placed in the tvb model folder and registerd to TVB such that it can be run the usual way.
