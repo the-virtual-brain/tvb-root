@@ -28,7 +28,10 @@
 #
 #
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.core.entities.file.simulator.operation_group_h5 import OperationGroupH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_operation import OperationGroup
+from tvb.datatypes.datatype_measure import DatatypeMeasure
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure, CorrelationCoefficients, Covariance
@@ -101,6 +104,7 @@ from tvb.core.neocom.h5 import REGISTRY
 def populate_datatypes_registry():
     REGISTRY.register_datatype(Connectivity, ConnectivityH5, ConnectivityIndex)
     REGISTRY.register_datatype(None, BurstConfigurationH5, BurstConfiguration)
+    REGISTRY.register_datatype(None, OperationGroupH5, OperationGroup)
     REGISTRY.register_datatype(LocalConnectivity, LocalConnectivityH5, LocalConnectivityIndex)
     REGISTRY.register_datatype(ProjectionMatrix, ProjectionMatrixH5, ProjectionMatrixIndex, make_proj_matrix)
     REGISTRY.register_datatype(RegionVolumeMapping, RegionVolumeMappingH5, RegionVolumeMappingIndex)

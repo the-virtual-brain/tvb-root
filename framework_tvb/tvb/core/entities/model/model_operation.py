@@ -168,6 +168,8 @@ class OperationGroup(Base, Exportable):
     range2 = Column(String)
     range3 = Column(String)
     gid = Column(String)
+    is_metric = bool
+    operation_view_model_gids = dict
     fk_launched_in = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
     project = relationship(Project, backref=backref('OPERATION_GROUPS', order_by=id, cascade="all,delete"))
 

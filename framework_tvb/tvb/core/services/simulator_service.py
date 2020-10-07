@@ -195,6 +195,7 @@ class SimulatorService(object):
                     if first_simulator is None:
                         first_simulator = simulator
 
+            self.operation_service._save_operation_group_to_disk(operations, project, False)
             first_operation = operations[0]
             storage_path = self.files_helper.get_project_folder(project, str(first_operation.id))
             burst_config = self.burst_service.update_simulation_fields(burst_config.id, first_operation.id,

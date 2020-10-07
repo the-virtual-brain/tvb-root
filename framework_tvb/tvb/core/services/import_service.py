@@ -42,14 +42,17 @@ from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.file.simulator.operation_group_h5 import OperationGroupH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED
+from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED, OperationGroup
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -316,6 +319,8 @@ class ImportService(object):
         """
         imported_operations = []
         ordered_operations = self._retrieve_operations_in_order(project, import_path)
+        burst_config = None
+        first_op_id_for_pse = None
 
         for operation_data in ordered_operations:
             if operation_data.is_old_form:
@@ -339,8 +344,37 @@ class ImportService(object):
                 dts = {}
                 for dt_path in operation_data.dt_paths:
                     dt = self.load_datatype_from_file(dt_path, operation_entity.id, dt_group, project.id)
-                    if isinstance(dt, BurstConfiguration):
-                        dao.store_entity(dt)
+                    if isinstance(dt, BurstConfiguration) or isinstance(dt, OperationGroup) or isinstance(dt, DatatypeMeasureIndex):
+                        if isinstance(dt, BurstConfiguration):
+                            dt.fk_datatype_group = dt.id
+                            dao.store_entity(dt)
+                        if isinstance(dt, OperationGroup):
+                            if first_op_id_for_pse is None and burst_config is None:
+                                first_op_id_for_pse = operation_entity.id
+                                burst_config = dao.get_burst_for_operation_id(first_op_id_for_pse)
+
+                            dao.store_entity(dt)
+
+                            if dt.is_metric:
+                                burst_config.fk_metric_operation_group = dt.id
+                            else:
+                                burst_config.fk_operation_group = dt.id
+
+                            #todo: user_group and range_values were in op.xml, add to h5 and add to the new op
+                            operation_entity.range_values = '{"conduction_speed": 0.01}'
+                            operation_entity.user_group = '2020-10-02,11-52-07'
+
+                            operation_entity.fk_operation_group = dt.id
+                            dao.store_entity(operation_entity)
+
+                            datatype_group = DataTypeGroup(dt, fk_parent_burst=burst_config.gid)
+                            datatype_group.fk_from_operation = operation_entity.id
+                            dao.store_entity(datatype_group)
+
+                            burst_config.datatypes_number = dao.count_datatypes_in_burst(burst_config.gid)
+                            dao.store_entity(burst_config)
+                        else:
+                            dao.store_entity(dt)
                     else:
                         dts[dt_path] = dt
                 stored_dts_count = self._store_imported_datatypes_in_db(project, dts)
@@ -416,10 +450,19 @@ class ImportService(object):
             h5_file = BurstConfigurationH5(current_file)
             burst = BurstConfiguration(current_project_id)
             burst.fk_simulation = op_id
-            # burst.fk_operation_group = TODO
-            # burst.fk_metric_operation_group = TODO
             h5_file.load_into(burst)
             result = burst
+        elif h5_class is OperationGroupH5:
+            h5_file = OperationGroupH5(current_file)
+            operation_group = OperationGroup(current_project_id)
+            h5_file.load_into(operation_group)
+            result = operation_group
+
+        elif h5_class is DatatypeMeasureH5:
+            h5_file = DatatypeMeasureH5(current_file)
+            datatype_measure_index = DatatypeMeasureIndex(current_project_id)
+            h5_file.load_into(datatype_measure_index)
+            result = datatype_measure_index
         else:
             datatype, generic_attributes = h5.load_with_links(current_file)
             index_class = h5.REGISTRY.get_index_for_datatype(datatype.__class__)

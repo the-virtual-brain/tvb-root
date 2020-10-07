@@ -52,6 +52,7 @@ from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.simulator.operation_group_h5 import OperationGroupH5
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
@@ -185,7 +186,24 @@ class OperationService:
             metrics_datatype_group.fk_from_operation = metric_operation.id
 
         self._store_view_model(metric_operation, sim_operation.project, view_model)
+
+        project = dao.get_project_by_id(sim_operation.fk_launched_in)
+        metric_operations = dao.get_operations_in_group(parent_burst.fk_metric_operation_group)
+        self._save_operation_group_to_disk(metric_operations, project, True)
+
         return metric_operation
+
+    @staticmethod
+    def _save_operation_group_to_disk(operations, project, is_metric):
+        operation_group_path = FilesHelper().get_project_folder(project, str(operations[0].id))
+        operation_group = dao.get_operationgroup_by_id(operations[0].fk_operation_group)
+        id_to_model_gid_map = {}
+        for op in operations:
+            id_to_model_gid_map[op.id] = op.view_model_gid
+
+        bc_path = h5.path_for(operation_group_path, OperationGroupH5, operation_group.gid)
+        with OperationGroupH5(bc_path) as op_gr_h5:
+            op_gr_h5.store(operation_group, id_to_model_gid_map, is_metric)
 
     @transactional
     def prepare_operation(self, user_id, project_id, algorithm, view_model_gid,

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
-# TheVirtualBrain-Scientific Package (for simulators). See content of the
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -27,36 +27,24 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import json
 
+"""
+
+
+"""
+
+import tvb.datatypes.time_series as time_series
 from tvb.basic.neotraits.api import HasTraits, Attr
-from tvb.core.neotraits.h5 import Json, Reference, H5File
-from tvb.datatypes.time_series import TimeSeries
-
 
 class DatatypeMeasure(HasTraits):
+    """
+    Result of a CrossCorrelation Analysis.
+    """
+
     metrics = Attr(dict)
 
     analyzed_datatype = Attr(
-        field_type=TimeSeries,
+        field_type=time_series.TimeSeries,
         label="TimeSeries",
-        doc="""Links to the time-series on which the metrics are computed."""
+        doc="""Links to the time-series on which the cross_correlation is applied."""
     )
-
-
-class DatatypeMeasureH5(H5File):
-
-    def __init__(self, path):
-        super(DatatypeMeasureH5, self).__init__(path)
-        # Actual measure (dictionary Algorithm: single Value)
-        self.metrics = Json(Attr(str), self, name='metrics')
-        # DataType for which the measure was computed.
-        self.analyzed_datatype = Reference(Attr(field_type=TimeSeries), self, "analyzed_datatype")
-
-
-    def load_into(self, datatype):
-        # type: (DatatypeMeasure) -> None
-        super(DatatypeMeasureH5, self).load_into(datatype)
-        datatype.metrics = json.dumps(self.metrics.load())
-        datatype.fk_source_gid = self.analyzed_datatype.load().hex
-        datatype.gid = self.gid.load().hex
