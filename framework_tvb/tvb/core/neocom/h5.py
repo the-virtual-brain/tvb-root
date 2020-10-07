@@ -32,7 +32,11 @@ import os
 import typing
 import uuid
 from datetime import datetime
+from pathlib import Path
+
 from tvb.basic.neotraits.api import HasTraits
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
@@ -309,3 +313,83 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
             uuid_files.append(h5_file.path)
             gather_all_references_by_index(h5_file, uuid_files)
         ref_files.extend(uuid_files)
+
+# Dependency dict
+h5_files_dependencies = {
+    "RegionVolumeMapping": ["Volume"]
+}
+
+
+def get_all_h5_paths(delete_other=False):
+    """
+    This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
+    The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).
+
+    If the delete_other parameter is set to True, non H5 files inside the operation folders will be deleted.
+    """
+    h5_files = []
+    projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, 'PROJECTS')
+
+    for project_path in os.listdir(projects_folder):
+        # Getting operation folders inside the current project
+        project_full_path = os.path.join(projects_folder, project_path)
+        project_operations = os.listdir(project_full_path)
+        project_operations_base_names = [os.path.basename(op) for op in project_operations]
+
+        # Build a list of the operation numbers and sort them
+        operation_int_names = []
+        for op_folder in project_operations_base_names:
+            try:
+                int_operation = int(op_folder)
+                operation_int_names.append(int_operation)
+            except ValueError:
+                pass
+
+        operation_int_names.sort()
+
+        # Go through the operation folders in numerical order
+        for op in operation_int_names:
+            op_folder = os.path.join(project_full_path, str(op))
+            file_paths = []
+            for file in Path(op_folder).iterdir():
+                file_paths.append(file)
+            _compute_h5_files_hierarchy(op_folder, file_paths, h5_files, delete_other)
+
+    return h5_files
+
+
+def _compute_h5_files_hierarchy(base_folder, file_paths, h5_files_result, delete_files_not_h5):
+    datatype_to_path = {}
+    for file in file_paths:
+        file_full_path = os.path.join(base_folder, file)
+        try:
+            storage_manager = HDF5StorageManager(base_folder, file)
+            root_metadata = storage_manager.get_metadata()
+            datatype_to_path[root_metadata['Type'].decode()] = file_full_path
+        except Exception:
+            pass
+
+    local_results = _build_hierarchy(base_folder, file_paths, datatype_to_path, delete_files_not_h5)
+    h5_files_result.extend(local_results)
+
+
+def _build_hierarchy(base_folder, file_paths, dt_to_path, delete_files_not_h5):
+    results = []
+    for file in file_paths:
+        file_full_path = os.path.join(base_folder, file)
+        try:
+            storage_manager = HDF5StorageManager(base_folder, file)
+            root_metadata = storage_manager.get_metadata()
+            dependencies = h5_files_dependencies[root_metadata['Type'].decode()]
+            results.extend(_build_hierarchy(base_folder,
+                                            [dt_to_path[dependency] for dependency in dependencies],
+                                            dt_to_path, delete_files_not_h5))
+        except Exception as e:
+            pass
+        finally:
+            if file_full_path.endswith('.h5'):
+                if not file_full_path in results:
+                    results.append(file_full_path)
+            elif delete_files_not_h5:
+                os.remove(file_full_path)
+    return results

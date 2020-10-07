@@ -36,7 +36,7 @@ import os
 import shutil
 from threading import Lock
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
-from pathlib import Path
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
@@ -434,49 +434,6 @@ class FilesHelper(object):
                     total_size += os.path.getsize(fp)
                     n_files += 1
         return int(round(total_size / 1024.))
-
-    @staticmethod
-    def get_all_h5_paths(delete_other=False):
-        """
-        This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
-        The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).
-
-        If the delete_other parameter is set to True, non H5 files inside the operation folders will be deleted.
-        """
-        h5_files = []
-        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, 'PROJECTS')
-
-        for project_path in os.listdir(projects_folder):
-            # Getting operation folders inside the current project
-            project_full_path = os.path.join(projects_folder, project_path)
-            project_operations = os.listdir(project_full_path)
-            project_operations_base_names = [os.path.basename(op) for op in project_operations]
-
-            # Build a list of the operation numbers and sort them
-            operation_int_names = []
-            for op_folder in project_operations_base_names:
-                try:
-                    int_operation = int(op_folder)
-                    operation_int_names.append(int_operation)
-                except ValueError:
-                    pass
-
-            operation_int_names.sort()
-
-            # Go through the operation folders in numerical order
-            for op in operation_int_names:
-                op_folder = os.path.join(project_full_path, str(op))
-                file_paths = sorted(Path(op_folder).iterdir(), key=os.path.getmtime)
-                for file in file_paths:
-                    file_full_path = os.path.join(op_folder, file)
-
-                    # Add to the list if it's a H5 file
-                    if file_full_path.endswith('.h5'):
-                        h5_files.append(file_full_path)
-                    elif delete_other:
-                        os.remove(file_full_path)
-
-        return h5_files
 
 
 class TvbZip(ZipFile):
