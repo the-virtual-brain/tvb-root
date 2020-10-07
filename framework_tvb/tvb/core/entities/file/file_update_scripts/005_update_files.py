@@ -81,6 +81,7 @@ def _migrate_connectivity(**kwargs):
     metadata = ['centres', 'region_labels', 'tract_lengths', 'weights']
     extra_metadata = ['orientations', 'areas', 'cortical', 'hemispheres', 'orientations']
     storage_manager = kwargs['storage_manager']
+    _bytes_ds_to_string_ds(storage_manager, 'region_labels')
 
     for mt in extra_metadata:
         try:
@@ -181,7 +182,7 @@ def _migrate_sensors(datasets, **kwargs):
     storage_manager.remove_metadata('Size', 'labels')
     storage_manager.remove_metadata('Size', 'locations')
     storage_manager.remove_metadata('Variance', 'locations')
-    storage_manager = _bytes_ds_to_string_ds(storage_manager, 'labels')
+    _bytes_ds_to_string_ds(storage_manager, 'labels')
     _migrate_dataset_metadata(datasets, storage_manager)
     algorithm = '{"classname": "SensorsImporter", "module": "tvb.adapters.uploaders.sensors_importer"}'
     kwargs['operation_xml_parameters']['sensors_file'] = kwargs['input_file']
