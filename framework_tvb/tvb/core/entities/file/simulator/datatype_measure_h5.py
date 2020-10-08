@@ -27,7 +27,6 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import json
 
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.core.neotraits.h5 import Json, Reference, H5File
@@ -52,10 +51,3 @@ class DatatypeMeasureH5(H5File):
         self.metrics = Json(Attr(str), self, name='metrics')
         # DataType for which the measure was computed.
         self.analyzed_datatype = Reference(Attr(field_type=TimeSeries), self, "analyzed_datatype")
-
-
-    def load_into(self, datatype):
-        # type: (DatatypeMeasure) -> None
-        super(DatatypeMeasureH5, self).load_into(datatype)
-        datatype.metrics = json.dumps(self.metrics.load())
-        datatype.fk_source_gid = self.analyzed_datatype.load().hex

@@ -31,7 +31,6 @@ from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigu
 from tvb.core.entities.file.simulator.operation_group_h5 import OperationGroupH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import OperationGroup
-from tvb.datatypes.datatype_measure import DatatypeMeasure
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure, CorrelationCoefficients, Covariance
