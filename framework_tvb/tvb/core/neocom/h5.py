@@ -32,8 +32,6 @@ import os
 import typing
 import uuid
 from datetime import datetime
-from pathlib import Path
-
 from tvb.basic.neotraits.api import HasTraits
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -353,46 +351,22 @@ def get_all_h5_paths(delete_other=False):
         # Go through the operation folders in numerical order
         for op in operation_int_names:
             op_folder = os.path.join(project_full_path, str(op))
-            file_paths = []
-            for file in Path(op_folder).iterdir():
-                file_paths.append(file)
-            _compute_h5_files_hierarchy(op_folder, file_paths, h5_files, delete_other)
+            files_for_op = {}
 
-    return h5_files
+            # Sort files for one operation based on their creation date from the H5 file
+            for file in os.listdir(op_folder):
+                if file.endswith('.h5'):
+                    storage_manager = HDF5StorageManager(op_folder, file)
+                    root_metadata = storage_manager.get_metadata()
+                    create_date_str = str(root_metadata['Create_date'], 'utf-8')
+                    create_date = datetime.strptime(create_date_str.replace('datetime:', ''), '%Y-%m-%d %H:%M:%S.%f')
+                    files_for_op[os.path.join(op_folder, file)] = create_date
+            sorted_files = sorted(files_for_op.items(), key=lambda dt_item: dt_item[1] or datetime.now())
+            h5_files.append(sorted_files)
 
+    h5_files_as_list = []
+    for files_for_op in h5_files:
+        for file_dict in files_for_op:
+            h5_files_as_list.append(file_dict[0])
 
-def _compute_h5_files_hierarchy(base_folder, file_paths, h5_files_result, delete_files_not_h5):
-    datatype_to_path = {}
-    for file in file_paths:
-        file_full_path = os.path.join(base_folder, file)
-        try:
-            storage_manager = HDF5StorageManager(base_folder, file)
-            root_metadata = storage_manager.get_metadata()
-            datatype_to_path[root_metadata['Type'].decode()] = file_full_path
-        except Exception:
-            pass
-
-    local_results = _build_hierarchy(base_folder, file_paths, datatype_to_path, delete_files_not_h5)
-    h5_files_result.extend(local_results)
-
-
-def _build_hierarchy(base_folder, file_paths, dt_to_path, delete_files_not_h5):
-    results = []
-    for file in file_paths:
-        file_full_path = os.path.join(base_folder, file)
-        try:
-            storage_manager = HDF5StorageManager(base_folder, file)
-            root_metadata = storage_manager.get_metadata()
-            dependencies = h5_files_dependencies[root_metadata['Type'].decode()]
-            results.extend(_build_hierarchy(base_folder,
-                                            [dt_to_path[dependency] for dependency in dependencies],
-                                            dt_to_path, delete_files_not_h5))
-        except Exception as e:
-            pass
-        finally:
-            if file_full_path.endswith('.h5'):
-                if not file_full_path in results:
-                    results.append(file_full_path)
-            elif delete_files_not_h5:
-                os.remove(file_full_path)
-    return results
+    return h5_files_as_list
