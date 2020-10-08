@@ -457,12 +457,6 @@ class ImportService(object):
             operation_group = OperationGroup(current_project_id)
             h5_file.load_into(operation_group)
             result = operation_group
-
-        elif h5_class is DatatypeMeasureH5:
-            h5_file = DatatypeMeasureH5(current_file)
-            datatype_measure_index = DatatypeMeasureIndex(current_project_id)
-            h5_file.load_into(datatype_measure_index)
-            result = datatype_measure_index
         else:
             datatype, generic_attributes = h5.load_with_links(current_file)
             index_class = h5.REGISTRY.get_index_for_datatype(datatype.__class__)

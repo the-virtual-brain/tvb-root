@@ -59,4 +59,3 @@ class DatatypeMeasureH5(H5File):
         super(DatatypeMeasureH5, self).load_into(datatype)
         datatype.metrics = json.dumps(self.metrics.load())
         datatype.fk_source_gid = self.analyzed_datatype.load().hex
-        datatype.gid = self.gid.load().hex

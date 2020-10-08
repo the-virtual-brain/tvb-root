@@ -41,7 +41,7 @@ class DatatypeMeasure(HasTraits):
     Result of a CrossCorrelation Analysis.
     """
 
-    metrics = Attr(dict)
+    metrics = Attr(str)
 
     analyzed_datatype = Attr(
         field_type=time_series.TimeSeries,
