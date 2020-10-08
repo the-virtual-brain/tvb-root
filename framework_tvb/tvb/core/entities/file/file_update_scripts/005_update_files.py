@@ -51,7 +51,8 @@ from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataSetException
+from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataSetException, \
+    FileMigrationException, MissingMatlabOctavePathException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits._h5accessors import DataSetMetaData
@@ -907,10 +908,56 @@ datatypes_to_be_migrated = {
 }
 
 
+def _migrate_general_part(folder, file_name):
+    # Obtain storage manager and metadata
+    storage_manager = HDF5StorageManager(folder, file_name)
+    root_metadata = storage_manager.get_metadata()
+
+    if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
+        raise IncompatibleFileManagerException("File %s received for upgrading 4 -> 5 is not valid, due to missing "
+                                               "metadata: %s" % (os.path.join(folder, file_name),
+                                                                 DataTypeMetaData.KEY_CLASS_NAME))
+
+    # In the new format all metadata has the 'TVB_%' format, where '%' starts with a lowercase letter
+    lowercase_keys = []
+    for key, value in root_metadata.items():
+        root_metadata[key] = str(value, 'utf-8')
+        lowercase_keys.append(_lowercase_first_character(key))
+        storage_manager.remove_metadata(key)
+
+    # Update DATA_VERSION
+    root_metadata = dict(zip(lowercase_keys, list(root_metadata.values())))
+    root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
+
+    # UPDATE CREATION DATE
+    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace('datetime:', '')
+    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(':', '-')
+    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(' ', ',')
+
+    # OBTAIN THE MODULE (for a few data types the old module doesn't exist anymore, in those cases the attr
+    # will be set later
+    try:
+        datatype_class = getattr(sys.modules[root_metadata["module"]],
+                                 root_metadata["type"])
+        h5_class = REGISTRY.get_h5file_for_datatype(datatype_class)
+        root_metadata[H5File.KEY_WRITTEN_BY] = h5_class.__module__ + '.' + h5_class.__name__
+    except KeyError:
+        pass
+
+    # Other general modifications
+    root_metadata['gid'] = _parse_gid(root_metadata['gid'])
+    root_metadata.pop("module")
+    root_metadata.pop('data_version')
+
+    return root_metadata, storage_manager
+
+
 def update(input_file):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
+    if not os.path.isfile(input_file):
+        raise IncompatibleFileManagerException("Not yet implemented update for file %s" % input_file)
 
     # The first step is to check based on the path if this function call is part of the migration of the whole storage
     # folder or just one datatype (in the first case the second to last element in the path is a number
@@ -919,7 +966,6 @@ def update(input_file):
     try:
         # Change file names only for storage migration
         op_id = int(split_path[-2])
-
         file_basename = os.path.basename(input_file)
         replaced_basename = file_basename.replace('-', '')
         replaced_basename = replaced_basename.replace('BrainSkull', 'Surface')
@@ -942,50 +988,10 @@ def update(input_file):
         op_id = None
         storage_migrate = False
 
-    if not os.path.isfile(input_file):
-        raise IncompatibleFileManagerException("Not yet implemented update for file %s" % input_file)
-
-    # Obtain storage manager and metadata
     folder, file_name = os.path.split(input_file)
-    storage_manager = HDF5StorageManager(folder, file_name)
-    root_metadata = storage_manager.get_metadata()
-
-    if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
-        raise IncompatibleFileManagerException("File %s received for upgrading 4 -> 5 is not valid, due to missing "
-                                               "metadata: %s" % (input_file, DataTypeMetaData.KEY_CLASS_NAME))
-
-    # In the new format all metadata has the 'TVB_%' format, where '%' starts with a lowercase letter
-    lowercase_keys = []
-    for key, value in root_metadata.items():
-        root_metadata[key] = str(value, 'utf-8')
-        lowercase_keys.append(_lowercase_first_character(key))
-        storage_manager.remove_metadata(key)
-
-    # Update DATA_VERSION
-    root_metadata = dict(zip(lowercase_keys, list(root_metadata.values())))
-    root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
-    class_name = root_metadata["type"]
-
-    # UPDATE CREATION DATE
-    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace('datetime:', '')
-    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(':', '-')
-    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(' ', ',')
-
-    # OBTAIN THE MODULE (for a few data types the old module doesn't exist anymore, in those cases the attr
-    # will be set later
-    try:
-        datatype_class = getattr(sys.modules[root_metadata["module"]],
-                                 root_metadata["type"])
-        h5_class = REGISTRY.get_h5file_for_datatype(datatype_class)
-        root_metadata[H5File.KEY_WRITTEN_BY] = h5_class.__module__ + '.' + h5_class.__name__
-    except KeyError:
-        pass
-
-    # Other general modifications
-    root_metadata['gid'] = _parse_gid(root_metadata['gid'])
+    root_metadata, storage_manager = _migrate_general_part(folder, file_name)
+    class_name = root_metadata['type']
     root_metadata.pop("type")
-    root_metadata.pop("module")
-    root_metadata.pop('data_version')
 
     files_in_folder = os.listdir(folder)
     import_service = ImportService()
@@ -1010,85 +1016,97 @@ def update(input_file):
     else:
         has_vm = True
 
-    # Calls the specific method for the current h5 class
-    params = datatypes_to_be_migrated[class_name](root_metadata=root_metadata,
-                                                  storage_manager=storage_manager,
-                                                  operation_xml_parameters=operation_xml_parameters,
-                                                  input_file=input_file)
+    try:
+        # Calls the specific method for the current h5 class
+        params = datatypes_to_be_migrated[class_name](root_metadata=root_metadata,
+                                                      storage_manager=storage_manager,
+                                                      operation_xml_parameters=operation_xml_parameters,
+                                                      input_file=input_file)
 
-    operation_xml_parameters = params['operation_xml_parameters']
-    if 'algorithm' not in params:
-        params['algorithm'] = algorithm
+        operation_xml_parameters = params['operation_xml_parameters']
+        if 'algorithm' not in params:
+            params['algorithm'] = algorithm
 
-    if 'additional_params' in params:
-        additional_params = params['additional_params']
+        if 'additional_params' in params:
+            additional_params = params['additional_params']
 
-    root_metadata['operation_tag'] = ''
+        root_metadata['operation_tag'] = ''
 
-    if class_name in ['SimulationState', 'DatatypeMeasure']:
-        return
+        if class_name in ['SimulationState', 'DatatypeMeasure']:
+            return
 
-    storage_manager.set_metadata(root_metadata)
+        storage_manager.set_metadata(root_metadata)
 
-    if storage_migrate is False:
-        return
+        if storage_migrate is False:
+            return
 
-    # Create the corresponding datatype to be stored in db
-    datatype, generic_attributes = h5.load_with_references(input_file)
-    datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
-    datatype_index.create_date = root_metadata['create_date']
+        # Create the corresponding datatype to be stored in db
+        datatype, generic_attributes = h5.load_with_references(input_file)
+        datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
+        datatype_index.create_date = root_metadata['create_date']
 
-    if has_vm is False:
-        # Get parent_burst when needed
-        if 'time_series' in operation_xml_parameters:
-            burst_gid = _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager)
-            generic_attributes.parent_burst = burst_gid
+        if has_vm is False:
+            # Get parent_burst when needed
+            if 'time_series' in operation_xml_parameters:
+                burst_gid = _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager)
+                generic_attributes.parent_burst = burst_gid
 
-        alg_json = json.loads(params['algorithm'])
-        algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
-        operation.algorithm = algorithm
-        operation.fk_from_algo = algorithm.id
+            alg_json = json.loads(params['algorithm'])
+            algorithm = dao.get_algorithm_by_module(alg_json['module'], alg_json['classname'])
 
-        operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
-        operation_entity, _ = import_service.import_operation(operation_data.operation)
-        possible_burst_id = operation.view_model_gid
-        vm = import_service.create_view_model(operation, operation_data, folder, additional_params)
-        vm.generic_attributes = generic_attributes
+            if algorithm is None:
+                raise MissingMatlabOctavePathException(alg_json['classname'] + 'data file could not be migrated.'
+                                                                               ' Please specify a valid path to locally'
+                                                                               ' installed Matlab or Octave!')
+            operation.algorithm = algorithm
+            operation.fk_from_algo = algorithm.id
 
-        if 'TimeSeries' in class_name:
-            alg = SimulatorAdapter().view_model_to_has_traits(vm)
-            alg.preconfigure()
-            alg.configure()
-            simulation_history = SimulationHistory()
-            simulation_history.populate_from(alg)
-            history_index = h5.store_complete(simulation_history, folder, generic_attributes=vm.generic_attributes)
-            history_index.fk_from_operation = op_id
-            history_index.fk_parent_burst = possible_burst_id
+            operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
+            operation_entity, _ = import_service.import_operation(operation_data.operation)
+            possible_burst_id = operation.view_model_gid
+            vm = import_service.create_view_model(operation, operation_data, folder, additional_params)
+            vm.generic_attributes = generic_attributes
 
-            burst_params = dao.get_burst_for_migration(possible_burst_id)
-            if burst_params is not None:
-                burst_config = _create_new_burst(burst_params, root_metadata)
-                burst_config.simulator_gid = vm.gid.hex
-                burst_config.fk_simulation = operation.id
-                generic_attributes.parent_burst = burst_config.gid
+            if 'TimeSeries' in class_name:
+                alg = SimulatorAdapter().view_model_to_has_traits(vm)
+                alg.preconfigure()
+                alg.configure()
+                simulation_history = SimulationHistory()
+                simulation_history.populate_from(alg)
+                history_index = h5.store_complete(simulation_history, folder, generic_attributes=vm.generic_attributes)
+                history_index.fk_from_operation = op_id
+                history_index.fk_parent_burst = possible_burst_id
 
-                # Creating BurstConfigH5
-                with BurstConfigurationH5(os.path.join(os.path.dirname(input_file), 'BurstConfiguration_'
-                                                                                    + burst_config.gid + ".h5")) as f:
-                    f.store(burst_config)
+                burst_params = dao.get_burst_for_migration(possible_burst_id)
+                if burst_params is not None:
+                    burst_config = _create_new_burst(burst_params, root_metadata)
+                    burst_config.simulator_gid = vm.gid.hex
+                    burst_config.fk_simulation = operation.id
+                    generic_attributes.parent_burst = burst_config.gid
 
-                history_index.fk_parent_burst = burst_config.gid
-                dao.store_entity(history_index)
-                dao.store_entity(burst_config)
-                root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
-                storage_manager.set_metadata(root_metadata)
+                    # Creating BurstConfigH5
+                    with BurstConfigurationH5(os.path.join(os.path.dirname(input_file),
+                                                           'BurstConfiguration_' + burst_config.gid + ".h5")) as f:
+                        f.store(burst_config)
 
-        os.remove(os.path.join(folder, OPERATION_XML))
+                    history_index.fk_parent_burst = burst_config.gid
+                    dao.store_entity(history_index)
+                    dao.store_entity(burst_config)
+                    root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
+                    storage_manager.set_metadata(root_metadata)
 
-    # Populate datatype
-    datatype_index.fill_from_has_traits(datatype)
-    datatype_index.fill_from_generic_attributes(generic_attributes)
-    datatype_index.fk_from_operation = op_id
+            os.remove(os.path.join(folder, OPERATION_XML))
 
-    # Finally store new datatype in db
-    dao.store_entity(datatype_index)
+        # Populate datatype
+        datatype_index.fill_from_has_traits(datatype)
+        datatype_index.fill_from_generic_attributes(generic_attributes)
+        datatype_index.fk_from_operation = op_id
+
+        # Finally store new datatype in db
+        dao.store_entity(datatype_index)
+    except Exception as excep:
+        if os.path.exists(input_file):
+            os.remove(input_file)
+
+        raise FileMigrationException('An unexpected error appeared when migrating file: ' + input_file + '.' + \
+                                     ' The exception message: ' + type(excep).__name__ + ': ' + str(excep))

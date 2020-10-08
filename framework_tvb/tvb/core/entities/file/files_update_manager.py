@@ -44,7 +44,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException
+from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
 from tvb.core.entities.storage import dao
 
 FILE_STORAGE_VALID = 'valid'
@@ -113,11 +113,15 @@ class FilesUpdateManager(UpdateManager):
         file_version = self.get_file_data_version(input_file_name)
         self.log.info("Updating from version %s , file: %s " % (file_version, input_file_name))
         for script_name in self.get_update_scripts(file_version):
+            temp_file_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
+                                          os.path.basename(input_file_name) + '.tmp')
+            self.files_helper.copy_file(input_file_name, temp_file_path)
             try:
                 self.run_update_script(script_name, input_file=input_file_name)
-            except Exception as excep:
-                self.log.info('An error appeared when migrating file: ' + input_file_name + '.' + \
-                              ' The exception message: ' + type(excep).__name__ + ': ' + str(excep))
+            except FileMigrationException as excep:
+                self.files_helper.copy_file(temp_file_path, input_file_name)
+                os.remove(temp_file_path)
+                self.log.info(excep)
                 return -1
 
         if datatype:
