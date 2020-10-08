@@ -42,14 +42,13 @@ from datetime import datetime
 from cherrypy._cpreqbody import Part
 from sqlalchemy.orm.attributes import manager_of_class
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.operation_group_h5 import OperationGroupH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED, OperationGroup
@@ -321,6 +320,7 @@ class ImportService(object):
         ordered_operations = self._retrieve_operations_in_order(project, import_path)
         burst_config = None
         first_op_id_for_pse = None
+        datatype_gr_id = None
 
         for operation_data in ordered_operations:
             if operation_data.is_old_form:
@@ -344,7 +344,7 @@ class ImportService(object):
                 dts = {}
                 for dt_path in operation_data.dt_paths:
                     dt = self.load_datatype_from_file(dt_path, operation_entity.id, dt_group, project.id)
-                    if isinstance(dt, BurstConfiguration) or isinstance(dt, OperationGroup) or isinstance(dt, DatatypeMeasureIndex):
+                    if isinstance(dt, BurstConfiguration) or isinstance(dt, OperationGroup):
                         if isinstance(dt, BurstConfiguration):
                             dt.fk_datatype_group = dt.id
                             dao.store_entity(dt)
@@ -357,6 +357,7 @@ class ImportService(object):
 
                             if dt.is_metric:
                                 burst_config.fk_metric_operation_group = dt.id
+                                operation_entity.visible = False
                             else:
                                 burst_config.fk_operation_group = dt.id
 
@@ -367,15 +368,24 @@ class ImportService(object):
                             operation_entity.fk_operation_group = dt.id
                             dao.store_entity(operation_entity)
 
-                            datatype_group = DataTypeGroup(dt, fk_parent_burst=burst_config.gid)
-                            datatype_group.fk_from_operation = operation_entity.id
+                            simulator_alg = AlgorithmService.get_algorithm_by_module_and_class(
+                                SimulatorAdapter.__module__, SimulatorAdapter.__name__)
+                            datatype_group = DataTypeGroup(dt, fk_parent_burst=burst_config.gid,
+                                                           state=simulator_alg.algorithm_category.defaultdatastate)
+                            if not dt.is_metric:
+                                datatype_group.fk_from_operation = operation_entity.id
+                            datatype_group.disk_size, datatype_group.subject = dao.get_summary_for_group(datatype_group.id)
+                            datatype_group.count_results = dao.count_datatypes_in_group(datatype_group.id)
+
                             dao.store_entity(datatype_group)
+                            datatype_gr_id = datatype_group.id
 
                             burst_config.datatypes_number = dao.count_datatypes_in_burst(burst_config.gid)
                             dao.store_entity(burst_config)
                         else:
                             dao.store_entity(dt)
                     else:
+                        dt.fk_datatype_group = datatype_gr_id
                         dts[dt_path] = dt
                 stored_dts_count = self._store_imported_datatypes_in_db(project, dts)
 
