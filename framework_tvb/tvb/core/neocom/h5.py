@@ -314,9 +314,12 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
             gather_all_references_by_index(h5_file, uuid_files)
         ref_files.extend(uuid_files)
 
+
 # Dependency dict
 h5_files_dependencies = {
-    "RegionVolumeMapping": ["Volume"]
+    "RegionVolumeMapping": ["Volume"],
+    "StructuralMRI": ["Volume"],
+    "TimeSeriesVolume": ["Volume"]
 }
 
 

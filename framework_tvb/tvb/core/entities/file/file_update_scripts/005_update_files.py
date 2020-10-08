@@ -595,18 +595,6 @@ def _migrate_fcd(**kwargs):
 
     _migrate_dataset_metadata(['array_data'], storage_manager)
 
-    if 'parent_burst' in root_metadata:
-        return {'operation_xml_parameters': operation_xml_parameters}
-
-    # If we encounter an FCD we expect it to have more FCDs and ConnectivityMeasure's
-    # so we can only set parent_burst attribute on all files
-    folder_name = os.path.dirname(kwargs['input_file'])
-    for file_name in os.listdir(folder_name):
-        if file_name != OPERATION_XML and file_name not in kwargs['input_file']:
-            storage_manager = HDF5StorageManager(folder_name, file_name)
-            root_metadata = storage_manager.get_metadata()
-            _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager, True)
-
     return {'operation_xml_parameters': operation_xml_parameters}
 
 
@@ -696,6 +684,19 @@ def _migrate_connectivity_measure(**kwargs):
     root_metadata['title'] = root_metadata['title'].replace('\\n', '').replace('"', '')
 
     _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
+
+    if 'parent_burst' in root_metadata or 'time_series' not in operation_xml_parameters:
+        return {'operation_xml_parameters': operation_xml_parameters}
+
+    # If we encounter a Connectivity Measure we expect that it could have more ConnectivityMeasure's and FCDs
+    # so we can only set here the parent_burst attribute on all files
+    folder_name = os.path.dirname(kwargs['input_file'])
+    for file_name in os.listdir(folder_name):
+        if file_name != OPERATION_XML and file_name not in kwargs['input_file']:
+            storage_manager = HDF5StorageManager(folder_name, file_name)
+            root_metadata = storage_manager.get_metadata()
+            _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager, True)
+
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 

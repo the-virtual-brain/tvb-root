@@ -46,7 +46,6 @@ from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
@@ -238,6 +237,7 @@ class FilesUpdateManager(UpdateManager):
                 TvbProfile.current.manager.add_entries_to_config_file(new_stored_settings)
                 # new_stored_settings.pop('URL_WEB')
 
+                from tvb.core.neocom import h5
                 file_paths = h5.get_all_h5_paths()
                 total_count = len(file_paths)
                 count_ok, count_ignored, count_error = self.__upgrade_h5_list(file_paths)
