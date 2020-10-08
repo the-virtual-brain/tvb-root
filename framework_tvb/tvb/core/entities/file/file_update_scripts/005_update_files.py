@@ -704,6 +704,12 @@ def _migrate_connectivity_measure(**kwargs):
 def _migrate_datatype_measure(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['written_by'] = 'tvb.core.entities.file.simulator.datatype_measure_h5.DatatypeMeasureH5'
+    operation_xml_parameters = kwargs['operation_xml_parameters']
+
+    if 'start_point' in operation_xml_parameters:
+        operation_xml_parameters['start_point'] = float(operation_xml_parameters['start_point'])
+        operation_xml_parameters['algorithms'] = [operation_xml_parameters['algorithms']]
+        operation_xml_parameters['segment'] = int(operation_xml_parameters['segment'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -1032,7 +1038,7 @@ def update(input_file):
 
         root_metadata['operation_tag'] = ''
 
-        if class_name in ['SimulationState', 'DatatypeMeasure']:
+        if class_name == 'SimulationState':
             return
 
         storage_manager.set_metadata(root_metadata)
@@ -1075,7 +1081,6 @@ def update(input_file):
                 simulation_history.populate_from(alg)
                 history_index = h5.store_complete(simulation_history, folder, generic_attributes=vm.generic_attributes)
                 history_index.fk_from_operation = op_id
-                history_index.fk_parent_burst = possible_burst_id
 
                 burst_params = dao.get_burst_for_migration(possible_burst_id)
                 if burst_params is not None:
