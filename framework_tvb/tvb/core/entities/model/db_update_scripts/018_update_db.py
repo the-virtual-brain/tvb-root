@@ -140,6 +140,7 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_VALUE_WRAPPER_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_VOLUME_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_WAVELET_COEFFICIENTS_DATA";"""))
+        session.execute(text("""DROP TABLE "DATA_TYPES_GROUPS";"""))
         session.commit()
     except Exception as excep:
         LOGGER.exception(excep)
@@ -258,6 +259,10 @@ def upgrade(migrate_engine):
 
         session.execute(text("""ALTER TABLE "OPERATIONS"
                                     RENAME COLUMN parameters TO view_model_gid"""))
+
+        # Name it back to the old name, because we have to keep both tables so we can create BurstConfigurationH5s
+        session.execute(text("""ALTER TABLE "BurstConfiguration"
+                                                RENAME TO "BURST_CONFIGURATION"; """))
         session.commit()
     except Exception as excep:
         LOGGER.exception(excep)

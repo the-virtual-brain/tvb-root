@@ -96,7 +96,7 @@ class FilesUpdateManager(UpdateManager):
             return True
         return False
 
-    def upgrade_file(self, input_file_name, datatype=None):
+    def upgrade_file(self, input_file_name, datatype=None, burst_match_dict=None):
         """
         Upgrades the given file to the latest data version. The file will be upgraded
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
@@ -117,7 +117,7 @@ class FilesUpdateManager(UpdateManager):
                                           os.path.basename(input_file_name) + '.tmp')
             self.files_helper.copy_file(input_file_name, temp_file_path)
             try:
-                self.run_update_script(script_name, input_file=input_file_name)
+                self.run_update_script(script_name, input_file=input_file_name, burst_match_dict=burst_match_dict)
             except FileMigrationException as excep:
                 self.files_helper.copy_file(temp_file_path, input_file_name)
                 os.remove(temp_file_path)
@@ -187,8 +187,9 @@ class FilesUpdateManager(UpdateManager):
         nr_of_dts_ignored = 0
         nr_of_dts_failed = 0
 
+        burst_match_dict = {}
         for path in h5_files:
-            update_result = self.upgrade_file(path)
+            update_result = self.upgrade_file(path, burst_match_dict=burst_match_dict)
 
             if update_result == 1:
                 nr_of_dts_upgraded_fine += 1

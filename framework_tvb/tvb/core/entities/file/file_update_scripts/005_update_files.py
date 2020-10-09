@@ -46,6 +46,7 @@ from tvb.basic.neotraits._attr import Range
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
@@ -836,24 +837,28 @@ def _migrate_one_stimuli_param(root_metadata, param_name):
     root_metadata[param_name] = json.dumps(new_param)
 
 
-def _create_new_burst(burst_params, root_metadata):
-    burst_config = BurstConfiguration(burst_params['fk_project'])
-    burst_config.datatypes_number = burst_params['datatypes_number']
-    burst_config.dynamic_ids = burst_params['dynamic_ids']
-    burst_config.error_message = burst_params['error_message']
-    burst_config.finish_time = datetime.strptime(burst_params['finish_time'], '%Y-%m-%d %H:%M:%S.%f')
-    burst_config.fk_metric_operation_group = burst_params['fk_metric_operation_group']
-    burst_config.fk_operation_group = burst_params['fk_operation_group']
-    burst_config.fk_project = burst_params['fk_project']
-    burst_config.fk_simulation = burst_params['fk_simulation']
-    burst_config.name = burst_params['name']
-    burst_config.range_1 = burst_params['range_1']
-    burst_config.range_2 = burst_params['range_2']
-    burst_config.start_time = datetime.strptime(burst_params['start_time'], '%Y-%m-%d %H:%M:%S.%f')
-    burst_config.status = burst_params['status']
-    root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
+def _create_new_burst(burst_params, burst_match_dict, burst_id):
+    if burst_id not in burst_match_dict:
+        burst_config = BurstConfiguration(burst_params['fk_project'])
+        burst_config.datatypes_number = burst_params['datatypes_number']
+        burst_config.dynamic_ids = burst_params['dynamic_ids']
+        burst_config.error_message = burst_params['error_message']
+        burst_config.finish_time = datetime.strptime(burst_params['finish_time'], '%Y-%m-%d %H:%M:%S.%f')
+        burst_config.fk_metric_operation_group = burst_params['fk_metric_operation_group']
+        burst_config.fk_operation_group = burst_params['fk_operation_group']
+        burst_config.fk_project = burst_params['fk_project']
+        burst_config.fk_simulation = burst_params['fk_simulation']
+        burst_config.name = burst_params['name']
+        burst_config.range1 = burst_params['range_1']
+        burst_config.range2 = burst_params['range_2']
+        burst_config.start_time = datetime.strptime(burst_params['start_time'], '%Y-%m-%d %H:%M:%S.%f')
+        burst_config.status = burst_params['status']
+        new_burst = True
+    else:
+        burst_config = dao.get_burst_by_id(burst_match_dict[burst_id])
+        new_burst = False
 
-    return burst_config
+    return burst_config, new_burst
 
 
 def _set_parent_burst(time_series_gid, root_metadata, storage_manager, is_ascii=False):
@@ -864,7 +869,7 @@ def _set_parent_burst(time_series_gid, root_metadata, storage_manager, is_ascii=
         burst_gid = burst_gid.encode('ascii', 'ignore')
     root_metadata['parent_burst'] = burst_gid
     storage_manager.set_metadata(root_metadata)
-    return ts.fk_parent_burst
+    return ts.fk_parent_burst, (ts.fk_datatype_group + 1) if ts.fk_datatype_group is not None else None
 
 
 datatypes_to_be_migrated = {
@@ -958,7 +963,7 @@ def _migrate_general_part(folder, file_name):
     return root_metadata, storage_manager
 
 
-def update(input_file):
+def update(input_file, burst_match_dict):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
@@ -1054,7 +1059,7 @@ def update(input_file):
         if has_vm is False:
             # Get parent_burst when needed
             if 'time_series' in operation_xml_parameters:
-                burst_gid = _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager)
+                burst_gid, datatype_index.fk_datatype_group = _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager)
                 generic_attributes.parent_burst = burst_gid
 
             alg_json = json.loads(params['algorithm'])
@@ -1068,23 +1073,16 @@ def update(input_file):
             operation.fk_from_algo = algorithm.id
 
             operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
-            operation_entity, _ = import_service.import_operation(operation_data.operation)
+            operation_entity, _ = import_service.import_operation(operation_data.operation, True)
             possible_burst_id = operation.view_model_gid
             vm = import_service.create_view_model(operation, operation_data, folder, additional_params)
             vm.generic_attributes = generic_attributes
 
             if 'TimeSeries' in class_name:
-                alg = SimulatorAdapter().view_model_to_has_traits(vm)
-                alg.preconfigure()
-                alg.configure()
-                simulation_history = SimulationHistory()
-                simulation_history.populate_from(alg)
-                history_index = h5.store_complete(simulation_history, folder, generic_attributes=vm.generic_attributes)
-                history_index.fk_from_operation = op_id
-
                 burst_params = dao.get_burst_for_migration(possible_burst_id)
                 if burst_params is not None:
-                    burst_config = _create_new_burst(burst_params, root_metadata)
+                    burst_config, new_burst = _create_new_burst(burst_params, burst_match_dict, possible_burst_id)
+                    root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                     burst_config.simulator_gid = vm.gid.hex
                     burst_config.fk_simulation = operation.id
                     generic_attributes.parent_burst = burst_config.gid
@@ -1093,10 +1091,44 @@ def update(input_file):
                     with BurstConfigurationH5(os.path.join(os.path.dirname(input_file),
                                                            'BurstConfiguration_' + burst_config.gid + ".h5")) as f:
                         f.store(burst_config)
+                    new_burst_id = dao.store_entity(burst_config).id
 
-                    history_index.fk_parent_burst = burst_config.gid
-                    dao.store_entity(history_index)
-                    dao.store_entity(burst_config)
+                    if new_burst:
+                        if burst_config.range1 is None:
+                            alg = SimulatorAdapter().view_model_to_has_traits(vm)
+                            alg.preconfigure()
+                            alg.configure()
+                            simulation_history = SimulationHistory()
+                            simulation_history.populate_from(alg)
+                            history_index = h5.store_complete(simulation_history, folder,
+                                                              generic_attributes=vm.generic_attributes)
+                            history_index.fk_from_operation = op_id
+                            history_index.fk_parent_burst = burst_config.gid
+                            dao.store_entity(history_index)
+                        else:
+                            ts_operation_group = dao.get_operationgroup_by_id(burst_config.fk_operation_group)
+                            metric_operation_group = dao.get_operationgroup_by_id(
+                                burst_config.fk_metric_operation_group)
+
+                            datatype_group = DataTypeGroup(ts_operation_group)
+                            datatype_group.fk_parent_burst = burst_config.gid
+                            datatype_group.fk_from_operation = op_id
+                            datatype_group.count_results = len(dao.get_operations_in_group(ts_operation_group.id))
+                            datatype_group.fill_from_generic_attributes(generic_attributes)
+                            metric_datatype_group = DataTypeGroup(metric_operation_group)
+                            metric_datatype_group.fk_parent_burst = burst_config.gid
+                            # metric_datatype_group.fk_from_operation = op_id
+                            metric_datatype_group.count_results = datatype_group.count_results
+                            metric_datatype_group.fill_from_generic_attributes(generic_attributes)
+                            dao.store_entity(datatype_group)
+                            dao.store_entity(metric_datatype_group)
+                            datatype_group = dao.get_datatypegroup_by_op_group_id(burst_config.fk_operation_group)
+                            datatype_index.fk_datatype_group = datatype_group.id
+                    else:
+                        datatype_group = dao.get_datatypegroup_by_op_group_id(burst_config.fk_operation_group)
+                        datatype_index.fk_datatype_group = datatype_group.id
+
+                    burst_match_dict[possible_burst_id] = new_burst_id
                     root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                     storage_manager.set_metadata(root_metadata)
 

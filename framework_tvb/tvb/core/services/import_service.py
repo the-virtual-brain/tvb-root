@@ -571,7 +571,7 @@ class ImportService(object):
         return operation_entity.from_dict(operation_dict, dao, self.user_id, project.gid)
 
     @staticmethod
-    def import_operation(operation_entity):
+    def import_operation(operation_entity, migration=False):
         """
         Store a Operation entity.
         """
@@ -584,10 +584,11 @@ class ImportService(object):
                 datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
             except SQLAlchemyError:
                 # If no dataType group present for current op. group, create it.
-                operation_group = dao.get_operationgroup_by_id(operation_group_id)
-                datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
-                datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
-                datatype_group = dao.store_entity(datatype_group)
+                if migration is False:
+                    operation_group = dao.get_operationgroup_by_id(operation_group_id)
+                    datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
+                    datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
+                    datatype_group = dao.store_entity(datatype_group)
 
         return operation_entity, datatype_group
 

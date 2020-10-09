@@ -132,25 +132,18 @@ class BurstDAO(RootDAO):
         It finds a BurstConfig in the old format (when it did not inherit from HasTraitsIndex), deletes it
         and returns its parameters.
         """
-        burst_params = self.session.execute("""SELECT * FROM BurstConfiguration WHERE id = """ + burst_id).fetchone()
+        burst_params = self.session.execute("""SELECT * FROM BURST_CONFIGURATION WHERE id = """ + burst_id).fetchone()
 
         if burst_params is None:
             return None
 
-        burst_params_dict = {}
-        burst_params_dict['datatypes_number'] = burst_params[0]
-        burst_params_dict['dynamic_ids'] = burst_params[1]
-        burst_params_dict['range_1'] = burst_params[2]
-        burst_params_dict['range_2'] = burst_params[3]
-        burst_params_dict['fk_project'] = burst_params[5]
-        burst_params_dict['name'] = burst_params[6]
-        burst_params_dict['status'] = burst_params[7]
-        burst_params_dict['error_message'] = burst_params[8]
-        burst_params_dict['start_time'] = burst_params[9]
-        burst_params_dict['finish_time'] = burst_params[10]
-        burst_params_dict['fk_simulation'] = burst_params[12]
-        burst_params_dict['fk_operation_group'] = burst_params[13]
-        burst_params_dict['fk_metric_operation_group'] = burst_params[14]
-        self.session.execute("""DELETE FROM BurstConfiguration WHERE id = """ + burst_id)
-        self.session.commit()
+        burst_params_dict = {'datatypes_number': burst_params[0], 'dynamic_ids': burst_params[1],
+                             'range_1': burst_params[2], 'range_2': burst_params[3], 'fk_project': burst_params[5],
+                             'name': burst_params[6], 'status': burst_params[7], 'error_message': burst_params[8],
+                             'start_time': burst_params[9], 'finish_time': burst_params[10],
+                             'fk_simulation': burst_params[12], 'fk_operation_group': burst_params[13],
+                             'fk_metric_operation_group': burst_params[14]}
+
         return burst_params_dict
+
+
