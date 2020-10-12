@@ -337,36 +337,27 @@ def get_all_h5_paths(delete_other=False):
         project_operations = os.listdir(project_full_path)
         project_operations_base_names = [os.path.basename(op) for op in project_operations]
 
-        # Build a list of the operation numbers and sort them
-        operation_int_names = []
         for op_folder in project_operations_base_names:
             try:
-                int_operation = int(op_folder)
-                operation_int_names.append(int_operation)
+                int(op_folder)
+                op_folder_path = os.path.join(project_full_path, op_folder)
+                for file in os.listdir(op_folder_path):
+                    if file.endswith('.h5'):
+                        h5_files.append(os.path.join(op_folder_path, file))
             except ValueError:
                 pass
 
-        operation_int_names.sort()
+    # Sort all h5 files based on their creation date stored in the files themselves
+    sorted_h5_files = sorted(h5_files, key=lambda h5_path: _get_create_date_for_sorting(h5_path) or datetime.now())
+    return sorted_h5_files
 
-        # Go through the operation folders in numerical order
-        for op in operation_int_names:
-            op_folder = os.path.join(project_full_path, str(op))
-            files_for_op = {}
 
-            # Sort files for one operation based on their creation date from the H5 file
-            for file in os.listdir(op_folder):
-                if file.endswith('.h5'):
-                    storage_manager = HDF5StorageManager(op_folder, file)
-                    root_metadata = storage_manager.get_metadata()
-                    create_date_str = str(root_metadata['Create_date'], 'utf-8')
-                    create_date = datetime.strptime(create_date_str.replace('datetime:', ''), '%Y-%m-%d %H:%M:%S.%f')
-                    files_for_op[os.path.join(op_folder, file)] = create_date
-            sorted_files = sorted(files_for_op.items(), key=lambda dt_item: dt_item[1] or datetime.now())
-            h5_files.append(sorted_files)
+def _get_create_date_for_sorting(h5_file):
+    storage_manager = HDF5StorageManager(os.path.dirname(h5_file), os.path.basename(h5_file))
+    root_metadata = storage_manager.get_metadata()
+    create_date_str = str(root_metadata['Create_date'], 'utf-8')
+    create_date = datetime.strptime(create_date_str.replace('datetime:', ''), '%Y-%m-%d %H:%M:%S.%f')
+    return create_date
 
-    h5_files_as_list = []
-    for files_for_op in h5_files:
-        for file_dict in files_for_op:
-            h5_files_as_list.append(file_dict[0])
 
-    return h5_files_as_list
+
