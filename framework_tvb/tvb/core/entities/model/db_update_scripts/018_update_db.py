@@ -257,12 +257,27 @@ def upgrade(migrate_engine):
         # Name it back to the old name, because we have to keep both tables so we can create BurstConfigurationH5s
         session.execute(text("""ALTER TABLE "BurstConfiguration"
                                                 RENAME TO "BURST_CONFIGURATION"; """))
-        session.execute(text("""DROP TABLE if exists "ALGORITHMS" cascade; """))
-        session.execute(text("""DROP TABLE if exists "ALGORITHM_CATEGORIES" cascade; """))
-        session.execute(text("""DROP TABLE if exists "DATA_TYPES" cascade; """))
         session.commit()
     except Exception as excep:
         LOGGER.exception(excep)
+    finally:
+        session.close()
+
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""DROP TABLE "ALGORITHMS"; """))
+        session.execute(text("""DROP TABLE "ALGORITHM_CATEGORIES"; """))
+        session.execute(text("""DROP TABLE "DATA_TYPES"; """))
+        session.commit()
+    except Exception as excep:
+        # If the drops fail, it could mean we are using postgresql
+        try:
+            LOGGER.exception(excep)
+            session.execute(text("""DROP TABLE if exists "ALGORITHMS" cascade; """))
+            session.execute(text("""DROP TABLE if exists "ALGORITHM_CATEGORIES" cascade; """))
+            session.execute(text("""DROP TABLE if exists "DATA_TYPES" cascade; """))
+        except Exception as excep:
+            LOGGER.exception(excep)
     finally:
         session.close()
 
