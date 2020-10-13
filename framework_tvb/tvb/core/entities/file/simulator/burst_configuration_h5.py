@@ -39,6 +39,7 @@ class BurstConfigurationH5(H5File):
     def __init__(self, path):
         super(BurstConfigurationH5, self).__init__(path)
         self.name = Scalar(Attr(str), self, name='name')
+        self.datatypes_number = Scalar(Attr(int, required=False), self, name='datatypes_number')
         self.status = Scalar(Attr(str), self, name='status')
         self.error_message = Scalar(Attr(str, required=False), self, name='error_message')
         self.start_time = Scalar(Attr(str), self, name='start_time')
@@ -50,6 +51,8 @@ class BurstConfigurationH5(H5File):
     def store(self, burst_config, scalars_only=False, store_references=True):
         # type (BurstConfiguration, bool, bool) -> None
         self.gid.store(uuid.UUID(burst_config.gid))
+        if burst_config.datatypes_number:
+            self.datatypes_number.store(burst_config.datatypes_number)
         self.name.store(burst_config.name)
         self.status.store(burst_config.status)
         self.error_message.store(burst_config.error_message or 'None')
@@ -63,6 +66,7 @@ class BurstConfigurationH5(H5File):
         # type (BurstConfiguration) -> None
         burst_config.gid = self.gid.load().hex
         burst_config.name = self.name.load()
+        burst_config.datatypes_number = self.datatypes_number.load()
         burst_config.status = self.status.load()
         burst_config.error_message = self.error_message.load()
         burst_config.start_time = string2date(self.start_time.load())

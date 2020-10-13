@@ -39,29 +39,33 @@ class OperationGroupH5(H5File):
     def __init__(self, path):
         super(OperationGroupH5, self).__init__(path)
         self.name = Scalar(Attr(str), self, name='name')
+        self.user_group = Scalar(Attr(str, required=False), self, name='user_group')
+        self.range_values = Scalar(Attr(str, required=False), self, name='range_values')
         self.range1 = Scalar(Attr(str, required=False), self, name='range1')
         self.range2 = Scalar(Attr(str, required=False), self, name='range2')
         self.range3 = Scalar(Attr(str, required=False), self, name='range3')
         self.gid = Reference(Attr(uuid.UUID), self, name='gid')
         self.fk_launched_in = Scalar(Attr(str), self, name='fk_launched_in')
         self.operation_view_model_gids = Json(Attr(str), self, name='operation_view_model_gids')
-        self.is_metric = Scalar(Attr(bool), self, name='is_metric')
 
-    def store(self, operation_group, operation_view_model_gids=None, is_metric=False):
+    def store(self, operation_group, operation_view_model_gids=None, user_group=None, range_values=None):
         # type: (OperationGroup) -> None
         self.name.store(operation_group.name)
+        self.user_group.store(user_group)
+        self.range_values.store(range_values)
         self.range1.store(operation_group.range1)
         self.range2.store(operation_group.range2)
         self.range3.store(operation_group.range3)
         self.gid.store(uuid.UUID(operation_group.gid))
         self.fk_launched_in.store(str(operation_group.fk_launched_in))
         self.operation_view_model_gids.store(operation_view_model_gids)
-        self.is_metric.store(is_metric)
 
     def load_into(self, datatype):
         # type: (OperationGroup) -> None
         super(OperationGroupH5, self).load_into(datatype)
         datatype.name = self.name.load()
+        datatype.user_group = self.user_group.load()
+        datatype.range_values = self.range_values.load()
 
         try:
             datatype.range1 = self.range1.load()
@@ -80,5 +84,4 @@ class OperationGroupH5(H5File):
 
         datatype.gid = str(self.gid.load())
         datatype.fk_launched_in = self.fk_launched_in.load()
-        datatype.is_metric = self.is_metric.load()
         datatype.operation_view_model_gids = self.operation_view_model_gids.load()

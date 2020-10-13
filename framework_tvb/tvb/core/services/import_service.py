@@ -91,6 +91,10 @@ class Operation2ImportData(object):
     def order_field(self):
         return self.operation.create_date if (self.operation is not None) else datetime.now()
 
+    @property
+    def order_field_by_folder(self):
+        return int(os.path.basename(self.operation_folder)) if (self.operation_folder is not None) else datetime.now()
+
 
 class ImportService(object):
     """
@@ -310,7 +314,7 @@ class ImportService(object):
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
 
-        return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
+        return sorted(retrieved_operations, key=lambda op_data: op_data.order_field_by_folder)
 
     def import_project_operations(self, project, import_path):
         """
@@ -319,6 +323,7 @@ class ImportService(object):
         imported_operations = []
         ordered_operations = self._retrieve_operations_in_order(project, import_path)
         burst_config = None
+        last_operation_id_in_burst = 0
         first_op_id_for_pse = None
         datatype_gr_id = None
 
@@ -347,6 +352,7 @@ class ImportService(object):
                     if isinstance(dt, BurstConfiguration) or isinstance(dt, OperationGroup):
                         if isinstance(dt, BurstConfiguration):
                             dt.fk_datatype_group = dt.id
+                            last_operation_id_in_burst = operation_entity.id + dt.datatypes_number
                             dao.store_entity(dt)
                         if isinstance(dt, OperationGroup):
                             if first_op_id_for_pse is None and burst_config is None:
@@ -355,29 +361,18 @@ class ImportService(object):
 
                             dao.store_entity(dt)
 
-                            if dt.is_metric:
-                                burst_config.fk_metric_operation_group = dt.id
-                                operation_entity.visible = False
-                            else:
+                            if burst_config.simulator_gid in dt.operation_view_model_gids.values():
                                 burst_config.fk_operation_group = dt.id
+                            else:
+                                burst_config.fk_metric_operation_group = dt.id
 
-                            #todo: user_group and range_values were in op.xml, add to h5 and add to the new op
-                            operation_entity.range_values = '{"conduction_speed": 0.01}'
-                            operation_entity.user_group = '2020-10-02,11-52-07'
+                            operation_entity.range_values = dt.range_values
+                            operation_entity.user_group = dt.range_values
 
                             operation_entity.fk_operation_group = dt.id
                             dao.store_entity(operation_entity)
 
-                            simulator_alg = AlgorithmService.get_algorithm_by_module_and_class(
-                                SimulatorAdapter.__module__, SimulatorAdapter.__name__)
-                            datatype_group = DataTypeGroup(dt, fk_parent_burst=burst_config.gid,
-                                                           state=simulator_alg.algorithm_category.defaultdatastate)
-                            if not dt.is_metric:
-                                datatype_group.fk_from_operation = operation_entity.id
-                            datatype_group.disk_size, datatype_group.subject = dao.get_summary_for_group(datatype_group.id)
-                            datatype_group.count_results = dao.count_datatypes_in_group(datatype_group.id)
-
-                            dao.store_entity(datatype_group)
+                            datatype_group = self._store_operation_group(dt, burst_config, operation_entity)
                             datatype_gr_id = datatype_group.id
 
                             burst_config.datatypes_number = dao.count_datatypes_in_burst(burst_config.gid)
@@ -388,6 +383,11 @@ class ImportService(object):
                         dt.fk_datatype_group = datatype_gr_id
                         dts[dt_path] = dt
                 stored_dts_count = self._store_imported_datatypes_in_db(project, dts)
+
+                if burst_config and not burst_config.fk_simulation==operation_entity.id:
+                    if operation_entity.id < last_operation_id_in_burst:
+                        operation_entity.visible = False
+                        dao.store_entity(operation_entity)
 
                 if stored_dts_count > 0 or not operation_data.is_self_generated:
                     imported_operations.append(operation_entity)
@@ -404,6 +404,21 @@ class ImportService(object):
                                     "operation or DTs inside!" % operation_data.operation_folder)
 
         return imported_operations
+
+    @staticmethod
+    def _store_operation_group(dt, burst_config, operation_entity):
+        simulator_alg = AlgorithmService.get_algorithm_by_module_and_class(
+            SimulatorAdapter.__module__, SimulatorAdapter.__name__)
+        datatype_group = DataTypeGroup(dt, fk_parent_burst=burst_config.gid,
+                                       state=simulator_alg.algorithm_category.defaultdatastate)
+
+        if burst_config.fk_operation_group and dt.id == burst_config.fk_operation_group:
+            datatype_group.fk_from_operation = operation_entity.id
+        datatype_group.disk_size, datatype_group.subject = dao.get_summary_for_group(datatype_group.id)
+        datatype_group.count_results = dao.count_datatypes_in_group(datatype_group.id)
+
+        dao.store_entity(datatype_group)
+        return datatype_group
 
     @staticmethod
     def _get_new_form_view_model(operation, xml_parameters):

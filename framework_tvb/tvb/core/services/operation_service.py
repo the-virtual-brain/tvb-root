@@ -189,12 +189,12 @@ class OperationService:
 
         project = dao.get_project_by_id(sim_operation.fk_launched_in)
         metric_operations = dao.get_operations_in_group(parent_burst.fk_metric_operation_group)
-        self._save_operation_group_to_disk(metric_operations, project, True)
+        self._save_operation_group_to_disk(metric_operations, project)
 
         return metric_operation
 
     @staticmethod
-    def _save_operation_group_to_disk(operations, project, is_metric):
+    def _save_operation_group_to_disk(operations, project):
         operation_group_path = FilesHelper().get_project_folder(project, str(operations[0].id))
         operation_group = dao.get_operationgroup_by_id(operations[0].fk_operation_group)
         id_to_model_gid_map = {}
@@ -203,7 +203,7 @@ class OperationService:
 
         bc_path = h5.path_for(operation_group_path, OperationGroupH5, operation_group.gid)
         with OperationGroupH5(bc_path) as op_gr_h5:
-            op_gr_h5.store(operation_group, id_to_model_gid_map, is_metric)
+            op_gr_h5.store(operation_group, id_to_model_gid_map, operations[0].user_group, operations[0].range_values)
 
     @transactional
     def prepare_operation(self, user_id, project_id, algorithm, view_model_gid,
@@ -298,6 +298,16 @@ class OperationService:
             view_model = adapter_instance.load_view_model(operation)
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, view_model, unique_id, available_space)
             operation = dao.get_operation_by_id(operation.id)
+
+            operation_group = ProjectService.get_operation_group_by_id(operation.fk_operation_group)
+            project = dao.get_project_by_id(operation.fk_launched_in)
+            burst_config = dao.get_burst_for_operation_id(operation.id)
+            if operation_group.id == burst_config.fk_metric_operation_group:
+                group_operations = dao.get_operations_in_group(burst_config.fk_metric_operation_group)
+            else:
+                group_operations = dao.get_operations_in_group(burst_config.fk_operation_group)
+            self._save_operation_group_to_disk(group_operations, project)
+
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
             dao.store_entity(operation)
