@@ -453,6 +453,10 @@ def _migrate_time_series_surface(**kwargs):
 
 
 def _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type, index):
+    eeg_reference = 'monitors_parameters_option_EEG_reference'
+    if eeg_reference in operation_xml_parameters:
+        setattr(operation_xml_parameters['monitors'][index], 'reference', operation_xml_parameters[eeg_reference])
+
     setattr(operation_xml_parameters['monitors'][index], 'region_mapping',
             operation_xml_parameters['monitors_parameters_option_' + sensors_type + '_region_mapping'])
     setattr(operation_xml_parameters['monitors'][index], 'sensors',
