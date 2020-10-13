@@ -279,6 +279,79 @@ def _migrate_connectivity_annotations(**kwargs):
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
+def _migrate_monitors(operation_xml_parameters, model):
+    monitors = operation_xml_parameters['monitors']
+    hrf_kernel_name = None
+    bold_index = None
+    for i in range(len(monitors)):
+        monitor_name = operation_xml_parameters['monitors'][i]
+        monitor = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
+                          monitor_name + 'ViewModel')()
+        operation_xml_parameters['monitors'][i] = monitor
+        if monitor_name != 'RawRecording':
+            monitor.period = float(operation_xml_parameters['monitors_parameters_option_' + monitor_name + '_period'])
+            variables_of_interest = eval(operation_xml_parameters['monitors_parameters_option_' + monitor_name +
+                                                                  '_variables_of_interest'])
+            if len(variables_of_interest) != 0:
+                monitor.variables_of_interest = numpy.array(variables_of_interest, dtype=numpy.int64)
+            else:
+                monitor.variables_of_interest = numpy.array([i for i in range(len(model.variables_of_interest))])
+            if monitor_name == 'SpatialAverage':
+                spatial_mask = eval(operation_xml_parameters['monitors_parameters_option_SpatialAverage_spatial_mask'])
+                if len(spatial_mask) != 0:
+                    monitor.spatial_mask = numpy.array(spatial_mask, dtype=numpy.int64)
+            if monitor_name in ['EEG', 'MEG', 'iEEG']:
+                _set_sensors_view_model_attributes(operation_xml_parameters, monitor_name, i)
+
+            if monitor_name == 'Bold':
+                hrf_kernel_name = operation_xml_parameters.pop('monitors_parameters_option_Bold_hrf_kernel')
+                hrf_kernel = getattr(sys.modules['tvb.datatypes.equations'], hrf_kernel_name)
+                monitor.hrf_kernel = hrf_kernel()
+                bold_index = i
+
+                operation_xml_parameters.pop('monitors_parameters_option_Bold_hrf_kernel_parameters_option_' +
+                                             hrf_kernel_name + '_equation')
+
+    return hrf_kernel_name, bold_index
+
+
+def _migrate_noise(operation_xml_parameters, integrator, integrator_name, noise_type_name):
+    equation_name = None
+    noise_type = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
+                         noise_type_name + 'NoiseViewModel')
+    integrator.noise = noise_type()
+
+    integrator_param_base_name = 'integrator_parameters_option_' + integrator_name + '_noise_' + \
+                                 'parameters_option_' + noise_type_name + '_'
+    integrator.noise.ntau = float(operation_xml_parameters.pop(integrator_param_base_name + 'ntau'))
+    integrator.noise.noise_seed = int(operation_xml_parameters.pop(integrator_param_base_name +
+                                                                   'random_stream_parameters_option_RandomStream' + \
+                                                                   '_init_seed'))
+    integrator.noise.nsig = numpy.array(eval(operation_xml_parameters.pop(integrator_param_base_name + 'nsig')),
+                                        dtype=numpy.float64)
+    operation_xml_parameters.pop(integrator_param_base_name + 'random_stream')
+
+    replace_for_branch = 'Multiplicative'
+    if noise_type_name == 'Multiplicative':
+        replace_for_branch = 'Additive'
+        equation_name = operation_xml_parameters.pop(integrator_param_base_name + 'b')
+        equation_type = getattr(sys.modules['tvb.datatypes.equations'], equation_name)
+        integrator.noise.b = equation_type()
+        operation_xml_parameters.pop(integrator_param_base_name + 'b_parameters_option_' +
+                                     equation_name + '_equation')
+
+    operation_xml_parameters.pop((integrator_param_base_name + 'random_stream_parameters_option_RandomStream' +
+                                  '_init_seed').replace(noise_type_name, replace_for_branch), None)
+    operation_xml_parameters.pop((integrator_param_base_name + 'ntau').replace(noise_type_name,
+                                                                               replace_for_branch), None)
+    operation_xml_parameters.pop((integrator_param_base_name + 'random_stream').replace(noise_type_name,
+                                                                                        replace_for_branch), None)
+    operation_xml_parameters.pop((integrator_param_base_name + 'nsig').replace(noise_type_name,
+                                                                               replace_for_branch), None)
+
+    return integrator_param_base_name, equation_name
+
+
 def _migrate_time_series(metadata, **kwargs):
     root_metadata = kwargs['root_metadata']
     operation_xml_parameters = kwargs['operation_xml_parameters']
@@ -315,75 +388,17 @@ def _migrate_time_series(metadata, **kwargs):
                          integrator_name + 'ViewModel')()
     operation_xml_parameters['integrator'] = integrator
 
-    monitors = operation_xml_parameters['monitors']
-    for i in range(len(monitors)):
-        monitor_name = operation_xml_parameters['monitors'][i]
-        monitor = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
-                          monitor_name + 'ViewModel')()
-        operation_xml_parameters['monitors'][i] = monitor
-        # _set_sensors_view_model_attributes(operation_xml_parameters, sensors_type, index)
-        if monitor_name != 'RawRecording':
-            monitor.period = float(operation_xml_parameters['monitors_parameters_option_' + monitor_name + '_period'])
-            variables_of_interest = eval(operation_xml_parameters['monitors_parameters_option_' + monitor_name +
-                                                                  '_variables_of_interest'])
-            if len(variables_of_interest) != 0:
-                monitor.variables_of_interest = numpy.array(variables_of_interest, dtype=numpy.int64)
-            else:
-                monitor.variables_of_interest = numpy.array([i for i in range(len(model.variables_of_interest))])
-            if monitor_name == 'SpatialAverage':
-                spatial_mask = eval(operation_xml_parameters['monitors_parameters_option_SpatialAverage_spatial_mask'])
-                if len(spatial_mask) != 0:
-                    monitor.spatial_mask = numpy.array(spatial_mask, dtype=numpy.int64)
-            if monitor_name in ['EEG', 'MEG', 'iEEG']:
-                _set_sensors_view_model_attributes(operation_xml_parameters, monitor_name, i)
-
-            if monitor_name == 'Bold':
-                hrf_kernel_name = operation_xml_parameters.pop('monitors_parameters_option_Bold_hrf_kernel')
-                hrf_kernel = getattr(sys.modules['tvb.datatypes.equations'], hrf_kernel_name)
-                monitor.hrf_kernel = hrf_kernel()
-                bold_index = i
-
-                operation_xml_parameters.pop('monitors_parameters_option_Bold_hrf_kernel_parameters_option_' +
-                                             hrf_kernel_name + '_equation')
-
     operation_xml_parameters['conduction_speed'] = float(operation_xml_parameters['conduction_speed'])
     operation_xml_parameters['simulation_length'] = float(operation_xml_parameters['simulation_length'])
+
+    hrf_kernel_name, bold_index = _migrate_monitors(operation_xml_parameters, model)
 
     noise_param_name = 'integrator_parameters_option_' + integrator_name + '_noise'
     noise_type_name = operation_xml_parameters.pop(noise_param_name, None)
 
     if noise_type_name is not None:
-        noise_type = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
-                             noise_type_name + 'NoiseViewModel')
-        integrator.noise = noise_type()
-
-        integrator_param_base_name = 'integrator_parameters_option_' + integrator_name + '_noise_' + \
-                                     'parameters_option_' + noise_type_name + '_'
-        integrator.noise.ntau = float(operation_xml_parameters.pop(integrator_param_base_name + 'ntau'))
-        integrator.noise.noise_seed = int(operation_xml_parameters.pop(integrator_param_base_name +
-                                                                       'random_stream_parameters_option_RandomStream' + \
-                                                                       '_init_seed'))
-        integrator.noise.nsig = numpy.array(eval(operation_xml_parameters.pop(integrator_param_base_name + 'nsig')),
-                                            dtype=numpy.float64)
-        operation_xml_parameters.pop(integrator_param_base_name + 'random_stream')
-
-        replace_for_branch = 'Multiplicative'
-        if noise_type_name == 'Multiplicative':
-            replace_for_branch = 'Additive'
-            equation_name = operation_xml_parameters.pop(integrator_param_base_name + 'b')
-            equation_type = getattr(sys.modules['tvb.datatypes.equations'], equation_name)
-            integrator.noise.b = equation_type()
-            operation_xml_parameters.pop(integrator_param_base_name + 'b_parameters_option_' +
-                                         equation_name + '_equation')
-
-        operation_xml_parameters.pop((integrator_param_base_name + 'random_stream_parameters_option_RandomStream' +
-                                      '_init_seed').replace(noise_type_name, replace_for_branch), None)
-        operation_xml_parameters.pop((integrator_param_base_name + 'ntau').replace(noise_type_name,
-                                                                                   replace_for_branch), None)
-        operation_xml_parameters.pop((integrator_param_base_name + 'random_stream').replace(noise_type_name,
-                                                                                            replace_for_branch), None)
-        operation_xml_parameters.pop((integrator_param_base_name + 'nsig').replace(noise_type_name,
-                                                                                   replace_for_branch), None)
+        integrator_param_base_name, equation_name = \
+            _migrate_noise(operation_xml_parameters, integrator, integrator_name, noise_type_name)
 
     additional_params = []
     for xml_param in operation_xml_parameters:
