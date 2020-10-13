@@ -71,7 +71,7 @@ def load_model(model_filename, folder=None):
 
     # do some inventory. check if boundaries are set for any sv to print the boundaries section in template
     svboundaries = 0
-    for i, sv in enumerate(model.component_types[model_filename].dynamics.state_variables):
+    for i, sv in enumerate(model.component_types['derivatives'].dynamics.state_variables):
         if sv.boundaries != 'None' and sv.boundaries != '' and sv.boundaries:
             svboundaries = 1
             continue
@@ -89,12 +89,15 @@ def default_template():
 def render_model(model_name, template=None, folder=None):
     model, svboundaries = load_model(model_name, folder)
     template = template or default_template()
+
+    modellist = model.component_types['derivatives']
+
     model_str = template.render(
         dfunname=model_name,
-        const=model.component_types[model_name].constants,
-        dynamics=model.component_types[model_name].dynamics,
+        const=modellist.constants,
+        dynamics=modellist.dynamics,
         svboundaries=svboundaries,
-        exposures=model.component_types[model_name].exposures
+        exposures=modellist.exposures
     )
     return model_str
 

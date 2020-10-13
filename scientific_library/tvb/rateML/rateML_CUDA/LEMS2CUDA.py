@@ -39,7 +39,7 @@ def render_model(model_name, template=None, folder=None):
     model = load_model(model_name, folder)
     template = template or default_template()
 
-    modellist = model.component_types[model_name]
+    modellist = model.component_types['derivatives']
 
     # coupling functionality
     couplinglist = list()
@@ -88,7 +88,7 @@ def cuda_templating(model_filename, folder=None):
 if __name__ == '__main__':
 
     # model_filename = 'Oscillator'
-    # model_filename = 'Kuramoto'
+    model_filename = 'Kuramoto'
     # model_filename = 'Rwongwang'
-    model_filename = 'Epileptor'
+    # model_filename = 'Epileptor'
     cuda_templating(model_filename)
