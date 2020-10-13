@@ -189,7 +189,6 @@ class FilesUpdateManager(UpdateManager):
             upgrade was not needed.
         """
         nr_of_dts_upgraded_fine = 0
-        nr_of_dts_ignored = 0
         nr_of_dts_failed = 0
 
         burst_match_dict = {}
@@ -198,12 +197,10 @@ class FilesUpdateManager(UpdateManager):
 
             if update_result == 1:
                 nr_of_dts_upgraded_fine += 1
-            elif update_result == 0:
-                nr_of_dts_ignored += 1
             else:
                 nr_of_dts_failed += 1
 
-        return nr_of_dts_upgraded_fine, nr_of_dts_ignored, nr_of_dts_failed
+        return nr_of_dts_upgraded_fine, nr_of_dts_failed
 
     def run_all_updates(self):
         """
@@ -251,10 +248,10 @@ class FilesUpdateManager(UpdateManager):
                 from tvb.core.neocom import h5
                 file_paths = h5.get_all_h5_paths()
                 total_count = len(file_paths)
-                count_ok, count_ignored, count_error = self.__upgrade_h5_list(file_paths)
+                count_ok, count_error = self.__upgrade_h5_list(file_paths)
 
-                self.log.info("Updated H5 files in total: %d [fine:%d, ignored:%d, failed:%d in: %s min]" % (
-                    total_count, count_ok, count_ignored, count_error, int((datetime.now() - start_time).seconds / 60)))
+                self.log.info("Updated H5 files in total: %d [fine:%d, failed:%d in: %s min]" % (
+                    total_count, count_ok, count_error, int((datetime.now() - start_time).seconds / 60)))
                 delete_old_burst_table_after_migration()
 
             # Now update the configuration file since update was done
