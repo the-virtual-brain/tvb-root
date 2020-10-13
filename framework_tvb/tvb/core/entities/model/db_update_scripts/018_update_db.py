@@ -271,11 +271,14 @@ def upgrade(migrate_engine):
         session.commit()
     except Exception as excep:
         # If the drops fail, it could mean we are using postgresql
+        session.close()
+        session = SA_SESSIONMAKER()
+        LOGGER.exception(excep)
         try:
-            LOGGER.exception(excep)
             session.execute(text("""DROP TABLE if exists "ALGORITHMS" cascade; """))
             session.execute(text("""DROP TABLE if exists "ALGORITHM_CATEGORIES" cascade; """))
             session.execute(text("""DROP TABLE if exists "DATA_TYPES" cascade; """))
+            session.commit()
         except Exception as excep:
             LOGGER.exception(excep)
     finally:

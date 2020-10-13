@@ -41,13 +41,16 @@ import os
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from datetime import datetime
 from tvb.basic.config import stored
+from tvb.basic.config.stored import KEY_ADMIN_DISPLAY_NAME, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIGURATION, \
+    KEY_KC_CONFIGURATION
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
+from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
-import migrate.versioning.api as migratesqlapi
+
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
@@ -239,10 +242,11 @@ class FilesUpdateManager(UpdateManager):
                             int((datetime.now() - start_time).seconds / 60)))
             else:
                 # Migrating the configuration file
-                new_stored_settings = {'ADMINISTRATOR_DISPLAY_NAME': 'Administrator', 'ENABLE_KEYCLOAK_LOGIN': False,
-                                       'KEYCLOAK_WEB_CONFIGURATION': '', 'KEYCLOAK_CONFIG': 'add_keycloak_path_here'}
-                TvbProfile.current.manager.add_entries_to_config_file(new_stored_settings)
-                # new_stored_settings.pop('URL_WEB')
+                new_stored_settings = {KEY_ADMIN_DISPLAY_NAME: 'Administrator', KEY_ENABLE_KC_LOGIN: False,
+                                       KEY_KC_WEB_CONFIGURATION: '', KEY_KC_CONFIGURATION: 'add_keycloak_path_here'}
+                manager = TvbProfile.current.manager
+                manager.add_entries_to_config_file(new_stored_settings)
+                manager.delete_entries_from_config_file(['URL_WEB'])
 
                 from tvb.core.neocom import h5
                 file_paths = h5.get_all_h5_paths()
@@ -251,9 +255,7 @@ class FilesUpdateManager(UpdateManager):
 
                 self.log.info("Updated H5 files in total: %d [fine:%d, ignored:%d, failed:%d in: %s min]" % (
                     total_count, count_ok, count_ignored, count_error, int((datetime.now() - start_time).seconds / 60)))
-
-                versions_repo = TvbProfile.current.db.DB_VERSIONING_REPO
-                migratesqlapi.upgrade(TvbProfile.current.db.DB_URL, versions_repo, version=19)
+                delete_old_burst_table_after_migration()
 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}

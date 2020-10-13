@@ -125,25 +125,3 @@ class BurstDAO(RootDAO):
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
         return burst
-
-    def get_burst_for_migration(self, burst_id):
-        """
-        This method is supposed to only be used when migrating from version 4 to version 5.
-        It finds a BurstConfig in the old format (when it did not inherit from HasTraitsIndex), deletes it
-        and returns its parameters.
-        """
-        burst_params = self.session.execute("""SELECT * FROM BURST_CONFIGURATION WHERE id = """ + burst_id).fetchone()
-
-        if burst_params is None:
-            return None
-
-        burst_params_dict = {'datatypes_number': burst_params[0], 'dynamic_ids': burst_params[1],
-                             'range_1': burst_params[2], 'range_2': burst_params[3], 'fk_project': burst_params[5],
-                             'name': burst_params[6], 'status': burst_params[7], 'error_message': burst_params[8],
-                             'start_time': burst_params[9], 'finish_time': burst_params[10],
-                             'fk_simulation': burst_params[12], 'fk_operation_group': burst_params[13],
-                             'fk_metric_operation_group': burst_params[14]}
-
-        return burst_params_dict
-
-
