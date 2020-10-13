@@ -787,6 +787,7 @@ def _migrate_stimuli_surface(**kwargs):
 def _migrate_value_wrapper(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['data_type'] = root_metadata['data_type'].replace("\"", '')
+    root_metadata['data_name'] = root_metadata['data_name'].replace("\"", '')
     root_metadata['written_by'] = "tvb.adapters.datatypes.h5.mapped_value_h5.ValueWrapperH5"
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
