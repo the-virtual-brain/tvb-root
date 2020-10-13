@@ -44,7 +44,6 @@ from sqlalchemy.sql import text
 from tvb.core.neotraits.db import Base
 
 meta = Base.metadata
-
 LOGGER = get_logger(__name__)
 
 
@@ -83,8 +82,6 @@ def migrate_range_params(ranges):
 
 
 def upgrade(migrate_engine):
-    """
-    """
     meta.bind = migrate_engine
 
     session = SA_SESSIONMAKER()
@@ -94,13 +91,10 @@ def upgrade(migrate_engine):
                                         RENAME TO "BurstConfiguration"; """))
 
         # Dropping tables which don't exist in the new version
-        session.execute(text("""DROP TABLE "MAPPED_ARRAY_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_LOOK_UP_TABLE_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_DATATYPE_MEASURE_DATA";"""))
-        session.execute(text("""DROP TABLE "MAPPED_SPATIAL_PATTERN_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_SPATIAL_PATTERN_VOLUME_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_SIMULATION_STATE_DATA";"""))
-        session.execute(text("""DROP TABLE "WORKFLOWS";"""))
         session.execute(text("""DROP TABLE "WORKFLOW_STEPS";"""))
         session.execute(text("""DROP TABLE "WORKFLOW_VIEW_STEPS";"""))
 
@@ -121,9 +115,6 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_PROJECTION_MATRIX_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_REGION_MAPPING_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_REGION_VOLUME_MAPPING_DATA";"""))
-        session.execute(text("""DROP TABLE "ALGORITHMS";"""))
-        session.execute(text("""DROP TABLE "ALGORITHM_CATEGORIES";"""))
-        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_REGION_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_EEG_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_MEG_DATA";"""))
@@ -131,7 +122,6 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_SURFACE_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_VOLUME_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_SENSORS_DATA" """))
-        session.execute(text("""DROP TABLE "MAPPED_SPATIO_TEMPORAL_PATTERN_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_TRACTS_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_STIMULI_REGION_DATA";"""))
         session.execute(text("""DROP TABLE "MAPPED_STIMULI_SURFACE_DATA";"""))
@@ -141,6 +131,11 @@ def upgrade(migrate_engine):
         session.execute(text("""DROP TABLE "MAPPED_VOLUME_DATA" """))
         session.execute(text("""DROP TABLE "MAPPED_WAVELET_COEFFICIENTS_DATA";"""))
         session.execute(text("""DROP TABLE "DATA_TYPES_GROUPS";"""))
+        session.execute(text("""DROP TABLE "MAPPED_ARRAY_DATA";"""))
+        session.execute(text("""DROP TABLE "MAPPED_SPATIO_TEMPORAL_PATTERN_DATA" """))
+        session.execute(text("""DROP TABLE "MAPPED_SPATIAL_PATTERN_DATA";"""))
+        session.execute(text("""DROP TABLE "WORKFLOWS";"""))
+        session.execute(text("""DROP TABLE "MAPPED_TIME_SERIES_DATA";"""))
         session.commit()
     except Exception as excep:
         LOGGER.exception(excep)
@@ -218,7 +213,6 @@ def upgrade(migrate_engine):
                 range2 = '""" + str(new_ranges_2[i]).replace('\'', '') + """'
                 WHERE fk_operation_group = """ + str(ranges[i][0])))
 
-        session.execute(text("""DROP TABLE "DATA_TYPES";"""))
         session.commit()
     except Exception:
         session.close()
@@ -250,7 +244,7 @@ def upgrade(migrate_engine):
     session = SA_SESSIONMAKER()
     try:
         burst_ref_metadata = session.execute(text("""SELECT id, meta_data FROM "OPERATIONS"
-                    WHERE meta_data like "%Burst_Reference%" """)).fetchall()
+                    WHERE meta_data like '%Burst_Reference%' """)).fetchall()
 
         for metadata in burst_ref_metadata:
             metadata_dict = eval(str(metadata[1]))
@@ -263,6 +257,9 @@ def upgrade(migrate_engine):
         # Name it back to the old name, because we have to keep both tables so we can create BurstConfigurationH5s
         session.execute(text("""ALTER TABLE "BurstConfiguration"
                                                 RENAME TO "BURST_CONFIGURATION"; """))
+        session.execute(text("""DROP TABLE if exists "ALGORITHMS" cascade; """))
+        session.execute(text("""DROP TABLE if exists "ALGORITHM_CATEGORIES" cascade; """))
+        session.execute(text("""DROP TABLE if exists "DATA_TYPES" cascade; """))
         session.commit()
     except Exception as excep:
         LOGGER.exception(excep)

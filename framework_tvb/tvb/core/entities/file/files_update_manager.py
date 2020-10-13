@@ -34,6 +34,7 @@ Manager for the file storage version updates.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
 import os
@@ -46,6 +47,7 @@ from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
 from tvb.core.entities.storage import dao
+import migrate.versioning.api as migratesqlapi
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
@@ -246,12 +248,12 @@ class FilesUpdateManager(UpdateManager):
                 file_paths = h5.get_all_h5_paths()
                 total_count = len(file_paths)
                 count_ok, count_ignored, count_error = self.__upgrade_h5_list(file_paths)
-                no_ok += count_ok
-                no_ignored += count_ignored
-                no_error += count_error
 
                 self.log.info("Updated H5 files in total: %d [fine:%d, ignored:%d, failed:%d in: %s min]" % (
-                    total_count, no_ok, no_ignored, no_error, int((datetime.now() - start_time).seconds / 60)))
+                    total_count, count_ok, count_ignored, count_error, int((datetime.now() - start_time).seconds / 60)))
+
+                versions_repo = TvbProfile.current.db.DB_VERSIONING_REPO
+                migratesqlapi.upgrade(TvbProfile.current.db.DB_URL, versions_repo, version=19)
 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
