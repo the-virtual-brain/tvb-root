@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<Lems xmlns="file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd">
+  <ComponentType name="derivatives" description="Base type of any cell/population which has a (dimensionless) rate _R.">
+    <Parameter name="global_speed" dimension="float"/>
+    <Parameter name="global_coupling" dimension="float"/>
+    <DerivedParameter name="rec_n" expression="1.0f / n_node" value="1"/>
+    <DerivedParameter name="rec_speed_dt" expression="1.0f / global_speed / (dt)" value="1"/>
+    <DerivedParameter name="nsig" expression="sqrt(dt) * sqrt(2.0 * 1e-5)" value="1"/>
+    <Constant name="omega" default="60 * 2 * 3.14 / 1000" description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
+    <Exposure name="V" dimension="['sin(V)']"/>
+    <Dynamics>
+      <StateVariable name="V" default="-2, 1" boundaries="PI"/>
+      <TimeDerivative name="dV" expression="omega + c_0"/>
+    </Dynamics>
+  </ComponentType>
+</Lems>

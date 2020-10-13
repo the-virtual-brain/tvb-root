@@ -32,6 +32,12 @@ def load_model(model_filename, folder=None):
     model.import_from_file(fp_xml)
     # modelextended = model.resolve()
 
+    fn = './tvbmodel.xml'
+    # model.export_to_file(fn)
+
+    from lems.base.util import validate_lems
+    validate_lems(fn)
+
     return model
 
 def render_model(model_name, template=None, folder=None):
