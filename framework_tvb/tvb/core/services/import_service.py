@@ -49,7 +49,7 @@ from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED
+from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED, STATUS_ERROR
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -316,21 +316,29 @@ class ImportService(object):
         """
         imported_operations = []
         ordered_operations = self._retrieve_operations_in_order(project, import_path)
+        success_no = 0
 
         for operation_data in ordered_operations:
+
             if operation_data.is_old_form:
                 operation_entity, datatype_group = self.__import_operation(operation_data.operation)
                 new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
-                operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
-                                                                                 operation_entity, datatype_group)
-                # Create and store view_model from operation
-                view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
-                h5.store_view_model(view_model, new_op_folder)
-                operation_entity.view_model_gid = view_model.gid.hex
-                dao.store_entity(operation_entity)
 
-                self._store_imported_datatypes_in_db(project, operation_datatypes)
-                imported_operations.append(operation_entity)
+                try:
+                    operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
+                                                                                 operation_entity, datatype_group)
+                    # Create and store view_model from operation
+                    view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
+                    h5.store_view_model(view_model, new_op_folder)
+                    operation_entity.view_model_gid = view_model.gid.hex
+                    dao.store_entity(operation_entity)
+
+                    self._store_imported_datatypes_in_db(project, operation_datatypes)
+                    imported_operations.append(operation_entity)
+                    success_no = success_no + 1
+                except MissingReferenceException:
+                    operation_entity.status = STATUS_ERROR
+                    dao.store_entity(operation_entity)
 
             elif operation_data.main_view_model is not None:
                 operation_entity = dao.store_entity(operation_data.operation)
@@ -359,6 +367,9 @@ class ImportService(object):
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
                                     "operation or DTs inside!" % operation_data.operation_folder)
 
+        self.logger.warning("Project has been only partially imported because of some missing dependent datatypes. " +
+                            "%d files were successfully imported from a total of %d!" %
+                            (success_no, len(ordered_operations)))
         return imported_operations
 
     @staticmethod
