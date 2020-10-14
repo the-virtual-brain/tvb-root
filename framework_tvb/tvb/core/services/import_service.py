@@ -415,7 +415,7 @@ class ImportService(object):
             if reference[1] is not None:
                 ref_index = dao.get_datatype_by_gid(reference[1].hex)
                 if ref_index is None:
-                    raise MissingReferenceException('The file you wish to upload has missing reference files. You'
+                    raise MissingReferenceException('The file you wish to upload has missing reference files. You ' +
                                                     'should upload those first!')
 
         if h5_class is BurstConfigurationH5:
