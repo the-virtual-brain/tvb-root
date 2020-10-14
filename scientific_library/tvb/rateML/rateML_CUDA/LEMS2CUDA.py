@@ -4,9 +4,8 @@ import os
 import sys
 
 # not ideal but avoids modifying  the vendored LEMS itself
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir))))
 from lems.model.model import Model
-
 
 def default_lems_folder():
     here = os.path.dirname(os.path.abspath(__file__))

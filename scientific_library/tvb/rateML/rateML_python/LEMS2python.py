@@ -39,14 +39,14 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 import os, sys
 import tvb.simulator.models
 from mako.template import Template
-from tvb.basic.logger.builder import get_logger
+# from tvb.basic.logger.builder import get_logger
 
 # not ideal but avoids modifying  the vendored LEMS itself
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir))))
 from lems.model.model import Model
 
 
-logger = get_logger(__name__)
+# logger = get_logger(__name__)
 
 
 def default_lems_folder():
@@ -147,9 +147,10 @@ def regTVB_templating(model_filename, folder=None):
                 f.truncate(0)
                 f.seek(0)
                 f.writelines(lines)
-            logger.info("model file generated {}".format(modelfile))
+            # logger.info("model file generated {}".format(modelfile))
     except IOError as e:
-        logger.error('ioerror: %s', e)
+        print(e)
+        # logger.error('ioerror: %s', e)
 
 
 if __name__ == "__main__":

@@ -165,7 +165,8 @@ class IndexParameter(LEMSBase):
                (' description = "{0}"'.format(self.description) if self.description else '') + \
                '/>'
 
-
+# MV Adapted
+# dimension into expression
 class DerivedParameter(LEMSBase):
     """
     Store the specification of a derived parameter.
@@ -208,11 +209,13 @@ class DerivedParameter(LEMSBase):
         """
 
         return '<DerivedParameter name="{0}"'.format(self.name) + \
-               (' dimension="{0}"'.format(self.dimension) if self.dimension else '') + \
-               (' value="{0}"'.format(self.expression) if self.expression else '') + \
+               (' expression="{0}"'.format(self.expression) if self.expression else '') + \
+               (' value="{0}"'.format(self.value) if self.value else '') + \
                '/>'
 
-
+#MV adopted
+# value into default
+# dimension int domain
 class Constant(LEMSBase):
     """
     Stores a constant specification.
@@ -257,8 +260,8 @@ class Constant(LEMSBase):
         return '<Constant' + \
                (' name = "{0}"'.format(self.name) if self.name else '') + \
                (' symbol = "{0}"'.format(self.symbol) if self.symbol else '') + \
-               (' value = "{0}"'.format(self.value) if self.value else '') + \
-               (' dimension = "{0}"'.format(self.dimension) if self.dimension else '') + \
+               (' default = "{0}"'.format(self.default) if self.default else '') + \
+               (' domain = "{0}"'.format(self.domain) if self.domain else '') + \
                (' description = "{0}"'.format(self.description) if self.description else '') + \
                '/>'
 

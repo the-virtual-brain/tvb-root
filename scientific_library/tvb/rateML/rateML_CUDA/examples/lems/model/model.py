@@ -8,20 +8,21 @@ Model storage.
 
 import os
 from os.path import dirname
+import sys
 
-from ..base.base import LEMSBase
-from ..base.map import Map
-from ..parser.LEMS import LEMSFileParser
-from ..parser.LEMS import LEMSFileParser
-from ..base.util import merge_maps, merge_lists
+from lems.base.base import LEMSBase
+from lems.base.map import Map
+from lems.parser.LEMS import LEMSFileParser
+from lems.base.util import merge_maps, merge_lists
+from lems.model.component import Constant,ComponentType,Component,FatComponent
 
-from ..base.errors import ModelError
-from ..base.errors import SimBuildError
+from lems.base.errors import ModelError
+from lems.base.errors import SimBuildError
 
-from .fundamental import Dimension,Unit,Include
-from .component import Constant,ComponentType,Component,FatComponent
-from .simulation import Run,Record,EventRecord,DataDisplay,DataWriter,EventWriter
-from .structure import With,EventConnection,ChildInstance,MultiInstantiate
+from lems.model.fundamental import Dimension,Unit,Include
+# from lems.model.component import Constant,ComponentType,Component,FatComponent
+from lems.model.simulation import Run,Record,EventRecord,DataDisplay,DataWriter,EventWriter
+from lems.model.structure import With,EventConnection,ChildInstance,MultiInstantiate
 
 import xml.dom.minidom as minidom
 
@@ -273,7 +274,7 @@ class Model(LEMSBase):
         parser = LEMSFileParser(self, inc_dirs, self.include_includes)
         with open(filepath) as f:
             parser.parse(f.read())
-
+        
     def export_to_dom(self):
         """
         Exports this model to a DOM.
@@ -308,7 +309,6 @@ class Model(LEMSBase):
             xmlstr += component.toxml()
 
         xmlstr += '</Lems>'
-
         xmldom = minidom.parseString(xmlstr)
         return xmldom
 
@@ -331,7 +331,6 @@ class Model(LEMSBase):
         """
         Resolves references in this model.
         """
-
         model = self.copy()
 
         for ct in model.component_types:
@@ -343,9 +342,7 @@ class Model(LEMSBase):
 
         for c in ct.constants:
             c2 = c.copy()
-            # added to exclude True and False values for value
-            if (c2.default != 'False' and c2.default != 'True'):
-                c2.numeric_value = model.get_numeric_value(c2.default, c2.domain)
+            c2.numeric_value = model.get_numeric_value(c2.value, c2.dimension)
             model.add(c2)
 
         return model
@@ -777,7 +774,7 @@ class Model(LEMSBase):
 
         for dw in ct.simulation.data_writers:
             try:
-                path = '.'
+                path = ''
                 if fc.texts[dw.path] and fc.texts[dw.path].value:
                     path = fc.texts[dw.path].value
 
@@ -790,7 +787,7 @@ class Model(LEMSBase):
 
         for ew in ct.simulation.event_writers:
             try:
-                path = '.'
+                path = ''
                 if fc.texts[ew.path] and fc.texts[ew.path].value:
                     path = fc.texts[ew.path].value
 

@@ -4,36 +4,35 @@ Parameter, ComponentType and Component class definitions.
 @author: Gautham Ganapathy
 @organization: LEMS (http://neuroml.org/lems/, https://github.com/organizations/LEMS)
 @contact: gautham@lisphacker.org
-
-MAvdVlag: altered attributes for constants and exposures. Added type 'function for CUDA generation'
 """
 
-from ..base.base import LEMSBase
-from ..base.map import Map
-from ..base.errors import ModelError,ParseError
+from lems.base.base import LEMSBase
+from lems.base.map import Map
+from lems.base.errors import ModelError,ParseError
 
-from .dynamics import Dynamics
-from .structure import Structure
-from .simulation import Simulation
+from lems.model.dynamics import Dynamics
+from lems.model.structure import Structure
+from lems.model.simulation import Simulation
 
-from ..parser.expr import ExprParser
+from lems.parser.expr import ExprParser
+
 
 class Parameter(LEMSBase):
     """
     Stores a parameter declaration.
     """
-    
-    def __init__(self, name, dimension, description = ''):
+
+    def __init__(self, name, dimension, description=''):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the parameter.
         @type: str """
-         
+
         self.dimension = dimension
         """ Physical dimension of the parameter.
         @type: str """
@@ -41,7 +40,7 @@ class Parameter(LEMSBase):
         self.fixed = False
         """ Whether the parameter has been fixed or not.
         @type: bool """
-        
+
         self.fixed_value = None
         """ Value if fixed.
         @type: str """
@@ -63,25 +62,26 @@ class Parameter(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<{0} name="{1}" dimension="{2}"'.format('Fixed' if self.fixed else 'Parameter', self.name, self.dimension) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
-          
-          
+        return '<{0} name="{1}" dimension="{2}"'.format('Fixed' if self.fixed else 'Parameter', self.name,
+                                                        self.dimension) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
     def __str__(self):
-        return '{0}: name="{1}" dimension="{2}"'.format('Fixed' if self.fixed else 'Parameter', self.name, self.dimension) +\
-          (' description = "{0}"'.format(self.description) if self.description else '')
-          
-          
+        return '{0}: name="{1}" dimension="{2}"'.format('Fixed' if self.fixed else 'Parameter', self.name,
+                                                        self.dimension) + \
+               (' description = "{0}"'.format(self.description) if self.description else '')
+
     def __repr__(self):
         return self.__str__()
+
 
 class Fixed(Parameter):
     """
     Stores a fixed parameter specification.
     """
-    
-    def __init__(self, parameter, value, description = ''):
+
+    def __init__(self, parameter, value, description=''):
         """
         Constructor.
 
@@ -89,25 +89,24 @@ class Fixed(Parameter):
         """
 
         Parameter.__init__(self, parameter, '__dimension_inherited__', description)
-        
+
         self.fixed = True
         self.fixed_value = value
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
-        return '<Fixed parameter="{0}"'.format(self.name) + ' value="{0}"'.format(self.fixed_value)+'/>'
-    
-    
-        
-class Property(LEMSBase): 
-    """ 
-    Store the specification of a property. 
-    """ 
- 
-    def __init__(self, name, dimension = None, default_value = None, description = ''): 
+        return '<Fixed parameter="{0}"'.format(self.name) + ' value="{0}"'.format(self.fixed_value) + '/>'
+
+
+class Property(LEMSBase):
+    """
+    Store the specification of a property.
+    """
+
+    def __init__(self, name, dimension=None, default_value=None, description=''):
         """
         Constructor.
         """
@@ -119,11 +118,11 @@ class Property(LEMSBase):
         self.dimension = dimension
         """ Physical dimensions of the property.
         @type: str """
-        
+
         self.description = description
         """ Description of the property.
         @type: str """
-        
+
         self.default_value = default_value
         """ Default value of the property.
         @type: float """
@@ -133,18 +132,18 @@ class Property(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Property name="{0}"'.format(self.name) +\
-          (' dimension="{0}"'.format(self.dimension) if self.dimension else 'none') +\
-          (' defaultValue = "{0}"'.format(self.default_value) if self.default_value else '') +\
-          '/>'
-          
+        return '<Property name="{0}"'.format(self.name) + \
+               (' dimension="{0}"'.format(self.dimension) if self.dimension else 'none') + \
+               (' defaultValue = "{0}"'.format(self.default_value) if self.default_value else '') + \
+               '/>'
+
 
 class IndexParameter(LEMSBase):
     """
     Stores a parameter which is an index (integer > 0).
     """
-    
-    def __init__(self, name, description = ''):
+
+    def __init__(self, name, description=''):
         """
         Constructor.
         """
@@ -152,28 +151,28 @@ class IndexParameter(LEMSBase):
         self.name = name
         """ Name of the parameter.
         @type: str """
-        
+
         self.description = description
         """ Description of this parameter.
         @type: str """
-        
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
         return '<IndexParameter name="{0}"'.format(self.name) + '' + \
-            (' description = "{0}"'.format(self.description) if self.description else '') +\
-            '/>'
-        
-        
-class DerivedParameter(LEMSBase): 
-    """ 
-    Store the specification of a derived parameter. 
-    """ 
- 
-    def __init__(self, name, value, dimension = None, description = ''): 
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
+# MV Adapted
+# dimension into expression
+class DerivedParameter(LEMSBase):
+    """
+    Store the specification of a derived parameter.
+    """
+
+    def __init__(self, name, value, expression=None, description=''):
         """
         Constructor.
 
@@ -184,55 +183,55 @@ class DerivedParameter(LEMSBase):
         """ Name of the derived parameter.
         @type: str """
 
-        self.dimension = dimension
+        self.expression = expression
         """ Physical dimensions of the derived parameter.
         @type: str """
-        
+
         self.value = value
         """ Value of the derived parameter.
         @type: str """
-        
+
         self.description = description
         """ Description of the derived parameter.
         @type: str """
-        
+
         try:
-            ep = ExprParser(self.value)
+            ep = ExprParser(self.expression)
             self.expression_tree = ep.parse()
         except:
             raise ParseError("Parse error when parsing value expression "
-                                 "'{0}' for derived parameter {1}",
-                                 self.value, self.name)
-        
-                             
-
+                             "'{0}' for derived parameter {1}",
+                             self.expression, self.name)
 
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
-        return '<DerivedParameter name="{0}"'.format(self.name) +\
-          (' dimension="{0}"'.format(self.dimension) if self.dimension else '') +\
-          (' value="{0}"'.format(self.value) if self.value else '') +\
-          '/>'
+        return '<DerivedParameter name="{0}"'.format(self.name) + \
+               (' expression="{0}"'.format(self.expression) if self.expression else '') + \
+               (' value="{0}"'.format(self.value) if self.value else '') + \
+               '/>'
 
+#MV adopted
+# value into default
+# dimension int domain
 class Constant(LEMSBase):
     """
     Stores a constant specification.
     """
-    
-    def __init__(self, name, default, domain = None, symbol = None, description = ''):
+
+    def __init__(self, name, default, domain=None, symbol=None, description=''):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the constant.
         @type: str """
-        
+
         self.symbol = symbol
         """ Symbol of the constant.
         @type: str """
@@ -258,13 +257,13 @@ class Constant(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Constant' +\
-          (' name = "{0}"'.format(self.name) if self.name else '') +\
-          (' symbol = "{0}"'.format(self.symbol) if self.symbol else '') +\
-          (' value = "{0}"'.format(self.value) if self.value else '') +\
-          (' dimension = "{0}"'.format(self.dimension) if self.dimension else '') +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
+        return '<Constant' + \
+               (' name = "{0}"'.format(self.name) if self.name else '') + \
+               (' symbol = "{0}"'.format(self.symbol) if self.symbol else '') + \
+               (' default = "{0}"'.format(self.default) if self.default else '') + \
+               (' domain = "{0}"'.format(self.domain) if self.domain else '') + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
 
 
 class Function(LEMSBase):
@@ -315,24 +314,24 @@ class Function(LEMSBase):
                (' dimension = "{0}"'.format(self.dimension) if self.dimension else '') + \
                (' description = "{0}"'.format(self.description) if self.description else '') + \
                '/>'
-        
+
 
 class Exposure(LEMSBase):
     """
     Stores a exposure specification.
     """
 
-    def __init__(self, name, choices, default, description = ''):
+    def __init__(self, name, choices, default, description=''):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the exposure.
         @type: str """
-         
+
         self.choices = list(choices.split(", "))
         """ Choices of the exposure.
         @type: str """
@@ -350,30 +349,31 @@ class Exposure(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Exposure name="{0}" dimension="{1}"'.format(self.name, self.choices) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
+        return '<Exposure name="{0}" dimension="{1}"'.format(self.name, self.choices) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
 
 class Requirement(LEMSBase):
     """
     Stores a requirement specification.
     """
 
-    def __init__(self, name, dimension, description = ''):
+    def __init__(self, name, dimension, description=''):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the requirement.
         @type: str """
-         
+
         self.dimension = dimension
         """ Physical dimension of the requirement.
         @type: str """
-        
+
         self.description = description
         """ Description of this requirement.
         @type: str """
@@ -383,17 +383,17 @@ class Requirement(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Requirement name="{0}" dimension="{1}"'.format(self.name, self.dimension) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
-          
-          
+        return '<Requirement name="{0}" dimension="{1}"'.format(self.name, self.dimension) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
+
 class ComponentRequirement(LEMSBase):
     """
     Specifies a component that is required
     """
-    
-    def __init__(self, name, description = ''):
+
+    def __init__(self, name, description=''):
         """
         Constructor.
         """
@@ -401,40 +401,39 @@ class ComponentRequirement(LEMSBase):
         self.name = name
         """ Name of the Component required.
         @type: str """
-        
+
         self.description = description
         """ Description of this ComponentRequirement.
         @type: str """
-        
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
         return '<ComponentRequirement name="{0}"'.format(self.name) + '' + \
-            (' description = "{0}"'.format(self.description) if self.description else '') +\
-            '/>'
-        
-          
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
+
 class InstanceRequirement(LEMSBase):
     """
     Stores an instance requirement specification.
     """
 
-    def __init__(self, name, type, description = ''):
+    def __init__(self, name, type, description=''):
         """
         Constructor.
         """
-        
+
         self.name = name
         """ Name of the instance requirement.
         @type: str """
-         
+
         self.type = type
         """ Type of the instance required.
         @type: str """
-        
+
         self.description = description
         """ Description of this InstanceRequirement.
         @type: str """
@@ -444,26 +443,27 @@ class InstanceRequirement(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<InstanceRequirement name="{0}" type="{1}"'.format(self.name, self.dimension) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
+        return '<InstanceRequirement name="{0}" type="{1}"'.format(self.name, self.dimension) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
 
 class Children(LEMSBase):
     """
     Stores children specification.
     """
-    
-    def __init__(self, name, type_, multiple = False):
+
+    def __init__(self, name, type_, multiple=False):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the children.
         @type: str """
-         
+
         self.type = type_
         """ Component type of the children.
         @type: str """
@@ -479,22 +479,23 @@ class Children(LEMSBase):
 
         return '<{2} name="{0}" type="{1}"/>'.format(self.name, self.type, 'Children' if self.multiple else 'Child')
 
+
 class Text(LEMSBase):
     """
     Stores a text entry specification.
     """
 
-    def __init__(self, name, description = ''):
+    def __init__(self, name, description=''):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the text entry.
         @type: str """
-         
+
         self.description = description
         """ Description of the text entry.
         @type: str """
@@ -508,32 +509,31 @@ class Text(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Text name="{0}"'.format(self.name) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
-          
-          
+        return '<Text name="{0}"'.format(self.name) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
     def __str__(self):
-        return 'Text, name: {0}'.format(self.name)+\
-          (', description = "{0}"'.format(self.description) if self.description else '') +\
-          (', value = "{0}"'.format(self.value) if self.value else '')
-          
-          
+        return 'Text, name: {0}'.format(self.name) + \
+               (', description = "{0}"'.format(self.description) if self.description else '') + \
+               (', value = "{0}"'.format(self.value) if self.value else '')
+
     def __repr__(self):
         return self.__str__()
-        
+
+
 class Link(LEMSBase):
     """
     Stores a link specification.
     """
 
-    def __init__(self, name, type_, description = ''):
+    def __init__(self, name, type_, description=''):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the link entry.
         @type: str """
@@ -541,7 +541,7 @@ class Link(LEMSBase):
         self.type = type_
         """ Type of the link.
         @type: str """
-         
+
         self.description = description
         """ Description of the link.
         @type: str """
@@ -555,27 +555,27 @@ class Link(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Link name="{0}" type="{1}"'.format(self.name, self.type) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
+        return '<Link name="{0}" type="{1}"'.format(self.name, self.type) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
 
-        
+
 class Path(LEMSBase):
     """
     Stores a path entry specification.
     """
 
-    def __init__(self, name, description = ''):
+    def __init__(self, name, description=''):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the path entry.
         @type: str """
-         
+
         self.description = description
         """ Description of the path entry.
         @type: str """
@@ -589,22 +589,23 @@ class Path(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Path name="{0}"'.format(self.name) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
-        
+        return '<Path name="{0}"'.format(self.name) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
+
 class EventPort(LEMSBase):
     """
     Stores an event port specification.
     """
 
-    def __init__(self, name, direction, description = ''):
+    def __init__(self, name, direction, description=''):
         """
         Constructor.
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.name = name
         """ Name of the event port.
         @type: str """
@@ -612,7 +613,7 @@ class EventPort(LEMSBase):
         d = direction.lower()
         if d != 'in' and d != 'out':
             raise ModelError("Invalid direction '{0}' in event port '{1}'".format(direction, name))
-         
+
         self.direction = direction
         """ Direction - IN/OUT .
         @type: str """
@@ -626,10 +627,11 @@ class EventPort(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<EventPort name="{0}" direction="{1}"'.format(self.name, self.direction) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
-        
+        return '<EventPort name="{0}" direction="{1}"'.format(self.name, self.direction) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
+
 class ComponentReference(LEMSBase):
     """
     Stores a component reference.
@@ -664,15 +666,16 @@ class ComponentReference(LEMSBase):
         """
 
         return '<ComponentReference name="{0}" type="{1}"'.format(self.name, self.type) + \
-          (' local = "{0}"'.format(self.local) if self.local else '') + \
-            '/>'
-        
+               (' local = "{0}"'.format(self.local) if self.local else '') + \
+               '/>'
+
+
 class Attachments(LEMSBase):
     """
     Stores an attachment type specification.
     """
 
-    def __init__(self, name, type_, description = ''):
+    def __init__(self, name, type_, description=''):
         """
         Constructor.
 
@@ -696,9 +699,10 @@ class Attachments(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Attachments name="{0}" type="{1}"'.format(self.name, self.type) +\
-          (' description = "{0}"'.format(self.description) if self.description else '') +\
-          '/>'
+        return '<Attachments name="{0}" type="{1}"'.format(self.name, self.type) + \
+               (' description = "{0}"'.format(self.description) if self.description else '') + \
+               '/>'
+
 
 class Fat(LEMSBase):
     """
@@ -711,19 +715,19 @@ class Fat(LEMSBase):
 
         See instance variable documentation for more details on parameters.
         """
-        
+
         self.parameters = Map()
         """ Map of parameters in this component type.
         @type: Map(str -> lems.model.component.Parameter) """
-        
+
         self.properties = Map()
         """ Map of properties in this component type.
         @type: Map(str -> lems.model.component.Property) """
-        
+
         self.derived_parameters = Map()
         """ Map of derived_parameters in this component type.
         @type: Map(str -> lems.model.component.Parameter) """
-        
+
         self.index_parameters = Map()
         """ Map of index_parameters in this component type.
         @type: Map(str -> lems.model.component.IndexParameter) """
@@ -793,7 +797,7 @@ class Fat(LEMSBase):
         self.types = set()
         """ Set of compatible component types.
         @type: set(str) """
-        
+
     def add_parameter(self, parameter):
         """
         Adds a paramter to this component type.
@@ -803,8 +807,7 @@ class Fat(LEMSBase):
         """
 
         self.parameters[parameter.name] = parameter
-        
-        
+
     def add_property(self, property):
         """
         Adds a property to this component type.
@@ -814,7 +817,7 @@ class Fat(LEMSBase):
         """
 
         self.properties[property.name] = property
-        
+
     def add_derived_parameter(self, derived_parameter):
         """
         Adds a derived_parameter to this component type.
@@ -824,8 +827,7 @@ class Fat(LEMSBase):
         """
 
         self.derived_parameters[derived_parameter.name] = derived_parameter
-        
-        
+
     def add_index_parameter(self, index_parameter):
         """
         Adds an index_parameter to this component type.
@@ -835,7 +837,6 @@ class Fat(LEMSBase):
         """
 
         self.index_parameters[index_parameter.name] = index_parameter
-
 
     def add_constant(self, constant):
         """
@@ -857,7 +858,6 @@ class Fat(LEMSBase):
 
         self.functions[function.name] = function
 
-
     def add_exposure(self, exposure):
         """
         Adds a exposure to this component type.
@@ -867,7 +867,6 @@ class Fat(LEMSBase):
         """
 
         self.exposures[exposure.name] = exposure
-
 
     def add_requirement(self, requirement):
         """
@@ -879,7 +878,6 @@ class Fat(LEMSBase):
 
         self.requirements[requirement.name] = requirement
 
-
     def add_component_requirement(self, component_requirement):
         """
         Adds a component requirement to this component type.
@@ -890,7 +888,6 @@ class Fat(LEMSBase):
 
         self.component_requirements[component_requirement.name] = component_requirement
 
-
     def add_instance_requirement(self, instance_requirement):
         """
         Adds an instance requirement to this component type.
@@ -900,7 +897,6 @@ class Fat(LEMSBase):
         """
 
         self.instance_requirements[instance_requirement.name] = instance_requirement
-
 
     def add_children(self, children):
         """
@@ -1014,12 +1010,13 @@ class Fat(LEMSBase):
         else:
             raise ModelError('Unsupported child element')
 
+
 class ComponentType(Fat):
     """
     Stores a component type declaration.
     """
 
-    def __init__(self, name, description = '', extends = None):
+    def __init__(self, name, description='', extends=None):
         """
         Constructor.
 
@@ -1027,11 +1024,11 @@ class ComponentType(Fat):
         """
 
         Fat.__init__(self)
-    
+
         self.name = name
         """ Name of the component type.
         @type: str """
-         
+
         self.extends = extends
         """ Base component type.
         @type: str """
@@ -1044,15 +1041,15 @@ class ComponentType(Fat):
 
     def __str__(self):
         return 'ComponentType, name: {0}'.format(self.name)
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
-        xmlstr = '<ComponentType name="{0}"'.format(self.name) +\
-          (' extends="{0}"'.format(self.extends) if self.extends else '') +\
-          (' description="{0}"'.format(self.description) if self.description else '')
+        xmlstr = '<ComponentType name="{0}"'.format(self.name) + \
+                 (' extends="{0}"'.format(self.extends) if self.extends else '') + \
+                 (' description="{0}"'.format(self.description) if self.description else '')
 
         chxmlstr = ''
 
@@ -1061,68 +1058,69 @@ class ComponentType(Fat):
 
         for parameter in self.parameters:
             chxmlstr += parameter.toxml()
-            
+
         for derived_parameter in self.derived_parameters:
             chxmlstr += derived_parameter.toxml()
-            
+
         for index_parameter in self.index_parameters:
             chxmlstr += index_parameter.toxml()
 
         for constant in self.constants:
             chxmlstr += constant.toxml()
-            
+
         childxml = ''
         childrenxml = ''
-        
+
         for children in self.children:
             if children.multiple:
                 childrenxml += children.toxml()
             else:
                 childxml += children.toxml()
-            
+
         chxmlstr += childxml
         chxmlstr += childrenxml
-            
+
         for link in self.links:
             chxmlstr += link.toxml()
-            
+
         for component_reference in self.component_references:
             chxmlstr += component_reference.toxml()
-            
+
         for attachment in self.attachments:
             chxmlstr += attachment.toxml()
-            
+
         for event_port in self.event_ports:
             chxmlstr += event_port.toxml()
-            
+
         for exposure in self.exposures:
             chxmlstr += exposure.toxml()
-            
+
         for requirement in self.requirements:
             chxmlstr += requirement.toxml()
-            
+
         for component_requirement in self.component_requirements:
             chxmlstr += component_requirement.toxml()
-            
+
         for instance_requirement in self.instance_requirements:
             chxmlstr += instance_requirement.toxml()
-            
+
         for path in self.paths:
             chxmlstr += path.toxml()
-            
+
         for text in self.texts:
             chxmlstr += text.toxml()
 
         chxmlstr += self.dynamics.toxml()
         chxmlstr += self.structure.toxml()
         chxmlstr += self.simulation.toxml()
-            
+
         if chxmlstr:
             xmlstr += '>' + chxmlstr + '</ComponentType>'
         else:
             xmlstr += '/>'
 
         return xmlstr
+
 
 class Component(LEMSBase):
     """
@@ -1153,15 +1151,16 @@ class Component(LEMSBase):
         self.children = list()
         """ List of child components.
         @type: list(lems.model.component.Component) """
-        
+
         self.parent_id = None
         """ Optional id of parent
         @type: str """
-        
 
     def __str__(self):
-        return 'Component, id: {0}, type: {1},\n   parameters: {2}\n   parent: {3}\n'.format(self.id, self.type, self.parameters, self.parent_id)
-    
+        return 'Component, id: {0}, type: {1},\n   parameters: {2}\n   parent: {3}\n'.format(self.id, self.type,
+                                                                                             self.parameters,
+                                                                                             self.parent_id)
+
     def __repr__(self):
         return self.__str__()
 
@@ -1199,18 +1198,17 @@ class Component(LEMSBase):
             self.add_child(child)
         else:
             raise ModelError('Unsupported child element')
-        
+
     def set_parent_id(self, parent_id):
         """
         Sets the id of the parent Component
-        
+
         @param parent_id: id of the parent Component
         @type parent_id: str
         """
-        
+
         self.parent_id = parent_id
-        
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
@@ -1230,7 +1228,7 @@ class Component(LEMSBase):
             xmlstr += '/>'
 
         return xmlstr
-    
+
 
 class FatComponent(Fat):
     """
@@ -1257,16 +1255,14 @@ class FatComponent(Fat):
         self.child_components = list()
         """ List of child components.
         @type: lems.model.component.FatComponent """
-        
+
         self.parent_id = None
         """ Optional id of parent
         @type: str """
-        
 
     def __str__(self):
-        return 'FatComponent, id: {0}, type: {1}, parent:{2}'.format(self.id, self.type, self.parent_id)+\
-          (', num children: {0}'.format(len(self.child_components)) if len(self.child_components)>0 else '')
-        
+        return 'FatComponent, id: {0}, type: {1}, parent:{2}'.format(self.id, self.type, self.parent_id) + \
+               (', num children: {0}'.format(len(self.child_components)) if len(self.child_components) > 0 else '')
 
     def add_child_component(self, child_component):
         """
@@ -1289,13 +1285,13 @@ class FatComponent(Fat):
             self.add_child_component(child)
         else:
             Fat.add(self, child)
-            
+
     def set_parent_id(self, parent_id):
         """
         Sets the id of the parent Component
-        
+
         @param parent_id: id of the parent Component
         @type parent_id: str
         """
-        
+
         self.parent_id = parent_id

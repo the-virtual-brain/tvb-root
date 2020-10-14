@@ -16,9 +16,13 @@
     v0.6 & v0.7 were updates prompted by the refactored Java LEMS implementation (https://github.com/robertcannon/jLEMS)
     and pylems (https://github.com/lisphacker/pylems)
 -->
+<!--<xs:schema targetNamespace="file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd"-->
+<!--    xmlns="file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd"-->
+<!--    xmlns:xs="http://www.w3.org/2001/XMLSchema"-->
+<!--    elementFormDefault="qualified"-->
+<!--    attributeFormDefault="unqualified">-->
 
-<xs:schema targetNamespace="http://www.neuroml.org/lems/0.7.4"
-    xmlns="http://www.neuroml.org/lems/0.7.4"
+<xs:schema
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
     elementFormDefault="qualified"
     attributeFormDefault="unqualified">
@@ -123,7 +127,8 @@
 
         <xs:attribute name="name" type="xs:string" use="required"/>
         <xs:attribute name="domain" type="xs:string" use="optional" default="none"/>
-        <xs:attribute name="default" type="PhysicalQuantity" use="required"/>
+<!--        <xs:attribute name="default" type="PhysicalQuantity" use="required"/>-->
+        <xs:attribute name="default" type="xs:string" use="required"/>
         <xs:attribute name="description" type="xs:string" use="optional"/>
 
     </xs:complexType>

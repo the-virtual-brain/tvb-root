@@ -9,18 +9,21 @@ MAvdVlag: altered attributes for state_variables, derived_variables, time_deriva
 conditional_derived_variable.
 """
 
-from ..base.base import LEMSBase
-from ..base.map import Map
-from ..base.errors import ModelError,ParseError
+from lems.base.base import LEMSBase
+from lems.base.map import Map
+from lems.base.errors import ModelError,ParseError
 
-from ..parser.expr import ExprParser
+from lems.parser.expr import ExprParser
 
+# MV adopted
+# dimension into default
+# boundaries into exposure
 class StateVariable(LEMSBase):
     """
     Store the specification of a state variable.
     """
 
-    def __init__(self, name, default, boundaries = None):
+    def __init__(self, name, default, boundaries=None):
         """
         Constructor.
 
@@ -32,26 +35,28 @@ class StateVariable(LEMSBase):
         @type: str """
 
         self.default = default
-        """ Dimension of the state variable.
+        """ Default of the state variable.
         @type: str """
 
         self.boundaries = boundaries
-        """ Exposure name for the state variable.
+        """ Boundaries name for the state variable.
         @type: str """
 
     def __str__(self):
-        return 'StateVariable name="{0}" dimension="{1}"'.format(self.name, self.default) +\
-          (' exposure="{0}"'.format(self.boundaries) if self.boundaries else '')
-
+        return 'StateVariable name="{0}" default="{1}"'.format(self.name, self.default) + \
+               (' boundaries="{0}"'.format(self.boundaries) if self.boundaries else '')
 
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
-        return '<StateVariable name="{0}" dimension="{1}"'.format(self.name, self.dimension) +\
-          (' exposure="{0}"'.format(self.exposure) if self.exposure else '') +\
-          '/>'
+        return '<StateVariable name="{0}" dimension="{1}"'.format(self.name, self.default) + \
+               (' boundaries="{0}"'.format(self.boundaries) if self.boundaries else '') + \
+               '/>'
+
+# MV added
+# Value into expression
 
 class DerivedVariable(LEMSBase):
     """
@@ -110,16 +115,16 @@ class DerivedVariable(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<DerivedVariable name="{0}"'.format(self.name) +\
-          (' dimension="{0}"'.format(self.dimension) if self.dimension else '') +\
-          (' exposure="{0}"'.format(self.exposure) if self.exposure else '') +\
-          (' select="{0}"'.format(self.select) if self.select else '') +\
-          (' value="{0}"'.format(self.value) if self.value else '') +\
-          (' reduce="{0}"'.format(self.reduce) if self.reduce else '') +\
-          (' required="{0}"'.format(self.required) if self.required else '') +\
-          '/>'
-          
-          
+        return '<DerivedVariable name="{0}"'.format(self.name) + \
+               (' dimension="{0}"'.format(self.dimension) if self.dimension else '') + \
+               (' exposure="{0}"'.format(self.exposure) if self.exposure else '') + \
+               (' select="{0}"'.format(self.select) if self.select else '') + \
+               (' expression="{0}"'.format(self.expression) if self.expression else '') + \
+               (' reduce="{0}"'.format(self.reduce) if self.reduce else '') + \
+               (' required="{0}"'.format(self.required) if self.required else '') + \
+               '/>'
+
+
 class Case(LEMSBase):
     """
     Store the specification of a case for a Conditional Derived Variable.
@@ -141,14 +146,14 @@ class Case(LEMSBase):
         self.condition_expression_tree = None
         """ Parse tree for the case condition expression.
         @type: lems.parser.expr.ExprNode """
-        
+
         self.value_expression_tree = None
         """ Parse tree for the case condition expression.
         @type: lems.parser.expr.ExprNode """
-        
+
         try:
             self.value_expression_tree = ExprParser(self.value).parse()
-            
+
             if not self.condition:
                 self.condition_expression_tree = None
             else:
@@ -157,20 +162,22 @@ class Case(LEMSBase):
             raise ParseError("Parse error when parsing case with condition "
                              "'{0}' and value {1}",
                              self.condition, self.value)
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
         return '<Case condition="{0}" value="{1}"'.format(self.condition, self.value) + '/>'
-          
+
+# MV
+# Dimension into condition
 class ConditionalDerivedVariable(LEMSBase):
     """
     Store the specification of a conditional derived variable.
     """
 
-    def __init__(self, name, condition, exposure = None, cases = None):
+    def __init__(self, name, condition, exposure=None, cases=None):
         """
         Constructor.
 
@@ -188,12 +195,12 @@ class ConditionalDerivedVariable(LEMSBase):
         self.exposure = exposure
         """ Exposure name for the state variable.
         @type: str """
-        
-        self.cases = list(cases.split(", "))
+
+        self.cases = list(cases.split("; "))
+        # self.cases = list()
         """ List of cases related to this conditional derived variable.
         @type: list(lems.model.dynamics.Case) """
-        
-        
+
     def add_case(self, case):
         """
         Adds a case to this conditional derived variable.
@@ -216,16 +223,15 @@ class ConditionalDerivedVariable(LEMSBase):
         else:
             raise ModelError('Unsupported child element')
 
-
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
-        xmlstr = '<ConditionalDerivedVariable name="{0}"'.format(self.name) +\
-          (' dimension="{0}"'.format(self.dimension) if self.dimension else '') +\
-          (' exposure="{0}"'.format(self.exposure) if self.exposure else '') 
-          
+        xmlstr = '<ConditionalDerivedVariable name="{0}"'.format(self.name) + \
+                 (' dimension="{0}"'.format(self.condition) if self.condition else '') + \
+                 (' exposure="{0}"'.format(self.exposure) if self.exposure else '')
+
         chxmlstr = ''
 
         for case in self.cases:
@@ -235,9 +241,12 @@ class ConditionalDerivedVariable(LEMSBase):
             xmlstr += '>' + chxmlstr + '</ConditionalDerivedVariable>'
         else:
             xmlstr += '/>'
-            
+
         return xmlstr
 
+# MV added
+# variable into name
+# value into expression
 class TimeDerivative(LEMSBase):
     """
     Store the specification of a time derivative specifcation.
@@ -261,20 +270,21 @@ class TimeDerivative(LEMSBase):
         self.expression_tree = None
         """ Parse tree for the time derivative expression.
         @type: lems.parser.expr.ExprNode """
-        
+
         try:
             self.expression_tree = ExprParser(expression).parse()
         except:
             raise ParseError("Parse error when parsing value expression "
                              "'{0}' for state variable {1}",
                              self.expression, self.name)
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
-        return '<TimeDerivative variable="{0}" value="{1}"/>'.format(self.variable, self.value)
+        return '<TimeDerivative variable="{0}" value="{1}"/>'.format(self.name, self.expression)
+
 
 class Action(LEMSBase):
     """
@@ -282,6 +292,7 @@ class Action(LEMSBase):
     """
 
     pass
+
 
 class StateAssignment(Action):
     """
@@ -333,22 +344,23 @@ class EventOut(Action):
     def __init__(self, port):
         """
         Constructor.
-        
+
         See instance variable documentation for more details on parameters.
         """
-        
+
         Action.__init__(self)
 
         self.port = port
         """ Port on which the event comes in.
         @type: str """
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
         """
 
         return '<EventOut port="{0}"/>'.format(self.port)
+
 
 class Transition(Action):
     """
@@ -358,10 +370,10 @@ class Transition(Action):
     def __init__(self, regime):
         """
         Constructor.
-        
+
         See instance variable documentation for more details on parameters.
         """
-        
+
         Action.__init__(self)
 
         self.regime = regime
@@ -374,6 +386,7 @@ class Transition(Action):
         """
 
         return '<Transition regime="{0}"/>'.format(self.regime)
+
 
 class EventHandler(LEMSBase):
     """
@@ -414,7 +427,8 @@ class EventHandler(LEMSBase):
             self.add_action(child)
         else:
             raise ModelError('Unsupported child element')
-        
+
+
 class OnStart(EventHandler):
     """
     Specification for event handler called upon initialization of the component.
@@ -424,7 +438,7 @@ class OnStart(EventHandler):
         """
         Constructor.
         """
-        
+
         EventHandler.__init__(self)
 
     def __str__(self):
@@ -453,6 +467,7 @@ class OnStart(EventHandler):
 
         return xmlstr
 
+
 class OnCondition(EventHandler):
     """
     Specification for event handler called upon satisfying a given condition.
@@ -461,10 +476,10 @@ class OnCondition(EventHandler):
     def __init__(self, test):
         """
         Constructor.
-        
+
         See instance variable documentation for more details on parameters.
         """
-        
+
         EventHandler.__init__(self)
 
         self.test = test
@@ -475,7 +490,7 @@ class OnCondition(EventHandler):
             self.expression_tree = ExprParser(test).parse()
         except:
             raise ParseError("Parse error when parsing OnCondition test '{0}'", test)
-        
+
     def __str__(self):
         istr = 'OnCondition...'
         return istr
@@ -499,6 +514,7 @@ class OnCondition(EventHandler):
 
         return xmlstr
 
+
 class OnEvent(EventHandler):
     """
     Specification for event handler called upon receiving en event sent by another component.
@@ -507,10 +523,10 @@ class OnEvent(EventHandler):
     def __init__(self, port):
         """
         Constructor.
-        
+
         See instance variable documentation for more details on parameters.
         """
-        
+
         EventHandler.__init__(self)
 
         self.port = port
@@ -518,7 +534,7 @@ class OnEvent(EventHandler):
         @type: str """
 
     def __str__(self):
-        istr = 'OnEvent, port: %s'%self.port
+        istr = 'OnEvent, port: %s' % self.port
         return istr
 
     def toxml(self):
@@ -540,6 +556,7 @@ class OnEvent(EventHandler):
 
         return xmlstr
 
+
 class OnEntry(EventHandler):
     """
     Specification for event handler called upon entry into a new behavior regime.
@@ -549,7 +566,7 @@ class OnEntry(EventHandler):
         """
         Constructor.
         """
-        
+
         EventHandler.__init__(self)
 
     def toxml(self):
@@ -571,17 +588,18 @@ class OnEntry(EventHandler):
 
         return xmlstr
 
+
 class KineticScheme(LEMSBase):
     """
     Kinetic scheme specifications.
     """
 
-    def __init__(self, name, nodes, state_variable, 
+    def __init__(self, name, nodes, state_variable,
                  edges, edge_source, edge_target,
                  forward_rate, reverse_rate):
         """
         Constructor.
-        
+
         See instance variable documentation for more details on parameters.
         """
 
@@ -639,6 +657,7 @@ class KineticScheme(LEMSBase):
                                               self.forward_rate,
                                               self.reverse_rate)
 
+
 class Behavioral(LEMSBase):
     """
     Store dynamic behavioral attributes.
@@ -647,7 +666,7 @@ class Behavioral(LEMSBase):
     def __init__(self):
         """
         Constructor.
-        
+
         See instance variable documentation for more details on parameters.
         """
 
@@ -678,24 +697,23 @@ class Behavioral(LEMSBase):
         self.kinetic_schemes = Map()
         """ Map of kinetic schemes in this behavior regime.
         @type: dict(str -> lems.model.dynamics.KineticScheme) """
-        
-        
+
     def has_content(self):
-        if len(self.state_variables)==0 and \
-           len(self.derived_variables)==0 and \
-           len(self.conditional_derived_variables)==0 and \
-           len(self.time_derivatives)==0 and \
-           len(self.event_handlers)==0 and \
-           len(self.kinetic_schemes)==0:
-               return False
+        if len(self.state_variables) == 0 and \
+                len(self.derived_variables) == 0 and \
+                len(self.conditional_derived_variables) == 0 and \
+                len(self.time_derivatives) == 0 and \
+                len(self.event_handlers) == 0 and \
+                len(self.kinetic_schemes) == 0:
+            return False
         else:
             return True
-        
+
     def clear(self):
         """
         Clear behavioral entities.
         """
-        
+
         self.time_derivatives = Map()
 
     def add_state_variable(self, sv):
@@ -707,7 +725,7 @@ class Behavioral(LEMSBase):
         """
 
         self.state_variables[sv.name] = sv
-        
+
     def add_derived_variable(self, dv):
         """
         Adds a derived variable to this behavior regime.
@@ -717,7 +735,7 @@ class Behavioral(LEMSBase):
         """
 
         self.derived_variables[dv.name] = dv
-        
+
     def add_conditional_derived_variable(self, cdv):
         """
         Adds a conditional derived variable to this behavior regime.
@@ -727,7 +745,7 @@ class Behavioral(LEMSBase):
         """
 
         self.conditional_derived_variables[cdv.name] = cdv
-        
+
     def add_time_derivative(self, td):
         """
         Adds a time derivative to this behavior regime.
@@ -745,7 +763,7 @@ class Behavioral(LEMSBase):
         @param eh: Event handler.
         @type eh: lems.model.dynamics.EventHandler
         """
-        
+
         self.event_handlers.append(eh)
 
     def add_kinetic_scheme(self, ks):
@@ -779,7 +797,7 @@ class Behavioral(LEMSBase):
             self.add_kinetic_scheme(child)
         else:
             raise ModelError('Unsupported child element')
-        
+
     def toxml(self):
         """
         Exports this object into a LEMS XML object
@@ -792,7 +810,7 @@ class Behavioral(LEMSBase):
 
         for derived_variable in self.derived_variables:
             chxmlstr += derived_variable.toxml()
-            
+
         for conditional_derived_variable in self.conditional_derived_variables:
             chxmlstr += conditional_derived_variable.toxml()
 
@@ -814,10 +832,10 @@ class Behavioral(LEMSBase):
             xmlsuffix = 'Dynamics'
             xmlempty = ''
         else:
-            xmlprefix = 'Regime name="{0}"'.format(self.name) +\
-              (' initial="true"' if self.initial else '')
+            xmlprefix = 'Regime name="{0}"'.format(self.name) + \
+                        (' initial="true"' if self.initial else '')
             xmlsuffix = 'Regime'
-            xmlempty = '<{0}/>',format(xmlprefix)
+            xmlempty = '<{0}/>', format(xmlprefix)
 
         if chxmlstr:
             xmlstr = '<{0}>'.format(xmlprefix) + chxmlstr + '</{0}>'.format(xmlsuffix)
@@ -825,21 +843,22 @@ class Behavioral(LEMSBase):
             xmlstr = xmlempty
 
         return xmlstr
-                
+
+
 class Regime(Behavioral):
     """
     Stores a single behavioral regime for a component type.
     """
 
-    def __init__(self, name, parent_behavioral, initial = False):
+    def __init__(self, name, parent_behavioral, initial=False):
         """
         Constructor.
-        
+
         See instance variable documentation for more details on parameters.
         """
 
         Behavioral.__init__(self)
-        
+
         self.name = name
         """ Name of this behavior regime.
         @type: str """
@@ -851,7 +870,8 @@ class Regime(Behavioral):
         self.initial = initial
         """ Initial behavior regime.
         @type: bool """
-        
+
+
 class Dynamics(Behavioral):
     """
     Stores behavioral dynamics specification for a component type.
@@ -861,7 +881,7 @@ class Dynamics(Behavioral):
         """
         Constructor.
         """
-        
+
         Behavioral.__init__(self)
 
         self.regimes = Map()
@@ -888,10 +908,10 @@ class Dynamics(Behavioral):
             self.add_regime(child)
         else:
             Behavioral.add(self, child)
-            
+
     def has_content(self):
-        if len(self.regimes)>0: 
+        if len(self.regimes) > 0:
             return True
         else:
             return Behavioral.has_content(self)
-        
+
