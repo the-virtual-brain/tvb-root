@@ -53,7 +53,7 @@ from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
 from tvb.adapters.simulator.simulator_fragments import *
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.adapters.exceptions import LaunchException, InvalidParameterException
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
@@ -274,8 +274,11 @@ class SimulatorAdapter(ABCAdapter):
             history.fill_into(self.algorithm)
 
         region_map, region_volume_map = self._try_load_region_mapping()
-
         for monitor in self.algorithm.monitors:
+
+            if monitor.period > view_model.simulation_length:
+                raise InvalidParameterException("Sampling period can not be bigger than the simulation length!")
+
             m_name = type(monitor).__name__
             ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
                                             region_volume_map)
