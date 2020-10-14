@@ -411,12 +411,14 @@ class ImportService(object):
         h5_class = H5File.h5_class_from_file(current_file)
         reference_list = h5_class(current_file).gather_references()
 
-        for reference in reference_list:
-            if reference[1] is not None:
-                ref_index = dao.get_datatype_by_gid(reference[1].hex)
-                if ref_index is None:
-                    raise MissingReferenceException('The file you wish to upload has missing reference files. You ' +
-                                                    'should upload those first!')
+        for _, reference_gid in reference_list:
+            if not reference_gid:
+                continue
+
+            ref_index = dao.get_datatype_by_gid(reference_gid.hex)
+            if ref_index is None:
+                raise MissingReferenceException('Imported file depends on datatypes that do not exist. Please upload '
+                                                'those first!')
 
         if h5_class is BurstConfigurationH5:
             if current_project_id is None:

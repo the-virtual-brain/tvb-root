@@ -77,7 +77,7 @@ class ImportException(ServicesBaseException):
 
 class MissingReferenceException(ImportException):
     """
-    Exception to be thrown in case there are missing references when importing a file.
+    Exception to be thrown in case there are missing references when importing a H5 file.
     """
 
 

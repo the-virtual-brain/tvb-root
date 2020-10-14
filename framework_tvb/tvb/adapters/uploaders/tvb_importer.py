@@ -131,7 +131,7 @@ class TVBImporter(ABCUploader):
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
                         service.store_datatype(datatype, view_model.data_file)
                         self.nr_of_datatypes += 1
-                    except (MissingReferenceException, ImportException) as excep:
+                    except ImportException as excep:
                         self.log.exception(excep)
                         if datatype is not None:
                             target_path = h5.path_for_stored_index(datatype)
