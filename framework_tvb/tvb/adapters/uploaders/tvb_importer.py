@@ -41,7 +41,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
-from tvb.core.services.exceptions import ImportException
+from tvb.core.services.exceptions import ImportException, MissingReferenceException
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -131,7 +131,7 @@ class TVBImporter(ABCUploader):
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
                         service.store_datatype(datatype, view_model.data_file)
                         self.nr_of_datatypes += 1
-                    except ImportException as excep:
+                    except (MissingReferenceException, ImportException) as excep:
                         self.log.exception(excep)
                         if datatype is not None:
                             target_path = h5.path_for_stored_index(datatype)

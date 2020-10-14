@@ -75,6 +75,12 @@ class ImportException(ServicesBaseException):
     """
 
 
+class MissingReferenceException(ImportException):
+    """
+    Exception to be thrown in case there are missing references when importing a file.
+    """
+
+
 class BurstServiceException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.

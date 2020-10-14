@@ -59,7 +59,7 @@ from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.neotraits.db import HasTraitsIndex
-from tvb.core.services.exceptions import ImportException, ServicesBaseException
+from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.neocom import h5
@@ -409,6 +409,15 @@ class ImportService(object):
         """
         self.logger.debug("Loading DataType from file: %s" % current_file)
         h5_class = H5File.h5_class_from_file(current_file)
+        reference_list = h5_class(current_file).gather_references()
+
+        for reference in reference_list:
+            if reference[1] is not None:
+                ref_index = dao.get_datatype_by_gid(reference[1].hex)
+                if ref_index is None:
+                    raise MissingReferenceException('The file you wish to upload has missing reference files. You'
+                                                    'should upload those first!')
+
         if h5_class is BurstConfigurationH5:
             if current_project_id is None:
                 op_entity = dao.get_operationgroup_by_id(op_id)
