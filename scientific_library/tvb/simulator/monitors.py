@@ -56,6 +56,7 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 
 import abc
 import numpy
+from tvb.core.adapters.exceptions import InvalidParameterException
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG,
                                        TimeSeriesSurface)
 from tvb.simulator import noise
@@ -856,6 +857,10 @@ class Bold(Monitor):
 
     def config_for_sim(self, simulator):
         super(Bold, self).config_for_sim(simulator)
+
+        if self.period > simulator.simulation_length:
+            raise InvalidParameterException("Sampling period can not be bigger than the simulation length!")
+
         self.compute_hrf()
         sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
         self._interim_stock = numpy.zeros((self._interim_istep,) + sample_shape)
