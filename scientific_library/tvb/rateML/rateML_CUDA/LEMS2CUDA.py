@@ -3,7 +3,7 @@ from mako.template import Template
 import os
 import sys
 
-# not ideal but avoids modifying  the vendored LEMS itself
+# not ideal but avoids modifying the vendored LEMS itself
 sys.path.append(os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir))))
 from lems.model.model import Model
 
@@ -31,11 +31,11 @@ def load_model(model_filename, folder=None):
     model.import_from_file(fp_xml)
     # modelextended = model.resolve()
 
-    fn = './tvbmodel.xml'
+    # fn = './tvbmodel.xml'
     # model.export_to_file(fn)
 
     from lems.base.util import validate_lems
-    validate_lems(fn)
+    validate_lems(fp_xml)
 
     return model
 
@@ -56,7 +56,7 @@ def render_model(model_name, template=None, folder=None):
     # collect total number of exposures combinations.
     expolist = list()
     for i, expo in enumerate(modellist.exposures):
-        for chc in expo.choices:
+        for chc in expo.dimension:
             expolist.append(chc)
 
     # only check whether noise is there, if so then activate it
@@ -93,7 +93,7 @@ def cuda_templating(model_filename, folder=None):
 if __name__ == '__main__':
 
     # model_filename = 'Oscillator'
-    model_filename = 'Kuramoto'
-    # model_filename = 'Rwongwang'
+    # model_filename = 'Kuramoto'
+    model_filename = 'Rwongwang'
     # model_filename = 'Epileptor'
     cuda_templating(model_filename)

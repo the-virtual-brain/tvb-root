@@ -106,7 +106,7 @@
     <xs:complexType name="DerivedParameter">
 
         <xs:attribute name="name" type="xs:string" use="required"/>
-        <xs:attribute name="expression" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
         <xs:attribute name="value" type="xs:string" use="required"/>
 
     </xs:complexType>
@@ -126,9 +126,9 @@
     <xs:complexType name="Constant">
 
         <xs:attribute name="name" type="xs:string" use="required"/>
-        <xs:attribute name="domain" type="xs:string" use="optional" default="none"/>
-<!--        <xs:attribute name="default" type="PhysicalQuantity" use="required"/>-->
-        <xs:attribute name="default" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+<!--        <xs:attribute name="value" type="PhysicalQuantity" use="required"/>-->
         <xs:attribute name="description" type="xs:string" use="optional"/>
 
     </xs:complexType>
@@ -208,8 +208,8 @@
     <xs:complexType name="StateVariable">
 
         <xs:attribute name="name" type="xs:string" use="required"/>
-        <xs:attribute name="default" type="xs:string" use="optional" default="none"/>
-        <xs:attribute name="boundaries" type="xs:string" use="optional"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="exposure" type="xs:string" use="optional"/>
         <xs:attribute name="description" type="xs:string" use="optional"/>
 
     </xs:complexType>
@@ -222,7 +222,7 @@
         <xs:attribute name="exposure" type="xs:string" use="optional"/>
 
         <xs:attribute name="select" type="xs:string" use="optional"/>  <!-- only one of these... -->
-        <xs:attribute name="expression" type="xs:string" use="optional"/>   <!-- only one of these... -->
+        <xs:attribute name="value" type="xs:string" use="optional"/>   <!-- only one of these... -->
 
         <xs:attribute name="reduce" type="xs:string" use="optional"/>     <!-- only if select present... -->
         <xs:attribute name="required" type="xs:string" use="optional"/>     <!-- only if reduce present... -->
@@ -251,8 +251,8 @@
 
     <xs:complexType name="TimeDerivative">
 
-        <xs:attribute name="name" type="xs:string" use="required"/>
-        <xs:attribute name="expression" type="xs:string" use="required"/>
+        <xs:attribute name="variable" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
 
     </xs:complexType>
 

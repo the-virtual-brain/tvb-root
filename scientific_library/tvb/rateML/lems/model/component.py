@@ -16,7 +16,6 @@ from lems.model.simulation import Simulation
 
 from lems.parser.expr import ExprParser
 
-
 class Parameter(LEMSBase):
     """
     Stores a parameter declaration.
@@ -172,7 +171,7 @@ class DerivedParameter(LEMSBase):
     Store the specification of a derived parameter.
     """
 
-    def __init__(self, name, value, expression=None, description=''):
+    def __init__(self, name, value, dimension=None, description=''):
         """
         Constructor.
 
@@ -183,7 +182,7 @@ class DerivedParameter(LEMSBase):
         """ Name of the derived parameter.
         @type: str """
 
-        self.expression = expression
+        self.dimension = dimension
         """ Physical dimensions of the derived parameter.
         @type: str """
 
@@ -196,12 +195,12 @@ class DerivedParameter(LEMSBase):
         @type: str """
 
         try:
-            ep = ExprParser(self.expression)
+            ep = ExprParser(self.value)
             self.expression_tree = ep.parse()
         except:
             raise ParseError("Parse error when parsing value expression "
                              "'{0}' for derived parameter {1}",
-                             self.expression, self.name)
+                             self.value, self.name)
 
     def toxml(self):
         """
@@ -209,7 +208,7 @@ class DerivedParameter(LEMSBase):
         """
 
         return '<DerivedParameter name="{0}"'.format(self.name) + \
-               (' expression="{0}"'.format(self.expression) if self.expression else '') + \
+               (' expression="{0}"'.format(self.dimension) if self.dimension else '') + \
                (' value="{0}"'.format(self.value) if self.value else '') + \
                '/>'
 
@@ -221,7 +220,7 @@ class Constant(LEMSBase):
     Stores a constant specification.
     """
 
-    def __init__(self, name, default, domain=None, symbol=None, description=''):
+    def __init__(self, name, value, dimension=None, symbol=None, description=''):
         """
         Constructor.
 
@@ -236,11 +235,11 @@ class Constant(LEMSBase):
         """ Symbol of the constant.
         @type: str """
 
-        self.default = default
+        self.value = value
         """ Value of the constant.
         @type: str """
 
-        self.domain = domain
+        self.dimension = dimension
         """ Physical dimensions of the constant.
         @type: str """
 
@@ -321,7 +320,7 @@ class Exposure(LEMSBase):
     Stores a exposure specification.
     """
 
-    def __init__(self, name, choices, default, description=''):
+    def __init__(self, name, dimension, description=''):
         """
         Constructor.
 
@@ -332,16 +331,12 @@ class Exposure(LEMSBase):
         """ Name of the exposure.
         @type: str """
 
-        self.choices = list(choices.split(", "))
-        """ Choices of the exposure.
+        self.dimension = list(dimension.split(", "))
+        """ Dimension of the exposure.
         @type: str """
 
-        self.default = list(default.split(", "))
-        """ Default option of the exposure.
-        @type: str """
-
-        self.description = description
-        """ Description of this exposure.
+        self.description = list(description.split(", "))
+        """ Description option of the exposure.
         @type: str """
 
     def toxml(self):
@@ -349,7 +344,7 @@ class Exposure(LEMSBase):
         Exports this object into a LEMS XML object
         """
 
-        return '<Exposure name="{0}" dimension="{1}"'.format(self.name, self.choices) + \
+        return '<Exposure name="{0}" dimension="{1}"'.format(self.name, self.dimension) + \
                (' description = "{0}"'.format(self.description) if self.description else '') + \
                '/>'
 
