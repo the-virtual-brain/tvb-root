@@ -41,7 +41,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
-from tvb.core.services.exceptions import ImportException, MissingReferenceException
+from tvb.core.services.exceptions import ImportException
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
