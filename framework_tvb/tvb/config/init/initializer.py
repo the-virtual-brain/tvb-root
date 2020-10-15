@@ -51,6 +51,7 @@ from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
 from tvb.core.entities.model.model_workflow import Portlet
 from tvb.core.entities.storage import dao, SA_SESSIONMAKER
+from tvb.core.entities.storage.session_maker import build_db_engine
 from tvb.core.neotraits.db import Base
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.services.project_service import initialize_storage
@@ -67,6 +68,21 @@ def reset():
     """
     reset_database()
 
+def command_initializer(persist_settings=True):
+    if persist_settings and TvbProfile.is_first_run():
+        settings_service = SettingsService()
+        settings = {}
+        # Save default settings
+        for key, setting in settings_service.configurable_keys.items():
+            settings[key] = setting['value']
+        settings_service.save_settings(**settings)
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    # Build new db engine in case DB URL value changed
+    new_db_engine = build_db_engine()
+    SA_SESSIONMAKER.configure(bind=new_db_engine)
+
+    # Initialize application
+    initialize()
 
 def initialize(skip_import=False):
     """

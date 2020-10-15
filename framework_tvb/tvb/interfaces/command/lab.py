@@ -36,8 +36,8 @@ A convenience module for the command interface
 from datetime import datetime
 from time import sleep
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterModel
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.config.init.initializer import command_initializer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
@@ -52,7 +52,7 @@ from tvb.core.services.user_service import UserService
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.simulator.simulator import Simulator
 
-TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+command_initializer()
 LOG = get_logger(__name__)
 
 
