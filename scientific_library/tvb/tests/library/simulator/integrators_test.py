@@ -213,6 +213,6 @@ class TestIntegrators(BaseTestCase):
             #     state[3] -= state[0]
             #     state[4] -= state[1] + state[2]
             #     return state
-            x = integrator.integrate_with_update(x0, model.dfun, 0.0, 0.0, 0.0)
+            x = integrator.integrate_with_update(x0, model, 0.0, 0.0, 0.0)
             # Eventually, the state should be left unchanged:
             assert numpy.all(x == x0)
