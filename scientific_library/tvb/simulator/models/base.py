@@ -52,7 +52,7 @@ class Model(HasTraits):
     cvar = None
     stvar = None
     state_variable_boundaries = None
-    state_variable_mask = None
+    state_variables_mask = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -102,7 +102,7 @@ class Model(HasTraits):
             Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
         if self.integration_variables is None:
             self.integration_variables = self.state_variables
-        self.state_variable_mask = [var in self.integration_variables for var in self.state_variables]
+        self.state_variables_mask = [var in self.integration_variables for var in self.state_variables]
 
     @property
     def nvar(self):
