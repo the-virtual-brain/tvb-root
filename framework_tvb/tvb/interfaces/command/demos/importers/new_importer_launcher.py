@@ -34,17 +34,12 @@ Launch an operation from the command line
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
-
 from tvb.core.entities.model.model_operation import Algorithm
-from tvb.core.entities.storage import dao
-from tvb.core.services.operation_service import OperationService
+
 from .new_importer import FooDataImporter
 
-# Before starting this, we need to have TVB web interface launched at least once (to have a default project, user, etc)
 if __name__ == "__main__":
+    from tvb.interfaces.command.lab import *
 
     operation_service = OperationService()
 

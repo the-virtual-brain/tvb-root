@@ -31,16 +31,20 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import datetime
 import importlib
 import os
 import shutil
-import datetime
 import threading
 from types import ModuleType
+
 from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import VIEW_MODEL2ADAPTER
+from tvb.config.init.datatypes_registry import populate_datatypes_registry
+from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.config.init.model_manager import initialize_startup, reset_database
 from tvb.core import removers_factory
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.constants import ELEM_INPUTS, ATT_TYPE, ATT_NAME
@@ -55,11 +59,8 @@ from tvb.core.entities.storage.session_maker import build_db_engine
 from tvb.core.neotraits.db import Base
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.services.project_service import initialize_storage
-from tvb.core.services.user_service import UserService
 from tvb.core.services.settings_service import SettingsService
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.config.init.datatypes_registry import populate_datatypes_registry
-from tvb.config.init.model_manager import initialize_startup, reset_database
+from tvb.core.services.user_service import UserService
 
 
 def reset():
@@ -68,7 +69,8 @@ def reset():
     """
     reset_database()
 
-def command_initializer(persist_settings=True, skip_import = False):
+
+def command_initializer(persist_settings=True, skip_import=False):
     if persist_settings and TvbProfile.is_first_run():
         settings_service = SettingsService()
         settings = {}
@@ -83,6 +85,7 @@ def command_initializer(persist_settings=True, skip_import = False):
 
     # Initialize application
     initialize(skip_import)
+
 
 def initialize(skip_import=False):
     """

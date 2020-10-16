@@ -35,21 +35,22 @@ A convenience module for the command interface
 """
 from datetime import datetime
 from time import sleep
+
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterModel
 from tvb.basic.logger.builder import get_logger
 from tvb.config.init.initializer import command_initializer
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
-from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.services.user_service import UserService
-from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.simulator.simulator import Simulator
 
 command_initializer()
@@ -102,8 +103,9 @@ def fire_simulation(project_id, simulator):
     project = dao.get_project_by_id(project_id)
     assert isinstance(simulator, Simulator)
     # Load the SimulatorAdapter algorithm from DB
-    cached_simulator_algorithm = AlgorithmService().get_algorithm_by_module_and_class(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                                                      IntrospectionRegistry.SIMULATOR_CLASS)
+    cached_simulator_algorithm = AlgorithmService().get_algorithm_by_module_and_class(
+        IntrospectionRegistry.SIMULATOR_MODULE,
+        IntrospectionRegistry.SIMULATOR_CLASS)
 
     simulator_model = SimulatorAdapterModel()
     simulator_model.connectivity = simulator.connectivity.gid
@@ -117,7 +119,8 @@ def fire_simulation(project_id, simulator):
     dao.store_entity(burst)
 
     launched_operation = simulator_service.async_launch_and_prepare_simulation(burst, project.administrator, project,
-                                                                               cached_simulator_algorithm, simulator_model)
+                                                                               cached_simulator_algorithm,
+                                                                               simulator_model)
     LOG.info("Operation launched ....")
     return launched_operation
 

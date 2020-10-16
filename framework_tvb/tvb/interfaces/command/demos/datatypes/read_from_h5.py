@@ -37,9 +37,7 @@ Demo script on how to read a TVB H5 file
 import os
 import sys
 
-from tvb.config.init.initializer import command_initializer
 from tvb.core.entities.model.model_operation import Operation
-from tvb.core.entities.storage import dao
 from tvb.core.services.import_service import ImportService
 
 
@@ -62,7 +60,8 @@ def read_h5(full_paths):
 
 
 if __name__ == '__main__':
-    command_initializer()
+    from tvb.interfaces.command.lab import *
+
     if len(sys.argv) > 1:
         FILE_PATHS = sys.argv[1:]
     else:

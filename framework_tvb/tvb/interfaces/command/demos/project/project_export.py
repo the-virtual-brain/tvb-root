@@ -37,8 +37,6 @@ After running this script, you should have a message in the console telling wher
 
 """
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.core.entities.storage import dao
-from tvb.core.services.project_service import ProjectService
 
 
 def run_export(project_id, loose_irrelevant=False):
@@ -51,9 +49,8 @@ def run_export(project_id, loose_irrelevant=False):
 
 
 if __name__ == '__main__':
-    from tvb.config.init.initializer import command_initializer
+    from tvb.interfaces.command.lab import *
 
-    command_initializer()
     projects = dao.get_all_projects()
 
     run_export(projects[0].id)

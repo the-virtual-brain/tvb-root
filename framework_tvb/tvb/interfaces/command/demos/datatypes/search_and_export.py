@@ -36,16 +36,12 @@ Demo script on how to filter datatypes and later export them.
 
 import os
 import shutil
-from datetime import datetime
 from sys import argv
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.config.init.initializer import command_initializer
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neocom import h5
 
 
 def _retrieve_entities_by_filters(kind, project_id, filters):
@@ -95,7 +91,8 @@ def search_and_export_ts(project_id, export_folder=os.path.join("~", "TVB")):
 
 
 if __name__ == '__main__':
-    command_initializer()
+    from tvb.interfaces.command.lab import *
+
     if len(argv) < 2:
         PROJECT_ID = 1
     else:

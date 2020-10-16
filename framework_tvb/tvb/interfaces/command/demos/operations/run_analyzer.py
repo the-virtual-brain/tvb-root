@@ -36,24 +36,18 @@ __main__ will contain the code.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from time import sleep
-
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter, FFTAdapterModel
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.config.init.initializer import command_initializer
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model.model_operation import STATUS_FINISHED
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.operation_service import OperationService
 
 
 # Before starting this, we need to have TVB web interface launched at least once
 # (to have a default project, user, etc setup)
 def run_analyzer():
-    command_initializer()
+    from tvb.interfaces.command.lab import *
+
     log = get_logger(__name__)
 
     # This ID of a project needs to exists in DB, and it can be taken from the WebInterface:
@@ -73,7 +67,7 @@ def run_analyzer():
 
     # launch an operation and have the results stored both in DB and on disk
     launched_operation = OperationService().fire_operation(adapter_instance, project.administrator,
-                                                           project.id, view_model=fourier_model,  **launch_args)[0]
+                                                           project.id, view_model=fourier_model, **launch_args)[0]
 
     # wait for the operation to finish
     while not launched_operation.has_finished:

@@ -34,28 +34,18 @@ Find a Connectivity in current project (by Subject) and later run a simulation o
 __main__ will contain the code.
 """
 
-from time import sleep
-
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.config.init.initializer import command_initializer
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
-from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_operation import STATUS_FINISHED
-from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neocom import h5
-from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.services.simulator_service import SimulatorService
 from tvb.simulator.coupling import Scaling
 
 
 # Before starting this, we need to have TVB web interface launched at least once
 # (to have a default project, user and connectivity)
 def run_simulation():
-    command_initializer()
+    from tvb.interfaces.command.lab import *
+
     log = get_logger(__name__)
 
     # This ID of a project needs to exists in DB, and it can be taken from the WebInterface:

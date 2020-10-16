@@ -35,13 +35,12 @@ Launch an operation from the command line
 """
 
 if __name__ == "__main__":
-    from tvb.config.init.initializer import command_initializer
-    command_initializer()
+    from tvb.interfaces.command.lab import *
 
+from tvb.adapters.uploaders.tvb_importer import TVBImporter, TVBImporterModel
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
-from tvb.adapters.uploaders.tvb_importer import TVBImporter, TVBImporterModel
 
 
 def import_h5(file_path, project_id):
@@ -58,8 +57,8 @@ def import_h5(file_path, project_id):
     print("We will try to import file at path " + file_path)
     # launch an operation and have the results stored both in DB and on disk
     service.fire_operation(adapter_instance,
-                                                 project.administrator,
-                                                 project.id,
-                                                 view_model=view_model)
+                           project.administrator,
+                           project.id,
+                           view_model=view_model)
 
     print("Operation launched. Check the web UI")
