@@ -3,6 +3,7 @@ import numpy as np
 import numba as nb
 from numpy.random import SFC64
 
+
 @nb.njit
 def fmri(node_bold, x, dt):
     TAU_S = nb.float32(0.65)
@@ -43,8 +44,9 @@ def fmri(node_bold, x, dt):
     node_bold[3] = q
     return V0 * (k1 * (1.0 - q) + k2 * (1.0 - q / v) + k3 * (1.0 - v))
 
+
 def make_loop(nh, nn, dt):
-    # for now assume dt=0.1ms, speed 10m/s, max delay 25.6ms ~ gamma band
+    # w/ dt=0.1ms, speed 10m/s, max delay 25.6ms ~ gamma band
     assert nh == 256
     assert dt == 0.1
     nh, nn = [nb.uint32(_) for _ in (nh, nn)]
@@ -52,6 +54,7 @@ def make_loop(nh, nn, dt):
     sqrt_dt = nb.float32(np.sqrt(dt))
     o_nh = nb.float32(1 / nh)
     nh_dt = nb.float32(nh * dt)
+
     @nb.njit(boundscheck=False, fastmath=True)
     def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, dt, I, Delta, eta, tau, J, cr, cv):
         o_tau = nb.float32(1 / tau)
@@ -79,44 +82,53 @@ def make_loop(nh, nn, dt):
             bold_out[i] = fmri(bold_state[i], tavg[0, i], nh_dt)
     return loop
 
-# TODO turn the following into a class w/ all vars as attributes
-# inner loop setup dimensions, constants, buffers
-nh, nn = 256, 96                                            # likely dimensions
-dt = 0.1                                                    # fixed dt
-w = (np.random.randn(nn, nn)**2).astype(np.float32)         # random weights
-d = (np.random.rand(nn, nn)**2 * 256).astype(np.uint32)     # random delays (in units of dt)
-r, V = np.zeros((2, nh, nn), 'f')                           # buffers for r & V
-V -= 2.0
-I, Delta, eta, tau, J, cr, cv = [nb.float32(_) for _ in (0.0, 1.0, -5.0, 100.0, 15.0, 1.0/nn, 0.0)]
-wrV = np.empty((2, nh, nn), 'f')                            # buffer for noise
-tavg = np.zeros((2, nn), 'f')                               # buffer for temporal average
-bold_state = np.zeros((nn, 4), 'f')                         # buffer for bold state
-bold_state[:,1:] = 1.0
-bold_out = np.zeros((nn,), 'f')                             # buffer for bold output
-rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
 
-# first call to jit the function
-loop = make_loop(nh, nn, dt)
-loop(r, V, wrV, w, d, tavg, bold_state, bold_out, dt, I, Delta, eta, tau, J, cr, cv)
+def default_icfun(t, rV):
+    rV[0] = 0.0
+    rV[1] = -2.0
 
-# outer loop setup
-win_len = nh * dt
-total_time = 60e3 # 1 min
-total_wins = int(total_time / win_len)
-bold_tr = 1800  # in ms
-bold_skip = int(bold_tr / win_len)
-tavg_trace = []  # TODO memmap
-bold_trace = []
 
-# start time stepping
-for t in tqdm.trange(total_wins):
-    rng.standard_normal(size=(2, nh, nn), dtype='f', out=wrV)  # ~15% time here
+def run_loop(weights, delays,
+             total_time=60e3, bold_tr=1800,
+             I=0.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
+             dt=0.1, nh=256,
+             icfun=default_icfun):
+    assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1]
+    nn = weights.shape[0]
+    w = weights.astype(np.float32)
+    d = (delays / dt).astype(np.uint32)
+    assert d.max() < nh
+    # inner loop setup dimensions, constants, buffers
+    r, V = rV = np.zeros((2, nh, nn), 'f')
+    icfun(-np.r_[:nh]*dt, rV)
+    I, Delta, eta, tau, J, cr, cv = [nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv)]
+    wrV = np.empty((2, nh, nn), 'f')                            # buffer for noise
+    tavg = np.zeros((2, nn), 'f')                               # buffer for temporal average
+    bold_state = np.zeros((nn, 4), 'f')                         # buffer for bold state
+    bold_state[:,1:] = 1.0
+    bold_out = np.zeros((nn,), 'f')                             # buffer for bold output
+    rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
+    # first call to jit the function
+    loop = make_loop(nh, nn, dt)
     loop(r, V, wrV, w, d, tavg, bold_state, bold_out, dt, I, Delta, eta, tau, J, cr, cv)
-    tavg_trace.append(tavg.copy())
-    if t % bold_skip == 0:
-        bold_trace.append(bold_out)
+    # outer loop setup
+    win_len = nh * dt
+    total_wins = int(total_time / win_len)
+    bold_skip = int(bold_tr / win_len)
+    tavg_trace = np.empty((total_wins, ) + tavg.shape, 'f')
+    bold_trace = np.empty((total_wins//bold_skip + 1, ) + bold_out.shape, 'f')
+    # start time stepping
+    for t in tqdm.trange(total_wins):
+        rng.standard_normal(size=(2, nh, nn), dtype='f', out=wrV)  # ~15% time here
+        loop(r, V, wrV, w, d, tavg, bold_state, bold_out, dt, I, Delta, eta, tau, J, cr, cv)
+        tavg_trace[t] = tavg
+        if t % bold_skip == 0:
+            bold_trace[t//bold_skip] = bold_out
+    return tavg_trace, bold_trace
 
-tavg_trace = np.array(tavg_trace)
-bold_trace = np.array(bold_trace)
-print('tavg', tavg_trace.shape)
-print('bold', bold_trace.shape)
+
+if __name__ == '__main__':
+    nn = 96
+    w = np.random.randn(nn, nn)**2
+    d = np.random.rand(nn, nn)**2 * 25
+    run_loop(w, d)
