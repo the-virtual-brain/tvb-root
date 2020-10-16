@@ -53,7 +53,7 @@ from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
 from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5, CorrelationCoefficientsH5, CovarianceH5
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5, ValueWrapper
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5, DatatypeMeasure
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5, IndependentComponentsH5
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5, StimuliSurfaceH5
 from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
@@ -132,6 +132,6 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(SpatioTemporalPattern, None, SpatioTemporalPatternIndex)
     REGISTRY.register_datatype(StimuliRegion, StimuliRegionH5, StimuliRegionIndex)
     REGISTRY.register_datatype(StimuliSurface, StimuliSurfaceH5, StimuliSurfaceIndex)
-    REGISTRY.register_datatype(None, DatatypeMeasureH5, DatatypeMeasureIndex)
+    REGISTRY.register_datatype(DatatypeMeasure, DatatypeMeasureH5, DatatypeMeasureIndex)
     REGISTRY.register_datatype(ConnectivityAnnotations, ConnectivityAnnotationsH5, ConnectivityAnnotationsIndex)
     REGISTRY.register_datatype(ValueWrapper, ValueWrapperH5, ValueWrapperIndex)

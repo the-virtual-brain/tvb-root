@@ -110,35 +110,35 @@ and cover the basic functionality of TVB's simulator package using very simple
 examples.
 
 
-.. _Analyze Region Corrcoef: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/analyze_region_corrcoef.ipynb
-.. _Compare Connectivity Normalization: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/compare_connectivity_normalization.ipynb
-.. _Compare Integrators: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/compare_integrators.ipynb
-.. _Display Source Sensor Geometry: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
-.. _Display Surface Local Connectivity: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
-.. _Encrypt Files before upload in TVB Web GUI: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/encrypt_data.ipynb
-.. _Exploring Epileptor 2D: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/exploring_epileptor2D.ipynb
-.. _Exploring Longer Time Series: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
-.. _Exploring Resting State in Epilepsy: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/exploring_resting_state_in_epilepsy.ipynb
-.. _Exploring The Bold Monitor: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
-.. _Exploring the Epileptor 3D: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/exploring_the_epileptor_codim_3_model.ipynb
-.. _Exporing A Surface Mesh: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/exporing_a_surface_mesh.ipynb
-.. _Generate a new model using DSL: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/model_generation_using_dsl.ipynb
-.. _Generate TimeSeries for import in Web GUI: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/generate_ts_h5_from_library.ipynb
-.. _Generate Surrogate Connectivity: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
-.. _Interacting With The Framework: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/interacting_with_the_framework.ipynb
-.. _Interacting With The Framework and Allen: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/interacting_with_Allen.ipynb
-.. _Simulate for Mouse: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/simulate_for_mouse.ipynb
-.. _Applying multiple Stimuli: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/multiple_stimuli.ipynb
-.. _Simulate Bold Continuation: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/simulate_bold_continuation.ipynb
-.. _Simulate Reduced Wong Wang: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/simulate_reduced_wong_wang.ipynb
-.. _Simulate Region Bold Stimulus: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/simulate_region_bold_stimulus.ipynb
-.. _Simulate Region Jansen Rit: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/simulate_region_jansen_rit.ipynb
-.. _Simulate Region Stimulus: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/simulate_region_stimulus.ipynb
-.. _Simulate SEEG for Epileptor with Observation Noise: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/simulate_seeg_from_epileptors_with_observation_noise.ipynb
-.. _Simulate Surface Seeg Eeg Meg: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/simulate_surface_seeg_eeg_meg.ipynb
-.. _Using Your Own Connectivity: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
-.. _Interacting with TVBClient API by launching simulation and analyzer methods: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_fire_simulation.ipynb
-.. _Interacting with TVBClient API importers: https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_launch_operations.ipynb
+.. _Analyze Region Corrcoef: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/analyze_region_corrcoef.ipynb
+.. _Compare Connectivity Normalization: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/compare_connectivity_normalization.ipynb
+.. _Compare Integrators: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/compare_integrators.ipynb
+.. _Display Source Sensor Geometry: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_source_sensor_geometry.ipynb
+.. _Display Surface Local Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/display_surface_local_connectivity.ipynb
+.. _Encrypt Files before upload in TVB Web GUI: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/encrypt_data.ipynb
+.. _Exploring Epileptor 2D: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_epileptor2D.ipynb
+.. _Exploring Longer Time Series: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_longer_time_series.ipynb
+.. _Exploring Resting State in Epilepsy: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_resting_state_in_epilepsy.ipynb
+.. _Exploring The Bold Monitor: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_the_bold_monitor.ipynb
+.. _Exploring the Epileptor 3D: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exploring_the_epileptor_codim_3_model.ipynb
+.. _Exporing A Surface Mesh: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/exporing_a_surface_mesh.ipynb
+.. _Generate a new model using DSL: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/model_generation_using_dsl.ipynb
+.. _Generate TimeSeries for import in Web GUI: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/generate_ts_h5_from_library.ipynb
+.. _Generate Surrogate Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/generate_surrogate_connectivity.ipynb
+.. _Interacting With The Framework: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_the_framework.ipynb
+.. _Interacting With The Framework and Allen: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_Allen.ipynb
+.. _Simulate for Mouse: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_for_mouse.ipynb
+.. _Applying multiple Stimuli: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/multiple_stimuli.ipynb
+.. _Simulate Bold Continuation: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_bold_continuation.ipynb
+.. _Simulate Reduced Wong Wang: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_reduced_wong_wang.ipynb
+.. _Simulate Region Bold Stimulus: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_region_bold_stimulus.ipynb
+.. _Simulate Region Jansen Rit: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_region_jansen_rit.ipynb
+.. _Simulate Region Stimulus: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_region_stimulus.ipynb
+.. _Simulate SEEG for Epileptor with Observation Noise: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_seeg_from_epileptors_with_observation_noise.ipynb
+.. _Simulate Surface Seeg Eeg Meg: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/simulate_surface_seeg_eeg_meg.ipynb
+.. _Using Your Own Connectivity: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/using_your_own_connectivity.ipynb
+.. _Interacting with TVBClient API by launching simulation and analyzer methods: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_fire_simulation.ipynb
+.. _Interacting with TVBClient API importers: https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos/interacting_with_rest_api_launch_operations.ipynb
 
 
 .. figure:: figures/analyze_region_corrcoef.png
