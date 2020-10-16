@@ -45,7 +45,18 @@ def fmri(node_bold, x, dt):
     return V0 * (k1 * (1.0 - q) + k2 * (1.0 - q / v) + k3 * (1.0 - v))
 
 
-def make_loop(nh, nn, dt):
+def make_linear_cfun(scale=0.01):
+    k = nb.float32(scale)
+    @nb.njit(inline='always')
+    def pre(xj, xi):
+        return xj
+    @nb.njit(inline='always')
+    def post(gx):
+        return k * gx
+    return pre, post
+
+
+def make_loop(nh, nn, dt, cfpre, cfpost):
     # w/ dt=0.1ms, speed 10m/s, max delay 25.6ms ~ gamma band
     assert nh == 256
     assert dt == 0.1
@@ -54,9 +65,8 @@ def make_loop(nh, nn, dt):
     sqrt_dt = nb.float32(np.sqrt(dt))
     o_nh = nb.float32(1 / nh)
     nh_dt = nb.float32(nh * dt)
-
     @nb.njit(boundscheck=False, fastmath=True)
-    def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, dt, I, Delta, eta, tau, J, cr, cv):
+    def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv):
         o_tau = nb.float32(1 / tau)
         assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
         assert r.shape[1] == V.shape[1] == nn
@@ -64,12 +74,14 @@ def make_loop(nh, nn, dt):
             t = nh-1 if t0==0 else t0
             t1 = t0 + 1
             for i in range(nn):
-                rc = nb.float32(0)
+                rc = nb.float32(0) # using array here costs 50%+
                 Vc = nb.float32(0)
                 for j in range(nn):
                     dij = (t - d[i, j] + nh) & (nh-1)
-                    rc += w[i, j] * r[dij, j]
-                    Vc += w[i, j] * r[dij, j]
+                    rc += w[i, j] * cfpre(r[dij, j], r[t, i])
+                    Vc += w[i, j] * cfpre(V[dij, j], V[t, i])
+                rc = cfpost(rc)
+                Vc = cfpost(Vc)
                 dr = o_tau * (Delta / (pi * tau) + 2 * V[t, i] * r[t, i])
                 dV = o_tau * (V[t, i] ** 2 - pi ** 2 * tau ** 2 * r[t, i] ** 2 + eta + J * tau * r[t, i] + I + cr * rc + cv * Vc)
                 r[t1, i] = r[t, i] + dr * dt + sqrt_dt * 0.1 * wrV[0, t, i]
@@ -89,7 +101,7 @@ def default_icfun(t, rV):
 
 
 def run_loop(weights, delays,
-             total_time=60e3, bold_tr=1800,
+             total_time=60e3, bold_tr=1800, coupling_scaling=0.01,
              I=0.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
              dt=0.1, nh=256,
              icfun=default_icfun):
@@ -109,8 +121,9 @@ def run_loop(weights, delays,
     bold_out = np.zeros((nn,), 'f')                             # buffer for bold output
     rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
     # first call to jit the function
-    loop = make_loop(nh, nn, dt)
-    loop(r, V, wrV, w, d, tavg, bold_state, bold_out, dt, I, Delta, eta, tau, J, cr, cv)
+    cfpre, cfpost = make_linear_cfun(coupling_scaling)
+    loop = make_loop(nh, nn, dt, cfpre, cfpost)
+    #loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv)
     # outer loop setup
     win_len = nh * dt
     total_wins = int(total_time / win_len)
@@ -120,7 +133,7 @@ def run_loop(weights, delays,
     # start time stepping
     for t in tqdm.trange(total_wins):
         rng.standard_normal(size=(2, nh, nn), dtype='f', out=wrV)  # ~15% time here
-        loop(r, V, wrV, w, d, tavg, bold_state, bold_out, dt, I, Delta, eta, tau, J, cr, cv)
+        loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv)
         tavg_trace[t] = tavg
         if t % bold_skip == 0:
             bold_trace[t//bold_skip] = bold_out
