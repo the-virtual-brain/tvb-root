@@ -110,7 +110,7 @@ class TestUpdateVariablesModel(Model):
         state[4] += state[1] + state[2]
         return state
 
-    def update_state_variables_after_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
+    def update_state_variables_after_integration(self, state):
         state[3] -= state[0]
         state[4] -= state[1] + state[2]
         return state
