@@ -68,7 +68,7 @@ def reset():
     """
     reset_database()
 
-def command_initializer(persist_settings=True):
+def command_initializer(persist_settings=True, skip_import = False):
     if persist_settings and TvbProfile.is_first_run():
         settings_service = SettingsService()
         settings = {}
@@ -82,7 +82,7 @@ def command_initializer(persist_settings=True):
     SA_SESSIONMAKER.configure(bind=new_db_engine)
 
     # Initialize application
-    initialize()
+    initialize(skip_import)
 
 def initialize(skip_import=False):
     """

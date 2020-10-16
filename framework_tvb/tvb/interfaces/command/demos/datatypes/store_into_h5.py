@@ -33,14 +33,13 @@ Demo script on how to use tvb-framework default read/write capabilities
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
-from tvb.core.neocom import h5
-from tvb.basic.profile import TvbProfile
-from tvb.datatypes.connectivity import Connectivity
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
+from tvb.config.init.initializer import command_initializer
+from tvb.core.neocom import h5
+from tvb.datatypes.connectivity import Connectivity
 
 if __name__ == '__main__':
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    command_initializer()
 
     # Read from a ZIP
     conn_ht = Connectivity.from_file()
