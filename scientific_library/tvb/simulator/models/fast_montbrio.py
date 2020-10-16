@@ -58,8 +58,8 @@ def make_linear_cfun(scale=0.01):
 
 def make_loop(nh, nn, dt, cfpre, cfpost):
     # w/ dt=0.1ms, speed 10m/s, max delay 25.6ms ~ gamma band
-    assert nh == 256
-    assert dt == 0.1
+    # assert nh == 256
+    # assert dt == 0.1
     nh, nn = [nb.uint32(_) for _ in (nh, nn)]
     dt, pi = [nb.float32(_) for _ in (dt, np.pi)]
     sqrt_dt = nb.float32(np.sqrt(dt))
@@ -70,8 +70,11 @@ def make_loop(nh, nn, dt, cfpre, cfpost):
         o_tau = nb.float32(1 / tau)
         assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
         assert r.shape[1] == V.shape[1] == nn
+        for i in range(nn):
+            tavg[0, i] = nb.float32(0.0)
+            tavg[1, i] = nb.float32(0.0)
         for t0 in range(-1, nh - 1):
-            t = nh-1 if t0==0 else t0
+            t = nh-1 if t0<0 else t0
             t1 = t0 + 1
             for i in range(nn):
                 rc = nb.float32(0) # using array here costs 50%+
@@ -83,15 +86,13 @@ def make_loop(nh, nn, dt, cfpre, cfpost):
                 rc = cfpost(rc)
                 Vc = cfpost(Vc)
                 dr = o_tau * (Delta / (pi * tau) + 2 * V[t, i] * r[t, i])
-                dV = o_tau * (V[t, i] ** 2 - pi ** 2 * tau ** 2 * r[t, i] ** 2 + eta + J * tau * r[t, i] + I + cr * rc + cv * Vc)
+                dV = o_tau * (V[t, i] ** 2 - (pi ** 2) * (tau ** 2) * (r[t, i] ** 2) + eta + J * tau * r[t, i] + I + cr * rc + cv * Vc)
                 r[t1, i] = r[t, i] + dr * dt + sqrt_dt * r_sigma * wrV[0, t, i]
                 V[t1, i] = V[t, i] + dV * dt + sqrt_dt * V_sigma * wrV[1, t, i]
-                # t avg over 25.6 ms ~39 Hz sampling; TODO use hanning window
+                # TODO use hanning window to lower leakage
                 tavg[0, i] += r[t1, i] * o_nh
                 tavg[1, i] += V[t1, i] * o_nh
-        # update bold (from r?)
-        for i in range(r.shape[1]):
-            bold_out[i] = fmri(bold_state[i], tavg[0, i], nh_dt)
+                bold_out[i] = fmri(bold_state[i], tavg[0, i], dt)
     return loop
 
 
