@@ -44,7 +44,6 @@ from tvb.basic.neotraits.api import Attr, Float
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator
 from tvb.simulator.coupling import Coupling, CouplingWithCurrentState
-from tvb.simulator.monitors import Monitor
 from tvb.simulator.models.base import ModelNumbaDfun
 from tvb.contrib.cosimulation.history import CosimHistory
 from tvb.contrib.cosimulation.tvb_to_cosim_interfaces import TVBtoCosimInterfaces
@@ -84,7 +83,7 @@ class CoSimulator(Simulator):
 
     PRINT_PROGRESSION_MESSAGE = True
 
-    def _configure_cosimulation(self, synchronization_time=None):
+    def _configure_cosimulation(self):
         """This method will run all the configuration methods of all TVB <-> Cosimulator interfaces,
            If there are any Cosimulator -> TVB update interfaces:
             - remove connectivity among region nodes modelled exclusively in the other co-simulator.
@@ -92,20 +91,19 @@ class CoSimulator(Simulator):
             - set the cosim_vars and cosim_vars_proxy_inds properties of the CosimModel class,
               based on the respective vois and proxy_inds of all cosim_to_tvb state interfaces.
            """
-        if synchronization_time is not None:
-            self.synchronization_time = synchronization_time
         if self.synchronization_time is None:
             # Default synchronization time to dt:
             self.synchronization_time = self.integrator.dt
         # Compute the number of synchronization time steps:
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
         if self.synchronization_n_step > 1:
+            # TODO: change the coupling monitor to give the delayed state only
             if self.coupling in CouplingWithCurrentState:
                 raise ValueError("You cannot have delayed synchronization with %s,"
                                  "which requires the current state of its computation!"
                                  % self.coupling.__class__.__name__)
         # We create a CosimHistory,
-        # for delayed state [synchronization_istep + 1, n_var, n_node, n_mode]
+        # for delayed state *[synchronization_istep + 1, n_var, n_node, n_mode]
         # and node_coupling [2 * synchronization_istep, n_cvar, n_node, n_mode]
         n_cvar = len(self.model.cvar)
         self.cosim_history = CosimHistory(self.synchronization_n_step,
@@ -157,7 +155,7 @@ class CoSimulator(Simulator):
             if reconfigure_connectivity:
                 self.connectivity.configure()
 
-    def configure(self, full_configure=True, synchronization_time=None):
+    def configure(self, full_configure=True):
         """Configure simulator and its components.
 
         The first step of configuration is to run the configure methods of all
@@ -183,7 +181,7 @@ class CoSimulator(Simulator):
             self._spatial_param_reshape = (-1, 1)
 
         super(CoSimulator, self).configure(full_configure=full_configure)
-        self._configure_cosimulation(synchronization_time)
+        self._configure_cosimulation()
         return self
 
     def _loop_update_state(self, state):
@@ -256,6 +254,7 @@ class CoSimulator(Simulator):
                 # we need to also recompute the node_coupling for the next synchronization_n_step time steps:
                 start_step = step + 1
                 for istep in range(start_step, start_step+self.synchronization_n_step):
+                    # TODO: recompute coupling for cosimulation/integration
                     self.cosim_history.update_coupling(istep, self._loop_compute_node_coupling(istep))
                 # Return the current state and next time step node coupling from CosimHistory:
                 return self.cosim_history.query_state(step), self.cosim_history.query_state(step+1)
