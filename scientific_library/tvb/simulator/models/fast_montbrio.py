@@ -66,7 +66,7 @@ def make_loop(nh, nn, dt, cfpre, cfpost):
     o_nh = nb.float32(1 / nh)
     nh_dt = nb.float32(nh * dt)
     @nb.njit(boundscheck=False, fastmath=True)
-    def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv):
+    def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
         o_tau = nb.float32(1 / tau)
         assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
         assert r.shape[1] == V.shape[1] == nn
@@ -84,8 +84,8 @@ def make_loop(nh, nn, dt, cfpre, cfpost):
                 Vc = cfpost(Vc)
                 dr = o_tau * (Delta / (pi * tau) + 2 * V[t, i] * r[t, i])
                 dV = o_tau * (V[t, i] ** 2 - pi ** 2 * tau ** 2 * r[t, i] ** 2 + eta + J * tau * r[t, i] + I + cr * rc + cv * Vc)
-                r[t1, i] = r[t, i] + dr * dt + sqrt_dt * 0.1 * wrV[0, t, i]
-                V[t1, i] = V[t, i] + dV * dt + sqrt_dt * 0.01 * wrV[1, t, i]
+                r[t1, i] = r[t, i] + dr * dt + sqrt_dt * r_sigma * wrV[0, t, i]
+                V[t1, i] = V[t, i] + dV * dt + sqrt_dt * V_sigma * wrV[1, t, i]
                 # t avg over 25.6 ms ~39 Hz sampling; TODO use hanning window
                 tavg[0, i] += r[t1, i] * o_nh
                 tavg[1, i] += V[t1, i] * o_nh
@@ -102,6 +102,7 @@ def default_icfun(t, rV):
 
 def run_loop(weights, delays,
              total_time=60e3, bold_tr=1800, coupling_scaling=0.01,
+             r_sigma=1e-3, V_sigma=1e-3,
              I=0.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
              dt=0.1, nh=256,
              icfun=default_icfun):
@@ -113,7 +114,7 @@ def run_loop(weights, delays,
     # inner loop setup dimensions, constants, buffers
     r, V = rV = np.zeros((2, nh, nn), 'f')
     icfun(-np.r_[:nh]*dt, rV)
-    I, Delta, eta, tau, J, cr, cv = [nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv)]
+    I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma = [nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)]
     wrV = np.empty((2, nh, nn), 'f')                            # buffer for noise
     tavg = np.zeros((2, nn), 'f')                               # buffer for temporal average
     bold_state = np.zeros((nn, 4), 'f')                         # buffer for bold state
@@ -123,7 +124,6 @@ def run_loop(weights, delays,
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
     loop = make_loop(nh, nn, dt, cfpre, cfpost)
-    #loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv)
     # outer loop setup
     win_len = nh * dt
     total_wins = int(total_time / win_len)
@@ -133,7 +133,7 @@ def run_loop(weights, delays,
     # start time stepping
     for t in tqdm.trange(total_wins):
         rng.standard_normal(size=(2, nh, nn), dtype='f', out=wrV)  # ~15% time here
-        loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv)
+        loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
         tavg_trace[t] = tavg
         if t % bold_skip == 0:
             bold_trace[t//bold_skip] = bold_out
