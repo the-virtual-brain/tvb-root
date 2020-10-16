@@ -190,11 +190,11 @@ class Model(HasTraits):
         "Returns reshape argument for a spatialized parameter."
         return -1, 1
 
-    def update_non_integrated_variables_before_integration(self, state_variables, coupling, local_coupling=0.0):
-        return None
+    def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0):
+        return state_variables
 
-    def update_non_integrated_variables_after_integration(self, state_variables):
-        return None
+    def update_state_variables_after_integration(self, state_variables):
+        return state_variables
 
 
 class ModelNumbaDfun(Model):
