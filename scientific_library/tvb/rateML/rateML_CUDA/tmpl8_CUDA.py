@@ -200,6 +200,7 @@ __global__ void ${modelname}(
             % endfor /
             % endif
 
+            % if dynamics.conditional_derived_variables:
             // The conditional variables
             % for con_der in dynamics.conditional_derived_variables:
                 % for case in (con_der.cases):
@@ -213,9 +214,10 @@ __global__ void ${modelname}(
             else
                 ${con_der.name} = ${case.value};
 
-                    %endif /
+                    %endif
                 % endfor
-            % endfor /
+            % endfor
+            % endif /
 
             // This is dynamics step and the update in the state of the node
             % for i, tim_der in enumerate(dynamics.time_derivatives):

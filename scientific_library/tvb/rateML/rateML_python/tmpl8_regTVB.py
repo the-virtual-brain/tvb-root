@@ -14,7 +14,7 @@ class ${dfunname}(ModelNumbaDfun):
         label="State Variable ranges [lo, hi]",
         default={\
 %for itemA in dynamics.state_variables:
-"${itemA.name}": numpy.array([${itemA.default}])${'' if loop.last else ', \n\t\t\t\t '}\
+"${itemA.name}": numpy.array([${itemA.dimension}])${'' if loop.last else ', \n\t\t\t\t '}\
 %endfor
 },
         doc="""state variables"""
@@ -25,8 +25,8 @@ class ${dfunname}(ModelNumbaDfun):
         label="State Variable boundaries [lo, hi]",
         default={\
 %for limit in dynamics.state_variables:
-% if (limit.boundaries!='None' and limit.boundaries!=''):
-"${limit.name}": numpy.array([${limit.boundaries}])\
+% if (limit.exposure!='None' and limit.exposure!=''):
+"${limit.name}": numpy.array([${limit.exposure}])\
 % endif
 %endfor
 },
@@ -39,12 +39,12 @@ class ${dfunname}(ModelNumbaDfun):
         choices=(\
 %for itemJ in exposures:
 %if {loop.first}:
-%for choice in (itemJ.choices):
+%for choice in (itemJ.dimension):
 '${choice}', \
 %endfor
 ),
         default=(\
-%for defa in (itemJ.default):
+%for defa in (itemJ.description):
 '${defa}', \
 %endfor
 %endif
@@ -91,26 +91,35 @@ local_coupling, dx):
     ${itemF.name} = vw[${i}]
     % endfor
 
-    ## derived variables
+% if (dynamics.derived_variables):
+    # derived variables
     % for der_var in dynamics.derived_variables:
-    ${der_var.name} = ${der_var.expression}
+    ${der_var.name} = ${der_var.value}
     % endfor
+%endif /
 
-    ## conditional variables
+% if dynamics.conditional_derived_variables:
+    # Conditional variables
     % for con_der in dynamics.conditional_derived_variables:
-    if (${con_der.condition}):
         % for case in (con_der.cases):
-% if (loop.first):
-        ${con_der.name} = ${case}
-% elif (loop.last and not loop.first):
+            % if (loop.first):
+    if ${case.condition}:
+        ${con_der.name} = ${case.value}
+            % elif (not loop.last and not loop.first):
+    elif ${case.condition}:
+        ${con_der.name} = ${case.value}
+            % elif (loop.last):
     else:
-        ${con_der.name} = ${case}
-%endif
+        ${con_der.name} = ${case.value}
+
+            %endif
         % endfor
-    % endfor \
+    % endfor
+% endif /
+
 
     % for j, itemH in enumerate(dynamics.time_derivatives):
-    dx[${j}] = ${itemH.expression}
+    dx[${j}] = ${itemH.value}
     % endfor
     \
     \
@@ -118,9 +127,9 @@ local_coupling, dx):
     <%def name="NArray(nconst)">
     ${nconst.name} = NArray(
         label=":math:`${nconst.name}`",
-        default=numpy.array([${nconst.default}]),
-        % if (nconst.domain != "None" and nconst.domain != ""):
-        domain=Range(${nconst.domain}),
+        default=numpy.array([${nconst.value}]),
+        % if (nconst.dimension != "None" and nconst.dimension != ""):
+        domain=Range(${nconst.dimension}),
         % endif
         doc="""${nconst.description}"""
     )\

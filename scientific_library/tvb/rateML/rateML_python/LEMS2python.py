@@ -69,10 +69,13 @@ def load_model(model_filename, folder=None):
     model = Model()
     model.import_from_file(fp_xml)
 
+    from lems.base.util import validate_lems
+    validate_lems(fp_xml)
+
     # do some inventory. check if boundaries are set for any sv to print the boundaries section in template
     svboundaries = 0
     for i, sv in enumerate(model.component_types['derivatives'].dynamics.state_variables):
-        if sv.boundaries != 'None' and sv.boundaries != '' and sv.boundaries:
+        if sv.exposure != 'None' and sv.exposure != '' and sv.exposure:
             svboundaries = 1
             continue
 
@@ -91,10 +94,13 @@ def render_model(model_name, template=None, folder=None):
     template = template or default_template()
 
     modellist = model.component_types['derivatives']
+    modelconstants = model.constants
+
+    print((modelconstants))
 
     model_str = template.render(
         dfunname=model_name,
-        const=modellist.constants,
+        const=modelconstants,
         dynamics=modellist.dynamics,
         svboundaries=svboundaries,
         exposures=modellist.exposures
@@ -154,5 +160,9 @@ def regTVB_templating(model_filename, folder=None):
 
 
 if __name__ == "__main__":
-    # example run for ReducedWongWang model
-    regTVB_templating('ReducedWongWangT', './XMLmodels/')
+    # model_filename = 'MontbrioT'
+    # model_filename = 'Generic2dOscillatorT'
+    # model_filename = 'KuramotoT'
+    model_filename = 'EpileptorT'
+    # model_filename = 'ReducedWongWangT'
+    regTVB_templating(model_filename, './XMLmodels/')

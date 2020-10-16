@@ -86,7 +86,7 @@ class DerivedVariable(LEMSBase):
         """ Selection path/expression for the derived variable.
         @type: str """
 
-        self.value = params['value'] if 'expression' in params else None
+        self.value = params['value'] if 'value' in params else None
         """ Value of the derived variable.
         @type: str """
 
