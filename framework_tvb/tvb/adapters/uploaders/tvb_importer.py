@@ -37,7 +37,11 @@ import shutil
 import zipfile
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import UploadField
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitUploadField
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str
+from tvb.core.services.exceptions import ImportException
 from tvb.core.services.import_service import ImportService
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -45,13 +49,28 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 
 
+class TVBImporterModel(UploaderViewModel):
+    data_file = Str(
+        label='Please select file to import (h5 or zip)'
+    )
+
+
 class TVBImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TVBImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = UploadField('.zip, .h5', self, name='data_file', required=True,
-                                     label='Please select file to import (h5 or zip)')
+        self.data_file = TraitUploadField(TVBImporterModel.data_file, ('.zip', '.h5'), self, name='data_file')
+
+    @staticmethod
+    def get_view_model():
+        return TVBImporterModel
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': ('.zip', '.h5')
+        }
 
 
 class TVBImporter(ABCUploader):
@@ -69,63 +88,58 @@ class TVBImporter(ABCUploader):
     def get_output(self):
         return []
 
-
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         """
         Overwrite method in order to return the correct number of stored datatypes.
         """
         self.nr_of_datatypes = 0
-        msg, _ = ABCUploader._prelaunch(self, operation, uid=None, **kwargs)
+        msg, _ = ABCUploader._prelaunch(self, operation, view_model, uid, available_disk_space)
         return msg, self.nr_of_datatypes
 
-
-    def launch(self, data_file):
+    def launch(self, view_model):
+        # type: (TVBImporterModel) -> []
         """
         Execute import operations: unpack ZIP, build and store generic DataType objects.
-
-        :param data_file: an archive (ZIP / HDF5) containing the `DataType`
-
         :raises LaunchException: when data_file is None, nonexistent, or invalid \
                     (e.g. incomplete meta-data, not in ZIP / HDF5 format etc. )
         """
-        if data_file is None:
+        if view_model.data_file is None:
             raise LaunchException("Please select file which contains data to import")
 
-        if os.path.exists(data_file):
-            if zipfile.is_zipfile(data_file):
+        service = ImportService()
+        if os.path.exists(view_model.data_file):
+            if zipfile.is_zipfile(view_model.data_file):
                 current_op = dao.get_operation_by_id(self.operation_id)
 
                 # Creates a new TMP folder where to extract data
                 tmp_folder = os.path.join(self.storage_path, "tmp_import")
-                FilesHelper().unpack_zip(data_file, tmp_folder)
-                operations = ImportService().import_project_operations(current_op.project, self.storage_path)
+                FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
+                operations = service.import_project_operations(current_op.project, tmp_folder)
                 shutil.rmtree(tmp_folder)
                 self.nr_of_datatypes += len(operations)
 
             else:
                 # upgrade file if necessary
                 file_update_manager = FilesUpdateManager()
-                file_update_manager.upgrade_file(data_file)
+                file_update_manager.upgrade_file(view_model.data_file)
 
-                folder, h5file = os.path.split(data_file)
+                folder, h5file = os.path.split(view_model.data_file)
                 manager = HDF5StorageManager(folder, h5file)
                 if manager.is_valid_hdf5_file():
                     datatype = None
                     try:
-                        service = ImportService()
-                        datatype = service.load_datatype_from_file(folder, h5file, self.operation_id,
-                                                                   final_storage=self.storage_path)
-                        service.store_datatype(datatype)
+                        datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
+                        service.store_datatype(datatype, view_model.data_file)
                         self.nr_of_datatypes += 1
-                    except Exception as excep:
-                        # If import operation failed delete file from disk.
-                        if datatype is not None and os.path.exists(datatype.get_storage_file_path()):
-                            os.remove(datatype.get_storage_file_path())
+                    except ImportException as excep:
                         self.log.exception(excep)
-                        raise LaunchException("Invalid file received as input. Most probably incomplete "
-                                              "meta-data ...  " + str(excep))
+                        if datatype is not None:
+                            target_path = h5.path_for_stored_index(datatype)
+                            if os.path.exists(target_path):
+                                os.remove(target_path)
+                        raise LaunchException("Invalid file received as input. " + str(excep))
                 else:
-                    raise LaunchException("Uploaded file: %s is neither in ZIP or HDF5 format" % data_file)
+                    raise LaunchException("Uploaded file: %s is neither in ZIP or HDF5 format" % view_model.data_file)
 
         else:
-            raise LaunchException("File: %s to import does not exists." % data_file)
+            raise LaunchException("File: %s to import does not exists." % view_model.data_file)

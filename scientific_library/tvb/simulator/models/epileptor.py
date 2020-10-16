@@ -149,10 +149,10 @@ class Epileptor(ModelNumbaDfun):
             0 & \text{if } x_{2} <-0.25\\
             a_{2}(x_{2} + 0.25) & \text{if } x_{2} \geq -0.25
             \end{cases}
-            
+
     Note Feb. 2017: the slow permittivity variable can be modify to account for the time
     difference between interictal and ictal states (see [Proixetal_2014]).
-    
+
     .. [Proixetal_2014] Proix, T.; Bartolomei, F; Chauvel, P; Bernard, C; Jirsa, V.K. *
         Permittivity coupling across brain regions determines seizure recruitment in
         partial epilepsy.* J Neurosci 2014, 34:15009-21.
@@ -160,104 +160,104 @@ class Epileptor(ModelNumbaDfun):
     """
 
     a = NArray(
-        label="a",
+        label=":math:`a`",
         default=numpy.array([1.0]),
         doc="Coefficient of the cubic term in the first state variable")
 
     b = NArray(
-        label="b",
+        label=":math:`b`",
         default=numpy.array([3.0]),
         doc="Coefficient of the squared term in the first state variabel")
 
     c = NArray(
-        label="c",
+        label=":math:`c`",
         default=numpy.array([1.0]),
         doc="Additive coefficient for the second state variable, \
         called :math:`y_{0}` in Jirsa paper")
 
     d = NArray(
-        label="d",
+        label=":math:`d`",
         default=numpy.array([5.0]),
         doc="Coefficient of the squared term in the second state variable")
 
     r = NArray(
-        label="r",
+        label=":math:`r`",
         domain=Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the third state variable, \
         called :math:`1/\\tau_{0}` in Jirsa paper")
 
     s = NArray(
-        label="s",
+        label=":math:`s`",
         default=numpy.array([4.0]),
         doc="Linear coefficient in the third state variable")
 
     x0 = NArray(
-        label="x0",
+        label=":math:`x_0`",
         domain=Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
         doc="Epileptogenicity parameter")
 
     Iext = NArray(
-        label="Iext",
+        label=":math:`I_{ext}`",
         domain=Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
         doc="External input current to the first population")
 
     slope = NArray(
-        label="slope",
+        label=":math:`slope`",
         domain=Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
         doc="Linear coefficient in the first state variable")
 
     Iext2 = NArray(
-        label="Iext2",
+        label=":math:`I_{ext2}`",
         domain=Range(lo=0.0, hi=1.0, step=0.05),
         default=numpy.array([0.45]),
         doc="External input current to the second population")
 
     tau = NArray(
-        label="tau",
+        label=":math:`\\tau`",
         default=numpy.array([10.0]),
         doc="Temporal scaling coefficient in fifth state variable")
 
     aa = NArray(
-        label="aa",
+        label=":math:`aa`",
         default=numpy.array([6.0]),
         doc="Linear coefficient in fifth state variable")
 
     bb = NArray(
-        label="bb",
+        label=":math:`bb`",
         default=numpy.array([2.0]),
         doc="Linear coefficient of lowpass excitatory coupling in fourth state variable")
 
     Kvf = NArray(
-        label="K_vf",
+        label=":math:`K_{vf}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a very fast time scale.")
 
     Kf = NArray(
-        label="K_f",
+        label=":math:`K_{f}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Correspond to the coupling scaling on a fast time scale.")
 
     Ks = NArray(
-        label="K_s",
+        label=":math:`K_{s}`",
         default=numpy.array([0.0]),
         domain=Range(lo=-4.0, hi=4.0, step=0.1),
         doc="Permittivity coupling, that is from the fast time scale toward the slow time scale")
 
     tt = NArray(
-        label="tt",
+        label=":math:`K_{tt}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.001, hi=10.0, step=0.001),
         doc="Time scaling of the whole system")
 
     modification = NArray(
         dtype=bool,
-        label="modification",
+        label=":math:`modification`",
         default=numpy.array([False]),
         doc="When modification is True, then use nonlinear influence on z. \
         The default value is False, i.e., linear influence.")
@@ -289,47 +289,8 @@ class Epileptor(ModelNumbaDfun):
     cvar.setflags(write=False)  # todo review this
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
-             array=numpy.array, where=numpy.where, concat=numpy.concatenate):
-        r"""
-        Computes the derivatives of the state variables of the Epileptor
-        with respect to time.
+                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
 
-        Implementation note: we expect this version of the Epileptor to be used
-        in a vectorized manner. Concretely, y has a shape of (6, n) where n is
-        the number of nodes in the network. An consequence is that
-        the original use of if/else is translated by calculated both the true
-        and false forms and mixing them using a boolean mask.
-
-        Variables of interest to be used by monitors: -y[0] + y[3]
-
-            .. math::
-                \dot{x_{1}} &=& y_{1} - f_{1}(x_{1}, x_{2}) - z + I_{ext1} \\
-                \dot{y_{1}} &=& c - d x_{1}^{2} - y{1} \\
-                \dot{z} &=&
-                \begin{cases}
-                r(4 (x_{1} - x_{0}) - z-0.1 z^{7}) & \text{if } x<0 \\
-                r(4 (x_{1} - x_{0}) - z) & \text{if } x \geq 0
-                \end{cases} \\
-                \dot{x_{2}} &=& -y_{2} + x_{2} - x_{2}^{3} + I_{ext2} + 0.002 g - 0.3 (z-3.5) \\
-                \dot{y_{2}} &=& 1 / \tau (-y_{2} + f_{2}(x_{2}))\\
-                \dot{g} &=& -0.01 (g - 0.1 x_{1})
-
-        where:
-            .. math::
-                f_{1}(x_{1}, x_{2}) =
-                \begin{cases}
-                a x_{1}^{3} - b x_{1}^2 & \text{if } x_{1} <0\\
-                -(slope - x_{2} + 0.6(z-4)^2) x_{1} &\text{if }x_{1} \geq 0
-                \end{cases}
-
-            .. math::
-                f_{2}(x_{2}) =
-                \begin{cases}
-                0 & \text{if } x_{2} <-0.25\\
-                a_{2}(x_{2} + 0.25) & \text{if } x_{2} \geq -0.25
-                \end{cases}
-
-        """
         y = state_variables
         ydot = numpy.empty_like(state_variables)
 
@@ -364,6 +325,47 @@ class Epileptor(ModelNumbaDfun):
         return ydot
 
     def dfun(self, x, c, local_coupling=0.0):
+        r"""
+        Computes the derivatives of the state variables of the Epileptor
+        with respect to time.
+
+        Implementation note: we expect this version of the Epileptor to be used
+        in a vectorized manner. Concretely, y has a shape of (6, n) where n is
+        the number of nodes in the network. An consequence is that
+        the original use of if/else is translated by calculated both the true
+        and false forms and mixing them using a boolean mask.
+
+        Variables of interest to be used by monitors: -y[0] + y[3]
+
+            .. math::
+                \dot{x_{1}} &=& y_{1} - f_{1}(x_{1}, x_{2}) - z + I_{ext1} \\
+                \dot{y_{1}} &=& c - d x_{1}^{2} - y{1} \\
+                \dot{z} &=&
+                \begin{cases}
+                r(4 (x_{1} - x_{0}) - z-0.1 z^{7}) & \text{if } x<0 \\
+                r(4 (x_{1} - x_{0}) - z) & \text{if } x \geq 0
+                \end{cases} \\
+                \dot{x_{2}} &=& -y_{2} + x_{2} - x_{2}^{3} + I_{ext2} + 0.002 g - 0.3 (z-3.5) \\
+                \dot{y_{2}} &=& 1 / \tau (-y_{2} + f_{2}(x_{2}))\\
+                \dot{g} &=& -0.01 (g - 0.1 x_{1})
+
+        where:
+            .. math::
+                f_{1}(x_{1}, x_{2}) =
+                \begin{cases}
+                a x_{1}^{3} - b x_{1}^2 & \text{if } x_{1} <0\\
+                -(slope - x_{2} + 0.6(z-4)^2) x_{1} &\text{if }x_{1} \geq 0
+                \end{cases}
+
+        and:
+            .. math::
+                f_{2}(x_{2}) =
+                \begin{cases}
+                0 & \text{if } x_{2} <-0.25\\
+                a_{2}(x_{2} + 0.25) & \text{if } x_{2} \geq -0.25
+                \end{cases}
+
+        """
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         Iext = self.Iext + local_coupling * x[0, :, 0]
@@ -371,8 +373,6 @@ class Epileptor(ModelNumbaDfun):
                          self.x0, Iext, self.Iext2, self.a, self.b, self.slope, self.tt, self.Kvf,
                          self.c, self.d, self.r, self.Ks, self.Kf, self.aa, self.bb, self.tau, self.modification)
         return deriv.T[..., numpy.newaxis]
-
-
 
 
 class Epileptor2D(ModelNumbaDfun):
@@ -394,10 +394,13 @@ class Epileptor2D(ModelNumbaDfun):
             \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
             \dot{z_{i}} &=& r(h - z_{i})
         
-        with 
-            h = x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) if modification
-            h = 4 (x_{1,i} - x_{0})
-            
+        with
+            h =
+            \begin{cases}
+            x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
+            4 (x_{1,i} - x_{0}) & \text{else }
+            \end{cases}
+
         References:
             [Proixetal_2014] Proix, T.; Bartolomei, F; Chauvel, P; Bernard, C; Jirsa, V.K. *
             Permittivity coupling across brain regions determines seizure recruitment in 
@@ -408,72 +411,72 @@ class Epileptor2D(ModelNumbaDfun):
     """
 
     a = NArray(
-        label="a",
+        label=":math:`a`",
         default=numpy.array([1.0]),
         doc="Coefficient of the cubic term in the first state-variable.")
 
     b = NArray(
-        label="b",
+        label=":math:`b`",
         default=numpy.array([3.0]),
         doc="Coefficient of the squared term in the first state-variable.")
 
     c = NArray(
-        label="c",
+        label=":math:`c`",
         default=numpy.array([1.0]),
         doc="Additive coefficient for the second state-variable x_{2}, \
         called :math:`y_{0}` in Jirsa paper.")
 
     d = NArray(
-        label="d",
+        label=":math:`d`",
         default=numpy.array([5.0]),
         doc="Coefficient of the squared term in the second state-variable x_{2}.")
 
     r = NArray(
-        label="r",
+        label=":math:`r`",
         domain=Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the slow state-variable, \
         called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor).")
 
     x0 = NArray(
-        label="x0",
+        label=":math:`x_0`",
         domain=Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
         doc="Epileptogenicity parameter.")
 
     Iext = NArray(
-        label="Iext",
+        label=":math:`I_{ext}`",
         domain=Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
         doc="External input current to the first state-variable.")
 
     slope = NArray(
-        label="slope",
+        label=":math:`slope`",
         domain=Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
         doc="Linear coefficient in the first state-variable.")
 
     Kvf = NArray(
-        label="K_vf",
+        label=":math:`K_{vf}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a very fast time scale.")
 
     Ks = NArray(
-        label="K_s",
+        label=":math:`K_{s}`",
         default=numpy.array([0.0]),
         domain=Range(lo=-4.0, hi=4.0, step=0.1),
         doc="Permittivity coupling, that is from the fast time scale toward the slow time scale.")
 
     tt = NArray(
-        label="tt",
+        label=":math:`tt`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.001, hi=1.0, step=0.001),
         doc="Time scaling of the whole system to the system in real time.")
 
     modification = NArray(
         dtype=bool,
-        label="modification",
+        label=":math:`modification`",
         default=numpy.array([False]),
         doc="When modification is True, then use nonlinear influence on z. \
         The default value is False, i.e., linear influence.")
@@ -495,13 +498,8 @@ class Epileptor2D(ModelNumbaDfun):
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
-
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
-                array=numpy.array, where=numpy.where, concat=numpy.concatenate):
-        r"""
-        Computes the derivatives of the state-variables of the Epileptor 2D
-        with respect to time.
-        """
+                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
 
         y = state_variables
         ydot = numpy.empty_like(state_variables)
@@ -529,7 +527,23 @@ class Epileptor2D(ModelNumbaDfun):
         return ydot
 
     def dfun(self, x, c, local_coupling=0.0):
-        """"The dfun using numba for speed."""
+        r"""
+        Computes the derivatives of the state-variables of the Epileptor 2D
+        with respect to time.
+
+        Equations and default parameters are taken from [Proixetal_2014]:
+
+        .. math::
+            \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
+            \dot{z_{i}} &=& r(h - z_{i})
+
+        with
+            h =
+            \begin{cases}
+            x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
+            4 (x_{1,i} - x_{0}) & \text{else }
+            \end{cases}
+        """
 
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T

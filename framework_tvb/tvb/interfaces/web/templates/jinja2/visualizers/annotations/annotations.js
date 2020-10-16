@@ -20,7 +20,6 @@
 /**
  * Depends on the following GLOBALS: gl, BASE_PICK, ColSch, LEG, HLPR_readJSONfromFile
  *
- * @param baseUrl - Current web installation base URL (is needed for JSTree style URLS)
  * @param treeDataUrl - URL from where the Annotations tree will be loaded
  * @param triangleToRegionUrl - URL for reading a vector of triangle to connectivity region mapping
  * @param activationPatternsUrl - URL for retrieving the Map of the activation patterns
@@ -28,7 +27,7 @@
  * @param maxValue - Maximum value for the colors (used for legend)
  * @constructor
  */
-function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue) {
+function ANN_Displayer(treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue) {
 
     this.treeElem = $("#treeStructure");
 
@@ -43,9 +42,9 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatt
     this.prefixNodeIdTVBRoot = "node_tvb_root_";
     this.prefixNodeIdBRCO = "node_brco_";
 
-    this._init = function (baseUrl, treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue) {
+    this._init = function (treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue) {
 
-        this._populateAnnotationsTree(baseUrl, treeDataUrl);
+        this._populateAnnotationsTree(treeDataUrl);
 
         ColSch_initColorSchemeGUI(minValue, maxValue);
         LEG_initMinMax(minValue, maxValue);
@@ -58,7 +57,7 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatt
         this.activationPatternMap = HLPR_readJSONfromFile(activationPatternsUrl);
     };
 
-    this._populateAnnotationsTree = function (baseUrl, treeDataUrl) {
+    this._populateAnnotationsTree = function (treeDataUrl) {
 
         this.treeElem.jstree({
             "plugins": ["themes", "json_data", "ui", "crrm"],
@@ -66,7 +65,7 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatt
                 "theme": "default",
                 "dots": true,
                 "icons": true,
-                "url": baseUrl + "static/jquery/jstree-theme/style.css"
+                "url": "/static/jquery/jstree-theme/style.css"
             },
             "json_data": {
                 "ajax": {
@@ -196,5 +195,5 @@ function ANN_Displayer(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatt
         }
     };
 
-    this._init(baseUrl, treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue);
+    this._init(treeDataUrl, triangleToRegionUrl, activationPatternsUrl, minValue, maxValue);
 }

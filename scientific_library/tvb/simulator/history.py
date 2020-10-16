@@ -32,7 +32,7 @@
 Simulator history implementations.
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

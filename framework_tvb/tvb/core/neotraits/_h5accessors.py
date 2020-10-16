@@ -34,7 +34,8 @@ import uuid
 import numpy
 import scipy.sparse
 import typing
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
+from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.datatypes import equations
 
 
@@ -85,13 +86,19 @@ class Scalar(Accessor):
         # type: (typing.Union[str, int, float]) -> None
         # noinspection PyProtectedMember
         val = self.trait_attribute._validate_set(None, val)
-        self.owner.storage_manager.set_metadata({self.field_name: val})
+        if val is not None:
+            self.owner.storage_manager.set_metadata({self.field_name: val})
 
     def load(self):
         # type: () -> typing.Union[str, int, float]
         # assuming here that the h5 will return the type we stored.
         # if paranoid do self.trait_attribute.field_type(value)
-        return self.owner.storage_manager.get_metadata()[self.field_name]
+        if self.owner.metadata_cache is None:
+            self.owner.metadata_cache = self.owner.storage_manager.get_metadata()
+        if self.field_name in self.owner.metadata_cache:
+            return self.owner.metadata_cache[self.field_name]
+        else:
+            raise MissingDataSetException(self.field_name)
 
 
 class Uuid(Scalar):
@@ -124,34 +131,43 @@ class DataSetMetaData(object):
     """
 
     # noinspection PyShadowingBuiltins
-    def __init__(self, min, max, mean):
+    def __init__(self, min, max, mean, is_finite=True, has_complex=False):
         self.min, self.max, self.mean = min, max, mean
+        self.is_finite = is_finite
+        self.has_complex = has_complex
 
     @classmethod
     def from_array(cls, array):
         try:
-            return cls(min=array.min(), max=array.max(), mean=array.mean())
+            return cls(min=array.min(), max=array.max(), mean=array.mean(),
+                       is_finite=numpy.isfinite(array).all().item(),
+                       has_complex=numpy.iscomplex(array).any().item())
         except (TypeError, ValueError):
             # likely a string array
             return cls(min=None, max=None, mean=None)
 
     @classmethod
     def from_dict(cls, dikt):
-        return cls(min=dikt['Minimum'], max=dikt['Maximum'], mean=dikt['Mean'])
+        return cls(min=dikt['Minimum'], max=dikt['Maximum'], mean=dikt['Mean'],
+                   is_finite=dikt['IsFinite'], has_complex=dikt["HasComplex"])
 
     def to_dict(self):
-        return {'Minimum': self.min, 'Maximum': self.max, 'Mean': self.mean}
+        return {'Minimum': self.min, 'Maximum': self.max, 'Mean': self.mean,
+                'IsFinite': self.is_finite, 'HasComplex': self.has_complex}
 
     def merge(self, other):
         self.min = min(self.min, other.min)
         self.max = max(self.max, other.max)
         self.mean = (self.mean + other.mean) / 2
+        self.is_finite = self.is_finite and other.is_finite
+        self.has_complex = self.has_complex or other.has_complex
 
 
 class DataSet(Accessor):
     """
     A dataset in a h5 file that corresponds to a traited NArray.
     """
+
     def __init__(self, trait_attribute, h5file, name=None, expand_dimension=-1):
         # type: (NArray, H5File, str, int) -> None
         """
@@ -186,7 +202,6 @@ class DataSet(Accessor):
             # this must be a new file, nothing to merge, set the new meta
             meta = new_meta
         self.owner.storage_manager.set_metadata(meta.to_dict(), self.field_name)
-
 
     def store(self, data):
         # type: (numpy.ndarray) -> None
@@ -259,6 +274,9 @@ class EquationScalar(Accessor):
         # type: () -> Equation
         eq_meta_dict = json.loads(self.owner.storage_manager.get_metadata()[self.field_name])
 
+        if eq_meta_dict is None:
+            return eq_meta_dict
+
         eq_type = eq_meta_dict[self.KEY_TYPE]
         eq_class = getattr(equations, eq_type)
         eq_instance = eq_class()
@@ -272,6 +290,7 @@ class Reference(Uuid):
     A reference to another h5 file
     Corresponds to a contained datatype
     """
+
     def store(self, val):
         # type: (HasTraits) -> None
         """
@@ -430,7 +449,50 @@ class Json(Scalar):
         return json.loads(val)
 
 
+class JsonRange(Scalar):
+    """
+    Stores and loads a Range in the form of a json in h5.
+    """
+
+    def store(self, val):
+        val = json.dumps(val.__dict__)
+        self.owner.storage_manager.set_metadata({self.field_name: val})
+
+    def load(self):
+        val = self.owner.storage_manager.get_metadata()[self.field_name]
+        loaded_val = json.loads(val)
+        range_items = list(loaded_val.values())
+        return Range(range_items[0], range_items[1], range_items[2])
+
+
+class ReferenceList(Json):
+
+    def store(self, val):
+        gids = [dt.gid.hex for dt in val]
+        super(ReferenceList, self).store(gids)
+
+
 class JsonFinal(Json):
     """
     A python json like data structure accessor meant to be used with Final(dict)
     """
+
+    class StateVariablesEncoder(json.JSONEncoder):
+        def default(self, o):
+            if isinstance(o, numpy.ndarray):
+                o = o.tolist()
+            return o
+
+    class StateVariablesDecoder(json.JSONDecoder):
+        def __init__(self):
+            json.JSONDecoder.__init__(self, object_hook=self.dict_array)
+
+        def dict_array(self, dictionary):
+            dict_array = {}
+            for k, v in dictionary.items():
+                dict_array.update({k: numpy.array(v)})
+            return dict_array
+
+    def __init__(self, trait_attribute, h5file, name=None):
+        super(JsonFinal, self).__init__(trait_attribute, h5file, name, self.StateVariablesEncoder,
+                                        self.StateVariablesDecoder)

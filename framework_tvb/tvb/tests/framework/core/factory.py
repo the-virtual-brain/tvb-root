@@ -40,31 +40,42 @@ Project, User, Operation, basic imports (e.g. CFF).
 
 import os
 import random
+import uuid
 import tvb_data
-from cherrypy._cpreqbody import Part
-from cherrypy.lib.httputil import HeaderMap
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
-from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterForm
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
-from tvb.core.utils import hash_password
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.adapters.uploaders.gifti.parser import OPTION_READ_METADATA
-from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporterForm
-from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporterForm
-from tvb.adapters.uploaders.sensors_importer import SensorsImporterForm
-from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterForm
-from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterForm
+from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
+from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporter, GIFTISurfaceImporterModel
+from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter, ObjSurfaceImporterModel
+from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterModel
+from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixSurfaceEEGImporter
+from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporter
+from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel, SensorsImporter
+from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
+from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.core.adapters import constants
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.load import try_get_last_datatype
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
+from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.project_service import ProjectService
-from tvb.core.services.flow_service import FlowService
+from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
-from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.project_service import ProjectService
+from tvb.core.utils import hash_password
+from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.surfaces import CorticalSurface
 
 
 class TestFactory(object):
@@ -79,34 +90,38 @@ class TestFactory(object):
 
         :param expected_data: specifies the class whose entity is returned
         """
-
-        data_types = FlowService().get_available_datatypes(project.id,
-                                                           expected_data.__module__ + "." + expected_data.__name__, filters)[0]
-        entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        return entity
+        return try_get_last_datatype(project.id, expected_data, filters)
 
     @staticmethod
-    def get_entity_count(project, datatype):
+    def get_entity_count(project, datatype_class):
         """
         Return the count of stored datatypes with class given by `datatype`
 
         :param datatype: Take class from this instance amd count for this class
         """
-        return dao.count_datatypes(project.id, datatype.__class__)
+        return dao.count_datatypes(project.id, datatype_class)
 
     @staticmethod
-    def create_user(username='test_user', password='test_pass',
+    def _assert_one_more_datatype(project, dt_class, prev_count=0):
+        dt = try_get_last_datatype(project.id, dt_class)
+        count = dao.count_datatypes(project.id, dt_class)
+        assert prev_count + 1 == count, "Project should contain only one new DT."
+        assert dt is not None, "Retrieved DT should not be empty"
+        return dt
+
+    @staticmethod
+    def create_user(username='test_user_42', display_name='test_display_name', password='test_pass',
                     mail='test_mail@tvb.org', validated=True, role='test'):
         """
         Create persisted User entity.
 
         :returns: User entity after persistence.
         """
-        user = User(username, password, mail, validated, role)
+        user = User(username, display_name, password, mail, validated, role)
         return dao.store_entity(user)
 
     @staticmethod
-    def create_project(admin, name="TestProject", description='description', users=None):
+    def create_project(admin, name="TestProject42", description='description', users=None):
         """
         Create persisted Project entity, with no linked DataTypes.
 
@@ -118,39 +133,33 @@ class TestFactory(object):
         return ProjectService().store_project(admin, True, None, **data)
 
     @staticmethod
-    def create_figure(operation_id, user_id, project_id, session_name=None,
-                      name=None, path=None, file_format='PNG'):
+    def create_figure(user_id, project_id, session_name=None, name=None, path=None, file_format='PNG'):
         """
         :returns: the `ResultFigure` for a result with the given specifications
         """
-        figure = ResultFigure(operation_id, user_id, project_id,
-                              session_name, name, path, file_format)
+        figure = ResultFigure(user_id, project_id, session_name, name, path, file_format)
         return dao.store_entity(figure)
 
     @staticmethod
-    def create_operation(algorithm=None, test_user=None, test_project=None,
-                         operation_status=STATUS_FINISHED, parameters="test params"):
+    def create_operation(test_user=None, test_project=None, operation_status=STATUS_FINISHED):
         """
         Create persisted operation.
-
-        :param algorithm: When not None, introspect TVB and TVB_TEST for adapters.
         :return: Operation entity after persistence.
         """
-        if algorithm is None:
-            algorithm = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
-
         if test_user is None:
             test_user = TestFactory.create_user()
-
         if test_project is None:
             test_project = TestFactory.create_project(test_user)
 
-        meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
-                DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
+        algorithm = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
+        view_model = adapter.get_view_model_class()()
+        view_model.data_file = "."
+        operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status)
         dao.store_entity(operation)
-        # Make sure lazy attributes are correctly loaded.
+        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
+        h5.store_view_model(view_model, op_dir)
         return dao.get_operation_by_id(operation.id)
 
     @staticmethod
@@ -164,19 +173,57 @@ class TestFactory(object):
             test_project = TestFactory.create_project(test_user)
 
         adapter_inst = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        adapter_inst.meta_data = {DataTypeMetaData.KEY_SUBJECT: subject}
-        args = {RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
+        adapter_inst.generic_attributes.subject = subject
+
+        view_model = adapter_inst.get_view_model()()
+        args = {RANGE_PARAMETER_1: 'param_5', 'param_5': json.dumps({constants.ATT_MINVALUE: 1,
+                                                                     constants.ATT_MAXVALUE: 2.1,
+                                                                     constants.ATT_STEP: 1})}
         algo = adapter_inst.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project.id, algo, algo_category, {}, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category,
+                                                view_model=view_model, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 
         resulted_dts = dao.get_datatype_in_group(operation_group_id=operations[0].fk_operation_group)
         return resulted_dts, operations[0].fk_operation_group
+
+    @staticmethod
+    def create_value_wrapper(test_user, test_project=None):
+        """
+        Creates a ValueWrapper dataType, and the associated parent Operation.
+        This is also used in ProjectStructureTest.
+        """
+        if test_project is None:
+            test_project = TestFactory.create_project(test_user, 'test_proj')
+        operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
+        value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
+        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
+        vw_idx = h5.store_complete(value_wrapper, op_dir)
+        vw_idx.fk_from_operation = operation.id
+        vw_idx = dao.store_entity(vw_idx)
+        return test_project, vw_idx.gid, operation
+
+    @staticmethod
+    def create_local_connectivity(user, project, surface_gid):
+
+        op = TestFactory.create_operation(test_user=user, test_project=project)
+        op_folder = FilesHelper().get_project_folder(project, str(op.id))
+
+        wrapper_surf = CorticalSurface()
+        wrapper_surf.gid = uuid.UUID(surface_gid)
+        lc_ht = LocalConnectivity.from_file()
+        lc_ht.surface = wrapper_surf
+        lc_idx = h5.store_complete(lc_ht, op_folder)
+        lc_idx.fk_surface_gid = surface_gid
+        lc_idx.fk_from_operation = op.id
+        dao.store_entity(lc_idx)
+
+        return TestFactory._assert_one_more_datatype(project, LocalConnectivityIndex)
 
     @staticmethod
     def create_adapter(module='tvb.tests.framework.adapters.ndimensionarrayadapter',
@@ -188,14 +235,20 @@ class TestFactory(object):
         return ABCAdapter.build_adapter(algorithm)
 
     @staticmethod
-    def store_burst(project_id, simulator_config=None):
+    def store_burst(project_id, operation=None):
         """
         Build and persist BurstConfiguration entity.
         """
-        burst = BurstConfiguration2(project_id)
-        if simulator_config is not None:
-            burst.simulator_configuration = simulator_config
-        burst.prepare_before_save()
+        burst = BurstConfiguration(project_id)
+        if operation is not None:
+            burst.name = 'dummy_burst'
+            burst.status = BurstConfiguration.BURST_FINISHED
+            burst.start_time = datetime.now()
+            burst.range1 = '["conduction_speed", {"lo": 50, "step": 1.0, "hi": 100.0}]'
+            burst.range2 = '["connectivity", null]'
+            burst.fk_simulation = operation.id
+            burst.simulator_gid = uuid.uuid4().hex
+            BurstService().update_burst_configuration_h5(burst)
         return dao.store_entity(burst)
 
     @staticmethod
@@ -210,160 +263,118 @@ class TestFactory(object):
         return import_service.created_projects[0]
 
     @staticmethod
-    def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid):
+    def launch_importer(importer_class, view_model, user, project, same_process=True):
+        # type: (type, ViewModel, User, Project, bool) -> None
         """
-                This method is used for importing region mappings
-                :param import_file_path: absolute path of the file to be imported
-                """
-
-        # Retrieve Adapter instance
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.region_mapping_importer',
-                                              'RegionMappingImporter')
-        form = RegionMappingImporterForm()
-        form.fill_from_post({'_mapping_file': Part(import_file_path, HeaderMap({}), ''),
-                             '_surface': surface_gid,
-                             '_connectivity': connectivity_gid,
-                             '_Data_Subject': 'John Doe'
-                             })
-        form.mapping_file.data = import_file_path
-        importer.submit_form(form)
-
-        # Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_dict())
-
-        region_mapping = TestFactory.get_entity(project, RegionMappingIndex)
-
-        return region_mapping
-
-    @staticmethod
-    def import_surface_gifti(user, project, path):
+        same_process = False will do the normal flow, with Uploaders running synchronously but in a different process.
+        This branch won't be compatible with usage in subclasses of TransactionalTestCase because the upload results
+        won't be available for the unit-test running.
+        same_process = True for usage in subclasses of TransactionalTestCase, as data preparation, for example. Won't
+        test the "real" upload flow, but it is very close to that.
         """
-        This method is used for importing data in GIFIT format
-        :param import_file_path: absolute path of the file to be imported
-        """
-
-        ### Retrieve Adapter instance
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.gifti_surface_importer', 'GIFTISurfaceImporter')
-
-        form = GIFTISurfaceImporterForm()
-        form.fill_from_post({'_file_type': OPTION_READ_METADATA,
-                             '_data_file': Part(path, HeaderMap({}), ''),
-                             '_data_file_part2': Part('', HeaderMap({}), ''),
-                             '_should_center': 'False',
-                             '_Data_Subject': 'John Doe',
-                            })
-        form.data_file.data = path
-        importer.submit_form(form)
-
-        ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
-
-        surface = CorticalSurface
-        data_types = FlowService().get_available_datatypes(project.id,
-                                                           surface.__module__ + "." + surface.__name__)[0]
-        assert 1, len(data_types) == "Project should contain only one data type."
-
-        surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        assert surface is not None == "TimeSeries should not be none"
-
-        return surface
+        importer = ABCAdapter.build_adapter_from_class(importer_class)
+        if same_process:
+            TestFactory.launch_synchronously(user, project, importer, view_model)
+        else:
+            OperationService().fire_operation(importer, user, project.id, view_model=view_model)
 
     @staticmethod
-    def import_surface_zip(user, project, zip_path, surface_type, zero_based='True'):
-        ### Retrieve Adapter instance
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_surface_importer', 'ZIPSurfaceImporter')
+    def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid, same_process=True):
 
-        form = ZIPSurfaceImporterForm()
-        form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
-                             '_zero_based_triangles': zero_based,
-                             '_should_center': 'True',
-                             '_surface_type': surface_type,
-                             '_Data_Subject': 'John Doe'
-                             })
-        form.uploaded.data = zip_path
-        importer.submit_form(form)
+        view_model = RegionMappingImporterModel()
+        view_model.mapping_file = import_file_path
+        view_model.surface = surface_gid
+        view_model.connectivity = connectivity_gid
+        TestFactory.launch_importer(RegionMappingImporter, view_model, user, project, same_process)
 
-        ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
-
-        data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
-        assert 1, len(data_types) == "Project should contain only one data type."
-
-        surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        surface.user_tag_3 = ''
-        assert surface is not None, "Surface should not be None"
-        return surface
+        return TestFactory._assert_one_more_datatype(project, RegionMappingIndex)
 
     @staticmethod
-    def import_surface_obj(user, project, obj_path, surface_type):
-        ### Retrieve Adapter instance
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.obj_importer', 'ObjSurfaceImporter')
+    def import_surface_gifti(user, project, path, same_process=False):
 
-        form = ObjSurfaceImporterForm()
-        form.fill_from_post({'_data_file': Part(obj_path, HeaderMap({}), ''),
-                             '_surface_type': surface_type,
-                             '_Data_Subject': 'John Doe'
-                             })
-        form.data_file.data = obj_path
-        importer.submit_form(form)
+        view_model = GIFTISurfaceImporterModel()
+        view_model.data_file = path
+        view_model.should_center = False
+        TestFactory.launch_importer(GIFTISurfaceImporter, view_model, user, project, same_process)
 
-        ### Launch import Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
-
-        data_types = FlowService().get_available_datatypes(project.id, SurfaceIndex)[0]
-        assert 1, len(data_types) == "Project should contain only one data type."
-
-        surface = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        assert surface is not None, "Surface should not be None"
-        return surface
+        return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
     @staticmethod
-    def import_sensors(user, project, zip_path, sensors_type):
-        """
-                This method is used for importing sensors
-                :param import_file_path: absolute path of the file to be imported
-                """
+    def import_surface_zip(user, project, zip_path, surface_type, zero_based=True, same_process=True):
 
-        ### Retrieve Adapter instance
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.sensors_importer', 'SensorsImporter')
+        count = dao.count_datatypes(project.id, SurfaceIndex)
 
-        form = SensorsImporterForm()
-        form.fill_from_post({'_sensors_file': Part(zip_path, HeaderMap({}), ''),
-                             '_sensors_type': sensors_type,
-                             '_Data_Subject': 'John Doe'
-                             })
-        form.sensors_file.data = zip_path
-        form.sensors_type.data = sensors_type
-        importer.submit_form(form)
+        view_model = ZIPSurfaceImporterModel()
+        view_model.uploaded = zip_path
+        view_model.should_center = True
+        view_model.zero_based_triangles = zero_based
+        view_model.surface_type = surface_type
+        TestFactory.launch_importer(ZIPSurfaceImporter, view_model, user, project, same_process)
 
-        ### Launch import Operation
-
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
-
-        data_types = FlowService().get_available_datatypes(project.id, SensorsIndex)[0]
-        assert 1 == len(data_types), "Project should contain only one data type = Sensors."
-
-        time_series = ABCAdapter.load_entity_by_gid(data_types[0][2])
-        assert time_series is not None, "Sensors instance should not be none"
-
-        return time_series
+        return TestFactory._assert_one_more_datatype(project, SurfaceIndex, count)
 
     @staticmethod
-    def import_zip_connectivity(user, project, zip_path, subject=DataTypeMetaData.DEFAULT_SUBJECT):
+    def import_surface_obj(user, project, obj_path, surface_type, same_process=True):
 
-        importer = TestFactory.create_adapter('tvb.adapters.uploaders.zip_connectivity_importer',
-                                              'ZIPConnectivityImporter')
+        view_model = ObjSurfaceImporterModel()
+        view_model.data_file = obj_path
+        view_model.surface_type = surface_type
+        TestFactory.launch_importer(ObjSurfaceImporter, view_model, user, project, same_process)
 
-        form = ZIPConnectivityImporterForm()
-        form.fill_from_post({'_uploaded': Part(zip_path, HeaderMap({}), ''),
-                             '_project_id': {1},
-                             '_Data_Subject': subject
-                             })
-        form.uploaded.data = zip_path
-        importer.submit_form(form)
+        return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
-        ### Launch Operation
-        FlowService().fire_operation(importer, user, project.id, **form.get_form_values())
+    @staticmethod
+    def import_sensors(user, project, zip_path, sensors_type, same_process=True):
+
+        view_model = SensorsImporterModel()
+        view_model.sensors_file = zip_path
+        view_model.sensors_type = sensors_type
+        TestFactory.launch_importer(SensorsImporter, view_model, user, project, same_process)
+
+        return TestFactory._assert_one_more_datatype(project, SensorsIndex)
+
+    @staticmethod
+    def import_projection_matrix(user, project, file_path, sensors_gid, surface_gid, same_process=True):
+
+        view_model = ProjectionMatrixImporterModel()
+        view_model.projection_file = file_path
+        view_model.sensors = sensors_gid
+        view_model.surface = surface_gid
+        TestFactory.launch_importer(ProjectionMatrixSurfaceEEGImporter, view_model, user, project, same_process)
+
+        return TestFactory._assert_one_more_datatype(project, ProjectionMatrixIndex)
+
+    @staticmethod
+    def import_zip_connectivity(user, project, zip_path=None, subject=DataTypeMetaData.DEFAULT_SUBJECT,
+                                same_process=True):
+
+        if zip_path is None:
+            zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
+        count = dao.count_datatypes(project.id, ConnectivityIndex)
+
+        view_model = ZIPConnectivityImporterModel()
+        view_model.uploaded = zip_path
+        view_model.data_subject = subject
+        TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project, same_process)
+
+        return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
+
+    @staticmethod
+    def launch_synchronously(test_user, test_project, adapter_instance, view_model, algo_category=None):
+        # Avoid the scheduled execution, as this is asynch, thus launch it immediately
+        service = OperationService()
+        algorithm = adapter_instance.stored_adapter
+        if algo_category is None:
+            algo_category = dao.get_category_by_id(algorithm.fk_category)
+        operation = service.prepare_operations(test_user.id, test_project, algorithm, algo_category,
+                                               True, view_model=view_model)[0][0]
+        service.initiate_prelaunch(operation, adapter_instance)
+
+        operation = dao.get_operation_by_id(operation.id)
+        # Check that operation status after execution is success.
+        assert STATUS_FINISHED == operation.status
+        # Make sure at least one result exists for each BCT algorithm
+        return dao.get_generic_entity(DataType, operation.id, 'fk_from_operation')
 
 
 class ExtremeTestFactory(object):
@@ -403,7 +414,7 @@ class ExtremeTestFactory(object):
             coin_flip = random.randint(0, 1)
             role = 'CLINICIAN' if coin_flip == 1 else 'RESEARCHER'
             password = hash_password("test")
-            new_user = User("gen" + str(i), password, "test_mail@tvb.org", True, role)
+            new_user = User("gen" + str(i), "name" + str(i), password, "test_mail@tvb.org", True, role)
             dao.store_entity(new_user)
             new_user = dao.get_user_by_name("gen" + str(i))
             ExtremeTestFactory.VALIDATION_DICT[new_user.id] = 0

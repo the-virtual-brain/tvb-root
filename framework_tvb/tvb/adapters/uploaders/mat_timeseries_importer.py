@@ -34,50 +34,98 @@
 import json
 import uuid
 import numpy
-from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
 from tvb.adapters.uploaders.mat.parser import read_nested_mat_file
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5, TimeSeriesEEGH5
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex, TimeSeriesEEGIndex
+from tvb.basic.neotraits.api import Attr, Int
+from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5, TimeSeriesEEGH5
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex, TimeSeriesEEGIndex
 from tvb.core.entities.storage import transactional
 from tvb.core.adapters.arguments_serialisation import parse_slice
-from tvb.core.neotraits.forms import UploadField, SimpleStrField, SimpleBoolField, SimpleIntField, DataTypeSelectField
+from tvb.core.neotraits.forms import TraitUploadField, StrField, BoolField, IntField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neocom import h5
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
 
 TS_REGION = "Region"
 TS_EEG = "EEG"
 
 
-class MatTimeSeriesImporterForm(ABCUploaderForm):
+class RegionMatTimeSeriesImporterModel(UploaderViewModel):
+    data_file = Str(
+        label='Please select file to import'
+    )
 
-    def __init__(self, prefix='', project_id=None):
-        super(MatTimeSeriesImporterForm, self).__init__(prefix, project_id)
-        self.data_file = UploadField('.mat', self, name='data_file', required=True,
-                                     label='Please select file to import')
-        self.dataset_name = SimpleStrField(self, name='dataset_name', required=True, label='Matlab dataset name',
-                                           doc='Name of the MATLAB dataset where data is stored')
-        self.structure_path = SimpleStrField(self, name='structure_path', default='',
-                                             label='For nested structures enter the field path (separated by .)')
-        self.transpose = SimpleBoolField(self, name='transpose', default=False,
-                                         label='Transpose the array. Expected shape is (time, channel)')
-        self.slice = SimpleStrField(self, name='slice', default='',
-                                    label='Slice of the array in numpy syntax. Expected shape is (time, channel)')
-        self.sampling_rate = SimpleIntField(self, name='sampling_rate', default=100, label='sampling rate (Hz)')
-        self.start_time = SimpleIntField(self, name='start_time', default=0, label='starting time (ms)', required=True)
+    dataset_name = Str(
+        label='Matlab dataset name',
+        doc='Name of the MATLAB dataset where data is stored'
+    )
+
+    structure_path = Str(
+        required=False,
+        default='',
+        label='For nested structures enter the field path (separated by .)'
+    )
+
+    transpose = Attr(
+        field_type=bool,
+        required=False,
+        default=False,
+        label='Transpose the array. Expected shape is (time, channel)'
+    )
+
+    slice = Str(
+        required=False,
+        default='',
+        label='Slice of the array in numpy syntax. Expected shape is (time, channel)'
+    )
+
+    sampling_rate = Int(
+        required=False,
+        default=100,
+        label='sampling rate (Hz)'
+    )
+
+    start_time = Int(
+        default=0,
+        label='starting time (ms)'
+    )
+
+    datatype = DataTypeGidAttr(
+        linked_datatype=Connectivity,
+        label='Connectivity'
+    )
 
 
-class RegionMatTimeSeriesImporterForm(MatTimeSeriesImporterForm):
+class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
 
     def __init__(self, prefix='', project_id=None):
         super(RegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
-        self.region = DataTypeSelectField(ConnectivityIndex, self, name='tstype_parameters', required=True,
-                                          label='Connectivity')
+        self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', self, name='data_file')
+        self.dataset_name = StrField(RegionMatTimeSeriesImporterModel.dataset_name, self, name='dataset_name')
+        self.structure_path = StrField(RegionMatTimeSeriesImporterModel.structure_path, self, name='structure_path')
+        self.transpose = BoolField(RegionMatTimeSeriesImporterModel.transpose, self, name='transpose')
+        self.slice = StrField(RegionMatTimeSeriesImporterModel.slice, self, name='slice')
+        self.sampling_rate = IntField(RegionMatTimeSeriesImporterModel.sampling_rate, self, name='sampling_rate')
+        self.start_time = IntField(RegionMatTimeSeriesImporterModel.start_time, self, name='start_time')
+        self.datatype = TraitDataTypeSelectField(RegionMatTimeSeriesImporterModel.datatype, self,
+                                                 name='tstype_parameters')
+
+    @staticmethod
+    def get_view_model():
+        return RegionMatTimeSeriesImporterModel
+
+    @staticmethod
+    def get_upload_information():
+        return {
+            'data_file': '.mat'
+        }
 
 
-class MatTimeSeriesImporter(ABCUploader):
+class RegionTimeSeriesImporter(ABCUploader):
     """
     Import time series from a .mat file.
     """
@@ -97,7 +145,7 @@ class MatTimeSeriesImporter(ABCUploader):
             raise LaunchException("Data has %d channels but the connectivity has %d nodes"
                                   % (data_shape[1], connectivity.number_of_regions))
         ts_idx = TimeSeriesRegionIndex()
-        ts_idx.connectivity_gid = connectivity.gid
+        ts_idx.fk_connectivity_gid = connectivity.gid
         ts_idx.has_surface_mapping = True
 
         ts_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, ts_idx.gid)
@@ -112,7 +160,7 @@ class MatTimeSeriesImporter(ABCUploader):
                                   % (data_shape[1], sensors.number_of_sensors))
 
         ts_idx = TimeSeriesEEGIndex()
-        ts_idx.sensors_gid = sensors.gid
+        ts_idx.fk_sensors_gid = sensors.gid
 
         ts_h5_path = h5.path_for(self.storage_path, TimeSeriesEEGH5, ts_idx.gid)
         ts_h5 = TimeSeriesEEGH5(ts_h5_path)
@@ -123,20 +171,21 @@ class MatTimeSeriesImporter(ABCUploader):
     ts_builder = {TS_REGION: create_region_ts, TS_EEG: create_eeg_ts}
 
     @transactional
-    def launch(self, data_file, dataset_name, structure_path='',
-               transpose=False, slice=None, sampling_rate=1000,
-               start_time=0, tstype_parameters=None):
+    def launch(self, view_model):
+        # type: (RegionMatTimeSeriesImporterModel) -> [TimeSeriesRegionIndex, TimeSeriesEEGIndex]
+
         try:
-            data = read_nested_mat_file(data_file, dataset_name, structure_path)
+            data = read_nested_mat_file(view_model.data_file, view_model.dataset_name, view_model.structure_path)
 
-            if transpose:
+            if view_model.transpose:
                 data = data.T
-            if slice:
-                data = data[parse_slice(slice)]
+            if view_model.slice:
+                data = data[parse_slice(view_model.slice)]
 
-            ts, ts_idx, ts_h5 = self.ts_builder[self.tstype](self, data.shape, tstype_parameters)
+            datatype_index = self.load_entity_by_gid(view_model.datatype)
+            ts, ts_idx, ts_h5 = self.ts_builder[self.tstype](self, data.shape, datatype_index)
 
-            ts.start_time = start_time
+            ts.start_time = view_model.start_time
             ts.sample_period_unit = 's'
 
             ts_h5.write_time_slice(numpy.r_[:data.shape[0]] * ts.sample_period)

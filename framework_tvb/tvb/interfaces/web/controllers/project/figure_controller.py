@@ -40,16 +40,17 @@ import cherrypy
 import formencode
 from formencode import validators
 from cherrypy.lib.static import serve_file
-
 from tvb.core import utils
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.figure_service import FigureService
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error
 from tvb.interfaces.web.controllers.decorators import using_template, expose_page
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 
 
+@traced
 class FigureController(ProjectController):
     """
     Resulting Figures are user-saved figures with specific visualizers or TVB pages which are considered important.
@@ -70,10 +71,8 @@ class FigureController(ProjectController):
         store image in current session, for future comparison."""
         project = common.get_current_project()
         user = common.get_logged_user()
-        operation_id = kwargs.get("operationId")
         suggested_name = kwargs.get("suggestedName")
-        self.figure_service.store_result_figure(project, user, img_type, kwargs['export_data'],
-                                                image_name=suggested_name, operation_id=operation_id)
+        self.figure_service.store_result_figure(project, user, img_type, kwargs['export_data'], suggested_name)
 
 
     @expose_page

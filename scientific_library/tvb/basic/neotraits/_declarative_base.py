@@ -34,18 +34,13 @@ The basic Attribute Property and their automatic discovery by the Metaclass.
 """
 import abc
 import inspect
-import logging
-
+import typing
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.basic.neotraits.info import auto_docstring
-
-import sys
-
-if sys.version_info[0] == 3:
-    import typing
+from tvb.basic.logger.builder import get_logger
 
 # a logger for the whole traits system
-log = logging.getLogger('tvb.traits')
+log = get_logger('tvb.traits')
 
 
 class _Attr(object):
@@ -145,7 +140,7 @@ class MetaType(abc.ABCMeta):
 
 
     def get_known_subclasses(cls, include_abstract=False, include_itself=False):
-        # type: (bool) -> typing.Dict[str, typing.Type[MetaType]]
+        # type: (bool, bool) -> typing.Dict[str, typing.Type[MetaType]]
         """
         Returns all subclasses that exist *now*.
         New subclasses can be created after this call,

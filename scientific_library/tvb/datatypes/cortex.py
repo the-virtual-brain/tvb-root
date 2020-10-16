@@ -52,7 +52,7 @@ class Cortex(HasTraits):
 
     region_mapping_data = Attr(
         field_type=region_mapping.RegionMapping,
-        label="region mapping",
+        label="Region mapping",
         doc="""An index vector of length equal to the number_of_vertices + the
             number of non-cortical regions, with values that index into an
             associated connectivity matrix.""")  # 'CS'

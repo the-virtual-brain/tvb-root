@@ -55,7 +55,7 @@ class TestTimeseries(BaseTestCase):
         assert summary_info['Time-series type'] == 'TimeSeries'
         assert dt.data.shape == (10, 10)
         assert dt.sample_period == 1.0
-        assert dt.sample_rate == 1.0
+        assert dt.sample_rate == 1000
         assert dt.start_time == 0.0
         assert dt.time is None
 
@@ -65,7 +65,7 @@ class TestTimeseries(BaseTestCase):
         assert dt.data.shape == (10, 10)
         assert ('Time', '1', 'EEG Sensor', '1') == dt.labels_ordering
         assert dt.sample_period == 1.0
-        assert dt.sample_rate == 1.0
+        assert dt.sample_rate == 1000
         assert dt.sensors is not None
         assert dt.start_time == 0.0
         assert dt.time is None
@@ -76,7 +76,7 @@ class TestTimeseries(BaseTestCase):
         assert dt.data.shape == (10, 10)
         assert ('Time', '1', 'MEG Sensor', '1') == dt.labels_ordering
         assert dt.sample_period == 1.0
-        assert dt.sample_rate == 1.0
+        assert dt.sample_rate == 1000
         assert dt.sensors is not None
         assert dt.start_time == 0.0
         assert dt.time is None
@@ -87,7 +87,7 @@ class TestTimeseries(BaseTestCase):
         assert dt.data.shape == (10, 10)
         assert dt.labels_ordering == ('Time', 'State Variable', 'Region', 'Mode')
         assert dt.sample_period == 1.0
-        assert dt.sample_rate == 1.0
+        assert dt.sample_rate == 1000
         assert dt.start_time == 0.0
         assert dt.time is None
 
@@ -97,7 +97,7 @@ class TestTimeseries(BaseTestCase):
         assert dt.data.shape == (10, 10)
         assert dt.labels_ordering == ('Time', 'State Variable', 'Vertex', 'Mode')
         assert dt.sample_period == 1.0
-        assert dt.sample_rate == 1.0
+        assert dt.sample_rate == 1000
         assert dt.start_time == 0.0
         assert dt.time is None
 
@@ -107,6 +107,6 @@ class TestTimeseries(BaseTestCase):
         assert dt.data.shape == (10, 10)
         assert dt.labels_ordering == ('Time', 'X', 'Y', 'Z')
         assert dt.sample_period == 1.0
-        assert dt.sample_rate == 1.0
+        assert dt.sample_rate == 1000
         assert dt.start_time == 0.0
         assert dt.time is None

@@ -18,23 +18,29 @@
  **/
 
 // ----- Datatype methods mappings start from here
-
-function readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
+function setStateModeStep(stateVariable, mode, step){
     if (stateVariable === null || stateVariable === undefined) {
         stateVariable = 0;
     }
     if (mode === null || mode === undefined) {
         mode = 0;
     }
-    if (step === null || step == undefined) {
+    if (step === null || step === undefined) {
         step = 1;
     }
-    return baseDatatypeMethodURL + '/read_data_page/False?from_idx=' + fromIdx + ";to_idx=" + toIdx + ";step=" + step + ";specific_slices=[null," + stateVariable + ",null," + mode + "]";
+
+    return [stateVariable, mode, step]
 }
 
-function readDataSplitPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
-    const baseURL = readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step);
-    return baseURL.replace('read_data_page', 'read_data_page_split');
+function readDataPageURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
+    const param_list = setStateModeStep(stateVariable, mode, step);
+    return baseDatatypeMethodURL + '/read_data_page?from_idx=' + fromIdx + ";to_idx=" + toIdx + ";step=" + param_list[2] + ";specific_slices=[null," + param_list[0] + ",null," + param_list[1] + "]";
+}
+
+function readDataSplitPageURL(baseAdapterMethodURL, fromIdx, toIdx, stateVariable, mode, step) {
+    const param_list = setStateModeStep(stateVariable, mode, step);
+    return baseAdapterMethodURL+ "from_idx=" + fromIdx + ";to_idx=" + toIdx + ";step=" + param_list[2] + ";specific_slices=[null," + param_list[0] + ",null," + param_list[1] + "]";
+
 }
 
 function readDataChannelURL(baseDatatypeMethodURL, fromIdx, toIdx, stateVariable, mode, step, channels) {

@@ -36,7 +36,7 @@ Singleton logging builder.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
-.. moduleauthor:: Marmaduke Woodman <mw@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 import importlib

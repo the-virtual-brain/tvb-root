@@ -77,7 +77,7 @@
                                 {{ proj.name }}
                             </td>
 
-                            <td class="owner">{{ proj.administrator.username }}</td>
+                            <td class="owner">{{ proj.administrator.display_name }}</td>
 
                             <td class="ops" tabindex='3' onkeypress="redirectToHrefChild(this)">
                                 <a href="/project/viewoperations/{{ proj.id }}" title="Manage operations..."

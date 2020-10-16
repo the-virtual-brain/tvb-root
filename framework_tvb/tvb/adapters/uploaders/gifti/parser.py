@@ -161,7 +161,7 @@ class GIFTIParser(object):
 
         return time_series, data_arrays
 
-
+    # TODO: data_file_part2 should be optional and if it's not given, then it should be None, but it is actually taken as '' from h5 file, so it  acts as if it is required
     def parse(self, data_file, data_file_part2=None, surface_type=OPTION_READ_METADATA, should_center=False):
         """
         Parse NIFTI file(s) and returns A Surface or a TimeSeries for it.

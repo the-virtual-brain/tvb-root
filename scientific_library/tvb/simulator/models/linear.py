@@ -60,6 +60,10 @@ class Linear(Model):
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state, coupling, local_coupling=0.0):
+        """
+        .. math::
+            x = a{\gamma} + b
+        """
         x, = state
         c, = coupling
         dx = self.gamma * x + c + local_coupling * x

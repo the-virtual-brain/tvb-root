@@ -33,14 +33,14 @@
 """
 
 import pytest
-from tvb.core.utils import hash_password
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.model import model_project
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.model import model_project
 from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import UsernameException
-from tvb.core.services.user_service import UserService, USERS_PAGE_SIZE
 from tvb.core.services.project_service import ProjectService
+from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
+from tvb.core.utils import hash_password
+from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
 class MainSenderDummy(object):
@@ -73,6 +73,7 @@ class TestUserService(TransactionalTestCase):
         self.clean_database()
         self.user_service = UserService()
         self.user_service.create_user(username=TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
+                                      display_name=TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
                                       password=TvbProfile.current.web.admin.ADMINISTRATOR_PASSWORD,
                                       email=TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
                                       role=model_project.ROLE_ADMINISTRATOR, skip_import=True)
@@ -91,7 +92,7 @@ class TestUserService(TransactionalTestCase):
         Standard flow for creating a user.
         """
         initial_user_count = dao.get_all_users()
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         final_user_count = dao.get_all_users()
@@ -106,7 +107,8 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with an empty password field.
         """
-        data = dict(username="test_user", password="", email="test_user@tvb.org", role="user", comment="")
+        data = dict(username="test_user", display_name="test_name", password="", email="test_user@tvb.org", role="user",
+                    comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -114,7 +116,7 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with no password data.
         """
-        data = dict(username="test_user", email="test_user@tvb.org", role="user", comment="")
+        data = dict(username="test_user", display_name="test_name", email="test_user@tvb.org", role="user", comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -122,7 +124,8 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with an empty username field.
         """
-        data = dict(username="", password="test_pass", email="test_user@tvb.org", role="user", comment="")
+        data = dict(username="", display_name="test_name", password="test_pass", email="test_user@tvb.org", role="user",
+                    comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -130,7 +133,7 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with no username data.
         """
-        data = dict(password="test_pass", email="test_user@tvb.org", role="user", comment="")
+        data = dict(password="test_pass", display_name="test_name", email="test_user@tvb.org", role="user", comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -138,7 +141,8 @@ class TestUserService(TransactionalTestCase):
         """
         Try to create a user with an empty email field.
         """
-        data = dict(username="test_username", password="test_password", email="", role="user", comment="")
+        data = dict(username="test_username", display_name="test_name", password="test_password", email="", role="user",
+                    comment="")
         with pytest.raises(UsernameException):
             self.user_service.create_user(**data)
 
@@ -146,7 +150,7 @@ class TestUserService(TransactionalTestCase):
         """
         Test method for the reset password method. Happy flow.
         """
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
@@ -161,7 +165,7 @@ class TestUserService(TransactionalTestCase):
         Test method for the reset password method. Email is not valid,
         should raise exception
         """
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")
@@ -192,7 +196,7 @@ class TestUserService(TransactionalTestCase):
 
     def _prepare_user_for_change_pwd(self):
         """Private method to prepare password change operation"""
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         self.user_service.validate_user("test_user")
@@ -206,7 +210,7 @@ class TestUserService(TransactionalTestCase):
         Test the method that checks if a userName is valid or not (if it already exists
         in the database the userName is not valid).
         """
-        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
+        user = model_project.User("test_user", "test_name", "test_pass", "test_mail@tvb.org", False, "user")
         dao.store_entity(user)
         assert not self.user_service.is_username_valid("test_user"), "Should be False but got True"
         assert self.user_service.is_username_valid("test_user2"), "Should be True but got False"
@@ -215,7 +219,7 @@ class TestUserService(TransactionalTestCase):
         """
         Standard flow for a validate user action.
         """
-        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", False, "user")
+        user = model_project.User("test_user", "test_name", "test_pass", "test_mail@tvb.org", False, "user")
         dao.store_entity(user)
         assert self.user_service.validate_user("test_user"), "Validation failed when it shouldn't have."
 
@@ -223,7 +227,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for trying to validate a user that was already validated.
         """
-        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", "test_name", "test_pass", "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         assert not self.user_service.validate_user("test_user"), "Validation invalid."
 
@@ -231,7 +235,7 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for trying to validate a user that doesn't exist in the database.
         """
-        user = model_project.User("test_user", "test_pass", "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", "test_name", "test_pass", "test_mail@tvb.org", True, "user")
         dao.store_entity(user)
         assert not self.user_service.validate_user("test_user2"), "Validation done even tho user is non-existent"
 
@@ -239,7 +243,8 @@ class TestUserService(TransactionalTestCase):
         """
         Standard login flow with a valid username and password.
         """
-        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", 'test_name', hash_password("test_pass"), "test_mail@tvb.org", True,
+                                  "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -249,7 +254,8 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid password.
         """
-        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", 'test_user_name', hash_password("test_pass"), "test_mail@tvb.org", True,
+                                  "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -259,7 +265,8 @@ class TestUserService(TransactionalTestCase):
         """
         Flow for entering a bad/invalid username.
         """
-        user = model_project.User("test_user", hash_password("test_pass"), "test_mail@tvb.org", True, "user")
+        user = model_project.User("test_user", 'test_name', hash_password("test_pass"), "test_mail@tvb.org", True,
+                                  "user")
         dao.store_entity(user)
         available_users = dao.get_all_users()
         assert 2 == len(available_users)
@@ -269,85 +276,74 @@ class TestUserService(TransactionalTestCase):
         """
         Get all members of a project except the current user.
         """
-        user_1 = model_project.User("test_user1", "test_pass", "test_mail1@tvb.org", False, "user")
-        dao.store_entity(user_1)
-        user_2 = model_project.User("test_user2", "test_pass", "test_mail2@tvb.org", False, "user")
-        dao.store_entity(user_2)
-        user_3 = model_project.User("test_user3", "test_pass", "test_mail2@tvb.org", False, "user")
-        dao.store_entity(user_3)
-        user_4 = model_project.User("test_user4", "test_pass", "test_mail2@tvb.org", False, "user")
-        dao.store_entity(user_4)
-        user_5 = model_project.User("test_user5", "test_pass", "test_mail2@tvb.org", False, "user")
-        dao.store_entity(user_5)
+        user_ids = []
+        for i in range(5):
+            user = model_project.User("test_user" + str(i), "test_user_no" + str(i), "pass", "test_mail@tvb.org")
+            user = dao.store_entity(user)
+            user_ids.append(user.id)
         admin = dao.get_user_by_name("test_user1")
         member1 = dao.get_user_by_name("test_user2")
-        member2 = dao.get_user_by_name("test_user5")
+        member2 = dao.get_user_by_name("test_user4")
         data = dict(name="test_proj", description="test_desc", users=[member1.id, member2.id])
         project = ProjectService().store_project(admin, True, None, **data)
         all_users, members, pag = self.user_service.get_users_for_project(admin.username, project.id)
-        assert len(members) == 2, "More members than there should be."
-        assert len(all_users) == 5, "Admin should not be viewed as member. " \
-                                    "Neither should users that were not part of the project's users list."
+        assert len(members) == 3, "More members than there should be."
+        assert len(all_users) == 5
         assert pag == 1, "Invalid total pages number."
+
+        admin_found_member = False
+        for user in members:
+            if user.username == admin.username:
+                admin_found_member = True
+        assert admin_found_member, "Admin is expected to be a project member"
+
+        admin_found_editable = False
         for user in all_users:
-            assert user.username != admin.username, "Admin is in members!"
+            if user.username == admin.username:
+                admin_found_editable = True
+        assert not admin_found_editable, "Admin membership should not be editable"
 
-    def test_get_users_second_page(self):
+    def test_get_members_pages(self):
         """
-        Try to get the second page of users for a given project
+        Create many users (more than one page of members.
+        Create a project and asign all Users as members.
+        Test that 2 pages or Project Members are retrieved.
+        Now remove extra users, to have only one page of members for the project.
         """
-        for i in range(USERS_PAGE_SIZE + 3):
-            exec('user_' + str(i) + '= model_project.User("test_user' + str(
-                i) + '", "test_pass", "test_mail@tvb.org", False, "user")')
-            exec("dao.store_entity(user_" + str(i) + ")")
-        for i in range(USERS_PAGE_SIZE + 3):
-            exec('member' + str(i) + '=dao.get_user_by_name("test_user' + str(i) + '")')
-        admin = dao.get_user_by_name("test_user1")
-        scope = locals()
-        data = dict(name='test_proj', description='test_desc',
-                    users=[eval('member' + str(i) + '.id', scope) for i in range(USERS_PAGE_SIZE + 3)])
+        user_ids = []
+        for i in range(MEMBERS_PAGE_SIZE + 3):
+            user = model_project.User("test_user_no" + str(i), "test_user_no" + str(i), "pass", "test_mail@tvb.org")
+            user = dao.store_entity(user)
+            user_ids.append(user.id)
+
+        admin = dao.get_user_by_name("test_user_no1")
+        data = dict(name='test_proj', description='test_desc', users=user_ids)
         project = ProjectService().store_project(admin, True, None, **data)
+
         page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
-        assert len(page_users) == (USERS_PAGE_SIZE + 3) % USERS_PAGE_SIZE
-        assert len(all_users) == USERS_PAGE_SIZE + 3, 'Not all members returned'
+        assert len(page_users) == (MEMBERS_PAGE_SIZE + 3) % MEMBERS_PAGE_SIZE
+        assert len(all_users) == MEMBERS_PAGE_SIZE + 3, 'Not all members returned'
         assert pag == 2, 'Invalid page number returned'
 
-    def test_get_users_second_page_del(self):
-        """
-        Try to get the second page of users for a given project where only one user on last page.
-        Then delete that user.
-        """
-        for i in range(USERS_PAGE_SIZE + 1):
-            exec('user_' + str(i) + '= model_project.User("test_user' + str(i) + \
-                 '", "test_pass", "test_mail@tvb.org", False, "user")')
-            exec("dao.store_entity(user_" + str(i) + ")")
-        for i in range(USERS_PAGE_SIZE + 1):
-            exec('member' + str(i) + '=dao.get_user_by_name("test_user' + str(i) + '")')
+        for i in range(3):
+            user = dao.get_user_by_name("test_user_no" + str(i + 2))
+            self.user_service.delete_user(user.id)
 
-        admin = dao.get_user_by_name("test_user1")
-        scope = locals()
-        data = dict(name='test_proj', description='test_desc',
-                    users=[eval('member' + str(i) + '.id', scope) for i in range(USERS_PAGE_SIZE + 1)])
-        project = ProjectService().store_project(admin, True, None, **data)
-        page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
-        assert len(page_users) == 1, 'Paging not working properly'
-        assert len(all_users) == USERS_PAGE_SIZE + 1, 'Not all members returned'
-        assert pag == 2, 'Invalid page number returned'
-        self.user_service.delete_user(scope['member2'].id)
-        page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 2)
+        page_users, all_users, pag = self.user_service.get_users_for_project("test_user_no1", project.id, 2)
         assert len(page_users) == 0, 'Paging not working properly'
-        assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
+        assert len(all_users) == MEMBERS_PAGE_SIZE, 'Not all members returned'
         assert pag == 1, 'Invalid page number returned'
-        page_users, all_users, pag = self.user_service.get_users_for_project(admin.username, project.id, 1)
-        assert len(page_users) == USERS_PAGE_SIZE, 'Paging not working properly'
-        assert len(all_users) == USERS_PAGE_SIZE, 'Not all members returned'
+
+        page_users, all_users, pag = self.user_service.get_users_for_project("test_user_no1", project.id, 1)
+        assert len(page_users) == MEMBERS_PAGE_SIZE, 'Paging not working properly'
+        assert len(all_users) == MEMBERS_PAGE_SIZE, 'Not all members returned'
         assert pag == 1, 'Invalid page number returned'
 
     def test_edit_user_happy_flow(self):
         """
         Test the method of editing a user.
         """
-        data = dict(username="test_user", password=hash_password("test_password"),
+        data = dict(username="test_user", display_name="test_name", password=hash_password("test_password"),
                     email="test_user@tvb.org", role="user", comment="")
         self.user_service.create_user(**data)
         inserted_user = dao.get_user_by_name("test_user")

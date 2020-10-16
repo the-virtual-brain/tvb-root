@@ -9,18 +9,18 @@
 
     <script type="text/javascript">
         $(document).ready(function () {
-            var entityElement = $("select[name='_existentEntitiesSelect']");
+            var entityElement = $("select[name='existentEntitiesSelect']");
             entityElement.change(function () { BS_loadEntity(); });
             // Any on change event should reset the loaded entity, disable the view button and enable the create button
             $("input").change(function () {
-                var selectEntity = $("select[name='_existentEntitiesSelect']")[0];
+                var selectEntity = $("select[name='existentEntitiesSelect']")[0];
                 selectEntity.options[selectEntity.options.selectedIndex].selected = false;
                 selectEntity.options[0].selected = true;
                 LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');
                 LCONN_enableCreate();
             });
-            $("select[name!='_existentEntitiesSelect']").change(function () {
-                var selectEntity = $("select[name='_existentEntitiesSelect']")[0];
+            $("select[name!='existentEntitiesSelect']").change(function () {
+                var selectEntity = $("select[name='existentEntitiesSelect']")[0];
                 selectEntity.options[selectEntity.options.selectedIndex].selected = false;
                 selectEntity.options[0].selected = true;
                 LCONN_disableView('In order to view a Local Connectivity entity, you have to load it first!');

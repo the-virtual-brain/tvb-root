@@ -501,10 +501,10 @@ function MATRIX_colorTable() {
 
 function saveSubConnectivity(submitUrl, originalConnectivityId,  isBranch) {
     var data = {
-        _original_connectivity: originalConnectivityId,
-        _new_weights: $.toJSON(GVAR_interestAreaVariables[1].values),
-        _new_tracts: $.toJSON(GVAR_interestAreaVariables[2].values),
-        _interest_area_indexes: $.toJSON(GVAR_interestAreaNodeIndexes),
+        original_connectivity: originalConnectivityId,
+        new_weights: $.toJSON(GVAR_interestAreaVariables[1].values),
+        new_tracts: $.toJSON(GVAR_interestAreaVariables[2].values),
+        interest_area_indexes: $.toJSON(GVAR_interestAreaNodeIndexes),
         User_Tag_1_Perpetuated: $('#newConnectivityNameTag').val()
     };
     // Emulate the way browsers send checkboxes in forms.

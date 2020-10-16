@@ -30,7 +30,7 @@
 """
 Data descriptors for declaring workspace for algorithms and checking usage.
 
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

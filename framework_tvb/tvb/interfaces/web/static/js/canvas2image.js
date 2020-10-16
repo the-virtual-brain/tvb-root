@@ -23,9 +23,8 @@ var C2I_EXPORT_HEIGHT = 1080;
 var canvasAndSvg=false;
 /**
  * Function called on any visualizer, to export canvases into image/svg downloadable files..
- * @param kwargs an object with 2 optional keys
- *   operationId  : The operation which created the figure
- *   suggestedName: A name for the figure
+ * @param kwargs an object with currently only one optional key:
+ *   suggestedName: A name prefix for the figure
  */
 function C2I_exportFigures(kwargs) {
     if ($("canvas, svg").filter(":visible").length === 0) {

@@ -31,12 +31,14 @@
 
 import json
 import numpy
-from tvb.adapters.visualizers.pearson_cross_correlation import PearsonCorrelationCoefficientVisualizerForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
+from tvb.adapters.visualizers.pearson_cross_correlation import PearsonCorrelationCoefficientVisualizerForm, \
+    PearsonCorrelationCoefficientVisualizerModel
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
+from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.datatypes.graph import CorrelationCoefficients
 
 
-class PearsonEdgeBundle(ABCDisplayer):
+class PearsonEdgeBundle(ABCSpaceDisplayer):
     """
     Viewer for Pearson CorrelationCoefficients.
     Very similar to the CrossCorrelationVisualizer - this one done with Matplotlib
@@ -47,33 +49,35 @@ class PearsonEdgeBundle(ABCDisplayer):
     def get_form_class(self):
         return PearsonCorrelationCoefficientVisualizerForm
 
-    def get_required_memory_size(self, datatype):
+    def get_required_memory_size(self, view_model):
+        # type: (PearsonCorrelationCoefficientVisualizerModel) -> numpy.ndarray
         """Return required memory."""
-
-        input_size = (datatype.data_length_1d, datatype.data_length_2d,
-                      datatype.data_length_3d, datatype.data_length_4d)
+        datatype_index = self.load_entity_by_gid(view_model.datatype)
+        input_size = (datatype_index.data_length_1d, datatype_index.data_length_2d,
+                      datatype_index.data_length_3d, datatype_index.data_length_4d)
         return numpy.prod(input_size) * 8.0
 
-    def launch(self, datatype):
+    def launch(self, view_model):
+        # type: (PearsonCorrelationCoefficientVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
 
-        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(datatype.gid)
+        datatype_h5_class, datatype_h5_path = self._load_h5_of_gid(view_model.datatype.hex)
         with datatype_h5_class(datatype_h5_path) as datatype_h5:
             matrix_shape = datatype_h5.array_data.shape[0:2]
             ts_gid = datatype_h5.source.load()
-        ts_index = self.load_entity_by_gid(ts_gid.hex)
+        ts_index = self.load_entity_by_gid(ts_gid)
+        state_list = ts_index.get_labels_for_dimension(1)
+        mode_list = list(range(ts_index.data_length_4d))
 
         ts_h5_class, ts_h5_path = self._load_h5_of_gid(ts_index.gid)
         with ts_h5_class(ts_h5_path) as ts_h5:
-            labels = ts_h5.get_space_labels()
-        state_list = ts_h5.labels_dimensions.load().get(ts_h5.labels_ordering.load()[1], [])
-        mode_list = list(range(ts_index.data_length_4d))
+            labels = self.get_space_labels(ts_h5)
         if not labels:
             labels = None
         pars = dict(matrix_labels=json.dumps(labels),
                     matrix_shape=json.dumps(matrix_shape),
                     viewer_title='Pearson Edge Bundle',
-                    url_base=URLGenerator.build_h5_url(datatype.gid, 'get_correlation_data', flatten="True",
+                    url_base=URLGenerator.build_h5_url(view_model.datatype.hex, 'get_correlation_data', flatten="True",
                                                        parameter=''),
                     state_variable=0,
                     mode=mode_list[0],

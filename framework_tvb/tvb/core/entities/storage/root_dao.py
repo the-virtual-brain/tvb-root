@@ -43,6 +43,8 @@ from tvb.core.entities.storage.session_maker import SESSION_META_CLASS
 from tvb.config import SIMULATION_DATATYPE_CLASS
 
 
+DEFAULT_PAGE_SIZE = 200
+
 
 class RootDAO(object, metaclass=SESSION_META_CLASS):
     """

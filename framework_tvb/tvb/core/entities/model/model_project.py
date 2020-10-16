@@ -37,27 +37,27 @@ Here we define entities related to user and project.
 """
 
 import datetime
-from sqlalchemy.orm import relationship, backref
+import uuid
+
+from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey, Float
-from tvb.core import utils
-from tvb.core.entities.exportable import Exportable
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core import utils
+from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neotraits.db import Base
 
 LOG = get_logger(__name__)
 
-
-#Constants for User Roles.
+# Constants for User Roles.
 ROLE_ADMINISTRATOR = "ADMINISTRATOR"
 ROLE_CLINICIAN = "CLINICIAN"
 ROLE_RESEARCHER = "RESEARCHER"
 
 USER_ROLES = [ROLE_ADMINISTRATOR, ROLE_CLINICIAN, ROLE_RESEARCHER]
-
 
 
 class User(Base):
@@ -67,7 +67,9 @@ class User(Base):
     __tablename__ = 'USERS'
 
     id = Column(Integer, primary_key=True)
+    gid = Column(String, unique=True)
     username = Column(String, unique=True)
+    display_name = Column(String)
     password = Column(String)
     email = Column(String, nullable=True)
     role = Column(String)
@@ -77,24 +79,25 @@ class User(Base):
     preferences = association_proxy('user_preferences', 'value',
                                     creator=lambda k, v: UserPreferences(key=k, value=v))
 
-
-    def __init__(self, login, password, email=None, validated=True, role=ROLE_RESEARCHER):
+    def __init__(self, login, display_name, password, email=None, validated=True, role=ROLE_RESEARCHER, gid=None):
         self.username = login
+        self.display_name = display_name
         self.password = password
         self.email = email
         self.validated = validated
         self.role = role
-
+        if gid is None:
+            gid = uuid.uuid4().hex
+        self.gid = gid
 
     def __repr__(self):
-        return "<USER('%s','%s','%s','%s','%s', %s)>" % (self.username, self.password, self.email, self.validated,
-                                                         self.role, str(self.selected_project))
-
+        return "<USER('%s','%s','%s','%s','%s','%s', %s)>" % (self.username, self.display_name, self.password,
+                                                              self.email, self.validated, self.role,
+                                                              str(self.selected_project))
 
     def is_administrator(self):
         """Return a boolean, saying if current user has role Administrator"""
         return self.role == ROLE_ADMINISTRATOR
-
 
     def is_online_help_active(self):
         """
@@ -107,17 +110,14 @@ class User(Base):
 
         return is_help_active
 
-
     def switch_online_help_state(self):
         """
         This method changes the state of the OnlineHelp Active flag.
         """
         self.preferences[UserPreferences.ONLINE_HELP_ACTIVE] = str(not self.is_online_help_active())
 
-
     def set_viewers_color_scheme(self, color_scheme):
         self.preferences[UserPreferences.VIEWERS_COLOR_SCHEME] = color_scheme
-
 
     def get_viewers_color_scheme(self):
         if UserPreferences.VIEWERS_COLOR_SCHEME not in self.preferences:
@@ -125,11 +125,9 @@ class User(Base):
 
         return self.preferences[UserPreferences.VIEWERS_COLOR_SCHEME]
 
-
     def set_project_structure_grouping(self, first, second):
         k = UserPreferences.PROJECT_STRUCTURE_GROUPING
         self.preferences[k] = "%s,%s" % (first, second)
-
 
     def get_project_structure_grouping(self):
         k = UserPreferences.PROJECT_STRUCTURE_GROUPING
@@ -154,10 +152,8 @@ class UserPreferences(Base):
     user = relationship(User, backref=backref("user_preferences", cascade="all, delete-orphan", lazy='joined',
                                               collection_class=attribute_mapped_collection("key")))
 
-
     def __repr__(self):
         return 'UserPreferences: %s - %s' % (self.key, self.value)
-
 
 
 class Project(Base, Exportable):
@@ -194,15 +190,12 @@ class Project(Base, Exportable):
         self.gid = utils.generate_guid()
         self.version = TvbProfile.current.version.PROJECT_VERSION
 
-
     def refresh_update_date(self):
         """Mark entity as being changed NOW. (last_update field)"""
         self.last_updated = datetime.datetime.now()
 
-
     def __repr__(self):
         return "<Project('%s', '%s')>" % (self.name, self.fk_admin)
-
 
     def to_dict(self):
         """
@@ -210,7 +203,6 @@ class Project(Base, Exportable):
         """
         _, base_dict = super(Project, self).to_dict(excludes=['id', 'fk_admin', 'administrator', 'trait'])
         return self.__class__.__name__, base_dict
-
 
     def from_dict(self, dictionary, user_id):
         """
@@ -225,7 +217,6 @@ class Project(Base, Exportable):
         return self
 
 
-
 class User_to_Project(Base):
     """
     Multiple Users can be members of a given Project.
@@ -235,7 +226,6 @@ class User_to_Project(Base):
     id = Column(Integer, primary_key=True)
     fk_user = Column(Integer, ForeignKey('USERS.id', ondelete="CASCADE"))
     fk_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
-
 
     def __init__(self, user, case):
 
@@ -247,6 +237,4 @@ class User_to_Project(Base):
         if type(case) == int:
             self.fk_project = case
         else:
-            self.fk_project = case.id   
-    
-            
+            self.fk_project = case.id

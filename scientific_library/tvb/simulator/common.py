@@ -44,7 +44,6 @@ import six
 import logging
 from tvb.basic.logger.builder import GLOBAL_LOGGER_BUILDER, get_logger
 
-
 def log_debug(debug=False, timestamp=False, prefix=''):
     level_name = 'DEBUG' if debug else 'INFO'
     level = getattr(logging, level_name)

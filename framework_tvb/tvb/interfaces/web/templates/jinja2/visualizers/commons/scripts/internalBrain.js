@@ -59,12 +59,12 @@ function VSI_StartInternalSensorViewer(urlMeasurePoints,  noOfMeasurePoints, url
 
 }
 
-function VSI_StartInternalActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
+function VSI_StartInternalActivityViewer(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                     urlRegionMapList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, urlMeasurePointsLabels, boundaryURL) {
 
-    _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
+    _VS_movie_entrypoint(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                     urlRegionMapList, minActivity, maxActivity,
                     oneToOneMapping, doubleView, shelfObject, null, urlMeasurePointsLabels, boundaryURL);

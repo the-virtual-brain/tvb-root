@@ -59,8 +59,8 @@ class TestRegionsStimulusController(BaseTransactionalControllerTest):
         """
         self.region_s_c.step_1_submit(1, 1)
         result_dict = self.region_s_c.step_1()
-        assert result_dict['equationViewerUrl'] == '/spatial/stimulus/region/get_equation_chart'
-        assert 'fieldsPrefixes' in result_dict
+        assert result_dict['baseUrl'] == '/spatial/stimulus/region'
+        assert 'fieldsWithEvents' in result_dict
         assert result_dict['loadExistentEntityUrl'] == '/spatial/stimulus/region/load_region_stimulus'
         assert result_dict['mainContent'] == 'spatial/stimulus_region_step1_main'
         assert result_dict['next_step_url'] == '/spatial/stimulus/region/step_1_submit'

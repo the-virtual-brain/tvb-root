@@ -29,12 +29,13 @@
 #
 from sqlalchemy import Column, Integer, ForeignKey, Float, String
 from sqlalchemy.orm import relationship
-from tvb.core.entities.model.model_datatype import DataType, DataTypeMatrix
-from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.core.neotraits.db import from_ndarray
+from tvb.core.entities.storage import dao
+from tvb.core.entities.model.model_datatype import DataType, DataTypeMatrix
+from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 
 
 class RegionMappingIndex(DataType):
@@ -44,42 +45,61 @@ class RegionMappingIndex(DataType):
     array_data_max = Column(Float)
     array_data_mean = Column(Float)
 
-    surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not RegionMapping.surface.required)
-    surface = relationship(SurfaceIndex, foreign_keys=surface_gid, primaryjoin=SurfaceIndex.gid == surface_gid,
+    fk_surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not RegionMapping.surface.required)
+    surface = relationship(SurfaceIndex, foreign_keys=fk_surface_gid, primaryjoin=SurfaceIndex.gid == fk_surface_gid,
                            cascade='none')
 
-    connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
-                              nullable=not RegionMapping.connectivity.required)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_gid,
-                                primaryjoin=ConnectivityIndex.gid == connectivity_gid, cascade='none')
+    fk_connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
+                                 nullable=not RegionMapping.connectivity.required)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
+                                primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid, cascade='none')
 
     def fill_from_has_traits(self, datatype):
         # type: (RegionMapping)  -> None
         super(RegionMappingIndex, self).fill_from_has_traits(datatype)
         self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.surface_gid = datatype.surface.gid.hex
-        self.connectivity_gid = datatype.connectivity.gid.hex
+        self.fk_surface_gid = datatype.surface.gid.hex
+        self.fk_connectivity_gid = datatype.connectivity.gid.hex
+
+    def after_store(self):
+        """
+        In case associated ConnectivityMeasureIndex entities already exist in the system and
+        they are compatible with the current RegionMappingIndex, change their flag `has_surface_mapping` True
+        """
+        conn_measure_index_list = dao.get_generic_entity("tvb.adapters.datatypes.db.graph.ConnectivityMeasureIndex",
+                                                         self.fk_connectivity_gid, "fk_connectivity_gid")
+        for conn_measure_index in conn_measure_index_list:
+            if not conn_measure_index.has_surface_mapping:
+                conn_measure_index.has_surface_mapping = True
+                dao.store_entity(conn_measure_index)
 
 
 class RegionVolumeMappingIndex(DataTypeMatrix):
     id = Column(Integer, ForeignKey(DataTypeMatrix.id), primary_key=True)
 
-    array_data_min = Column(Float)
-    array_data_max = Column(Float)
-    array_data_mean = Column(Float)
+    fk_connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
+                                 nullable=not RegionVolumeMapping.connectivity.required)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
+                                primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid, cascade='none')
 
-    connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid),
-                              nullable=not RegionVolumeMapping.connectivity.required)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_gid,
-                                primaryjoin=ConnectivityIndex.gid == connectivity_gid, cascade='none')
-
-    volume_gid = Column(String(32), ForeignKey(VolumeIndex.gid), nullable=not RegionVolumeMapping.volume.required)
-    volume = relationship(VolumeIndex, foreign_keys=volume_gid, primaryjoin=VolumeIndex.gid == volume_gid,
+    fk_volume_gid = Column(String(32), ForeignKey(VolumeIndex.gid), nullable=not RegionVolumeMapping.volume.required)
+    volume = relationship(VolumeIndex, foreign_keys=fk_volume_gid, primaryjoin=VolumeIndex.gid == fk_volume_gid,
                           cascade='none')
 
     def fill_from_has_traits(self, datatype):
         # type: (RegionVolumeMapping)  -> None
         super(RegionVolumeMappingIndex, self).fill_from_has_traits(datatype)
-        self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
-        self.connectivity_gid = datatype.connectivity.gid.hex
-        self.volume_gid = datatype.volume.gid.hex
+        self.fk_connectivity_gid = datatype.connectivity.gid.hex
+        self.fk_volume_gid = datatype.volume.gid.hex
+
+    def after_store(self):
+        """
+        In case associated ConnectivityMeasureIndex entities already exist in the system and
+        they are compatible with the current RegionVolumeMappingIndex, change their flag `has_volume_mapping` True
+        """
+        conn_measure_index_list = dao.get_generic_entity("tvb.adapters.datatypes.db.graph.ConnectivityMeasureIndex",
+                                                         self.fk_connectivity_gid, "fk_connectivity_gid")
+        for conn_measure_index in conn_measure_index_list:
+            if not conn_measure_index.has_volume_mapping:
+                conn_measure_index.has_volume_mapping = True
+                dao.store_entity(conn_measure_index)

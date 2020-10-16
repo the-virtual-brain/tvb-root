@@ -46,7 +46,6 @@ import tvb.core.entities.model.db_update_scripts as scripts
 LOGGER = get_logger(__name__)
 
 
-
 def initialize_startup():
     """ Force DB tables create, in case no data is already found."""
     is_db_empty = False
@@ -79,7 +78,6 @@ def initialize_startup():
     return is_db_empty
 
 
-
 def reset_database():
     """
     Remove all tables in DB.
@@ -99,13 +97,13 @@ def reset_database():
                 except Exception as excep1:
                     LOGGER.error("Could no drop table %s", table)
                     LOGGER.exception(excep1)
+        migratesqlapi.drop_version_control(TvbProfile.current.db.DB_URL, TvbProfile.current.db.DB_VERSIONING_REPO)
         session.commit()
         LOGGER.info("Database was cleanup!")
     except Exception as excep:
         LOGGER.warning(excep)
     finally:
         session.close()
-
 
 
 def _update_sql_scripts():
@@ -118,4 +116,3 @@ def _update_sql_scripts():
         shutil.rmtree(versions_folder)
     ignore_patters = shutil.ignore_patterns('.svn')
     shutil.copytree(scripts_folder, versions_folder, ignore=ignore_patters)
-

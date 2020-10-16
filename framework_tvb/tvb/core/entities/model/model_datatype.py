@@ -35,17 +35,20 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
+import json
+import numpy
+import typing
 from datetime import datetime
 from copy import copy
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Boolean, Integer, String, Float, Column, ForeignKey
+from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.entities.model.simulator.burst_configuration import BurstConfiguration2
-from tvb.core.neotraits.db import HasTraitsIndex, Base
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
-from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.neotraits.db import HasTraitsIndex, Base, from_ndarray
 
 
 LOG = get_logger(__name__)
@@ -66,13 +69,14 @@ FILTER_CATEGORIES = {'DataType.subject': {'display': 'Subject', 'type': 'string'
                                              'operations': ['!=', '==', 'like']},
                      'DataType.user_tag_5': {'display': 'Tag 5', 'type': 'string',
                                              'operations': ['!=', '==', 'like']},
-                     'Operation.start_date': {'display': 'Start date', 'type': 'date',
-                                              'operations': ['!=', '<', '>']},
                      'BurstConfiguration.name': {'display': 'Simulation name', 'type': 'string',
                                                  'operations': ['==', '!=', 'like']},
+                     'Operation.user_group': {'display': 'Operation Tag', 'type': 'string',
+                                              'operations': ['==', '!=', 'like']},
+                     'Operation.start_date': {'display': 'Start date', 'type': 'date',
+                                              'operations': ['!=', '<', '>']},
                      'Operation.completion_date': {'display': 'Completion date', 'type': 'date',
                                                    'operations': ['!=', '<', '>']}}
-
 
 
 class DataType(HasTraitsIndex):
@@ -91,18 +95,19 @@ class DataType(HasTraitsIndex):
     visible = Column(Boolean, default=True)
     invalid = Column(Boolean, default=False)
     is_nan = Column(Boolean, default=False)
-    disk_size = Column(Integer)
+    disk_size = Column(Integer, default=0)
     user_tag_1 = Column(String)  # Name used by framework and perpetuated from a DataType to derived entities.
     user_tag_2 = Column(String)
     user_tag_3 = Column(String)
     user_tag_4 = Column(String)
     user_tag_5 = Column(String)
 
-    # ID of a burst in which current dataType was generated
+    # GID of a burst in which current dataType was generated
     # Native burst-results are referenced from a workflowSet as well
     # But we also have results generated afterwards from TreeBurst tab.
-    fk_parent_burst = Column(Integer, ForeignKey('BurstConfiguration2.id', ondelete="SET NULL"))
-    _parent_burst = relationship(BurstConfiguration2, primaryjoin="DataType.fk_parent_burst==BurstConfiguration2.id")
+    fk_parent_burst = Column(String(32), ForeignKey(BurstConfiguration.gid, ondelete="SET NULL"), nullable=True)
+    _parent_burst = relationship(BurstConfiguration, foreign_keys=fk_parent_burst,
+                                 primaryjoin=BurstConfiguration.gid == fk_parent_burst, cascade='none')
 
     # it should be a reference to a DataTypeGroup, but we can not create that FK
     # because this two tables (DATA_TYPES, DATA_TYPES_GROUPS) will reference each
@@ -112,11 +117,14 @@ class DataType(HasTraitsIndex):
     fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     parent_operation = relationship(Operation, backref=backref("DATA_TYPES", order_by=id, cascade="all,delete"))
 
+    # Transient info
+    fixed_generic_attributes = False
+
+    def get_extra_info(self):
+        return {}
+
     def __init__(self, gid=None, **kwargs):
 
-        # if gid is None:
-        #     self.gid = generate_guid()
-        # else:
         self.gid = gid
         self.type = self.__class__.__name__
         self.module = self.__class__.__module__
@@ -126,7 +134,6 @@ class DataType(HasTraitsIndex):
         except Exception as exc:
             LOG.warning('Could not perform __initdb__: %r', exc)
         super(DataType, self).__init__()
-
 
     def __initdb__(self, subject='', state=None, operation_id=None, fk_parent_burst=None, disk_size=None,
                    user_tag_1=None, user_tag_2=None, user_tag_3=None, user_tag_4=None, user_tag_5=None, **_):
@@ -142,6 +149,18 @@ class DataType(HasTraitsIndex):
         self.disk_size = disk_size
         self.fk_parent_burst = fk_parent_burst
 
+    def after_store(self):
+        """
+        Put here code (as a trigger after storage) to be executed by
+        ABCAdapter after the current DT is stored in DB
+        """
+        pass
+
+    def __repr__(self):
+        msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
+        return msg % (str(self.id), self.gid, self.type, self.module,
+                      self.subject, self.state, str(self.fk_parent_burst),
+                      self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
 
     @property
     def display_type(self):
@@ -159,13 +178,36 @@ class DataType(HasTraitsIndex):
                 display_name += " - " + str(tag)
         return display_name
 
+    @property
+    def summary_info(self):
+        # type: () -> typing.Dict[str, str]
 
-    def __repr__(self):
-        msg = "<DataType(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)>"
-        return msg % (str(self.id), self.gid, self.type, self.module,
-                      self.subject, self.state, str(self.fk_parent_burst),
-                      self.user_tag_1, self.user_tag_2, self.user_tag_3, self.user_tag_4, self.user_tag_5)
+        ret = {}
+        if self.title:
+            ret['Title'] = str(self.title)
 
+        columns = self._get_table_columns()
+        for attr_name in columns:
+            try:
+                if "id" == attr_name:
+                    continue
+                name = attr_name.title().replace("Fk_", "Linked ").replace("_", " ")
+                attr_value = getattr(self, attr_name)
+                ret[name] = str(attr_value)
+            except Exception:
+                pass
+        return ret
+
+    def _get_table_columns(self):
+        columns = self.__table__.columns.keys()
+        if type(self).__bases__[0] is DataType:
+            return columns
+        # Consider the immediate superclass only, as for now we have
+        # - most of *Index classes directly inheriting from DataType
+        # - except the ones with one intermediate: DataTypeMatrix or TimeSeriesIndex
+        base_table_columns = type(self).__bases__[0].__table__.columns.keys()
+        columns.extend(base_table_columns)
+        return columns
 
     @staticmethod
     def accepted_filters():
@@ -173,14 +215,6 @@ class DataType(HasTraitsIndex):
         Return accepted UI filters for current DataType.
         """
         return copy(FILTER_CATEGORIES)
-
-
-    def persist_full_metadata(self):
-        """
-        Do nothing here. We will implement this only in MappedType.
-        """
-        pass
-
 
     def fill_from_has_traits(self, has_traits):
         # type: (HasTraits) -> None
@@ -195,6 +229,7 @@ class DataType(HasTraitsIndex):
         self.user_tag_3 = attrs.user_tag_3
         self.user_tag_4 = attrs.user_tag_4
         self.user_tag_5 = attrs.user_tag_5
+        self.fk_parent_burst = attrs.parent_burst
         self.is_nan = attrs.is_nan
         self.visible = attrs.visible
         self.create_date = attrs.create_date or datetime.now()
@@ -202,7 +237,38 @@ class DataType(HasTraitsIndex):
 
 class DataTypeMatrix(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
-    ndim = Column(Integer)
+    subtype = Column(String, nullable=True)
+
+    ndim = Column(Integer, default=0)
+    shape = Column(String, nullable=True)
+    array_data_min = Column(Float)
+    array_data_max = Column(Float)
+    array_data_mean = Column(Float)
+    array_is_finite = Column(Boolean, default=True)
+    array_has_complex = Column(Boolean, default=False)
+    # has_volume_mapping will currently be changed for ConnectivityMeasureIndex subclass
+    has_volume_mapping = Column(Boolean, nullable=False, default=False)
+
+    def fill_from_has_traits(self, datatype):
+        super(DataTypeMatrix, self).fill_from_has_traits(datatype)
+        self.subtype = datatype.__class__.__name__
+
+        if hasattr(datatype, "array_data"):
+            self.array_has_complex = numpy.iscomplex(datatype.array_data).any().item()
+
+            if not self.array_has_complex:
+                self.array_data_min, self.array_data_max, self.array_data_mean = from_ndarray(datatype.array_data)
+
+            self.array_is_finite = numpy.isfinite(datatype.array_data).all().item()
+            self.shape = json.dumps(datatype.array_data.shape)
+            self.ndim = len(datatype.array_data.shape)
+
+    @property
+    def parsed_shape(self):
+        try:
+            return tuple(json.loads(self.shape))
+        except:
+            return ()
 
 
 class DataTypeGroup(DataType):

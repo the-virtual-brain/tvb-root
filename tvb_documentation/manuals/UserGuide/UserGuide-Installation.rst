@@ -203,8 +203,8 @@ There you can find a Default TVB Project, structural Connectivity, Surfaces, Map
 which can be found inside `TVB_Distribution` under the following path:
 
 - On Windows `TVB_Distribution/tvb_data/Lib/site-packages/tvb_data/`
-- On Linux `TVB_Distribution/tvb_data/lib/python2.7/site-packages/tvb_data/`
-- On Mac `TVB_Distribution/tvb.app/Contents/Resources/lib/python2.7/tvb_data/`
+- On Linux `TVB_Distribution/tvb_data/lib/python3.x/site-packages/tvb_data/`
+- On Mac `TVB_Distribution/tvb.app/Contents/Resources/lib/python3.x/tvb_data/`
 
 .. note::
     Everything under `TVB_Distribution` is not to be removed or edited.

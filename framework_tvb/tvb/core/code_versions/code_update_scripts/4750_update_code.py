@@ -32,11 +32,11 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import os
+import tvb_data.sensors
 from tvb.adapters.uploaders.sensors_importer import SensorsImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
-from tvb.core.services.flow_service import FlowService
-import tvb_data.sensors
+from tvb.core.services.operation_service import OperationService
 
 DATA_FILE = os.path.join(os.path.dirname(tvb_data.sensors.__file__), "seeg_39.txt.bz2")
 
@@ -50,16 +50,14 @@ def update():
     This update was done for release 1.0.5
     """
     projects_count = dao.get_all_projects(is_count=True)
-    
+
     for page_start in range(0, projects_count, PAGE_SIZE):
         projects_page = dao.get_all_projects(page_start=page_start, page_size=PAGE_SIZE)
-        
+
         for project in projects_page:
             try:
                 adapter = SensorsImporter()
-                FlowService().fire_operation(adapter, dao.get_system_user(), project.id, visible=False,
-                                             sensors_file=DATA_FILE, sensors_type=SensorsImporter.INTERNAL_SENSORS)
+                OperationService().fire_operation(adapter, dao.get_system_user(), project.id, visible=False,
+                                                  sensors_file=DATA_FILE, sensors_type=SensorsImporter.INTERNAL_SENSORS)
             except Exception as excep:
                 LOGGER.exception(excep)
-    
-    

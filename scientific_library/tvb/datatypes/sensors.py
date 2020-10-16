@@ -37,13 +37,18 @@ The Sensors dataType.
 
 """
 
+import re
+from enum import Enum
+
 import numpy
 from tvb.basic.readers import FileReader, try_get_absolute_path
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
 
-EEG_POLYMORPHIC_IDENTITY = "EEG"
-MEG_POLYMORPHIC_IDENTITY = "MEG"
-INTERNAL_POLYMORPHIC_IDENTITY = "Internal"
+
+class SensorTypes(Enum):
+    TYPE_EEG = "EEG"
+    TYPE_MEG = "MEG"
+    TYPE_INTERNAL = "Internal"
 
 
 class Sensors(HasTraits):
@@ -175,10 +180,6 @@ class Sensors(HasTraits):
 
         return sensor_locations
 
-    @staticmethod
-    def build_sensors_subclass(sensors):
-        pass
-
 
 class SensorsEEG(Sensors):
     """
@@ -193,25 +194,9 @@ class SensorsEEG(Sensors):
         file columns: labels, x, y, z
 
     """
-    sensors_type = Attr(str, default=EEG_POLYMORPHIC_IDENTITY)
+    sensors_type = Attr(str, default=SensorTypes.TYPE_EEG.value)
 
     has_orientation = Attr(bool, default=False)
-
-    @staticmethod
-    def build_sensors_subclass(sensors):
-        sensors_eeg = SensorsEEG()
-
-        sensors_eeg.sensors_type = sensors.sensors_type
-        sensors_eeg.has_orientation = sensors.has_orientation
-
-        sensors_eeg.labels = sensors.labels
-        sensors_eeg.locations = sensors.locations
-        sensors_eeg.orientations = sensors.orientations
-        sensors_eeg.number_of_sensors = sensors.number_of_sensors
-
-        sensors_eeg.gid = sensors.gid
-
-        return sensors_eeg
 
 
 class SensorsMEG(Sensors):
@@ -227,7 +212,7 @@ class SensorsMEG(Sensors):
         file columns: labels, x, y, z,   dx, dy, dz
 
     """
-    sensors_type = Attr(str, default=MEG_POLYMORPHIC_IDENTITY)
+    sensors_type = Attr(str, default=SensorTypes.TYPE_MEG.value)
 
     orientations = NArray(label="Sensor orientations",
                           doc="An array representing the orientation of the MEG SQUIDs")
@@ -244,45 +229,53 @@ class SensorsMEG(Sensors):
 
         return result
 
-    @staticmethod
-    def build_sensors_subclass(sensors):
-        sensors_meg = SensorsMEG()
-
-        sensors_meg.sensors_type = sensors.sensors_type
-        sensors_meg.orientations = sensors.orientations
-        sensors_meg.has_orientation = sensors.has_orientation
-
-        sensors_meg.labels = sensors.labels
-        sensors_meg.locations = sensors.locations
-        sensors_meg.number_of_sensors = sensors.number_of_sensors
-
-        sensors_meg.gid = sensors.gid
-
-        return sensors_meg
-
 
 class SensorsInternal(Sensors):
     """
     Sensors inside the brain...
     """
-    sensors_type = Attr(str, default=INTERNAL_POLYMORPHIC_IDENTITY)
+    sensors_type = Attr(str, default=SensorTypes.TYPE_INTERNAL.value)
 
     @classmethod
     def from_file(cls, source_file="seeg_39.txt.bz2"):
         return super(SensorsInternal, cls).from_file(source_file)
 
     @staticmethod
-    def build_sensors_subclass(sensors):
-        sensors_internal = SensorsInternal()
+    def _split_string_text_numbers(labels):
+        items = []
+        for i, s in enumerate(labels):
+            match = re.findall('(\d+|\D+)', s)
+            if match:
+                items.append((match[0], i))
+            else:
+                items.append((s, i))
+        return numpy.array(items)
 
-        sensors_internal.sensors_type = sensors.sensors_type
+    @staticmethod
+    def group_sensors_to_electrodes(labels):
+        sensor_names = SensorsInternal._split_string_text_numbers(labels)
+        electrode_labels = numpy.unique(sensor_names[:, 0])
+        electrode_groups = []
+        for electrode in electrode_labels:
+            tuples = [(idx, labels[idx]) for idx in numpy.where(sensor_names[:, 0] == electrode)[0]]
+            electrode_groups.append((electrode, tuples))
+        return electrode_groups
 
-        sensors_internal.labels = sensors.labels
-        sensors_internal.orientations = sensors.orientations
-        sensors_internal.has_orientation = sensors.has_orientation
-        sensors_internal.locations = sensors.locations
-        sensors_internal.number_of_sensors = sensors.number_of_sensors
+    @property
+    def grouped_electrodes(self):
+        return SensorsInternal.group_sensors_to_electrodes(self.labels)
 
-        sensors_internal.gid = sensors.gid
 
-        return sensors_internal
+def make_sensors(sensors_type):
+    """
+    Build a Sensors instance, based on an input type
+    :param sensors_type: one of the supported subtypes
+    :return: Instance of the corresponding sensors class, or None
+    """
+    if sensors_type == SensorTypes.TYPE_EEG.value:
+        return SensorsEEG()
+    elif sensors_type == SensorTypes.TYPE_MEG.value:
+        return SensorsMEG()
+    elif sensors_type == SensorTypes.TYPE_INTERNAL.value:
+        return SensorsInternal()
+    return None

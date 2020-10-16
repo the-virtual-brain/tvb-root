@@ -27,31 +27,28 @@
 # Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.adapters.analyzers.bct_adapters import BaseBCT, BaseUndirected, bct_description, \
     LABEL_CONN_WEIGHTED_UNDIRECTED, LABEL_CONN_WEIGHTED_DIRECTED
 
-
 BCT_GROUP_CLUSTERING = AlgorithmTransientGroup("Clustering Algorithms", "Brain Connectivity Toolbox", "bctclustering")
-
 
 class ClusteringCoefficient(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CLUSTERING
-    _ui_connectivity_label = "Binary directed connection matrix:"
 
-    _ui_name = "Clustering Coefficient BD"
+    _ui_name = "Clustering Coefficient BD: Binary directed connection matrix"
     _ui_description = bct_description("clustering_coef_bd.m")
     _matlab_code = "C = clustering_coef_bd(A);"
 
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.weights}
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
-        measure = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BD")
-        return [measure]
+        result = self.execute_matlab(self._matlab_code, data=data)
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BD")
+        return [measure_index]
 
 
 class ClusteringCoefficientBU(BaseUndirected):
@@ -63,75 +60,75 @@ class ClusteringCoefficientBU(BaseUndirected):
     _ui_description = bct_description("clustering_coef_bu.m")
     _matlab_code = "C = clustering_coef_bu(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
-        measure = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BU")
-        return [measure]
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.weights}
 
+        result = self.execute_matlab(self._matlab_code, data=data)
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient BU")
+        return [measure_index]
 
 class ClusteringCoefficientWU(BaseUndirected):
     """
     """
     _ui_group = BCT_GROUP_CLUSTERING
-    _ui_connectivity_label = LABEL_CONN_WEIGHTED_UNDIRECTED
 
-    _ui_name = "Clustering Coeficient WU"
+    _ui_name = "Clustering Coeficient WU: " + LABEL_CONN_WEIGHTED_UNDIRECTED
     _ui_description = bct_description("clustering_coef_wu.m")
     _matlab_code = "C = clustering_coef_wu(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.scaled_weights()
-        result = self.execute_matlab(self._matlab_code, **kwargs)
-        measure = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WU")
-        return [measure]
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.scaled_weights()}
 
+        result = self.execute_matlab(self._matlab_code, data=data)
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WU")
+        return [measure_index]
 
 class ClusteringCoefficientWD(ClusteringCoefficient):
     """
     """
-    _ui_connectivity_label = LABEL_CONN_WEIGHTED_DIRECTED
-
-    _ui_name = "Clustering Coeficient WD"
+    _ui_name = "Clustering Coeficient WD: " + LABEL_CONN_WEIGHTED_DIRECTED
     _ui_description = bct_description("clustering_coef_wd.m")
     _matlab_code = "C = clustering_coef_wd(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.scaled_weights()
-        result = self.execute_matlab(self._matlab_code, **kwargs)
-        measure = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WD")
-        return [measure]
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.scaled_weights()}
 
+        result = self.execute_matlab(self._matlab_code, data=data)
+        measure_index = self.build_connectivity_measure(result, 'C', connectivity, "Clustering Coefficient WD")
+        return [measure_index]
 
 class TransitivityBinaryDirected(BaseBCT):
     """
     """
     _ui_group = BCT_GROUP_CLUSTERING
-    _ui_connectivity_label = "Binary directed connection matrix:"
 
-    _ui_name = "Transitivity Binary Directed"
+    _ui_name = "Transitivity Binary Directed: Binary directed connection matrix"
     _ui_description = bct_description("transitivity_bd.m")
     _matlab_code = "T = transitivity_bd(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.weights}
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Binary Directed")
         return [value]
-
 
 class TransitivityWeightedDirected(TransitivityBinaryDirected):
     """
     """
-    _ui_connectivity_label = LABEL_CONN_WEIGHTED_DIRECTED
-
-    _ui_name = "Transitivity Weighted Directed"
+    _ui_name = "Transitivity Weighted Directed: " + LABEL_CONN_WEIGHTED_DIRECTED
     _ui_description = bct_description("transitivity_wd.m")
     _matlab_code = "T = transitivity_wd(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.scaled_weights()
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.scaled_weights()}
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Weighted Directed")
         return [value]
 
@@ -145,24 +142,25 @@ class TransitivityBinaryUnDirected(BaseUndirected):
     _ui_description = bct_description("transitivity_bu.m")
     _matlab_code = "T = transitivity_bu(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.weights
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.weights}
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Binary Undirected")
         return [value]
-
 
 class TransitivityWeightedUnDirected(TransitivityBinaryUnDirected):
     """
     """
-    _ui_connectivity_label = LABEL_CONN_WEIGHTED_UNDIRECTED
-
-    _ui_name = "Transitivity Weighted undirected"
+    _ui_name = "Transitivity Weighted undirected: " + LABEL_CONN_WEIGHTED_UNDIRECTED
     _ui_description = bct_description("transitivity_wu.m")
     _matlab_code = "T = transitivity_wu(A);"
 
-    def launch(self, connectivity, **kwargs):
-        kwargs['A'] = connectivity.scaled_weights()
-        result = self.execute_matlab(self._matlab_code, **kwargs)
+    def launch(self, view_model):
+        connectivity = self.get_connectivity(view_model)
+        data = {'A': connectivity.scaled_weights()}
+
+        result = self.execute_matlab(self._matlab_code, data=data)
         value = self.build_float_value_wrapper(result, 'T', "Transitivity Weighted Undirected")
         return [value]

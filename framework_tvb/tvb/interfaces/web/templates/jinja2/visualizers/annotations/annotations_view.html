@@ -41,7 +41,7 @@
             BASE_PICK_webGLStart('{{ urlVerticesPick | safe  }}', '{{ urlTrianglesPick | safe }}', '{{ urlNormalsPick | safe }}', '{{ urlVertices | safe }}',
                     '{{ urlTriangles | safe }}', '{{ urlNormals | safe }}', '{{ brainCenter }}', 'ANN.setBrainColors(\'{{ urlColors | safe }}\')', '{{ urlRegionBoundaries | safe }}');
 
-            ANN = new ANN_Displayer('{{ baseUrl }}', '{{ annotationsTreeUrl }}', '{{ urlTriangleToRegion }}',
+            ANN = new ANN_Displayer('{{ annotationsTreeUrl }}', '{{ urlTriangleToRegion }}',
                     '{{ urlActivationPatterns }}', {{ minValue }}, {{ maxValue }});
 
             $('#GLcanvas').click(function () {

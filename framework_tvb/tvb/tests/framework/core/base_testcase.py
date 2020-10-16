@@ -35,17 +35,17 @@
 """
 
 import os
-import sys
 import shutil
+import sys
 from functools import wraps
 from types import FunctionType
-import decorator
-from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
+from tvb.config.init.model_manager import reset_database
+from tvb.config.init.initializer import initialize
 from tvb.core.neocom.h5 import REGISTRY
-from tvb.tests.framework.test_datatype import DummyDataType
-from tvb.tests.framework.test_datatype_h5 import DummyDataTypeH5
-from tvb.tests.framework.test_datatype_index import DummyDataTypeIndex
+from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
+from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
 def init_test_env():
@@ -53,6 +53,7 @@ def init_test_env():
     This method prepares all necessary data for tests execution
     """
     # Set a default test profile, for when running tests from dev-env.
+    from tvb.basic.profile import TvbProfile
     if TvbProfile.CURRENT_PROFILE_NAME is None:
         profile = TvbProfile.TEST_SQLITE_PROFILE
         if len(sys.argv) > 1:
@@ -65,14 +66,12 @@ def init_test_env():
         if os.path.exists(db_file):
             os.remove(db_file)
 
-    from tvb.config.init.model_manager import reset_database
-    from tvb.config.init.initializer import initialize
-
     reset_database()
     initialize(skip_import=True)
 
     # Add Dummy DataType
     REGISTRY.register_datatype(DummyDataType, DummyDataTypeH5, DummyDataTypeIndex)
+    REGISTRY.register_datatype(None, None, DummyDataType2Index)
 
 
 # Following code is executed once / tests execution to reduce time spent in tests.
@@ -87,6 +86,8 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities.model.model_project import *
 from tvb.core.entities.model.model_datatype import *
+import decorator
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
 
 LOGGER = get_logger(__name__)
 
@@ -134,7 +135,9 @@ class BaseTestCase(object):
         # Now if the database is clean we can delete also project folders on disk
         if delete_folders:
             self.delete_project_folders()
-        dao.store_entity(User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True, None))
+        dao.store_entity(
+            User(TvbProfile.current.web.admin.SYSTEM_USER_NAME, TvbProfile.current.web.admin.SYSTEM_USER_NAME, None,
+                 None, True, None))
 
     def cancel_all_operations(self):
         """
@@ -145,7 +148,11 @@ class BaseTestCase(object):
         op_service = OperationService()
         operations = self.get_all_entities(Operation)
         for operation in operations:
-            op_service.stop_operation(operation.id)
+            try:
+                op_service.stop_operation(operation.id)
+            except Exception:
+                # Ignore potential wrongly written operations by other unit-tests
+                pass
 
     def delete_project_folders(self):
         """
@@ -231,6 +238,7 @@ class BaseTestCase(object):
             assert key in found_dict, "%s not found in result" % key
             if value is not None:
                 assert value == found_dict[key]
+
 
 def transactional_test(func, callback=None):
     """

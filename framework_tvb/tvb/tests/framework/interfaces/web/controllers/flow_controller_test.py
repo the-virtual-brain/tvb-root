@@ -31,25 +31,21 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import copy
-import json
 import cherrypy
-from time import sleep
-import pytest
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
-from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
+from tvb.config.algorithm_categories import CreateAlgorithmCategoryConfig
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.tests.framework.adapters.simulator.simulator_adapter_test import SIMULATOR_PARAMETERS
+from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestModel
+from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
 class TestFlowController(BaseControllersTest):
     """ Unit tests for FlowController """
-    
+
     def setup_method(self):
         """
         Sets up the environment for testing;
@@ -65,24 +61,6 @@ class TestFlowController(BaseControllersTest):
         self.cleanup()
         self.clean_database()
 
-    @pytest.fixture()
-    def long_burst_launch(self, connectivity_factory):
-
-        def build(is_range=False):
-            self.burst_c.index()
-            connectivity = connectivity_factory()
-            launch_params = copy.deepcopy(SIMULATOR_PARAMETERS)
-            launch_params['connectivity'] = dao.get_datatype_by_id(connectivity.id).gid
-            launch_params['simulation_length'] = '10000'
-            if is_range:
-                launch_params['conduction_speed'] = '[10,15,20]'
-                launch_params[RANGE_PARAMETER_1] = 'conduction_speed'
-            launch_params = {"simulator_parameters": json.dumps(launch_params)}
-            burst_id = json.loads(self.burst_c.launch_burst("new", "test_burst", **launch_params))['id']
-            return dao.get_burst_by_id(burst_id)
-
-        return build
-
     def test_context_selected(self):
         """
         Remove the project from CherryPy session and check that you are redirected to projects page.
@@ -96,8 +74,8 @@ class TestFlowController(BaseControllersTest):
         page has it's title given by category name.
         """
         result_dict = self.flow_c.step_analyzers()
-        assert common.KEY_SUBMENU_LIST in result_dict,\
-                        "Expect to have a submenu with available algorithms for category."
+        assert common.KEY_SUBMENU_LIST in result_dict, \
+            "Expect to have a submenu with available algorithms for category."
         assert result_dict["section_name"] == 'analyze'
 
     def test_step_connectivity(self):
@@ -116,6 +94,9 @@ class TestFlowController(BaseControllersTest):
         cherrypy.request.method = "GET"
         categories = dao.get_algorithm_categories()
         for categ in categories:
+            # Ignore creators, as those won't go through this flow
+            if categ.displayname in [CreateAlgorithmCategoryConfig.category_name]:
+                continue
             algo_groups = dao.get_adapters_from_categories([categ.id])
             for algo in algo_groups:
                 result_dict = self.flow_c.default(categ.id, algo.id)
@@ -161,96 +142,82 @@ class TestFlowController(BaseControllersTest):
         assert returned_data.replace('"', '') == " ".join(str(x) for x in range(101))
 
     def test_get_simple_adapter_interface(self, test_adapter_factory):
-        test_adapter_factory()
+        algo = test_adapter_factory()
         form = TestAdapter1Form()
         adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
-        algo = adapter.stored_adapter
         adapter.submit_form(form)
         result = self.flow_c.get_simple_adapter_interface(algo.id)
         expected_interface = adapter.get_form()
-        assert type(result['form']) == type(expected_interface)
-        assert result['form'].test1_val1.value == expected_interface.test1_val1.value
-        assert result['form'].test1_val2.value == expected_interface.test1_val2.value
+        found_form = result['adapter_form']['adapter_form']
+        assert isinstance(result['adapter_form'], dict)
+        assert isinstance(found_form, TestAdapter1Form)
+        assert found_form.test1_val1.value == expected_interface.test1_val1.value
+        assert found_form.test1_val2.value == expected_interface.test1_val2.value
 
-    def _wait_for_burst_ops(self, burst_config):
-        """ sleeps until some operation of the burst is created"""
-        waited = 1
-        timeout = 50
-        operations = dao.get_operations_in_burst(burst_config.id)
-        while not len(operations) and waited <= timeout:
-            sleep(1)
-            waited += 1
-            operations = dao.get_operations_in_burst(burst_config.id)
-        operations = dao.get_operations_in_burst(burst_config.id)
-        return operations
-
-    def test_stop_burst_operation(self, long_burst_launch):
-        burst_config = long_burst_launch()
-        operation = self._wait_for_burst_ops(burst_config)[0]
+    def test_stop_burst_operation(self, simulation_launch):
+        operation = simulation_launch(self.test_user, self.test_project, 1000)
         assert not operation.has_finished
-        self.flow_c.stop_burst_operation(operation.id, 0, False)
+        self.flow_c.cancel_or_remove_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
 
-    def test_stop_burst_operation_group(self, long_burst_launch):
-        burst_config = long_burst_launch(True)
-        operations = self._wait_for_burst_ops(burst_config)
-        operations_group_id = 0
-        for operation in operations:
-            assert not operation.has_finished
-            operations_group_id = operation.fk_operation_group
-        self.flow_c.stop_burst_operation(operations_group_id, 1, False)
+    def test_stop_burst_operation_group(self, simulation_launch):
+        first_op = simulation_launch(self.test_user, self.test_project, 1000, True)
+        operations_group_id = first_op.fk_operation_group
+        assert not first_op.has_finished
+        self.flow_c.cancel_or_remove_operation(operations_group_id, 1, False)
+        operations = dao.get_operations_in_group(operations_group_id)
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
             assert operation.status == STATUS_CANCELED
 
-    def test_remove_burst_operation(self, long_burst_launch):
-        burst_config = long_burst_launch()
-        operation = self._wait_for_burst_ops(burst_config)[0]
+    def test_remove_burst_operation(self, simulation_launch):
+        operation = simulation_launch(self.test_user, self.test_project, 1000)
         assert not operation.has_finished
-        self.flow_c.stop_burst_operation(operation.id, 0, True)
+        self.flow_c.cancel_or_remove_operation(operation.id, 0, True)
         operation = dao.try_get_operation_by_id(operation.id)
         assert operation is None
 
-    def test_remove_burst_operation_group(self, long_burst_launch):
-        burst_config = long_burst_launch(True)
-        operations = self._wait_for_burst_ops(burst_config)
-        operations_group_id = 0
-        for operation in operations:
-            assert not operation.has_finished
-            operations_group_id = operation.fk_operation_group
-        self.flow_c.stop_burst_operation(operations_group_id, 1, True)
+    def test_remove_burst_operation_group(self, simulation_launch):
+        first_op = simulation_launch(self.test_user, self.test_project, 1000, True)
+        operations_group_id = first_op.fk_operation_group
+        assert not first_op.has_finished
+        self.flow_c.cancel_or_remove_operation(operations_group_id, 1, True)
+        operations = dao.get_operations_in_group(operations_group_id)
         for operation in operations:
             operation = dao.try_get_operation_by_id(operation.id)
             assert operation is None
 
-    def _launch_test_algo_on_cluster(self, **data):
+    def _asynch_launch_simple_op(self, **data):
         adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
+        view_model = TestModel()
+        view_model.test1_val1 = 5
+        view_model.test1_val2 = 6
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project.id, algo,
-                                                                  algo_category, {}, **data)
+        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
+                                                                  algo_category, view_model=view_model, **data)
         self.operation_service._send_to_cluster(operations, adapter)
         return operations
 
     def test_stop_operations(self):
-        data = {"test1_val1": 5, 'test1_val2': 5}
-        operations = self._launch_test_algo_on_cluster(**data)
+        operations = self._asynch_launch_simple_op()
         operation = dao.get_operation_by_id(operations[0].id)
         assert not operation.has_finished
-        self.flow_c.stop_operation(operation.id, 0, False)
+        self.flow_c.cancel_or_remove_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
 
     def test_stop_operations_group(self):
-        data = {RANGE_PARAMETER_1: "test1_val1", "test1_val1": '5,6,7', 'test1_val2': 5}
-        operations = self._launch_test_algo_on_cluster(**data)
+        range_param = {RANGE_PARAMETER_1: "test1_val1", 'test1_val1': {"lo": 0, "step": 2.0, "hi": 5.0}}
+        operations = self._asynch_launch_simple_op(**range_param)
+        assert 3 == len(operations)
         operation_group_id = 0
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
             assert not operation.has_finished
             operation_group_id = operation.fk_operation_group
-        self.flow_c.stop_operation(operation_group_id, 1, False)
+        self.flow_c.cancel_or_remove_operation(operation_group_id, 1, False)
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)
             assert operation.status == STATUS_CANCELED

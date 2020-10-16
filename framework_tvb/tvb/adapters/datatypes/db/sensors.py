@@ -43,3 +43,14 @@ class SensorsIndex(DataType):
         super(SensorsIndex, self).fill_from_has_traits(datatype)
         self.number_of_sensors = datatype.number_of_sensors
         self.sensors_type = datatype.sensors_type
+
+    @property
+    def display_name(self):
+        """
+        Overwrite from superclass and add number of sensors and subtype
+        """
+        previous = "Sensors"
+        return previous + " [" + str(self.number_of_sensors) + "] - " + str(self.sensors_type)
+
+    def get_subtype_attr(self):
+        return self.sensors_type

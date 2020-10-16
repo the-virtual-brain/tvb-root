@@ -33,16 +33,16 @@ Service layer for saving/editing TVB settings.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+
 import os
-import sys
 import shutil
-import hashlib
+import sys
 from sqlalchemy import create_engine
-from tvb.basic.profile import TvbProfile
 from tvb.basic.config import stored
 from tvb.basic.logger.builder import get_logger
-from tvb.core.utils import get_matlab_executable, hash_password
+from tvb.basic.profile import TvbProfile
 from tvb.core.services.exceptions import InvalidSettingsException
+from tvb.core.utils import get_matlab_executable, hash_password
 
 
 class SettingsService(object):
@@ -51,13 +51,16 @@ class SettingsService(object):
     """
 
     KEY_ADMIN_NAME = stored.KEY_ADMIN_NAME
+    KEY_ADMIN_DISPLAY_NAME = stored.KEY_ADMIN_DISPLAY_NAME
     KEY_ADMIN_PWD = stored.KEY_ADMIN_PWD
     KEY_ADMIN_EMAIL = stored.KEY_ADMIN_EMAIL
     KEY_STORAGE = stored.KEY_STORAGE
+    KEY_KC_CONFIG = stored.KEY_KC_CONFIGURATION
+    KEY_KC_WEB_CONFIG = stored.KEY_KC_WEB_CONFIGURATION
+    KEY_ENABLE_KC_LOGIN = stored.KEY_ENABLE_KC_LOGIN
     KEY_MAX_DISK_SPACE_USR = stored.KEY_MAX_DISK_SPACE_USR
     KEY_MATLAB_EXECUTABLE = stored.KEY_MATLAB_EXECUTABLE
     KEY_PORT = stored.KEY_PORT
-    KEY_URL_WEB = stored.KEY_URL_WEB
     KEY_SELECTED_DB = stored.KEY_SELECTED_DB
     KEY_DB_URL = stored.KEY_DB_URL
     KEY_CLUSTER = stored.KEY_CLUSTER
@@ -67,9 +70,11 @@ class SettingsService(object):
     KEY_MAX_NR_SURFACE_VERTEX = stored.KEY_MAX_NR_SURFACE_VERTEX
 
     # Display order for the keys. None means a separator/new line will be added
-    KEYS_DISPLAY_ORDER = [KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
-                          KEY_STORAGE, KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB, KEY_DB_URL, None,
-                          KEY_PORT, KEY_URL_WEB, None,
+    KEYS_DISPLAY_ORDER = [KEY_ADMIN_DISPLAY_NAME, KEY_ADMIN_NAME, KEY_ADMIN_PWD, KEY_ADMIN_EMAIL, None,
+                          KEY_KC_CONFIG, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIG, None, KEY_STORAGE,
+                          KEY_MAX_DISK_SPACE_USR, KEY_MATLAB_EXECUTABLE, KEY_SELECTED_DB,
+                          KEY_DB_URL, None,
+                          KEY_PORT, None,
                           KEY_CLUSTER, KEY_CLUSTER_SCHEDULER,
                           KEY_MAX_NR_THREADS, KEY_MAX_RANGE, KEY_MAX_NR_SURFACE_VERTEX]
 
@@ -78,6 +83,15 @@ class SettingsService(object):
         first_run = TvbProfile.is_first_run()
         storage = TvbProfile.current.TVB_STORAGE if not first_run else TvbProfile.current.DEFAULT_STORAGE
         self.configurable_keys = {
+            self.KEY_KC_CONFIG: {'label': 'Rest API Keycloak configuration file',
+                                 'value': TvbProfile.current.KEYCLOAK_CONFIG,
+                                 'readonly': False, 'type': 'text'},
+            self.KEY_ENABLE_KC_LOGIN: {'label': 'Enable Keycloak login',
+                                       'value': TvbProfile.current.KEYCLOAK_LOGIN_ENABLED,
+                                       'readonly': False, 'type': 'boolean'},
+            self.KEY_KC_WEB_CONFIG: {'label': 'Web Keycloak configuration file',
+                                     'value': TvbProfile.current.KEYCLOAK_WEB_CONFIG,
+                                     'readonly': False, 'type': 'text'},
             self.KEY_STORAGE: {'label': 'Root folder for all projects', 'value': storage,
                                'readonly': not first_run, 'type': 'text'},
             self.KEY_MAX_DISK_SPACE_USR: {'label': 'Max hard disk space per user (MBytes)',
@@ -95,8 +109,6 @@ class SettingsService(object):
 
             self.KEY_PORT: {'label': 'Port to run Cherrypy on',
                             'value': TvbProfile.current.web.SERVER_PORT, 'dtype': 'primitive', 'type': 'text'},
-            self.KEY_URL_WEB: {'label': 'URL for accessing web',
-                               'value': TvbProfile.current.web.BASE_URL, 'type': 'text', 'dtype': 'primitive'},
 
             self.KEY_MAX_NR_THREADS: {'label': 'Maximum no. of threads for local installations', 'type': 'text',
                                       'value': TvbProfile.current.MAX_THREADS_NUMBER, 'dtype': 'primitive'},
@@ -112,6 +124,9 @@ class SettingsService(object):
             self.KEY_CLUSTER_SCHEDULER: {'label': 'Cluster Scheduler', 'readonly': False,
                                          'value': TvbProfile.current.cluster.CLUSTER_SCHEDULER, 'type': 'select',
                                          'options': TvbProfile.current.cluster.ACCEPTED_SCHEDULERS},
+            self.KEY_ADMIN_DISPLAY_NAME: {'label': 'Administrator Display Name',
+                                          'value': TvbProfile.current.web.admin.ADMINISTRATOR_DISPLAY_NAME,
+                                          'type': 'text', 'readonly': not first_run},
             self.KEY_ADMIN_NAME: {'label': 'Administrator User Name',
                                   'value': TvbProfile.current.web.admin.ADMINISTRATOR_NAME,
                                   'type': 'text', 'readonly': not first_run,
@@ -125,7 +140,6 @@ class SettingsService(object):
                                    'value': TvbProfile.current.web.admin.ADMINISTRATOR_EMAIL,
                                    'readonly': not first_run, 'type': 'text'}}
 
-
     def check_db_url(self, url):
         """Validate DB URL, that a connection can be done."""
         try:
@@ -135,7 +149,6 @@ class SettingsService(object):
         except Exception as excep:
             self.logger.exception(excep)
             raise InvalidSettingsException('Could not connect to DB! ' 'Invalid URL:' + str(url))
-
 
     @staticmethod
     def get_disk_free_space(storage_path):
@@ -159,11 +172,10 @@ class SettingsService(object):
             # bytes_value = mem_stat.f_bsize * mem_stat.f_bavail
         return bytes_value / 2 ** 10
 
-
     def save_settings(self, **data):
         """
         Check if new settings are correct.  Make necessary changes, then save new data in configuration file.
-        
+
         :returns: two boolean values
                     -there were any changes to the configuration;
                     -a reset should be performed on the TVB relaunch.
@@ -179,13 +191,12 @@ class SettingsService(object):
         matlab_exec = data[self.KEY_MATLAB_EXECUTABLE]
         if matlab_exec == 'None':
             data[self.KEY_MATLAB_EXECUTABLE] = ''
+
+        if TvbProfile.is_first_run() or storage_changed:
+            self._check_tvb_folder(new_storage)
+
         # Storage changed but DB didn't, just copy TVB storage to new one.
         if storage_changed and not db_changed:
-            if os.path.exists(new_storage):
-                if os.access(new_storage, os.W_OK):
-                    shutil.rmtree(new_storage)
-                else:
-                    raise InvalidSettingsException("No Write access on storage folder!!")
             shutil.copytree(previous_storage, new_storage)
 
         if not os.path.isdir(new_storage):
@@ -225,3 +236,24 @@ class SettingsService(object):
             TvbProfile.current.manager.write_config_data(file_data)
             os.chmod(TvbProfile.current.TVB_CONFIG_FILE, 0o644)
         return anything_changed, first_run or db_changed
+
+    def _check_tvb_folder(self, storage_path):
+        """
+        Check if the storage folder is compatible (should be an empty or new folder, with rights to write inside).
+        """
+        if not os.path.exists(storage_path):
+            return True
+
+        if not os.path.isdir(storage_path):
+            raise InvalidSettingsException('TVB Storage should be a folder')
+
+        if not os.access(storage_path, os.W_OK):
+            raise InvalidSettingsException('TVB Storage folder should have write access for tvb process')
+
+        list_content = os.listdir(storage_path)
+        list_content.remove("TEMP")
+        if len(list_content) > 0:
+            raise InvalidSettingsException(
+                'TVB Storage should be empty, please set another folder than {}.'.format(storage_path))
+
+        return True

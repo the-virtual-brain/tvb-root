@@ -33,14 +33,16 @@
 """
 
 import os
-from tvb.core.neocom import h5
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.factory import TestFactory
-from tvb.core.entities.file.files_helper import FilesHelper
+
 import tvb_data.obj
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.neocom import h5
+from tvb.datatypes.surfaces import FACE
+from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.factory import TestFactory
 
 
-class TestObjSurfaceImporter(TransactionalTestCase):
+class TestObjSurfaceImporter(BaseTestCase):
     """
     Unit-tests for Obj Surface importer.
     """
@@ -48,21 +50,21 @@ class TestObjSurfaceImporter(TransactionalTestCase):
     torus = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'test_torus.obj')
     face = os.path.join(os.path.dirname(tvb_data.obj.__file__), 'face_surface.obj')
 
-    def transactional_setup_method(self):
+    def setup_method(self):
         self.test_user = TestFactory.create_user('Obj_Importer_User')
         self.test_project = TestFactory.create_project(self.test_user, "Obj_Importer_Project")
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_quads_no_normals(self):
         """
         Test that import works with a file which contains quads and no normals
         """
-        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.face, "Face Surface")
+        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.face, FACE, False)
 
         surface = h5.load_from_index(surface_index)
-
         assert 8614 == len(surface.vertex_normals)
         assert 8614 == len(surface.vertices)
         assert 17224 == len(surface.triangles)
@@ -71,10 +73,9 @@ class TestObjSurfaceImporter(TransactionalTestCase):
         """
         Test that import works with an OBJ file which includes normals
         """
-        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.torus, "Face Surface")
+        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.torus, FACE, False)
         assert 441 == surface_index.number_of_vertices
         assert 800 == surface_index.number_of_triangles
 
         surface = h5.load_from_index(surface_index)
-
         assert 441 == len(surface.vertex_normals)

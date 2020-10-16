@@ -43,3 +43,6 @@ class ProjectionMatrixH5(H5File):
         self.sources = Reference(ProjectionMatrix.sources, self)
         self.sensors = Reference(ProjectionMatrix.sensors, self)
         self.projection_data = DataSet(ProjectionMatrix.projection_data, self)
+
+    def read_subtype_attr(self):
+        return self.projection_type.load()

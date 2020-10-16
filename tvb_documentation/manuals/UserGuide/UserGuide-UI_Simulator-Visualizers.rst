@@ -532,8 +532,6 @@ The matrix is a complex ndarray that contains the `number of nodes` x `number of
 spectrum for every frequency and for every segment.
 The thick line represents the Mean and the colored area the SD of CohSpec.
 
-This visualizer is very similar with the previous one (Cross Coherence Visualizer).
-
 .. figure:: screenshots/visualizer_complex_coherence.jpg
      :width: 90%
      :align: center
@@ -544,7 +542,8 @@ This visualizer is very similar with the previous one (Cross Coherence Visualize
 Cross Correlation Visualizer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Displays the cross-correlation matrix. Similar to the previous three visualizers.
+Displays the cross-correlation matrix.
+It is similar to the previous matrix visualizers.
 
 
 Pearson Coefficients Visualizer

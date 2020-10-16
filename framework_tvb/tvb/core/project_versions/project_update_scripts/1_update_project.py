@@ -75,7 +75,7 @@ def update(project_path):
     FilesHelper().check_created(new_img_folder)
 
     for root, dirs, files in os.walk(project_path):
-        in_operation_dir_with_images = FilesHelper.IMAGES_FOLDER in dirs and FilesHelper.TVB_OPERARATION_FILE in files
+        in_operation_dir_with_images = FilesHelper.IMAGES_FOLDER in dirs and "Operation.xml" in files
 
         if in_operation_dir_with_images:
             op_id = os.path.basename(root)

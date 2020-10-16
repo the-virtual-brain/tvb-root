@@ -29,6 +29,7 @@
 #
 
 """
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
@@ -36,19 +37,20 @@
 import json
 import uuid
 import cherrypy
-from tvb.adapters.creators.local_connectivity_creator import LocalConnectivitySelectorForm, \
-    LocalConnectivityCreatorForm, LocalConnectivityCreator
+from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
-from tvb.adapters.simulator.equation_forms import GAUSSIAN_EQUATION, DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION, \
-    get_ui_name_to_equation_dict, get_form_for_equation, get_ui_name_for_equation
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.subform_helper import SubformHelper
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
+    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import prepare_prefixed_name_for_field
-from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.common import MissingDataException
 from tvb.interfaces.web.controllers.decorators import check_user, handle_error, using_template
 from tvb.interfaces.web.controllers.decorators import expose_fragment, expose_page, expose_json
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
@@ -58,10 +60,11 @@ NO_OF_CUTOFF_POINTS = 20
 LOAD_EXISTING_URL = '/spatial/localconnectivity/load_local_connectivity'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/localconnectivity/reset_local_connectivity'
 
+# Between steps/pages we keep a LocalConnectivityCreatorModel in session at this key
 KEY_LCONN = "local-conn"
-KEY_LCONN_NAME = "local-conn-name"
 
 
+@traced
 class LocalConnectivityController(SpatioTemporalController):
     """
     Controller layer for displaying/creating a LocalConnectivity entity.
@@ -72,6 +75,7 @@ class LocalConnectivityController(SpatioTemporalController):
     CUTOFF_FIELD = 'set_cutoff_value'
     DISPLAY_NAME_FIELD = 'set_display_name'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
+    base_url = '/spatial/localconnectivity'
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
@@ -87,67 +91,68 @@ class LocalConnectivityController(SpatioTemporalController):
         Generate the html for the first step of the local connectivity page.
         :param do_reset: Boolean telling to start from empty page or not
         :param kwargs: not actually used, but parameters are still submitted from UI since we just\
-               use the same js function for this. TODO: do this in a smarter way
+               use the same js function for this.
         """
-        if int(do_reset) == 1:
-            new_lconn = LocalConnectivity()
-            common.add2session(KEY_LCONN, new_lconn)
-            common.add2session(KEY_LCONN_NAME, None)
-        current_lconn = common.get_from_session(KEY_LCONN)
         project_id = common.get_current_project().id
+
+        if int(do_reset) == 1:
+            new_lconn = LocalConnectivityCreatorModel()
+            default_surface_index = try_get_last_datatype(project_id, SurfaceIndex,
+                                                          LocalConnectivityCreatorForm.get_filters())
+            if default_surface_index:
+                new_lconn.surface = uuid.UUID(default_surface_index.gid)
+            else:
+                # Surface is required in model and we should keep it like this, but we also want to
+                new_lconn.surface = uuid.uuid4()
+                common.set_error_message(self.MSG_MISSING_SURFACE)
+            common.add2session(KEY_LCONN, new_lconn)
+
+        current_lconn = common.get_from_session(KEY_LCONN)
         existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
         existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
         configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id)
-
-        # TODO: find a nicer way
-        if not hasattr(current_lconn, 'surface') or not current_lconn.surface:
-            current_surface_in_form = configure_lcon_form.surface._get_values_from_db()[0]
-            configure_lcon_form.surface.data = current_surface_in_form[2]
-            current_lconn.surface = CorticalSurface()
-            current_lconn.surface.gid = uuid.UUID(configure_lcon_form.surface.value)
         configure_lcon_form.fill_from_trait(current_lconn)
-        configure_lcon_form.display_name.data = common.get_from_session(KEY_LCONN_NAME)
+        current_lconn.equation = configure_lcon_form.spatial.value()
 
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step1_main'
-        template_specification['inputList'] = configure_lcon_form
+        template_specification['inputList'] = self.render_spatial_form(configure_lcon_form)
         template_specification['displayCreateLocalConnectivityBtn'] = True
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
-        template_specification['existentEntitiesInputList'] = existent_lcon_form
+        template_specification['existentEntitiesInputList'] = self.render_spatial_form(existent_lcon_form)
         template_specification['submit_parameters_url'] = '/spatial/localconnectivity/create_local_connectivity'
         template_specification['equationViewerUrl'] = '/spatial/localconnectivity/get_equation_chart'
-        template_specification['localConnBaseUrl'] = '/spatial/localconnectivity'
+        template_specification['baseUrl'] = self.base_url
 
         self.plotted_equation_prefixes = {self.SURFACE_FIELD: configure_lcon_form.surface.name,
                                           self.EQUATION_FIELD: configure_lcon_form.spatial.name,
                                           self.CUTOFF_FIELD: configure_lcon_form.cutoff.name,
                                           self.DISPLAY_NAME_FIELD: configure_lcon_form.display_name.name,
-                                          self.EQUATION_PARAMS_FIELD: configure_lcon_form.spatial_params.name[1:]}
+                                          self.EQUATION_PARAMS_FIELD: configure_lcon_form.spatial.subform_field.name[1:]}
 
         template_specification['equationsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_2'
-        msg, msg_type = common.get_message_from_session()
-        template_specification['displayedMessage'] = msg
         return self.fill_default_attributes(template_specification)
 
     @cherrypy.expose
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def set_equation(self, equation):
+    def refresh_subform(self, equation, mapping_key):
         eq_class = get_ui_name_to_equation_dict().get(equation)
         current_lconn = common.get_from_session(KEY_LCONN)
         current_lconn.equation = eq_class()
 
-        eq_params_form = get_form_for_equation(eq_class)(prefix=LocalConnectivityCreatorForm.NAME_EQUATION_PARAMS_DIV)
-        return {'form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
+        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
+        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):
         current_lconn = common.get_from_session(KEY_LCONN)
         eq_param_form_class = get_form_for_equation(type(current_lconn.equation))
-        eq_param_form = eq_param_form_class(prefix=LocalConnectivityCreatorForm.NAME_EQUATION_PARAMS_DIV)
+        eq_param_form = eq_param_form_class()
+        eq_param_form.fill_from_trait(current_lconn.equation)
         eq_param_form.fill_from_post(param)
         eq_param_form.fill_trait(current_lconn.equation)
 
@@ -163,37 +168,37 @@ class LocalConnectivityController(SpatioTemporalController):
         current_lconn = common.get_from_session(KEY_LCONN)
         surface_form_field = LocalConnectivityCreatorForm(self.possible_equations).surface
         surface_form_field.fill_from_post(param)
-        current_lconn.surface = CorticalSurface()
-        current_lconn.surface.gid = uuid.UUID(surface_form_field.value)
+        current_lconn.surface = surface_form_field.value
 
     @cherrypy.expose
     def set_display_name(self, **param):
         display_name_form_field = LocalConnectivityCreatorForm(self.possible_equations).display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
-            common.add2session(KEY_LCONN_NAME, display_name_form_field.value)
+            lconn = common.get_from_session(KEY_LCONN)
+            lconn.display_name = display_name_form_field.value
 
     @expose_page
     def step_2(self, **kwargs):
         """
         Generate the html for the second step of the local connectivity page.
         :param kwargs: not actually used, but parameters are still submitted from UI since we just\
-               use the same js function for this. TODO: do this in a smarter way
+               use the same js function for this.
         """
         current_lconn = common.get_from_session(KEY_LCONN)
         left_side_form = LocalConnectivitySelectorForm(project_id=common.get_current_project().id)
         left_side_form.existentEntitiesSelect.data = current_lconn.gid.hex
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step2_main'
-        template_specification['existentEntitiesInputList'] = left_side_form
+        template_specification['existentEntitiesInputList'] = self.render_adapter_form(left_side_form)
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_1'
         msg, _ = common.get_message_from_session()
         template_specification['displayedMessage'] = msg
         if current_lconn is not None:
-            selected_local_conn = ABCAdapter.load_entity_by_gid(current_lconn.gid.hex)
-            template_specification.update(self.display_surface(selected_local_conn.surface_gid))
+            selected_local_conn = load_entity_by_gid(current_lconn.gid)
+            template_specification.update(self.display_surface(selected_local_conn.fk_surface_gid))
             template_specification['no_local_connectivity'] = False
             template_specification['minValue'] = selected_local_conn.matrix_non_zero_min
             template_specification['maxValue'] = selected_local_conn.matrix_non_zero_max
@@ -201,17 +206,6 @@ class LocalConnectivityController(SpatioTemporalController):
             template_specification['no_local_connectivity'] = True
         template_specification[common.KEY_PARAMETERS_CONFIG] = False
         return self.fill_default_attributes(template_specification)
-
-    def _prepare_operation_params(self, lconn):
-        params_dict = {LocalConnectivityCreator.KEY_SURFACE: lconn.surface.gid.hex,
-                       LocalConnectivityCreator.KEY_CUTOFF: str(lconn.cutoff),
-                       LocalConnectivityCreator.KEY_EQUATION: get_ui_name_for_equation(type(lconn.equation)),
-                       DataTypeMetaData.KEY_TAG_1: common.get_from_session(KEY_LCONN_NAME)
-                       }
-        for param_key, param_val in lconn.equation.parameters.items():
-            param_full_key = prepare_prefixed_name_for_field(LocalConnectivityCreator.KEY_EQUATION, param_key)
-            params_dict.update({param_full_key: str(param_val)})
-        return params_dict
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -222,9 +216,8 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         current_lconn = common.get_from_session(KEY_LCONN)
         local_connectivity_creator = ABCAdapter.build_adapter_from_class(LocalConnectivityCreator)
-        params_dict = self._prepare_operation_params(current_lconn)
-        self.flow_service.fire_operation(local_connectivity_creator, common.get_logged_user(),
-                                         common.get_current_project().id, **params_dict)
+        self.operation_service.fire_operation(local_connectivity_creator, common.get_logged_user(),
+                                              common.get_current_project().id, view_model=current_lconn)
         common.set_important_message("The operation for creating the local connectivity was successfully launched.")
         return self.step_1()
 
@@ -235,21 +228,24 @@ class LocalConnectivityController(SpatioTemporalController):
         """
         Loads an existing local connectivity.
         """
-        lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
-        existent_lconn = LocalConnectivity()
+        lconn_index = load_entity_by_gid(local_connectivity_gid)
+        existent_lconn = LocalConnectivityCreatorModel()
         lconn_h5_path = h5.path_for_stored_index(lconn_index)
         with LocalConnectivityH5(lconn_h5_path) as lconn_h5:
             lconn_h5.load_into(existent_lconn)
 
-        # prepare dummy surface, we need only the GID at this step, for serialization
-        existent_lconn.surface = CorticalSurface()
-        existent_lconn.surface.gid = uuid.UUID(lconn_index.surface_gid)
+        existent_lconn.surface = uuid.UUID(lconn_index.fk_surface_gid)
 
         common.add2session(KEY_LCONN, existent_lconn)
-        common.add2session(KEY_LCONN_NAME, lconn_index.user_tag_1)
+        existent_lconn.display_name = lconn_index.user_tag_1
 
-        msg = "Successfully loaded existent entity gid=%s" % (local_connectivity_gid,)
+        if existent_lconn.equation:
+            msg = "Successfully loaded existent entity gid=%s" % (local_connectivity_gid,)
+        else:
+            msg = "There is no equation specified for this local connectivity. "
+            msg += "The default equation is displayed into the spatial field."
         common.set_message(msg)
+
         if int(from_step) == 1:
             return self.step_1()
         if int(from_step) == 2:
@@ -287,14 +283,16 @@ class LocalConnectivityController(SpatioTemporalController):
 
         Returns a json which contains the data needed for drawing a gradient view for the selected vertex.
         """
-        lconn_index = ABCAdapter.load_entity_by_gid(local_connectivity_gid)
+        lconn_index = load_entity_by_gid(local_connectivity_gid)
         triangle_index = int(selected_triangle)
 
-        surface_indx = ABCAdapter.load_entity_by_gid(lconn_index.surface_gid)
+        surface_indx = load_entity_by_gid(lconn_index.fk_surface_gid)
         surface_h5 = h5.h5_file_for_index(surface_indx)
+        assert isinstance(surface_h5, SurfaceH5)
         vertex_index = int(surface_h5.triangles[triangle_index][0])
 
         lconn_h5 = h5.h5_file_for_index(lconn_index)
+        assert isinstance(lconn_h5, LocalConnectivityH5)
         lconn_matrix = lconn_h5.matrix.load()
         picked_data = list(lconn_matrix[vertex_index].toarray().squeeze())
         lconn_h5.close()
@@ -334,13 +332,13 @@ class LocalConnectivityController(SpatioTemporalController):
             # This should be called once at first rendering and once for any change event on form fields used
             # in computation: equation, equation params, surface, cutoff
             current_lconn = common.get_from_session(KEY_LCONN)
-            surface_gid = current_lconn.surface.gid.hex
-            surface = ABCAdapter.load_entity_by_gid(surface_gid)
+            surface_gid = current_lconn.surface.hex
+            surface = load_entity_by_gid(surface_gid)
+            if surface is None:
+                raise MissingDataException(self.MSG_MISSING_SURFACE + "!!!")
             max_x = current_lconn.cutoff
             if max_x <= 0:
                 max_x = 50
-            # form_data = local_connectivity_creator.prepare_ui_inputs(form_data, validation_required=False)
-            # equation = local_connectivity_creator.get_lconn_equation(form_data)
             equation = current_lconn.equation
             # What we want
             ideal_case_series, _ = equation.get_series_data(0, 2 * max_x)

@@ -127,14 +127,6 @@ class Connectivity(HasTraits):
     saved_selection = List(of=int)
 
     @property
-    def display_name(self):
-        """
-        Overwrite from superclass and add number of regions field (as title on DataStructure tree)
-        """
-        previous = "Connectivity"
-        return previous + " " + str(self.number_of_regions)
-
-    @property
     def saved_selection_labels(self):
         """
         Taking the entity field saved_selection, convert indexes in that array
@@ -226,7 +218,7 @@ class Connectivity(HasTraits):
                     r.append((i, label))
                 else:
                     l.append((i, label))
-            return [('left', l), ('right', r)]
+            return [('Left', l), ('Right', r)]
         else:
             return [('', list(enumerate(self.region_labels)))]
 
@@ -237,12 +229,6 @@ class Connectivity(HasTraits):
             return sel
         else:
             return list(range(len(self.region_labels)))
-
-    def get_measure_points_selection_gid(self):
-        """
-        :return: the associated connectivity gid
-        """
-        return self.gid
 
     @property
     def binarized_weights(self):

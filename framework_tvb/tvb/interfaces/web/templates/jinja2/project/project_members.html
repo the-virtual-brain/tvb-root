@@ -3,7 +3,7 @@
         <input type="checkbox" name="users" value="{{ user.id }}" id="{{ user.id }}" tabindex="5"
                {{ ("checked='checked'") | safe if user.id in usersMembers }}
                {{ ("disabled='disabled'") | safe if not editUsersEnabled  }} />
-        {{ user.username }}
+        {{ user.display_name }}
         <img src="/static/style/img/role/{{ user.role | lower }}.png" alt="{{ user.role }}" class="userRole"/>
         <br/>
     </span>

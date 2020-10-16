@@ -49,7 +49,7 @@ class SensorsH5(H5File):
     def get_labels(self):
         return self.labels.load()
 
-    def store(self, datatype, scalars_only=False, store_references=False):
+    def store(self, datatype, scalars_only=False, store_references=True):
         # type: (Sensors, bool, bool) -> None
         super(SensorsH5, self).store(datatype, scalars_only, store_references)
         self.labels.store(datatype.labels.astype(STORE_STRING))
@@ -58,3 +58,6 @@ class SensorsH5(H5File):
         # type: (Sensors) -> None
         super(SensorsH5, self).load_into(datatype)
         datatype.labels = self.labels.load().astype(MEMORY_STRING)
+
+    def read_subtype_attr(self):
+        return self.sensors_type.load()

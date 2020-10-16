@@ -46,7 +46,7 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.flow_service import FlowService
+from tvb.core.services.operation_service import OperationService
 
 # Before starting this, we need to have TVB web interface launched at least once
 # (to have a default project, user, etc setup)
@@ -66,8 +66,8 @@ if __name__ == "__main__":
     launch_args = {"_time_series": time_series[0].gid, "_segment_length": 100}
 
     # launch an operation and have the results stored both in DB and on disk
-    launched_operation = FlowService().fire_operation(adapter_instance, project.administrator,
-                                                      project.id, **launch_args)[0]
+    launched_operation = OperationService().fire_operation(adapter_instance, project.administrator,
+                                                           project.id, **launch_args)[0]
 
     # wait for the operation to finish
     while not launched_operation.has_finished:

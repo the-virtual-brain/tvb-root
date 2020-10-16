@@ -35,33 +35,36 @@ Root classes for adding custom functionality to the code.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
-import os
-import json
-import psutil
-import numpy
 import importlib
-from functools import wraps
-from datetime import datetime
+import json
+import os
+import typing
+import uuid
 from abc import ABCMeta, abstractmethod
+from datetime import datetime
+from enum import Enum
+from functools import wraps
+
+import numpy
+import psutil
 from six import add_metaclass
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters import constants
-from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
-from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
-from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.basic.neotraits.api import Attr, HasTraits, List
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.neotraits.forms import Form, DataTypeSelectField
-from tvb.interfaces.web.controllers.decorators import using_template
-
-ATT_METHOD = "python_method"
-ATT_PARAMETERS = "parameters_prefix"
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.generic_attributes import GenericAttributes
+from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.model.model_operation import Algorithm
+from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import Form
+from tvb.core.neotraits.h5 import H5File
+from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
+from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
 
 LOGGER = get_logger("ABCAdapter")
 
@@ -120,15 +123,35 @@ def nan_allowed():
 class ABCAdapterForm(Form):
     @staticmethod
     def get_required_datatype():
+        """
+        Each Adapter's computation is based on a main Datatype. This method should keep the class of it.
+        This Datatype will be stored to DB at introspection time.
+        :return: DataType class
+        """
         raise NotImplementedError
 
-    # TODO: This keeps filters for the required_datatype. Only to be in DB at introspection?
     @staticmethod
     def get_filters():
+        """
+        Should keep filters for the required_datatype. These filters are stored in DB at introspection time.
+        :return: FilterChain
+        """
         raise NotImplementedError
 
     @staticmethod
     def get_input_name():
+        """
+        The Form's input name for the required_datatype. Will be stored in DB at introspection time.
+        :return: str
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def get_view_model():
+        """
+        Should keep the ViewModel class that corresponds to the current Adapter.
+        :return: ViewModel class
+        """
         raise NotImplementedError
 
     def get_traited_datatype(self):
@@ -138,32 +161,17 @@ class ABCAdapterForm(Form):
         """
         return None
 
-    def _get_original_field_name(self, field):
-        return field.name[len(self.prefix) + 1:]
-
-    # TODO: Used to support original flow (pass form values as kwargs). Also for the asynchronous launch
-    def get_dict(self):
-        attrs_dict = {}
+    def fill_from_post_plus_defaults(self, form_data):
+        self.fill_from_trait(self.get_view_model()())
         for field in self.fields:
-            attrs_dict.update({field.name: field.data})
-        attrs_dict.update({self.RANGE_1_NAME: self.range_1})
-        attrs_dict.update({self.RANGE_2_NAME: self.range_2})
-        return attrs_dict
+            if field.name in form_data:
+                field.fill_from_post(form_data)
 
-    def get_form_values(self):
-        attrs_dict = {}
-        for field in self.fields:
-            field_name = self._get_original_field_name(field)
-            if isinstance(field, DataTypeSelectField):
-                field_data = field.get_dt_from_db()
-            else:
-                field_data = field.data
-            attrs_dict.update({field_name: field_data})
-        return attrs_dict
 
-    @using_template('form_fields/form')
-    def __str__(self):
-        return {'form': self}
+class AdapterLaunchModeEnum(Enum):
+    SYNC_SAME_MEM = 'sync_same_mem'
+    SYNC_DIFF_MEM = 'sync_diff_mem'
+    ASYNC_DIFF_MEM = 'async_diff_mem'
 
 
 @add_metaclass(ABCMeta)
@@ -171,30 +179,11 @@ class ABCAdapter(object):
     """
     Root Abstract class for all TVB Adapters. 
     """
-    # todo this constants copy is not nice
-    KEY_TYPE = constants.ATT_TYPE
-    KEY_OPTIONS = constants.ELEM_OPTIONS
-    KEY_ATTRIBUTES = constants.ATT_ATTRIBUTES
-    KEY_NAME = constants.ELEM_NAME
-    KEY_VALUE = constants.ATT_VALUE
-    KEY_DEFAULT = constants.ATT_DEFAULT
-    KEY_DATATYPE = "datatype"
-    KEY_DISABLED = "disabled"
-    KEY_FILTERABLE = "filterable"
-
-    # TODO: move everything related to parameters PRE + POST into parameters_factory
-    KEYWORD_PARAMS = "_parameters_"
-
-    INTERFACE_ATTRIBUTES_ONLY = "attributes-only"
-    INTERFACE_ATTRIBUTES = "attributes"
-
-    # model.Algorithm instance that will be set for each adapter created by in build_adapter method
+    # model.Algorithm instance that will be set for each adapter class created by in build_adapter method
     stored_adapter = None
-
+    launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
 
     def __init__(self):
-        # It will be populate with key from DataTypeMetaData
-        self.meta_data = {DataTypeMetaData.KEY_SUBJECT: DataTypeMetaData.DEFAULT_SUBJECT}
         self.generic_attributes = GenericAttributes()
         self.generic_attributes.subject = DataTypeMetaData.DEFAULT_SUBJECT
         self.file_handler = FilesHelper()
@@ -202,8 +191,8 @@ class ABCAdapter(object):
         # Will be populate with current running operation's identifier
         self.operation_id = None
         self.user_id = None
-        self.log = get_logger(self.__class__.__module__)
         self.submitted_form = None
+        self.log = get_logger(self.__class__.__module__)
 
     @classmethod
     def get_group_name(cls):
@@ -246,12 +235,6 @@ class ABCAdapter(object):
         """
         return True
 
-    def get_input_tree(self):
-        """
-        Describes inputs and outputs of the launch method.
-        """
-        return None
-
     def submit_form(self, form):
         self.submitted_form = form
 
@@ -265,52 +248,60 @@ class ABCAdapter(object):
     def get_form_class(self):
         return None
 
+    def get_adapter_fragments(self, view_model):
+        """
+        The result will be used for introspecting and checking operation changed input
+        params from the defaults, to show in web gui.
+        :return: a list of ABCAdapterForm classes, in case the current Adapter GUI
+        will be composed of multiple sub-forms.
+        """
+        return {}
+
+    def get_view_model_class(self):
+        return self.get_form_class().get_view_model()
+
     @abstractmethod
     def get_output(self):
         """
         Describes inputs and outputs of the launch method.
         """
 
-
-    def configure(self, **kwargs):
+    def configure(self, view_model):
         """
         To be implemented in each Adapter that requires any specific configurations
         before the actual launch.
         """
 
-
     @abstractmethod
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
         """
         Abstract method to be implemented in each adapter. Should return the required memory
         for launching the adapter.
         """
 
-
     @abstractmethod
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
         """
         Abstract method to be implemented in each adapter. Should return the required memory
         for launching the adapter in kilo-Bytes.
         """
 
-
-    def get_execution_time_approximation(self, **kwargs):
+    def get_execution_time_approximation(self, view_model):
         """
         Method should approximate based on input arguments, the time it will take for the operation 
         to finish (in seconds).
         """
         return -1
 
-
     @abstractmethod
-    def launch(self):
+    def launch(self, view_model):
         """
          To be implemented in each Adapter.
          Will contain the logic of the Adapter.
+         Takes a ViewModel with data, dependency direction is: Adapter -> Form -> ViewModel
          Any returned DataType will be stored in DB, by the Framework.
+        :param view_model: the data model corresponding to the current adapter
         """
-
 
     def add_operation_additional_info(self, message):
         """
@@ -320,40 +311,22 @@ class ABCAdapter(object):
         current_op.additional_info = message
         dao.store_entity(current_op)
 
-    def _prepare_generic_attributes(self, user_tag=None):
-
-        self.generic_attributes.subject = str(self.meta_data.get(DataTypeMetaData.KEY_SUBJECT))
-        self.generic_attributes.state = self.meta_data.get(DataTypeMetaData.KEY_STATE)
-
-        perpetuated_identifier = self.generic_attributes.user_tag_1
-        if DataTypeMetaData.KEY_TAG_1 in self.meta_data:
-            perpetuated_identifier = self.meta_data.get(DataTypeMetaData.KEY_TAG_1)
-        if not self.generic_attributes.user_tag_1:
-            self.generic_attributes.user_tag_1 = user_tag if user_tag is not None else perpetuated_identifier
-        else:
-            self.generic_attributes.user_tag_2 = user_tag if user_tag is not None else perpetuated_identifier
-
-    @nan_not_allowed()
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, **kwargs):
-        """
-        Method to wrap LAUNCH.
-        Will prepare data, and store results on return. 
-        """
-        self.meta_data.update(json.loads(operation.meta_data))
-        self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+    def extract_operation_data(self, operation):
+        operation = dao.get_operation_by_id(operation.id)
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        self.storage_path = self.file_handler.get_project_folder(project, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
 
-        self.configure(**kwargs)
-
+    def _ensure_enough_resources(self, available_disk_space, view_model):
         # Compare the amount of memory the current algorithms states it needs,
         # with the average between the RAM available on the OS and the free memory at the current moment.
         # We do not consider only the free memory, because some OSs are freeing late and on-demand only.
         total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
         total_existent_memory = psutil.virtual_memory().total + psutil.swap_memory().total
         memory_reference = (total_free_memory + total_existent_memory) / 2
-        adapter_required_memory = self.get_required_memory_size(**kwargs)
+        adapter_required_memory = self.get_required_memory_size(view_model)
 
         if adapter_required_memory > memory_reference:
             msg = "Machine does not have enough RAM memory for the operation (expected %.2g GB, but found %.2g GB)."
@@ -361,7 +334,7 @@ class ABCAdapter(object):
 
         # Compare the expected size of the operation results with the HDD space currently available for the user
         # TVB defines a quota per user.
-        required_disk_space = self.get_required_disk_size(**kwargs)
+        required_disk_space = self.get_required_disk_size(view_model)
         if available_disk_space < 0:
             msg = "You have exceeded you HDD space quota by %.2f MB Stopping execution."
             raise NoMemoryAvailableException(msg % (- available_disk_space / 2 ** 10))
@@ -369,19 +342,36 @@ class ABCAdapter(object):
             msg = ("You only have %.2f GB of disk space available but the operation you "
                    "launched might require %.2f Stopping execution...")
             raise NoMemoryAvailableException(msg % (available_disk_space / 2 ** 20, required_disk_space / 2 ** 20))
+        return required_disk_space
 
+    def _update_operation_entity(self, operation, required_disk_space):
         operation.start_now()
         operation.estimated_disk_size = required_disk_space
         dao.store_entity(operation)
 
-        self._prepare_generic_attributes(uid)
-        result = self.launch(**kwargs)
+    @nan_not_allowed()
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+        """
+        Method to wrap LAUNCH.
+        Will prepare data, and store results on return.
+        """
+        self.extract_operation_data(operation)
+        self.generic_attributes.fill_from(view_model.generic_attributes)
+        self.configure(view_model)
+        required_disk_size = self._ensure_enough_resources(available_disk_space, view_model)
+        self._update_operation_entity(operation, required_disk_size)
+
+        if not self.generic_attributes.user_tag_1:
+            self.generic_attributes.user_tag_1 = uid
+        else:
+            self.generic_attributes.user_tag_2 = uid
+
+        result = self.launch(view_model)
 
         if not isinstance(result, (list, tuple)):
             result = [result, ]
         self.__check_integrity(result)
         return self._capture_operation_results(result)
-
 
     def _capture_operation_results(self, result):
         """
@@ -395,30 +385,27 @@ class ABCAdapter(object):
             operation = dao.store_entity(operation)
         if self._is_group_launch():
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id
-        burst_reference = None
-        if DataTypeMetaData.KEY_BURST in self.meta_data:
-            burst_reference = self.meta_data[DataTypeMetaData.KEY_BURST]
 
         count_stored = 0
-        group_type = None   # In case of a group, the first not-none type is sufficient to memorize here
+        group_type = None  # In case of a group, the first not-none type is sufficient to memorize here
         for res in result:
             if res is None:
                 continue
-            res.subject = self.generic_attributes.subject
-            res.state = self.generic_attributes.state
-            res.fk_parent_burst = burst_reference
+            if not res.fixed_generic_attributes:
+                res.fill_from_generic_attributes(self.generic_attributes)
             res.fk_from_operation = self.operation_id
-            res.framework_metadata = self.meta_data
-            res.user_tag_1 = self.generic_attributes.user_tag_1
-            res.user_tag_2 = self.generic_attributes.user_tag_2
             res.fk_datatype_group = data_type_group_id
-            # Compute size-on disk, in case file-storage is used
+
             associated_file = h5.path_for_stored_index(res)
             if os.path.exists(associated_file):
+                if not res.fixed_generic_attributes:
+                    with H5File.from_file(associated_file) as f:
+                        f.store_generic_attributes(self.generic_attributes)
+                # Compute size-on disk, in case file-storage is used
                 res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
-                with H5File.from_file(associated_file) as f:
-                    f.store_generic_attributes(self.generic_attributes)
+
             dao.store_entity(res)
+            res.after_store()
             group_type = res.type
             count_stored += 1
 
@@ -429,7 +416,6 @@ class ABCAdapter(object):
             dao.store_entity(operation_group)
 
         return 'Operation ' + str(self.operation_id) + ' has finished.', count_stored
-
 
     def __check_integrity(self, result):
         """
@@ -443,7 +429,6 @@ class ABCAdapter(object):
                 msg = "Unexpected output DataType %s"
                 raise InvalidParameterException(msg % type(result_entity))
 
-
     def __is_data_in_supported_types(self, data):
 
         if data is None:
@@ -454,7 +439,6 @@ class ABCAdapter(object):
         # Data can't be mapped on any supported type !!
         return False
 
-
     def _is_group_launch(self):
         """
         Return true if this adapter is launched from a group of operations
@@ -462,14 +446,59 @@ class ABCAdapter(object):
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
 
+    def _get_output_path(self):
+        return self.storage_path
 
-    @staticmethod
-    def load_entity_by_gid(data_gid):
+    def load_entity_by_gid(self, data_gid):
+        # type: (typing.Union[uuid.UUID, str]) -> DataType
         """
         Load a generic DataType, specified by GID.
         """
-        return load_entity_by_gid(data_gid)
+        idx = load_entity_by_gid(data_gid)
+        if idx and self.generic_attributes.parent_burst is None:
+            # Only in case the BurstConfiguration references hasn't been set already, take it from the current DT
+            self.generic_attributes.parent_burst = idx.fk_parent_burst
+        return idx
 
+    def load_traited_by_gid(self, data_gid):
+        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
+        """
+        Load a generic HasTraits instance, specified by GID.
+        """
+        index = self.load_entity_by_gid(data_gid)
+        return h5.load_from_index(index)
+
+    def load_with_references(self, dt_gid):
+        # type: (typing.Union[uuid.UUID, str]) -> HasTraits
+        dt_index = self.load_entity_by_gid(dt_gid)
+        h5_path = h5.path_for_stored_index(dt_index)
+        dt, _ = h5.load_with_references(h5_path)
+        return dt
+
+    def view_model_to_has_traits(self, view_model):
+        # type: (ViewModel) -> HasTraits
+        has_traits_class = view_model.linked_has_traits
+        has_traits = has_traits_class()
+        view_model_class = type(view_model)
+        if not has_traits_class:
+            raise Exception("There is no linked HasTraits for this ViewModel {}".format(type(view_model)))
+        for attr_name in has_traits_class.declarative_attrs:
+            view_model_class_attr = getattr(view_model_class, attr_name)
+            view_model_attr = getattr(view_model, attr_name)
+            if isinstance(view_model_class_attr, DataTypeGidAttr) and view_model_attr:
+                attr_value = self.load_with_references(view_model_attr)
+            elif isinstance(view_model_class_attr, Attr) and isinstance(view_model_attr, ViewModel):
+                attr_value = self.view_model_to_has_traits(view_model_attr)
+            elif isinstance(view_model_class_attr, List) and len(view_model_attr) > 0 and isinstance(view_model_attr[0],
+                                                                                                     ViewModel):
+                attr_value = list()
+                for view_model_elem in view_model_attr:
+                    elem = self.view_model_to_has_traits(view_model_elem)
+                    attr_value.append(elem)
+            else:
+                attr_value = view_model_attr
+            setattr(has_traits, attr_name, attr_value)
+        return has_traits
 
     @staticmethod
     def build_adapter_from_class(adapter_class):
@@ -488,15 +517,26 @@ class ABCAdapter(object):
             LOGGER.exception(excep)
             raise IntrospectionException(str(excep))
 
+    @staticmethod
+    def determine_adapter_class(stored_adapter):
+        # type: (Algorithm) -> ABCAdapter
+        """
+        Determine the class of an adapter based on module and classname strings from stored_adapter
+        :param stored_adapter: Algorithm or AlgorithmDTO type
+        :return: a subclass of ABCAdapter
+        """
+        ad_module = importlib.import_module(stored_adapter.module)
+        adapter_class = getattr(ad_module, stored_adapter.classname)
+        return adapter_class
 
     @staticmethod
     def build_adapter(stored_adapter):
+        # type: (Algorithm) -> ABCAdapter
         """
         Having a module and a class name, create an instance of ABCAdapter.
         """
         try:
-            ad_module = importlib.import_module(stored_adapter.module)
-            adapter_class = getattr(ad_module, stored_adapter.classname)
+            adapter_class = ABCAdapter.determine_adapter_class(stored_adapter)
             adapter_instance = adapter_class()
             adapter_instance.stored_adapter = stored_adapter
             return adapter_instance
@@ -506,23 +546,10 @@ class ABCAdapter(object):
             LOGGER.exception(msg)
             raise IntrospectionException(msg)
 
-
-    # METHODS for PROCESSING PARAMETERS start here #############################
-
-    def review_operation_inputs(self, parameters):
-        # TODO: implement this for neoforms
-        """
-        :returns: a list with the inputs from the parameters list that are instances of DataType,\
-            and a dictionary with all parameters which are different than the declared defauts
-        """
-        return {}, None
-
-
-@add_metaclass(ABCMeta)
-class ABCAsynchronous(ABCAdapter):
-    """
-    Abstract class, for marking adapters that are prone to be executed  on Cluster.
-    """
+    def load_view_model(self, operation):
+        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        input_gid = operation.view_model_gid
+        return h5.load_view_model(input_gid, storage_path)
 
     def array_size2kb(self, size):
         """
@@ -530,12 +557,3 @@ class ABCAsynchronous(ABCAdapter):
         :return: size in kB
         """
         return size * TvbProfile.current.MAGIC_NUMBER / 8 / 2 ** 10
-
-
-@add_metaclass(ABCMeta)
-class ABCSynchronous(ABCAdapter):
-    """
-    Abstract class, for marking adapters that are prone to be NOT executed on Cluster.
-    """
-
-

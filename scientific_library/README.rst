@@ -1,6 +1,3 @@
-**Using this repository (tvb-library) from github is now considered DEPRECATED.
-We advise you to use our main tvb-root repository instead**
-
 THE VIRTUAL BRAIN SCIENTIFIC LIBRARY
 ====================================
 
@@ -119,4 +116,4 @@ Further Resources
 -  A public mailing list for users of The Virtual Brain can be joined
    and followed using: tvb-users@googlegroups.com
 -  Raw demo IPython Notebooks can be found under:
-   https://github.com/the-virtual-brain/tvb-documentation/tree/master/demos
+   https://github.com/the-virtual-brain/tvb-root/tree/master/tvb_documentation/demos

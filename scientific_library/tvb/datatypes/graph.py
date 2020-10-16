@@ -38,7 +38,8 @@ The Graph datatypes.
 """
 import numpy
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, narray_summary_info
-from tvb.datatypes import time_series, connectivity
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.time_series import TimeSeries
 
 
 class Covariance(HasTraits):
@@ -47,7 +48,7 @@ class Covariance(HasTraits):
     array_data = NArray(dtype=numpy.complex128)
 
     source = Attr(
-        field_type=time_series.TimeSeries,
+        field_type=TimeSeries,
         label="Source time-series",
         doc="Links to the time-series on which NodeCovariance is applied.")
 
@@ -70,7 +71,7 @@ class CorrelationCoefficients(HasTraits):
     array_data = NArray()
 
     source = Attr(
-        field_type=time_series.TimeSeries,
+        field_type=TimeSeries,
         label="Source time-series",
         doc="Links to the time-series on which Correlation (coefficients) is applied.")
 
@@ -95,7 +96,7 @@ class ConnectivityMeasure(HasTraits):
 
     array_data = NArray()
 
-    connectivity = Attr(field_type=connectivity.Connectivity)
+    connectivity = Attr(field_type=Connectivity)
 
     def summary_info(self):
         summary = {"Graph type": self.__class__.__name__}

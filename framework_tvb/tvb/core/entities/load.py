@@ -33,6 +33,7 @@ Higher level entity loading.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import importlib
+import uuid
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.exceptions import FileVersioningException
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
@@ -40,11 +41,12 @@ from tvb.core.entities.storage import dao
 
 LOGGER = get_logger(__name__)
 
+
 def get_class_by_name(fqname):
-    '''
+    """
     get_class_by_name("package.module.class")
     is equivalent to from package.module import class
-    '''
+    """
     try:
         modulename, classname = fqname.rsplit('.', 1)
         module = importlib.import_module(modulename)
@@ -57,6 +59,8 @@ def load_entity_by_gid(data_gid):
     """
     Load a generic DataType, specified by GID.
     """
+    if isinstance(data_gid, uuid.UUID):
+        data_gid = data_gid.hex
     datatype = dao.get_datatype_by_gid(data_gid)
     # TODO
     # from tvb.core.traits.types_mapped import MappedType
@@ -82,3 +86,14 @@ def get_filtered_datatypes(project_id, data_type_cls, filters=None, page_size=50
     LOGGER.debug('Filtering:' + str(data_type_cls))
     return dao.get_values_of_datatype(project_id, data_type_cls, filters, page_size)
 
+
+def try_get_last_datatype(project_id, data_type_cls, filters=None):
+    """
+    Retrieve the last dataTypes matching a filter inside the current project.
+    :return: instance of data_type_cls or None
+    """
+    result, count = get_filtered_datatypes(project_id, data_type_cls, filters=filters, page_size=1)
+    if count == 0:
+        return None
+    dt = load_entity_by_gid(result[0][2])
+    return dt

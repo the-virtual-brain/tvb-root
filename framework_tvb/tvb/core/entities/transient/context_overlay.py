@@ -138,7 +138,7 @@ class OperationOverlayDetails(CommonDetails):
     """
 
 
-    def __init__(self, operation, username, count_inputs, count_results, burst, no_of_op_in_group, op_pid):
+    def __init__(self, operation, user_display_name, count_inputs, count_results, burst, no_of_op_in_group, op_pid):
         super(OperationOverlayDetails, self).__init__()
 
         self.operation_id = operation.id
@@ -168,9 +168,9 @@ class OperationOverlayDetails(CommonDetails):
                 self.job_id = op_pid.job_id
                 self.metadata['job_id'] = {"name": "Cluster job Id", "disabled": "True"}
 
-        ### Now set/update generic fields
+        # Now set/update generic fields
         self.gid = operation.gid
-        self.author = username
+        self.author = user_display_name
         self.count = no_of_op_in_group
         self.burst_name = burst.name if burst is not None else ""
         self.operation_type = self.compute_operation_name(operation.algorithm.algorithm_category.displayname,
@@ -211,7 +211,7 @@ class DataTypeOverlayDetails(CommonDetails):
         self.metadata[self.DATA_STATE] = {"name": "State"}
 
         self.datatype_title = None
-        self.metadata[self.DATA_TITLE] = {"name": "Title", "disabled": "True"}
+        self.metadata[self.DATA_TITLE] = {"name": "Display Name", "disabled": "True"}
 
         self.subject = None
         self.metadata[self.DATA_SUBJECT] = {"name": "Subject"}
@@ -256,14 +256,14 @@ class DataTypeOverlayDetails(CommonDetails):
         self.data_state = datatype_result.state
         self.datatype_title = datatype_result.display_name
         self.subject = datatype_result.subject
-        self.data_type = datatype_result.type
+        self.data_type = datatype_result.display_type
         self.datatype_tag_1 = datatype_result.user_tag_1
         self.datatype_tag_2 = datatype_result.user_tag_2
         self.datatype_tag_3 = datatype_result.user_tag_3
         self.datatype_tag_4 = datatype_result.user_tag_4
         self.datatype_tag_5 = datatype_result.user_tag_5
         self.datatype_size = datatype_result.disk_size
-        self.author = datatype_result.parent_operation.user.username
+        self.author = datatype_result.parent_operation.user.display_name
 
         parent_algorithm = datatype_result.parent_operation.algorithm
         operation_name = self.compute_operation_name(parent_algorithm.algorithm_category.displayname,
@@ -280,7 +280,7 @@ class DataTypeOverlayDetails(CommonDetails):
         else:
             self.burst_name = ''
 
-        ### Populate Group attributes
+        # Populate Group attributes
         if isinstance(datatype_result, DataTypeGroup):
             self.count = datatype_result.count_results
             self.operation_group_name = datatype_result.parent_operation.operation_group.name
@@ -289,6 +289,5 @@ class DataTypeOverlayDetails(CommonDetails):
         else:
             self.operation_label = datatype_result.parent_operation.user_group
 
-        ### Populate Scientific attributes
-        if hasattr(datatype_result, 'summary_info') and datatype_result.summary_info is not None:
-            self.add_scientific_fields(datatype_result.summary_info)
+        # Populate Scientific attributes
+        self.add_scientific_fields(datatype_result.summary_info)

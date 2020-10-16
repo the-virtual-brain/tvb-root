@@ -1,4 +1,29 @@
 ======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.1 - build 10***
+ Release Date: ** June 2020
+ Description: TVB_Distribution with Python 3
+======================================================================================================================================
+    * Add a REST API (server in tvb-framework and tvb-rest-client separately)
+    * Make tvb-framework code also compatible with Python 3 and Neo-Traits
+    * Use Jinja instead of Genshi for tvb web GUI
+    * Improve the Simulator page
+    * CFF import was removed
+    * tvb-contrib is a package on Pypi
+
+======================================================================================================================================
+ The Virtual Brain (TVB) tvb-library
+ Version: 2.0 - build 8898
+ Release Date: 16 Oct 2019
+ Description: New Traits. Python 3
+======================================================================================================================================
+    * Make our library code compatible with Python 3
+    * Fully refactor Traited system, by splitting the aspects of: types, storage, indexing, web GUI
+    * Slightly change DataTypes API in accordance to neotraits
+    * Review library dependencies, and make few of them only optional
+    * Drop some functionality from library Analyzers, move part to the framework
+
+======================================================================================================================================
  The Virtual Brain (TVB) tvb-library
  Version: 1.5.9 - build 8865
  Release Date: 4 July 2019

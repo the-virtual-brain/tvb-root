@@ -27,34 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
 from tvb.datatypes.equations import *
 from tvb.core.neotraits.forms import Form, ScalarField, SimpleFloatField
-
-
-LINEAR_EQUATION = 'Linear'
-GAUSSIAN_EQUATION = 'Gaussian'
-DOUBLE_GAUSSIAN_EQUATION = 'Mexican-hat'
-SIGMOID_EQUATION = 'Sigmoid'
-GENRALIZED_SIGMOID_EQUATION = 'GeneralizedSigmoid'
-SINUSOID_EQUATION = 'Sinusoid'
-COSINE_EQUATION = 'Cosine'
-ALPHA_EQUATION = 'Alpha'
-PULSE_TRAIN_EQUATION = 'PulseTrain'
-
-
-def get_ui_name_to_equation_dict():
-    eq_name_to_class = {
-        LINEAR_EQUATION: Linear,
-        GAUSSIAN_EQUATION: Gaussian,
-        DOUBLE_GAUSSIAN_EQUATION: DoubleGaussian,
-        SIGMOID_EQUATION: Sigmoid,
-        GENRALIZED_SIGMOID_EQUATION: GeneralizedSigmoid,
-        SINUSOID_EQUATION: Sinusoid,
-        COSINE_EQUATION: Cosine,
-        ALPHA_EQUATION: Alpha,
-        PULSE_TRAIN_EQUATION: PulseTrain
-    }
-    return eq_name_to_class
 
 
 def get_ui_name_for_equation(equation_class):
@@ -98,6 +73,9 @@ def get_form_for_equation(equation_class):
 
 class EquationForm(Form):
 
+    def get_subform_key(self):
+        return SubformsEnum.EQUATION.name
+
     def get_traited_equation(self):
         return Equation
 
@@ -128,6 +106,7 @@ class LinearEquationForm(EquationForm):
     def fill_from_trait(self, trait):
         self.a.data = trait.parameters['a']
         self.b.data = trait.parameters['b']
+
 
 class GaussianEquationForm(EquationForm):
 

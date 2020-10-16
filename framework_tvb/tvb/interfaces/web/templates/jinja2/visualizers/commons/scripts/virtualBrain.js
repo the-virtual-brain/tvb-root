@@ -111,7 +111,6 @@ var regionBoundariesController = null;
 var activitiesData = [], timeData = [], measurePoints = [], measurePointsLabels = [];
 
 var pageSize = 0;
-var urlBase = '';
 var selectedMode = 0;
 var selectedStateVar = 0;
 var currentActivitiesFileLength = 0;
@@ -160,6 +159,8 @@ var VS_pickedIndex = -1;
 
 var VB_BrainNavigator;
 
+var urlBaseAdapter = '';
+
 
 function VS_init_hemisphere_mask(hemisphere_chunk_mask) {
     VS_hemisphere_chunk_mask = hemisphere_chunk_mask;
@@ -184,12 +185,11 @@ function VS_SetHemisphere(h) {
     }
 }
 
-function VS_StartPortletPreview(baseDatatypeURL, urlVerticesList, urlTrianglesList, urlNormalsList, noOfMeasurePoints,
+function VS_StartPortletPreview(urlBaseAdapter, urlVerticesList, urlTrianglesList, urlNormalsList, noOfMeasurePoints,
                                 urlRegionMapList, boundaryURL, minActivity, maxActivity, oneToOneMapping) {
     isPreview = true;
     pageSize = 1;
-    urlBase = baseDatatypeURL;
-    activitiesData = HLPR_readJSONfromFile(readDataSplitPageURL(urlBase, 0, 1, selectedStateVar, selectedMode, TIME_STEP));
+    activitiesData = HLPR_readJSONfromFile(readDataSplitPageURL(urlBaseAdapter, 0, 1, selectedStateVar, selectedMode, TIME_STEP));
     if (oneToOneMapping === 'True') {
         isOneToOneMapping = true;
     }
@@ -299,10 +299,10 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
     }
 }
 
-function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
+function _VS_movie_entrypoint(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                               urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
-                              urlRegionMapList, minActivity, maxActivity,
-                              oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
+                              urlRegionMapList, minActivity, maxActivity, oneToOneMapping, doubleView,
+                              shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
     // initialize global configuration
     isDoubleView = doubleView;
     if (oneToOneMapping === 'True') {
@@ -313,7 +313,7 @@ function _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVert
     activityMin = parseFloat(minActivity);
     activityMax = parseFloat(maxActivity);
     pageSize = onePageSize;
-    urlBase = baseDatatypeURL;
+    urlBaseAdapter = baseAdapterURL;
 
     // initialize global data
     _initMeasurePoints(noOfMeasurePoints, urlMeasurePoints, urlMeasurePointsLabels);
@@ -371,12 +371,12 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
     _VS_init_cubicalMeasurePoints();
 }
 
-function VS_StartBrainActivityViewer(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
+function VS_StartBrainActivityViewer(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                                      urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                                      urlRegionMapList, minActivity, maxActivity,
                                      oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
                                      urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
-    _VS_movie_entrypoint(baseDatatypeURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
+    _VS_movie_entrypoint(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
         urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
         urlRegionMapList, minActivity, maxActivity,
         oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
@@ -1230,7 +1230,7 @@ function getUrlForPageFromIndex(index) {
         fromIdx = 0;
     }
     const toIdx = fromIdx + pageSize * TIME_STEP;
-    return readDataSplitPageURL(urlBase, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP);
+    return readDataSplitPageURL(urlBaseAdapter, fromIdx, toIdx, selectedStateVar, selectedMode, TIME_STEP);
 }
 
 /**

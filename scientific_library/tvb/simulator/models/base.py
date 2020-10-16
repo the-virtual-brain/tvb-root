@@ -30,17 +30,12 @@
 This module defines the common imports and abstract base class for model definitions.
 
 """
-import sys
 import abc
 import numpy
+import typing
 from tvb.basic.neotraits.api import HasTraits
-if sys.version_info[0] == 3:
-    import typing
 
-import sys
 
-if sys.version_info[0] == 3:
-    import typing
 
 
 class Model(HasTraits):
@@ -54,6 +49,7 @@ class Model(HasTraits):
     _nvar = None   # todo make this a prop len(state_variables)
     number_of_modes = 1
     cvar = None
+    stvar = None
     state_variable_boundaries = None
 
     def _build_observer(self):
@@ -91,6 +87,8 @@ class Model(HasTraits):
         "Configure base model."
         for req_attr in 'nvar number_of_modes cvar'.split():
             assert hasattr(self, req_attr)
+        if self.stvar is None:
+            self.stvar = self.cvar.copy()
         super(Model, self).configure()
         self.update_derived_parameters()
         self._build_observer()

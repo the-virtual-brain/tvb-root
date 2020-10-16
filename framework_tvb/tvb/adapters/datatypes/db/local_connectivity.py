@@ -39,8 +39,8 @@ from tvb.core.neotraits.db import from_ndarray
 class LocalConnectivityIndex(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not LocalConnectivity.surface.required)
-    surface = relationship(SurfaceIndex, foreign_keys=surface_gid, primaryjoin=SurfaceIndex.gid == surface_gid)
+    fk_surface_gid = Column(String(32), ForeignKey(SurfaceIndex.gid), nullable=not LocalConnectivity.surface.required)
+    surface = relationship(SurfaceIndex, foreign_keys=fk_surface_gid, primaryjoin=SurfaceIndex.gid == fk_surface_gid)
 
     matrix_non_zero_min = Column(Float)
     matrix_non_zero_max = Column(Float)
@@ -51,4 +51,4 @@ class LocalConnectivityIndex(DataType):
         super(LocalConnectivityIndex, self).fill_from_has_traits(datatype)
         I, J, V = scipy.sparse.find(datatype.matrix)
         self.matrix_non_zero_min, self.matrix_non_zero_max, self.matrix_non_zero_mean = from_ndarray(V)
-        self.surface_gid = datatype.surface.gid.hex
+        self.fk_surface_gid = datatype.surface.gid.hex

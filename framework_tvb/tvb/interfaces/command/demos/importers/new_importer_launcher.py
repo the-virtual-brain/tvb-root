@@ -40,23 +40,20 @@ if __name__ == "__main__":
 
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
-from tvb.core.services.flow_service import FlowService
 from tvb.core.services.operation_service import OperationService
 from .new_importer import FooDataImporter
 
-
-## Before starting this, we need to have TVB web interface launched at least once (to have a default project, user, etc)
+# Before starting this, we need to have TVB web interface launched at least once (to have a default project, user, etc)
 if __name__ == "__main__":
 
-    flow_service = FlowService()
     operation_service = OperationService()
 
-    ## This ID of a project needs to exists in Db, and it can be taken from the WebInterface:
+    # This ID of a project needs to exists in Db, and it can be taken from the WebInterface:
     project = dao.get_project_by_id(1)
 
-    ## This is our new added Importer:
+    # This is our new added Importer:
     adapter_instance = FooDataImporter()
-    ## We need to store a reference towards the new algorithms also in DB:
+    # We need to store a reference towards the new algorithms also in DB:
     # First select the category of uploaders:
     upload_category = dao.get_uploader_categories()[0]
     # check if the algorithm has been added in DB already
@@ -68,12 +65,12 @@ if __name__ == "__main__":
 
     adapter_instance.stored_adapter = algorithm
 
-    ## Prepare the input algorithms as if they were coming from web UI submit:
-    #launch_args = {"array_data": "[1, 2, 3, 4, 5]"}
+    # Prepare the input algorithms as if they were coming from web UI submit:
+    # launch_args = {"array_data": "[1, 2, 3, 4, 5]"}
     launch_args = {"array_data": "demo_array.txt"}
 
-    ## launch an operation and have the results sotored both in DB and on disk
-    launched_operations = flow_service.fire_operation(adapter_instance,
-                                                      project.administrator,
-                                                      project.id,
-                                                      **launch_args)
+    # launch an operation and have the results stored both in DB and on disk
+    launched_operations = operation_service.fire_operation(adapter_instance,
+                                                           project.administrator,
+                                                           project.id,
+                                                           **launch_args)

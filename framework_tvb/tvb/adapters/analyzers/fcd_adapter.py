@@ -32,7 +32,7 @@
 Adapter that uses the traits model to generate interfaces for FCD Analyzer.
 
 .. moduleauthor:: Francesca Melozzi <france.melozzi@gmail.com>
-.. moduleauthor:: Marmaduke Woodman <mmwoodman@gmail.com>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 
@@ -43,24 +43,21 @@ from scipy import linalg
 from scipy.spatial.distance import pdist
 from sklearn.cluster import DBSCAN
 from sklearn.manifold import SpectralEmbedding
-from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
-from tvb.basic.neotraits.info import narray_describe
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
-from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.core.neotraits.forms import DataTypeSelectField, ScalarField
+from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
+from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.info import narray_describe
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.time_series import TimeSeriesRegion
-
-LOG = get_logger(__name__)
 
 
 class FcdCalculator(HasTraits):
@@ -92,15 +89,26 @@ class FcdCalculator(HasTraits):
         between FC(ti) and FC(tj) arranged in a vector""")
 
 
+class FCDAdapterModel(ViewModel, FcdCalculator):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeriesRegion,
+        label="Time Series",
+        required=True,
+        doc="""The time-series for which the fcd matrices are calculated."""
+    )
+
+
 class FCDAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(FCDAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                               required=True, label=FcdCalculator.time_series.label,
-                                               doc=FcdCalculator.time_series.doc, conditions=self.get_filters(),
-                                               has_all_option=True)
-        self.sw = ScalarField(FcdCalculator.sw, self)
-        self.sp = ScalarField(FcdCalculator.sp, self)
+        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, self, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.sw = ScalarField(FCDAdapterModel.sw, self)
+        self.sp = ScalarField(FCDAdapterModel.sp, self)
+
+    @staticmethod
+    def get_view_model():
+        return FCDAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -118,7 +126,7 @@ class FCDAdapterForm(ABCAdapterForm):
         return FcdCalculator()
 
 
-class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
+class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
     """ TVB adapter for calling the Pearson CrossCorrelation algorithm.
 
         The present class will do the following actions:
@@ -161,7 +169,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
     def get_output(self):
         return [FcdIndex, ConnectivityMeasureIndex]
 
-    def configure(self, time_series, sw, sp):
+    def configure(self, view_model):
+        # type: (FCDAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
 
@@ -172,14 +181,14 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         """
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
         """
-        self.input_time_series_index = time_series
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
-        LOG.debug("time_series shape is %s" % str(self.input_shape))
-        self.actual_sp = float(sp) / time_series.sample_period
-        self.actual_sw = float(sw) / time_series.sample_period
+        self.log.debug("time_series shape is %s" % str(self.input_shape))
+        self.actual_sp = float(view_model.sp) / self.input_time_series_index.sample_period
+        self.actual_sw = float(view_model.sw) / self.input_time_series_index.sample_period
         actual_ts_length = self.input_shape[0]
 
         if self.actual_sw >= actual_ts_length or self.actual_sp >= actual_ts_length or self.actual_sp >= self.actual_sw:
@@ -188,16 +197,18 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                 "and Sp < Sw. After calibration with sampling period, current values are: Sp=%d, Sw=%d, Ts=%d). "
                 "Please configure valid input parameters." % (self.actual_sp, self.actual_sw, actual_ts_length))
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (FCDAdapterModel) -> int
         # We do not know how much memory is needed.
         return -1
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (FCDAdapterModel) -> int
         return 0
 
     @staticmethod
     def _populate_fcd_index(fcd_index, source_gid, fcd_data, metadata):
-        fcd_index.source_gid = source_gid
+        fcd_index.fk_source_gid = source_gid
         fcd_index.labels_ordering = json.dumps(Fcd.labels_ordering.default)
         fcd_index.ndim = fcd_data.ndim
         fcd_index.array_data_min = metadata.min
@@ -214,7 +225,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         fcd_h5.labels_ordering.store(json.dumps(Fcd.labels_ordering.default))
         return fcd_h5.array_data.get_cached_metadata()
 
-    def launch(self, time_series, sw, sp):
+    def launch(self, view_model):
+        # type: (FCDAdapterModel) -> [FcdIndex]
         """
         Launch algorithm and build results.
 
@@ -227,6 +239,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             [fcd, fcd_segmented, eigvect_dict, eigval_dict] = self._compute_fcd_matrix(ts_h5)
             connectivity_gid = ts_h5.connectivity.load()
+            connectivity = self.load_traited_by_gid(connectivity_gid)
 
         result = []  # list to store: fcd index, fcd_segmented index (eventually), and connectivity measure indexes
 
@@ -234,8 +247,9 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
         fcd_index = FcdIndex()
         fcd_h5_path = h5.path_for(self.storage_path, FcdH5, fcd_index.gid)
         with FcdH5(fcd_h5_path) as fcd_h5:
-            fcd_array_metadata = self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, time_series.gid, sw, sp)
-        self._populate_fcd_index(fcd_index, time_series.gid, fcd, fcd_array_metadata)
+            fcd_array_metadata = self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, self.input_time_series_index.gid,
+                                                       view_model.sw, view_model.sp)
+        self._populate_fcd_index(fcd_index, self.input_time_series_index.gid, fcd, fcd_array_metadata)
         result.append(fcd_index)
 
         if np.amax(fcd_segmented) == 1.1:
@@ -243,8 +257,11 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
             result_fcd_segmented_h5_path = h5.path_for(self.storage_path, FcdH5, result_fcd_segmented_index.gid)
             with FcdH5(result_fcd_segmented_h5_path) as result_fcd_segmented_h5:
                 fcd_segmented_metadata = self._populate_fcd_h5(result_fcd_segmented_h5, fcd_segmented,
-                                                               result_fcd_segmented_index.gid, time_series.gid, sw, sp)
-            self._populate_fcd_index(result_fcd_segmented_index, time_series.id, fcd_segmented, fcd_segmented_metadata)
+                                                               result_fcd_segmented_index.gid,
+                                                               self.input_time_series_index.gid, view_model.sw,
+                                                               view_model.sp)
+            self._populate_fcd_index(result_fcd_segmented_index, self.input_time_series_index.id, fcd_segmented,
+                                     fcd_segmented_metadata)
             result.append(result_fcd_segmented_index)
 
         for mode in eigvect_dict.keys():
@@ -252,28 +269,18 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                 for ep in eigvect_dict[mode][var].keys():
                     for eig in range(3):
                         cm_data = eigvect_dict[mode][var][ep][eig]
-                        cm_index = ConnectivityMeasureIndex()
-                        cm_index.type = ConnectivityMeasure.__name__
-                        cm_index.connectivity_gid = connectivity_gid.hex
-                        cm_index.title = "Epoch # %d, \n eigenvalue = %s,\n variable = %s,\n " \
-                                         "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
-
-                        storage_path = h5.path_for(self.storage_path, ConnectivityMeasureH5, cm_index.gid)
-                        with ConnectivityMeasureH5(storage_path) as f:
-                            f.array_data.store(cm_data)
-                            f.connectivity.store(connectivity_gid)
-                            f.title.store(cm_index.title)
-                            cm_array_metadata = f.array_data.get_cached_metadata()
-
-                        cm_index.array_data_min = cm_array_metadata.min
-                        cm_index.array_data_max = cm_array_metadata.max
-                        cm_index.array_data_mean = cm_array_metadata.mean
+                        measure = ConnectivityMeasure()
+                        measure.connectivity = connectivity
+                        measure.array_data = cm_data
+                        measure.title = "Epoch # %d, eigenvalue = %s, variable = %s, " \
+                                        "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
+                        cm_index = h5.store_complete(measure, self.storage_path)
                         result.append(cm_index)
         return result
 
     def _compute_fcd_matrix(self, ts_h5):
-        LOG.debug("timeseries_h5.data")
-        LOG.debug(narray_describe(ts_h5.data[:]))
+        self.log.debug("timeseries_h5.data")
+        self.log.debug(narray_describe(ts_h5.data[:]))
 
         input_shape = ts_h5.data.shape
         result_shape = self._result_shape(input_shape)
@@ -301,8 +308,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAsynchronous):
                         fcd[j, i, var, mode] = fcd[i, j, var, mode]
                         j += 1
 
-        LOG.debug("FCD")
-        LOG.debug(narray_describe(fcd))
+        self.log.debug("FCD")
+        self.log.debug(narray_describe(fcd))
 
         num_eig = 3  # number of the eigenvector that will be extracted
 

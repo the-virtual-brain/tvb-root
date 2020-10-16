@@ -40,17 +40,14 @@ from tvb.core.entities.storage import dao
 from tvb.config.init.model_manager import initialize_startup, reset_database
 
 
-
 class TestsModelManager(BaseTestCase):
     """
-    This class contains tests for the tvb.core.entities.modelmanager module.
+    This class contains tests for tvb.config.init.model_manager module.
     """
 
-    @pytest.mark.skipif
     def teardown_method(self):
         init_test_env()
 
-    @pytest.mark.skipif
     def test_initialize_startup(self):
         """
         Test "reset_database" and "initialize_startup" calls.
@@ -58,11 +55,10 @@ class TestsModelManager(BaseTestCase):
         reset_database()
         # Table USERS should not exist:
         with pytest.raises(Exception): dao.get_all_users()
-        
+
         initialize_startup()
         # Table exists, but no rows
         assert 0 == len(dao.get_all_users())
-        assert None == dao.get_system_user()
+        assert dao.get_system_user() is None
         # DB revisions folder should exist:
         assert os.path.exists(TvbProfile.current.db.DB_VERSIONING_REPO)
-    

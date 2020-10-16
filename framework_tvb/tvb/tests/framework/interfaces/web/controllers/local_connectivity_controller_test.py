@@ -60,7 +60,7 @@ class TestLocalConnectivityController(BaseTransactionalControllerTest):
         local connectivity controller.
         """
         assert result_dict['data'] == {}
-        assert isinstance(result_dict['existentEntitiesInputList'], list)
+        assert isinstance(result_dict['existentEntitiesInputList'], dict)
 
     def test_step_1(self):
         """
@@ -68,20 +68,20 @@ class TestLocalConnectivityController(BaseTransactionalControllerTest):
         """
         result_dict = self.local_p_c.step_1(1)
         self._default_checks(result_dict)
-        assert result_dict['equationViewerUrl'] == '/spatial/localconnectivity/get_equation_chart'
-        assert isinstance(result_dict['inputList'], list)
+        assert result_dict['baseUrl'] == '/spatial/localconnectivity'
+        assert isinstance(result_dict['inputList'], dict)
         assert result_dict['mainContent'] == 'spatial/local_connectivity_step1_main'
         assert result_dict['next_step_url'] == '/spatial/localconnectivity/step_2'
         assert result_dict['resetToDefaultUrl'] == '/spatial/localconnectivity/reset_local_connectivity'
         assert result_dict['submit_parameters_url'] == '/spatial/localconnectivity/create_local_connectivity'
         assert result_dict['resetToDefaultUrl'] == '/spatial/localconnectivity/reset_local_connectivity'
 
-    def test_step_2(self):
+    def test_step_2(self, local_connectivity_index_factory):
         """
         Test that the dictionary returned by the controller for the LC Workflow second step is correct.
         """
-        context = LocalConnectivity()
-        cherrypy.session[KEY_LCONN] = context
+        lconn_index, lconn = local_connectivity_index_factory()
+        cherrypy.session[KEY_LCONN] = lconn
         result_dict = self.local_p_c.step_2()
         self._default_checks(result_dict)
         assert result_dict['loadExistentEntityUrl'] == '/spatial/localconnectivity/load_local_connectivity'

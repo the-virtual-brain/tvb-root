@@ -8,13 +8,13 @@
 
 	    <script type="text/javascript">
 	    	$(document).ready(function() {
-	    		$("select[name='_existentEntitiesSelect']").change(function () { BS_loadEntity(); });
+	    		$("select[name='existentEntitiesSelect']").change(function () { BS_loadEntity(); });
                 {% if displayedMessage is defined and displayedMessage != none %}
 					displayMessage('{{ displayedMessage }}', '{{ messageType }}');
 				{% endif %}
-                setEventsOnFormFields({{ spatialFieldsPrefixes | safe }}, '{{ baseUrl | safe }}');
-                plotEquations('{{ baseUrl | safe }}');
-                redrawPlotOnMinMaxChanges('{{ baseUrl | safe }}')
+                setEventsOnStaticFormFields({{ spatialFieldsPrefixes | safe }});
+                plotEquations();
+                redrawPlotOnMinMaxChanges()
 	        });
 	    </script>
 

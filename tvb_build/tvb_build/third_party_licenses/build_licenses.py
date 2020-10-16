@@ -150,8 +150,8 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
 
     dep_html = docutils.core.publish_string(dep_text, writer_name='html4css1', settings=None,
                                             settings_overrides={
-                                            'stylesheet_path': os.path.join(CURRENT_FOLDER, 'scheme.css')})
-    with open(RESULT_FILE_NAME + '.html', 'w') as f:
+                                                'stylesheet_path': os.path.join(CURRENT_FOLDER, 'scheme.css')})
+    with open(RESULT_FILE_NAME + '.html', 'wb') as f:
         f.write(dep_html)
     # Create ZIP with included dependencies.
     if os.path.exists(RESULT_FILE_NAME + '.zip'):
@@ -168,10 +168,6 @@ def generate_artefact(root_folder_to_introspect, excludes=None, actual_libs=None
     print(" - THIRD_PARTY_LICENSES were generated")
     return RESULT_FILE_NAME + '.zip'
 
-
-ROOT_WINDOWS = os.path.join(os.path.dirname(CURRENT_FOLDER), 'TVB_Windows', 'TVB_distribution', 'library.zip')
-ROOT_MAC = os.path.join(os.path.dirname(CURRENT_FOLDER), 'TVB_MacOS', 'TVB_distribution', 'tvb.app',
-                        'Contents', 'Resources', 'lib', 'python2.7')
 
 if __name__ == "__main__":
     # Run stand-alone.

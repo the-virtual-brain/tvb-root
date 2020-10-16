@@ -72,6 +72,12 @@ class ModelsEnum(Enum):
     REDUCED_WONG_WANG_EXCH_INH = "ReducedWongWangExcInh"
     ZERLAUT_FIRST_ORDER = "ZerlautAdaptationFirstOrder"
     ZERLAUT_SECOND_ORDER = "ZerlautAdaptationSecondOrder"
+    MONTBRIO_PAZO_ROXIN = "MontbrioPazoRoxin"
+    COOMBES_BYRNE = "CoombesByrne"
+    COOMBES_BYRNE_2D = "CoombesByrne2D"
+    GAST_SCHMIDT_KNOSCHE_SD = "GastSchmidtKnosche_SD"
+    GAST_SCHMIDT_KNOSCHE_SF = "GastSchmidtKnosche_SF"
+    DUMONT_GUTKIN = "DumontGutkin"
 
     def get_class(self):
         return _get_imported_model(self.value)
@@ -106,7 +112,24 @@ _module_models = {
     'wong_wang': [ModelsEnum.REDUCED_WONG_WANG],
     'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXCH_INH],
     'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
+    'infinite_theta': [ModelsEnum.MONTBRIO_PAZO_ROXIN, ModelsEnum.COOMBES_BYRNE, ModelsEnum.COOMBES_BYRNE_2D, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD, ModelsEnum.DUMONT_GUTKIN],
 }
+
+
+def _find_lems_models():
+    import os, tvb.dsl
+    dsl_path = os.path.dirname(os.path.abspath(tvb.dsl.__file__))
+    xml_folder = os.path.join(dsl_path, 'NeuroML', 'XMLmodels')
+    for xml_filename in os.listdir(xml_folder):
+        # try to get model name
+        fullfilename = os.path.join(xml_folder, xml_filename)
+        print(fullfilename)
+        with open(fullfilename, 'r') as fd:
+            for line in fd.readlines():
+                if '<ComponentType name=' in line:
+                    _, name_, *_ = line.strip().split()
+                    _, name, _ = name_.split("=")[1].split('"')
+                    break
 
 
 def _delay_import_one(mod, model):

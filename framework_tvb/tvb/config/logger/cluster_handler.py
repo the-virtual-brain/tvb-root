@@ -32,29 +32,29 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-import os
 import logging
+import os
 from logging.handlers import MemoryHandler
-from tvb.basic.profile import TvbProfile
+
 from tvb.basic.logger.simple_handler import SimpleTimedRotatingFileHandler
+from tvb.basic.profile import TvbProfile
 
 
 class ClusterTimedRotatingFileHandler(MemoryHandler):
     """
     This is a custom rotating file handler which computes the name of the file depending on the 
-    execution environment (web node or cluster node)
+    execution environment (web node, cluster node or hpc)
     """
 
     # Name of the log file where code from Web application will be stored
     WEB_LOG_FILE = "web_application.log"
 
     # Name of the file where to write logs from the code executed on cluster nodes
-    CLUSTER_NODES_LOG_FILE = "operations_executions.log"
+    ASYNC_OP_LOG_FILE = "operations_executions.log"
 
     # Size of the buffer which store log entries in memory
     # in number of lines
     BUFFER_CAPACITY = 20
-
 
     def __init__(self, when='h', interval=1, backupCount=0):
         """
@@ -62,8 +62,8 @@ class ClusterTimedRotatingFileHandler(MemoryHandler):
         """
         # Formatting string
         format_str = '%(asctime)s - %(levelname)s'
-        if TvbProfile.current.cluster.IN_OPERATION_EXECUTION_PROCESS:
-            log_file = self.CLUSTER_NODES_LOG_FILE
+        if TvbProfile.current.cluster.IN_OPERATION_EXECUTION_PROCESS or TvbProfile.current.hpc.IN_OPERATION_EXECUTION_PROCESS:
+            log_file = self.ASYNC_OP_LOG_FILE
             if TvbProfile.current.cluster.IS_RUNNING_ON_CLUSTER_NODE:
                 node_name = TvbProfile.current.cluster.CLUSTER_NODE_NAME
                 if node_name is not None:
@@ -79,7 +79,3 @@ class ClusterTimedRotatingFileHandler(MemoryHandler):
         rotating_file_handler.setFormatter(logging.Formatter(format_str))
 
         MemoryHandler.__init__(self, capacity=self.BUFFER_CAPACITY, target=rotating_file_handler)
-        
-        
-        
-        

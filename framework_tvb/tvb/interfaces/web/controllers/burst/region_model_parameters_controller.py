@@ -42,12 +42,14 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
+from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, SimulatorWizzardURLs
 
 
+@traced
 class RegionsModelParametersController(BurstBaseController):
     """
     Controller class for placing model parameters in nodes.
@@ -91,7 +93,7 @@ class RegionsModelParametersController(BurstBaseController):
 
         current_project = common.get_current_project()
         file_handler = FilesHelper()
-        conn_idx = dao.get_datatype_by_gid(connectivity.gid.hex)
+        conn_idx = dao.get_datatype_by_gid(connectivity.hex)
         conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
 
         params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)

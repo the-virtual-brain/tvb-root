@@ -32,32 +32,23 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from sqlalchemy import Integer, String, Column, ForeignKey
-from tvb.core.neotraits.db import Base
+from sqlalchemy import Column, Integer, ForeignKey, String, DateTime
+from sqlalchemy.orm import relationship, backref
+from tvb.core.utils import format_timedelta
+from tvb.core.entities.model.model_operation import OperationGroup
+from tvb.core.entities.model.model_project import Project
+from tvb.core.neotraits.db import Base, HasTraitsIndex
 
 NUMBER_OF_PORTLETS_PER_TAB = 4
-KEY_PARAMETER_CHECKED = 'checked'
-KEY_SAVED_VALUE = 'value'
-
-BURST_INFO_FILE = "bursts_info.json"
-BURSTS_DICT_KEY = "bursts_dict"
-DT_BURST_MAP = "dt_mapping"
 
 PARAM_RANGE_PREFIX = 'range_'
 RANGE_PARAMETER_1 = "range_1"
 RANGE_PARAMETER_2 = "range_2"
 
-PARAM_CONNECTIVITY = 'connectivity'
-PARAM_SURFACE = 'surface'
-PARAM_MODEL = 'model'
-PARAM_INTEGRATOR = 'integrator'
-
-PARAMS_MODEL_PATTERN = 'model_parameters_option_%s_%s'
-
-
 ## TabConfiguration entity is not moved in the "transient" module, although it's not stored in DB,
 ## because it was directly referenced from the BurstConfiguration old class.
 ## In most of the case, we depend in "transient" module from classed in "model", and not vice-versa.
+
 
 class TabConfiguration():
     """
@@ -65,10 +56,8 @@ class TabConfiguration():
     burst page.
     """
 
-
     def __init__(self):
         self.portlets = [None for _ in range(NUMBER_OF_PORTLETS_PER_TAB)]
-
 
     def reset(self):
         """
@@ -76,7 +65,6 @@ class TabConfiguration():
         """
         for idx in range(len(self.portlets)):
             self.portlets[idx] = None
-
 
     def get_portlet(self, portlet_id):
         """
@@ -86,7 +74,6 @@ class TabConfiguration():
             if portlet is not None and str(portlet.portlet_id) == str(portlet_id):
                 return portlet
         return None
-
 
     def clone(self):
         """
@@ -100,7 +87,6 @@ class TabConfiguration():
             else:
                 new_config.portlets[portlet_idx] = None
         return new_config
-
 
     def __repr__(self):
         repr_str = "Tab: "
@@ -131,3 +117,73 @@ class Dynamic(Base):
 
     def __repr__(self):
         return "<Dynamic(%s, %s, %s)" % (self.name, self.model_class, self.integrator_class)
+
+
+class BurstConfiguration(HasTraitsIndex):
+    BURST_RUNNING = 'running'
+    BURST_ERROR = 'error'
+    BURST_FINISHED = 'finished'
+    BURST_CANCELED = 'canceled'
+
+    # TODO: Fix attrs for portlets
+    nr_of_tabs = 0
+    selected_tab = -1
+    is_group = False
+
+    datatypes_number = Column(Integer)
+    dynamic_ids = Column(String, default='[]', nullable=False)
+
+    range1 = Column(String, nullable=True)
+    range2 = Column(String, nullable=True)
+
+    id = Column(Integer, ForeignKey(HasTraitsIndex.id), primary_key=True)
+
+    fk_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete='CASCADE'))
+    project = relationship(Project, backref=backref('BurstConfiguration', cascade='all,delete'))
+
+    name = Column(String)
+    status = Column(String)
+    error_message = Column(String)
+
+    start_time = Column(DateTime)
+    finish_time = Column(DateTime)
+
+    # This will store the first Simulation Operation, and First Simulator GID, in case of PSE
+    simulator_gid = Column(String, nullable=True)
+    fk_simulation = Column(Integer, ForeignKey('OPERATIONS.id'), nullable=True)
+
+    fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
+    operation_group = relationship(OperationGroup, foreign_keys=fk_operation_group,
+                                   primaryjoin=OperationGroup.id == fk_operation_group, cascade='none')
+
+    fk_metric_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id'), nullable=True)
+    metric_operation_group = relationship(OperationGroup, foreign_keys=fk_metric_operation_group,
+                                          primaryjoin=OperationGroup.id == fk_metric_operation_group, cascade='none')
+
+    # Transient attribute, for when copying or branching
+    parent_burst_object = None
+
+    def __init__(self, project_id, status="running", name=None):
+        super().__init__()
+        self.fk_project = project_id
+        self.name = name
+        self.status = status
+        self.dynamic_ids = '[]'
+
+    def clone(self):
+        new_burst = BurstConfiguration(self.fk_project)
+        new_burst.name = self.name
+        new_burst.range1 = self.range1
+        new_burst.range2 = self.range2
+        new_burst.status = self.BURST_RUNNING
+        new_burst.parent_burst_object = self
+        return new_burst
+
+    @property
+    def process_time(self):
+        if self.finish_time is not None and self.start_time is not None:
+            return format_timedelta(self.finish_time - self.start_time)
+        return ''
+
+    def is_pse_burst(self):
+        return self.range1 is not None

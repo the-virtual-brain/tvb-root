@@ -35,38 +35,46 @@ Few supplementary steps are done here:
    * from submitted Monitor/Model... names, build transient entities
    * after UI parameters submit, compose transient Cortex entity to be passed to the Simulator.
 
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
 
-from tvb.simulator.simulator import Simulator
-from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
-from tvb.adapters.datatypes.h5.simulation_history_h5 import SimulationHistory
-from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
+import json
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
+from tvb.adapters.simulator.model_forms import get_model_to_form_dict
+from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
+from tvb.adapters.simulator.simulator_fragments import *
+from tvb.basic.neotraits.api import Attr
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import DataTypeSelectField, SimpleSelectField, FloatField
-from tvb.core.services.simulator_service import SimulatorService
+from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import FloatField, SelectField
+from tvb.simulator.coupling import Coupling
+from tvb.simulator.simulator import Simulator
 
 
 class SimulatorAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(SimulatorAdapterForm, self).__init__(prefix, project_id)
-        self.connectivity = DataTypeSelectField(self.get_required_datatype(), self, name=self.get_input_name(),
-                                                required=True, label="Connectivity",
-                                                doc=Simulator.connectivity.doc,
-                                                conditions=self.get_filters())
         self.coupling_choices = get_ui_name_to_coupling_dict()
-        self.coupling = SimpleSelectField(choices=self.coupling_choices, form=self, name='coupling', required=True,
-                                          label="Coupling", doc=Simulator.coupling.doc)
-        self.coupling.template = 'form_fields/select_field.html'
+        default_coupling = list(self.coupling_choices.values())[0]
+
+        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self,
+                                                     name=self.get_input_name(), conditions=self.get_filters())
+        self.coupling = SelectField(
+            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self,
+            name='coupling', choices=self.coupling_choices)
         self.conduction_speed = FloatField(Simulator.conduction_speed, self)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
@@ -74,9 +82,20 @@ class SimulatorAdapterForm(ABCAdapterForm):
     def fill_from_trait(self, trait):
         # type: (Simulator) -> None
         if hasattr(trait, 'connectivity'):
-            self.connectivity.data = trait.connectivity.gid.hex
+            self.connectivity.data = trait.connectivity.hex
         self.coupling.data = trait.coupling.__class__
         self.conduction_speed.data = trait.conduction_speed
+
+    def fill_trait(self, datatype):
+        datatype.connectivity = self.connectivity.value
+        datatype.conduction_speed = self.conduction_speed.value
+        coupling = self.coupling.value
+        if type(datatype.coupling) != coupling:
+            datatype.coupling = coupling()
+
+    @staticmethod
+    def get_view_model():
+        return SimulatorAdapterModel
 
     @staticmethod
     def get_input_name():
@@ -97,7 +116,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
         pass
 
 
-class SimulatorAdapter(ABCAsynchronous):
+class SimulatorAdapter(ABCAdapter):
     """
     Interface between the Simulator and the Framework.
     """
@@ -117,24 +136,41 @@ class SimulatorAdapter(ABCAsynchronous):
     def get_form_class(self):
         return SimulatorAdapterForm
 
+    def get_adapter_fragments(self, view_model):
+        # type (SimulatorAdapterModel) -> dict
+        forms = {None: [SimulatorSurfaceFragment, SimulatorRMFragment, SimulatorStimulusFragment,
+                        SimulatorModelFragment, SimulatorIntegratorFragment, SimulatorMonitorFragment,
+                        SimulatorFinalFragment]}
+
+        current_model_class = type(view_model.model)
+        all_model_forms = get_model_to_form_dict()
+        forms["model"] = [all_model_forms.get(current_model_class)]
+
+        all_monitor_forms = get_monitor_to_form_dict()
+        selected_monitor_forms = []
+        for monitor in view_model.monitors:
+            current_monitor_class = type(monitor)
+            selected_monitor_forms.append(all_monitor_forms.get(current_monitor_class))
+
+        forms["monitors"] = selected_monitor_forms
+        # Not sure if where we should in fact include the entire tree, or it will become too tedious.
+        # For now I think it is ok if we rename this section "Summary" and filter what is shown
+        return forms
+
     def get_output(self):
         """
         :returns: list of classes for possible results of the Simulator.
         """
         return [TimeSeriesIndex, SimulationHistoryIndex]
 
-    def configure(self, simulator_gid):
+    def configure(self, view_model):
+        # type: (SimulatorAdapterModel) -> None
         """
         Make preparations for the adapter launch.
         """
         self.log.debug("%s: Configuring simulator adapter..." % str(self))
-        self.algorithm, history_gid = SimulatorService().deserialize_simulator(simulator_gid, self.storage_path)
-        self.branch_simulation_state_gid = history_gid
-
-        # for monitor in self.algorithm.monitors:
-        #     if issubclass(monitor, Projection):
-        #         # TODO: add a service that loads a RM with Surface and Connectivity
-        #         pass
+        self.algorithm = self.view_model_to_has_traits(view_model)
+        self.branch_simulation_state_gid = view_model.history_gid
 
         try:
             self.algorithm.preconfigure()
@@ -142,19 +178,22 @@ class SimulatorAdapter(ABCAsynchronous):
             raise LaunchException("Failed to configure simulator due to invalid Input Values. It could be because "
                                   "of an incompatibility between different version of TVB code.", err)
 
-    def get_required_memory_size(self, **kwargs):
+    def get_required_memory_size(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Return the required memory to run this algorithm.
         """
         return self.algorithm.memory_requirement()
 
-    def get_required_disk_size(self, **kwargs):
+    def get_required_disk_size(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Return the required disk size this algorithm estimates it will take. (in kB)
         """
         return self.algorithm.storage_requirement() / 2 ** 10
 
-    def get_execution_time_approximation(self, **kwargs):
+    def get_execution_time_approximation(self, view_model):
+        # type: (SimulatorAdapterModel) -> int
         """
         Method should approximate based on input arguments, the time it will take for the operation 
         to finish (in seconds).
@@ -189,7 +228,7 @@ class SimulatorAdapter(ABCAsynchronous):
         :return: None or instance of "mapping_class"
         """
 
-        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, 'connectivity_gid')
+        dts_list = dao.get_generic_entity(mapping_class, connectivity_gid, 'fk_connectivity_gid')
         if len(dts_list) < 1:
             return None
 
@@ -214,7 +253,8 @@ class SimulatorAdapter(ABCAsynchronous):
 
         return region_map, region_volume_map
 
-    def launch(self, simulator_gid):
+    def launch(self, view_model):
+        # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
         """
         Called from the GUI to launch a simulation.
           *: string class name of chosen model, etc...
@@ -229,15 +269,14 @@ class SimulatorAdapter(ABCAsynchronous):
 
         self.algorithm.configure(full_configure=False)
         if self.branch_simulation_state_gid is not None:
-            history_index = dao.get_datatype_by_gid(self.branch_simulation_state_gid.hex)
-            history = h5.load_from_index(history_index)
+            history = self.load_traited_by_gid(self.branch_simulation_state_gid)
             assert isinstance(history, SimulationHistory)
             history.fill_into(self.algorithm)
 
         region_map, region_volume_map = self._try_load_region_mapping()
 
         for monitor in self.algorithm.monitors:
-            m_name = monitor.__class__.__name__
+            m_name = type(monitor).__name__
             ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
                                             region_volume_map)
             self.log.debug("Monitor created the TS")
@@ -249,25 +288,22 @@ class SimulatorAdapter(ABCAsynchronous):
             ts_index.data_ndim = 4
             ts_index.state = 'INTERMEDIATE'
 
-            # state_variable_dimension_name = ts.labels_ordering[1]
-            # if ts_index.user_tag_1:
-            #     ts_index.labels_dimensions[state_variable_dimension_name] = ts.user_tag_1.split(';')
-            # elif m_name in self.HAVE_STATE_VARIABLES:
-            #     selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
-            #     ts.labels_dimensions[state_variable_dimension_name] = selected_vois
+            state_variable_dimension_name = ts.labels_ordering[1]
+            if m_name in self.HAVE_STATE_VARIABLES:
+                selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
+                ts.labels_dimensions[state_variable_dimension_name] = selected_vois
+                ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
-            ts_h5_path = h5.path_for(self.storage_path, ts_h5_class, ts.gid)
+            ts_h5_path = h5.path_for(self._get_output_path(), ts_h5_class, ts.gid)
+            self.log.info("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
             ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
-
-            if self.algorithm.surface:
-                ts_index.surface_gid = self.algorithm.surface.region_mapping_data.surface.gid.hex
-                ts_h5.surface.store(self.algorithm.surface.gid)
-            else:
-                ts_h5.store_references(ts)
+            # Storing GA also here redundant, except for HPC
+            ts_h5.store_generic_attributes(self.generic_attributes)
+            ts_h5.store_references(ts)
 
             result_indexes[m_name] = ts_index
             result_h5[m_name] = ts_h5
@@ -277,7 +313,7 @@ class SimulatorAdapter(ABCAsynchronous):
         for result in self.algorithm(simulation_length=self.algorithm.simulation_length):
             for j, monitor in enumerate(self.algorithm.monitors):
                 if result[j] is not None:
-                    m_name = monitor.__class__.__name__
+                    m_name = type(monitor).__name__
                     ts_h5 = result_h5[m_name]
                     ts_h5.write_time_slice([result[j][0]])
                     ts_h5.write_data_slice([result[j][1]])
@@ -288,12 +324,15 @@ class SimulatorAdapter(ABCAsynchronous):
         if not self._is_group_launch():
             simulation_history = SimulationHistory()
             simulation_history.populate_from(self.algorithm)
-            history_index = h5.store_complete(simulation_history, self.storage_path)
+            self.generic_attributes.visible = False
+            history_index = h5.store_complete(simulation_history, self._get_output_path(), self.generic_attributes)
+            self.generic_attributes.visible = True
+            history_index.fixed_generic_attributes = True
             results.append(history_index)
 
         self.log.debug("Simulation state persisted, returning results ")
         for monitor in self.algorithm.monitors:
-            m_name = monitor.__class__.__name__
+            m_name = type(monitor).__name__
             ts_shape = result_h5[m_name].read_data_shape()
             result_indexes[m_name].fill_shape(ts_shape)
             result_h5[m_name].close()

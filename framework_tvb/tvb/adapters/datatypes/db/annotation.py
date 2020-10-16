@@ -104,9 +104,9 @@ class ConnectivityAnnotationsIndex(DataType):
     """
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
 
-    connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid), nullable=False)
-    connectivity = relationship(ConnectivityIndex, foreign_keys=connectivity_gid,
-                                primaryjoin=ConnectivityIndex.gid == connectivity_gid, cascade='none')
+    fk_connectivity_gid = Column(String(32), ForeignKey(ConnectivityIndex.gid), nullable=False)
+    connectivity = relationship(ConnectivityIndex, foreign_keys=fk_connectivity_gid,
+                                primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid, cascade='none')
 
     annotations_length = Column(Integer)
 
@@ -114,4 +114,4 @@ class ConnectivityAnnotationsIndex(DataType):
         # type: (ConnectivityAnnotations)  -> None
         super(ConnectivityAnnotationsIndex, self).fill_from_has_traits(datatype)
         self.annotations_length = datatype.region_annotations.shape[0]
-        self.connectivity_gid = datatype.connectivity.gid.hex
+        self.fk_connectivity_gid = datatype.connectivity.gid.hex

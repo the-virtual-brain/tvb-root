@@ -1,6 +1,3 @@
-**Using this repository (tvb-framework) from github is now considered DEPRECATED.
-We advise you to use our main tvb-root repository instead**
-
 TVB FRAMEWORK
 =============
 
@@ -23,8 +20,8 @@ Python installation, you may want to read this:
 
 If you don't require the framework features listed above, the simulator
 and associated scientific modules can be used independently; please see
-the `tvb-library <https://github.com/the-virtual-brain/tvb-library>`__
-repo.
+the `tvb-library <https://github.com/the-virtual-brain/tvb-root/tree/master/scientific_library>`__
+folder.
 
 Framework structure
 -------------------
@@ -113,4 +110,4 @@ Further Resources
 -  A public mailing list for users of The Virtual Brain can be joined
    and followed using: tvb-users@googlegroups.com
 -  Raw demo IPython Notebooks can be found under:
-   https://github.com/the-virtual-brain/tvb-documentation/tree/master/demos
+   https://github.com/the-virtual-brain/tvb-root/tree/master/tvb_documentation/demos

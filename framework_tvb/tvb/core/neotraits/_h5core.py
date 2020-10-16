@@ -31,13 +31,24 @@
 import importlib
 import typing
 import os.path
+import uuid
+import numpy
+import scipy.sparse
 from datetime import datetime
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits._attr import Final
+from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal
+from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
+from tvb.core.neotraits._h5accessors import EquationScalar, SparseMatrix, ReferenceList
+from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
+from tvb.datatypes.equations import Equation
+
+LOGGER = get_logger(__name__)
 
 
 class H5File(object):
@@ -46,6 +57,7 @@ class H5File(object):
     This class implements reading and writing to a *specific* h5 based file format.
     A subclass of this defines a new file format.
     """
+    KEY_WRITTEN_BY = 'written_by'
     is_new_file = False
 
     def __init__(self, path):
@@ -57,8 +69,9 @@ class H5File(object):
 
         # common scalar headers
         self.gid = Uuid(HasTraits.gid, self)
-        self.written_by = Scalar(Attr(str), self, name='written_by')
+        self.written_by = Scalar(Attr(str), self, name=self.KEY_WRITTEN_BY)
         self.create_date = Scalar(Attr(str), self, name='create_date')
+        self.type = Scalar(Attr(str), self, name='type')
 
         # Generic attributes descriptors
         self.generic_attributes = GenericAttributes()
@@ -66,13 +79,15 @@ class H5File(object):
         self.is_nan = Scalar(Attr(bool), self, name='is_nan')
         self.subject = Scalar(Attr(str), self, name='subject')
         self.state = Scalar(Attr(str), self, name='state')
-        self.type = Scalar(Attr(str), self, name='type')
         self.user_tag_1 = Scalar(Attr(str), self, name='user_tag_1')
         self.user_tag_2 = Scalar(Attr(str), self, name='user_tag_2')
         self.user_tag_3 = Scalar(Attr(str), self, name='user_tag_3')
         self.user_tag_4 = Scalar(Attr(str), self, name='user_tag_4')
         self.user_tag_5 = Scalar(Attr(str), self, name='user_tag_5')
+        self.operation_tag = Scalar(Attr(str, required=False), self, name='operation_tag')
+        self.parent_burst = Uuid(Attr(uuid.UUID, required=False), self, name='parent_burst')
         self.visible = Scalar(Attr(bool), self, name='visible')
+        self.metadata_cache = None
 
         if not self.storage_manager.is_valid_hdf5_file():
             self.written_by.store(self.__class__.__module__ + '.' + self.__class__.__name__)
@@ -81,6 +96,9 @@ class H5File(object):
     @classmethod
     def file_name_base(cls):
         return cls.__name__.replace("H5", "")
+
+    def read_subtype_attr(self):
+        return None
 
     def iter_accessors(self):
         # type: () -> typing.Generator[Accessor]
@@ -119,7 +137,7 @@ class H5File(object):
     def load_into(self, datatype):
         # type: (HasTraits) -> None
         for accessor in self.iter_accessors():
-            if isinstance(accessor, Reference):
+            if isinstance(accessor, (Reference, ReferenceList)):
                 # we do not load references recursively
                 continue
             f_name = accessor.trait_attribute.field_name
@@ -141,25 +159,36 @@ class H5File(object):
                 for k, v in current_attr.items():
                     current_attr[k] = value[k]
             else:
-                setattr(datatype, f_name, value)
+                try:
+                    setattr(datatype, f_name, value)
+                except TraitFinalAttributeError:
+                    if getattr(datatype, f_name) != value:
+                        raise
+                    else:
+                        LOGGER.info(
+                            'Cannot overwrite Final attribute: {} on {}, but it already has the expected value'.format(
+                                f_name, type(datatype).__name__))
 
-    def store_generic_attributes(self, generic_attributes):
-        # type: (GenericAttributes) -> None
+    def store_generic_attributes(self, generic_attributes, create=True):
+        # type: (GenericAttributes, bool) -> None
         # write_metadata  creation time, serializer class name, etc
-        self.create_date.store(date2string(datetime.now()))
+        if create:
+            self.create_date.store(date2string(datetime.now()))
 
         self.generic_attributes.fill_from(generic_attributes)
         self.invalid.store(self.generic_attributes.invalid)
         self.is_nan.store(self.generic_attributes.is_nan)
         self.subject.store(self.generic_attributes.subject)
         self.state.store(self.generic_attributes.state)
-        self.type.store(self.generic_attributes.type)
         self.user_tag_1.store(self.generic_attributes.user_tag_1)
         self.user_tag_2.store(self.generic_attributes.user_tag_2)
         self.user_tag_3.store(self.generic_attributes.user_tag_3)
         self.user_tag_4.store(self.generic_attributes.user_tag_4)
         self.user_tag_5.store(self.generic_attributes.user_tag_5)
+        self.operation_tag.store(self.generic_attributes.operation_tag)
         self.visible.store(self.generic_attributes.visible)
+        if self.generic_attributes.parent_burst is not None:
+            self.parent_burst.store(uuid.UUID(self.generic_attributes.parent_burst))
 
     def load_generic_attributes(self):
         # type: () -> GenericAttributes
@@ -167,7 +196,6 @@ class H5File(object):
         self.generic_attributes.is_nan = self.is_nan.load()
         self.generic_attributes.subject = self.subject.load()
         self.generic_attributes.state = self.state.load()
-        self.generic_attributes.type = self.type.load()
         self.generic_attributes.user_tag_1 = self.user_tag_1.load()
         self.generic_attributes.user_tag_2 = self.user_tag_2.load()
         self.generic_attributes.user_tag_3 = self.user_tag_3.load()
@@ -175,31 +203,136 @@ class H5File(object):
         self.generic_attributes.user_tag_5 = self.user_tag_5.load()
         self.generic_attributes.visible = self.visible.load()
         self.generic_attributes.create_date = string2date(str(self.create_date.load())) or None
+        try:
+            self.generic_attributes.operation_tag = self.operation_tag.load()
+        except MissingDataSetException:
+            self.generic_attributes.operation_tag = None
+        try:
+            burst = self.parent_burst.load()
+            self.generic_attributes.parent_burst = burst.hex if burst is not None else None
+        except MissingDataSetException:
+            self.generic_attributes.parent_burst = None
         return self.generic_attributes
 
-
-    def gather_references(self):
+    def gather_references(self, datatype_cls=None):
         ret = []
         for accessor in self.iter_accessors():
+            trait_attribute = None
+            if datatype_cls:
+                if hasattr(datatype_cls, accessor.field_name):
+                    trait_attribute = getattr(datatype_cls, accessor.field_name)
+            if not trait_attribute:
+                trait_attribute = accessor.trait_attribute
             if isinstance(accessor, Reference):
-                ret.append((accessor.trait_attribute, accessor.load()))
+                ret.append((trait_attribute, accessor.load()))
+            if isinstance(accessor, ReferenceList):
+                hex_gids = accessor.load()
+                gids = [uuid.UUID(hex_gid) for hex_gid in hex_gids]
+                ret.append((trait_attribute, gids))
         return ret
 
+    def determine_datatype_from_file(self):
+        config_type = self.type.load()
+        package, cls_name = config_type.rsplit('.', 1)
+        module = importlib.import_module(package)
+        datatype_cls = getattr(module, cls_name)
+        return datatype_cls
 
     @staticmethod
-    def from_file(path):
-        # type: (str) -> typing.Type[H5File]
+    def determine_type(path):
+        # type: (str) -> typing.Type[HasTraits]
+        type_class_fqn = H5File.get_metadata_param(path, 'type')
+        if type_class_fqn is None:
+            return HasTraits
+        package, cls_name = type_class_fqn.rsplit('.', 1)
+        module = importlib.import_module(package)
+        cls = getattr(module, cls_name)
+        return cls
+
+    @staticmethod
+    def get_metadata_param(path, param):
         base_dir, fname = os.path.split(path)
         storage_manager = HDF5StorageManager(base_dir, fname)
         meta = storage_manager.get_metadata()
-        h5file_class_fqn = meta.get('written_by')
+        return meta.get(param)
+
+    @staticmethod
+    def h5_class_from_file(path):
+        # type: (str) -> typing.Type[H5File]
+        h5file_class_fqn = H5File.get_metadata_param(path, H5File.KEY_WRITTEN_BY)
         if h5file_class_fqn is None:
             return H5File(path)
         package, cls_name = h5file_class_fqn.rsplit('.', 1)
         module = importlib.import_module(package)
         cls = getattr(module, cls_name)
-        return cls(path)
+        return cls
 
+    @staticmethod
+    def from_file(path):
+        # type: (str) -> H5File
+        cls = H5File.h5_class_from_file(path)
+        return cls(path)
 
     def __repr__(self):
         return '<{}("{}")>'.format(type(self).__name__, self.path)
+
+
+class ViewModelH5(H5File):
+
+    # TODO  it will be good to be able to just call with H5File.from_file(h5_path) as f for ViewModelH5 also
+    def __init__(self, path, view_model):
+        super(ViewModelH5, self).__init__(path)
+        self.view_model = type(view_model)
+        attrs = self.view_model.declarative_attrs
+        self._generate_accessors(attrs)
+
+    def _generate_accessors(self, view_model_fields):
+        for attr_name in view_model_fields:
+            attr = getattr(self.view_model, attr_name)
+            if not issubclass(type(attr), Attr):
+                raise ValueError('expected a Attr, got a {}'.format(type(attr)))
+
+            if isinstance(attr, DataTypeGidAttr):
+                ref = Uuid(attr, self)
+            elif isinstance(attr, NArray):
+                ref = DataSet(attr, self)
+            elif isinstance(attr, List):
+                if issubclass(attr.element_type, HasTraits):
+                    ref = ReferenceList(attr, self)
+                else:
+                    ref = Json(attr, self)
+            elif issubclass(type(attr), Attr):
+                if attr.field_type is scipy.sparse.spmatrix:
+                    ref = SparseMatrix(attr, self)
+                elif attr.field_type is numpy.random.RandomState:
+                    continue
+                elif attr.field_type is uuid.UUID:
+                    ref = Uuid(attr, self)
+                elif issubclass(attr.field_type, Equation):
+                    ref = EquationScalar(attr, self)
+                elif attr.field_type is Range:
+                    ref = JsonRange(attr, self)
+                elif isinstance(attr, Final) and attr.field_type == dict:
+                    ref = JsonFinal(attr, self)
+                elif issubclass(attr.field_type, HasTraits):
+                    ref = Reference(attr, self)
+                else:
+                    ref = Scalar(attr, self)
+            else:
+                ref = Accessor(attr, self)
+            setattr(self, attr.field_name, ref)
+
+    def gather_references_by_uuid(self):
+        """
+        Mind that ViewModelH5 stores references towards ViewModel objects (eg. Coupling) as Reference attributes, and
+        references towards existent Datatypes (eg. Connectivity) as Uuid.
+        Thus, the method gather_references will return only references towards other ViewModels, and we need this
+        method to gather also the other references.
+        """
+        ret = []
+        for accessor in self.iter_accessors():
+            if isinstance(accessor, Uuid) and not isinstance(accessor, Reference):
+                if accessor.field_name is 'gid':
+                    continue
+                ret.append((accessor.trait_attribute, accessor.load()))
+        return ret

@@ -55,9 +55,8 @@ def read_h5(full_paths):
     results = []
 
     for full_path in full_paths:
-        folder, h5file = os.path.split(full_path)
         # The actual read of H5:
-        datatype = service.load_datatype_from_file(folder, h5file, all_operations[0].id, move=False)
+        datatype = service.load_datatype_from_file(full_path, all_operations[0].id)
 
         print("We've build DataType: [%s]" % datatype.__class__.__name__, datatype)
         results.append(datatype)

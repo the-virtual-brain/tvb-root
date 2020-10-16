@@ -7,11 +7,11 @@
 tvb_setup
 
 %% Build simulator
-model = py.tvb.simulator.models.ReducedWongWang();
+RWW = py.tvb_matlab.get_model('ReducedWongWang');
+model = RWW();
 coupling = py.tvb.simulator.coupling.Linear;
-conn = py.tvb.datatypes.connectivity.Connectivity(...
-    pyargs('load_default', py.True));
-noise = py.tvb.simulator.noise.Additive(pyargs('nsig', 1e-4));
+conn = py.tvb.datatypes.connectivity.Connectivity.from_file();
+noise = py.tvb.simulator.noise.Additive(pyargs('nsig', py.numpy.array({1e-4})));
 
 sim = py.tvb.simulator.simulator.Simulator(pyargs(...
     'integrator', py.tvb.simulator.integrators.HeunStochastic(...

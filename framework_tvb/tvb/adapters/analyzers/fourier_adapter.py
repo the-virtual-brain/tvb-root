@@ -35,32 +35,51 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import uuid
-import psutil
-import numpy
 import math
+import uuid
+
+import numpy
+import psutil
 import tvb.analyzers.fft as fft
-import tvb.core.adapters.abcadapter as abcadapter
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.datatypes.time_series import TimeSeries
-from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import ScalarField, DataTypeSelectField
+from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, SelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
 
 
+class FFTAdapterModel(ViewModel, fft.FFT):
+    """
+    Parameters have the following meaning:
+    - time_series: the input time series to which the fft is to be applied
+    - segment_length: the block size which determines the frequency resolution of the resulting power spectra
+    - window_function: windowing functions can be applied before the FFT is performed
+    - detrend: None; specify if detrend is performed on the time series
+    """
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
+        label="Time Series",
+        doc="""The TimeSeries to which the FFT is to be applied."""
+    )
 
-class FFTAdapterForm(abcadapter.ABCAdapterForm):
+
+class FFTAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(FFTAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = DataTypeSelectField(self.get_required_datatype(), self, name='time_series', required=True,
-                                               label=fft.FFT.time_series.label, doc=fft.FFT.time_series.doc,
-                                               conditions=self.get_filters(), has_all_option=True)
-        self.segment_length = ScalarField(fft.FFT.segment_length, self)
-        self.window_function = ScalarField(fft.FFT.window_function, self)
-        self.detrend = ScalarField(fft.FFT.detrend, self)
+        self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self, name='time_series',
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.segment_length = ScalarField(FFTAdapterModel.segment_length, self)
+        self.window_function = SelectField(FFTAdapterModel.window_function, self)
+        self.detrend = ScalarField(FFTAdapterModel.detrend, self)
+
+    @staticmethod
+    def get_view_model():
+        return FFTAdapterModel
 
     @staticmethod
     def get_required_datatype():
@@ -78,7 +97,7 @@ class FFTAdapterForm(abcadapter.ABCAdapterForm):
         return fft.FFT()
 
 
-class FourierAdapter(abcadapter.ABCAsynchronous):
+class FourierAdapter(ABCAdapter):
     """ TVB adapter for calling the FFT algorithm. """
 
     _ui_name = "Fourier Spectral Analysis"
@@ -96,39 +115,35 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
     def get_output(self):
         return [FourierSpectrumIndex]
 
-    def configure(self, time_series, segment_length=None, window_function=None, detrend=None):
+    def configure(self, view_model):
+        # type: (FFTAdapterModel) -> None
         """
         Do any configuration needed before launching.
-
-        :param time_series: the input time series to which the fft is to be applied
-        :param segment_length: the block size which determines the frequency resolution \
-                               of the resulting power spectra
-        :param window_function: windowing functions can be applied before the FFT is performed
-        :type  window_function: None; ‘hamming’; ‘bartlett’; ‘blackman’; ‘hanning’
-        :param detrend: None; specify if detrend is performed on the time series
         """
-        self.input_time_series_index = time_series
-        self.input_shape = (time_series.data_length_1d, time_series.data_length_2d,
-                            time_series.data_length_3d, time_series.data_length_4d)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
+        self.input_shape = (self.input_time_series_index.data_length_1d,
+                            self.input_time_series_index.data_length_2d,
+                            self.input_time_series_index.data_length_3d,
+                            self.input_time_series_index.data_length_4d)
 
         self.log.debug("time_series shape is %s" % str(self.input_shape))
-        self.log.debug("Provided segment_length is %s" % segment_length)
-        self.log.debug("Provided window_function is %s" % window_function)
-        self.log.debug("Detrend is %s" % detrend)
+        self.log.debug("Provided segment_length is %s" % view_model.segment_length)
+        self.log.debug("Provided window_function is %s" % view_model.window_function)
+        self.log.debug("Detrend is %s" % view_model.detrend)
         # -------------------- Fill Algorithm for Analysis -------------------
         # The enumerate set function isn't working well. A get around strategy is to create a new algorithm
-        if segment_length is not None:
-            self.algorithm.segment_length = segment_length
+        if view_model.segment_length is not None:
+            self.algorithm.segment_length = view_model.segment_length
 
-        self.algorithm.window_function = window_function
-        self.algorithm.detrend = detrend
+        self.algorithm.window_function = view_model.window_function
+        self.algorithm.detrend = view_model.detrend
 
         self.log.debug("Using segment_length is %s" % self.algorithm.segment_length)
         self.log.debug("Using window_function  is %s" % self.algorithm.window_function)
         self.log.debug("Using detrend  is %s" % self.algorithm.detrend)
 
-
-    def get_required_memory_size(self, time_series, segment_length=None, window_function=None, detrend=None):
+    def get_required_memory_size(self, view_model):
+        # type: (FFTAdapterModel) -> int
         """
         Returns the required memory to be able to run the adapter.
         """
@@ -141,8 +156,8 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
             self.memory_factor += 1
         return total_required_memory / self.memory_factor
 
-
-    def get_required_disk_size(self, time_series, segment_length=None, window_function=None, detrend=None):
+    def get_required_disk_size(self, view_model):
+        # type: (FFTAdapterModel) -> int
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
@@ -150,8 +165,8 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
                                                  self.input_time_series_index.sample_period)
         return self.array_size2kb(output_size)
 
-
-    def launch(self, time_series, segment_length=None, window_function=None, detrend=None):
+    def launch(self, view_model):
+        # type: (FFTAdapterModel) -> [FourierSpectrumIndex]
         """
         Launch algorithm and build results.
 
@@ -165,7 +180,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
 
         """
         fft_index = FourierSpectrumIndex()
-        fft_index.source_gid = time_series.gid
+        fft_index.fk_source_gid = view_model.time_series.hex
 
         block_size = int(math.floor(self.input_shape[2] / self.memory_factor))
         blocks = int(math.ceil(self.input_shape[2] / block_size))
@@ -183,6 +198,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         # ---------- Iterate over slices and compose final result ------------
         small_ts = TimeSeries()
         small_ts.sample_period = input_time_series_h5.sample_period.load()
+        small_ts.sample_period_unit = input_time_series_h5.sample_period_unit.load()
 
         for block in range(blocks):
             node_slice[2] = slice(block * block_size, min([(block + 1) * block_size, self.input_shape[2]]), 1)

@@ -5,8 +5,8 @@
 
     <script type="text/javascript">
    		$(document).ready(function() {
-   		   set_events_on_form_fields({{ equationsPrefixes | safe }}, '{{ localConnBaseUrl }}');
-           plot_equation('{{ localConnBaseUrl }}');
+   		   setEventsOnStaticFormFields({{ equationsPrefixes | safe }});
+           plotEquation();
         });
     </script>
 

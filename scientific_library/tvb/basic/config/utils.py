@@ -32,7 +32,7 @@
 Helper tools, for the configuration area.
 
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
-.. moduleauthor:: marmaduke <duke@eml.cc>
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 

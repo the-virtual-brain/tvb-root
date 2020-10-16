@@ -32,4 +32,4 @@
     This package contains adapters used for testing purposes.
 """
 
-__all__ = ["testadapter1", "testadapter2", "testadapter3", "ndimensionarrayadapter"]
+__all__ = ["testadapter1", "testadapter2", "testadapter3"]

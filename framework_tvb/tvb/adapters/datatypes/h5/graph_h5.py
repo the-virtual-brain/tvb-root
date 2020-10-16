@@ -70,3 +70,13 @@ class ConnectivityMeasureH5(DataTypeMatrixH5):
 
     def get_array_data(self):
         return self.array_data[:]
+
+    def store(self, datatype, scalars_only=False, store_references=True):
+        # type: (ConnectivityMeasure, bool, bool) -> None
+        super(ConnectivityMeasureH5, self).store(datatype, scalars_only, store_references)
+        self.title.store(datatype.title)
+
+    def load_into(self, datatype):
+        # type: (ConnectivityMeasure) -> None
+        super(ConnectivityMeasureH5, self).load_into(datatype)
+        datatype.title = self.title.load()

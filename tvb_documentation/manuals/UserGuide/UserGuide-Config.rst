@@ -20,7 +20,6 @@ of the current OS user which is launching |TVB|.
 Copy the following content and edit it to suit your needs. ::
 
     MAXIMUM_NR_OF_OPS_IN_RANGE=2000
-    URL_WEB=http://127.0.0.1:8080/
     ADMINISTRATOR_EMAIL=jira.tvb@gmail.com
     MATLAB_EXECUTABLE=/usr/bin/octave
     MAXIMUM_NR_OF_THREADS=4

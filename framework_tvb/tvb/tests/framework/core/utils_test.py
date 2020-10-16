@@ -39,7 +39,6 @@ import pytest
 import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import path2url_part, get_unique_file_name, string2date, date2string, string2bool
-from tvb.core.utils import string2array
 
 
 class TestUtils(TransactionalTestCase):
@@ -129,16 +128,3 @@ class TestUtils(TransactionalTestCase):
         assert not string2bool("False"), "Expect True boolean for input u'False'"
         assert not string2bool("somethingelse"), "Expect True boolean for input 'somethingelse'"
         assert not string2bool("somethingelse"), "Expect True boolean for input u'somethingelse'"
-
-    def test_string2array(self):
-        """
-        Check the string2array method for various inputs
-        """
-        test_string_arrays = ['[1,2,3]', '1,2,3', '1 2 3']
-        array_separators = [',', ',', ' ']
-        for idx in range(len(test_string_arrays)):
-            result_array = string2array(test_string_arrays[idx], array_separators[idx])
-            assert len(result_array) == 3
-            assert result_array[0] == 1
-            assert result_array[1] == 2
-            assert result_array[2] == 3

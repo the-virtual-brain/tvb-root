@@ -48,6 +48,11 @@
         <script type="text/javascript" src="/static/jquery/jquery.json.js"></script>
         <script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
 
+        <!--  include keycloak initialization      -->
+        {% if keycloakConfigWebFile is defined%}
+            {% include 'user/keycloak_config.html' %}
+        {% endif %}
+
         <!--! include specific resources per section-->
         {% if includedResources is defined %}
            {% include includedResources ~ ".html" %}

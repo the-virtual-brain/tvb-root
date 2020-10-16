@@ -1,5 +1,5 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -71,7 +71,7 @@ function STIM_PICK_setVisualizedData(data) {
         ColSch_initColorSchemeGUI(minValue, maxValue);
     }
 
-    if (AG_isStopped){ // unpause movie
+    if (AG_isStopped) { // unpause movie
         pauseMovie();  // this should be called toggle ...
     }
 
@@ -86,14 +86,14 @@ function STIM_PICK_setVisualizedData(data) {
 
     // Initialize slider for timeLine
     $("#slider").slider({
-        min:minTime, max: maxTime, disabled: true,
-        slide: function() {
+        min: minTime, max: maxTime, disabled: true,
+        slide: function () {
             sliderSel = true;
             totalTimeStep = $("#slider").slider("option", "value");
             displayedStep = parseInt((totalTimeStep - minTime) % DATA_CHUNK_SIZE);
             $('#TimeNow').val(totalTimeStep);
         },
-        stop: function(event, target) {
+        stop: function (event, target) {
             sliderSel = false;
             totalTimeStep = target.value;
             displayedStep = parseInt((totalTimeStep - minTime) % DATA_CHUNK_SIZE);
@@ -103,14 +103,14 @@ function STIM_PICK_setVisualizedData(data) {
     });
 
     // init the go to time input.
-    $('#TimeNow').click(function(){
-        if (!AG_isStopped){
+    $('#TimeNow').click(function () {
+        if (!AG_isStopped) {
             pauseMovie();
         }
         $(this).select();
-    }).change(function(ev){
+    }).change(function (ev) {
         var val = parseFloat(ev.target.value);
-        if (val == null || val < minTime || val > maxTime){
+        if (val == null || val < minTime || val > maxTime) {
             val = 0;
             ev.target.value = 0;
         }
@@ -152,13 +152,13 @@ function STIM_PICK_loadNextStimulusChunk() {
         // We haven't reached the final chunk so just load it normally.
         asyncLoadStarted = true;
         doAjaxCall({
-            type:'GET',
-            url:'/spatial/stimulus/surface/get_stimulus_chunk/' + (currentChunkIdx + 1),
-            success:function (data) {
+            type: 'GET',
+            url: '/spatial/stimulus/surface/get_stimulus_chunk/' + (currentChunkIdx + 1),
+            success: function (data) {
                 nextStimulusData = $.parseJSON(data);
                 asyncLoadStarted = false;
             },
-            error: function() {
+            error: function () {
                 displayMessage("Something went wrong in getting the next stimulus chunk!", "warningMessage")
             }
         });
@@ -172,10 +172,10 @@ function STIM_PICK_loadNextStimulusChunk() {
 
 /** Update color buffers for the current movie
  todo: this is almost the same as virtualbrain.js:updateColors */
-function updateColors(currentTimeInFrame){
+function updateColors(currentTimeInFrame) {
     var currentActivity = currentStimulusData[currentTimeInFrame];
     // Compute the colors for this current step:
-    for (var i=0; i < BASE_PICK_brainDisplayBuffers.length;i++) {
+    for (var i = 0; i < BASE_PICK_brainDisplayBuffers.length; i++) {
         var upperBorder = BASE_PICK_brainDisplayBuffers[i][0].numItems / 3;
         var offset_start = i * 40000;
         var currentActivitySlice = currentActivity.slice(offset_start, offset_start + upperBorder);
@@ -195,7 +195,7 @@ function tick() {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }
-    if (sliderSel){
+    if (sliderSel) {
         return;
     }
 
@@ -206,7 +206,7 @@ function tick() {
     if (BASE_PICK_isMovieMode && totalTimeStep < maxTime) {
         // We are still in movie mode and didn't pass the end of the data.
         if (displayedStep >= currentStimulusData.length) {
-            if (currentStimulusData.length > maxTime - minTime || endReached ) {
+            if (currentStimulusData.length > maxTime - minTime || endReached) {
                 //We had reached the end of the movie mode.
                 STIM_PICK_stopDataVisualization();
                 buttonRun.className = buttonRun.className.replace('action-idle', '');
@@ -225,7 +225,7 @@ function tick() {
 
         updateColors(displayedStep);
 
-        if (! AG_isStopped ) {
+        if (!AG_isStopped) {
             // We are in movie mode so drawScene was called automatically. We don't
             // want to update the slices here to improve performance. Increse the timestep.
             displayedStep += 1;
@@ -240,112 +240,98 @@ function tick() {
         drawScene();
 
         // update Movie timeline
-        if (!sliderSel && ! AG_isStopped) {
+        if (!sliderSel && !AG_isStopped) {
             document.getElementById("TimeNow").value = toSignificantDigits(totalTimeStep, 2);
             $("#slider").slider("option", "value", totalTimeStep);
         }
-   } else {
-       //We had reached the end of the movie mode.
-       STIM_PICK_stopDataVisualization();
-       buttonRun.className = buttonRun.className.replace('action-idle', '');
-       buttonStop.className = buttonStop.className + " action-idle";
-   }
+    } else {
+        //We had reached the end of the movie mode.
+        STIM_PICK_stopDataVisualization();
+        buttonRun.className = buttonRun.className.replace('action-idle', '');
+        buttonStop.className = buttonStop.className + " action-idle";
+    }
 }
 
 // Following methods are used for handling events on dynamic forms
-function changeEquationParamsForm(baseUrl, methodToCall, currentEquation, equationParamsDiv, fieldsWithEvents) {
-    let url = baseUrl + "/" + methodToCall + "/" + currentEquation;
-    $.ajax({
-        url: url,
-        type: 'POST',
-        success: function (response) {
-            var t = document.createRange().createContextualFragment(response);
-            $("#" + equationParamsDiv).empty().append(t);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, equationParamsDiv]);
-            setEventsOnFormFields(fieldsWithEvents, baseUrl, true);
-            plotEquations(baseUrl)
-        }
-    })
-}
-
-function prepareUrlParam(paramName, paramValue) {
-    return paramName + '=' + paramValue;
-}
-
-function setSurfaceStimParamAndRedrawChart(baseUrl, methodToCall, fieldName, fieldValue) {
+function setSurfaceStimParamAndRedrawChart(methodToCall, fieldName, fieldValue) {
     let current_param = prepareUrlParam(fieldName, fieldValue);
-    let url = baseUrl + '/' + methodToCall + '?' + current_param;
+    let url = refreshBaseUrl + '/' + methodToCall + '?' + current_param;
     $.ajax({
         url: url,
         type: 'POST',
         success: function () {
-            plotEquations(baseUrl)
+            plotEquations()
         }
     })
 }
 
-function redrawPlotOnMinMaxChanges(baseUrl) {
-    $('input[name="' + '_min_space_x' + '"]').change(function () {
-        plotEquation(baseUrl, 'get_spatial_equation_chart', 'spatialEquationDivId', prepareUrlParam(this.name, this.value));
+function redrawPlotOnMinMaxChanges() {
+    $('#min_space_x').change(function () {
+        plotEquation('spatial');
     });
-    $('input[name="' + '_max_space_x' + '"]').change(function () {
-        plotEquation(baseUrl, 'get_spatial_equation_chart', 'spatialEquationDivId', prepareUrlParam(this.name, this.value));
+    $('#max_space_x').change(function () {
+        plotEquation('spatial');
     });
-    $('input[name="' + '_min_tmp_x' + '"]').change(function () {
-        plotEquation(baseUrl, 'get_temporal_equation_chart', 'temporalEquationDivId', prepareUrlParam(this.name, this.value));
+    $('#min_tmp_x').change(function () {
+        plotEquation('temporal');
     });
-    $('input[name="' + '_max_tmp_x' + '"]').change(function () {
-        plotEquation(baseUrl, 'get_temporal_equation_chart', 'temporalEquationDivId', prepareUrlParam(this.name, this.value));
+    $('#max_tmp_x').change(function () {
+        plotEquation('temporal');
     });
 }
 
-function setEventsOnFormFields(fields_with_events, url, only_equation_params = false) {
+function setEventsOnStaticFormFields(fieldsWithEvents) {
     let SURFACE_FIELD = 'set_surface';
-    let SPATIAL_FIELD = 'set_spatial';
-    let TEMPORAL_FIELD = 'set_temporal';
     let DISPLAY_NAME_FIELD = 'set_display_name';
-    let SPATIAL_PARAMS_FIELD = 'set_spatial_param';
-    let TEMPORAL_PARAMS_FIELD = 'set_temporal_param';
 
-    if (only_equation_params === false) {
-        $('select[name^="' + fields_with_events[SURFACE_FIELD] + '"]').change(function () {
-            setSurfaceStimParamAndRedrawChart(url, SURFACE_FIELD, this.name, this.value)
-        });
-        $('input[name^="' + fields_with_events[DISPLAY_NAME_FIELD] + '"]').change(function () {
-            setSurfaceStimParamAndRedrawChart(url, DISPLAY_NAME_FIELD, this.name, this.value)
-        });
+    $('select[name^="' + fieldsWithEvents[SURFACE_FIELD] + '"]').change(function () {
+        setSurfaceStimParamAndRedrawChart(SURFACE_FIELD, this.name, this.value)
+    });
+    $('input[name^="' + fieldsWithEvents[DISPLAY_NAME_FIELD] + '"]').change(function () {
+        setSurfaceStimParamAndRedrawChart(DISPLAY_NAME_FIELD, this.name, this.value)
+    });
+}
 
-        //TODO: we want to have also select fields for this
-        let spatial_radio_fields = document.getElementsByName(fields_with_events[SPATIAL_FIELD]);
-        for (let i=0; i<spatial_radio_fields.length; i++) {
-            spatial_radio_fields[i].onclick = function () {
-                changeEquationParamsForm(url, SPATIAL_FIELD, this.value, 'spatial_params',
-                    fields_with_events)
-            };
-        }
-        let temporal_radio_fields = document.getElementsByName(fields_with_events[TEMPORAL_FIELD]);
-        for (let i=0; i<temporal_radio_fields.length; i++) {
-            temporal_radio_fields[i].onclick = function () {
-                changeEquationParamsForm(url, TEMPORAL_FIELD, this.value, 'temporal_params',
-                    fields_with_events)
-            };
-        }
+function setEventsOnFormFields(fields_with_events, div_id = 'temporal_params') {
+    let PARAMS_FIELD = 'set_temporal_param';
+    if (div_id.includes('spatial')) {
+        PARAMS_FIELD = 'set_spatial_param';
     }
-    $('input[name^="' + fields_with_events[SPATIAL_PARAMS_FIELD] + '"]').change(function () {
-        setSurfaceStimParamAndRedrawChart(url, SPATIAL_PARAMS_FIELD, this.name, this.value)
-    });
-    $('input[name^="' + fields_with_events[TEMPORAL_PARAMS_FIELD] + '"]').change(function () {
-        setSurfaceStimParamAndRedrawChart(url, TEMPORAL_PARAMS_FIELD, this.name, this.value)
+    $('#' + div_id + ' input').change(function () {
+        setSurfaceStimParamAndRedrawChart(PARAMS_FIELD, this.name, this.value);
     });
 }
 
-function plotEquations(baseUrl) {
-    plotEquation(baseUrl, 'get_spatial_equation_chart', 'spatialEquationDivId');
-    plotEquation(baseUrl, 'get_temporal_equation_chart', 'temporalEquationDivId');
+function plotEquations() {
+    plotEquation('temporal');
+    plotEquation('spatial');
 }
 
-function plotEquation(baseUrl, methodToCall='get_equation_chart', equationDivId='equationDivId', params=null) {
-    let url = baseUrl + '/' + methodToCall;
+function prepareUrlParams(subformDiv='temporal_params') {
+    let min_field_id = 'min_tmp_x';
+    let max_field_id = 'max_tmp_x';
+    if (subformDiv.includes('spatial')) {
+        min_field_id = 'min_space_x';
+        max_field_id = 'max_space_x';
+    }
+    let min_field = $('#' + min_field_id)[0];
+    let min_params = prepareUrlParam(min_field.name, min_field.value);
+
+    let max_field = $('#' + max_field_id)[0];
+    let max_params = prepareUrlParam(max_field.name, max_field.value);
+
+    return min_params + '&' + max_params;
+}
+
+function plotEquation(subformDiv = 'temporal_params') {
+    let methodToCall = 'get_temporal_equation_chart';
+    let equationDivId = 'temporalEquationDivId';
+    if (subformDiv.includes('spatial')) {
+        methodToCall = 'get_spatial_equation_chart';
+        equationDivId = 'spatialEquationDivId';
+    }
+    let url = refreshBaseUrl + '/' + methodToCall;
+    params = prepareUrlParams(subformDiv);
     if (params) {
         url += '?' + params
     }
@@ -357,4 +343,8 @@ function plotEquation(baseUrl, methodToCall='get_equation_chart', equationDivId=
             $("#" + equationDivId).empty().append(data);
         }
     });
+}
+
+function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + subformDiv + '/' + currentElem.value + '/' + elementType;
 }

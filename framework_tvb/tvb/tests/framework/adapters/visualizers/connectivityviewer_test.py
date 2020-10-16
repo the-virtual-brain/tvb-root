@@ -30,6 +30,7 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import os
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -56,8 +57,8 @@ class TestConnectivityViewer(TransactionalTestCase):
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
-        assert self.connectivity is not None
+        self.connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
+        assert self.connectivity_index is not None
 
     def transactional_teardown_method(self):
         """
@@ -70,7 +71,9 @@ class TestConnectivityViewer(TransactionalTestCase):
         Check that all required keys are present in output from BrainViewer launch.
         """
         viewer = ConnectivityViewer()
-        result = viewer.launch(self.connectivity)
+        view_model = viewer.get_view_model_class()()
+        view_model.connectivity = self.connectivity_index.gid
+        result = viewer.launch(view_model)
         expected_keys = ['weightsMin', 'weightsMax', 'urlWeights', 'urlVertices',
                          'urlTriangles', 'urlTracts', 'urlPositions', 'urlNormals',
                          'rightHemisphereJson', 'raysArray', 'rayMin', 'rayMax', 'positions',
