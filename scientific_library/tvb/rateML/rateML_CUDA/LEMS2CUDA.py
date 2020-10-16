@@ -48,7 +48,6 @@ def render_model(model_name, template=None, folder=None):
 
     # coupling functionality
     couplinglist = list()
-
     for i, cplists in enumerate(model.component_types):
         if 'coupling' in cplists.name:
             couplinglist.append(cplists)
@@ -94,6 +93,6 @@ if __name__ == '__main__':
 
     # model_filename = 'Oscillator'
     # model_filename = 'Kuramoto'
-    model_filename = 'Rwongwang'
-    # model_filename = 'Epileptor'
+    # model_filename = 'Rwongwang'
+    model_filename = 'Epileptor'
     cuda_templating(model_filename)

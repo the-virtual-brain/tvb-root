@@ -1,12 +1,11 @@
 <?xml version="1.0" ?>
 <Lems xmlns:xsi="http://www.w3.org/2001/XMLSchema"
-      description="Kuramoto"
+      description="Kuramoto Base type of any cell/population which has a (dimensionless) rate _R."
 >
     <Constant name="omega" value="60.0 * 2.0 * M_PI_F / 1e3" dimension=""  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
     <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
 
-    <ComponentType name="derivatives"
-                   description="Base type of any cell/population which has a (dimensionless) rate _R.">
+    <ComponentType name="derivatives">
 
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
         <Parameter name="global_speed" dimension='float'/>
