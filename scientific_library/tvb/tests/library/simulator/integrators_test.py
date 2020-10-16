@@ -39,8 +39,10 @@ Test for tvb.simulator.coupling module
 import numpy
 import pytest
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.tests.library.simulator.models_test import TestUpdateVariablesModel
 from tvb.simulator import integrators
 from tvb.simulator import noise
+
 
 # For the moment all integrators inherit dt from the base class
 dt = integrators.Integrator.dt.default
@@ -179,3 +181,38 @@ class TestIntegrators(BaseTestCase):
             x = vode.scheme(x, self._dummy_dfun, 0.0, 0.0, 0.0)
         for idx, val in zip(vode.clamped_state_variable_indices, vode.clamped_state_variable_values):
             assert numpy.allclose(x[idx], val)
+
+    def test_update_variables(self):
+        x = numpy.ones((5, 4, 2))
+        x[:, 0, ] = -x[:, 0, ]
+        x[:, 1, ] = 2 * x[:, 1, ]
+        x0 = numpy.array(x)
+        model = TestUpdateVariablesModel()
+        for integrator_class in INTEGRATORStoTEST:
+            integrator = integrator_class()
+            integrator.dt = dt
+            try:
+                # Set noise to 0 if this is a stochastic integrator
+                integrator.noise.nsig = numpy.array([0.0])
+                integrator.noise.dt = dt
+            except:
+                pass
+            # The integration will happen with TestUpdateVariablesModel methods:
+            # a dfun that does nothing:
+            # def dfun(self, state_variables, node_coupling, local_coupling=0.0):
+            #     return 0.0 * state_variables
+            #
+            # an update before integration that adds state[0] to state[3], and state[1] and state[2] to state[4]
+            # def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
+            #     state[3] += state[0]
+            #     state[4] += state[1] + state[2]
+            #     return state
+            #
+            # and an update after integration that reverses the effect of the update before integration
+            # def update_state_variables_after_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
+            #     state[3] -= state[0]
+            #     state[4] -= state[1] + state[2]
+            #     return state
+            x = integrator.integrate_with_update(x0, model.dfun, 0.0, 0.0, 0.0)
+            # Eventually, the state should be left unchanged:
+            assert numpy.all(x == x0)
