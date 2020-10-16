@@ -28,9 +28,19 @@
 #
 #
 
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.core.neotraits.h5 import Json, Reference, H5File
 from tvb.datatypes.time_series import TimeSeries
+
+
+class DatatypeMeasure(HasTraits):
+    metrics = Attr(dict)
+
+    analyzed_datatype = Attr(
+        field_type=TimeSeries,
+        label="TimeSeries",
+        doc="""Links to the time-series on which the metrics are computed."""
+    )
 
 
 class DatatypeMeasureH5(H5File):
