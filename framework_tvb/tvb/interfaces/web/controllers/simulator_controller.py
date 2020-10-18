@@ -904,6 +904,8 @@ class SimulatorController(BurstBaseController):
         if range_param2:
             burst_config.range2 = range_param2.to_json()
         burst_config = self.burst_service.prepare_burst_for_pse(burst_config)
+        session_stored_simulator.operation_group_gid = uuid.UUID(burst_config.operation_group.gid)
+        session_stored_simulator.ranges = json.dumps(burst_config.ranges)
 
         try:
             thread = threading.Thread(target=self.simulator_service.async_launch_and_prepare_pse,
