@@ -105,6 +105,7 @@ def run_loop(weights, delays,
              dt=0.1,
              nh=256,  # history buf len, must be power of 2 & greater than delays.max()/dt
              nto=2,   # num parts of nh for tavg, e.g. nh=256, nto=4: tavg over 64 steps
+             progress=False,
              icfun=default_icfun):
     assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1]
     nn = weights.shape[0]
@@ -131,7 +132,7 @@ def run_loop(weights, delays,
     tavg_trace = np.empty((total_wins, ) + tavg.shape, 'f')
     bold_trace = np.empty((total_wins//bold_skip + 1, ) + bold_out.shape, 'f')
     # start time stepping
-    for t in tqdm.trange(total_wins):
+    for t in (tqdm.trange if progress else range)(total_wins):
         rng.standard_normal(size=(2, nh, nn), dtype='f', out=wrV)  # ~15% time here
         loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
         tavg_trace[t] = tavg
@@ -140,8 +141,26 @@ def run_loop(weights, delays,
     return tavg_trace.reshape((total_wins * nto, 2, nn)), bold_trace
 
 
+def grid_search(**params):
+    import joblib, itertools
+    n_jobs = params.pop('n_jobs', 1)
+    verbose = params.pop('verbose', 1)
+    keys = list(params.keys())
+    vals = [params[key] for key in keys]
+    # expand product of search dimensions into dict of run_loop kwargs
+    args = [dict(list(zip(keys, _))) for _ in itertools.product(*vals)]
+    # run in parallel and return
+    return args, joblib.Parallel(n_jobs=n_jobs, verbose=verbose)(
+        joblib.delayed(run_loop)(**arg) for arg in args)
+
+
 if __name__ == '__main__':
-    nn = 96
+    nn = 8
     w = np.random.randn(nn, nn)**2
     d = np.random.rand(nn, nn)**2 * 25
-    run_loop(w, d)
+    args, mons = grid_search(n_jobs=2,
+        weights=[w], delays=[d], total_time=[10e3],  # non-varying into single elem list
+        cr=np.r_[:0.1:4j], cv=np.r_[:0.1:4j]         # varying as arrays/lists
+    )
+    for args, (tavg, bold) in zip(args, mons):
+        print('cr/cv: ', args['cr'], '/', args['cv'], ', tavg std:', tavg[-100:].std())
