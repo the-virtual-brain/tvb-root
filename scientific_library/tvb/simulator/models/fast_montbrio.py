@@ -56,26 +56,24 @@ def make_linear_cfun(scale=0.01):
     return pre, post
 
 
-def make_loop(nh, nn, dt, cfpre, cfpost):
-    # w/ dt=0.1ms, speed 10m/s, max delay 25.6ms ~ gamma band
-    # assert nh == 256
-    # assert dt == 0.1
+def make_loop(nh, nto, nn, dt, cfpre, cfpost):
     nh, nn = [nb.uint32(_) for _ in (nh, nn)]
     dt, pi = [nb.float32(_) for _ in (dt, np.pi)]
     sqrt_dt = nb.float32(np.sqrt(dt))
     o_nh = nb.float32(1 / nh)
-    nh_dt = nb.float32(nh * dt)
     @nb.njit(boundscheck=False, fastmath=True)
     def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
         o_tau = nb.float32(1 / tau)
         assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
         assert r.shape[1] == V.shape[1] == nn
-        for i in range(nn):
-            tavg[0, i] = nb.float32(0.0)
-            tavg[1, i] = nb.float32(0.0)
+        for j in range(nto):
+            for i in range(nn):
+                tavg[j, 0, i] = nb.float32(0.0)
+                tavg[j, 1, i] = nb.float32(0.0)
         for t0 in range(-1, nh - 1):
             t = nh-1 if t0<0 else t0
             t1 = t0 + 1
+            t0_nto = t0 // (nh // nto)
             for i in range(nn):
                 rc = nb.float32(0) # using array here costs 50%+
                 Vc = nb.float32(0)
@@ -89,10 +87,9 @@ def make_loop(nh, nn, dt, cfpre, cfpost):
                 dV = o_tau * (V[t, i] ** 2 - (pi ** 2) * (tau ** 2) * (r[t, i] ** 2) + eta + J * tau * r[t, i] + I + cr * rc + cv * Vc)
                 r[t1, i] = r[t, i] + dr * dt + sqrt_dt * r_sigma * wrV[0, t, i]
                 V[t1, i] = V[t, i] + dV * dt + sqrt_dt * V_sigma * wrV[1, t, i]
-                # TODO use hanning window to lower leakage
-                tavg[0, i] += r[t1, i] * o_nh
-                tavg[1, i] += V[t1, i] * o_nh
-                bold_out[i] = fmri(bold_state[i], tavg[0, i], dt)
+                tavg[t0_nto, 0, i] += r[t1, i] * o_nh
+                tavg[t0_nto, 1, i] += V[t1, i] * o_nh
+                bold_out[i] = fmri(bold_state[i], tavg[0, 0, i], dt)
     return loop
 
 
@@ -105,7 +102,9 @@ def run_loop(weights, delays,
              total_time=60e3, bold_tr=1800, coupling_scaling=0.01,
              r_sigma=1e-3, V_sigma=1e-3,
              I=0.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
-             dt=0.1, nh=256,
+             dt=0.1,
+             nh=256,  # history buf len, must be power of 2 & greater than delays.max()/dt
+             nto=2,   # num parts of nh for tavg, e.g. nh=256, nto=4: tavg over 64 steps
              icfun=default_icfun):
     assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1]
     nn = weights.shape[0]
@@ -117,14 +116,14 @@ def run_loop(weights, delays,
     icfun(-np.r_[:nh]*dt, rV)
     I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma = [nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)]
     wrV = np.empty((2, nh, nn), 'f')                            # buffer for noise
-    tavg = np.zeros((2, nn), 'f')                               # buffer for temporal average
+    tavg = np.zeros((nto, 2, nn), 'f')                               # buffer for temporal average
     bold_state = np.zeros((nn, 4), 'f')                         # buffer for bold state
     bold_state[:,1:] = 1.0
     bold_out = np.zeros((nn,), 'f')                             # buffer for bold output
     rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
-    loop = make_loop(nh, nn, dt, cfpre, cfpost)
+    loop = make_loop(nh, nto, nn, dt, cfpre, cfpost)
     # outer loop setup
     win_len = nh * dt
     total_wins = int(total_time / win_len)
@@ -138,7 +137,7 @@ def run_loop(weights, delays,
         tavg_trace[t] = tavg
         if t % bold_skip == 0:
             bold_trace[t//bold_skip] = bold_out
-    return tavg_trace, bold_trace
+    return tavg_trace.reshape((total_wins * nto, 2, nn)), bold_trace
 
 
 if __name__ == '__main__':
