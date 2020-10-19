@@ -59,6 +59,7 @@ def lems_file(model_name, folder=None):
     folder = folder or default_lems_folder()
     return os.path.join(folder, model_name.lower() + '.xml')
 
+
 def XSD_validate_XML(file_name):
     ''' Use own validation instead of LEMS because of slight difference in definition file'''
     from lxml import etree
@@ -74,6 +75,7 @@ def XSD_validate_XML(file_name):
     print("Validating {0} against {1}".format(file_name, schema_file.geturl()))
     xmlschema.assertValid(etree.parse(file_name))
     print("It's valid!")
+
 
 def load_model(model_filename, folder=None):
     "Load model from filename"
