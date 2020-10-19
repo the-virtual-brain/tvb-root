@@ -378,8 +378,7 @@ class ImportService(object):
                     if not dt_group:
                         first_op = dao.get_operations_in_group(op_group.id, only_first_operation=True)
                         dt_group = DataTypeGroup(op_group, operation_id=first_op.id,
-                                                 state=DEFAULTDATASTATE_INTERMEDIATE,
-                                                 fk_parent_burst=operation_data.main_view_model.generic_attributes.parent_burst)
+                                                 state=DEFAULTDATASTATE_INTERMEDIATE)
                         dt_group = dao.store_entity(dt_group)
                 # Store the DataTypes in db
                 dts = {}
@@ -598,6 +597,9 @@ class ImportService(object):
         dt_groups = dao.get_datatypegroup_for_project(project_id)
         for dt_group in dt_groups:
             dt_group.count_results = dao.count_datatypes_in_group(dt_group.id)
+            dts_in_group = dao.get_datatypes_from_datatype_group(dt_group.id)
+            if dts_in_group:
+                dt_group.fk_parent_burst = dts_in_group[0].fk_parent_burst
             dao.store_entity(dt_group)
 
     def _update_burst_configurations(self, project_id):
