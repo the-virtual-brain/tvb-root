@@ -347,7 +347,6 @@ class ImportService(object):
         """
         imported_operations = []
         ordered_operations = self._retrieve_operations_in_order(project, import_path)
-        success_no = 0
 
         for operation_data in ordered_operations:
 
@@ -366,7 +365,6 @@ class ImportService(object):
 
                     self._store_imported_datatypes_in_db(project, operation_datatypes)
                     imported_operations.append(operation_entity)
-                    success_no = success_no + 1
                 except MissingReferenceException:
                     operation_entity.status = STATUS_ERROR
                     dao.store_entity(operation_entity)
@@ -421,9 +419,6 @@ class ImportService(object):
 
         self._update_dt_groups(project.id)
         self._update_burst_configurations(project.id)
-
-        self.logger.info("At project import: %d files were successfully imported from a total of %d!" %
-                         (success_no, len(ordered_operations)))
         return imported_operations
 
     @staticmethod
@@ -482,8 +477,6 @@ class ImportService(object):
             h5_file = BurstConfigurationH5(current_file)
             burst = BurstConfiguration(current_project_id)
             burst.fk_simulation = op_id
-            # burst.fk_operation_group = TODO
-            # burst.fk_metric_operation_group = TODO
             h5_file.load_into(burst)
             result = burst
         else:
