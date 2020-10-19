@@ -87,10 +87,13 @@ __global__ void ${modelname}(
 
     % if derparams:
     // derived parameters
+    % if nsigpresent==False and noisepresent==True:
+    const float nsig = 1;
+    % endif /
     % for par_var in derparams:
     const float ${par_var.name} = ${par_var.value};
     % endfor /
-    %endif /
+    %endif \
 
     % if dynamics.derived_variables:
     // the dynamic derived variables declarations
@@ -106,8 +109,10 @@ __global__ void ${modelname}(
     % endfor /
     % endif /
 
+    % if noisepresent==True:
     curandState crndst;
     curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
+    % endif /
 
     % for state_var in (dynamics.state_variables):
     float ${state_var.name} = 0.0;
@@ -205,15 +210,15 @@ __global__ void ${modelname}(
             % for con_der in dynamics.conditional_derived_variables:
                 % for case in (con_der.cases):
                     % if (loop.first):
-            if (${case.condition})
+            if (${case.condition}) {
                 ${con_der.name} = ${case.value};
                     % elif (not loop.last and not loop.first):
-            else if (${case.condition})
+            } else if (${case.condition}) {
                 ${con_der.name} = ${case.value};
                     % elif (loop.last):
-            else
+            } else {
                 ${con_der.name} = ${case.value};
-
+            }
                     %endif
                 % endfor
             % endfor

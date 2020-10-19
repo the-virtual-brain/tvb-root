@@ -22,7 +22,6 @@ def default_template():
     template = Template(filename=tmp_filename)
     return template
 
-
 def XSD_validate_XML(file_name):
     ''' Use own validation instead of LEMS because of slight difference in definition file'''
     from lxml import etree
@@ -38,7 +37,6 @@ def XSD_validate_XML(file_name):
     print("Validating {0} against {1}".format(file_name, schema_file.geturl()))
     xmlschema.assertValid(etree.parse(file_name))
     print("It's valid!")
-
 
 def load_model(model_filename, folder=None):
     "Load model from filename"
@@ -60,23 +58,26 @@ def render_model(model_name, template=None, folder=None):
 
     modellist = model.component_types['derivatives']
 
+    #  doing some pretemplate inventory
+
     # coupling functionality
     couplinglist = list()
     for i, cplists in enumerate(model.component_types):
         if 'coupling' in cplists.name:
             couplinglist.append(cplists)
 
-    # collect total number of exposures combinations.
-    expolist = list()
-    for i, expo in enumerate(modellist.exposures):
-        for chc in expo.dimension:
-            expolist.append(chc)
-
     # only check whether noise is there, if so then activate it
     noisepresent=False
     for ct in (model.component_types):
         if ct.name == 'noise' and ct.description == 'on':
             noisepresent=True
+
+    # see if nsig derived parameter is present for noise
+    nsigpresent=False
+    if noisepresent==True:
+        for dprm in (modellist.derived_parameters):
+            if (dprm.name == 'nsig' or dprm.name == 'NSIG'):
+                 nsigpresent=True
 
     # start templating
     model_str = template.render(
@@ -87,6 +88,7 @@ def render_model(model_name, template=None, folder=None):
                             derparams=modellist.derived_parameters,
                             coupling=couplinglist,
                             noisepresent=noisepresent,
+                            nsigpresent=nsigpresent,
                             exposures=modellist.exposures
                             )
 
