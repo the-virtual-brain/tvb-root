@@ -277,7 +277,8 @@ class SimulatorAdapter(ABCAdapter):
         for monitor in self.algorithm.monitors:
 
             if monitor.period > view_model.simulation_length:
-                raise InvalidParameterException("Sampling period can not be bigger than the simulation length!")
+                raise InvalidParameterException("Sampling period for monitors can not be bigger "
+                                                "than the simulation length!")
 
             m_name = type(monitor).__name__
             ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
