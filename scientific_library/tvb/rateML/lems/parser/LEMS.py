@@ -602,8 +602,7 @@ class LEMSFileParser(LEMSBase):
         except:
             self.raise_error('<Constant> must specify a name.')
 
-        dimension = node.lattrib.get('domain', None)
-        value = node.lattrib.get('symbol', None)
+        dimension = node.lattrib.get('dimension', None)
 
         try:
             value = node.lattrib['value']
