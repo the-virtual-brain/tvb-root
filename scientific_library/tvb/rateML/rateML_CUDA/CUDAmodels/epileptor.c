@@ -100,7 +100,7 @@ __global__ void Epileptor(
     const float global_coupling = params(1);
 
     // regular constants
-    const float a = 1.0;
+    const float a = 2.5;
     const float b = 3.0;
     const float c = 1.0;
     const float d = 5.0;
@@ -118,9 +118,9 @@ __global__ void Epileptor(
     const float Ks = 0.0;
     const float tt = 1.0;
     const float modification = 1.0;
+    const float c_a = 1;
 
     // coupling constants, coupling itself is hardcoded in kernel
-    const float c_a = 1;
 
     // coupling parameters
     float c_pop1 = 0.0;
@@ -205,27 +205,29 @@ __global__ void Epileptor(
             c_pop1 *= global_coupling;
             c_pop2 *= g;
 
+            // The conditional variables
             if (x1 < 0.0)
-                // The conditional variables
                 ydot0 = -a * powf(x1, 2) + b * x1;
             else
                 ydot0 = slope - x2 + 0.6 * powf((z - 4),2);
+
             if (z < 0.0)
-                // The conditional variables
                 ydot2 = - 0.1 * (powf(z, 7));
             else
                 ydot2 = 0;
+
             if (modification)
-                // The conditional variables
                 h = x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1));
             else
                 h = 4 * (x1 - x0) + ydot2;
+
             if (x2 < -0.25)
-                // The conditional variables
                 ydot4 = 0.0;
             else
                 ydot4 = aa * (x2 + 0.25);
-            // This is dynamics step and the update in the state of the node
+
+
+            // Integrate with stochastic forward euler
             dx1 = dt * (tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 ));
             dy1 = dt * (tt * (c - d * powf(x1, 2) - y1));
             dz = dt * (tt * (r * (h - z + Ks * c_pop1)));
@@ -233,13 +235,13 @@ __global__ void Epileptor(
             dy2 = dt * (tt * (-y2 + ydot4) / tau);
             dg = dt * (tt * (-0.01 * (g - 0.1 * x1) ));
 
-            // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
-            x1 += nsig * curand_normal(&crndst) + dx1;
-            y1 += nsig * curand_normal(&crndst) + dy1;
-            z += nsig * curand_normal(&crndst) + dz;
-            x2 += nsig * curand_normal(&crndst) + dx2;
-            y2 += nsig * curand_normal(&crndst) + dy2;
-            g += nsig * curand_normal(&crndst) + dg;
+            // No noise is added because it is not present in model
+            x1 += dx1;
+            y1 += dy1;
+            z += dz;
+            x2 += dx2;
+            y2 += dy2;
+            g += dg;
 
             // Wrap it within the limits of the model
             x1 = wrap_it_x1(x1);
@@ -260,6 +262,7 @@ __global__ void Epileptor(
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
                 tavg(i_node + 0 * n_node) = x1;
+                tavg(i_node + 1 * n_node) = x2;
             }
 
             // sync across warps executing nodes for single sim, before going on to next time step

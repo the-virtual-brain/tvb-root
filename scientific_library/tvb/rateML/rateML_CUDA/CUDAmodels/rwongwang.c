@@ -68,8 +68,37 @@ __global__ void Rwongwang(
     const float global_coupling = params(1);
 
     // regular constants
+    const float w_plus = 1.4f;
+    const float a_E = 310.0f;
+    const float b_E = 125.0f;
+    const float d_E = 0.154f;
+    const float a_I = 615.0f;
+    const float b_I = 177.0f;
+    const float d_I = 0.087f;
+    const float gamma_E = 0.641f / 1000.0f;
+    const float tau_E = 100.0f;
+    const float tau_I = 10.0f;
+    const float I_0 = 0.382f;
+    const float w_E = 1.0f;
+    const float w_I = 0.7f;
+    const float gamma_I = 1.0f / 1000.0f;
+    const float min_d_E = -1.0f * d_E;
+    const float min_d_I = -1.0f * d_I;
+    const float imintau_E = -1.0f / tau_E;
+    const float imintau_I = -1.0f / tau_I;
+    const float w_E__I_0 = w_E * I_0;
+    const float w_I__I_0 = w_I * I_0;
+    const float J_N = 0.15;
+    const float J_I = 1.0;
+    const float G = 2.0;
+    const float lamda = 0.0;
+    const float J_NMDA = 0.15;
+    const float JI = 1.0;
+    const float G_J_NMDA = G*J_NMDA;
+    const float w_plus__J_NMDA = w_plus * J_NMDA;
 
     // coupling constants, coupling itself is hardcoded in kernel
+    const float a = 1;
 
     // coupling parameters
     float c_0 = 0.0;
@@ -132,22 +161,23 @@ __global__ void Rwongwang(
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_0 += wij * None * None;
+                c_0 += wij * a * V_j * G_J_NMDA;
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
             // the dynamic derived variables
-            tmp_I_E = None;
-            tmp_H_E = None;
-            tmp_I_I = None;
-            tmp_H_I = None;
+            tmp_I_E = a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_0 - JI*W) - b_E;
+            tmp_H_E = tmp_I_E/(1.0-exp(min_d_E * tmp_I_E));
+            tmp_I_I = (a_I*((w_I__I_0+(J_NMDA * V))-W))-b_I;
+            tmp_H_I = tmp_I_I/(1.0-exp(min_d_I*tmp_I_I));
 
-            // This is dynamics step and the update in the state of the node
+
+            // Integrate with stochastic forward euler
             dV = dt * ((imintau_E* V)+(tmp_H_E*(1-V)*gamma_E));
             dW = dt * ((imintau_I* W)+(tmp_H_I*gamma_I));
 
-            // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
+            // Add noise because component_type Noise is present in model
             V += nsig * curand_normal(&crndst) + dV;
             W += nsig * curand_normal(&crndst) + dW;
 

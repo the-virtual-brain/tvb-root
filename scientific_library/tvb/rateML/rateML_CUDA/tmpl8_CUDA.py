@@ -68,13 +68,13 @@ __global__ void ${modelname}(
 
     // regular constants
 % for item in const:
-    const float ${item.name} = ${item.default};
+    const float ${item.name} = ${item.value};
 % endfor /
 
     // coupling constants, coupling itself is hardcoded in kernel
 % for m in range(len(coupling)):
     % for cc in (coupling[m].constants):
-    const float ${cc.name} = ${cc.default};
+    const float ${cc.name} = ${cc.value};
     %endfor /
 % endfor
 
@@ -219,20 +219,21 @@ __global__ void ${modelname}(
             % endfor
             % endif /
 
-            // This is dynamics step and the update in the state of the node
+            // Integrate with stochastic forward euler
             % for i, tim_der in enumerate(dynamics.time_derivatives):
             ${tim_der.variable} = dt * (${tim_der.value});
             % endfor
 
             % if noisepresent:
-            // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
+            // Add noise because component_type Noise is present in model
             % for ds, td in zip(dynamics.state_variables, dynamics.time_derivatives):
             ${ds.name} += nsig * curand_normal(&crndst) + ${td.variable};
             % endfor /
-            ##% else:
-            ##% for ds, td in zip(dynamics.state_variables, dynamics.time_derivatives):
-            ##${ds.name} += dt a * ${td.name});
-            ##% endfor /
+            % else:
+            // No noise is added because it is not present in model
+            % for ds, td in zip(dynamics.state_variables, dynamics.time_derivatives):
+            ${ds.name} += ${td.variable};
+            % endfor /
             % endif
 
             // Wrap it within the limits of the model
@@ -251,8 +252,8 @@ __global__ void ${modelname}(
 
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
-                % for i, expo in enumerate(expolist):
-                tavg(i_node + ${i} * n_node) = ${expo};
+                % for i, expo in enumerate(exposures):
+                tavg(i_node + ${i} * n_node) = ${expo.name};
                 % endfor /
             }
 

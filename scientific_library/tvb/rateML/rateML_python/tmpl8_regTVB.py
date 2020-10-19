@@ -37,20 +37,16 @@ class ${dfunname}(ModelNumbaDfun):
         of=str,
         label="Variables or quantities available to Monitors",
         choices=(\
-%for itemJ in exposures:
-%if {loop.first}:
-%for choice in (itemJ.dimension):
-'${choice}', \
+%for choice in exposures:
+'${choice.name}', \
 %endfor
 ),
         default=(\
-%for defa in (itemJ.description):
-'${defa}', \
-%endfor
-%endif
+%for defa in (dynamics.state_variables):
+'${defa.name}', \
 %endfor
 ),
-        doc="${itemJ.description}"
+        doc="Variables to monitor"
     )
 
     state_variables = [\

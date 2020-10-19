@@ -148,11 +148,12 @@ __global__ void Oscillator(
             // rec_n is used for the scaling over nodes
             c_0 *= global_coupling;
 
-            // This is dynamics step and the update in the state of the node
+
+            // Integrate with stochastic forward euler
             dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V));
             dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
 
-            // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
+            // Add noise because component_type Noise is present in model
             V += nsig * curand_normal(&crndst) + dV;
             W += nsig * curand_normal(&crndst) + dW;
 

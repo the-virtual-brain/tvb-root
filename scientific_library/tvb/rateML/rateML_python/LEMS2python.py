@@ -59,6 +59,21 @@ def lems_file(model_name, folder=None):
     folder = folder or default_lems_folder()
     return os.path.join(folder, model_name.lower() + '.xml')
 
+def XSD_validate_XML(file_name):
+    ''' Use own validation instead of LEMS because of slight difference in definition file'''
+    from lxml import etree
+    from urllib.request import urlopen
+
+    # Local XSD file location
+    # schema_file = urlopen("file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd")
+
+    # Global XSD file location
+    schema_file = urlopen(
+        "https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
+    xmlschema = etree.XMLSchema(etree.parse(schema_file))
+    print("Validating {0} against {1}".format(file_name, schema_file.geturl()))
+    xmlschema.assertValid(etree.parse(file_name))
+    print("It's valid!")
 
 def load_model(model_filename, folder=None):
     "Load model from filename"
@@ -69,9 +84,7 @@ def load_model(model_filename, folder=None):
     model = Model()
     model.import_from_file(fp_xml)
 
-    from lems.base.util import validate_lems
-    validate_lems(fp_xml)
-
+    XSD_validate_XML(fp_xml)
     # do some inventory. check if boundaries are set for any sv to print the boundaries section in template
     svboundaries = 0
     for i, sv in enumerate(model.component_types['derivatives'].dynamics.state_variables):
@@ -94,13 +107,10 @@ def render_model(model_name, template=None, folder=None):
     template = template or default_template()
 
     modellist = model.component_types['derivatives']
-    modelconstants = model.constants
-
-    print((modelconstants))
 
     model_str = template.render(
         dfunname=model_name,
-        const=modelconstants,
+        const=modellist.constants,
         dynamics=modellist.dynamics,
         svboundaries=svboundaries,
         exposures=modellist.exposures
@@ -163,6 +173,6 @@ if __name__ == "__main__":
     # model_filename = 'MontbrioT'
     # model_filename = 'Generic2dOscillatorT'
     # model_filename = 'KuramotoT'
-    model_filename = 'EpileptorT'
-    # model_filename = 'ReducedWongWangT'
+    # model_filename = 'EpileptorT'
+    model_filename = 'ReducedWongWangT'
     regTVB_templating(model_filename, './XMLmodels/')

@@ -52,8 +52,10 @@ __global__ void Kuramoto(
     const float global_coupling = params(1);
 
     // regular constants
+    const float omega = 60.0 * 2.0 * M_PI_F / 1e3;
 
     // coupling constants, coupling itself is hardcoded in kernel
+    const float a = 1;
 
     // coupling parameters
     float c_0 = 0.0;
@@ -108,17 +110,18 @@ __global__ void Kuramoto(
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_0 += wij * None * None;
+                c_0 += wij * a * sin(V_j - V);
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
             c_0 *= global_coupling * rec_n;
 
-            // This is dynamics step and the update in the state of the node
+
+            // Integrate with stochastic forward euler
             dV = dt * (omega + c_0);
 
-            // Add noise (if noise components are present in model), integrate with stochastic forward euler and wrap it up
+            // Add noise because component_type Noise is present in model
             V += nsig * curand_normal(&crndst) + dV;
 
             // Wrap it within the limits of the model

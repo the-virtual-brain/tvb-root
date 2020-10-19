@@ -1,22 +1,23 @@
 <Lems description="2D model describing the Ott-Antonsen reduction of infinitely all-to-all coupled QIF neurons (Theta-neurons). Montbrio">
-    
-    <!-- If empty then none -->
-    <Constant name="I" dimension="lo=-10.0, hi=10.0, step=0.01" value="0.0" description="???"/>
-    <Constant name="Delta" dimension="lo=0.0, hi=10.0, step=0.01" value="1.0" description="Vertical shift of the configurable nullcline."/>
-    <Constant name="alpha" dimension="lo=0.0, hi=1.0, step=0.1" value="1.0" description=":math:`\alpha` ratio of effect between long-range and local connectivity."/>
-    <Constant name="s" dimension="lo=-15.0, hi=15.0, step=0.01" value="0.0" description="QIF membrane reversal potential."/>
-    <Constant name="k" dimension="lo=-15.0, hi=15.0, step=0.01" value="0.0" description="Switch for the terms specific to Coombes model."/>
-    <Constant name="J" dimension="lo=-25.0, hi=25.0, step=0.0001" value="15.0" description="Constant parameter to scale the rate of feedback from the slow variable to the firing rate variable."/>
-    <Constant name="eta" dimension="lo=-10.0, hi=10.0, step=0.0001" value="-5.0" description="Constant parameter to scale the rate of feedback from the firing rate variable to itself"/>
-    <Constant name="Gamma" dimension="lo=0., hi=10.0, step=0.1" value="0.0" description="Derived from eterogeneous currents and synaptic weights (see Montbrio p.12)."/>
-    <Constant name="gamma" dimension="lo=-2.0, hi=2.0, step=0.1" value="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative. It scales both I and the long range coupling term."/>
 
     <ComponentType name="derivatives">
+
+        <!-- If empty then none -->
+        <Constant name="I" dimension="lo=-10.0, hi=10.0, step=0.01" value="0.0" description="???"/>
+        <Constant name="Delta" dimension="lo=0.0, hi=10.0, step=0.01" value="1.0" description="Vertical shift of the configurable nullcline."/>
+        <Constant name="alpha" dimension="lo=0.0, hi=1.0, step=0.1" value="1.0" description=":math:`\alpha` ratio of effect between long-range and local connectivity."/>
+        <Constant name="s" dimension="lo=-15.0, hi=15.0, step=0.01" value="0.0" description="QIF membrane reversal potential."/>
+        <Constant name="k" dimension="lo=-15.0, hi=15.0, step=0.01" value="0.0" description="Switch for the terms specific to Coombes model."/>
+        <Constant name="J" dimension="lo=-25.0, hi=25.0, step=0.0001" value="15.0" description="Constant parameter to scale the rate of feedback from the slow variable to the firing rate variable."/>
+        <Constant name="eta" dimension="lo=-10.0, hi=10.0, step=0.0001" value="-5.0" description="Constant parameter to scale the rate of feedback from the firing rate variable to itself"/>
+        <Constant name="Gamma" dimension="lo=0., hi=10.0, step=0.1" value="0.0" description="Derived from eterogeneous currents and synaptic weights (see Montbrio p.12)."/>
+        <Constant name="gamma" dimension="lo=-2.0, hi=2.0, step=0.1" value="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative. It scales both I and the long range coupling term."/>
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
         Choices and default list with a (,) separator-->
-        <Exposure name="r" dimension="r, V" description="r, V"/>
+        <Exposure name="r" dimension=""/>
+        <Exposure name="v" dimension=""/>
         
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->

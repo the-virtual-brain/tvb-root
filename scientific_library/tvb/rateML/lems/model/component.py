@@ -220,7 +220,7 @@ class Constant(LEMSBase):
     Stores a constant specification.
     """
 
-    def __init__(self, name, value, dimension=None, symbol=None, description=''):
+    def __init__(self, name, value, dimension = None, symbol = None, description = ''):
         """
         Constructor.
 
@@ -259,8 +259,8 @@ class Constant(LEMSBase):
         return '<Constant' + \
                (' name = "{0}"'.format(self.name) if self.name else '') + \
                (' symbol = "{0}"'.format(self.symbol) if self.symbol else '') + \
-               (' default = "{0}"'.format(self.default) if self.default else '') + \
-               (' domain = "{0}"'.format(self.domain) if self.domain else '') + \
+               (' value = "{0}"'.format(self.value) if self.value else '') + \
+               (' dimension = "{0}"'.format(self.dimension) if self.dimension else '') + \
                (' description = "{0}"'.format(self.description) if self.description else '') + \
                '/>'
 
@@ -331,11 +331,11 @@ class Exposure(LEMSBase):
         """ Name of the exposure.
         @type: str """
 
-        self.dimension = list(dimension.split(", "))
+        self.dimension = dimension
         """ Dimension of the exposure.
         @type: str """
 
-        self.description = list(description.split(", "))
+        self.description = description
         """ Description option of the exposure.
         @type: str """
 

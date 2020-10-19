@@ -1,9 +1,4 @@
-<?xml version="1.0" ?>
-<Lems xmlns:xsi="http://www.w3.org/2001/XMLSchema"
-      description="Kuramoto Base type of any cell/population which has a (dimensionless) rate _R."
->
-    <Constant name="omega" value="60.0 * 2.0 * M_PI_F / 1e3" dimension=""  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
-    <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
+<Lems description="Kuramoto Base type of any cell/population which has a (dimensionless) rate _R.">
 
     <ComponentType name="derivatives">
 
@@ -15,7 +10,10 @@
         <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
         <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
 
-        <Exposure name="V" dimension="sin(V)" description="" />
+        <Constant name="omega" value="60.0 * 2.0 * M_PI_F / 1e3" dimension=""  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
+
+        <Exposure name="sin(V)" dimension="" />
+
         <Dynamics>
             <!-- Use PI to select the PI wrapper (ie Kuramoto) -->
             <StateVariable name="V" dimension="-2, 1" exposure="PI"/>
@@ -30,6 +28,8 @@
 <!--        variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
         <DerivedParameter name="c_0" value="global_coupling * rec_n"/>
+
+        <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
 
 <!--        variables for post synaptic function-->
 <!--        <Requirement name="wij" dimension=''/>-->

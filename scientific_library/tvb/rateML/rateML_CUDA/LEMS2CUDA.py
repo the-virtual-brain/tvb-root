@@ -22,6 +22,22 @@ def default_template():
     template = Template(filename=tmp_filename)
     return template
 
+def XSD_validate_XML(file_name):
+    ''' Use own validation instead of LEMS because of slight difference in definition file'''
+    from lxml import etree
+    from urllib.request import urlopen
+
+    # Local XSD file location
+    # schema_file = urlopen("file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd")
+
+    # Global XSD file location
+    schema_file = urlopen(
+        "https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
+    xmlschema = etree.XMLSchema(etree.parse(schema_file))
+    print("Validating {0} against {1}".format(file_name, schema_file.geturl()))
+    xmlschema.assertValid(etree.parse(file_name))
+    print("It's valid!")
+
 def load_model(model_filename, folder=None):
     "Load model from filename"
 
@@ -31,11 +47,7 @@ def load_model(model_filename, folder=None):
     model.import_from_file(fp_xml)
     # modelextended = model.resolve()
 
-    # fn = './tvbmodel.xml'
-    # model.export_to_file(fn)
-
-    from lems.base.util import validate_lems
-    validate_lems(fp_xml)
+    XSD_validate_XML(fp_xml)
 
     return model
 
@@ -73,7 +85,7 @@ def render_model(model_name, template=None, folder=None):
                             derparams=modellist.derived_parameters,
                             coupling=couplinglist,
                             noisepresent=noisepresent,
-                            expolist=expolist
+                            exposures=modellist.exposures
                             )
 
     return model_str

@@ -1,24 +1,22 @@
-<Lems
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      description="Reduced Wong Wang.">
-    
-    <Constant name="a" dimension="lo=0.0, hi=0.270, step=0.01" value="0.270" description="[n/C]. Input gain parameter, chosen to fit numerical solutions."/>
-    <Constant name="b" dimension="lo=0.0, hi=1.0, step=0.01" value="0.108" description="[kHz]. Input shift parameter chosen to fit numerical solutions."/>
-    <Constant name="d" dimension="lo=0.0, hi=200.0, step=0.01" value="154." description="[ms]. Parameter chosen to fit numerical solutions."/>
-    <Constant name="gamma" dimension="lo=0.0, hi=1.0, step=0.01" value="0.641" description="Kinetic parameter"/>
-    <Constant name="tau_s" dimension="lo=50., hi=150., step=1." value="100." description="Kinetic parameter. NMDA decay time constant."/>
-    <Constant name="w" dimension="lo=0.0, hi=1.0, step=0.01" value="0.6" description="Excitatory recurrence"/>
-    <Constant name="J_N" dimension="lo=0.2609, hi=0.5, step=0.001" value="0.2609" description="Excitatory recurrence"/>
-    <Constant name="I_o" dimension="lo=0.0, hi=1.0, step=0.01" value="0.33" description="[nA] Effective external input"/>
-<!--        <Constant name="sigma_noise" symbol="NArray" dimension="lo=0.0, hi=0.005, step=0.0001" value="0.000000001" description="[nA] Noise amplitude. Take this value into account for stochastic-->
-<!--        integration schemes."/>-->
+<Lems description="Reduced Wong Wang.">
 
     <ComponentType name="derivatives">
+
+        <Constant name="a" dimension="lo=0.0, hi=0.270, step=0.01" value="0.270" description="[n/C]. Input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b" dimension="lo=0.0, hi=1.0, step=0.01" value="0.108" description="[kHz]. Input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d" dimension="lo=0.0, hi=200.0, step=0.01" value="154." description="[ms]. Parameter chosen to fit numerical solutions."/>
+        <Constant name="gamma" dimension="lo=0.0, hi=1.0, step=0.01" value="0.641" description="Kinetic parameter"/>
+        <Constant name="tau_s" dimension="lo=50., hi=150., step=1." value="100." description="Kinetic parameter. NMDA decay time constant."/>
+        <Constant name="w" dimension="lo=0.0, hi=1.0, step=0.01" value="0.6" description="Excitatory recurrence"/>
+        <Constant name="J_N" dimension="lo=0.2609, hi=0.5, step=0.001" value="0.2609" description="Excitatory recurrence"/>
+        <Constant name="I_o" dimension="lo=0.0, hi=1.0, step=0.01" value="0.33" description="[nA] Effective external input"/>
+        <!-- <Constant name="sigma_noise" symbol="NArray" dimension="lo=0.0, hi=0.005, step=0.0001" value="0.000000001" description="[nA] Noise amplitude. Take this value into account for stochastic-->
+        <!-- integration schemes."/>-->
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
         Choices and default list with a (,) seperator-->
-        <Exposure name="S" dimension="S" description="S"/>
+        <Exposure name="S" dimension=""/>
 
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->

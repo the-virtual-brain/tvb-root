@@ -1,43 +1,6 @@
-<Lems
-      description="A number of ComponentTypes for rate based/population models.
+<Lems description="A number of ComponentTypes for rate based/population models.
                     Base type of any cell/population which has a (dimensionless) rate _R.
                     Reduced Wong Wang model.">
-
-    <Constant name="w_plus" dimension="" value="1.4f" description="Excitatory population recurrence weight"/>
-    <Constant name="a_E" dimension="" value="310.0f" description="[n/C]. Excitatory population input gain parameter, chosen to fit numerical solutions."/>
-    <Constant name="b_E" dimension="" value="125.0f" description="[Hz]. Excitatory population input shift parameter chosen to fit numerical solutions."/>
-    <Constant name="d_E" dimension="" value="0.154f" description="[s]. Excitatory population input scaling parameter chosen to fit numerical solutions."/>
-    <Constant name="a_I" dimension="" value="615.0f" description="[n/C]. Inhibitory population input gain parameter, chosen to fit numerical solutions."/>
-    <Constant name="b_I" dimension="" value="177.0f" description="[Hz]. Inhibitory population input shift parameter chosen to fit numerical solutions."/>
-    <Constant name="d_I" dimension="" value="0.087f" description="[s]. Inhibitory population input scaling parameter chosen to fit numerical solutions."/>
-    <Constant name="gamma_E" dimension="" value="0.641f / 1000.0f" description="Excitatory population kinetic parameter"/>
-    <Constant name="tau_E" dimension="" value="100.0f" description="[ms]. Excitatory population NMDA decay time constant."/>
-    <Constant name="tau_I" dimension="" value="10.0f" description="[ms]. Inhibitory population NMDA decay time constant."/>
-    <Constant name="I_0" dimension="" value="0.382f" description="[nA]. Effective external input"/>
-    <Constant name="w_E" dimension="" value="1.0f" description="Excitatory population external input scaling weight"/>
-    <Constant name="w_I" dimension="" value="0.7f" description="Inhibitory population external input scaling weight"/>
-    <Constant name="gamma_I" dimension="" value="1.0f / 1000.0f" description="Inhibitory population kinetic parameter"/>
-    <Constant name="min_d_E" dimension="" value="-1.0f * d_E" description="Only in CUDA"/>
-    <Constant name="min_d_I" dimension="" value="-1.0f * d_I" description="Only in CUDA"/>
-    <Constant name="imintau_E" dimension="" value="-1.0f / tau_E" description="Only in CUDA"/>
-    <Constant name="imintau_I" dimension="" value="-1.0f / tau_I" description="Only in CUDA"/>
-    <Constant name="w_E__I_0" dimension="" value="w_E * I_0" description="Only in CUDA"/>
-    <Constant name="w_I__I_0" dimension="" value="w_I * I_0" description="Only in CUDA"/>
-
-    <Constant name="J_N" dimension="" value="0.15" description="[nA] NMDA current"/>
-    <Constant name="J_I" dimension="" value="1.0" description="[nA] Local inhibitory current"/>
-    <Constant name="G" dimension="" value="2.0" description="Global coupling scaling"/>
-    <Constant name="lamda" dimension="" value="0.0" description="Inhibitory global coupling scaling"/>
-
-    <!-- Unpack params -->
-    <Constant name="J_NMDA" dimension="" value="0.15" description=""/>
-    <Constant name="JI" dimension="" value="1.0" description=""/>
-    <Constant name="J_NMDA" dimension="" value="0.15" description=""/>
-    <Constant name="G_J_NMDA" dimension="" value="G*J_NMDA" description=""/>
-    <Constant name="w_plus__J_NMDA" dimension="" value="w_plus * J_NMDA" description=""/>
-
-    <!-- Used for coupling function -->
-    <Constant name="a" dimension="lo=0.0, hi=10., step=0.1" value="1" description="Rescales the connection strength."/>
 
     <ComponentType name="derivatives">
 
@@ -49,8 +12,41 @@
         <!-- If rec_speed_dt not is defined or is zero, then no delays will be fetched -->
         <DerivedParameter name="rec_speed_dt" value="0"/>
         <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
-        
-                <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
+
+        <Constant name="w_plus" dimension="" value="1.4f" description="Excitatory population recurrence weight"/>
+        <Constant name="a_E" dimension="" value="310.0f" description="[n/C]. Excitatory population input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b_E" dimension="" value="125.0f" description="[Hz]. Excitatory population input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d_E" dimension="" value="0.154f" description="[s]. Excitatory population input scaling parameter chosen to fit numerical solutions."/>
+        <Constant name="a_I" dimension="" value="615.0f" description="[n/C]. Inhibitory population input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b_I" dimension="" value="177.0f" description="[Hz]. Inhibitory population input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d_I" dimension="" value="0.087f" description="[s]. Inhibitory population input scaling parameter chosen to fit numerical solutions."/>
+        <Constant name="gamma_E" dimension="" value="0.641f / 1000.0f" description="Excitatory population kinetic parameter"/>
+        <Constant name="tau_E" dimension="" value="100.0f" description="[ms]. Excitatory population NMDA decay time constant."/>
+        <Constant name="tau_I" dimension="" value="10.0f" description="[ms]. Inhibitory population NMDA decay time constant."/>
+        <Constant name="I_0" dimension="" value="0.382f" description="[nA]. Effective external input"/>
+        <Constant name="w_E" dimension="" value="1.0f" description="Excitatory population external input scaling weight"/>
+        <Constant name="w_I" dimension="" value="0.7f" description="Inhibitory population external input scaling weight"/>
+        <Constant name="gamma_I" dimension="" value="1.0f / 1000.0f" description="Inhibitory population kinetic parameter"/>
+        <Constant name="min_d_E" dimension="" value="-1.0f * d_E" description="Only in CUDA"/>
+        <Constant name="min_d_I" dimension="" value="-1.0f * d_I" description="Only in CUDA"/>
+        <Constant name="imintau_E" dimension="" value="-1.0f / tau_E" description="Only in CUDA"/>
+        <Constant name="imintau_I" dimension="" value="-1.0f / tau_I" description="Only in CUDA"/>
+        <Constant name="w_E__I_0" dimension="" value="w_E * I_0" description="Only in CUDA"/>
+        <Constant name="w_I__I_0" dimension="" value="w_I * I_0" description="Only in CUDA"/>
+
+        <Constant name="J_N" dimension="" value="0.15" description="[nA] NMDA current"/>
+        <Constant name="J_I" dimension="" value="1.0" description="[nA] Local inhibitory current"/>
+        <Constant name="G" dimension="" value="2.0" description="Global coupling scaling"/>
+        <Constant name="lamda" dimension="" value="0.0" description="Inhibitory global coupling scaling"/>
+
+        <!-- Unpack params -->
+        <Constant name="J_NMDA" dimension="" value="0.15" description=""/>
+        <Constant name="JI" dimension="" value="1.0" description=""/>
+        <Constant name="J_NMDA" dimension="" value="0.15" description=""/>
+        <Constant name="G_J_NMDA" dimension="" value="G*J_NMDA" description=""/>
+        <Constant name="w_plus__J_NMDA" dimension="" value="w_plus * J_NMDA" description=""/>
+
+        <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality-->
         <Exposure name="V" dimension="V" description="V"/>
 
@@ -75,6 +71,8 @@
         <Parameter name="V_j" dimension='0'/>
         <!--        post coupling expression, needs to be present. If no temporary result needs to be computed enter 'None'-->
         <DerivedParameter name="c_0" value="None"/>
+
+        <Constant name="a" dimension="" value="1" description="Rescales the connection strength."/>
 
     <Dynamics>
         <DerivedVariable name="pre" value="V_j * G_J_NMDA"/>

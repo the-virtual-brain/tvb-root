@@ -1,13 +1,13 @@
 <Lems description="A number of ComponentTypes for rate based/population models.">
 
-    <Constant name="omega" dimension="lo=0.01, hi=200.0, step=0.1" value="1.0" description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
-
     <ComponentType name="derivatives">
+
+        <Constant name="omega" dimension="lo=0.01, hi=200.0, step=0.1" value="1.0" description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
         Choices and default list with a (,) separator-->
-        <Exposure name="theta" dimension="theta" description="theta"/>
+        <Exposure name="theta" dimension=""/>
 
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->

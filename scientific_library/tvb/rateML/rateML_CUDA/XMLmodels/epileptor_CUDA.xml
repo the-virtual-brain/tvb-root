@@ -1,4 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <Lems description="Epileptor">
+
+    <ComponentType name="derivatives">
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_speed" dimension='float'/>
+        <Parameter name="global_coupling" dimension='float'/>
+
+        <DerivedParameter name="rec_n" value="1 / n_node"/>
+        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
+        <!-- nsig is the default variable for noise amplitude. Is equal to 1 if not defined -->
+        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
 
         <Constant name="a" dimension="" value="2.5" description="Coefficient of the cubic term in the first state-variable."/>
         <Constant name="b" dimension="" value="3.0" description="Coefficient of the squared term in the first state-variable."/>
@@ -21,19 +33,10 @@
 
         <!-- Constant used in coupling -->
         <Constant name="c_a" dimension="lo=0.0, hi=10., step=0.1" value="1" description="Rescales the connection strength."/>
-    
-    <ComponentType name="derivatives">
-
-        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='float'/>
-        <Parameter name="global_coupling" dimension='float'/>
-
-        <DerivedParameter name="rec_n" value="1 / n_node"/>
-        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
-        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
 
         <!-- Exposures are used for observables. For dimension enter the reduction functionality. Name field is not used-->
-        <Exposure name="o_x1" dimension="x1" description="x1"/>
+        <Exposure name="x1" dimension=""/>
+        <Exposure name="x2" dimension=""/>
 
         <Dynamics>
 
@@ -110,7 +113,7 @@
 
     </ComponentType>
 
-    <ComponentType name="noise" description="on"/>
+    <ComponentType name="noise" description="off"/>
 
 </Lems>
 
