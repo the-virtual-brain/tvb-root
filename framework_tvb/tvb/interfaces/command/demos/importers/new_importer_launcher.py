@@ -35,8 +35,7 @@ Launch an operation from the command line
 """
 
 from tvb.core.entities.model.model_operation import Algorithm
-
-from .new_importer import FooDataImporter
+from tvb.interfaces.command.demos.importers.new_importer import FooDataImporter, FooDataImporterModel
 
 if __name__ == "__main__":
     from tvb.interfaces.command.lab import *
@@ -60,12 +59,12 @@ if __name__ == "__main__":
 
     adapter_instance.stored_adapter = algorithm
 
-    # Prepare the input algorithms as if they were coming from web UI submit:
-    # launch_args = {"array_data": "[1, 2, 3, 4, 5]"}
-    launch_args = {"array_data": "demo_array.txt"}
+    # Prepare view model
+    view_model = FooDataImporterModel()
+    view_model.array_data = "demo_array.txt"
 
     # launch an operation and have the results stored both in DB and on disk
     launched_operations = operation_service.fire_operation(adapter_instance,
                                                            project.administrator,
                                                            project.id,
-                                                           **launch_args)
+                                                           view_model=view_model)
