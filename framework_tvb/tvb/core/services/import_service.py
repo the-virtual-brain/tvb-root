@@ -224,6 +224,7 @@ class ImportService(object):
         # type: (Project, dict) -> int
         sorted_dts = sorted(all_datatypes.items(),
                             key=lambda dt_item: dt_item[1].create_date or datetime.now())
+
         count = 0
         for dt_path, datatype in sorted_dts:
             datatype_already_in_tvb = dao.get_datatype_by_gid(datatype.gid)
@@ -232,6 +233,23 @@ class ImportService(object):
                 count += 1
             else:
                 AlgorithmService.create_link([datatype_already_in_tvb.id], project.id)
+
+            file_path = h5.h5_file_for_index(datatype).path
+            h5_class = H5File.h5_class_from_file(file_path)
+            reference_list = h5_class(file_path).gather_references()
+
+            for _, reference_gid in reference_list:
+                if not reference_gid:
+                    continue
+
+                ref_index = dao.get_datatype_by_gid(reference_gid.hex)
+                if ref_index is None:
+                    os.remove(file_path)
+                    dao.remove_entity(datatype.__class__, datatype.id)
+                    raise MissingReferenceException(
+                        'Imported file depends on datatypes that do not exist. Please upload '
+                        'those first!')
+
         return count
 
     def _store_imported_images(self, project, temp_project_path, project_name):
@@ -351,17 +369,21 @@ class ImportService(object):
                         dao.store_entity(dt)
                     else:
                         dts[dt_path] = dt
-                stored_dts_count = self._store_imported_datatypes_in_db(project, dts)
+                try:
+                    stored_dts_count = self._store_imported_datatypes_in_db(project, dts)
 
-                if stored_dts_count > 0 or not operation_data.is_self_generated:
-                    imported_operations.append(operation_entity)
-                    new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
-                    for h5_file in operation_data.all_view_model_files:
-                        shutil.move(h5_file, new_op_folder)
-                else:
-                    # In case all Dts under the current operation were Links and the ViewModel is dummy,
-                    # don't keep the Operation empty in DB
-                    dao.remove_entity(Operation, operation_entity.id)
+                    if stored_dts_count > 0 or not operation_data.is_self_generated:
+                        imported_operations.append(operation_entity)
+                        new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
+                        for h5_file in operation_data.all_view_model_files:
+                            shutil.move(h5_file, new_op_folder)
+                    else:
+                        # In case all Dts under the current operation were Links and the ViewModel is dummy,
+                        # don't keep the Operation empty in DB
+                        dao.remove_entity(Operation, operation_entity.id)
+                except MissingReferenceException:
+                    operation_entity.status = STATUS_ERROR
+                    dao.store_entity(operation_entity)
 
             else:
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
@@ -420,16 +442,6 @@ class ImportService(object):
         """
         self.logger.debug("Loading DataType from file: %s" % current_file)
         h5_class = H5File.h5_class_from_file(current_file)
-        reference_list = h5_class(current_file).gather_references()
-
-        for _, reference_gid in reference_list:
-            if not reference_gid:
-                continue
-
-            ref_index = dao.get_datatype_by_gid(reference_gid.hex)
-            if ref_index is None:
-                raise MissingReferenceException('Imported file depends on datatypes that do not exist. Please upload '
-                                                'those first!')
 
         if h5_class is BurstConfigurationH5:
             if current_project_id is None:
@@ -549,3 +561,15 @@ class ImportService(object):
             return temp_folder
         except FileStructureException as excep:
             raise ServicesBaseException("Could not process the given ZIP file..." + str(excep))
+
+#     # Sort all h5 files based on their creation date stored in the files themselves
+#     sorted_h5_files = sorted(h5_files, key=lambda h5_path: _get_create_date_for_sorting(h5_path) or datetime.now())
+#     return sorted_h5_files
+#
+#
+# def _get_create_date_for_sorting(h5_file):
+#     storage_manager = HDF5StorageManager(os.path.dirname(h5_file), os.path.basename(h5_file))
+#     root_metadata = storage_manager.get_metadata()
+#     create_date_str = str(root_metadata['Create_date'], 'utf-8')
+#     create_date = datetime.strptime(create_date_str.replace('datetime:', ''), '%Y-%m-%d %H:%M:%S.%f')
+#     return create_date
