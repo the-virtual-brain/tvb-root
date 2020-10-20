@@ -360,7 +360,7 @@ class Simulator(HasTraits):
     def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)
         output = [monitor.record(step,
-                                 numpy.where(isinstance(monitor, monitors.Coupling), node_coupling, observed).item())
+                                 node_coupling if isinstance(monitor, monitors.Coupling) else observed)
                   for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
