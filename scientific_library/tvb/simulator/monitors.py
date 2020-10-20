@@ -401,6 +401,49 @@ class TemporalAverage(Monitor):
             return [time, avg_stock]
 
 
+class Coupling(RawVoi):
+    """
+    A monitor that records the variables_of_interest from node_coupling data from a tvb simulation
+    for all the integration time steps.
+
+    """
+
+    _ui_name = "Coupling recording"
+
+    variables_of_interest = NArray(
+        dtype=int,
+        label="Indices of coupling variables to record",
+        required=False)
+
+    def _config_vois(self, simulator):
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.cvar)]
+
+    def sample(self, step, node_coupling):
+        return super(Coupling, self).sample(step, node_coupling)
+
+
+class CouplingTemporalAverage(Coupling, TemporalAverage):
+    """
+    Monitors the averaged value for the model's coupling variable/s of interest over all
+    the nodes at each sampling period. Time steps that are not modulo ``istep``
+    are stored temporarily in the ``_stock`` attribute and then that temporary
+    store is averaged and returned when time step is modulo ``istep``.
+
+    """
+    _ui_name = "Coupling Temporal average"
+
+    def _config_vois(self, simulator):
+        Coupling._config_vois(self, simulator)
+
+    def _config_time(self, simulator):
+        TemporalAverage._config_time(self, simulator)
+
+    def sample(self, step, node_coupling):
+        return TemporalAverage.sample(self, step, node_coupling)
+
+
 # mhtodo: this is not a proper superclass but a mixin, it refers to fields that don't exist
 
 class Projection(Monitor):
@@ -962,46 +1005,3 @@ class ProgressLogger(Monitor):
 
     def sample(self, step, state):
         raise NotImplementedError
-
-
-class Coupling(RawVoi):
-    """
-    A monitor that records the variables_of_interest from node_coupling data from a tvb simulationfor
-    for all the integration time steps.
-
-    """
-
-    _ui_name = "Coupling recording"
-
-    variables_of_interest = NArray(
-        dtype=int,
-        label="Indices of coupling variables to record",
-        required=False)
-
-    def _config_vois(self, simulator):
-        self.voi = self.variables_of_interest
-        if self.voi is None or self.voi.size == 0:
-            self.voi = numpy.r_[:len(simulator.model.cvar)]
-
-    def sample(self, step, node_coupling):
-        return super(Coupling, self).sample(step, node_coupling)
-
-
-class CouplingTemporalAverage(Coupling, TemporalAverage):
-    """
-    Monitors the averaged value for the model's coupling variable/s of interest over all
-    the nodes at each sampling period. Time steps that are not modulo ``istep``
-    are stored temporarily in the ``_stock`` attribute and then that temporary
-    store is averaged and returned when time step is modulo ``istep``.
-
-    """
-    _ui_name = "Coupling Temporal average"
-
-    def _config_vois(self, simulator):
-        Coupling._config_vois(self, simulator)
-
-    def _config_time(self, simulator):
-        TemporalAverage._config_time(self, simulator)
-
-    def sample(self, step, node_coupling):
-        return TemporalAverage.sample(self, step, node_coupling)
