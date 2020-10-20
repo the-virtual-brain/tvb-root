@@ -184,6 +184,7 @@ class Raw(Monitor):
         self.voi = numpy.arange(len(simulator.model.variables_of_interest))
 
     def _config_time(self, simulator):
+        self.dt = simulator.integrator.dt
         if self.period != simulator.integrator.dt:
             self.log.debug('Raw period not equal to integration time step, overriding')
         self.period = simulator.integrator.dt
