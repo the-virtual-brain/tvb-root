@@ -71,9 +71,12 @@ class Simulator(object):
 
         # Initialise some Monitors with period in physical time
         raw = monitors.Raw()
+        rawvoi = monitors.RawVoi()
         gavg = monitors.GlobalAverage(period=2 ** -2)
         subsamp = monitors.SubSample(period=2 ** -2)
         tavg = monitors.TemporalAverage(period=2 ** -2)
+        coupl = monitors.Coupling()
+        coupltavg = monitors.CouplingTemporalAverage(period=2 ** -2)
         eeg = monitors.EEG.from_file()
         eeg.period = 2 ** -2
         eeg2 = monitors.EEG.from_file()
@@ -82,7 +85,7 @@ class Simulator(object):
         meg = monitors.MEG.from_file()
         meg.period = 2 ** -2
 
-        self.monitors = (raw, gavg, subsamp, tavg, eeg, eeg2, meg)
+        self.monitors = (raw, rawvoi, gavg, subsamp, tavg, coupl, coupltavg, eeg, eeg2, meg)
 
         self.method = None
         self.sim = None
