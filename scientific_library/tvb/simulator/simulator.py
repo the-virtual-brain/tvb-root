@@ -398,7 +398,7 @@ class Simulator(HasTraits):
             self._loop_update_stimulus(step, stimulus)
             state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, n_reg, state)
-            node_coupling = self._loop_compute_node_coupling(step)
+            node_coupling = self._loop_compute_node_coupling(step + 1)
             output = self._loop_monitor_output(step, state, node_coupling)
             if output is not None:
                 yield output
