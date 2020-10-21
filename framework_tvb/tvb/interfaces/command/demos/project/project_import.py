@@ -35,15 +35,11 @@ Later on, this project will be available from the web-interface.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+from sys import argv
 
 from tvb.core.entities import model
-from tvb.core.services.user_service import UserService
 from tvb.core.services.import_service import ImportService
-from sys import argv
+from tvb.core.services.user_service import UserService
 
 
 def run_import(project_path):
@@ -68,6 +64,9 @@ def run_import(project_path):
 
 
 if __name__ == '__main__':
+    from tvb.config.init.initializer import command_initializer
+
+    command_initializer(skip_import=True)
 
     if len(argv) < 2:
         print("No Project path given!!!")

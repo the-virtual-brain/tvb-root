@@ -36,18 +36,12 @@ After running this script, you should have a message in the console telling wher
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
-
 from tvb.core.services.project_service import ProjectService
+from tvb.core.entities.storage import dao
 from tvb.adapters.exporters.export_manager import ExportManager
-from sys import argv
 
 
 def run_export(project_id, loose_irrelevant=False):
-
     s = ProjectService()
     mng = ExportManager()
 
@@ -57,10 +51,8 @@ def run_export(project_id, loose_irrelevant=False):
 
 
 if __name__ == '__main__':
+    from tvb.interfaces.command.lab import *
 
-    if len(argv) < 2:
-        print("You should specify a project ID to be exported!")
+    projects = dao.get_all_projects()
 
-    print("We will try to export project with ID: " + str(argv[1]))
-
-    run_export(argv[0])
+    run_export(projects[0].id)
