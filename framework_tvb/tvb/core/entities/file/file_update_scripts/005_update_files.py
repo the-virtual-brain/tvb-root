@@ -167,6 +167,12 @@ def _migrate_region_volume_mapping(**kwargs):
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
     root_metadata['volume'] = _parse_gid(root_metadata['volume'])
 
+    storage_manager = kwargs['storage_manager']
+    array_data = storage_manager.get_data('array_data')
+    array_data = array_data.astype(int)
+    storage_manager.remove_data('array_data')
+    storage_manager.store_data('array_data', array_data)
+
     _migrate_dataset_metadata(['array_data'], kwargs['storage_manager'])
 
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
@@ -446,7 +452,8 @@ def _migrate_time_series_simple(**kwargs):
 def _migrate_time_series_region(**kwargs):
     operation_xml_parameters, additional_params = _migrate_time_series(['data', 'time'], **kwargs)
     root_metadata = kwargs['root_metadata']
-    root_metadata['region_mapping'] = _parse_gid(root_metadata['region_mapping'])
+    if 'region_mapping' in root_metadata:
+        root_metadata['region_mapping'] = _parse_gid(root_metadata['region_mapping'])
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
 
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
@@ -504,10 +511,10 @@ def _migrate_volume(**kwargs):
     kwargs['root_metadata']['voxel_unit'] = root_metadata['voxel_unit'].replace("\"", '')
 
     operation_xml_parameters = kwargs['operation_xml_parameters']
-    if operation_xml_parameters['connectivity'] == '':
+    if 'connectivity' in operation_xml_parameters and operation_xml_parameters['connectivity'] == '':
         operation_xml_parameters['connectivity'] = None
 
-    if operation_xml_parameters['apply_corrections'] == 'bool:True':
+    if 'apply_corrections' in operation_xml_parameters and operation_xml_parameters['apply_corrections'] == 'bool:True':
         operation_xml_parameters['apply_corrections'] = True
     else:
         operation_xml_parameters['apply_corrections'] = False
@@ -927,7 +934,10 @@ def _migrate_general_part(folder, file_name):
     # In the new format all metadata has the 'TVB_%' format, where '%' starts with a lowercase letter
     lowercase_keys = []
     for key, value in root_metadata.items():
-        root_metadata[key] = str(value, 'utf-8')
+        try:
+            root_metadata[key] = str(value, 'utf-8')
+        except TypeError:
+            pass
         lowercase_keys.append(_lowercase_first_character(key))
         storage_manager.remove_metadata(key)
 

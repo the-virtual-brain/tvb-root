@@ -56,7 +56,7 @@ def update_localconnectivity_metadata(folder, file_name):
     dt.set_metadata(info_dict, '', True, '/matrix')
 
 
-def update(input_file):
+def update(input_file, burst_match_dict=None):
     """
     In order to avoid segmentation faults when updating a batch of files just
     start every conversion on a different Python process.
