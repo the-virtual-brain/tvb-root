@@ -33,13 +33,19 @@ Find a Connectivity in current project (by Subject) and later run a simulation o
 
 __main__ will contain the code.
 """
-
+from time import sleep
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.simulator.coupling import Scaling
-
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
+from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.services.simulator_service import SimulatorService
 
 # Before starting this, we need to have TVB web interface launched at least once
 # (to have a default project, user and connectivity)

@@ -37,12 +37,13 @@ Demo script on how to filter datatypes and later export them.
 import os
 import shutil
 from sys import argv
-
+from datetime import datetime
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-
+from tvb.core.neocom import h5
 
 def _retrieve_entities_by_filters(kind, project_id, filters):
     named_tuple_array, counter = dao.get_values_of_datatype(project_id, kind, filters)

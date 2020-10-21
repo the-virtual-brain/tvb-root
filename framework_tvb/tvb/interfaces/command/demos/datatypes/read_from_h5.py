@@ -38,6 +38,7 @@ import os
 import sys
 
 from tvb.core.entities.model.model_operation import Operation
+from tvb.core.entities.storage import dao
 from tvb.core.services.import_service import ImportService
 
 

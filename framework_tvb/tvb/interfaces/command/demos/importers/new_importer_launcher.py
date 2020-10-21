@@ -35,6 +35,8 @@ Launch an operation from the command line
 """
 
 from tvb.core.entities.model.model_operation import Algorithm
+from tvb.core.entities.storage import dao
+from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.command.demos.importers.new_importer import FooDataImporter, FooDataImporterModel
 
 if __name__ == "__main__":

@@ -41,10 +41,12 @@ from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.model.model_operation import STATUS_FINISHED
+from tvb.core.entities.storage import dao
+from time import sleep
 
 
-# Before starting this, we need to have TVB web interface launched at least once
-# (to have a default project, user, etc setup)
 def run_analyzer():
     from tvb.interfaces.command.lab import *
 
@@ -59,15 +61,15 @@ def run_analyzer():
     time_series = dao.get_generic_entity(TimeSeriesRegionIndex, DataTypeMetaData.DEFAULT_SUBJECT, "subject")
     if len(time_series) < 1:
         log.error("We could not find a compatible TimeSeries Datatype!")
-    launch_args = {"_time_series": time_series[0].gid, "_segment_length": 100}
 
     fourier_model = FFTAdapterModel()
     fourier_model.time_series = time_series[0].gid
     fourier_model.window_function = 'hamming'
+    fourier_model.segment_length = 100
 
     # launch an operation and have the results stored both in DB and on disk
     launched_operation = OperationService().fire_operation(adapter_instance, project.administrator,
-                                                           project.id, view_model=fourier_model, **launch_args)[0]
+                                                           project.id, view_model=fourier_model)[0]
 
     # wait for the operation to finish
     while not launched_operation.has_finished:

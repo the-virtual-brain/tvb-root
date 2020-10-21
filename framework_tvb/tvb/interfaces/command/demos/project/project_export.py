@@ -36,6 +36,8 @@ After running this script, you should have a message in the console telling wher
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
+from tvb.core.services.project_service import ProjectService
+from tvb.core.entities.storage import dao
 from tvb.adapters.exporters.export_manager import ExportManager
 
 
