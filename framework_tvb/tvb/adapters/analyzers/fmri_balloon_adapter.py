@@ -69,13 +69,13 @@ class BalloonModelAdapterModel(ViewModel):
 
     tau_s = Float(
         label=r":math:`\tau_s`",
-        default=0.8,
+        default=1.54,
         required=True,
         doc="""Balloon model parameter. Time of signal decay (s)""")
 
     tau_f = Float(
         label=r":math:`\tau_f`",
-        default=0.4,
+        default=1.44,
         required=True,
         doc=""" Balloon model parameter. Time of flow-dependent elimination or
             feedback regulation (s). The average  time blood take to traverse the
