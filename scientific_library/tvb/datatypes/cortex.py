@@ -29,10 +29,11 @@
 #
 
 import os
+
 import numpy
 import scipy.sparse
-from tvb.datatypes import local_connectivity, region_mapping, surfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
+from tvb.datatypes import local_connectivity, region_mapping, surfaces
 
 
 class Cortex(HasTraits):
@@ -72,6 +73,13 @@ class Cortex(HasTraits):
         if self.region_mapping_data is None:
             return None
         return self.region_mapping_data.array_data
+
+    @property
+    def surface(self):
+        """
+        Define shortcut for retrieving the surface held by a RegionMapping.
+        """
+        return self.region_mapping_data.surface
 
     @property
     def number_of_vertices(self):
