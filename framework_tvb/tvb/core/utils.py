@@ -116,6 +116,8 @@ def parse_json_parameters(parameters):
 
 def string2date(string_input, complex_format=True, date_format=None):
     """Read date from string, after internal format"""
+    if string_input is 'None':
+        return None
     if date_format is not None:
         return datetime.datetime.strptime(string_input, date_format)
     if complex_format:
