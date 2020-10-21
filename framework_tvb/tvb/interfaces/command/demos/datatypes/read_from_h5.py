@@ -34,22 +34,18 @@ Demo script on how to read a TVB H5 file
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
-
 import os
 import sys
-from tvb.core.entities import model
+
+from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.import_service import ImportService
 
 
 def read_h5(full_paths):
-
     # We need to load the DataType in the context of an operation, and a project
     all_projects = dao.get_all_projects()
-    all_operations = dao.get_generic_entity(model.Operation, all_projects[0].id, "fk_launched_in")
+    all_operations = dao.get_generic_entity(Operation, all_projects[0].id, "fk_launched_in")
 
     service = ImportService()
     results = []
@@ -64,18 +60,19 @@ def read_h5(full_paths):
     return results
 
 
-
 if __name__ == '__main__':
+    from tvb.interfaces.command.lab import *
 
     if len(sys.argv) > 1:
         FILE_PATHS = sys.argv[1:]
     else:
         import tvb_data.h5
+
         dir_name = os.path.dirname(tvb_data.h5.__file__)
+        # TODO: Fix tvb_data h5 files
         FILE_PATHS = [os.path.join(dir_name, "Connectivity_74.h5"),
                       os.path.join(dir_name, "TimeSeriesRegion.h5")]
 
     print("We will try to read from H5: " + str(FILE_PATHS))
 
     read_h5(FILE_PATHS)
-
