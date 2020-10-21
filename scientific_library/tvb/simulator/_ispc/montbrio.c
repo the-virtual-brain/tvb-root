@@ -31,6 +31,7 @@ export void loop(
     uniform float o_tau = 1.0f / tau;
     uniform float sq_pi_tau = pi*pi * tau*tau;
     uniform float sqrt_dt = sqrt(0.1f);
+    uniform float o_6 = 1.0f / 6.0f;
     foreach (it = 0 ... nl)
     {
         for (uniform int t=0; t<16; t++)
@@ -50,15 +51,26 @@ export void loop(
                 }
 
             // update neural mass
-            for (int i=0; i<nc; i++) {
+            for (uniform int i=0; i<nc; i++) {
+                uniform float dt=0.1f;
                 int i_ = i*nl + it;
-                float dr = o_tau * (Delta / (pi * tau) + 2 * V[i_] * r[i_]);
-                float dV = o_tau * (sq(V[i_]) - sq_pi_tau * sq(r[i_]) + eta + J * tau * r[i_] + I + cr * aff[i_]);
-                nr[i_] = 0.1f*dr + sqrt_dt*1e-4f*W[t*nn+i_];
-                nV[i_] = 0.1f*dV + sqrt_dt*1e-4f*W[nl*nn + t*nn+i_];
+                float kr[4], kV[4], r_, V_; // RK4
+                for (uniform int k=0; k<4; k++) {
+                    r_ = r[i_];
+                    V_ = V[i_];
+                    if (k>0) {
+                        uniform float kh = k==3 ? 1.0f : 0.5f;
+                        r_ += dt*kh*kr[k-1];
+                        V_ += dt*kh*kV[k-1];
+                    }
+                    kr[k] = o_tau * (Delta / (pi * tau) + 2 * V_ * r_);
+                    kV[k] = o_tau * (sq(V_) - sq_pi_tau * sq(r_) + eta + J * tau * r_ + I + cr * aff[i_]);
+                }
+                nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*1e-4f*W[t*nn+i_];
+                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-4f*W[nl*nn + t*nn+i_];
             }
 
-            for (int i=0; i<nc; i++) {
+            for (uniform int i=0; i<nc; i++) {
                 int i_ = i*nl + it;
                 r[i_] += nr[i_];
                 V[i_] += nV[i_];
@@ -72,7 +84,7 @@ export void loop(
             }
 
             // update history w/ current state
-            for (it==0)
+            if (it==0)
                 for (uniform int i=0; i<nn; i++)
                 {
                     rh[i*nl] = r[i];

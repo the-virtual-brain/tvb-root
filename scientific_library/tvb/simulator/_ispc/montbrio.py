@@ -8,9 +8,9 @@ def cmd(str):# {{{
     subprocess.check_call(str.split(' '))# }}}
 
 def make_kernel():
-    cmd('ispc --target=avx512skx-i32x16 --math-lib=fast --pic simd_history.ispc -o simd_history.o')
-    cmd('g++ -shared simd_history.o -o simd_history.so')
-    dll = ctypes.CDLL('./simd_history.so')
+    cmd('/usr/local/bin/ispc --target=avx512skx-i32x16 --math-lib=fast --pic montbrio.c -o montbrio.o')
+    cmd('g++ -shared montbrio.o -o montbrio.so')
+    dll = ctypes.CDLL('./montbrio.so')
     fn = getattr(dll, 'loop')
     fn.restype = ctypes.c_void_p
     i32a = ctypes.POINTER(ctypes.c_int)
