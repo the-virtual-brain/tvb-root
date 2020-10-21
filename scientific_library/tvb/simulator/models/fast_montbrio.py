@@ -60,7 +60,7 @@ def make_loop(nh, nto, nn, dt, cfpre, cfpost):
     nh, nn = [nb.uint32(_) for _ in (nh, nn)]
     dt, pi = [nb.float32(_) for _ in (dt, np.pi)]
     sqrt_dt = nb.float32(np.sqrt(dt))
-    o_nh = nb.float32(1 / nh)
+    o_nh = nb.float32(1 / nh * nto)
     @nb.njit(boundscheck=False, fastmath=True)
     def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
         o_tau = nb.float32(1 / tau)
@@ -86,8 +86,7 @@ def make_loop(nh, nto, nn, dt, cfpre, cfpost):
                 dr = o_tau * (Delta / (pi * tau) + 2 * V[t, i] * r[t, i])
                 dV = o_tau * (V[t, i] ** 2 - (pi ** 2) * (tau ** 2) * (r[t, i] ** 2) + eta + J * tau * r[t, i] + I + cr * rc + cv * Vc)
                 r[t1, i] = r[t, i] + dr * dt + sqrt_dt * r_sigma * wrV[0, t, i]
-                if r[t1, i] < 0:
-                    r[t1, i] = 0
+                r[t1, i] *= r[t1, i] >= 0
                 V[t1, i] = V[t, i] + dV * dt + sqrt_dt * V_sigma * wrV[1, t, i]
                 tavg[t0_nto, 0, i] += r[t1, i] * o_nh
                 tavg[t0_nto, 1, i] += V[t1, i] * o_nh
