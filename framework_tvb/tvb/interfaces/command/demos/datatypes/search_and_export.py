@@ -40,12 +40,10 @@ from sys import argv
 from datetime import datetime
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
-from tvb.basic.profile import TvbProfile
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-
 
 def _retrieve_entities_by_filters(kind, project_id, filters):
     named_tuple_array, counter = dao.get_values_of_datatype(project_id, kind, filters)
@@ -94,8 +92,7 @@ def search_and_export_ts(project_id, export_folder=os.path.join("~", "TVB")):
 
 
 if __name__ == '__main__':
-
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    from tvb.interfaces.command.lab import *
 
     if len(argv) < 2:
         PROJECT_ID = 1
