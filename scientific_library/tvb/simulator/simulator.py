@@ -181,7 +181,6 @@ class Simulator(HasTraits):
     _runtime = None
 
     integrate_next_step = None
-    bound_and_clamp = None
 
     # methods consist of
     # 1) generic configure
@@ -215,7 +214,6 @@ class Simulator(HasTraits):
         else:
             self.integrator.bounded_state_variable_indices = None
             self.integrator.state_variable_boundaries = None
-        self.bound_and_clamp = self.integrator.bound_and_clamp
 
     def preconfigure(self):
         """Configure just the basic fields, so that memory can be estimated."""
@@ -483,9 +481,7 @@ class Simulator(HasTraits):
                     history = numpy.roll(history, shift, axis=0)
                 self.current_step += ic_shape[0] - 1
 
-        # Make sure that history values are bounded
-        for it in range(history.shape[0]):
-            self.bound_and_clamp(history[it])
+        self.integrator.bound_and_clamp(numpy.swapaxes(history, 0, 1))
         self.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
