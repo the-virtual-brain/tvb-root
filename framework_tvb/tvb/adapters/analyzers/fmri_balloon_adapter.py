@@ -67,6 +67,21 @@ class BalloonModelAdapterModel(ViewModel):
             If none is provided, by default, the TimeSeries sample period is used."""
     )
 
+    tau_s = Float(
+        label=r":math:`\tau_s`",
+        default=1.54,
+        required=True,
+        doc="""Balloon model parameter. Time of signal decay (s)""")
+
+    tau_f = Float(
+        label=r":math:`\tau_f`",
+        default=1.44,
+        required=True,
+        doc=""" Balloon model parameter. Time of flow-dependent elimination or
+            feedback regulation (s). The average  time blood take to traverse the
+            venous compartment. It is the  ratio of resting blood volume (V0) to
+            resting blood flow (F0).""")
+
     neural_input_transformation = Attr(
         field_type=str,
         label="Neural input transformation",
@@ -105,6 +120,8 @@ class BalloonModelAdapterForm(ABCAdapterForm):
                                                     name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
         self.dt = ScalarField(BalloonModelAdapterModel.dt, self)
+        self.tau_s = ScalarField(BalloonModelAdapterModel.tau_s, self)
+        self.tau_f = ScalarField(BalloonModelAdapterModel.tau_f, self)
         self.neural_input_transformation = ScalarField(BalloonModelAdapterModel.neural_input_transformation, self)
         self.bold_model = ScalarField(BalloonModelAdapterModel.bold_model, self)
         self.RBM = ScalarField(BalloonModelAdapterModel.RBM, self)
@@ -165,6 +182,10 @@ class BalloonModelAdapter(ABCAdapter):
         else:
             algorithm.dt = self.input_time_series_index.sample_period / 1000.
 
+        if view_model.tau_s is not None:
+            algorithm.tau_s = view_model.tau_s
+        if view_model.tau_f is not None:
+            algorithm.tau_f = view_model.tau_f
         if view_model.bold_model is not None:
             algorithm.bold_model = view_model.bold_model
         if view_model.RBM is not None:
