@@ -258,7 +258,7 @@ __global__ void ${modelname}(
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
                 % for i, expo in enumerate(exposures):
-                tavg(i_node + ${i} * n_node) = ${expo.name};
+                tavg(i_node + ${i} * n_node) = ${expo.dimension};
                 % endfor /
             }
 

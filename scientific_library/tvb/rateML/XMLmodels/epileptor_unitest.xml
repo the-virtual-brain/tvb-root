@@ -10,7 +10,7 @@
         <DerivedParameter name="rec_n" value="1 / n_node"/>
         <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
         <!-- nsig is the default variable for noise amplitude. Is equal to 1 if not defined -->
-        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
+<!--        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>-->
 
         <Constant name="a" dimension="" value="2.5" description="Coefficient of the cubic term in the first state-variable."/>
         <Constant name="b" dimension="" value="3.0" description="Coefficient of the squared term in the first state-variable."/>

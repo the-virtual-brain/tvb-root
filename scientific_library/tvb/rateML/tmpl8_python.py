@@ -5,7 +5,7 @@ from numpy import *
 from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
-class ${dfunname}(ModelNumbaDfun):
+class ${modelname}(ModelNumbaDfun):
     %for mconst in const:
         ${NArray(mconst)}
     %endfor
@@ -38,7 +38,7 @@ class ${dfunname}(ModelNumbaDfun):
         label="Variables or quantities available to Monitors",
         choices=(\
 %for choice in exposures:
-'${choice.name}', \
+'${choice.dimension}', \
 %endfor
 ),
         default=(\
@@ -62,7 +62,7 @@ class ${dfunname}(ModelNumbaDfun):
         ##lc_0 = local_coupling * vw[0, :, 0]
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_${dfunname}(vw_, c_, \
+        deriv = _numba_dfun_${modelname}(vw_, c_, \
 %for itemE in const:
 self.${itemE.name}, \
 %endfor
@@ -76,12 +76,12 @@ local_coupling)
 float64, \
 % endfor
 float64[:])], '(n),(m)' + ',()'*${const.__len__()+1} + '->(n)', nopython=True)
-def _numba_dfun_${dfunname}(vw, coupling, \
+def _numba_dfun_${modelname}(vw, coupling, \
 % for itemI in const:
 ${itemI.name}, \
 % endfor
 local_coupling, dx):
-    "Gufunc for ${dfunname} model equations."
+    "Gufunc for ${modelname} model equations."
 
     % for i, itemF in enumerate(dynamics.state_variables):
     ${itemF.name} = vw[${i}]

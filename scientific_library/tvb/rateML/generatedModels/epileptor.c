@@ -74,7 +74,7 @@ __device__ float wrap_it_g(float g)
     return g;
 }
 
-__global__ void Epileptor(
+__global__ void epileptor(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
@@ -100,7 +100,7 @@ __global__ void Epileptor(
     const float global_coupling = params(1);
 
     // regular constants
-    const float a = 2.5;
+    const float a = 1.0;
     const float b = 3.0;
     const float c = 1.0;
     const float d = 5.0;
@@ -109,7 +109,7 @@ __global__ void Epileptor(
     const float x0 = -1.6;
     const float Iext = 3.1;
     const float slope = 0.;
-    const float Iext2 = 3.1;
+    const float Iext2 = 0.45;
     const float tau = 10.0;
     const float aa = 6.0;
     const float bb = 2.0;
@@ -117,8 +117,7 @@ __global__ void Epileptor(
     const float Kf = 0.0;
     const float Ks = 0.0;
     const float tt = 1.0;
-    const float modification = 1.0;
-    const float c_a = 1;
+    const float modification = False;
 
     // coupling constants, coupling itself is hardcoded in kernel
 
@@ -128,9 +127,9 @@ __global__ void Epileptor(
 
     // derived parameters
     const float rec_n = 1 / n_node;
-    const float rec_speed_dt = 1.0f / global_speed / (dt);
-    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
-
+    const float rec_speed_dt = {powf(1.0f, global_speed)} / dt * {powf(x, 2)};
+    // the dynamic derived variables declarations
+    float bla = 0.0;
 
     // conditional_derived variable declaration
     float ydot0 = 0.0;
@@ -138,8 +137,6 @@ __global__ void Epileptor(
     float h = 0.0;
     float ydot4 = 0.0;
 
-    curandState crndst;
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float x1 = 0.0;
     float y1 = 0.0;
@@ -204,28 +201,30 @@ __global__ void Epileptor(
             // rec_n is used for the scaling over nodes
             c_pop1 *= global_coupling;
             c_pop2 *= g;
+            // the dynamic derived variables
+            bla = {powf(x, 2)};
 
             // The conditional variables
-            if (x1 < 0.0)
-                ydot0 = -a * powf(x1, 2) + b * x1;
-            else
-                ydot0 = slope - x2 + 0.6 * powf((z - 4),2);
-
-            if (z < 0.0)
-                ydot2 = - 0.1 * (powf(z, 7));
-            else
+            if (x1 < 0.0) {
+                ydot0 = -a * {powf(x1, 2)} + b * x1;
+            } else {
+                ydot0 = slope - x2 + 0.6 * {powf(z-4, 2)};
+            }
+            if (z < 0.0) {
+                ydot2 = - 0.1 * {powf(z, 7)};
+            } else {
                 ydot2 = 0;
-
-            if (modification)
+            }
+            if (modification) {
                 h = x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1));
-            else
+            } else {
                 h = 4 * (x1 - x0) + ydot2;
-
-            if (x2 < -0.25)
+            }
+            if (x2 < -0.25) {
                 ydot4 = 0.0;
-            else
+            } else {
                 ydot4 = aa * (x2 + 0.25);
-
+            }
 
             // Integrate with stochastic forward euler
             dx1 = dt * (tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 ));
@@ -261,7 +260,7 @@ __global__ void Epileptor(
 
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = x1;
+                tavg(i_node + 0 * n_node) = {powf(x1, x2)};
                 tavg(i_node + 1 * n_node) = x2;
             }
 

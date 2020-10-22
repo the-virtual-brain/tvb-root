@@ -53,9 +53,9 @@ def validate_lems(file_name):
         from urllib.request import urlopen # Python 3
         
     # schema_file = urlopen("https://raw.githubusercontent.com/LEMS/LEMS/development/Schemas/LEMS/LEMS_v0.7.3.xsd")
-    schema_file = urlopen("file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd")
+    # schema_file = urlopen("file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd")
+    schema_file = urlopen("https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
     xmlschema = etree.XMLSchema(etree.parse(schema_file))
     print("Validating {0} against {1}".format(file_name, schema_file.geturl()))
     xmlschema.assertValid(etree.parse(file_name))
     print("It's valid!")
-
