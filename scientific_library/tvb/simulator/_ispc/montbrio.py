@@ -14,9 +14,10 @@ def make_kernel():
     fn = getattr(dll, 'loop')
     fn.restype = ctypes.c_void_p
     i32a = ctypes.POINTER(ctypes.c_int)
+    u32a = ctypes.POINTER(ctypes.c_uint32)
     f32 = ctypes.c_float
     f32a = ctypes.POINTER(f32)
-    fn.argtypes = [f32, f32a, f32a, f32a, f32a, i32a, f32a, f32a, f32a, f32a, f32a, f32a]
+    fn.argtypes = [f32, f32a, f32a, f32a, f32a, u32a, f32a, f32a, f32a, f32a, f32a, f32a]
     def _(*args):
         args_ = []
         args_ct = []
@@ -38,16 +39,17 @@ k = 0.1
 aff, r, V, nr, nV = np.zeros((5, nc, nl), 'f')
 W  = np.zeros((2, nl, nc, nl), 'f')
 V -= 2.0
-rh, Vh, wij = np.zeros((3, nn, nl), 'f')
+rh, Vh = np.zeros((2, nn, nl), 'f')
+wij = np.zeros((nn, nn), 'f')
 Vh -= 2.0
-ih = np.zeros((nn, nl), np.int32)
+ih = np.zeros((nn, nl), np.uint32)
 tavg = np.zeros((2*nn,), 'f')
 rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
 kerneler = make_kernel()
 (_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(k, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
 tavgs = []
 import tqdm
-for i in tqdm.trange(int(30e3/0.1/16)):
+for i in tqdm.trange(int(10e3/1.0/16)):
   rng.standard_normal(size=W.shape, dtype='f', out=W) # ~50%
   kernel()
   tavgs.append(r.flat[:].copy())

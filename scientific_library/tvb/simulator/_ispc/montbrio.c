@@ -2,10 +2,10 @@
 #define nl 16
 #define nc 6
 
-#define I 1.0f
+#define I 5.0f
 #define Delta 1.0f
 #define eta -5.0f
-#define tau 250.0f
+#define tau 100.0f
 #define J 15.0f
 #define cr 0.01f
 #define cv 0.0f
@@ -13,13 +13,14 @@
 
 float sq(float x) { return x * x; }
 
+
 export void loop(
     uniform float k,
     uniform float aff[],
     uniform float rh[],
     uniform float Vh[],
     uniform float wij[],
-    uniform int ih[],
+    uniform uint32 ih[],
     uniform float W[],
     uniform float r[],
     uniform float V[],
@@ -30,11 +31,13 @@ export void loop(
 {
     uniform float o_tau = 1.0f / tau;
     uniform float sq_pi_tau = pi*pi * tau*tau;
-    uniform float sqrt_dt = sqrt(0.1f);
+    uniform float dt=1.0f;
+    uniform float sqrt_dt = sqrt(dt);
     uniform float o_6 = 1.0f / 6.0f;
+
     foreach (it = 0 ... nl)
     {
-        for (uniform int t=0; t<16; t++)
+        for (uniform int t=0; t<1; t++)
         {
             // compute delayed state coupling
             for (uniform int j=0; j<nc; j++)
@@ -46,13 +49,15 @@ export void loop(
                     int ij = j*nn + i*nl + it;
                     float wij_ = wij[ij];
                     float rh_ = rh[j*nl + it];
-                    int ih_ = ih[ij];
-                    aff[i*nl+it] += wij_ * shuffle(rh_, ih_);
+                    int ih_ = 0;//ih[ij];
+                    // wij_ values are wrong: bad arguments passed.
+                    float inc = wij_;// * shuffle(rh_, ih_);
+                    aff[i*nl+it] += inc;
                 }
 
+            //continue;
             // update neural mass
             for (uniform int i=0; i<nc; i++) {
-                uniform float dt=0.1f;
                 int i_ = i*nl + it;
                 float kr[4], kV[4], r_, V_; // RK4
                 for (uniform int k=0; k<4; k++) {
