@@ -15,20 +15,16 @@ class CosimHistory(StaticAttr):
 
     state_buffer = NDArray(('n_time', 'n_var', 'n_node', 'n_mode'), 'f', read_only=False)
 
-    coupling_buffer = NDArray(('n_ctime', 'n_cvar', 'n_node', 'n_mode'), 'f', read_only=False)
-
-    def __init__(self,  n_time, n_var, n_cvar, n_node, n_mode):
+    def __init__(self,  n_time, n_var, n_node, n_mode):
         self.n_time = n_time + 1  # state buffer has n past steps and the current one
         self.n_ctime = 2*self.n_time  # coupling buffer has n-1 past steps, the current one, and n future steps
         self.n_var = n_var
-        self.n_cvar = n_cvar
         self.n_node = n_node
         self.n_mode = n_mode
 
-    def initialize(self, init_state, init_coupling):
+    def initialize(self, init_state):
         """Initialize CosimHistory from the initial condition."""
         self.state_buffer = init_state[:self.n_time]
-        self.coupling_buffer = init_coupling
 
     def update_state(self, step, new_state):
         """This method will update the CosimHistory state buffer
@@ -47,13 +43,3 @@ class CosimHistory(StaticAttr):
         """This method returns the whole TVB current_state
            by querying the CosimHistory state buffer for a time step."""
         return self.state_buffer[(step - 1) % self.n_time]
-
-    def update_coupling(self, step, new_node_coupling):
-        """This method will update the CosimHistory coupling buffer
-           with the whole TVB node_coipling for a specific time step."""
-        self.coupling_buffer[step % self.n_ctime] = new_node_coupling
-
-    def query_coupling(self, step):
-        """This method returns the whole TVB current node_coupling
-           by querying the CosimHistory coupling buffer for a time step."""
-        return self.coupling_buffer[(step - 1) % self.n_ctime]

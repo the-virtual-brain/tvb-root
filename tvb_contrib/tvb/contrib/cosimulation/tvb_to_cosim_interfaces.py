@@ -91,47 +91,22 @@ class TVBtoCosimInterface(HasTraits):
 
 class TVBtoCosimInterfaces(HasTraits):
 
-    """This class holds list of
-        - state_interfaces, and
-        - coupling interfaces"""
+    """This class holds a list of state_interfaces"""
 
-    state_interfaces = List(of=TVBtoCosimInterface)
-    coupling_interfaces = List(of=TVBtoCosimInterface)
-
-    update_non_state_variables = None
+    interfaces = List(of=TVBtoCosimInterface)
 
     number_of_interfaces = None
-    number_of_state_interfaces = None
-    number_of_coupling_interfaces = None
-
-    @property
-    def interfaces(self):
-        return self.state_interfaces + self.coupling_interfaces
 
     @property
     def voi(self):
-        return [interfaces.voi for interfaces in self.state_interfaces]
-
-    @property
-    def cvoi(self):
-        return [interfaces.voi for interfaces in self.coupling_interfaces]
-
-    @property
-    def state_proxy_inds(self):
-        return [interfaces.proxy_inds for interfaces in self.state_interfaces]
-
-    @property
-    def coupling_proxy_inds(self):
-        return [interfaces.proxy_inds for interfaces in self.coupling_interfaces]
+        return [interfaces.voi for interfaces in self.interfaces]
 
     @property
     def proxy_inds(self):
-        return self.state_proxy_inds + self.coupling_proxy_inds
+        return [interfaces.proxy_inds for interfaces in self.interfaces]
 
     def configure(self, simulator):
         for interface in self.interfaces:
             interface.configure(simulator)
         self.number_of_interfaces = len(self.interfaces)
-        self.number_of_state_interfaces = len(self.state_interfaces)
-        self.number_of_coupling_interfaces = len(self.coupling_interfaces)
         super(TVBtoCosimInterfaces, self).configure()

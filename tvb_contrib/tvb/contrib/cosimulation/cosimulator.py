@@ -84,45 +84,33 @@ class CoSimulator(Simulator):
     PRINT_PROGRESSION_MESSAGE = True
 
     def _configure_cosimulation(self):
-        """This method will run all the configuration methods of all TVB <-> Cosimulator interfaces,
+        """This method will
+           - set the synchronization time and number of steps,
+           - create CosimHistory,
+           - run all the configuration methods of all TVB <-> Cosimulator interfaces,
            If there are any Cosimulator -> TVB update interfaces:
             - remove connectivity among region nodes modelled exclusively in the other co-simulator.
-            - generate a CosimModel class from the original Model class
+           If there is any current state cosim_to_tvb interface update:
+            - generate a CosimModel class from the original Model class,
             - set the cosim_vars and cosim_vars_proxy_inds properties of the CosimModel class,
               based on the respective vois and proxy_inds of all cosim_to_tvb state interfaces.
+           If there is any history cosim_to_tvb interface update:
+            - throw a warning if we are not using a coupling function that requires the current state.
            """
         if self.synchronization_time is None:
             # Default synchronization time to dt:
             self.synchronization_time = self.integrator.dt
         # Compute the number of synchronization time steps:
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
-        if self.synchronization_n_step > 1:
-            # TODO: change the coupling monitor to give the delayed state only
-            if self.coupling in CouplingWithCurrentState:
-                raise ValueError("You cannot have delayed synchronization with %s,"
-                                 "which requires the current state of its computation!"
-                                 % self.coupling.__class__.__name__)
         # We create a CosimHistory,
-        # for delayed state *[synchronization_istep + 1, n_var, n_node, n_mode]
-        # and node_coupling [2 * synchronization_istep, n_cvar, n_node, n_mode]
-        n_cvar = len(self.model.cvar)
+        # for delayed state [synchronization_istep+1, n_var, n_node, n_mode]
         self.cosim_history = CosimHistory(self.synchronization_n_step,
                                           self.model.nvar,
-                                          n_cvar,
                                           self.number_of_nodes,
                                           self.model.number_of_modes)
         # Initialization of the delayed state from the initial condition,
         # which must be already configured during history configuration
-        # Instead, CosimHistory coupling buffer is initialized
-        # for synchronization_nsteps
-        # both in the past (for possible TVB monitors),
-        # and in the future (for possible Coupling TVB to Cosim interfaces).
-        coupling_buffer = numpy.empty((self.cosim_history.n_ctime, self.cosim_history.n_cvar,
-                                       self.cosim_history.n_node, self.cosim_history.n_mode)).astype("f")
-        start_step = self.current_step + 1
-        for istep in range(start_step-self.synchronization_n_step, start_step + self.synchronization_n_step):
-            coupling_buffer[istep % self.cosim_history.n_ctime] = self._loop_compute_node_coupling(istep)
-        self.cosim_history.initialize(self.initial_conditions, coupling_buffer)
+        self.cosim_history.initialize(self.initial_conditions)
         if self.tvb_to_cosim_interfaces:
             # Configure any TVB to Cosim interfaces:
             self.tvb_to_cosim_interfaces.configure(self)
@@ -131,18 +119,6 @@ class CoSimulator(Simulator):
         if self.cosim_to_tvb_interfaces:
             # Configure any Cosim to TVB interfaces:
             self.cosim_to_tvb_interfaces.configure(self)
-            # Create a CosimModel out of the TVB model,
-            # in order to add cosim_vars and cosim_vars_proxy_inds properties
-            # that might be used in the model's code to
-            # identify the states that get updated from the Cosimulator:
-            if isinstance(self.model, ModelNumbaDfun):
-                self.model = CosimModelNumbaDfun.from_model(self.model)
-            else:
-                self.model = CosimModel.from_model(self.model)
-            self.model.cosim_vars = self.cosim_to_tvb_interfaces.state_vois
-            self.model.cosim_vars_proxy_inds = self.cosim_to_tvb_interfaces.state_proxy_inds
-            self.model.configure()
-            self.model.update_derived_parameters()
             # A flag to know if the connectivity needs to be reconfigured:
             reconfigure_connectivity = False
             for interface in self.cosim_to_tvb_interfaces.interfaces:
@@ -154,6 +130,26 @@ class CoSimulator(Simulator):
                     self.connectivity.weights[interface.proxy_inds][:, interface.proxy_inds] = 0.0
             if reconfigure_connectivity:
                 self.connectivity.configure()
+            if self._update_state:
+                # In case we update the current state,
+                # create a CosimModel out of the TVB model,
+                # in order to add cosim_vars and cosim_vars_proxy_inds properties
+                # that might be used in the model's code to
+                # identify the states that get updated from the Cosimulator:
+                if isinstance(self.model, ModelNumbaDfun):
+                    self.model = CosimModelNumbaDfun.from_model(self.model)
+                else:
+                    self.model = CosimModel.from_model(self.model)
+                self.model.cosim_vars = self.cosim_to_tvb_interfaces.state_vois
+                self.model.cosim_vars_proxy_inds = self.cosim_to_tvb_interfaces.state_proxy_inds
+                self.model.configure()
+                self.model.update_derived_parameters()
+            if self.cosim_to_tvb_interfaces.number_of_history_interfaces:
+                if self.coupling in CouplingWithCurrentState:
+                    self.log.warning("Mind that you are using delayed sychronization of co-simulation"
+                                     " together with node coupling %s,"
+                                     "which requires the current state for its computation!"
+                                     % self.coupling.__class__.__name__)
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
@@ -213,14 +209,9 @@ class CoSimulator(Simulator):
         # Also, put the current state as it stands
         # to the CosimHistory state buffer:
         self.cosim_history.update_state(step, state)
-        # Compute the node_coupling for next step:
-        next_step = step + 1
-        node_coupling = self._loop_compute_node_coupling(next_step)
-        # ...and update the CosimHistory coupling buffer:
-        self.cosim_history.update_coupling(next_step, node_coupling)
         # If there are any history cosim to TVB interfaces
         # and if it is time to synchronize...
-        if self.number_of_history_interfaces and step % self.synchronization_n_step == 0:
+        if self.cosim_to_tvb_interfaces.number_of_history_interfaces and step % self.synchronization_n_step == 0:
             # For every step of synchronization_time,
             # starting from the past towards the present,
             start_step = step - self.synchronization_n_step
@@ -250,16 +241,6 @@ class CoSimulator(Simulator):
                     self.cosim_history.update_state(istep, self.bound_and_clamp(istate))
                     # ...and finally update the TVB history as well...
                     self.history.update(istep, self.cosim_history.query_state(istep))
-                # Now that all history is updated,
-                # we need to also recompute the node_coupling for the next synchronization_n_step time steps:
-                start_step = step + 1
-                for istep in range(start_step, start_step+self.synchronization_n_step):
-                    # TODO: recompute coupling for cosimulation/integration
-                    self.cosim_history.update_coupling(istep, self._loop_compute_node_coupling(istep))
-                # Return the current state and next time step node coupling from CosimHistory:
-                return self.cosim_history.query_state(step), self.cosim_history.query_state(step+1)
-            else:
-                return state, node_coupling
 
     @staticmethod
     def _get_tvb_monitor(monitor):
@@ -287,9 +268,9 @@ class CoSimulator(Simulator):
                 data = []
                 for _step in range(start_step, step):
                     # Get the observable, based either on state variables or on node coupling:
-                    observable = numpy.where(isinstance(get_monitor_fun(monitor), Coupling),
-                                             self.cosim_history.query_coupling(_step),
-                                             self.model.observe(self.cosim_history.query_state(_step)())).item()
+                    observable = self.cosim_history.query_coupling(_step) \
+                                 if isinstance(get_monitor_fun(monitor), Coupling) \
+                                 else self.model.observe(self.cosim_history.query_state(_step)())
                     # ...to provide states to the sample method of the TVB monitor...
                     _output = self.monitor.record(_step, observable)
                     if _output is not None:
@@ -302,37 +283,24 @@ class CoSimulator(Simulator):
             return_flag = True
         return outputs, return_flag
 
-    def _loop_cosim_monitor_output(self, step, return_outputs=[], return_flag=False):
-        """This method records from all cosimulation monitors"""
-        cosim_state_outputs, return_flag = \
-            self._loop_record_monitors(step, self.tvb_to_cosim_interfaces.state_interfaces,
-                                       self._get_tvb_monitor_from_tvb_to_cosim_interface,
-                                       return_flag)
-        return_outputs.append(cosim_state_outputs)
-        cosim_coupling_outputs, return_flag = \
-            self._loop_record_monitors(step + self.synchronization_n_step + 1,
-                                       self.tvb_to_cosim_interfaces.coupling_interfaces, return_flag)
-        return_outputs.append(cosim_coupling_outputs)
-        return return_outputs, return_flag
-
     def _loop_monitor_output(self, step):
         """This method computes the observed state,
            records from all TVB monitors, and then, all cosimulation monitors,
            and returns:
             - either None if none of the above monitors returns an ouput,
-            - (monitor_outputs, cosim_state_outputs, cosim_coupling_outputs),
+            - (monitor_outputs, cosim_state_outputs),
                with None for outputs that do not exist."""
         return_outputs, return_flag = self._loop_record_monitors(step, self.monitors)
+        return_outputs = [return_outputs]
         if self.tvb_to_cosim_interfaces:
-            cosim_state_outputs, cosim_coupling_outputs, return_flag = \
-                self._loop_cosim_monitor_output(step, return_outputs, return_flag)
-            if return_flag:
-                # return a tuple of (monitors, cosim_state_outputs, cosim_coupling_outputs) outputs
-                return tuple([return_outputs, cosim_state_outputs, cosim_coupling_outputs])
-        else:
-            if return_flag:
-                # return only (monitors,) outputs
-                return tuple([return_outputs])
+            cosim_outputs, return_flag = \
+                self._loop_record_monitors(step, self.tvb_to_cosim_interfaces.state_interfaces,
+                                           self._get_tvb_monitor_from_tvb_to_cosim_interface,
+                                           return_flag)
+            return_outputs += [cosim_outputs]  # return a tuple of (monitors, cosim_outputs) outputs
+        if return_flag:
+            # return a tuple of (monitors, cosim_outputs) outputs
+            return tuple(return_outputs)
 
     def _print_progression_message(self, step, n_steps):
         if step - self.current_step >= self._tic_point:
@@ -374,7 +342,7 @@ class CoSimulator(Simulator):
         stimulus = self._prepare_stimulus()
         state = self.current_state
         start_step = self.current_step + 1
-        node_coupling = self.cosim_history.query_coupling(start_step)
+        node_coupling = self._loop_compute_node_coupling(start_step)
 
         # integration loop
         n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
@@ -388,7 +356,8 @@ class CoSimulator(Simulator):
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             if self._update_state:
                 state = self._loop_update_state(state)
-            state, node_coupling = self._loop_update_history(step, n_reg, state, cosim_updates)
+            self._loop_update_history(step, n_reg, state, cosim_updates)
+            node_coupling = self._loop_compute_node_coupling(step + 1)
             output = self._loop_monitor_output(step)
             if output is not None:
                 yield output
