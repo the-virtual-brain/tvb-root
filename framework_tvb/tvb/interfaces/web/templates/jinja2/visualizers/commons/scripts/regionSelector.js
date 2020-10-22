@@ -255,6 +255,7 @@ RegionSelectComponent.prototype.selectedIndices = function(arg){
         this._set_indices(arg);
         this._dropDown.val("[]");
         this.$dom.trigger("selectionChange", [this._selectedValues.slice()]);
+
     }
 };
 
