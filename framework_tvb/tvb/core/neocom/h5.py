@@ -36,6 +36,7 @@ from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.storage import dao
 from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
@@ -203,6 +204,7 @@ def store_view_model(view_model, base_dir):
     It works recursively because there are view models that are serialized in multiple files (eg. SimulatorAdapterModel)
     """
     h5_path = path_for(base_dir, ViewModelH5, view_model.gid, type(view_model).__name__)
+    file_exist_before_save = os.path.exists(h5_path)
     with ViewModelH5(h5_path, view_model) as h5_file:
         h5_file.store(view_model)
         h5_file.type.store(get_full_class_name(type(view_model)))
@@ -223,7 +225,18 @@ def store_view_model(view_model, base_dir):
                     store_view_model(model_attr[idx], base_dir)
             else:
                 store_view_model(model_attr, base_dir)
+
+        if not references and isinstance(view_model, ViewModel) and not file_exist_before_save:
+            operation = dao.get_operation_by_id(os.path.basename(base_dir))
+            disk_size = get_view_model_disk_size(h5_path)
+            operation.disk_size = operation.disk_size + disk_size
+            dao.store_entity(operation)
+
     return h5_path
+
+def get_view_model_disk_size(path):
+    size = os.path.getsize(path)
+    return int(round(size / 1024.))
 
 
 def determine_filepath(gid, base_dir):
