@@ -103,6 +103,7 @@ class SimulatorService(object):
             session_stored_simulator.generic_attributes = ga
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             h5.store_view_model(session_stored_simulator, storage_path)
+            model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)[0]
             burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id,
                                                                        session_stored_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)
@@ -110,6 +111,8 @@ class SimulatorService(object):
             wf_errs = 0
             try:
                 OperationService().launch_operation(operation.id, True)
+                operation.view_model_disk_size = model_size_on_disk
+                dao.store_entity(operation)
                 return operation
             except Exception as excep:
                 self.logger.error(excep)

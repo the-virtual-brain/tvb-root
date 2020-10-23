@@ -418,6 +418,23 @@ class FilesHelper(object):
             return int(os.path.getsize(file_path) / 1024)
         return 0
 
+    @staticmethod
+    def compute_recursive_h5_disk_usage(start_path='.'):
+        """
+        Computes the disk usage of all h5 files under the given directory.
+        :param start_path:
+        :return: A tuple of size in kiB and number of files
+        """
+        total_size = 0
+        n_files = 0
+        for dir_path, _, file_names in os.walk(start_path):
+            for f in file_names:
+                if f.endswith('.h5'):
+                    fp = os.path.join(dir_path, f)
+                    total_size += os.path.getsize(fp)
+                    n_files += 1
+        return int(round(total_size / 1024.)), n_files
+
 
 class TvbZip(ZipFile):
     def __init__(self, dest_path, mode="r"):

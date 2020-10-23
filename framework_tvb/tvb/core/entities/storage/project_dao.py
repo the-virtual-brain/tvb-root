@@ -213,7 +213,7 @@ class CaseDAO(RootDAO):
             total_size_for_dt = self.session.query(func.sum(DataType.disk_size)).join(Operation
                                                                                ).filter(
                 Operation.fk_launched_in == project_id).scalar()
-            total_size = self.session.query(func.sum(Operation.disk_size)).filter(
+            total_size = self.session.query(func.sum(Operation.view_model_disk_size)).filter(
                 Operation.fk_launched_in == project_id).scalar()
             total_size = total_size + total_size_for_dt
             return total_size or 0

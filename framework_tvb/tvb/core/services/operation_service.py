@@ -192,7 +192,7 @@ class OperationService:
             metrics_datatype_group.fk_from_operation = metric_operation.id
             dao.store_entity(metrics_datatype_group)
 
-        self._store_view_model(metric_operation, sim_operation.project, view_model)
+        self.store_view_model(metric_operation, sim_operation.project, view_model)
         return metric_operation
 
     @transactional
@@ -257,14 +257,17 @@ class OperationService:
                 dao.store_entity(existing_dt_group)
 
         for operation in operations:
-            self._store_view_model(operation, project, view_model)
+            self.store_view_model(operation, project, view_model)
 
         return operations, group
 
-    @staticmethod
-    def _store_view_model(operation, project, view_model):
+    def store_view_model(self, operation, project, view_model):
         storage_path = FilesHelper().get_project_folder(project, str(operation.id))
         h5.store_view_model(view_model, storage_path)
+        storage_path = FilesHelper().get_project_folder(project, str(operation.id))
+        model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)[0]
+        operation.view_model_disk_size = model_size_on_disk
+        dao.store_entity(operation)
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
