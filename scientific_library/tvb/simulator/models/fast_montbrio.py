@@ -61,6 +61,13 @@ def make_loop(nh, nto, nn, dt, cfpre, cfpost):
     dt, pi = [nb.float32(_) for _ in (dt, np.pi)]
     sqrt_dt = nb.float32(np.sqrt(dt))
     o_nh = nb.float32(1 / nh * nto)
+    o_6 = nb.float32(1 / 6)
+    @nb.njit(fastmath=True,boundscheck=False,inline='always')
+    def dr(r, V, o_tau, pi, tau, Delta):
+        return o_tau * (Delta / (pi * tau) + 2 * V * r)
+    @nb.njit(fastmath=True,boundscheck=False,inline='always')
+    def dV(r, V, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc):
+        return o_tau * (V ** 2 - (pi ** 2) * (tau ** 2) * (r ** 2) + eta + J * tau * r + I + cr * rc + cv * Vc)
     @nb.njit(boundscheck=False, fastmath=True)
     def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
         o_tau = nb.float32(1 / tau)
@@ -83,11 +90,19 @@ def make_loop(nh, nto, nn, dt, cfpre, cfpost):
                     Vc += w[i, j] * cfpre(V[dij, j], V[t, i])
                 rc = cfpost(rc)
                 Vc = cfpost(Vc)
-                dr = o_tau * (Delta / (pi * tau) + 2 * V[t, i] * r[t, i])
-                dV = o_tau * (V[t, i] ** 2 - (pi ** 2) * (tau ** 2) * (r[t, i] ** 2) + eta + J * tau * r[t, i] + I + cr * rc + cv * Vc)
-                r[t1, i] = r[t, i] + dr * dt + sqrt_dt * r_sigma * wrV[0, t, i]
+                dr_0 = dr(r[t, i], V[t, i], o_tau, pi, tau, Delta)
+                dV_0 = dV(r[t, i], V[t, i], o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
+                kh = nb.float32(0.5)
+                dr_1 = dr(r[t, i] + dt*kh*dr_0, V[t, i] + dt*kh*dV_0, o_tau, pi, tau, Delta)
+                dV_1 = dV(r[t, i] + dt*kh*dr_0, V[t, i] + dt*kh*dV_0, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
+                dr_2 = dr(r[t, i] + dt*kh*dr_1, V[t, i] + dt*kh*dV_1, o_tau, pi, tau, Delta)
+                dV_2 = dV(r[t, i] + dt*kh*dr_1, V[t, i] + dt*kh*dV_1, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
+                kh = nb.float32(1.0)
+                dr_3 = dr(r[t, i] + dt*kh*dr_2, V[t, i] + dt*kh*dV_2, o_tau, pi, tau, Delta)
+                dV_3 = dV(r[t, i] + dt*kh*dr_2, V[t, i] + dt*kh*dV_2, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
+                r[t1, i] = r[t, i] + o_6*dt*(dr_0 + 2*(dr_1 + dr_2) + dr_3) + sqrt_dt * r_sigma * wrV[0, t, i]
                 r[t1, i] *= r[t1, i] >= 0
-                V[t1, i] = V[t, i] + dV * dt + sqrt_dt * V_sigma * wrV[1, t, i]
+                V[t1, i] = V[t, i] + o_6*dt*(dV_0 + 2*(dV_1 + dV_2) + dV_3) + sqrt_dt * V_sigma * wrV[1, t, i]
                 tavg[t0_nto, 0, i] += r[t1, i] * o_nh
                 tavg[t0_nto, 1, i] += V[t1, i] * o_nh
                 bold_out[i] = fmri(bold_state[i], tavg[0, 0, i], dt)
@@ -102,10 +117,10 @@ def default_icfun(t, rV):
 def run_loop(weights, delays,
              total_time=60e3, bold_tr=1800, coupling_scaling=0.01,
              r_sigma=1e-3, V_sigma=1e-3,
-             I=0.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
-             dt=0.1,
+             I=1.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
+             dt=1.0,
              nh=256,  # history buf len, must be power of 2 & greater than delays.max()/dt
-             nto=2,   # num parts of nh for tavg, e.g. nh=256, nto=4: tavg over 64 steps
+             nto=16,   # num parts of nh for tavg, e.g. nh=256, nto=4: tavg over 64 steps
              progress=False,
              icfun=default_icfun):
     assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1]
@@ -156,12 +171,17 @@ def grid_search(**params):
 
 
 if __name__ == '__main__':
-    nn = 8
+    nn = 96
     w = np.random.randn(nn, nn)**2
     d = np.random.rand(nn, nn)**2 * 25
-    args, mons = grid_search(n_jobs=2,
-        weights=[w], delays=[d], total_time=[10e3],  # non-varying into single elem list
-        cr=np.r_[:0.1:4j], cv=np.r_[:0.1:4j]         # varying as arrays/lists
-    )
-    for args, (tavg, bold) in zip(args, mons):
-        print('cr/cv: ', args['cr'], '/', args['cv'], ', tavg std:', tavg[-100:].std())
+    tavg, bold = run_loop(w, d, dt=1, I=1.7)
+    import pylab as pl
+    pl.plot(tavg[:, 0, 0], 'k')
+    pl.show()
+
+    # args, mons = grid_search(n_jobs=2,
+    #     weights=[w], delays=[d], total_time=[10e3],  # non-varying into single elem list
+    #     cr=np.r_[:0.1:4j], cv=np.r_[:0.1:4j]         # varying as arrays/lists
+    # )
+    # for args, (tavg, bold) in zip(args, mons):
+    #     print('cr/cv: ', args['cr'], '/', args['cv'], ', tavg std:', tavg[-100:].std())
