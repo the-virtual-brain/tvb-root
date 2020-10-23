@@ -33,14 +33,18 @@ A convenience module for the command interface
 
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+import os
 from datetime import datetime
 from time import sleep
 
+from tvb.adapters.uploaders.tvb_importer import TVBImporter
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterModel
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import command_initializer
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
@@ -51,7 +55,6 @@ from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.services.user_service import UserService
-from tvb.simulator.simulator import Simulator
 
 command_initializer()
 LOG = get_logger(__name__)
@@ -90,26 +93,42 @@ def new_project(name):
 
 
 def import_conn_zip(project_id, zip_path):
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
     project = dao.get_project_by_id(project_id)
 
     importer = ABCAdapter.build_adapter_from_class(ZIPConnectivityImporter)
     view_model = ZIPConnectivityImporterModel()
     view_model.uploaded = zip_path
 
-    OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)
+    return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)[0]
 
 
-def fire_simulation(project_id, simulator):
+def import_conn_h5(project_id, h5_path):
     project = dao.get_project_by_id(project_id)
-    assert isinstance(simulator, Simulator)
+
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    now = datetime.now()
+    date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
+                                         now.minute, now.second, now.microsecond)
+    uq_name = "%s-Connectivity" % date_str
+    new_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, uq_name)
+
+    FilesHelper.copy_file(h5_path, new_path)
+    importer = ABCAdapter.build_adapter_from_class(TVBImporter)
+    view_model = importer.get_view_model_class()()
+    view_model.data_file = new_path
+
+    return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)[0]
+
+
+def fire_simulation(project_id, simulator_model):
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    project = dao.get_project_by_id(project_id)
+    assert isinstance(simulator_model, SimulatorAdapterModel)
     # Load the SimulatorAdapter algorithm from DB
     cached_simulator_algorithm = AlgorithmService().get_algorithm_by_module_and_class(
         IntrospectionRegistry.SIMULATOR_MODULE,
         IntrospectionRegistry.SIMULATOR_CLASS)
-
-    simulator_model = SimulatorAdapterModel()
-    simulator_model.connectivity = simulator.connectivity.gid
-    simulator_model.simulation_length = simulator.simulation_length
 
     # Instantiate a SimulatorService and launch the configured simulation
     simulator_service = SimulatorService()
@@ -125,6 +144,17 @@ def fire_simulation(project_id, simulator):
     return launched_operation
 
 
+def fire_operation(project_id, adapter_instance, view_model):
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    project = dao.get_project_by_id(project_id)
+
+    # launch an operation and have the results stored both in DB and on disk
+    launched_operation = OperationService().fire_operation(adapter_instance, project.administrator,
+                                                           project.id, view_model=view_model)[0]
+    LOG.info("Operation launched....")
+    return launched_operation
+
+
 def wait_to_finish(operation):
     # Wait for the operation to finish
     while not operation.has_finished:
@@ -135,3 +165,12 @@ def wait_to_finish(operation):
         LOG.info("Operation finished successfully")
     else:
         LOG.warning("Operation ended with problems [%s]: [%s]" % (operation.status, operation.additional_info))
+
+    return operation
+
+
+def list_operation_results(operation_id):
+    fmt = "%16s %24s %32s %12s"
+    print(fmt % ('id', 'type', 'gid', 'date'))
+    for dt in dao.get_results_for_operation(operation_id):
+        print(fmt % (dt.id, dt.type, dt.gid, dt.create_date))
