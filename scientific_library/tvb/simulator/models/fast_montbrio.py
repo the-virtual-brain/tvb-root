@@ -56,6 +56,59 @@ def make_linear_cfun(scale=0.01):
     return pre, post
 
 
+def make_cuda_loop(nh, nto, nn, dt):
+    from numba import cuda
+    nh, nn = [nb.uint32(_) for _ in (nh, nn)]
+    dt, pi = [nb.float32(_) for _ in (dt, np.pi)]
+    sqrt_dt = nb.float32(np.sqrt(dt))
+    o_nh = nb.float32(1 / nh * nto)
+    o_6 = nb.float32(1 / 6)
+    @cuda.jit(inline='always',device=True)
+    def dr(r, V, o_tau, pi, tau, Delta):
+        return o_tau * (Delta / (pi * tau) + 2 * V * r)
+    @cuda.jit(inline='always',device=True)
+    def dV(r, V, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc):
+        return o_tau * (V ** 2 - (pi ** 2) * (tau ** 2) * (r ** 2) + eta + J * tau * r + I + cr * rc + cv * Vc)
+    @cuda.jit(fastmath=True)
+    def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
+        it = cuda.threadIdx.x
+        o_tau = nb.float32(1 / tau)
+        assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
+        assert r.shape[1] == V.shape[1] == nn
+        if it == 0:
+            for j in range(nto):
+                for i in range(nn):
+                    tavg[j, 0, i] = nb.float32(0.0)
+                    tavg[j, 1, i] = nb.float32(0.0)
+            for t0 in range(-1, nh - 1):
+                t = nh-1 if t0<0 else t0
+                t1 = t0 + 1
+                t0_nto = t0 // (nh // nto)
+                for i in range(nn):
+                    rc = nb.float32(0) # using array here costs 50%+
+                    Vc = nb.float32(0)
+                    for j in range(nn):
+                        dij = (t - d[i, j] + nh) & (nh-1)
+                        rc += w[i, j] * r[dij, j]
+                        Vc += w[i, j] * V[dij, j]
+                    dr_0 = dr(r[t, i], V[t, i], o_tau, pi, tau, Delta)
+                    dV_0 = dV(r[t, i], V[t, i], o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
+                    kh = nb.float32(0.5)
+                    dr_1 = dr(r[t, i] + dt*kh*dr_0, V[t, i] + dt*kh*dV_0, o_tau, pi, tau, Delta)
+                    dV_1 = dV(r[t, i] + dt*kh*dr_0, V[t, i] + dt*kh*dV_0, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
+                    dr_2 = dr(r[t, i] + dt*kh*dr_1, V[t, i] + dt*kh*dV_1, o_tau, pi, tau, Delta)
+                    dV_2 = dV(r[t, i] + dt*kh*dr_1, V[t, i] + dt*kh*dV_1, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
+                    kh = nb.float32(1.0)
+                    dr_3 = dr(r[t, i] + dt*kh*dr_2, V[t, i] + dt*kh*dV_2, o_tau, pi, tau, Delta)
+                    dV_3 = dV(r[t, i] + dt*kh*dr_2, V[t, i] + dt*kh*dV_2, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
+                    r[t1, i] = r[t, i] + o_6*dt*(dr_0 + 2*(dr_1 + dr_2) + dr_3) + sqrt_dt * r_sigma * wrV[0, t, i]
+                    r[t1, i] *= r[t1, i] >= 0
+                    V[t1, i] = V[t, i] + o_6*dt*(dV_0 + 2*(dV_1 + dV_2) + dV_3) + sqrt_dt * V_sigma * wrV[1, t, i]
+                    tavg[t0_nto, 0, i] += r[t1, i] * o_nh
+                    tavg[t0_nto, 1, i] += V[t1, i] * o_nh
+    return loop
+
+
 def make_loop(nh, nto, nn, dt, cfpre, cfpost):
     nh, nn = [nb.uint32(_) for _ in (nh, nn)]
     dt, pi = [nb.float32(_) for _ in (dt, np.pi)]
@@ -121,7 +174,7 @@ def run_loop(weights, delays,
              dt=1.0,
              nh=256,  # history buf len, must be power of 2 & greater than delays.max()/dt
              nto=16,   # num parts of nh for tavg, e.g. nh=256, nto=4: tavg over 64 steps
-             progress=False,
+             progress=False, gpu=False,
              icfun=default_icfun):
     assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1]
     nn = weights.shape[0]
@@ -140,7 +193,10 @@ def run_loop(weights, delays,
     rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
-    loop = make_loop(nh, nto, nn, dt, cfpre, cfpost)
+    if gpu:
+        loop = make_cuda_loop(nh, nto, nn, dt)[(1,1,1), (32,1)]
+    else:
+        loop = make_loop(nh, nto, nn, dt, cfpre, cfpost)
     # outer loop setup
     win_len = nh * dt
     total_wins = int(total_time / win_len)
@@ -174,7 +230,7 @@ if __name__ == '__main__':
     nn = 96
     w = np.random.randn(nn, nn)**2
     d = np.random.rand(nn, nn)**2 * 25
-    tavg, bold = run_loop(w, d, dt=1, I=1.7)
+    tavg, bold = run_loop(w, d, dt=1, I=1.7, gpu=True)
     import pylab as pl
     pl.plot(tavg[:, 0, 0], 'k')
     pl.show()
