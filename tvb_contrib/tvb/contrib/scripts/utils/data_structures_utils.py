@@ -56,6 +56,8 @@ class CalculusConfig(object):
 
 
 def is_numeric(value):
+    if isinstance(value, bool):
+        return False
     return isinstance(value, (float, np.float, np.float64, np.float32, np.float16, np.float128,
                               int, np.int, np.int0, np.int8, np.int16, np.int32, np.int64,
                               complex, np.complex, np.complex64, np.complex128, np.complex256,
@@ -63,6 +65,8 @@ def is_numeric(value):
 
 
 def is_integer(value):
+    if isinstance(value, bool):
+        return False
     return isinstance(value, (int, np.int, np.int0, np.int8, np.int16, np.int32, np.int64))
 
 
