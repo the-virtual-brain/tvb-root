@@ -2,10 +2,13 @@ import numpy as np
 import subprocess
 import logging
 import ctypes
+import tqdm
 from numpy.random import SFC64
+
 
 def cmd(str):# {{{
     subprocess.check_call(str.split(' '))# }}}
+
 
 def make_kernel():
     cmd('/usr/local/bin/ispc --target=avx512skx-i32x16 --math-lib=fast --pic montbrio.c -o montbrio.o')
@@ -48,14 +51,17 @@ rng = np.random.default_rng(SFC64(42))                      # create RNG w/ know
 kerneler = make_kernel()
 (_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(k, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
 tavgs = []
-import tqdm
-for i in tqdm.trange(int(10e3/1.0/16)):
+for i in tqdm.trange(int(10*60e3/1.0/16)):
   rng.standard_normal(size=W.shape, dtype='f', out=W) # ~50%
   kernel()
-  tavgs.append(r.flat[:].copy())
+  tavgs.append(tavg.flat[:].copy())
 tavgs = np.array(tavgs)
 
 import pylab as pl
-pl.subplot(211); pl.plot(tavgs[:, 0], 'k')
-# pl.subplot(212); pl.plot(tavgs[:, 96], 'b')
+t = np.r_[:len(tavgs)] * 0.016
+pl.subplot(211); pl.plot(t, tavgs[:, 0], 'k-')
+pl.ylabel('tavg r'); pl.xlabel('time (s)')
+pl.subplot(212); pl.plot(t, tavgs[:, 0], 'k-'); pl.xlim([t[-1000], t[-1]])
+pl.ylabel('tavg r'); pl.xlabel('time (s)')
+pl.grid(1)
 pl.show()

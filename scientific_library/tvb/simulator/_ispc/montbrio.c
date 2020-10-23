@@ -2,10 +2,11 @@
 #define nl 16
 #define nc 6
 
-#define I 5.0f
+#define I 1.0f
 #define Delta 1.0f
 #define eta -5.0f
-#define tau 100.0f
+// tau 10 gives ~60Hz fast time scale
+#define tau 10.0f
 #define J 15.0f
 #define cr 0.01f
 #define cv 0.0f
@@ -37,7 +38,10 @@ export void loop(
 
     foreach (it = 0 ... nl)
     {
-        for (uniform int t=0; t<1; t++)
+        // this can be anything, but longer values do more work
+        // in kernel, and yield fewer tavg samplers, but
+        // the tavg is always over 16 samples
+        for (uniform int t=0; t<16; t++)
         {
             // compute delayed state coupling
             for (uniform int j=0; j<nc; j++)
@@ -49,9 +53,8 @@ export void loop(
                     int ij = j*nn + i*nl + it;
                     float wij_ = wij[ij];
                     float rh_ = rh[j*nl + it];
-                    int ih_ = 0;//ih[ij];
-                    // wij_ values are wrong: bad arguments passed.
-                    float inc = wij_;// * shuffle(rh_, ih_);
+                    int ih_ = ih[ij];
+                    float inc = wij_ * shuffle(rh_, ih_);
                     aff[i*nl+it] += inc;
                 }
 
@@ -69,10 +72,10 @@ export void loop(
                         V_ += dt*kh*kV[k-1];
                     }
                     kr[k] = o_tau * (Delta / (pi * tau) + 2 * V_ * r_);
-                    kV[k] = o_tau * (sq(V_) - sq_pi_tau * sq(r_) + eta + J * tau * r_ + I + cr * aff[i_]);
+                    kV[k] = o_tau * (sq(V_) - sq_pi_tau * sq(r_) + eta + J * tau * r_ + I + k * cr * aff[i_]);
                 }
-                nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*1e-4f*W[t*nn+i_];
-                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-4f*W[nl*nn + t*nn+i_];
+                nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*1e-2f*W[t*nn+i_];
+                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-2f*W[nl*nn + t*nn+i_];
             }
 
             for (uniform int i=0; i<nc; i++) {
