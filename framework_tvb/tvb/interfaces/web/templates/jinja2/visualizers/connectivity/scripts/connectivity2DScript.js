@@ -94,29 +94,36 @@ function drawConnectivity(json, shouldRefreshNodes) {
 
     }
     var selection_empty = true;
-    var first_json_node = hasNodesInJson(json);
-    if (first_json_node >= 0) {
-    	selection_empty = false;
-    	rootNode = first_json_node;
-    }
-
-    if (selection_empty) {
-        rgraph.loadJSON([{id:'root', name:'SELECT AT LEAST ONE NODE FROM THIS REGION TO REVEAL CONNECTIONS...',
+    if(json === undefined || json === null){
+        rgraph.loadJSON([{id:'root', name:'THIS HEMISPHERE IS EMPTY',
                           data: {radius: 0, angle: 0} }]);
-
     } else {
-        //load graph.
-        if (shouldRefreshNodes) {
-            rgraph.loadJSON(json, rootNode);
-        } else {
-            rgraph.loadJSON(json, 1);
+        var first_json_node = hasNodesInJson(json);
+        if (first_json_node >= 0) {
+            selection_empty = false;
+            rootNode = first_json_node;
         }
-        // remove all the nodes that were not selected by the user
-        rgraph.graph.eachNode(function(node) {
-            if (shouldRefreshNodes && selectedPoints.length > 0 && !isNodeSelected(node.id)) {
-                rgraph.graph.removeNode(node.id);
+
+        if (selection_empty) {
+            rgraph.loadJSON([{
+                id: 'root', name: 'SELECT AT LEAST ONE NODE FROM THIS REGION TO REVEAL CONNECTIONS...',
+                data: {radius: 0, angle: 0}
+            }]);
+
+        } else {
+            //load graph.
+            if (shouldRefreshNodes) {
+                rgraph.loadJSON(json, rootNode);
+            } else {
+                rgraph.loadJSON(json, 1);
             }
-        });
+            // remove all the nodes that were not selected by the user
+            rgraph.graph.eachNode(function (node) {
+                if (shouldRefreshNodes && selectedPoints.length > 0 && !isNodeSelected(node.id)) {
+                    rgraph.graph.removeNode(node.id);
+                }
+            });
+        }
     }
 
     //compute positions and plot
