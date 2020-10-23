@@ -82,7 +82,7 @@ def make_gpu_loop(nh, nn, nt, dt):
         assert r.shape[1] == V.shape[1] == nh
         # 48 KB shared memory
         # 96 nn x 16 nh x 4 f32 x 2 svar = 12 KB
-        # TODO try copying everything to shared before doing multiple iterations
+        # 96^2*2 * 4f32 = 73 KB so we can't do everything in shared memory
         # coupling
         aff = cuda.shared.array((3, 32), nb.float32)
         # current state
@@ -90,6 +90,8 @@ def make_gpu_loop(nh, nn, nt, dt):
         Vt = cuda.shared.array((3, 32), nb.float32)
         nrt = cuda.shared.array((3, 32), nb.float32)
         nVt = cuda.shared.array((3, 32), nb.float32)
+        # shared mem usage 640 per block, nvcc says
+        # used 106 registers, 32 stack, 1920 bytes smem, 856 bytes cmem[0], 24 bytes cmem[2], 0 bytes lmem
         for i in range(nc):
             rt[i, it] = r[i * nl + it, 0]
             Vt[i, it] = V[i * nl + it, 0]
@@ -230,9 +232,11 @@ def run_loop(weights, delays,
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
     loop = make_loop(nh, nto, nn, dt, cfpre, cfpost)
+    loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
     # outer loop setup
     win_len = nh * dt
     total_wins = int(total_time / win_len)
+    print(total_time, win_len, total_wins)
     bold_skip = int(bold_tr / win_len)
     tavg_trace = np.empty((total_wins, ) + tavg.shape, 'f')
     bold_trace = np.empty((total_wins//bold_skip + 1, ) + bold_out.shape, 'f')
@@ -252,7 +256,7 @@ def run_gpu_loop(weights, delays,
              I=1.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
              dt=1.0,
              nh=32,  # history buf len, must be power of 2 & greater than delays.max()/dt
-             progress=False,
+             progress=False, nt=16,
              icfun=default_icfun):
     assert nh==32, 'only nh=32 supported'
     assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1], 'weights delays square plz'
@@ -273,17 +277,25 @@ def run_gpu_loop(weights, delays,
     bold_state[:,1:] = 1.0
     bold_out = np.zeros((nn,), 'f')                             # buffer for bold output
     from numba.cuda.random import create_xoroshiro128p_states
-    nt = 16
     rng_states = create_xoroshiro128p_states(nn*2*nt, seed=1)
     loop = make_gpu_loop(nh, nn, nt, dt)
+    sloop = loop.specialize(r, V, w_, d_, tavg, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma, rng_states)
+    print(sloop._func.ccinfos[0])
     # outer loop setup
     win_len = nt * dt
     total_wins = int(total_time / win_len)
+    print(total_time, win_len, total_wins)
     tavg_trace = np.empty((total_wins, ) + tavg.shape, 'f')
+    # manage gpu memory
+    from numba.cuda import to_device, pinned_array, device_array_like
+    g_r, g_V, g_w_, g_d_, g_rng_states = [to_device(_) for _ in (r, V, w_, d_, rng_states)]
+    p_tavg = pinned_array(tavg.shape)
+    g_tavg = device_array_like(p_tavg)
     # start time stepping
     for t in (tqdm.trange if progress else range)(total_wins):
-        loop[1, 32](r, V, w_, d_, tavg, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma, rng_states)
-        tavg_trace[t] = tavg
+        loop[1, 32](g_r, g_V, g_w_, g_d_, g_tavg, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma, g_rng_states)
+        g_tavg.copy_to_host(p_tavg)
+        tavg_trace[t] = p_tavg
     return tavg_trace.reshape((total_wins, 2, nn)), None
 
 
@@ -304,9 +316,12 @@ if __name__ == '__main__':
     nn = 96
     w = np.random.randn(nn, nn)**2
     d = np.random.rand(nn, nn)**2 * 2.5
-    tavg, _ = run_gpu_loop(w, d, total_time=5e4, dt=1.0, I=1.0, tau=10.0, progress=True)
+    pars = dict(total_time=5e4, dt=1.0, I=1.0, tau=10.0, nh=32, progress=True)
+    tavg0, _ = run_gpu_loop(w, d, nt=32, **pars)
+    tavg1, _ = run_loop(w, d, nto=1, **pars)
     import pylab as pl
-    pl.plot(tavg[:, 0, 0], 'k')
+    pl.subplot(211); pl.plot(tavg0[:, 0, 0], 'k')
+    pl.subplot(212); pl.plot(tavg1[:, 0, 0], 'k')
     pl.show()
 
     # args, mons = grid_search(n_jobs=2,
