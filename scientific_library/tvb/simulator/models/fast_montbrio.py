@@ -2,6 +2,7 @@ import tqdm
 import numpy as np
 import numba as nb
 from numpy.random import SFC64
+import math
 
 
 @nb.njit
@@ -56,13 +57,17 @@ def make_linear_cfun(scale=0.01):
     return pre, post
 
 
-def make_cuda_loop(nh, nto, nn, dt):
+def make_gpu_loop(nh, nn, nt, dt):
     from numba import cuda
+    from numba.cuda.random import xoroshiro128p_uniform_float32
+    assert nh == 32
     nh, nn = [nb.uint32(_) for _ in (nh, nn)]
     dt, pi = [nb.float32(_) for _ in (dt, np.pi)]
     sqrt_dt = nb.float32(np.sqrt(dt))
-    o_nh = nb.float32(1 / nh * nto)
     o_6 = nb.float32(1 / 6)
+    pi_2 = nb.float32(np.pi * 2)
+    o_nt = nb.float32(1.0 / nt)
+    nl, nc = nb.int32(32), nb.int32(nn // 32)
     @cuda.jit(inline='always',device=True)
     def dr(r, V, o_tau, pi, tau, Delta):
         return o_tau * (Delta / (pi * tau) + 2 * V * r)
@@ -70,42 +75,73 @@ def make_cuda_loop(nh, nto, nn, dt):
     def dV(r, V, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc):
         return o_tau * (V ** 2 - (pi ** 2) * (tau ** 2) * (r ** 2) + eta + J * tau * r + I + cr * rc + cv * Vc)
     @cuda.jit(fastmath=True)
-    def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
+    def loop(r, V, w, d, tavg, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma, rng_states):
         it = cuda.threadIdx.x
         o_tau = nb.float32(1 / tau)
-        assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
-        assert r.shape[1] == V.shape[1] == nn
-        if it == 0:
-            for j in range(nto):
-                for i in range(nn):
-                    tavg[j, 0, i] = nb.float32(0.0)
-                    tavg[j, 1, i] = nb.float32(0.0)
-            for t0 in range(-1, nh - 1):
-                t = nh-1 if t0<0 else t0
-                t1 = t0 + 1
-                t0_nto = t0 // (nh // nto)
-                for i in range(nn):
-                    rc = nb.float32(0) # using array here costs 50%+
-                    Vc = nb.float32(0)
-                    for j in range(nn):
-                        dij = (t - d[i, j] + nh) & (nh-1)
-                        rc += w[i, j] * r[dij, j]
-                        Vc += w[i, j] * V[dij, j]
-                    dr_0 = dr(r[t, i], V[t, i], o_tau, pi, tau, Delta)
-                    dV_0 = dV(r[t, i], V[t, i], o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
-                    kh = nb.float32(0.5)
-                    dr_1 = dr(r[t, i] + dt*kh*dr_0, V[t, i] + dt*kh*dV_0, o_tau, pi, tau, Delta)
-                    dV_1 = dV(r[t, i] + dt*kh*dr_0, V[t, i] + dt*kh*dV_0, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
-                    dr_2 = dr(r[t, i] + dt*kh*dr_1, V[t, i] + dt*kh*dV_1, o_tau, pi, tau, Delta)
-                    dV_2 = dV(r[t, i] + dt*kh*dr_1, V[t, i] + dt*kh*dV_1, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
-                    kh = nb.float32(1.0)
-                    dr_3 = dr(r[t, i] + dt*kh*dr_2, V[t, i] + dt*kh*dV_2, o_tau, pi, tau, Delta)
-                    dV_3 = dV(r[t, i] + dt*kh*dr_2, V[t, i] + dt*kh*dV_2, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
-                    r[t1, i] = r[t, i] + o_6*dt*(dr_0 + 2*(dr_1 + dr_2) + dr_3) + sqrt_dt * r_sigma * wrV[0, t, i]
-                    r[t1, i] *= r[t1, i] >= 0
-                    V[t1, i] = V[t, i] + o_6*dt*(dV_0 + 2*(dV_1 + dV_2) + dV_3) + sqrt_dt * V_sigma * wrV[1, t, i]
-                    tavg[t0_nto, 0, i] += r[t1, i] * o_nh
-                    tavg[t0_nto, 1, i] += V[t1, i] * o_nh
+        assert r.shape[0] == V.shape[0] == nn  # shape asserts help numba optimizer
+        assert r.shape[1] == V.shape[1] == nh
+        # 48 KB shared memory
+        # 96 nn x 16 nh x 4 f32 x 2 svar = 12 KB
+        # TODO try copying everything to shared before doing multiple iterations
+        # coupling
+        aff = cuda.shared.array((3, 32), nb.float32)
+        # current state
+        rt = cuda.shared.array((3, 32), nb.float32)
+        Vt = cuda.shared.array((3, 32), nb.float32)
+        nrt = cuda.shared.array((3, 32), nb.float32)
+        nVt = cuda.shared.array((3, 32), nb.float32)
+        for i in range(nc):
+            rt[i, it] = r[i * nl + it, 0]
+            Vt[i, it] = V[i * nl + it, 0]
+        for i in range(nc):
+            tavg[0, i, it] = nb.float32(0.0)
+            tavg[1, i, it] = nb.float32(0.0)
+        for t in range(nt):
+            for i in range(nc):
+                aff[i, it] = nb.float32(0)
+            for j in range(nn):
+                for i in range(nc):
+                    aff[i, it] += w[i,j,it] * cuda.shfl_sync(nb.int32(1), r[j,it], d[j,i,it])
+            for i in range(nc):
+                r_ = rt[i, it]  # we need history stride 1 in time, but state stride 1 in space..
+                V_ = Vt[i, it]
+                dr_0 = dr(r_, V_, o_tau, pi, tau, Delta)
+                dV_0 = dV(r_, V_, o_tau, pi, tau, eta, J, I, cr, aff[i,it], cv, nb.float32(0))
+                kh = nb.float32(0.5)
+                dr_1 = dr(r_ + dt*kh*dr_0, V_ + dt*kh*dV_0, o_tau, pi, tau, Delta)
+                dV_1 = dV(r_ + dt*kh*dr_0, V_ + dt*kh*dV_0, o_tau, pi, tau, eta, J, I, cr, aff[i,it], cv, nb.float32(0))
+                dr_2 = dr(r_ + dt*kh*dr_1, V_ + dt*kh*dV_1, o_tau, pi, tau, Delta)
+                dV_2 = dV(r_ + dt*kh*dr_1, V_ + dt*kh*dV_1, o_tau, pi, tau, eta, J, I, cr, aff[i,it], cv, nb.float32(0))
+                kh = nb.float32(1.0)
+                dr_3 = dr(r_ + dt*kh*dr_2, V_ + dt*kh*dV_2, o_tau, pi, tau, Delta)
+                dV_3 = dV(r_ + dt*kh*dr_2, V_ + dt*kh*dV_2, o_tau, pi, tau, eta, J, I, cr, aff[i,it], cv, nb.float32(0))
+                # drift
+                nrt[i, it] = r_ + o_6 * dt * (dr_0 + 2 * (dr_1 + dr_2) + dr_3)
+                nVt[i, it] = V_ + o_6 * dt * (dV_0 + 2 * (dV_1 + dV_2) + dV_3)
+                # box-muller
+                u1 = xoroshiro128p_uniform_float32(rng_states, t*nn*2 + i*nl*2 + it)
+                u2 = xoroshiro128p_uniform_float32(rng_states, t*nn*2 + i*nl*2 + nl + it)
+                z0 = math.sqrt(-nb.float32(2.0) * math.log(u1)) * math.cos(pi_2 * u2)
+                z1 = math.sqrt(-nb.float32(2.0) * math.log(u1)) * math.sin(pi_2 * u2)
+                nrt[i, it] += sqrt_dt * r_sigma * z0
+                nVt[i, it] += sqrt_dt * V_sigma * z1
+                nrt[i, it] *= nrt[i, it] >= 0
+            for i in range(nc):
+                rt[i, it] = nrt[i, it]
+                Vt[i, it] = nVt[i, it]
+            # global memory writes
+            for i in range(nc):
+                # shift history
+                for l in range(nl):
+                    r[i*nl+l, it] = cuda.shfl_up_sync(1, r[i*nl+l, it], 1) # [0, 1, 2] -> [0, 0, 1]
+                    V[i*nl+l, it] = cuda.shfl_up_sync(1, V[i*nl+l, it], 1)
+                # insert current state at 0
+                r[i*nl+it, 0] = rt[i, it]
+                V[i*nl+it, 0] = Vt[i, it]
+                # update tavg
+                tavg[0, i, it] += rt[i, it] * o_nt
+                tavg[1, i, it] += Vt[i, it] * o_nt
+            # TODO fmri
     return loop
 
 
@@ -174,12 +210,12 @@ def run_loop(weights, delays,
              dt=1.0,
              nh=256,  # history buf len, must be power of 2 & greater than delays.max()/dt
              nto=16,   # num parts of nh for tavg, e.g. nh=256, nto=4: tavg over 64 steps
-             progress=False, gpu=False,
+             progress=False,
              icfun=default_icfun):
     assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1]
     nn = weights.shape[0]
     w = weights.astype(np.float32)
-    d = (delays / dt).astype(np.uint32)
+    d = (delays / dt).astype(np.int32)
     assert d.max() < nh
     # inner loop setup dimensions, constants, buffers
     r, V = rV = np.zeros((2, nh, nn), 'f')
@@ -193,10 +229,7 @@ def run_loop(weights, delays,
     rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
-    if gpu:
-        loop = make_cuda_loop(nh, nto, nn, dt)[(1,1,1), (32,1)]
-    else:
-        loop = make_loop(nh, nto, nn, dt, cfpre, cfpost)
+    loop = make_loop(nh, nto, nn, dt, cfpre, cfpost)
     # outer loop setup
     win_len = nh * dt
     total_wins = int(total_time / win_len)
@@ -211,6 +244,47 @@ def run_loop(weights, delays,
         if t % bold_skip == 0:
             bold_trace[t//bold_skip] = bold_out
     return tavg_trace.reshape((total_wins * nto, 2, nn)), bold_trace
+
+
+def run_gpu_loop(weights, delays,
+             total_time=60e3, coupling_scaling=0.01,
+             r_sigma=1e-3, V_sigma=1e-3,
+             I=1.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
+             dt=1.0,
+             nh=32,  # history buf len, must be power of 2 & greater than delays.max()/dt
+             progress=False,
+             icfun=default_icfun):
+    assert nh==32, 'only nh=32 supported'
+    assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1], 'weights delays square plz'
+    nn = weights.shape[0]
+    assert nn%32==0, 'only nn multiple of 32 supported'
+    nc, nl = nn // 32, 32
+    w = weights.astype(np.float32)
+    d = (delays / dt).astype(np.uint32)
+    # reshape for j,chunk,lane indexing
+    w_, d_ = [_.T.copy().reshape((nn,nc,nl)) for _ in (w, d)]
+    assert d.max() <= nh, 'max delay must be <= nh'
+    # inner loop setup dimensions, constants, buffers
+    r, V = rV = np.zeros((2, nn, nh), 'f')
+    icfun(-np.r_[:nh]*dt, rV)
+    I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma = [nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)]
+    tavg = np.zeros((2, nc, nl), 'f')                               # buffer for temporal average
+    bold_state = np.zeros((nn, 4), 'f')                         # buffer for bold state
+    bold_state[:,1:] = 1.0
+    bold_out = np.zeros((nn,), 'f')                             # buffer for bold output
+    from numba.cuda.random import create_xoroshiro128p_states
+    nt = 16
+    rng_states = create_xoroshiro128p_states(nn*2*nt, seed=1)
+    loop = make_gpu_loop(nh, nn, nt, dt)
+    # outer loop setup
+    win_len = nt * dt
+    total_wins = int(total_time / win_len)
+    tavg_trace = np.empty((total_wins, ) + tavg.shape, 'f')
+    # start time stepping
+    for t in (tqdm.trange if progress else range)(total_wins):
+        loop[1, 32](r, V, w_, d_, tavg, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma, rng_states)
+        tavg_trace[t] = tavg
+    return tavg_trace.reshape((total_wins, 2, nn)), None
 
 
 def grid_search(**params):
@@ -229,8 +303,8 @@ def grid_search(**params):
 if __name__ == '__main__':
     nn = 96
     w = np.random.randn(nn, nn)**2
-    d = np.random.rand(nn, nn)**2 * 25
-    tavg, bold = run_loop(w, d, dt=1, I=1.7, gpu=True)
+    d = np.random.rand(nn, nn)**2 * 2.5
+    tavg, _ = run_gpu_loop(w, d, total_time=5e4, dt=1.0, I=1.0, tau=10.0, progress=True)
     import pylab as pl
     pl.plot(tavg[:, 0, 0], 'k')
     pl.show()
