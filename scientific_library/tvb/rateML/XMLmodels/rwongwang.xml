@@ -48,7 +48,7 @@
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality-->
-        <Exposure name="V" dimension="V" description="V"/>
+        <Exposure name="V" dimension="{V^2}"/>
 
         <Dynamics>
             <StateVariable name="V" dimension="" exposure="0.0000001, 1"/>
@@ -70,7 +70,7 @@
         <!-- variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
         <!--        post coupling expression, needs to be present. If no temporary result needs to be computed enter 'None'-->
-        <DerivedParameter name="c_0" value="None"/>
+        <DerivedParameter name="c_0" value="{V^2}"/>
 
         <Constant name="a" dimension="" value="1" description="Rescales the connection strength."/>
 

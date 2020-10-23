@@ -138,8 +138,8 @@ class TVB_test:
 		return tavg_data
 
 	def set_CUDAmodel_dir(self):
-		# self.args.filename = os.path.join(os.path.join(os.getcwd(), os.pardir), 'CUDAmodels', self.args.model.lower() + '.c')
-		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))), os.pardir, 'CUDAmodels',
+		# self.args.filename = os.path.join(os.path.join(os.getcwd(), os.pardir), 'cuda_refs', self.args.model.lower() + '.c')
+		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))), os.pardir, 'cuda_refs',
 								 self.args.model.lower() + '.c')
 
 	def set_states(self):

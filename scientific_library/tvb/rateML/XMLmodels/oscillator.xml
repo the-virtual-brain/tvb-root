@@ -28,7 +28,7 @@
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality-->
-        <Exposure name="V" dimension="V" description="V"/>
+        <Exposure name="V" dimension="V"/>
 
         <Dynamics>
             <StateVariable name="V" dimension="" exposure="-2.0, 4.0"/>

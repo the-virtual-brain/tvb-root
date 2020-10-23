@@ -201,3 +201,19 @@ should be altered to match the cluster of choice. The block dimensions default t
 the best occupancy, the grid is adjusted accordingly. In the output.out a small report on the success of 
 the simulation is printed. 
 
+# TODO
+Process in Readme: The parameters with name 'rec_speed_dt' is conidered to be integral part of tv coupling calculation
+if not present, the delay part of coupling will be 0 for each node.
+Powers in expressions should be entered between curly braces: {x^2}. The parser will pick this up and translate to
+correct expression for the selected language: powf(x, 2) for CUDA and x**2 for Python models.
+The 'nsig' variable is used for noise amplification. If noise component is present but this variable is not it will be
+set to 1. 
+Eplain that exposure attritbute in state variable will lead to :   
+        
+        state_variable_boundaries = Final(
+        label="State Variable boundaries [lo, hi]",
+        default={"V": numpy.array([0.0000001, 1])"W": numpy.array([0.0000001, 1])},
+        )
+Description bug in LEMS. The description attibute is mapped to the symbol attribute in LEMS.py. For now no description 
+in the model. 
+

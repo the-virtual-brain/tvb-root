@@ -187,8 +187,8 @@ __global__ void epileptor(
                 if (wij == 0.0)
                     continue;
 
-                //***// Get the delay between node i and node j
-                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
+                // no delay specified
+                unsigned int dij = 0;
 
                 //***// Get the state of node j which is delayed by dij
                 float x1_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);

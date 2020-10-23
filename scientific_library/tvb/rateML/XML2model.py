@@ -34,6 +34,21 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 .. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>   
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
+
+        Usage: - create an modelfile.xml
+               - import rateML
+               - make instance: rateml(model_filename, language, your/XMLfolder, 'your/generatedModelsfolder')
+        the current supported model framework languages are python and cuda.
+        for new models models/__init.py__ is auto_updated if model is unfamiliar to tvb for py models
+        model_class_name is the model_filename + 'T', so not to overwrite existing models. Be sure to add the t
+        when simulating the model in TVB
+        example model files:
+            epileptor.xml
+            generic2doscillatort.xml
+            kuramoto.xml
+            montbrio.xml
+            reducedwongwang.xml
+
 """
 
 import os, sys
@@ -43,7 +58,9 @@ import re
 # from tvb.basic.logger.builder import get_logger
 
 # not ideal but avoids modifying  the vendored LEMS itself
-sys.path.append(os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir))))
+# sys.path.append(os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir))))
+# from lems.model.model import Model
+
 from lems.model.model import Model
 
 # logger = get_logger(__name__)
@@ -59,6 +76,16 @@ class rateml:
         # set file locations
         self.generated_model_location = self.set_generated_model_location()
         self.xml_location = self.set_XML_model_folder()
+
+        # start templating
+        model_str = self.render_model()
+
+        # write model to user submitted location
+        self.write_model_file(self.generated_model_location, model_str)
+
+        # if it is a TVB.py model, it should be familiarized
+        if self.language.lower()=='python':
+            self.familiarize_TVB(model_str)
 
     def default_XML_folder(self):
         here = os.path.dirname(os.path.abspath(__file__))
@@ -136,64 +163,71 @@ class rateml:
 
         # see if nsig derived parameter is present for noise
         # cuda only
+        modellist = model.component_types['derivatives']
         nsigpresent=False
         if noisepresent==True:
             for dprm in (modellist.derived_parameters):
                 if (dprm.name == 'nsig' or dprm.name == 'NSIG'):
                      nsigpresent=True
 
-        # check for power symbol and translate to python (**) or c power (powf(x, y))
+        # check for power symbol and parse to python (**) or c power (powf(x, y))
         # there are 5 locations where they can occur: Derivedvariable.value, ConditionalDerivedVariable.Case.condition
-        # Derivedparameter.value, Time_Derivaties.value and Exposure.name
-        # Todo make more generic
-        powlst = model.component_types['derivatives']
-        power_parse_exprs_value = [powlst.derived_parameters, powlst.dynamics.derived_variables,
-                                   powlst.dynamics.time_derivatives]
+        # Derivedparameter.value, Time_Derivaties.value and Exposure.dimension
+        # Todo make more generic, XML tag processing might be the key
 
-        for x, pwr_parse_object in enumerate(power_parse_exprs_value):
-            for pwr_obj in pwr_parse_object:
-                if '^' in  pwr_obj.value:
+        for cptype in model.component_types:
+            powlst = model.component_types[cptype.name]
+            # list of locations with mathmatical expressions with attribute 'value'
+            power_parse_exprs_value = [powlst.derived_parameters, powlst.dynamics.derived_variables,
+                                       powlst.dynamics.time_derivatives]
+            for pwr_parse_object in power_parse_exprs_value:
+                for pwr_obj in pwr_parse_object:
+                    if '^' in  pwr_obj.value:
+                        if self.language=='python':
+                            if hasattr(pwr_obj, 'name'):
+                                pwr_parse_object[pwr_obj.name].value = pwr_obj.value\
+                                    .replace('{', '').replace('^', ' ** ').replace('}', '')
+                            if hasattr(pwr_obj, 'variable'):
+                                pwr_parse_object[pwr_obj.variable].value = pwr_obj.value\
+                                    .replace('{', '').replace('^', ' ** ').replace('}', '')
+                        if self.language=='cuda':
+                            for power in re.finditer('\{(.*?)\}',  pwr_obj.value):
+                                target = power.group(1)
+                                powersplit = target.split('^')
+                                powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
+                                pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace(target, powf)
+
+            for pwr_obj in powlst.exposures:
+                if '^' in pwr_obj.dimension:
                     if self.language=='python':
-                        pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace('{', '')
-                        pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace('^', ' ** ')
-                        pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace('}', '')
+                        powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension\
+                            .replace('{', '').replace('^', ' ** ').replace('}', '')
                     if self.language=='cuda':
-                        for power in re.finditer('\{(.*?)\}',  pwr_obj.value):
+                        for power in re.finditer('\{(.*?)\}', pwr_obj.dimension):
                             target = power.group(1)
                             powersplit = target.split('^')
                             powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
-                            pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace(target, powf)
+                            powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension.replace(target, powf)
 
-        for pwr_obj in powlst.exposures:
-            if '^' in pwr_obj.dimension:
-                if self.language=='python':
-                    powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension.replace('{', '')
-                    powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension.replace('^', ' ** ')
-                    powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension.replace('}', '')
-                if self.language=='cuda':
-                    for power in re.finditer('\{(.*?)\}', pwr_obj.dimension):
-                        target = power.group(1)
-                        powersplit = target.split('^')
-                        powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
-                        powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension.replace(target, powf)
-
-        for cdv in powlst.dynamics.conditional_derived_variables:
-            for casenr, case in enumerate(cdv.cases):
-                if '^' in case.value:
-                    if self.language == 'python':
-                        powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace('{', '')
-                        powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace('^', ' ** ')
-                        powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace('}', '')
-                    if self.language == 'cuda':
-                        for power in re.finditer('\{(.*?)\}', case.value):
-                            target = power.group(1)
-                            powersplit = target.split('^')
-                            powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
-                            powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace(target, powf)
+            for cdv in powlst.dynamics.conditional_derived_variables:
+                for casenr, case in enumerate(cdv.cases):
+                    if '^' in case.value:
+                        if self.language == 'python':
+                            powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value\
+                                .replace('{', '').replace('^', ' ** ').replace('}', '')
+                        if self.language == 'cuda':
+                            for power in re.finditer('\{(.*?)\}', case.value):
+                                target = power.group(1)
+                                powersplit = target.split('^')
+                                powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
+                                powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace(target, powf)
 
         # print((powlst.derived_parameters['rec_speed_dt'].value))
         # print((powlst.dynamics.derived_variables['bla'].value))
-        # print((powlst.exposures['x1'].dimension))
+        # print((powlst.dynamics.time_derivatives['bla'].value))
+        # if self.model_filename == 'epileptor':
+        #     print((model.component_types['derivatives'].exposures['x1'].dimension))
+        # print((model.component_types['coupling_function'].derived_parameters['c_0'].value))
         # print((powlst.dynamics.conditional_derived_variables['ydot0'].cases[0].value))
         # print((powlst.dynamics.conditional_derived_variables['ydot0'].cases[1].value))
         # print((powlst.dynamics.conditional_derived_variables['ydot2'].cases[0].value))
@@ -240,12 +274,13 @@ class rateml:
 
         return model_str
 
-    def familiarize_TVB(self, model_filename, model_str):
+    def familiarize_TVB(self, model_str):
         '''
         Write new model to TVB model location and into init.py such it is familiar to TVB if not already present
         This is for Python models only
         '''
 
+        model_filename = self.model_filename
         # set tvb location
         TVB_model_location = os.path.join(os.path.dirname(tvb.simulator.models.__file__), model_filename.lower() + 'T.py')
         # next to user submitted location also write to default tvb location
@@ -283,39 +318,28 @@ class rateml:
         with open(model_location, "w") as f:
             f.writelines(model_str)
 
-    def start_model_generation(self):
-
-        """
-        modelfile.py is placed results into tvb/simulator/models
-        for new models models/__init.py__ is auto_updated if model is unfamiliar to tvb
-        file_class_name is the name of the produced file and also the model's class name
-        the path to XML model files folder can be added with the 2nd argument.
-        example model files:
-            epileptort.xml
-            generic2doscillatort.xml
-            kuramotot.xml
-            montbriot.xml
-            reducedwongwangt.xml
-        """
-
-        # start templating
-        model_str = self.render_model()
-
-        # write model to user submitted location
-        self.write_model_file(self.generated_model_location, model_str)
-
-        # if it is a TVB.py model, it should be familiarized
-        if self.language.lower()=='python':
-            self.familiarize_TVB(self.model_filename, model_str)
 
 if __name__ == "__main__":
-    # model_filename = 'MontbrioT'
-    # model_filename = 'Generic2dOscillatorT'
-    # model_filename = 'KuramotoT'
-    # model_filename = 'EpileptorT'
-    # model_filename = 'ReducedWongWangT'
-    model_filename = 'epileptor'
 
     language='python'
     # language='cuda'
-    rateml(model_filename, language, './XMLmodels/', './generatedModels/').start_model_generation()
+
+    model_filename = 'montbrio'
+    # model_filename = 'oscillator'
+    # model_filename = 'kuramoto'
+    # model_filename = 'rwongwang'
+    # model_filename = 'epileptor'
+
+    rateml(model_filename, language, './XMLmodels/', './generatedModels/')
+
+    # model_filenames = [
+    #                    'montbrio',
+    #                    'oscillator',
+    #                    'kuramoto',
+    #                    'epileptor',
+    #                    'rwongwang'
+    # ]
+    # #
+    # for model_filename in model_filenames:
+    #     # this will start generating the model
+    #     rateml(model_filename, language, './XMLmodels/', './generatedModels/')

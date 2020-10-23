@@ -27,7 +27,7 @@ __device__ float wrap_it_PI(float x)
 }
 __device__ float wrap_it_V(float V)
 {
-    float Vdim[] = {-2.0, 4.0};
+    float Vdim[] = {0.0000001, 1};
     if (V < Vdim[0]) V = Vdim[0];
     else if (V > Vdim[1]) V = Vdim[1];
 
@@ -35,14 +35,14 @@ __device__ float wrap_it_V(float V)
 }
 __device__ float wrap_it_W(float W)
 {
-    float Wdim[] = {-6.0, 6.0};
+    float Wdim[] = {0.0000001, 1};
     if (W < Wdim[0]) W = Wdim[0];
     else if (W > Wdim[1]) W = Wdim[1];
 
     return W;
 }
 
-__global__ void Oscillator(
+__global__ void rwongwang(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
@@ -68,31 +68,50 @@ __global__ void Oscillator(
     const float global_coupling = params(1);
 
     // regular constants
-    const float tau = 1.0;
-    const float I = 0.0;
-    const float a = -2.0;
-    const float b = -10.0;
-    const float c = 0;
-    const float d = 0.02;
-    const float e = 3.0;
-    const float f = 1.0;
-    const float g = 0.0;
-    const float alpha = 1.0;
-    const float beta = 1.0;
-    const float gamma = 1.0;
+    const float w_plus = 1.4f;
+    const float a_E = 310.0f;
+    const float b_E = 125.0f;
+    const float d_E = 0.154f;
+    const float a_I = 615.0f;
+    const float b_I = 177.0f;
+    const float d_I = 0.087f;
+    const float gamma_E = 0.641f / 1000.0f;
+    const float tau_E = 100.0f;
+    const float tau_I = 10.0f;
+    const float I_0 = 0.382f;
+    const float w_E = 1.0f;
+    const float w_I = 0.7f;
+    const float gamma_I = 1.0f / 1000.0f;
+    const float min_d_E = -1.0f * d_E;
+    const float min_d_I = -1.0f * d_I;
+    const float imintau_E = -1.0f / tau_E;
+    const float imintau_I = -1.0f / tau_I;
+    const float w_E__I_0 = w_E * I_0;
+    const float w_I__I_0 = w_I * I_0;
+    const float J_N = 0.15;
+    const float J_I = 1.0;
+    const float G = 2.0;
+    const float lamda = 0.0;
+    const float J_NMDA = 0.15;
+    const float JI = 1.0;
+    const float G_J_NMDA = G*J_NMDA;
+    const float w_plus__J_NMDA = w_plus * J_NMDA;
 
     // coupling constants, coupling itself is hardcoded in kernel
-    const float c_a = 1;
+    const float a = 1;
 
     // coupling parameters
     float c_0 = 0.0;
 
     // derived parameters
     const float rec_n = 1 / n_node;
-    const float rec_speed_dt = 1.0f / global_speed / (dt);
-    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-3);
-    const float lc = 0.0;
-
+    const float rec_speed_dt = 0;
+    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
+    // the dynamic derived variables declarations
+    float tmp_I_E = 0.0;
+    float tmp_H_E = 0.0;
+    float tmp_I_I = 0.0;
+    float tmp_H_I = 0.0;
 
 
     curandState crndst;
@@ -134,24 +153,29 @@ __global__ void Oscillator(
                 if (wij == 0.0)
                     continue;
 
-                //***// Get the delay between node i and node j
-                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
+                // no delay specified
+                unsigned int dij = 0;
 
                 //***// Get the state of node j which is delayed by dij
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_0 += wij * c_a * sin(V_j - V);
+                c_0 += wij * a * V_j * G_J_NMDA;
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_0 *= global_coupling;
+            c_0 *= {powf(V, 2)};
+            // the dynamic derived variables
+            tmp_I_E = a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_0 - JI*W) - b_E;
+            tmp_H_E = tmp_I_E/(1.0-exp(min_d_E * tmp_I_E));
+            tmp_I_I = (a_I*((w_I__I_0+(J_NMDA * V))-W))-b_I;
+            tmp_H_I = tmp_I_I/(1.0-exp(min_d_I*tmp_I_I));
 
 
             // Integrate with stochastic forward euler
-            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V));
-            dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
+            dV = dt * ((imintau_E* V)+(tmp_H_E*(1-V)*gamma_E));
+            dW = dt * ((imintau_I* W)+(tmp_H_I*gamma_I));
 
             // Add noise because component_type Noise is present in model
             V += nsig * curand_normal(&crndst) + dV;
@@ -167,7 +191,7 @@ __global__ void Oscillator(
 
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = V;
+                tavg(i_node + 0 * n_node) = {powf(V, 2)};
             }
 
             // sync across warps executing nodes for single sim, before going on to next time step

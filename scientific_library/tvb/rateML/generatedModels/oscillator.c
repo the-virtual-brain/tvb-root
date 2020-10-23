@@ -25,8 +25,24 @@ __device__ float wrap_it_PI(float x)
     float neg_val = PI_2 - fmodf(-x, PI_2);
     return neg_mask * neg_val + pos_mask * pos_val;
 }
+__device__ float wrap_it_V(float V)
+{
+    float Vdim[] = {-2.0, 4.0};
+    if (V < Vdim[0]) V = Vdim[0];
+    else if (V > Vdim[1]) V = Vdim[1];
 
-__global__ void Kuramoto(
+    return V;
+}
+__device__ float wrap_it_W(float W)
+{
+    float Wdim[] = {-6.0, 6.0};
+    if (W < Wdim[0]) W = Wdim[0];
+    else if (W > Wdim[1]) W = Wdim[1];
+
+    return W;
+}
+
+__global__ void oscillator(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
@@ -43,7 +59,7 @@ __global__ void Kuramoto(
     const unsigned int size = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
-#define state(time, i_node) (state_pwi[((time) * 1 * n_node + (i_node))*size + id])
+#define state(time, i_node) (state_pwi[((time) * 2 * n_node + (i_node))*size + id])
 #define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
 
     // unpack params
@@ -52,27 +68,40 @@ __global__ void Kuramoto(
     const float global_coupling = params(1);
 
     // regular constants
-    const float omega = 60.0 * 2.0 * M_PI_F / 1e3;
+    const float tau = 1.0;
+    const float I = 0.0;
+    const float a = -2.0;
+    const float b = -10.0;
+    const float c = 0;
+    const float d = 0.02;
+    const float e = 3.0;
+    const float f = 1.0;
+    const float g = 0.0;
+    const float alpha = 1.0;
+    const float beta = 1.0;
+    const float gamma = 1.0;
 
     // coupling constants, coupling itself is hardcoded in kernel
-    const float a = 1;
+    const float c_a = 1;
 
     // coupling parameters
     float c_0 = 0.0;
 
     // derived parameters
-    const float rec_n = 1.0f / n_node;
+    const float rec_n = 1 / n_node;
     const float rec_speed_dt = 1.0f / global_speed / (dt);
-    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
-
+    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-3);
+    const float lc = 0.0;
 
 
     curandState crndst;
     curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float V = 0.0;
+    float W = 0.0;
 
     float dV = 0.0;
+    float dW = 0.0;
 
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
@@ -92,6 +121,7 @@ __global__ void Kuramoto(
             c_0 = 0.0f;
 
             V = state((t) % nh, i_node + 0 * n_node);
+            W = state((t) % nh, i_node + 1 * n_node);
 
             // This variable is used to traverse the weights and lengths matrix, which is really just a vector. It is just a displacement. /
             unsigned int i_n = i_node * n_node;
@@ -103,36 +133,40 @@ __global__ void Kuramoto(
                 if (wij == 0.0)
                     continue;
 
-                //***// Get the delay between node i and node j
-                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
+                // no delay specified
+                unsigned int dij = 0;
 
                 //***// Get the state of node j which is delayed by dij
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_0 += wij * a * sin(V_j - V);
+                c_0 += wij * c_a * sin(V_j - V);
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_0 *= global_coupling * rec_n;
+            c_0 *= global_coupling;
 
 
             // Integrate with stochastic forward euler
-            dV = dt * (omega + c_0);
+            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V));
+            dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
 
             // Add noise because component_type Noise is present in model
             V += nsig * curand_normal(&crndst) + dV;
+            W += nsig * curand_normal(&crndst) + dW;
 
             // Wrap it within the limits of the model
-            V = wrap_it_PI(V);
+            V = wrap_it_V(V);
+            W = wrap_it_W(W);
 
             // Update the state
             state((t + 1) % nh, i_node + 0 * n_node) = V;
+            state((t + 1) % nh, i_node + 1 * n_node) = W;
 
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = sin(V);
+                tavg(i_node + 0 * n_node) = V;
             }
 
             // sync across warps executing nodes for single sim, before going on to next time step

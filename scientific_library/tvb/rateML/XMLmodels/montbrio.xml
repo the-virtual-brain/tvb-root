@@ -2,6 +2,18 @@
 
     <ComponentType name="derivatives">
 
+        <!-- Powers should be entered as {powee^power} -->
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_speed" dimension='float'/>
+        <Parameter name="global_coupling" dimension='float'/>
+
+        <DerivedParameter name="rec_n" value="1 / n_node"/>
+        <!-- The parameters with name 'rec_speed_dt' is conidered to be integral part of tv coupling calculation
+         if not present, the delay part of coupling will be 0 for each node -->
+        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
+        <!-- nsig is the default variable for noise amplitude. Is equal to 1 if not defined -->
+<!--        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>-->
+
         <!-- If empty then none -->
         <Constant name="I" dimension="lo=-10.0, hi=10.0, step=0.01" value="0.0" description="???"/>
         <Constant name="Delta" dimension="lo=0.0, hi=10.0, step=0.01" value="1.0" description="Vertical shift of the configurable nullcline."/>
@@ -16,8 +28,8 @@
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
         Choices and default list with a (,) separator-->
-        <Exposure name="r" dimension=""/>
-        <Exposure name="v" dimension=""/>
+        <Exposure name="r" dimension="r"/>
+        <Exposure name="v" dimension="v"/>
         
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
@@ -35,10 +47,35 @@
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
             <!-- Conditional used for if statement, syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,) -->
-            <TimeDerivative variable="dx" value="Delta / pi + 2 * V * r - k * r**2 + Gamma * r / pi"/>
-            <TimeDerivative variable="dy" value="V**2 - pi**2 * r**2 + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
+            <TimeDerivative variable="dx" value="Delta / pi + 2 * V * r - k * {r^2} + Gamma * r / pi"/>
+            <TimeDerivative variable="dy" value="{V^2} - {pi^2} * {r^2} + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
 
         </Dynamics>
 
     </ComponentType>
+
+        <ComponentType name="coupling_function">
+
+<!--        variables for pre synaptic function-->
+        <Parameter name="V_j" dimension='0'/>
+        <DerivedParameter name="c_0" value="global_coupling * rec_n"/>
+
+        <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
+
+<!--        variables for post synaptic function-->
+<!--        <Requirement name="wij" dimension=''/>-->
+        <Dynamics>
+            <DerivedVariable name="pre" value="sin(V_j - V)"/>
+            <DerivedVariable name="post" value="a"/>
+        </Dynamics>
+
+        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
+
+
+    </ComponentType>
+
+    <!-- If noise needs to be present, just specify the component type. Detail might be added later -->
+    <ComponentType name="noise" description="on">
+    </ComponentType>
+
 </Lems>

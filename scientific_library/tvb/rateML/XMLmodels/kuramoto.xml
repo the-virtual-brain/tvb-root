@@ -12,7 +12,7 @@
 
         <Constant name="omega" value="60.0 * 2.0 * M_PI_F / 1e3" dimension=""  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
 
-        <Exposure name="sin(V)" dimension="" />
+        <Exposure name="V" dimension="sin(V)" />
 
         <Dynamics>
             <!-- Use PI to select the PI wrapper (ie Kuramoto) -->
