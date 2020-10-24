@@ -3,7 +3,7 @@ import numpy as np
 import numba as nb
 from numpy.random import SFC64
 
-from .._numba.montbrio import make_gpu_loop, make_loop
+from tvb.simulator._numba.montbrio import make_gpu_loop, make_loop
 
 
 def make_linear_cfun(scale=0.01):
@@ -40,7 +40,7 @@ def run_loop(weights, delays,
     r, V = rV = np.zeros((2, nh, nn), 'f')
     icfun(-np.r_[:nh]*dt, rV)
     I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma = [nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)]
-    wrV = np.empty((2, nh, nn), 'f')                            # buffer for noise
+    #wrV = np.empty((2, nh, nn), 'f')                            # buffer for noise
     tavg = np.zeros((nto, 2, nn), 'f')                               # buffer for temporal average
     bold_state = np.zeros((nn, 4), 'f')                         # buffer for bold state
     bold_state[:,1:] = 1.0
@@ -49,7 +49,7 @@ def run_loop(weights, delays,
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
     loop = make_loop(nh, nto, nn, dt, cfpre, cfpost)
-    loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
+    #loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
     # outer loop setup
     win_len = nh * dt
     total_wins = int(total_time / win_len)
@@ -59,7 +59,7 @@ def run_loop(weights, delays,
     bold_trace = np.empty((total_wins//bold_skip + 1, ) + bold_out.shape, 'f')
     # start time stepping
     for t in (tqdm.trange if progress else range)(total_wins):
-        rng.standard_normal(size=(2, nh, nn), dtype='f', out=wrV)  # ~15% time here
+        wrV = rng.standard_normal(size=(2, nh, nn), dtype='f') #, out=wrV)  # ~15% time here
         loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
         tavg_trace[t] = tavg
         if t % bold_skip == 0:
@@ -131,14 +131,11 @@ def grid_search(**params):
 
 if __name__ == '__main__':
     nn = 96
-    w = np.random.randn(nn, nn)**2
-    d = np.random.rand(nn, nn)**2 * 2.5
-    pars = dict(total_time=5e4, dt=1.0, I=1.0, tau=10.0, nh=32, progress=True)
-    tavg0, _ = run_gpu_loop(w, d, nt=32, **pars)
-    tavg1, _ = run_loop(w, d, nto=1, **pars)
+    w = np.random.randn(nn, nn)**2/nn
+    d = np.random.rand(nn, nn)**2 * 1
+    tavg0, _ = run_loop(w, d, nh=64, dt=1.0, I=1, nto=1, progress=True)#, total_time=60e3, dt=0.1, I=1.0, tau=10.0, nh=16, nto=1, progress=True)
     import pylab as pl
     pl.subplot(211); pl.plot(tavg0[:, 0, 0], 'k')
-    pl.subplot(212); pl.plot(tavg1[:, 0, 0], 'k')
     pl.show()
 
     # args, mons = grid_search(n_jobs=2,

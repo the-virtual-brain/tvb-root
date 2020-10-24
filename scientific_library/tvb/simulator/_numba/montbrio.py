@@ -111,6 +111,7 @@ def make_loop(nh, nto, nn, dt, cfpre, cfpost):
     @nb.njit(boundscheck=False, fastmath=True)
     def loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
         o_tau = nb.float32(1 / tau)
+        # np.seterr(invalid='raise')
         assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
         assert r.shape[1] == V.shape[1] == nn
         for j in range(nto):
@@ -140,9 +141,9 @@ def make_loop(nh, nto, nn, dt, cfpre, cfpost):
                 kh = nb.float32(1.0)
                 dr_3 = dr(r[t, i] + dt*kh*dr_2, V[t, i] + dt*kh*dV_2, o_tau, pi, tau, Delta)
                 dV_3 = dV(r[t, i] + dt*kh*dr_2, V[t, i] + dt*kh*dV_2, o_tau, pi, tau, eta, J, I, cr, rc, cv, Vc)
-                r[t1, i] = r[t, i] + o_6*dt*(dr_0 + 2*(dr_1 + dr_2) + dr_3) + sqrt_dt * r_sigma * wrV[0, t, i]
-                r[t1, i] *= r[t1, i] >= 0
-                V[t1, i] = V[t, i] + o_6*dt*(dV_0 + 2*(dV_1 + dV_2) + dV_3) + sqrt_dt * V_sigma * wrV[1, t, i]
+                r[t1, i] = r[t, i] + o_6*dt*(dr_0 + 2*(dr_1 + dr_2) + dr_3) + sqrt_dt * r_sigma * wrV[0, t1, i]
+                r[t1, i] *= r[t1, i] > 0
+                V[t1, i] = V[t, i] + o_6*dt*(dV_0 + 2*(dV_1 + dV_2) + dV_3) + sqrt_dt * V_sigma * wrV[1, t1, i]
                 tavg[t0_nto, 0, i] += r[t1, i] * o_nh
                 tavg[t0_nto, 1, i] += V[t1, i] * o_nh
                 bold_out[i] = fmri(bold_state[i], tavg[0, 0, i], dt)
