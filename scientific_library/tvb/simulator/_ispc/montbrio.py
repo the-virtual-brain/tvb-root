@@ -40,7 +40,7 @@ def make_kernel():
 nn, nl, nc = 96, 16, 6
 k = 0.1
 aff, r, V, nr, nV = np.zeros((5, nc, nl), 'f')
-W  = np.zeros((2, nl, nc, nl), 'f')
+W  = np.zeros((2, 16, nc, nl), 'f')
 V -= 2.0
 rh, Vh = np.zeros((2, nn, nl), 'f')
 wij = np.zeros((nn, nn), 'f')
@@ -51,8 +51,8 @@ rng = np.random.default_rng(SFC64(42))                      # create RNG w/ know
 kerneler = make_kernel()
 (_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(k, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
 tavgs = []
-for i in tqdm.trange(int(10*60e3/1.0/16)):
-  rng.standard_normal(size=W.shape, dtype='f', out=W) # ~50%
+for i in tqdm.trange(int(100*60e3/1.0/16)):
+  rng.standard_normal(size=W.shape, dtype='f', out=W) # ~63% of time
   kernel()
   tavgs.append(tavg.flat[:].copy())
 tavgs = np.array(tavgs)

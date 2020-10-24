@@ -38,10 +38,14 @@ export void loop(
 
     foreach (it = 0 ... nl)
     {
-        // this can be anything, but longer values do more work
-        // in kernel, and yield fewer tavg samplers, but
-        // the tavg is always over 16 samples
-        for (uniform int t=0; t<16; t++)
+        // w/o rng 190k it/s,  5us call overhead
+        // w/o rng 151k it/s,  7us t=1  w/o tavg
+        // w/o rng 125k it/s,  8us t=1  w/ tavg
+        // w/o rng  46k it/s, 21us t=16 w/ tavg
+        // w/o rng  15k it/s, 68us t=64 w/ tavg
+        //  -> loop body ~1us
+        // w/  rng  18k it/s, 56us t=16 w/ tavg
+        for (uniform int t=0; t<16; t++) // needs to match W.shape
         {
             // compute delayed state coupling
             for (uniform int j=0; j<nc; j++)
@@ -75,7 +79,7 @@ export void loop(
                     kV[k] = o_tau * (sq(V_) - sq_pi_tau * sq(r_) + eta + J * tau * r_ + I + k * cr * aff[i_]);
                 }
                 nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*1e-2f*W[t*nn+i_];
-                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-2f*W[nl*nn + t*nn+i_];
+                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-2f*W[16*nn + t*nn+i_];
             }
 
             for (uniform int i=0; i<nc; i++) {
