@@ -10,19 +10,21 @@ def cmd(str):# {{{
     subprocess.check_call(str.split(' '))# }}}
 
 
+# shoudl refactor this into a build and load process
+# build requires ISPC, cc & ctypesgen
+# load is plain Python
+# though to customize which variant is loaded, maybe need ctypesgen at runtime
 def make_kernel():
     import os.path
     here = os.path.dirname(os.path.abspath(__file__))
-    cmd(f'/usr/local/bin/ispc --target=avx512skx-i32x16 --math-lib=fast --pic {here}/montbrio.c -o {here}/_montbrio.o')
+    # compile ISPC to object + header file
+    cmd(f'/usr/local/bin/ispc --target=avx512skx-i32x16 --math-lib=fast -h {here}/_montbrio.h --pic {here}/_montbrio.c -o {here}/_montbrio.o')
+    # link object into shared lib / dll
     cmd(f'g++ -shared {here}/_montbrio.o -o {here}/_montbrio.so')
-    dll = ctypes.CDLL(f'{here}/_montbrio.so')
-    fn = getattr(dll, 'loop')
-    fn.restype = ctypes.c_void_p
-    i32a = ctypes.POINTER(ctypes.c_int)
-    u32a = ctypes.POINTER(ctypes.c_uint32)
-    f32 = ctypes.c_float
-    f32a = ctypes.POINTER(f32)
-    fn.argtypes = [f32, f32a, f32a, f32a, f32a, u32a, f32a, f32a, f32a, f32a, f32a, f32a]
+    # generate ctypes interface
+    import ctypesgen.main
+    ctypesgen.main.main(f'-o {here}/_montbrio_ctypes.py -L {here} -l {here}/_montbrio.so {here}/_montbrio.h'.split())
+    from tvb.simulator._ispc._montbrio_ctypes import loop as fn
     def _(*args):
         args_ = []
         args_ct = []
@@ -55,7 +57,9 @@ def run_ispc_montbrio(w, d, total_time):
     tavg = np.zeros((2*nn,), 'f')
     rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
     kerneler = make_kernel()
-    (_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(k, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
+    from tvb.simulator._ispc._montbrio_ctypes import Data
+    data = Data(k=0.1)
+    (_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(data, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
     tavgs = []
     for i in tqdm.trange(int(total_time/1.0/16)):
       rng.standard_normal(size=W.shape, dtype='f', out=W) # ~63% of time
@@ -66,5 +70,8 @@ def run_ispc_montbrio(w, d, total_time):
 
 
 if __name__ == '__main__':
-    from ctypesgen.main import main
-    main()
+
+    nn = 96
+    w = np.random.randn(nn, nn)**2
+    d = np.random.rand(nn, nn)**2 * 15
+    run_ispc_montbrio(w, d, 60e3)

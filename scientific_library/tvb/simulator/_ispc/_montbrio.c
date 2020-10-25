@@ -14,9 +14,12 @@
 
 float sq(float x) { return x * x; }
 
+struct Data {
+    float k;
+};
 
 export void loop(
-    uniform float k,
+    uniform Data * uniform data,
     uniform float aff[],
     uniform float rh[],
     uniform float Vh[],
@@ -30,6 +33,7 @@ export void loop(
     uniform float tavg[]
     )
 {
+    uniform float k = data->k;
     uniform float o_tau = 1.0f / tau;
     uniform float sq_pi_tau = pi*pi * tau*tau;
     uniform float dt=1.0f;
