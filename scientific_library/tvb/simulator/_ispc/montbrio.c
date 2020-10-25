@@ -8,7 +8,7 @@
 // tau 10 gives ~60Hz fast time scale
 #define tau 10.0f
 #define J 15.0f
-#define cr 0.01f
+#define cr 0.1f
 #define cv 0.0f
 #define pi 3.141592653589793f
 
@@ -78,8 +78,8 @@ export void loop(
                     kr[k] = o_tau * (Delta / (pi * tau) + 2 * V_ * r_);
                     kV[k] = o_tau * (sq(V_) - sq_pi_tau * sq(r_) + eta + J * tau * r_ + I + k * cr * aff[i_]);
                 }
-                nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*1e-2f*W[t*nn+i_];
-                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-2f*W[16*nn + t*nn+i_];
+                nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*3e-3f*W[t*nn+i_];
+                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-3f*W[16*nn + t*nn+i_];
             }
 
             for (uniform int i=0; i<nc; i++) {

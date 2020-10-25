@@ -11,9 +11,11 @@ def cmd(str):# {{{
 
 
 def make_kernel():
-    cmd('/usr/local/bin/ispc --target=avx512skx-i32x16 --math-lib=fast --pic montbrio.c -o montbrio.o')
-    cmd('g++ -shared montbrio.o -o montbrio.so')
-    dll = ctypes.CDLL('./montbrio.so')
+    import os.path
+    here = os.path.dirname(os.path.abspath(__file__))
+    cmd(f'/usr/local/bin/ispc --target=avx512skx-i32x16 --math-lib=fast --pic {here}/montbrio.c -o {here}/_montbrio.o')
+    cmd(f'g++ -shared {here}/_montbrio.o -o {here}/_montbrio.so')
+    dll = ctypes.CDLL(f'{here}/_montbrio.so')
     fn = getattr(dll, 'loop')
     fn.restype = ctypes.c_void_p
     i32a = ctypes.POINTER(ctypes.c_int)
@@ -37,31 +39,32 @@ def make_kernel():
         return args_, __
     return _
 
-nn, nl, nc = 96, 16, 6
-k = 0.1
-aff, r, V, nr, nV = np.zeros((5, nc, nl), 'f')
-W  = np.zeros((2, 16, nc, nl), 'f')
-V -= 2.0
-rh, Vh = np.zeros((2, nn, nl), 'f')
-wij = np.zeros((nn, nn), 'f')
-Vh -= 2.0
-ih = np.zeros((nn, nl), np.uint32)
-tavg = np.zeros((2*nn,), 'f')
-rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
-kerneler = make_kernel()
-(_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(k, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
-tavgs = []
-for i in tqdm.trange(int(100*60e3/1.0/16)):
-  rng.standard_normal(size=W.shape, dtype='f', out=W) # ~63% of time
-  kernel()
-  tavgs.append(tavg.flat[:].copy())
-tavgs = np.array(tavgs)
 
-import pylab as pl
-t = np.r_[:len(tavgs)] * 0.016
-pl.subplot(211); pl.plot(t, tavgs[:, 0], 'k-')
-pl.ylabel('tavg r'); pl.xlabel('time (s)')
-pl.subplot(212); pl.plot(t, tavgs[:, 0], 'k-'); pl.xlim([t[-1000], t[-1]])
-pl.ylabel('tavg r'); pl.xlabel('time (s)')
-pl.grid(1)
-pl.show()
+def run_ispc_montbrio(w, d, total_time):
+    assert w.shape[0] == 96
+    nn, nl, nc = 96, 16, 6
+    k = 0.1
+    aff, r, V, nr, nV = np.zeros((5, nc, nl), 'f')
+    W = np.zeros((2, 16, nc, nl), 'f')
+    V -= 2.0
+    rh, Vh = np.zeros((2, nn, nl), 'f')
+    wij = w.copy().astype('f')
+    Vh -= 2.0
+    # assume dt=1
+    ih = d.copy().astype(np.uint32)  # np.zeros((nn, nl), np.uint32)
+    tavg = np.zeros((2*nn,), 'f')
+    rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
+    kerneler = make_kernel()
+    (_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(k, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
+    tavgs = []
+    for i in tqdm.trange(int(total_time/1.0/16)):
+      rng.standard_normal(size=W.shape, dtype='f', out=W) # ~63% of time
+      kernel()
+      tavgs.append(tavg.flat[:].copy())
+    tavgs = np.array(tavgs)
+    return tavgs, None
+
+
+if __name__ == '__main__':
+    from ctypesgen.main import main
+    main()

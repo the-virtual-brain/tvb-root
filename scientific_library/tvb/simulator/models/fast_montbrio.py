@@ -4,6 +4,7 @@ import numba as nb
 from numpy.random import SFC64
 
 from tvb.simulator._numba.montbrio import make_gpu_loop, make_loop
+from tvb.simulator._ispc.montbrio import run_ispc_montbrio
 
 
 def make_linear_cfun(scale=0.01):
@@ -131,12 +132,13 @@ def grid_search(**params):
 
 if __name__ == '__main__':
     nn = 96
-    w = np.random.randn(nn, nn)**2/nn
-    d = np.random.rand(nn, nn)**2 * 1
-    tavg0, _ = run_loop(w, d, nh=64, dt=1.0, I=1, nto=1, progress=True)#, total_time=60e3, dt=0.1, I=1.0, tau=10.0, nh=16, nto=1, progress=True)
-    import pylab as pl
-    pl.subplot(211); pl.plot(tavg0[:, 0, 0], 'k')
-    pl.show()
+    w = np.random.randn(nn, nn)**2
+    d = np.random.rand(nn, nn)**2 * 15
+    ns = 60
+    tavg0, _ = run_loop(w, d, nh=16, dt=1.0, I=1.0, cr=0.1, r_sigma=3e-3, V_sigma=1e-3, nto=1, tau=10.0, progress=True, total_time=ns*1e3)
+    tavg1, _ = run_ispc_montbrio(w, d, total_time=ns*1e3)
+    from numpy.testing import assert_allclose
+    assert_allclose(tavg0.reshape((-1, 192)), tavg1)
 
     # args, mons = grid_search(n_jobs=2,
     #     weights=[w], delays=[d], total_time=[10e3],  # non-varying into single elem list
