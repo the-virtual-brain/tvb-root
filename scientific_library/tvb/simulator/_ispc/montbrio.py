@@ -4,10 +4,45 @@ import logging
 import ctypes
 import tqdm
 from numpy.random import SFC64
+import os
 
 
-def cmd(str):# {{{
-    subprocess.check_call(str.split(' '))# }}}
+
+def needs_built(output, *inputs):
+    if not os.path.exists(output):
+        return True
+    for input in inputs:
+        if os.stat(input).st_mtime > os.stat(output).st_mtime:
+            return True
+    return False
+
+
+def make(str, output, *inputs):
+    if needs_built(output, *inputs):
+        subprocess.check_call(str.split(' '))
+
+
+def buildmod():  # prolly refactor to generic ISPC builder
+    import os.path
+    here = os.path.dirname(os.path.abspath(__file__))
+    ispc = '/usr/local/bin/ispc'
+    cxx = 'g++'
+    target = 'avx512skx-i32x16'
+    model = 'montbrio'
+    name = f'{model}_{target}'
+    source = f"{here}/_{name.split('_')[0]}.c"
+    object = f'{here}/_{name}.o'
+    shared_lib = f'{here}/_{name}.so'
+    header = f'{here}/_{name}.h'
+    ctypes_mod = f'{here}/_{name.replace("-","_")}_ct.py'
+    make(f'{ispc} --target={target} --math-lib=fast --pic -h {header} {source} -o {object}', object, source)
+    make(f'{cxx} -shared {object} -o {shared_lib}', shared_lib, object)
+    import ctypesgen.main
+    if needs_built(ctypes_mod, header):
+        ctypesgen.main.main(f'-o {ctypes_mod} -L {here} -l {shared_lib} {header}'.split())
+    import importlib
+    mod_name = os.path.basename(ctypes_mod).split('.py')[0]
+    return importlib.import_module(f'tvb.simulator._ispc.{mod_name}')
 
 
 # shoudl refactor this into a build and load process
@@ -15,16 +50,9 @@ def cmd(str):# {{{
 # load is plain Python
 # though to customize which variant is loaded, maybe need ctypesgen at runtime
 def make_kernel():
-    import os.path
-    here = os.path.dirname(os.path.abspath(__file__))
-    # compile ISPC to object + header file
-    cmd(f'/usr/local/bin/ispc --target=avx512skx-i32x16 --math-lib=fast -h {here}/_montbrio.h --pic {here}/_montbrio.c -o {here}/_montbrio.o')
-    # link object into shared lib / dll
-    cmd(f'g++ -shared {here}/_montbrio.o -o {here}/_montbrio.so')
-    # generate ctypes interface
-    import ctypesgen.main
-    ctypesgen.main.main(f'-o {here}/_montbrio_ctypes.py -L {here} -l {here}/_montbrio.so {here}/_montbrio.h'.split())
-    from tvb.simulator._ispc._montbrio_ctypes import loop as fn
+    mod = buildmod()
+    fn = mod.loop
+    # from tvb.simulator._ispc._montbrio_avx512skx_i32x16_ct import loop as fn
     def _(*args):
         args_ = []
         args_ct = []
@@ -39,13 +67,20 @@ def make_kernel():
         def __():
             fn(*args_ct)
         return args_, __
-    return _
+    return _, mod
 
 
-def run_ispc_montbrio(w, d, total_time):
+def run_ispc_montbrio(
+        weights, delays,
+        total_time=60e3, bold_tr=1800, coupling_scaling=0.01,
+        r_sigma=1e-3, V_sigma=1e-3,
+        I=1.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
+        dt=1.0,
+        progress=False,
+        ):
+    w, d = weights, delays
     assert w.shape[0] == 96
     nn, nl, nc = 96, 16, 6
-    k = 0.1
     aff, r, V, nr, nV = np.zeros((5, nc, nl), 'f')
     W = np.zeros((2, 16, nc, nl), 'f')
     V -= 2.0
@@ -53,19 +88,17 @@ def run_ispc_montbrio(w, d, total_time):
     wij = w.copy().astype('f')
     Vh -= 2.0
     # assume dt=1
-    ih = d.copy().astype(np.uint32)  # np.zeros((nn, nl), np.uint32)
+    ih = (d/dt).astype(np.uint32, order='C', copy=True)
     tavg = np.zeros((2*nn,), 'f')
     rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
-    kerneler = make_kernel()
-    from tvb.simulator._ispc._montbrio_ctypes import Data
-    data = Data(k=0.1)
+    kerneler, mod = make_kernel()
+    data = mod.Data(k=coupling_scaling, I=I, Delta=Delta, eta=eta, tau=tau, J=J, cr=cr, cv=cv, dt=dt, r_sigma=r_sigma, V_sigma=V_sigma)
     (_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(data, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
     tavgs = []
-    for i in tqdm.trange(int(total_time/1.0/16)):
-      rng.standard_normal(size=W.shape, dtype='f', out=W) # ~63% of time
-      kernel()
-      tavgs.append(tavg.flat[:].copy())
-    tavgs = np.array(tavgs)
+    for i in (tqdm.trange if progress else range)(int(total_time/dt/16)):
+        rng.standard_normal(W.shape, dtype='f', out=W)
+        kernel()
+        tavgs.append(tavg.flat[:].copy())
     return tavgs, None
 
 
@@ -74,4 +107,4 @@ if __name__ == '__main__':
     nn = 96
     w = np.random.randn(nn, nn)**2
     d = np.random.rand(nn, nn)**2 * 15
-    run_ispc_montbrio(w, d, 60e3)
+    run_ispc_montbrio(w, d, 60e3, progress=True)

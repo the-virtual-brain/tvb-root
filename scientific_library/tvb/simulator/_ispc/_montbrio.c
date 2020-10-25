@@ -2,20 +2,12 @@
 #define nl 16
 #define nc 6
 
-#define I 1.0f
-#define Delta 1.0f
-#define eta -5.0f
-// tau 10 gives ~60Hz fast time scale
-#define tau 10.0f
-#define J 15.0f
-#define cr 0.1f
-#define cv 0.0f
 #define pi 3.141592653589793f
 
 float sq(float x) { return x * x; }
 
 struct Data {
-    float k;
+    float k, I, Delta, eta, tau, J, cr, cv, dt, r_sigma, V_sigma;
 };
 
 export void loop(
@@ -33,12 +25,12 @@ export void loop(
     uniform float tavg[]
     )
 {
-    uniform float k = data->k;
-    uniform float o_tau = 1.0f / tau;
-    uniform float sq_pi_tau = pi*pi * tau*tau;
-    uniform float dt=1.0f;
+    uniform float o_tau = 1.0f / data->tau;
+    uniform float sq_pi_tau = pi*pi * data->tau*data->tau;
+    uniform float dt=data->dt;
     uniform float sqrt_dt = sqrt(dt);
     uniform float o_6 = 1.0f / 6.0f;
+    uniform float o_16 = 1.0f / 16.0f;
 
     foreach (it = 0 ... nl)
     {
@@ -79,8 +71,8 @@ export void loop(
                         r_ += dt*kh*kr[k-1];
                         V_ += dt*kh*kV[k-1];
                     }
-                    kr[k] = o_tau * (Delta / (pi * tau) + 2 * V_ * r_);
-                    kV[k] = o_tau * (sq(V_) - sq_pi_tau * sq(r_) + eta + J * tau * r_ + I + k * cr * aff[i_]);
+                    kr[k] = o_tau * (data->Delta / (pi * data->tau) + 2 * V_ * r_);
+                    kV[k] = o_tau * (sq(V_) - sq_pi_tau * sq(r_) + data->eta + data->J * data->tau * r_ + data->I + data->k * data->cr * aff[i_]);
                 }
                 nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*3e-3f*W[t*nn+i_];
                 nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-3f*W[16*nn + t*nn+i_];
@@ -112,9 +104,9 @@ export void loop(
         for (uniform int i=0; i<nn; i++)
         {
             uniform float tavg_i = reduce_add(rh[i*nl+it]);
-            if (it==0) tavg[i] = tavg_i/16;
+            if (it==0) tavg[i] = tavg_i * o_16;
             tavg_i = reduce_add(Vh[i*nl+it]);
-            if (it==0) tavg[nn+i] = tavg_i/16;
+            if (it==0) tavg[nn+i] = tavg_i * o_16;
         }
 
         // TODO bold
