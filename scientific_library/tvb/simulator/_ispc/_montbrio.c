@@ -74,8 +74,8 @@ export void loop(
                     kr[k] = o_tau * (data->Delta / (pi * data->tau) + 2 * V_ * r_);
                     kV[k] = o_tau * (sq(V_) - sq_pi_tau * sq(r_) + data->eta + data->J * data->tau * r_ + data->I + data->k * data->cr * aff[i_]);
                 }
-                nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*3e-3f*W[t*nn+i_];
-                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*1e-3f*W[16*nn + t*nn+i_];
+                nr[i_] = dt*o_6*(kr[0] + 2*kr[1] + 2*kr[2] + kr[3]) + sqrt_dt*data->r_sigma*W[t*nn+i_];
+                nV[i_] = dt*o_6*(kV[0] + 2*kV[1] + 2*kV[2] + kV[3]) + sqrt_dt*data->V_sigma*W[16*nn + t*nn+i_];
             }
 
             for (uniform int i=0; i<nc; i++) {

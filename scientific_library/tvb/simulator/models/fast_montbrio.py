@@ -135,10 +135,11 @@ if __name__ == '__main__':
     w = np.random.randn(nn, nn)**2
     d = np.random.rand(nn, nn)**2 * 15
     ns = 60
-    tavg0, _ = run_loop(w, d, nh=16, dt=1.0, I=1.0, cr=0.1, r_sigma=3e-3, V_sigma=1e-3, nto=1, tau=10.0, progress=True, total_time=ns*1e3)
-    tavg1, _ = run_ispc_montbrio(w, d, total_time=ns*1e3)
+    params = dict(dt=1.0, I=1.0, cr=0.1, r_sigma=3e-3, V_sigma=1e-3, tau=10.0,  progress=True, total_time=ns*1e3)
+    tavg0, _ = run_loop(w, d, nh=16, nto=1, **params)
+    tavg1, _ = run_ispc_montbrio(w, d, **params)
     from numpy.testing import assert_allclose
-    assert_allclose(tavg0.reshape((-1, 192)), tavg1)
+    assert_allclose(tavg0.reshape((-1, 192)), tavg1, 1e-3, 0.1)
 
     # args, mons = grid_search(n_jobs=2,
     #     weights=[w], delays=[d], total_time=[10e3],  # non-varying into single elem list
