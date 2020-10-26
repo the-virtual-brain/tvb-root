@@ -35,16 +35,17 @@ DAO operations related to generic DataTypes are defined here.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import importlib
-from sqlalchemy import func, or_, not_, and_
+
+from sqlalchemy import func, or_, and_
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.sql import text
 from sqlalchemy.orm import aliased
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql import text
 from sqlalchemy.sql.expression import desc, cast
 from sqlalchemy.types import Text
-from sqlalchemy.orm.exc import NoResultFound
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import Operation, AlgorithmCategory, Algorithm, OperationGroup
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 from tvb.core.neotraits.db import Base
 
@@ -54,14 +55,26 @@ class DatatypeDAO(RootDAO):
     DATATYPE and DATA_TYPES_GROUPS RELATED METHODS
     """
 
+    def get_datatypegroup_for_project(self, project_id):
+        """
+        Returns all DataTypeGroup entities from a project.
+        """
+        query = self.session.query(DataTypeGroup
+                                   ).join((OperationGroup, OperationGroup.id == DataTypeGroup.fk_operation_group)
+                                          ).filter(OperationGroup.fk_launched_in == project_id).order_by(DataTypeGroup.id)
+        return query.all()
+
 
     def get_datatypegroup_by_op_group_id(self, operation_group_id):
         """
         Returns the DataTypeGroup corresponding to a certain OperationGroup.
         """
-        result = self.session.query(DataTypeGroup).filter_by(fk_operation_group=operation_group_id).one()
-        return result
-
+        try:
+            result = self.session.query(DataTypeGroup).filter_by(fk_operation_group=operation_group_id).one()
+            return result
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+            return None
 
     def get_datatype_group_by_gid(self, datatype_group_gid):
         """

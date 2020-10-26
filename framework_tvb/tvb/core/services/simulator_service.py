@@ -190,6 +190,7 @@ class SimulatorService(object):
                                                                          simulator.gid, operation_group, ranges)
 
                     storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+                    simulator.range_values = ranges
                     h5.store_view_model(simulator, storage_path)
                     operations.append(operation)
                     if first_simulator is None:
@@ -205,7 +206,8 @@ class SimulatorService(object):
                                            state=algo_category.defaultdatastate)
             dao.store_entity(datatype_group)
 
-            metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.gid)
+            metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.gid,
+                                                   state=algo_category.defaultdatastate)
             dao.store_entity(metrics_datatype_group)
 
             wf_errs = 0
