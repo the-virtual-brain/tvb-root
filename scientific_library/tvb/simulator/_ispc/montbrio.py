@@ -21,13 +21,20 @@ def make(str, output, *inputs):
     if needs_built(output, *inputs):
         subprocess.check_call(str.split(' '))
 
+# assume 16 wide only for now
+targets = {
+    'sse4': 'sse4-i8x16',
+    'avx1': 'avx1-i32x16',
+    'avx2': 'avx2-i16x16',
+    'avx512': 'avx512skx-i32x16',
+}
 
-def buildmod():  # prolly refactor to generic ISPC builder
+def buildmod(isa='avx512'):  # prolly refactor to generic ISPC builder
     import os.path
     here = os.path.dirname(os.path.abspath(__file__))
     ispc = '/usr/local/bin/ispc'
     cxx = 'g++'
-    target = 'avx512skx-i32x16'
+    target = targets[isa]
     model = 'montbrio'
     name = f'{model}_{target}'
     source = f"{here}/_{name.split('_')[0]}.c"
@@ -49,8 +56,8 @@ def buildmod():  # prolly refactor to generic ISPC builder
 # build requires ISPC, cc & ctypesgen
 # load is plain Python
 # though to customize which variant is loaded, maybe need ctypesgen at runtime
-def make_kernel():
-    mod = buildmod()
+def make_kernel(isa='avx512'):
+    mod = buildmod(isa)
     fn = mod.loop
     # from tvb.simulator._ispc._montbrio_avx512skx_i32x16_ct import loop as fn
     def _(*args):
@@ -77,6 +84,7 @@ def run_ispc_montbrio(
         I=1.0, Delta=1.0, eta=-5.0, tau=100.0, J=15.0, cr=0.01, cv=0.0,
         dt=1.0,
         progress=False,
+        isa='avx512',
         ):
     w, d = weights, delays
     assert w.shape[0] == 96
@@ -91,7 +99,7 @@ def run_ispc_montbrio(
     ih = (d/dt).astype(np.uint32, order='C', copy=True)
     tavg = np.zeros((2*nn,), 'f')
     rng = np.random.default_rng(SFC64(42))                      # create RNG w/ known seed
-    kerneler, mod = make_kernel()
+    kerneler, mod = make_kernel(isa=isa)
     data = mod.Data(k=coupling_scaling, I=I, Delta=Delta, eta=eta, tau=tau, J=J, cr=cr, cv=cv, dt=dt, r_sigma=r_sigma, V_sigma=V_sigma)
     (_, aff, *_, W, r, V, nr, nV, tavg), kernel = kerneler(data, aff, rh, Vh, wij, ih, W, r, V, nr, nV, tavg)
     tavgs = []
