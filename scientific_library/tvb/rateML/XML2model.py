@@ -87,7 +87,8 @@ class rateml:
         if self.language.lower()=='python':
             self.familiarize_TVB(model_str)
 
-    def default_XML_folder(self):
+    @staticmethod
+    def default_XML_folder():
         here = os.path.dirname(os.path.abspath(__file__))
         xmlpath = os.path.join(here, 'XMLmodels')
         return xmlpath
@@ -96,7 +97,8 @@ class rateml:
         folder = self.XMLfolder or self.default_XML_folder()
         return os.path.join(folder, self.model_filename.lower() + '.xml')
 
-    def default_generation_folder(self):
+    @staticmethod
+    def default_generation_folder():
         here = os.path.dirname(os.path.abspath(__file__))
         xmlpath = os.path.join(here, 'generatedModels')
         return xmlpath
@@ -116,7 +118,7 @@ class rateml:
         template = Template(filename=tmp_filename)
         return template
 
-    def XSD_validate_XML(self, file_name):
+    def XSD_validate_XML(self):
 
         ''' Use own validation instead of LEMS because of slight difference in definition file'''
 
@@ -130,11 +132,11 @@ class rateml:
         schema_file = urlopen(
             "https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
         xmlschema = etree.XMLSchema(etree.parse(schema_file))
-        print("Validating {0} against {1}".format(file_name, schema_file.geturl()))
-        xmlschema.assertValid(etree.parse(file_name))
+        print("Validating {0} against {1}".format(self.xml_location, schema_file.geturl()))
+        xmlschema.assertValid(etree.parse(self.xml_location))
         print("It's valid!")
 
-    def inventorize_props(self, model):
+    def preprocess_model(self, model):
 
         ''' Do some preprocessing on the template to easify rendering '''
 
@@ -222,16 +224,6 @@ class rateml:
                                 powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
                                 powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace(target, powf)
 
-        # print((powlst.derived_parameters['rec_speed_dt'].value))
-        # print((powlst.dynamics.derived_variables['bla'].value))
-        # print((powlst.dynamics.time_derivatives['bla'].value))
-        # if self.model_filename == 'epileptor':
-        #     print((model.component_types['derivatives'].exposures['x1'].dimension))
-        # print((model.component_types['coupling_function'].derived_parameters['c_0'].value))
-        # print((powlst.dynamics.conditional_derived_variables['ydot0'].cases[0].value))
-        # print((powlst.dynamics.conditional_derived_variables['ydot0'].cases[1].value))
-        # print((powlst.dynamics.conditional_derived_variables['ydot2'].cases[0].value))
-
         return svboundaries, couplinglist, noisepresent, nsigpresent
 
     def load_model(self):
@@ -241,10 +233,10 @@ class rateml:
         model = Model()
         model.import_from_file(self.xml_location)
 
-        self.XSD_validate_XML(self.xml_location)
+        self.XSD_validate_XML()
 
         # do some inventory. check if boundaries are set for any sv to print the boundaries section in template
-        svboundaries, couplinglist, noisepresent, nsigpresent = self.inventorize_props(model)
+        svboundaries, couplinglist, noisepresent, nsigpresent = self.preprocess_model(model)
 
         return model, svboundaries, couplinglist, noisepresent, nsigpresent
 
