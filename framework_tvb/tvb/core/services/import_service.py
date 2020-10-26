@@ -388,6 +388,7 @@ class ImportService(object):
                         if op_group:
                             dt.fk_operation_group = op_group.id
                         dao.store_entity(dt)
+                        self.store_datatype(dt)
                     else:
                         dts[dt_path] = dt
                         if op_group:
