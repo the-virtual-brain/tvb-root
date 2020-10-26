@@ -62,6 +62,7 @@ RegionAssociatorView.prototype.createSelector = function(selectionGID){
 
     selector.change(function () {
         GVAR_interestAreaNodeIndexes = selector.selectedIndices();
+        GFUNC_updateLeftSideVisualization();
     });
     selector.checkAll();
     return selector;
