@@ -423,7 +423,7 @@ class FilesHelper(object):
         """
         Computes the disk usage of all h5 files under the given directory.
         :param start_path:
-        :return: A tuple of size in kiB and number of files
+        :return: A tuple of size in kiB
         """
         total_size = 0
         n_files = 0
@@ -433,7 +433,7 @@ class FilesHelper(object):
                     fp = os.path.join(dir_path, f)
                     total_size += os.path.getsize(fp)
                     n_files += 1
-        return int(round(total_size / 1024.)), n_files
+        return int(round(total_size / 1024.))
 
 
 class TvbZip(ZipFile):

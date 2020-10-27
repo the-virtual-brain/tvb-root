@@ -264,7 +264,7 @@ class OperationService:
     def store_view_model(self, operation, project, view_model):
         storage_path = FilesHelper().get_project_folder(project, str(operation.id))
         h5.store_view_model(view_model, storage_path)
-        view_model_size_on_disk, _ = FilesHelper.compute_recursive_h5_disk_usage(storage_path)
+        view_model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)
         operation.view_model_disk_size = view_model_size_on_disk
         dao.store_entity(operation)
 
