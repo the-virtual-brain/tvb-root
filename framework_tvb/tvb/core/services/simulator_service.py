@@ -101,18 +101,15 @@ class SimulatorService(object):
             ga = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
                                                           None, burst_config.gid)
             session_stored_simulator.generic_attributes = ga
-            storage_path = self.files_helper.get_project_folder(project, str(operation.id))
-            h5.store_view_model(session_stored_simulator, storage_path)
-            model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)[0]
+            self.operation_service.store_view_model(operation, project, session_stored_simulator)
             burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id,
                                                                        session_stored_simulator.gid)
+            storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
 
             wf_errs = 0
             try:
                 OperationService().launch_operation(operation.id, True)
-                operation.view_model_disk_size = model_size_on_disk
-                dao.store_entity(operation)
                 return operation
             except Exception as excep:
                 self.logger.error(excep)
@@ -192,9 +189,8 @@ class SimulatorService(object):
                     operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
                                                                          simulator.gid, operation_group, ranges)
 
-                    storage_path = self.files_helper.get_project_folder(project, str(operation.id))
                     simulator.range_values = ranges
-                    h5.store_view_model(simulator, storage_path)
+                    self.operation_service.store_view_model(operation, project, simulator)
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator

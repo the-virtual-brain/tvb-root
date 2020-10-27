@@ -360,6 +360,8 @@ class ImportService(object):
                     # Create and store view_model from operation
                     view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
                     h5.store_view_model(view_model, new_op_folder)
+                    view_model_disk_size, _ = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
+                    operation_entity.view_model_disk_size = view_model_disk_size
                     operation_entity.view_model_gid = view_model.gid.hex
                     dao.store_entity(operation_entity)
 
