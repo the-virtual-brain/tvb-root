@@ -212,11 +212,11 @@ class CaseDAO(RootDAO):
         try:
             total_size_for_dt = self.session.query(func.sum(DataType.disk_size)).join(Operation
                                                                                ).filter(
-                Operation.fk_launched_in == project_id).scalar()
+                Operation.fk_launched_in == project_id).scalar() or 0
             total_size = self.session.query(func.sum(Operation.view_model_disk_size)).filter(
-                Operation.fk_launched_in == project_id).scalar()
+                Operation.fk_launched_in == project_id).scalar() or 0
             total_size = total_size + total_size_for_dt
-            return total_size or 0
+            return total_size
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return -1
