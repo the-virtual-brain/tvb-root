@@ -705,7 +705,10 @@ class ProjectController(BaseController):
             self.mark_file_for_delete(file_path, True)
 
         self.logger.debug("Data exported in file: " + str(file_path))
-        return serve_file(file_path, "application/x-download", "attachment", file_name)
+        if file_name:
+            return serve_file(file_path, "application/x-download", "attachment", file_name)
+        else:
+            return serve_file(file_path, "application/x-download", "attachment")
 
 
     @cherrypy.expose

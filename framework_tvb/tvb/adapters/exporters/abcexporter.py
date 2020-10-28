@@ -158,7 +158,7 @@ class ABCExporter(metaclass=ABCMeta):
         """
         pass
 
-    def get_export_file_name(self, data):
+    def get_export_file_name(self, data, with_extension=True):
         """
         This method computes the name used to save exported data on user computer
         """
@@ -167,7 +167,10 @@ class ABCExporter(metaclass=ABCMeta):
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
 
-        return "%s_%s.%s" % (date_str, data_type_name, file_ext)
+        if with_extension:
+            return "%s_%s.%s" % (date_str, data_type_name, file_ext)
+        else:
+            return "%s_%s" % (date_str, data_type_name)
 
     @abstractmethod
     def get_export_file_extension(self, data):

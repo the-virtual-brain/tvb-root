@@ -46,6 +46,7 @@ from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.neotraits._h5core import H5File
 
 
 class ExportManager(object):
@@ -94,6 +95,48 @@ class ExportManager(object):
 
         return results
 
+    def export_data_with_references(self, dt_list, project, exporter):
+        files_helper = FilesHelper()
+        considered_op_ids = []
+        to_be_exported_folders = []
+
+        data_export_folder = self._build_data_export_folder(dt_list[0])
+        name = exporter.get_export_file_name(dt_list[0], False)
+
+        zip_file_name = "%s.%s" % (name, self.ZIP_FILE_EXTENSION)
+        result_path = os.path.join(data_export_folder, zip_file_name)
+
+        for dt in dt_list:
+            op_id = dt.fk_from_operation
+            if op_id not in considered_op_ids:
+                to_be_exported_folders.append({'folder': files_helper.get_project_folder(project, str(op_id)),
+                                               'archive_path_prefix': str(op_id) + os.sep,
+                                               'exclude': ''})
+                considered_op_ids.append(op_id)
+
+        with TvbZip(result_path, "w") as zip_file:
+            # Pack project [filtered] content into a ZIP file:
+            self.logger.debug("Done preparing, now we will write folders " + str(len(to_be_exported_folders)))
+            self.logger.debug(str(to_be_exported_folders))
+            for pack in to_be_exported_folders:
+                zip_file.write_folder(**pack)
+            self.logger.debug("Done exporting files, now we will export linked DTs")
+            self.logger.debug("Done, closing")
+
+        return None, result_path, False
+
+    def get_data_with_references_list(self, data):
+        data_path = h5.path_for_stored_index(data)
+        dt_list = []
+        dt_list.append(data)
+        with H5File.from_file(data_path) as f:
+            sub_dt_refs = f.gather_references()
+
+            for reference in sub_dt_refs:
+                dt = dao.get_datatype_by_gid(reference[1].hex)
+                dt_list.append(dt)
+        return dt_list
+
     def export_data(self, data, exporter_id, project):
         """
         Export provided data using given exporter
@@ -124,19 +167,23 @@ class ExportManager(object):
         if not exporter.accepts(data):
             raise InvalidExportDataException("Current data can not be exported by specified exporter")
 
-        # Now compute and create folder where to store exported data
-        # This will imply to generate a folder which is unique for each export
-        data_export_folder = None
-        try:
-            data_export_folder = self._build_data_export_folder(data)
+        dt_list = self.get_data_with_references_list(data)
+        if len(dt_list) > 1:
+            export_data = self.export_data_with_references(dt_list, project, exporter)
+        else:
+            # Now compute and create folder where to store exported data
+            # This will imply to generate a folder which is unique for each export
+            data_export_folder = None
+            try:
+                data_export_folder = self._build_data_export_folder(data)
 
-            # Here is the real export                    
-            self.logger.debug("Start export of data: %s" % data.type)
-            export_data = exporter.export(data, data_export_folder, project)
-        finally:
-            # In case export did not generated any file delete folder
-            if data_export_folder is not None and len(os.listdir(data_export_folder)) == 0:
-                os.rmdir(data_export_folder)
+                # Here is the real export
+                self.logger.debug("Start export of data: %s" % data.type)
+                export_data = exporter.export(data, data_export_folder, project)
+            finally:
+                # In case export did not generated any file delete folder
+                if data_export_folder is not None and len(os.listdir(data_export_folder)) == 0:
+                    os.rmdir(data_export_folder)
 
         return export_data
 
