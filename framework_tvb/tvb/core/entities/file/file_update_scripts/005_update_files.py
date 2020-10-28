@@ -39,42 +39,96 @@ import json
 import os
 import sys
 import uuid
+
 import numpy
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
-from tvb.basic.neotraits._attr import Range
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import Range
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataSetException, \
+    FileMigrationException, MissingMatlabOctavePathException
+from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
-from tvb.basic.logger.builder import get_logger
-from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataSetException, \
-    FileMigrationException, MissingMatlabOctavePathException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neotraits._h5accessors import DataSetMetaData
-from tvb.core.neotraits._h5core import H5File
-from tvb.core.neotraits.h5 import STORE_STRING
+from tvb.core.neotraits.h5 import H5File, STORE_STRING, DataSetMetaData
 from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
+from tvb.core.utils import date2string, string2date
 from tvb.datatypes.sensors import SensorTypes
 
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
 FIELD_VOLUME_MAPPING = "has_volume_mapping"
+DATE_FORMAT_V4_DB = '%Y-%m-%d %H:%M:%S.%f'
+DATE_FORMAT_V4_H5 = 'datetime:' + DATE_FORMAT_V4_DB
 
+
+# Generic parsing functions
+
+def _parse_bool(value):
+    value = value.lower().replace(HDF5StorageManager.BOOL_VALUE_PREFIX, '')
+    if value in ['true', '1', 'on']:
+        return HDF5StorageManager.serialize_bool(True), True
+    return HDF5StorageManager.serialize_bool(False), False
+
+
+def _value2str(value):
+    return str(value, 'utf-8')
+
+
+def _parse_gid(old_gid):
+    return uuid.UUID(old_gid).urn
+
+
+def _lowercase_first_character(string):
+    """
+    One-line function which converts the first character of a string to lowercase and
+    handles empty strings and None values
+    """
+    return string[:1].lower() + string[1:] if string else ''
+
+
+def _pop_lengths(root_metadata):
+    root_metadata.pop('length_1d')
+    root_metadata.pop('length_2d')
+    root_metadata.pop('length_3d')
+    root_metadata.pop('length_4d')
+
+    return root_metadata
+
+
+def _pop_common_metadata(root_metadata):
+    root_metadata.pop('label_x')
+    root_metadata.pop('label_y')
+    root_metadata.pop('aggregation_functions')
+    root_metadata.pop('dimensions_labels')
+    root_metadata.pop('nr_dimensions')
+
+
+def _bytes_ds_to_string_ds(storage_manager, ds_name):
+    bytes_labels = storage_manager.get_data(ds_name)
+    string_labels = []
+    for i in range(len(bytes_labels)):
+        string_labels.append(_value2str(bytes_labels[i]))
+
+    storage_manager.remove_data(ds_name)
+    storage_manager.store_data(ds_name, numpy.asarray(string_labels).astype(STORE_STRING))
+    return storage_manager
+
+
+# Specific datatype migration functions
 
 def _migrate_connectivity(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['number_of_connections'] = int(root_metadata['number_of_connections'])
     root_metadata['number_of_regions'] = int(root_metadata['number_of_regions'])
 
-    if root_metadata['undirected'] == "0":
-        root_metadata['undirected'] = "bool:False"
-    else:
-        root_metadata['undirected'] = "bool:True"
+    root_metadata['undirected'], _ = _parse_bool(root_metadata['undirected'])
 
     if root_metadata['saved_selection'] == 'null':
         root_metadata['saved_selection'] = '[]'
@@ -116,26 +170,17 @@ def _migrate_surface(**kwargs):
     root_metadata['number_of_triangles'] = int(root_metadata['number_of_triangles'])
     root_metadata['number_of_vertices'] = int(root_metadata['number_of_vertices'])
 
-    root_metadata['zero_based_triangles'] = "bool:" + root_metadata['zero_based_triangles'][:1].upper() \
-                                            + root_metadata['zero_based_triangles'][1:]
-    root_metadata['bi_hemispheric'] = "bool:" + root_metadata['bi_hemispheric'][:1].upper() \
-                                      + root_metadata['bi_hemispheric'][1:]
-    root_metadata['valid_for_simulations'] = "bool:" + root_metadata['valid_for_simulations'][:1].upper() \
-                                             + root_metadata['valid_for_simulations'][1:]
+    root_metadata['zero_based_triangles'], _ = _parse_bool(root_metadata['zero_based_triangles'])
+    root_metadata['bi_hemispheric'], _ = _parse_bool(root_metadata['bi_hemispheric'])
+    root_metadata['valid_for_simulations'], _ = _parse_bool(root_metadata['valid_for_simulations'])
 
     root_metadata["surface_type"] = root_metadata["surface_type"].replace("\"", '')
 
     operation_xml_parameters = kwargs['operation_xml_parameters']
-    if root_metadata['zero_based_triangles'] == 'bool:True':
-        operation_xml_parameters['zero_based_triangles'] = True
-    else:
-        operation_xml_parameters['zero_based_triangles'] = False
+    _, operation_xml_parameters['zero_based_triangles'] = _parse_bool(root_metadata['zero_based_triangles'])
 
     if 'should_center' in operation_xml_parameters:
-        if operation_xml_parameters['should_center'] == 'bool:True':
-            operation_xml_parameters['should_center'] = True
-        else:
-            operation_xml_parameters['should_center'] = False
+        _, operation_xml_parameters['should_center'] = _parse_bool(operation_xml_parameters['should_center'])
 
     kwargs['storage_manager'].store_data('split_triangles', [])
 
@@ -182,8 +227,7 @@ def _migrate_sensors(datasets, **kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['number_of_sensors'] = int(root_metadata['number_of_sensors'])
     root_metadata['sensors_type'] = root_metadata["sensors_type"].replace("\"", '')
-    root_metadata['has_orientation'] = "bool:" + root_metadata['has_orientation'][:1].upper() \
-                                       + root_metadata['has_orientation'][1:]
+    root_metadata['has_orientation'], _ = _parse_bool(root_metadata['has_orientation'])
 
     storage_manager = kwargs['storage_manager']
     storage_manager.remove_metadata('Size', 'labels')
@@ -241,9 +285,9 @@ def _migrate_local_connectivity(**kwargs):
 
     storage_manager = kwargs['storage_manager']
     matrix_metadata = storage_manager.get_metadata('matrix')
-    matrix_metadata['Shape'] = str(matrix_metadata['Shape'], 'utf-8')
-    matrix_metadata['dtype'] = str(matrix_metadata['dtype'], 'utf-8')
-    matrix_metadata['format'] = str(matrix_metadata['format'], 'utf-8')
+    matrix_metadata['Shape'] = _value2str(matrix_metadata['Shape'])
+    matrix_metadata['dtype'] = _value2str(matrix_metadata['dtype'])
+    matrix_metadata['format'] = _value2str(matrix_metadata['format'])
     storage_manager.set_metadata(matrix_metadata, 'matrix')
     operation_xml_parameters = kwargs['operation_xml_parameters']
 
@@ -514,10 +558,8 @@ def _migrate_volume(**kwargs):
     if 'connectivity' in operation_xml_parameters and operation_xml_parameters['connectivity'] == '':
         operation_xml_parameters['connectivity'] = None
 
-    if 'apply_corrections' in operation_xml_parameters and operation_xml_parameters['apply_corrections'] == 'bool:True':
-        operation_xml_parameters['apply_corrections'] = True
-    else:
-        operation_xml_parameters['apply_corrections'] = False
+    if 'apply_corrections' in operation_xml_parameters:
+        _, operation_xml_parameters['apply_corrections'] = _parse_bool(operation_xml_parameters['apply_corrections'])
 
     _migrate_dataset_metadata(['origin', 'voxel_size'], kwargs['storage_manager'])
     return {'operation_xml_parameters': operation_xml_parameters}
@@ -636,10 +678,7 @@ def _migrate_fourier_spectrum(**kwargs):
     operation_xml_parameters = kwargs['operation_xml_parameters']
     operation_xml_parameters['input_data'] = root_metadata['source']
 
-    if operation_xml_parameters['detrend'] == 'on':
-        operation_xml_parameters['detrend'] = True
-    else:
-        operation_xml_parameters['detrend'] = False
+    _, operation_xml_parameters['detrend'] = _parse_bool(operation_xml_parameters['detrend'])
     operation_xml_parameters['segment_length'] = root_metadata['segment_length']
 
     _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power',
@@ -782,8 +821,7 @@ def _migrate_stimuli_surface(**kwargs):
     root_metadata['surface'] = _parse_gid(root_metadata['surface'])
     operation_xml_parameters = kwargs['operation_xml_parameters']
     operation_xml_parameters['focal_points_triangles'] = numpy.asarray(
-        json.loads(root_metadata['focal_points_triangles']),
-        dtype=numpy.int)
+        json.loads(root_metadata['focal_points_triangles']), dtype=numpy.int)
     _migrate_stimuli(['focal_points_surface', 'focal_points_triangles'], root_metadata, kwargs['storage_manager'])
     additional_params = [_migrate_stimuli_equation_params(operation_xml_parameters, 'temporal'),
                          _migrate_stimuli_equation_params(operation_xml_parameters, 'spatial')]
@@ -802,46 +840,6 @@ def _migrate_value_wrapper(**kwargs):
 def _migrate_simulation_state(**kwargs):
     os.remove(kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
-
-
-def _parse_gid(old_gid):
-    return uuid.UUID(old_gid).urn
-
-
-def _lowercase_first_character(string):
-    """
-    One-line function which converts the first character of a string to lowercase and
-    handles empty strings and None values
-    """
-    return string[:1].lower() + string[1:] if string else ''
-
-
-def _pop_lengths(root_metadata):
-    root_metadata.pop('length_1d')
-    root_metadata.pop('length_2d')
-    root_metadata.pop('length_3d')
-    root_metadata.pop('length_4d')
-
-    return root_metadata
-
-
-def _pop_common_metadata(root_metadata):
-    root_metadata.pop('label_x')
-    root_metadata.pop('label_y')
-    root_metadata.pop('aggregation_functions')
-    root_metadata.pop('dimensions_labels')
-    root_metadata.pop('nr_dimensions')
-
-
-def _bytes_ds_to_string_ds(storage_manager, ds_name):
-    bytes_labels = storage_manager.get_data(ds_name)
-    string_labels = []
-    for i in range(len(bytes_labels)):
-        string_labels.append(str(bytes_labels[i], 'utf-8'))
-
-    storage_manager.remove_data(ds_name)
-    storage_manager.store_data(ds_name, numpy.asarray(string_labels).astype(STORE_STRING))
-    return storage_manager
 
 
 def _migrate_dataset_metadata(dataset_list, storage_manager):
@@ -864,8 +862,7 @@ def _migrate_one_stimuli_param(root_metadata, param_name):
 
 
 def _set_parent_burst(time_series_gid, root_metadata, storage_manager, is_ascii=False):
-    ts = dao.get_datatype_by_gid(
-        time_series_gid.replace('-', '').replace('urn:uuid:', ''))
+    ts = dao.get_datatype_by_gid(_parse_gid(time_series_gid))
     burst_gid = _parse_gid(ts.fk_parent_burst)
     if is_ascii:
         burst_gid = burst_gid.encode('ascii', 'ignore')
@@ -935,7 +932,7 @@ def _migrate_general_part(folder, file_name):
     lowercase_keys = []
     for key, value in root_metadata.items():
         try:
-            root_metadata[key] = str(value, 'utf-8')
+            root_metadata[key] = _value2str(value)
         except TypeError:
             pass
         lowercase_keys.append(_lowercase_first_character(key))
@@ -946,9 +943,8 @@ def _migrate_general_part(folder, file_name):
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
 
     # UPDATE CREATION DATE
-    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace('datetime:', '')
-    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(':', '-')
-    root_metadata[DataTypeMetaData.KEY_DATE] = root_metadata[DataTypeMetaData.KEY_DATE].replace(' ', ',')
+    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(
+        string2date(root_metadata[DataTypeMetaData.KEY_DATE], date_format=DATE_FORMAT_V4_H5))
 
     # OBTAIN THE MODULE (for a few data types the old module doesn't exist anymore, in those cases the attr
     # will be set later
@@ -1086,7 +1082,7 @@ def update(input_file, burst_match_dict):
 
             if 'TimeSeries' in class_name:
                 burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
-                                                                  TvbProfile.current.db.SELECTED_DB)
+                                                                  TvbProfile.current.db.SELECTED_DB, DATE_FORMAT_V4_DB)
                 root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                 burst_config.simulator_gid = vm.gid.hex
                 burst_config.fk_simulation = operation.id

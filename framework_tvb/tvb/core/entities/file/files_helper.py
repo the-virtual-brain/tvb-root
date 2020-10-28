@@ -84,6 +84,9 @@ class FilesHelper(object):
             self.logger.exception("COULD NOT CREATE FOLDER! CHECK ACCESS ON IT!")
             raise FileStructureException("Could not create Folder" + str(path))
 
+    def get_projects_folder(self):
+        return os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER)
+
     def get_project_folder(self, project, *sub_folders):
         """
         Retrieve the root path for the given project. 
@@ -91,7 +94,7 @@ class FilesHelper(object):
         """
         if hasattr(project, 'name'):
             project = project.name
-        complete_path = os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER, project)
+        complete_path = os.path.join(self.get_projects_folder(), project)
         if sub_folders is not None:
             complete_path = os.path.join(complete_path, *sub_folders)
         if not os.path.exists(complete_path):

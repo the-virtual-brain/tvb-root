@@ -32,9 +32,8 @@ import os
 import typing
 import uuid
 from datetime import datetime
+
 from tvb.basic.neotraits.api import HasTraits
-from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
@@ -311,53 +310,3 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
             uuid_files.append(h5_file.path)
             gather_all_references_by_index(h5_file, uuid_files)
         ref_files.extend(uuid_files)
-
-
-# Dependency dict
-h5_files_dependencies = {
-    "RegionVolumeMapping": ["Volume"],
-    "StructuralMRI": ["Volume"],
-    "TimeSeriesVolume": ["Volume"]
-}
-
-
-def get_all_h5_paths(delete_other=False):
-    """
-    This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
-    The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).
-
-    If the delete_other parameter is set to True, non H5 files inside the operation folders will be deleted.
-    """
-    h5_files = []
-    projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, 'PROJECTS')
-
-    for project_path in os.listdir(projects_folder):
-        # Getting operation folders inside the current project
-        project_full_path = os.path.join(projects_folder, project_path)
-        project_operations = os.listdir(project_full_path)
-        project_operations_base_names = [os.path.basename(op) for op in project_operations]
-
-        for op_folder in project_operations_base_names:
-            try:
-                int(op_folder)
-                op_folder_path = os.path.join(project_full_path, op_folder)
-                for file in os.listdir(op_folder_path):
-                    if file.endswith('.h5'):
-                        h5_files.append(os.path.join(op_folder_path, file))
-            except ValueError:
-                pass
-
-    # Sort all h5 files based on their creation date stored in the files themselves
-    sorted_h5_files = sorted(h5_files, key=lambda h5_path: _get_create_date_for_sorting(h5_path) or datetime.now())
-    return sorted_h5_files
-
-
-def _get_create_date_for_sorting(h5_file):
-    storage_manager = HDF5StorageManager(os.path.dirname(h5_file), os.path.basename(h5_file))
-    root_metadata = storage_manager.get_metadata()
-    create_date_str = str(root_metadata['Create_date'], 'utf-8')
-    create_date = datetime.strptime(create_date_str.replace('datetime:', ''), '%Y-%m-%d %H:%M:%S.%f')
-    return create_date
-
-
-

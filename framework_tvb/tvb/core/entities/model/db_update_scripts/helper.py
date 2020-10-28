@@ -35,11 +35,10 @@ This modules holds helping function for DB update scripts
 """
 
 from sqlalchemy import text
+from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import SA_SESSIONMAKER, dao
-from tvb.basic.logger.builder import get_logger
-from datetime import datetime
-
+from tvb.core.utils import string2date
 
 LOGGER = get_logger(__name__)
 
@@ -61,7 +60,7 @@ def change_algorithm(module, classname, new_module, new_class):
         session.close()
 
 
-def get_burst_for_migration(burst_id, burst_match_dict, selected_db):
+def get_burst_for_migration(burst_id, burst_match_dict, selected_db, date_format):
     """
     This method is supposed to only be used when migrating from version 4 to version 5.
     It finds a BurstConfig in the old format (when it did not inherit from HasTraitsIndex), deletes it
@@ -80,8 +79,8 @@ def get_burst_for_migration(burst_id, burst_match_dict, selected_db):
                              'start_time': burst_params[9], 'finish_time': burst_params[10],
                              'fk_simulation': burst_params[12], 'fk_operation_group': burst_params[13],
                              'fk_metric_operation_group': burst_params[14]}
-        burst_params_dict['start_time'] = datetime.strptime(burst_params_dict['start_time'], '%Y-%m-%d %H:%M:%S.%f')
-        burst_params_dict['finish_time'] = datetime.strptime(burst_params_dict['finish_time'], '%Y-%m-%d %H:%M:%S.%f')
+        burst_params_dict['start_time'] = string2date(burst_params_dict['start_time'], date_format)
+        burst_params_dict['finish_time'] = string2date(burst_params_dict['finish_time'], date_format)
     else:
         burst_params_dict = {'fk_project': burst_params[1], 'name': burst_params[2], 'status': burst_params[3],
                              'error_message': burst_params[4], 'start_time': burst_params[5], 'finish_time':

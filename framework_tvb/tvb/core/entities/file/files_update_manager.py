@@ -38,19 +38,21 @@ Manager for the file storage version updates.
 """
 
 import os
-import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from datetime import datetime
+
+import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
 from tvb.basic.config.stored import KEY_ADMIN_DISPLAY_NAME, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIGURATION, \
     KEY_KC_CONFIGURATION
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
-
+from tvb.core.neotraits.h5 import H5File
+from tvb.core.utils import string2date
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
@@ -245,8 +247,7 @@ class FilesUpdateManager(UpdateManager):
                 manager.add_entries_to_config_file(new_stored_settings)
                 manager.delete_entries_from_config_file(['URL_WEB'])
 
-                from tvb.core.neocom import h5
-                file_paths = h5.get_all_h5_paths()
+                file_paths = self._get_all_h5_paths()
                 total_count = len(file_paths)
                 count_ok, count_error = self.__upgrade_h5_list(file_paths)
 
@@ -282,3 +283,39 @@ class FilesUpdateManager(UpdateManager):
         """
         folder, file_name = os.path.split(file_path)
         return HDF5StorageManager(folder, file_name)
+
+    @staticmethod
+    def _get_all_h5_paths():
+        """
+        This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
+        The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).
+        """
+        h5_files = []
+        projects_folder = FilesHelper().get_projects_folder()
+
+        for project_path in os.listdir(projects_folder):
+            # Getting operation folders inside the current project
+            project_full_path = os.path.join(projects_folder, project_path)
+            project_operations = os.listdir(project_full_path)
+            project_operations_base_names = [os.path.basename(op) for op in project_operations]
+
+            for op_folder in project_operations_base_names:
+                try:
+                    int(op_folder)
+                    op_folder_path = os.path.join(project_full_path, op_folder)
+                    for file in os.listdir(op_folder_path):
+                        if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+                            h5_files.append(os.path.join(op_folder_path, file))
+                except ValueError:
+                    pass
+
+        # Sort all h5 files based on their creation date stored in the files themselves
+        sorted_h5_files = sorted(h5_files, key=lambda h5_path: FilesUpdateManager._get_create_date_for_sorting(
+            h5_path) or datetime.now())
+        return sorted_h5_files
+
+    @staticmethod
+    def _get_create_date_for_sorting(h5_file):
+        create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'), 'utf-8')
+        create_date = string2date(create_date_str, date_format='datetime:%Y-%m-%d %H:%M:%S.%f')
+        return create_date
