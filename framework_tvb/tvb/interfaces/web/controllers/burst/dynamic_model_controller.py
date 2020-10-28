@@ -32,9 +32,11 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
+import threading
+
 import cherrypy
 import numpy
-import threading
+import tvb.core.entities.model.model_burst as model_burst
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model, get_form_for_model
@@ -48,7 +50,6 @@ from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
 from tvb.core.entities.storage import dao
-import tvb.core.entities.model.model_burst as model_burst
 from tvb.core.neotraits.forms import SimpleStrField
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
@@ -64,6 +65,7 @@ class Dynamic(object):
     """
     Groups a model and an integrator.
     """
+
     def __init__(self, model=None, integrator=None):
         if model is None:
             model = models.Generic2dOscillator()
@@ -107,14 +109,15 @@ class SessionCache(object):
 class _InputTreeFragment(ABCAdapterForm):
     def __init__(self):
         super(_InputTreeFragment, self).__init__()
-        self.dynamic_name = SimpleStrField(self, name='dynamic_name', label = "Parameter configuration name",
-                                           doc = """The name of this parameter configuration""")
+        self.dynamic_name = SimpleStrField(self, name='dynamic_name', label="Parameter configuration name",
+                                           doc="""The name of this parameter configuration""")
 
 
 @traced
 class DynamicModelController(BurstBaseController):
     KEY_CACHED_DYNAMIC_MODEL = 'cache.DynamicModelController'
     LOGGER = get_logger(__name__)
+
     def __init__(self):
         BurstBaseController.__init__(self)
         self.available_models = get_ui_name_to_model()
@@ -122,7 +125,6 @@ class DynamicModelController(BurstBaseController):
         self.cache = SessionCache()
         # Work around a numexpr thread safety issue. See TVB-1639.
         self.traj_lock = threading.Lock()
-
 
     def get_cached_dynamic(self, dynamic_gid):
         """
@@ -135,7 +137,6 @@ class DynamicModelController(BurstBaseController):
             dynamic = Dynamic()
             self.cache[dynamic_gid] = dynamic
         return self.cache[dynamic_gid]
-
 
     @expose_page
     def index(self):
@@ -160,10 +161,8 @@ class DynamicModelController(BurstBaseController):
         self._configure_integrator_noise(dynamic.integrator, dynamic.model)
         return params
 
-
     def fill_default_attributes(self, param):
         return BurstBaseController.fill_default_attributes(self, param, subsection='phaseplane')
-
 
     @expose_json
     def model_changed(self, dynamic_gid, name):
@@ -173,6 +172,7 @@ class DynamicModelController(BurstBaseController):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         dynamic.model = self.available_models[name]()
         dynamic.model.configure()
+        self._configure_integrator_noise(dynamic.integrator, dynamic.model)
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
         mp_params = DynamicModelController._get_model_parameters_ui_model(dynamic.model)
         graph_params = DynamicModelController._get_graph_ui_model(dynamic)
@@ -181,7 +181,6 @@ class DynamicModelController(BurstBaseController):
             'model_param_sliders_fragment': self._model_param_sliders_fragment(dynamic_gid),
             'axis_sliders_fragment': self._axis_sliders_fragment(dynamic_gid)
         }
-
 
     @expose_json
     def integrator_changed(self, dynamic_gid, **kwargs):
@@ -247,21 +246,22 @@ class DynamicModelController(BurstBaseController):
     def integrator_parameters_changed(self, dynamic_gid, type, **param):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         integrator = dynamic.integrator
+        changed_params = list(param.keys())
         if type == SubformHelper.FormToConfigEnum.INTEGRATOR.name:
             integrator_form_class = get_form_for_integrator(integrator.__class__)
             integrator_form = integrator_form_class()
             integrator_form.fill_from_post(param)
-            integrator_form.fill_trait(integrator)
+            integrator_form.fill_trait_partially(integrator, changed_params)
         if type == SubformHelper.FormToConfigEnum.NOISE.name:
             noise_form_class = get_form_for_noise(integrator.noise.__class__)
             noise_form = noise_form_class()
             noise_form.fill_from_post(param)
-            noise_form.fill_trait(integrator.noise)
+            noise_form.fill_trait_partially(integrator.noise, changed_params)
         if type == SubformHelper.FormToConfigEnum.EQUATION.name:
             eq_form_class = get_form_for_equation(integrator.noise.b.__class__)
             eq_form = eq_form_class()
             eq_form.fill_from_post(param)
-            eq_form.fill_trait(integrator.noise.b)
+            eq_form.fill_trait_partially(integrator.noise.b, changed_params)
         self._update_integrator(dynamic, integrator)
 
     @staticmethod
@@ -280,7 +280,7 @@ class DynamicModelController(BurstBaseController):
                 integrator.noise.configure_coloured(integrator.dt, shape)
             else:
                 integrator.noise.configure_white(integrator.dt, shape)
-
+            integrator.noise.reset_random_stream()
 
     @expose_json
     def parameters_changed(self, dynamic_gid, params):
@@ -296,15 +296,14 @@ class DynamicModelController(BurstBaseController):
             model.configure()
             return dynamic.phase_plane.compute_phase_plane()
 
-
     @expose_json
     def graph_changed(self, dynamic_gid, graph_state):
         with self.traj_lock:
             graph_state = json.loads(graph_state)
             dynamic = self.get_cached_dynamic(dynamic_gid)
+            self._configure_integrator_noise(dynamic.integrator, dynamic.model)
             dynamic.phase_plane.update_axis(**graph_state)
             return dynamic.phase_plane.compute_phase_plane()
-
 
     @expose_json
     def trajectories(self, dynamic_gid, starting_points, integration_steps):
@@ -316,10 +315,9 @@ class DynamicModelController(BurstBaseController):
             for t in trajectories:
                 if not numpy.isfinite(t).all():
                     self.logger.warning('Denaturated point %s on a trajectory')
-                    return {'finite':False}
+                    return {'finite': False}
 
-            return {'trajectories': trajectories, 'signals': signals, 'finite':True}
-
+            return {'trajectories': trajectories, 'signals': signals, 'finite': True}
 
     @staticmethod
     def _get_model_parameters_ui_model(model):
@@ -347,7 +345,6 @@ class DynamicModelController(BurstBaseController):
             })
         return ret
 
-
     @staticmethod
     def _get_graph_ui_model(dynamic):
         model = dynamic.model
@@ -367,21 +364,19 @@ class DynamicModelController(BurstBaseController):
                 'default': (hi + lo) / 2
             })
 
-
         ret = {
             'modes': list(range(model.number_of_modes)),
             'state_variables': sv_model,
-            'default_mode' : dynamic.phase_plane.mode
+            'default_mode': dynamic.phase_plane.mode
         }
 
         if model.nvar > 1:
-            ret['default_sv'] = [ model.state_variables[dynamic.phase_plane.svx_ind],
-                                  model.state_variables[dynamic.phase_plane.svy_ind]]
-            ret['integration_steps'] = {'default': 512, 'min': 32, 'max':2048 }
+            ret['default_sv'] = [model.state_variables[dynamic.phase_plane.svx_ind],
+                                 model.state_variables[dynamic.phase_plane.svy_ind]]
+            ret['integration_steps'] = {'default': 512, 'min': 32, 'max': 2048}
         else:
-            ret['default_sv'] = [ model.state_variables[0] ]
+            ret['default_sv'] = [model.state_variables[0]]
         return ret
-
 
     @using_template('burst/dynamic_axis_sliders')
     def _axis_sliders_fragment(self, dynamic_gid):
@@ -389,8 +384,8 @@ class DynamicModelController(BurstBaseController):
         model = dynamic.model
         ps_params = self._get_graph_ui_model(dynamic)
         templ_var = ps_params
-        templ_var.update({'showOnlineHelp' : True,
-                          'one_dimensional':len(model.state_variables) == 1 })
+        templ_var.update({'showOnlineHelp': True,
+                          'one_dimensional': len(model.state_variables) == 1})
         return templ_var
 
     @using_template('burst/dynamic_mp_sliders')
@@ -398,9 +393,8 @@ class DynamicModelController(BurstBaseController):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         model = dynamic.model
         mp_params = self._get_model_parameters_ui_model(model)
-        templ_var = {'parameters' : mp_params, 'showOnlineHelp' : True }
+        templ_var = {'parameters': mp_params, 'showOnlineHelp': True}
         return templ_var
-
 
     @expose_json
     def submit(self, dynamic_gid, dynamic_name):
@@ -431,7 +425,6 @@ class DynamicModelController(BurstBaseController):
 
         dao.store_entity(entity)
         return {'saved': True}
-
 
     @expose_fragment('burst/dynamic_minidetail')
     def dynamic_detail(self, dynamic_id):
