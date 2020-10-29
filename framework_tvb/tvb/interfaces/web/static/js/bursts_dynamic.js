@@ -527,7 +527,7 @@ function plotEquation(subformDiv = null) {
 }
 
 function setEventsOnFormFields(param, div_id) {
-    $('#' + div_id + ' input').change(function () {
+    $('#' + div_id + ' input:not([type=radio])').change(function () {
         setIntegratorParamAndRedrawChart('integrator_parameters_changed', this.name, this.value, param)
     });
 }
