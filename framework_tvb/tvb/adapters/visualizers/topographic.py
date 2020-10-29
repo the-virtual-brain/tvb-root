@@ -277,6 +277,11 @@ class TopographicViewer(ABCDisplayer):
         for i, array_data in enumerate(arrays):
             try:
                 data_array = TopographyCalculations.compute_topography_data(array_data, sensor_locations)
+                first_label = h5.load_from_index(connectivities_idx[0]).region_labels[0]
+                if first_label.lower().startswith('r'):
+                    data_array = numpy.rot90(data_array, k=1, axes=(0, 1))
+                else:
+                    data_array = numpy.rot90(data_array, k=-1, axes=(0, 1))
                 if numpy.any(numpy.isnan(array_data)):
                     titles[i] = titles[i] + " - Topography contains nan"
                 if not numpy.any(array_data):
