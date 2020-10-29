@@ -1,0 +1,13 @@
+{% macro generate_help_tooltip(field) %}
+    {% if showOnlineHelp and field.doc and not isCallout %}
+        <nav class="inline-menu helper">
+            <a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <mark>{{ field.label }}</mark>
+                    <div class="dropdown-pane-overlay">{{ field.doc }}</div>
+                </div>
+            </div>
+        </nav>
+    {% endif %}
+{% endmacro %}

@@ -16,7 +16,7 @@
             <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
                 <label for="{{ field.name }}">{{ field.label }}</label>
                 {% if field.doc %}
-                 {{ generate_help_tooltip(field) }}
+                    {{ generate_help_tooltip(field) }}
                 {% endif %}
             </dt>
             <dd>
