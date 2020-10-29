@@ -862,7 +862,7 @@ def _migrate_one_stimuli_param(root_metadata, param_name):
 
 
 def _set_parent_burst(time_series_gid, root_metadata, storage_manager, is_ascii=False):
-    ts = dao.get_datatype_by_gid(_parse_gid(time_series_gid))
+    ts = dao.get_datatype_by_gid(uuid.UUID(time_series_gid).hex)
     burst_gid = _parse_gid(ts.fk_parent_burst)
     if is_ascii:
         burst_gid = burst_gid.encode('ascii', 'ignore')

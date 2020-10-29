@@ -37,6 +37,7 @@
 import json
 import os
 import shutil
+import uuid
 from cgi import FieldStorage
 from datetime import datetime
 
@@ -353,6 +354,11 @@ class ImportService(object):
                 key_attr = getattr(view_model, element[0])
                 setattr(key_attr, element[1], element[2])
 
+        view_model.range_values = operation_entity.range_values
+        if operation_entity.operation_group:
+            view_model.operation_group_gid = uuid.UUID(operation_entity.operation_group.gid)
+            view_model.ranges = json.dumps(operation_entity.operation_group.range_references)
+            view_model.is_metric_operation = 'DatatypeMeasure' in operation_entity.operation_group.name
         h5.store_view_model(view_model, new_op_folder)
         view_model_disk_size = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
         operation_entity.view_model_disk_size = view_model_disk_size
