@@ -67,7 +67,7 @@ class TestExplorationController(BaseTransactionalControllerTest):
         for row in data.values():
             assert len(row) == 2
             for entry in row.values():
-                assert entry['dataType'] == 'DatatypeMeasureIndex'
+                assert entry['dataType'] == 'TimeSeriesIndex'
                 for key in ['Gid', 'color_weight', 'operationId', 'tooltip']:
                     assert key in entry
 
