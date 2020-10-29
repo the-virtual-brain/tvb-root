@@ -1137,7 +1137,11 @@ let activeMenu = null;
 function openMenu(selector) {
     hideMenus();
     activeMenu = $(selector);
+    extension =  activeMenu.find('.extension')
     activeMenu.find('.extension').show();
+    if(extension.length > 1) {
+        $(".helper").remove();
+    }
 }
 
 function hideMenus() {
