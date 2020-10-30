@@ -1,0 +1,47 @@
+{% import 'burst/dynamic_sliders.html' as ds with context %}
+
+<div class="sliderGroup">
+    <button id="reset_axes">Reset</button>
+
+    <h3>State variables shown on axes and their range</h3>
+
+    <table class="axisSlidersTable">
+        <tr>
+            <td class="paramName">mode</td>
+            <td class="paramValue">
+                <select id="mode">
+                    {% for idx in modes %}
+                        <option value="{{ idx }}" selected="{{ 'selected' if idx == default_mode else none }}">{{ idx }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+
+            <td class="c3"></td>
+        </tr>
+
+        <tr>
+            {{ ds.drawAxis(":math:`x`", state_variables, default_sv[0], "svx", "slider_x_axis", "x_range_span") }}
+        </tr>
+
+        {% if not one_dimensional %}
+            <tr>
+                {{ ds.drawAxis(":math:`y`", state_variables, default_sv[1], "svy", "slider_y_axis", "y_range_span") }}
+            </tr>
+        {% endif %}
+    </table>
+</div>
+
+{% if not one_dimensional %}
+    {{ ds.drawSliderGroup(state_variables, "reset_state_variables", "Values of the state variables that are not on the graph") }}
+    <div class="sliderGroup">
+        <h3>Trajectories</h3>
+        <button id="reset_trajectories">Delete all</button>
+        <table class="axisSlidersTable">
+            <tr>
+                <td class="paramName">Integration steps</td>
+                <td class="c3"><div id="slider_integration_steps"></div></td>
+                <td><span id="span_integration_steps"> </span></td>
+            </tr>
+        </table>
+    </div>
+{% endif %}

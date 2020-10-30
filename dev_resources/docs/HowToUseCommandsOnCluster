@@ -1,0 +1,17 @@
+Running TVB command on the cluster could be done in the following manner: 
+
+- first download TVB_Distribution and place it under the folder shared with the cluster nodes. This should be the home directory: ~/TVB_Distribution 
+- start the web interface of TVB_Distribution on the local node, and make sure the settings are chosen and the first default project gets created. You can leave the web-server running while launching other jobs on the cluster from the command line. 
+
+- create a script for running your TVB simulations from the command line. 
+  One example of such script could be ~/clusterLaunch (as attached to this task) 
+  clusterLauncher works in this example with a python file from inside TVB_Distribution/tvb_data/tvb/interfaces/command/demos/operations/run_simulation.py which launches a parametrized simulation 
+- it is important to test locally that running command "clusterLaunch [value_for_TAU_param]" works. 
+  You should see a simulation in your browser (while refreshing with the web-interface of the same TVB_Distribution folder) 
+
+- launching a bunch of jobs like "clusterLaunch [tau]" on the cluster nodes, can be done in the following manner: 
+  oarsub -p "host>'n02' AND host<'n20'" -l walltime=02:00:00 -S "/home/[berlinUser]/clusterLauncher [tau_value_1]" 
+  oarsub -p "host>'n02' AND host<'n20'" -l walltime=02:00:00 -S "/home/[berlinUser]/clusterLauncher [tau_value_2]" 
+  oarsub -p "host>'n02' AND host<'n20'" -l walltime=02:00:00 -S "/home/[berlinUser]/clusterLauncher [tau_value_...]" 
+
+- You could automatise this further with other scripts for launching a range or simulations in the manner which is comfortable for you 

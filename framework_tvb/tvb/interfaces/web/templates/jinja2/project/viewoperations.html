@@ -1,0 +1,284 @@
+<div id="main" class="columnized colscheme-2-1st-narrow">
+    <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+    {% import 'project/pagination.html' as pag %}
+
+    {% macro displayOperationResults(operation_row) -%}
+        <!--! Function for displaying a given Operation's result column:
+              - list of icons for results, or
+              - expand button in case of a group.
+        -->
+        {% if operation_row['datatype_group_gid'] is not none %}
+            <nav class="inline-menu">
+                <button class="action action-menu" type="button">Expand</button>
+
+                <div class="extension">
+                    <div class="dropdown-pane" onkeypress="redirectToHrefChild(this)" tabindex="3">
+                        <mark>{{ operation_row['count'] }} operations</mark>
+                        <p>Group {{ operation_row['group'] }}</p>
+
+                        {% for view_algo in operation_row.view_groups %}
+                            {% set launchParamName = view_algo.parameter_name %}
+                            {% set  launchParamVal = operation_row['datatype_group_gid'] %}
+                            {% set url = '/flow/' ~ (view_algo.fk_category | string) ~ '/' ~ (view_algo.id | string) %}
+
+                            <a href="#" title="Go view the diagram"
+                               class="action action-crosslink crosslink-s-project crosslink-ss-stray" tabindex="-1"
+                               onclick="launchAdapter('{{ url }}', '{{ launchParamName }}', '{{ launchParamVal }}', 'operations', false);">
+                                {{ view_algo.displayname }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </nav>
+        {% endif %}
+
+        {% if operation_row['results'] is not none %}
+            <div>
+                {% for 	result in operation_row['results'] %}
+                    {% if not result.invalid and not result.is_nan %}
+                        <img src="/static/style/nodes/node{{ result.display_type }}.png" class="result_icon"
+                             title="{{ result.display_name }} "
+                             onclick="displayNodeDetails('{{ result.gid }}', '{{ result.type }}', 'operations');"/>
+                    {% endif %}
+                {% endfor %}
+
+                {% for result in operation_row['results'] %}
+                    {% if result.invalid or result.is_nan %}
+                        <img src="/static/style/nodes/nodeInvalid.png" class="result_icon"
+                             title="{{ result.display_name }}"/>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+    {%- endmacro %}
+
+    <form id="operationsForm" method="post" action="/project/viewoperations/{{ selectedProject.id }}">
+        <!--! Column w/ filters for the operation list -->
+        <section class="ops-filter view-column col-1">
+            <h4>
+                <mark>Filter</mark>
+            </h4>
+
+            <ul>
+                <li class="{{ 'active' if no_filter_selected else '' }}">
+                    <a href="#" title="Reset all filters" onclick="resetOperationFilters('operationsForm')">Display All
+                        ({{ total_op_count }})</a>
+                </li>
+
+                {% for f in filters %}
+                    <li class="{{ 'active' if f.selected else '' }}">
+                        <a href="#" title="{{ 'Disable' if f.selected else 'Enable' }} this filter"
+                           onclick="applyOperationFilter('{{ f.display_name }}', 'operationsForm')">
+                            {{ f.display_name }}
+                            {% if f.passes_count %}
+                                ({{ f.passes_count }})
+                            {% endif %}
+                        </a>
+                    </li>
+                {% endfor %}
+
+                <input type="hidden" name="filtername" id="filtername"/>
+            </ul>
+        </section>
+
+        <!--! Column displaying the operation list -->
+        <section class="ops-list view-column col-2">
+            <h4>
+                <mark>Manage</mark>
+                Operations
+            </h4>
+
+            <table>
+                <thead>
+                {{ pag.displayPaginationControls(page_number, total_pages, 11, 'operationsForm') }}
+                <input type="hidden" name="page" value="{{ page_number }}" id="currentPage"/>
+
+                <tr>
+                    <th class="id"
+                        title="Operation identifier -application specific. In case of a range of operations, an interval will be displayed."></th>
+                    <th class="state" title="Operation status at last page refresh">Status</th>
+                    <th class="control" title="Reload / Pause / Stop">Control</th>
+                    <th class="ops" title="Operation Category and Name">Operation</th>
+                    <th class="brst" title="Simulation Group Name">Simulation</th>
+                    <th class="user" title="Name of the user initiating current operation">Creator</th>
+                    <th class="start-end"
+                        title="Exact time when the operation was scheduled for execution/ Time of completion">
+                        Created/Ended
+                    </th>
+                    <th class="time"
+                        title="Difference between start and complete time. Start time might be different than the Create Time (due to queueing).">
+                        Duration
+                    </th>
+                    <th class="result" title="Types and number of operation results">Result</th>
+                    <th class="relevancy" title="Relevance of an operation">Relevance</th>
+                </tr>
+                </thead>
+
+                <tfoot>
+                {{ pag.displayPaginationControls(page_number, total_pages, 11, 'operationsForm') }}
+                </tfoot>
+
+                {% if operationsList %}
+                    <tbody>
+                    {% for operation in operationsList %}
+                        {% set status_class = {model.STATUS_FINISHED:'ops-finished',
+                                               model.STATUS_ERROR:'ops-error',
+                                               model.STATUS_CANCELED:'ops-cancelled',
+                                               model.STATUS_STARTED:'ops-started',
+                                               model.STATUS_PENDING:'ops-submitted'}[operation['status']] %}
+                        <tr class="{{ 'ops-group' if operation['group'] else 'ops-single' }} {{ status_class }}
+					     	  		{{ 'ops-relevant' if operation['visible'] else 'ops-irrelevant' }}
+					     	  		ops-type-{{ operation['algorithm'].algorithm_category.displayname | lower }}">
+
+                            <td class="id" title="{{ operation['operation_tag'] }}">
+                                {{ operation['id'] }}
+                            </td>
+
+                            {% with %}
+                                {% set op_ui_status = operation['status'].split('-')[1] | title %}
+                                <td class="state">
+                                    {% if operation['additional'] == '' %}
+                                        <a class="action action-mini-zoom-in"
+                                           onclick="displayNodeDetails('{{ operation['gid'] }}',
+                                                   '{{ 'operationGroup' if operation['group'] else 'operation' }}', 'operations');"
+                                           title="Show details...">{{ op_ui_status }}</a>
+                                    {% endif %}
+
+                                    {% if operation['additional'] != '' %}
+                                        <nav class="inline-menu">
+                                            <button tabindex='3' class="action action-menu" onclick="return false;">
+                                                <mark>{{ op_ui_status }}</mark>
+                                            </button>
+                                            <div class="extension">
+                                                <div class="dropdown-pane">
+                                                    <mark>
+                                                        Retrieved {{ 'error' if operation['status']== model.STATUS_ERROR else 'warning' }}
+                                                        message:
+                                                    </mark>
+                                                    <p>{{ operation['additional'] }}</p>
+                                                    <a class="action action-mini-zoom-in"
+                                                       onclick="displayNodeDetails('{{ operation['gid'] }}',
+                                                               '{{ 'operationGroup' if operation['group'] else 'operation' }}', 'operations');"
+                                                       title="Show details...">Show operation details</a>
+                                                </div>
+                                            </div>
+                                        </nav>
+                                    {% endif %}
+                                </td>
+                            {% endwith %}
+
+                            {% with %}
+                                {% if not operation['group'] %}
+                                    {% set op_id = operation['id'] %}
+                                {% else %}
+                                    {% set op_id = operation['operation_group_id'] %}
+                                {% endif %}
+
+                                {% if operation['group'] %}
+                                    {% set is_group = 1 %}
+                                {% else %}
+                                    {% set is_group = 0 %}
+                                {% endif %}
+
+                                <td class="control">
+                                    <div class="action-block block-player">
+                                        {% if operation['algorithm'].algorithm_category.displayname == 'Simulate' %}
+                                            <!--! If simulation. Redirect to burst page with this one as a copy -->
+                                            <button tabindex='3' type="submit" class="action action-run"
+                                                    onclick="reloadBurstOperation('{{ op_id }}', {{ is_group }}, 'operationsForm')">
+                                                Reload
+                                            </button>
+                                        {% else %}
+                                            {% if (not operation['group']) and (not operation['algorithm'].algorithm_category.displayname == 'Create') and (not operation['algorithm'].algorithm_category.rawinput) %}
+                                                <!--! Normal operation reload -->
+                                                <button tabindex='3' type="submit" class="action action-run"
+                                                        onclick="reloadOperation({{ operation['id'] }}, 'operationsForm')">
+                                                    Reload
+                                                </button>
+                                            {% else %}
+                                                <!--! Upload or non-burst group which we can't reload -->
+                                                <button tabindex='3' type="submit"
+                                                        class="action action-run action-idle" disabled="disabled">
+                                                    Reload
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+
+                                        {% if operation['status'] == model.STATUS_STARTED %}
+                                                <button tabindex='3' type="submit" class="action action-stop"
+                                                        onclick="cancelOrRemoveOperation('{{ op_id }}', {{ is_group }}, false)">Stop
+                                                </button>
+                                        {% else %}
+                                            <button tabindex='3' type="submit"
+                                                    class="action action-stop action-idle" disabled="disabled">Stop
+                                            </button>
+                                        {% endif %}
+
+                                        {% with %}
+                                            {% set ok_callback = 'cancelOrRemoveOperation(' ~ (op_id | string) ~ ', ' ~ (is_group | string) ~ ', true);' %}
+                                            <button type="submit" class="action action-remove" title="Remove operation"
+                                                    onclick="showQuestionOverlay('Are you sure you want to delete the operation?', '{{ ok_callback }}'); return false;">
+                                                Remove
+                                            </button>
+                                        {% endwith %}
+                                    </div>
+                                </td>
+                            {% endwith %}
+
+                            <td class="ops">
+                                <mark>{{ operation['algorithm'].algorithm_category.displayname }}</mark>
+                                {{ operation['algorithm'].displayname }} </td>
+
+                            <td class="brst"> {{ operation['burst_name'] if operation['burst_name']!='-' else '' }} </td>
+
+                            <td class="user"> {{ operation['user'].display_name }} </td>
+
+                            <td class="start-end">
+                                <div class="start">
+                                    <mark>{{ operation['create'].strftime('%Y/%m/%d') }}</mark>
+                                    {{ operation['create'].strftime('%H:%M') }}</div>
+                                {% if operation['complete']!= none %}
+                                    <div class="end">
+                                        <mark>{{ operation['complete'].strftime('%Y/%m/%d') }}</mark>
+                                        {{ operation['complete'].strftime('%H:%M') }}</div>
+                                {% endif %}
+                            </td>
+
+                            <td class="time">
+                                {% if 'duration' in operation %}
+                                    {{ operation['duration'] }}
+                                {% endif %}
+                            </td>
+
+                            <td class="result">{{ displayOperationResults(operation) }}</td>
+
+                            <td class="relevancy">
+                                {% with %}
+                                    {% set toBeStatus = 'false' if operation['visible'] else 'true' %}
+                                    {% set buttonLabel = 'Make not relevant' if operation['visible'] else 'Make relevant' %}
+                                    {% set buttonClass = 'action-make-irrelevant' if operation['visible'] else 'action-make-relevant' %}
+                                    {% set is_group = 'true' if 'operation_group_id' in operation else 'false' %}
+
+                                    <button class="action action-relevancy {{ buttonClass }}"
+                                            onclick="setOperationRelevant('{{ operation['gid'] }}', {{ is_group }}, '{{ toBeStatus }}', 'operationsForm'); return false;"
+                                            title="Make this operation(s) {{ 'Irrelevant' if operation['visible'] else 'Relevant' }}">{{ buttonLabel }}
+                                    </button>
+                                {% endwith %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                {% endif %}
+            </table>
+        </section>
+    </form>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            setTimeout(refreshOperations, 30000);
+        });
+    </script>
+</div>
+
+

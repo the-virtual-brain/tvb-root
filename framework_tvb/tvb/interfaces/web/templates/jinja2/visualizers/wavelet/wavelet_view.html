@@ -1,0 +1,40 @@
+<div id="wavelet-root" class="view-column">
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/matrix2d.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
+
+    <div class="matrix2d-draw-content" id="canvasParent">
+        <div class="matrix-legend" id="colorWeightsLegend"></div>
+        <div class="matrix-legend">
+            <table id="table-colorWeightsLegend" class="table-legend-labels">
+                {% for label in range(7) %}
+                    {% if label != 0 %}
+                        <tr height="{{ ((100/8) | string) + '%' }}" style='vertical-align: bottom;'>
+                            <td>{{ label }}</td>
+                        </tr>
+                    {% else %}
+                        <tr height="20px">
+                            <td>{{ label }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            </table>
+        </div>
+
+        <svg class="matrix2d-svg-container" id="svg-container"></svg>
+        <canvas class="matrix2d-main-canvas" id="main-canvas-2d"></canvas>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#main").addClass("colscheme-1");
+            matrix2d_init('{{ canvasName }}', '{{ xAxisName }}', '{{ yAxisName }}', '{{ matrix_data }}', '{{ matrix_shape }}',
+                {{ start_time }}, {{ end_time }}, {{ freq_lo }}, {{ freq_hi }}, {{ vmin }}, {{ vmax }});
+            window.onresize = drawAxis;
+        });
+        // For the burst Preview part
+        function launchViewer(width, height) {
+        }
+    </script>
+</div>

@@ -1,0 +1,24 @@
+<div id="s-brain" class="brain view-column">
+    {% include 'visualizers/commons/gl_view_header.html' %}
+    {% include 'visualizers/commons/fragment_shader.html' %}
+    {% include 'visualizers/commons/surface_pick_vertex_shader.html' %}
+    <script type="text/javascript" src="/static_view/tract/track.js?{{ currentVersionJS }}"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            TRACK_webGLStart('{{ urlTrackStarts | safe }}', '{{ urlTrackVertices | safe }}', '{{ shelfObject | safe if shelfObject else null }}');
+        });
+    </script>
+
+    <ul class="toolbar-inline">
+        <li class="channel-selector can-extend">
+            {% import 'visualizers/commons/channel_selector_button.html' as csb with context %}
+            {{ csb.drawRegionSelectorButton("Tracks emerging from", groupedLabels, initialSelection, radio=true) }}
+        </li>
+    </ul>
+
+    {% with %}
+        {% set show_navigator = false %}
+        {% include 'visualizers/commons/gl_view_after.html' %}
+    {% endwith %}
+</div>

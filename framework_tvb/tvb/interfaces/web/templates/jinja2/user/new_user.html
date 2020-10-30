@@ -1,0 +1,75 @@
+{% macro create_user_registration(data, errors, title, include_description) -%}
+	<table class="contentTable" summary="Register New User">
+		<thead><tr><td colspan='2'><h2>{{ title }}</h2></td></tr></thead>
+		<tr>
+			<td><label for="display_name">Display name *</label></td>
+			<td><input tabindex='1' id="display_name" type="textField" name="display_name" value="{{ data.display_name if ('display_name' in data) else '' }}" class="inputField"/>
+				<br/>
+				{% if 'display_name' in errors %}
+					<span class=errorMessage">{{ errors.display_name }}</span>
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td><label for="username">Username *</label></td>
+			<td><input tabindex='1' id="username" type="textField" name="username" value="{{ data.username if ('username' in data) else '' }}" class="inputField"/>
+				<br/>
+				{% if 'username' in errors %}
+					<span class=errorMessage">{{ errors.username }}</span>
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td><label for="password">Password *</label></td>
+			<td><input tabindex='2' id="password" type="password" name="password" value="{{ data.password if ('password' in data) else '' }}" class="inputField"/>
+				<br/>
+				{% if 'password' in errors %}
+					<span class="errorMessage">{{ errors.password }}</span>
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td><label for="password2">Confirm Password *</label></td>
+			<td><input tabindex='3' id="password2" type="password" name="password2" value="{{ data.password2 if ('password2' in data) else '' }}" class="inputField"/>
+				<br/>
+				{% if 'password2' in errors %}
+					<span class="errorMessage">{{ errors.password2 }}</span>
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td><label for="email">Email Address *</label></td>
+			<td><input tabindex='4' id="email" type="textField" name="email" value="{{ data.email if ('email' in data) else '' }}" class="inputField"/>
+				<br/>
+				{% if 'email' in errors %}
+					<span class="errorMessage">{{ errors.email }}</span>
+				{% endif %}
+			</td>
+		</tr>
+		<tr>
+			<td><label for="role">Role *</label></td>
+			<!--! TODO make this two values dynamic, retrieved them from the server-side. -->
+			<td><select tabindex='5' id="role" name="role" class="inputField" value="{{ data.role if ('role' in data) else '' }}">
+					<option value="RESEARCHER">Researcher</option>
+					<option value="CLINICIAN" selected="{{ 'SELECTED' if ('role' in data and data.role=='CLINICIAN') else '' }}">Clinician</option>
+				</select>
+				<br/>
+				{% if 'role' in errors %}
+					<span class="errorMessage">{{ errors.role }}</span>
+				{% endif %}
+			</td>
+		</tr>
+		{% if "include_description" %}
+			<tr>
+				<td><label for="comment">Why do you want to use TVB?</label></td>
+				<td><textarea tabindex='6' id="comment" name="comment" rows="10" cols="35" class="inputArea">{{ data.comment if ('comment' in data) else '' }}</textarea>
+					<br/>
+					{% if 'comment' in errors %}
+						<span class="errorMessage">{{ errors.comment }}</span>
+					{% endif %}
+				</td>
+			</tr>
+		{% endif %}
+	</table>
+{%- endmacro %}
+

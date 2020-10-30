@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:annotation>
+    	<xs:documentation>
+	    	This is a validation XML schema.
+			You should use this in case you intend to produce TVB compatible interfaces.
+			You are expected to write your algorithms in some programming language (e.g. Matlab, Python) and then describe its interface in an XML file.
+			The XML file, if compatible with this XSD, will be parsable by TVB, thus integrated in TVB's UI and results processed by our visualizers.
+		</xs:documentation>
+	</xs:annotation>
+
+	<xs:simpleType name="alfaNumericString">
+		<xs:restriction base="xs:string">
+			<xs:minLength value="1" />
+			<xs:pattern value="[a-zA-Z0-9]*" />
+		</xs:restriction>
+	</xs:simpleType>
+
+    <xs:element name="tvb">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="portlet" type="portletType" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="portletType">
+        <xs:sequence>
+            <xs:element name="inputs" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="input" type="inputType" minOccurs="1" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="identifier" type="alfaNumericString" use="required"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="inputType">
+        <xs:sequence>
+            <xs:element name="name">
+                <xs:complexType>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="label">
+                <xs:complexType>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="description" minOccurs="0">
+                <xs:complexType>
+                    <xs:attribute name="value" type="xs:string" use="required"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="type" type="type"/>
+        </xs:sequence>
+        <xs:attribute name="required" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:string">
+                    <xs:enumeration value="True"/>
+                    <xs:enumeration value="False"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="overwrite" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="type">
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="default" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+</xs:schema>
+

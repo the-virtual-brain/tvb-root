@@ -1,0 +1,132 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+.timeseries-display {
+    width: 100%;
+}
+
+.toolbar-inline .extension p {
+    color: #000;
+}
+
+/* !------------------------------------------------------- */
+/* ! COMPONENT: Volume Time Series Visualizer LEFT COLUMN   */
+/* !------------------------------------------------------- */
+
+.toolbar-li-with-slider {
+    width: 20%;
+}
+
+.toolbar-small-li {
+    width: 6%;
+    padding-top: 5%;
+}
+
+.toolbar-large-li {
+    width: 27%;
+    padding-top: 2%;
+}
+
+.toolbar-with-sliders .ui-slider {
+    float: left;
+    width: 90%;
+    margin: 3%;
+}
+
+.movie-slider-parent label {
+    color: white;
+    font-size: 12px;
+}
+
+.slider-axis-name {
+    padding-left: 35%;
+}
+
+.min-slider-coord {
+    padding-left: 5px;
+}
+
+.current-slider-coord {
+    padding-left: 33%;
+}
+
+.max-slider-coord {
+    padding-left: 27%;
+}
+
+.canvas-parent {
+    height: 80%;
+    width: 99%;
+}
+
+.movie-slider-parent {
+    height: 8%;
+    padding: 1px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+#movieSlider {
+    width: 97%;
+    float: left;
+    margin: 10px;
+}
+
+.max-slider-time {
+    position: absolute;
+    right: 15px;
+}
+
+/* !------------------------------------------------------- */
+/* ! COMPONENT: Volume Time Series Visualizer RIGHT COLUMN  */
+/* !------------------------------------------------------- */
+
+#ts-trash-can {
+	position: absolute;
+	text-align: center;
+	vertical-align: middle;
+	color: #c8d4de;
+	text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0;
+	top: 0;
+	left: 0;
+	background: #333;
+	opacity: 0.9;
+	z-index: 999;
+}
+
+.trash-hidden {
+	display: none;
+}
+
+.trash-show {
+	display: block;
+}
+
+#sortable-delete {
+    height: 30px;
+    max-height: 30px;
+}
+
+.ts-graph-parent{
+    position: relative;
+    width: 99%;
+    float: left;
+    padding-left: 3px;
+}

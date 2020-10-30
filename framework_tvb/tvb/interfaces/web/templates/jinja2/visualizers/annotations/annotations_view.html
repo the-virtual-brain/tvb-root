@@ -1,0 +1,52 @@
+<div id="s-brain">
+
+    <div class="view-column col-1">
+        <ul class="toolbar-inline">
+            <li class="tool-base"></li>
+        </ul>
+
+        {% include 'visualizers/commons/gl_view_header.html' %}
+        {% include 'visualizers/commons/fragment_shader.html' %}
+        {% include 'visualizers/commons/surface_pick_vertex_shader.html' %}
+
+        <div class="monitor annotations3d">
+            {% import 'visualizers/commons/brain_component.html' as bc %}
+            {{ bc.draw_brain_component("GLcanvas", none) }}
+        </div>
+    </div>
+
+    <div class="view-column col-2">
+
+        <ul class="toolbar-inline">
+            <li class="tool-base">
+                <a href="#" tabindex='-1' class="action action-plus" title="Expand all nodes in tree"
+                   onclick='ANN.openAll();'>Expand</a>
+                <a href="#" tabindex='-1' class="action action-minus" title="Collapse all nodes in tree"
+                   onclick='ANN.closeAll();'>Collapse</a>
+            </li>
+        </ul>
+
+        <div id="treeStructure"></div>
+    </div>
+
+
+    <script type="text/javascript" src="/static/js/base_vertice_pick.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/annotations/annotations.js?{{ currentVersionJS }}"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            $("#main").addClass("colscheme-2-2nd-narrow");
+
+            BASE_PICK_webGLStart('{{ urlVerticesPick | safe  }}', '{{ urlTrianglesPick | safe }}', '{{ urlNormalsPick | safe }}', '{{ urlVertices | safe }}',
+                    '{{ urlTriangles | safe }}', '{{ urlNormals | safe }}', '{{ brainCenter }}', 'ANN.setBrainColors(\'{{ urlColors | safe }}\')', '{{ urlRegionBoundaries | safe }}');
+
+            ANN = new ANN_Displayer('{{ annotationsTreeUrl }}', '{{ urlTriangleToRegion }}',
+                    '{{ urlActivationPatterns }}', {{ minValue }}, {{ maxValue }});
+
+            $('#GLcanvas').click(function () {
+                ANN.selectTreeNode();
+            });
+        });
+    </script>
+</div>

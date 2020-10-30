@@ -1,0 +1,296 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+/* WARNING ! */
+/* This file should be deprecated and its contents moved into proper section-* & subsection-* files. */
+
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by two tribes GmbH, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: SECTION BRAIN VIEW */
+/* Version: 1.1.0.LD */
+/* !-------------------------------------------- */
+/* !Color dictionary */
+/* !-------------------------------------------- */
+/* basic: 2d87b1 xxx */
+
+/* !-------------------------------------------- */
+/* !General layout */
+/* !-------------------------------------------- */
+
+#s-brain {
+border: none;
+}
+
+.brain {
+min-width: 1206px;
+}
+
+#main.columnized #s-brain{
+float:none;
+}
+
+html#s-brain #main .monitor:last-child:after {
+content: "";
+display: table;
+}
+
+#s-brain .monitor {
+border: 1px solid #000;
+margin: 0;
+padding: 0;
+position: relative;
+}
+
+#s-brain .monitor.master {
+/*background: -webkit-gradient(radial, center 30%, 0, center 30%, 600, from(rgba(60, 60, 60, 1)), to(rgba(0, 0, 0, 1)));*/
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(60, 60, 60, 1) 0%, rgba(0, 0, 0, 1) 100%);
+float: left;
+height: 85%;
+width: 65%;
+}
+
+/* NOTE: This is a temporary hack when this viewer is running together w/ an EEG view */
+#main.brain-extended #s-brain .monitor.master {
+height: 600px;
+width: 98%;
+}
+
+#main.brain-extended #s-brain .slider-div {
+width: 99%;
+}
+
+#s-brain .monitor.slave {
+background: rgb(25, 25, 25);
+float: right;
+height: 192px;
+margin-bottom: 10px;
+width: 33%;
+clear: right;
+}
+
+#s-brain .monitor.slave:before {
+border-right: 1px solid #333;
+border-bottom: 1px solid #333;
+color: #666;
+content: "test";
+background: #000;
+display: block;
+font-size: 20px;
+font-weight: bold;
+height: 25px;
+text-align: center;
+width: 25px;
+}
+
+
+#s-brain .monitor#brain-x:before {
+content: "X"
+}
+#s-brain .monitor#brain-y:before {
+content: "Y"
+}
+#s-brain .monitor#brain-z:before {
+content: "Z"
+}
+
+/* !-------------------------------------------- */
+/* !Adjust for helpers below monitors */
+/* !-------------------------------------------- */
+
+#s-brain .monitor .helper {
+bottom: 0;
+color: rgb(133, 133, 133);
+padding: 0 2px;
+font-size: 11px;
+position: absolute;
+}
+
+.brainArea {
+    color: white;
+    font-family: "Helvetica","Arial",sans-serif;
+    font-size: small;
+}
+
+.titleClass {
+    margin: 0 auto auto;
+    width: 800px;
+    height: 22px;
+    text-align: right;
+    font-size: 20px;
+    color: #fff;
+    text-shadow: 1px 1px 1px #000;
+    font-style: italic;
+}
+
+.glCanvasClass {
+   border: none;
+}
+
+.timeClass {
+   margin: 10px 10px 10px 10px; 
+   position:absolute; 
+   width: 200px;  
+   color:#dcd;   
+}
+
+.buttonClass {
+   margin-top: 10px;
+   margin-left: 20px;
+}
+.buttonClassLeftPadded {
+   margin: 6px;
+}
+
+ /**	
+   *  Sliders.
+   */
+
+.sliderStepDiv {
+   width: 100%;
+   height: 20px;
+   padding-top: 5px;
+   margin: auto auto;
+}
+.sliderStepCurrent {
+   padding-top: -2px;
+   width: 60%;
+   margin: auto auto;
+}
+
+.sectionCanvasClass {
+   margin: auto auto;
+   border: 4px solid #fff;
+   width: 250px;
+   height: 250px;
+}
+
+.sectionSliderDiv {
+ 	float: right;
+    height: 15px;
+    padding-bottom:10px;
+    width: 33%;
+}
+.slider-div {
+    width: 65%;
+    height: 20px;
+    left: 0;
+    padding: 6px 0;
+    position: relative;
+}
+
+.lastChild {
+    content: "";
+    display: table;
+    float: left;
+    clear: left;
+}
+
+
+/*Brain component*/
+
+#brainComponentContainer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border: none;
+}
+
+#brainLegendDiv {
+    height: 100%;
+    min-width: 10px;
+    color: #ffffff;
+    top: 0;
+    right: 0;
+    float: right;
+    position: absolute;
+    z-index: 1;
+}
+
+.brainLegendContent {
+    height: 100%;
+    color: #909090;
+    text-shadow: 0 0 10px #000;
+    text-align: center;
+}
+
+.brainLegendContent tr{
+    vertical-align: bottom;
+}
+
+.brainLegendContent tr:first-child{
+    height: 20px;
+}
+
+#brainComponentContainer .brainComponentCanvas {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    border: none;
+}
+
+/* Backend devs */
+/* These styles move the movie timeline near the play pause button. They also style the time input */
+
+#main .view-column .slider-div .action {
+    position: absolute;
+    left: 0;
+    top: 4px;
+}
+
+.slider-div #slider {
+    position: absolute;
+    left: 52px;
+    right: 90px;
+    top: 8px;
+    border-radius: 0;
+}
+
+.slider-div .movie-time {
+    position: absolute;
+    width: 80px;
+    right: 0
+}
+
+.slider-div .movie-time #TimeNow {
+    width: 40px;
+    border: none;
+    font-size: 12px
+}
+
+.slider-div-right {
+    left: 38px;
+    top: -4px
+}
+
+#treeStructure {
+    height: 90%;
+    overflow: auto;
+}
+
+.annotations3d {
+    height: 85%;
+    width: 98%;
+}
+
+.toolbar-inline .tool-base {
+    height: 30px;
+}

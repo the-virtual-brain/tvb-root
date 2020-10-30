@@ -1,0 +1,42 @@
+<section class="select-points view-column col-1">
+
+	<script type="text/javascript" src="/static_view/commons/scripts/regionBoundaries.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="/static/js/base_vertice_pick.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/js/spatial/stimulus_surface.js?{{ currentVersionJS }}"></script>
+    {% include 'spatial/refreshBaseUrl_initializer.html' %}
+
+	<h4>	<mark>Select</mark> Focal points</h4>
+
+	{{ surfaceStimulusSelectForm | safe }}
+
+	{% with %}
+		{% set callback='STIM_initFocalPoints(' ~ definedFocalPoints ~ ')' %}
+		{% include 'spatial/left_template_brain_pick.html' %}
+	{% endwith %}
+
+	<script type="text/javascript">
+        $(document).ready(function() {
+            ColSch_initColorSchemeComponent();
+        	$("select[name='existentEntitiesSelect']").change(function () {
+                BS_loadEntity();
+            });
+            setEventsOnStaticFormFields({{ spatialFieldsPrefixes | safe }});
+        });
+    </script>
+    
+    <form id="load-existing-entity" action="{{ loadExistentEntityUrl }}" method="POST">
+    	<input type="hidden" id="entity-gid" name="surface_stimulus_gid" value="none"/>
+    	<input type="hidden" name="from_step" value="2"/>
+    </form>
+
+    <form id="reset-to-default" action="{{ resetToDefaultUrl }}" method="POST">
+    	<input type="hidden" name="from_step" value="2"/>
+    </form>
+
+	{% if displayedMessage is defined and displayedMessage != none %}
+		<script type="text/javascript">
+			displayMessage('{{ displayedMessage }}', '{{ messageType }}');
+		</script>
+    {% endif %}
+    
+</section>

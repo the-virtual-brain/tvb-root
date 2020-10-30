@@ -1,0 +1,75 @@
+
+TVB RELEASE PROCEDURE
+
+When creating a new TVB set of release packages you should:
+
+	- update version number in: framework_tvb/tvb/config/settings.py BASE_VERSION
+    - in case DB changes happened:
+        * increment in scientific_library/tvb/basic/config/settings.py DB_CURRENT_VERSION
+        * create a new DB update script in: framework_tvb/tvb/core/entities/model/db_update_scripts/
+    - in case File Storage changes drastically:
+        * increment in scientific_library/tvb/basic/config/settings.py DATA_VERSION
+        * create the next update script in: framework_tvb/tvb/core/entities/file/file_update_scripts/
+    - in case something changed in the code, which requires an update script:
+        * create a new update script, with svn revision number in: framework_tvb/tvb/core/code_versions/code_update_scripts/
+    - in case a Project structure changes :
+        * increment in scientific_library/tvb/basic/config/settings.py PROJECT_VERSION
+        * create a new project update script, with the new project version-number in: framework_tvb/tvb/core/project_versions/project_update_scripts/
+            
+    - refresh class diagrams:
+    	* go in tvb_documentation/sim_doc and execute sh class_diagrams.sh
+    	  	This will update images under tvb/simulator/doc/img. 
+    	  	Commit the *.vsg that are used in the *.rst files on SVN.
+    	* go in tvb_documentation/sim_doc and execute python generate_model_phase_plane_images.py
+    		This will generate images used into Simulator documentation. PLEASE commit the used ones
+    		on SVN, so they will be included in the final distribution.
+    		To check, for missing images you can try to generate PDF for tvb.simulator.rst (with rst2pdf) and look for missing image errors.
+
+    - run benchmarks for the new release:
+        * run tvb.interfaces.command.benchmark.py and copy the resulted text from the console
+        * manually create a file tvb_x.y.rst under tvb_documentation/doc_site/benchmarks
+        * copy the output from console into this RST file and add headers where needed
+        * edit tvb_documentation/doc_site/benchmarks/top_benchmarks.rst to point towards the new file in toctree
+        * add the new x_label and values and run tvb_documentation/doc_site/benchmarks/generate_benchmark_img.py
+
+    - check that all README files and manuals are still valid
+    - fill new RELEASE_NOTES:
+    	* if the release is an internal release add description only in ZWEI
+    	* if the release is an official one, update also [tvb-root]/tvb_documentation/RELEASE_NOTES
+
+    - run TVB unit tests (cd tvb_bin sh run_tests.sh) to make sure that everything is correct.
+    - generate distribution packages with http://jenkins.codemart.ro/
+        * when the release is public, copy the distribution files on [tvb-live-server]:/opt/tvb-public-releases/[version]
+    - http://www.thevirtualbrain.org/tvb/zwei/cms#
+        Upload new ZIPs with distributions under "Document" entity
+        Create new entity TVB-Release with references towards the ZIP documents uploaded at the previous step.
+    - TVB Documentation Site needs to be updated separately, by copying from Hudson the latest ZIP
+        https://jenkins.codemart.ro/view/TVB/job/TVB%20-%20Build%20-%20Linux/
+        Unzip and copy 	tvb-documentation-site.zip	at location /opt/tvb-documentation-site
+        Check at http://docs.thevirtualbrain.com/
+
+    - create release tag on GitHub also.
+
+    - upload new packages on Pypi
+
+    - make sure conda-forge packages are also released based on new Pypi packs
+       
+    - let the Force be with Us!
+    
+    
+     
+ TVB REST CLIENT release procedure:
+    Usually, we need to:
+        1. Release the tvb-rest-client package on Pypi:
+            - it is mandatory to take the package from a Jenkins build
+            - make sure you keep 'forever' that build and give it a significant name (eg: Release ​tvb-rest-client ​2.0.2)
+            - download on your local machine the package from Jenkins
+            - install it in a new environment and run the examples (eg: fire_simulation.py) to ensure it works correctly
+            - upload it on Pypi
+
+        2. Update the REST server docker image:
+            - thevirtualbrain/tvb-run:latest - it is built and uploaded by Jenkins. We have to mount the proper
+                                                 Keycloak configuration files inside the container.
+
+    If there are changes in tvb-library that affect the tvb-rest-client, we need to release that, too.
+    Make sure the version number is kept in sync for all of tvb-library, tvb-rest-client and tvb-framework.

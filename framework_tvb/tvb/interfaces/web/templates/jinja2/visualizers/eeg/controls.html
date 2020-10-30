@@ -1,0 +1,70 @@
+<fieldset class="slider" >
+
+    <dl>
+
+        {% if not extended_view %}
+
+            <dt>
+                <label for="ctrl-input-speed">Speed</label>
+                <span class="slider-value" id="display-speed">3</span>
+            </dt>
+
+            <dd>
+                <div class="sliderDiv sliderLabels">
+                    <div id="ctrl-input-speed" class="shadow sliderPosition"></div>
+                </div>
+            </dd>
+        {% endif %}
+
+        <dt>
+            <label for="ctrl-input-spacing">Spacing</label>
+            <span class="slider-value" id="display-spacing" title="Distance between adjacent lines">1</span>
+        </dt>
+
+        <dd>
+            <div class="sliderDiv sliderLabels">
+                <div id="ctrl-input-spacing" class="shadow sliderPosition"></div>
+            </div>
+        </dd>
+
+        <dt>
+            <label for="ctrl-input-scale">Scaling</label>
+            <span class="slider-value" id="display-scale" title="signal amplitude multiplier">1</span>
+        </dt>
+
+        <dd>
+            <div class="sliderDiv sliderLabels">
+                <div id="ctrl-input-scale" class="shadow sliderPosition"></div>
+            </div>
+        </dd>
+
+        <dt>
+            <label for="display-page-size">Page size</label>
+            <span class="slider-value" id="display-page-size" title="Number of points displayed per page">
+                {{ [number_of_visible_points, longestChannelLength] | min }}
+            </span>
+        </dt>
+
+        <dd>
+            {% if (longestChannelLength < number_of_visible_points) or ((longestChannelLength - number_of_visible_points) < 50) %}
+                All points already displayed!
+            {% endif %}
+
+            {% if (number_of_visible_points < page_size) and (page_size - number_of_visible_points) > 49 %}
+
+                <select id='page-size-select' onchange="AG_rePaginate($(this).val());" autocomplete="off">
+                    {% for value in range(number_of_visible_points, page_size - 1, (page_size - number_of_visible_points) // 10) %}
+                        <option value="{{ value }}">{{ value }} </option>
+                    {% endfor %}
+                </select>
+
+                A change here will trigger Graph redrawing from the first step!
+
+            {% endif %}
+
+       </dd>
+
+    </dl>
+
+</fieldset>
+

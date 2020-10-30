@@ -1,0 +1,221 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+.histogramParentDiv {
+    width: 100%;
+    height: 100%;
+    float: left;
+    margin-top: 20px;
+}
+
+#histogramCanvasId {
+    width: 95%;
+    height: 90%;
+}
+
+#histogramLegend {
+    position: absolute;
+    right: 35px;
+    top: 20px;
+    height: 90%;
+}
+
+#histogramLegendLabels {
+    position: absolute;
+    top: 0;
+    left: -15px;
+}
+
+#resize_div {
+    position: absolute;
+    display: none;
+    border: 2px dashed grey;
+    top: 0;
+    left: 0;
+}
+
+.flot-x-axis div.flot-tick-label {
+    /* Rotate Axis Labels */
+    transform: translateX(50%) rotate(30deg); /* CSS3 */
+    transform-origin: 0 0;
+
+    -ms-transform: translateX(50%) rotate(30deg); /* IE */
+    -ms-transform-origin: 0 0;
+
+    -moz-transform: translateX(50%) rotate(30deg); /* Firefox */
+    -moz-transform-origin: 0 0;
+
+    -webkit-transform: translateX(50%) rotate(30deg); /* Safari and Chrome */
+    -webkit-transform-origin: 0 0;
+
+    -o-transform: translateX(50%) rotate(30deg); /* Opera */
+    -o-transform-origin: 0 0;
+}
+
+div.flot-tick-label {
+    /* increase label contrast*/
+    color: #000000;
+}
+
+.matrix-legend {
+    font-size: 10px;
+    font-weight: bold;
+    position: absolute;
+    height: 100%;
+    right: 5px;
+    text-align: center;
+    top: 0;
+}
+
+.draw-svg-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 95%;
+    height: 95%;
+}
+
+.matrix2d-main-canvas {
+    position: absolute;
+    left: 8%;
+    top: 6%;
+    height: 80%;
+    width: 80%;
+}
+
+.matrix2d-svg-container {
+    position: absolute;
+    top:0;
+    left:0;
+    width:95%;
+    height: 95%;
+}
+
+.matrix2d-draw-content {
+    height: 85%;
+    position: relative;
+    top: 5%;
+}
+
+.matrix2d-toolTip {
+    position: absolute;
+    display: block;
+    background-color: #C0C0C0;
+    border: 1px solid #fdd;
+    padding: 2px;
+    opacity: 0.80;
+}
+
+.curve_draw_area {
+    height: 85%;
+    width: 95%;
+    position: relative;
+    top: 5%;
+    left: 5%;
+}
+
+.topographic_space {
+    height: 85%;
+    position: relative;
+    top: 5%;
+    overflow: hidden;
+}
+
+.topographic_canvas {
+    position: absolute;
+    left: 10%;
+    top: 20%;
+    width: 80%;
+}
+
+.topographic_svg {
+    position: absolute;
+    top: 5%;
+    left: 0;
+    height: 100%;
+    width: 100%;
+
+}
+
+.topographic_1 {
+    width: 35%;
+    height: 100%;
+    left: 20%;
+    position: relative;
+}
+
+.topographic_2 {
+    width: 35%;
+    height: 100%;
+    float: left;
+    position: relative;
+    top: 5%;
+}
+
+.topographic_3 {
+    width: 30%;
+    height: 100%;
+    float: left;
+    position: relative;
+}
+
+.topographic_left_ear {
+    position: absolute;
+    top: 45%;
+    left: 3%;
+    width: 10%;
+    font-weight: bold;
+    cursor: default;
+}
+
+.topographic_right_ear {
+    position: absolute;
+    top: 45%;
+    left: 115%;
+    width: 10%;
+    font-weight: bold;
+    cursor: default;
+}
+
+.topographic_nose {
+    left: 46%;
+    top: 15%;
+    position: absolute;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: default;
+}
+
+.topographic_title {
+    display: block;
+    top: 3%;
+    font-size: 20px;
+    text-align: center;
+    cursor: default;
+}
+
+.topographic_text_allign {
+    position: absolute;
+    top: 20%;
+    width: 80%;
+}
+
+.main_canvas{
+    display: none;
+}

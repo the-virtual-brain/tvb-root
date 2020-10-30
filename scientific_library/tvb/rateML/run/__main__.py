@@ -8,7 +8,7 @@ import os, sys
 import numpy as np
 from numpy import corrcoef
 
-# from tvb.simulator.lab import *
+from tvb.simulator.lab import *
 from tvb.rateML.rateML_CUDA import LEMS2CUDA
 
 class TVB_test:

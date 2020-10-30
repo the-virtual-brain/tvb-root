@@ -1,0 +1,10 @@
+<p class="field-data field-series">
+{% for option in field.options() %}
+    <input type="checkbox" name="{{ field.name }}" id="{{option.id}}" tabindex="1"
+           value="{{ option.value }}"
+            {{ 'checked' if option.checked}} {{ 'disabled' if field.disabled }}
+           class="form-control"
+    >
+    <label for="{{option.id}}"> {{ option.label}} </label>
+{% endfor %}
+</p>

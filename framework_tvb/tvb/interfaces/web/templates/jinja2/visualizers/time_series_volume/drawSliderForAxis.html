@@ -1,0 +1,15 @@
+{% macro drawSliderForAxis(axisName) -%}
+
+    <div class="slider-div">
+        <label class="slider-axis-name">{{ axisName | upper }} Axis</label>
+        <br/>
+
+        <span id="sliderForAxis{{ axisName }}"></span>
+        <br/>
+
+        <label class="min-slider-coord">0</label>
+        <label class="current-slider-coord" id="labelCurrentValueAxis{{ axisName }}"></label>
+        <label class="max-slider-coord" id="labelMaxValueAxis{{ axisName }}"></label>
+    </div>
+
+{%- endmacro %}

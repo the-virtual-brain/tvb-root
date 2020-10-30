@@ -1,0 +1,70 @@
+<div>
+    <h4>History</h4>
+    <a href="#" title="Import simulation from ZIP " class="column-control action-big-upload" onclick="showOverlay('/burst/get_upload_overlay', true);">Import</a>
+    <a href="#" title="Prepare a new simulation " class="column-control action action-big-new" onclick="resetToNewBurst();">New</a>
+
+    <ul class="burst-list" id="burst-history">
+       {% for burst in burst_list %}
+            <li class="burst {{ 'burst-group' if burst.range1 else '' }} {{'burst-started' if burst.status == 'running' else 'burst-canceled' if burst.status == 'canceled' else 'burst-error' if burst.status == 'error' else 'burst-finished' }}"
+                id='burst_id_{{ burst.id }}'>
+                <a href="#" onclick="changeBurstHistory({{ burst.id }}, true); loadBurstReadOnly({{ burst.id }}, '{{ first_fragment_url }}');" title="Load this simulation">{{ burst.name }}</a>
+                <nav class="inline-menu inline-hover-menu">
+                    <button class="action action-edit action-menu">Edit</button>
+                    <div class="extension">
+                        <div class="dropdown-pane">
+                            <p class="burst-prop-state"></p>
+
+                            <p class="burst-prop-title">
+                                {% if burst.status != 'running' %}
+                                    <textarea type="text" id="new_name_{{ burst.id }}">{{ burst.name }}</textarea>
+                                {% else %}
+                                    <label>{{ burst.name }}</label>
+                                {% endif %}                            </p>
+                            {% if burst.status != 'running' %}
+                                <button class="action action-store" onclick="renameBurstEntry({{ burst.id }}, 'new_name_{{ burst.id }}')"
+                                        title="Rename with new name from above input-field">Rename</button>
+                            {% endif %}
+                            <p><button class="action action-copy" onclick="copyBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a copy of the current simulation configuration.">
+                                Copy</button></p>
+                            <p><button class="action action-export" onclick="window.location='/burst/export/{{ burst.id }}'; return false;"
+                                        title="Export simulation as ZIP, for later import or use in command line">
+                                Export ZIP</button></p>
+
+                            <p class="burst-prop-processtime"><mark>Processing time : </mark><span>{{ burst.process_time }}</span></p>
+                            {% if burst.datatypes_number %}
+                                <p class="burst-prop-dataweight"><mark>Datatypes : </mark> {{ burst.datatypes_number }}</p>
+                            {% endif %}
+                            {% if burst.disk_size %}
+                                <p class="burst-prop-datasize"><mark>Size : </mark> {{ burst.disk_size }}</p>
+                            {% endif %}
+
+                            <p class="burst-prop-age"><mark>Created : </mark> {{ burst.start_time.strftime('%Y/%m/%d %H:%M') }}</p>
+                            {% if burst.error_message %}
+                                <p class="burst-prop-error"><mark>Error message : </mark> {{ burst.error_message }}</p>
+                            {% endif %}
+
+                            {% if burst.range1 %}
+                            <p class="burst-prop-data"><mark>Range1 : </mark> {{ burst.range1 }}</p>
+                            {% endif %}
+
+                            {% if burst.range2 %}
+                            <p class="burst-prop-data"><mark>Range2 : </mark> {{ burst.range2 }}</p>
+                            {% endif %}
+
+                            {% if burst.status=='canceled' %}
+                                <p class="burst-prop-cancelled">This simulation was canceled from execution by the user.</p>
+                            {% endif %}
+
+                            {% if burst.status=='running' %}
+                                <p class="burst-prop-age">This simulation is still running....</p>
+                            {% endif %}
+
+                            <button class="action action-delete" onclick="cancelOrRemoveBurst({{ burst.id }})" title="Stop/Remove this simulation and all its data">
+                                {{ 'Cancel' if burst.status == 'running' else 'Delete' }}</button>
+                        </div>
+                    </div>
+                </nav>
+            </li>
+        {% endfor %}
+    </ul>
+</div>

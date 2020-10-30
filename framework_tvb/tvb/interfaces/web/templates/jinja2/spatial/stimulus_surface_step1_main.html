@@ -1,0 +1,38 @@
+<div id="main" class="columnized colscheme-2-even">
+	<script type="text/javascript" src="/static/js/spatial/stimulus_surface.js"></script>
+    {% include 'spatial/refreshBaseUrl_initializer.html' %}
+
+    {% include 'spatial/stimulus_surface_step1_left.html' %}
+    {% include 'spatial/stimulus_surface_step1_right.html' %}
+
+    <aside class="header-component toolbar can-extend auto-extends">
+        <h3>SpatioTemporal Entities</h3>
+        <div class="extension">
+            <div class="dropdown-pane">
+                <ul>
+                    <li>
+                        <button class="action action-analyze action-idle" disabled="disabled">
+                            Edit Stimulus Equations
+                        </button>
+                    </li>
+                    <li>
+                        <button class="action action-view" onclick="STIM_submitSurfaceStimulusData('{{ next_step_url }}', 2); return false;">
+                            Edit Focal Points and View
+                        </button>
+                    </li>
+                    <li>
+                        {% if definedFocalPoints is not none and (definedFocalPoints | length) > 0 %}
+                            <button class="action action-plus" onclick="STIM_submitSurfaceStimulusData('{{ next_step_url }}', 3); return false;">
+                                Save Stimulus Surface
+                            </button>
+                        {% else %}
+                            <button class="action action-plus action-idle" onclick="displayMessage('You first need to define your focal points!', 'infoMessage');return false;">
+                                Save new Stimulus on Surface
+                            </button>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+</div>

@@ -1,0 +1,43 @@
+<div id="main" class="columnized colscheme-2-2nd-narrow">
+	<div>
+		<script type="text/javascript" src="/static_view/commons/scripts/regionBoundaries.js?{{ currentVersionJS }}"></script>
+		<script type="text/javascript" src="/static/js/base_vertice_pick.js?{{ currentVersionJS }}"></script>
+    	<script type="text/javascript" src="/static/js/spatial/local_connectivity.js?{{ currentVersionJS }}"></script>
+        <script type="text/javascript" src="/static/js/canvas2image.js?{{ currentVersionJS }}"></script>
+
+		{% include 'spatial/local_connectivity_step2_left.html' %}
+		{% include 'spatial/local_connectivity_step2_right.html' %}
+
+	    <form id="base_spatio_temporal_form" method="POST">
+		    <aside class="header-component toolbar can-extend auto-extends">
+		    	<h3>SpatioTemporal Entities</h3>
+			  <div class="extension">
+			   <div class="dropdown-pane">
+		        <ul>
+                    <li>
+                        <button id="ctrl-action-export" class="action action-download" onclick="C2I_exportFigures({suggestedName:'local-connectivity'}); return false;">
+                        	Save Figure
+                        </button>
+                    </li>
+	                <li>
+	                	<button id="lconn_step_1" class="action action-analyze" onclick="LCONN_submitLocalConnectivityData('{{ next_step_url }}', 'base_spatio_temporal_form');return false;">
+	                		Edit Local Connectivity Equation
+	                	</button>
+	                </li>
+					<li>
+						<button id="lconn_step_2" class="action action-view action-idle" onclick="displayMessage('You are already at view page. You can reload a different entity from the select input.', 'infoMessage'); return false;">
+					    	View Local Connectivity on surface
+						</button>
+					</li>
+					<li>
+						<button id="lconn_step_3" class="action action-plus action-idle" onclick="displayMessage('If you want to create a local connectivity return to step one to edit parameters.', 'infoMessage'); return false;">
+							Create new Local Connectivity
+						</button>
+					</li>
+		        </ul>
+		       </div>
+		      </div>
+		    </aside>
+		</form>
+	</div>
+</div>

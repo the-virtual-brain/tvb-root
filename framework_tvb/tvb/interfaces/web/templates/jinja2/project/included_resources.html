@@ -1,0 +1,11 @@
+{% if section_name == 'project' %}
+    <link rel="stylesheet" type="text/css" href="/static/style/section_project.css?{{ currentVersionJS }}"/>
+{% elif section_name == 'burst' %}
+    <link rel="stylesheet" type="text/css" href="/static/style/section_burst.css?{{ currentVersionJS }}"/>
+{% endif %}
+
+<script type="text/javascript" src="/static/jquery/jquery.jstree.js?{{ currentVersionJS }}"></script>
+
+{% if subsection_name == 'figures' %}
+    <script type="text/javascript" src="/static/js/canvas2image.js?{{ currentVersionJS }}"></script>
+{% endif %}

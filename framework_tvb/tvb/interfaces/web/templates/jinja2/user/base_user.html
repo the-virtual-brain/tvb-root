@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" class="{{ 'user-authorized ss-account' if  mainContent  in ['user/profile', 'user/user_management'] else 'user-anon ss-login' }} style-default v-odinson" id="s-user">
+    <!--
+		TheVirtualBrain-Framework Package. This package holds all Data Management, and
+		Web-UI helpful to run brain-simulations. To use it, you also need do download
+		TheVirtualBrain-Scientific Package (for simulators). See content of the
+		documentation-folder for more details. See also http://www.thevirtualbrain.org
+		(c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+        This program is free software: you can redistribute it and/or modify it under the
+        terms of the GNU General Public License as published by the Free Software Foundation,
+        either version 3 of the License, or (at your option) any later version.
+        This program is distributed in the hope that it will be useful, but WITHOUT ANY
+        WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+        PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+        You should have received a copy of the GNU General Public License along with this
+        program.  If not, see <http://www.gnu.org/licenses/>.
+	-->
+
+    <!--! ========================================================== -->
+    <!--! TEMPLATE CODE: The Virtual Brain / System -->
+    <!--! SECTION: Login screen -->
+    <!--! VERSION: 1.0.1 -->
+    <!--! ========================================================== -->
+    <!--! Page Manifest -->
+    <!--! ========================================================== -->
+    <head>
+        <title>{{ title }} | {{ currentVersion }} The Virtual Brain</title>
+
+        <meta name="author" content="TVB Team"/>
+        <meta name="description" content="The Virtual Brain Project"/>
+        <meta charset="utf-8"/>
+        <meta lang="en-US"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+        <meta http-equiv="Pragma" content="no-cache"/>
+        <meta http-equiv="Cache-Control" content="no-cache"/>
+
+        <link rel="shortcut icon" href="/static/style/img/favicon.ico"/>
+        <link rel="stylesheet" type="text/css" href="/static/style/base.css?{{ currentVersionJS }}"/>
+        <link rel="stylesheet" type="text/css" href="/static/style/section_user.css?{{ currentVersionJS }}"/>
+        <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?{{ currentVersionJS }}"/>
+        <script type="text/javascript" src="/static/jquery/jquery.js"></script>
+        <script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
+        <script type="text/javascript">checkForIE()</script>
+
+        <!--  include keycloak initialization      -->
+        {% if keycloakConfigWebFile is defined%}
+            {% include 'user/keycloak_config.html' %}
+        {% endif %}
+    </head>
+
+    <!--! ========================================================== -->
+    <!--! App Content -->
+    <!--! ========================================================== -->
+
+    <body class="{{ 'user-authorized' if mainContent=='user/profile' else 'user-anon' }} style-default v-odinson {{ 'is-helping' if showOnlineHelp else '' }}"
+          id="s-user">
+        {% with %}
+            {% set msgClass = {'ERROR': 'generic-message errorMessage',
+                               'WARNING': 'generic-message warningMessage',
+                               'INFO': 'generic-message infoMessage',
+                               'IMPORTANT': 'generic-message importantMessage'} %}
+            {% if includeTooltip is defined and includeTooltip %}
+                {% include "user/tooltip.html" %}
+            {% endif %}
+            <div id="generic-message" class="{{ msgClass[messageType] }} {{ 'no-message' if (message | length) == 0 else '' }}">
+                <div id="messageDiv">{{ message }}</div>
+            </div>
+        {% endwith %}
+
+        {% if wrapContentInMainDiv is defined and wrapContentInMainDiv %}
+            <div id="main">
+                {% include mainContent ~ ".html" %}
+            </div>
+        {% else %}
+            {% include mainContent ~ ".html" %}
+        {% endif %}
+
+        <!--! === Box: Sponsor logos & links -->
+        <aside class="credits">
+            <hgroup>
+                <h3 class="boxtitle">Lead<br/> Institutions </h3>
+            </hgroup>
+            <a href="https://www.univ-amu.fr/en" title="Visit the Aix Marseille Université..." target="_new" class="unimed" tabindex="-1">Aix Marseille Université</a>
+            <a href="https://www.baycrest.org" title="Visit the Baycrest Foundation..." target="_new" class="baycrest" tabindex="-1">Baycrest Foundation</a>
+            <a href="https://www.charite.de/en/" title="Charité University Medicine..." target="_new" class="charite" tabindex="-1">Charité University Medicine</a>
+        </aside>
+
+        {% if tvbRestarted is not defined or not tvbRestarted %}
+            {% include 'footer.html' %}
+        {% endif %}
+    </body>
+
+    {% if not first_run and isStorageInUpdate is defined and isStorageInUpdate %}
+        <script type="application/javascript">
+            $(document).ready(function () {
+                waitForStorageUpdateToEnd();
+            });
+        </script>
+    {% endif %}
+
+</html>

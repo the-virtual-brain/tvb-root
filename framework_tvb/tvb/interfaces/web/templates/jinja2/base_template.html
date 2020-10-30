@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" class="user-standard style-default v-odinson ss-{{ subsection_name }}">
+	<!--
+		TheVirtualBrain-Framework Package. This package holds all Data Management, and
+		Web-UI helpful to run brain-simulations. To use it, you also need do download
+		TheVirtualBrain-Scientific Package (for simulators). See content of the
+		documentation-folder for more details. See also http://www.thevirtualbrain.org
+		(c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+        This program is free software: you can redistribute it and/or modify it under the
+        terms of the GNU General Public License as published by the Free Software Foundation,
+        either version 3 of the License, or (at your option) any later version.
+        This program is distributed in the hope that it will be useful, but WITHOUT ANY
+        WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+        PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+        You should have received a copy of the GNU General Public License along with this
+        program.  If not, see <http://www.gnu.org/licenses/>.
+	-->
+
+    <!--! ========================================================== -->
+    <!--! TEMPLATE CODE: The Virtual Brain / System -->
+    <!--! SECTION: Base template for all sections -->
+    <!--! VERSION: 1.0.1 -->
+    <!--! ========================================================== -->
+    <!--! Page Manifest -->
+    <!--! ========================================================== -->
+    <head>
+
+        <title>{{ title }} | {{ currentVersion }} The Virtual Brain</title>
+
+        <meta name="author" content="TVB Team" />
+        <meta name="description" content="The Virtual Brain Project" />
+        <meta charset="utf-8" />
+        <meta lang="en-US"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Cache-Control" content="no-cache" />
+
+        <link rel="shortcut icon" href="/static/style/img/favicon.ico" />
+        <link rel="stylesheet" type="text/css" href="/static/style/base.css?{{ currentVersionJS }}" />
+        <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?{{ currentVersionJS }}"/>
+        <link rel="stylesheet" type="text/css" href="/static/jquery/jquery-ui.css?{{ currentVersionJS }}"/>
+
+        {% include 'mathjax_config.html' %}
+
+        <script type="text/javascript" src="/static/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/javascript" src="/static/jquery/jquery.js"></script>
+        <script type="text/javascript" src="/static/jquery/jquery-ui.js?{{ currentVersionJS }}"></script> <!--JQuery custom imports for the Range, Slider controller -->
+        <script type="text/javascript" src="/static/jquery/jquery.json.js"></script>
+        <script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
+
+        <!--  include keycloak initialization      -->
+        {% if keycloakConfigWebFile is defined%}
+            {% include 'user/keycloak_config.html' %}
+        {% endif %}
+
+        <!--! include specific resources per section-->
+        {% if includedResources is defined %}
+           {% include includedResources ~ ".html" %}
+        {% endif %}
+
+    </head>
+
+    <!--! ========================================================== -->
+    <!--! App Content -->
+    <!--! ========================================================== -->
+
+    <body class="user-standard style-default v-odinson {{ 'is-helping' if showOnlineHelp else '' }}" id="s-{{ section_name }}">
+        {% include 'header.html' %}
+
+        {% if isAdapter is defined and isAdapter %}
+            <div id="main" class="columnized colscheme-generic">
+                {% if displayControl is defined and displayControl %}
+                    {% include 'flow/call_out_control.html' %}
+                {% endif %}
+                {% if 'header_menu' not in mainContent %}
+                    {% include mainContent ~ ".html" %}
+                {% endif %}
+            </div>
+        {% else %}
+            {% if 'project_submenu' not in mainContent and 'header_menu' not in mainContent %}
+                {% include mainContent ~ ".html" %}
+            {% endif %}
+        {% endif %}
+
+        {% include 'footer.html' %}
+    </body>
+
+</html>

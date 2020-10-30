@@ -1,0 +1,20 @@
+<section class="configure-stimulus-shape view-column col-1">
+	<h4><mark>View</mark> Plot</h4>
+	<!--! Div used by the plotEquations function to display the actual plot. -->
+    <div id="equationDivId"></div>
+
+    <script type="text/javascript">
+   		$(document).ready(function() {
+   		   setEventsOnStaticFormFields({{ equationsPrefixes | safe }});
+           plotEquation();
+        });
+    </script>
+
+    {% if displayedMessage is defined and displayedMessage != none %}
+	    <script type="text/javascript">
+	    	$(document).ready(function() {
+	            displayMessage('{{ displayedMessage }}', "infoMessage");
+	        });
+	    </script>
+    {% endif %}
+</section>

@@ -1,0 +1,27 @@
+<!--! === Box: Control call-out -->
+<aside id="control-view" class="header-component controller can-extend"
+       tabindex="1" onkeypress="redirectToHrefChild(this)">
+    <h3>{{ title }} controls </h3>
+
+    <div class="extension">
+        <div class="dropdown-pane">
+            {% if controlPage %}
+                {% include controlPage ~ ".html" %}
+            {% endif %}
+
+            <div id="div_adapter_interface"></div>
+
+            <script type="text/javascript">
+                $(document).ready(function () {
+                    includeAdapterInterface("div_adapter_interface", {{ selectedProject.id }}, {{ currentAlgoId }},
+                        '{{ "" if ("back_page=" not in submitLink) else submitLink.split("back_page=")[-1] }}');
+                    var saveFigureBtn = document.getElementById("ctrl-action-export");
+                    saveFigureBtn.onclick = function () {
+                        C2I_exportFigures({});
+                        return false;
+                    };
+                });
+            </script>
+        </div>
+    </div>
+</aside>

@@ -1,0 +1,28 @@
+{% for algorithm in uploadAlgorithms %}
+    {% set algo_interface_key = 'template_for_algo_' ~ (algorithm.id | string) %}
+    {% set inputList=algorithmsInterface[algo_interface_key].get('inputList') %}
+    {% set adapter_form=algorithmsInterface[algo_interface_key].get('adapter_form') %}
+    {% set submitLink=algorithmsInterface[algo_interface_key].submitLink %}
+    <section id="overlayTabContent_{{ loop.index0 }}" class="uploader upload-{{ algorithm.subsection_name }}">
+        <form method="post" action="{{ submitLink }}" enctype="multipart/form-data" id="form_{{ algorithm.id }}">
+            <fieldset class="toolbar-inline">
+                <ul>
+                    <li>
+                        <button type="submit" class="action action-upload" onClick="showOverlayProgress()">Upload
+                        </button>
+                    </li>
+                </ul>
+            </fieldset>
+
+            {% with %}
+                {% include 'flow/genericAdapterFormFields.html' %}
+            {% endwith %}
+
+            <fieldset>
+                <legend>
+                    Please be aware that large uploads might take some time and are not interruptible.
+                </legend>
+            </fieldset>
+        </form>
+    </section>
+{% endfor %}

@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+
+
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../core/portlets/tvb.xsd">
+
+    <!--  For each portlet, a preview with the name $identifider$.png should be present in:
+        	 tvb/interfaces/static/style/img/portlets 
+        	 and a style in section_burst.css
+       -->
+    <portlet name="BCT - Clustering Coefficient WD" identifier="CCWD">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.bct_clustering_adapters.ClusteringCoefficientWD" />
+            </input>
+            <input overwrite="chain_1">
+                <name value="connectivity"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[connectivity]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.histogram.HistogramViewer" />
+            </input>
+            <input overwrite="chain_2">
+                <name value="input_data"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="BCT - Node Betweenness Centrality Binary" identifier="NBCB">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.bct_centrality_adapters.CentralityNodeBinary" />
+            </input>
+            <input overwrite="chain_1">
+                <name value="connectivity"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[connectivity]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.histogram.HistogramViewer"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="input_data"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="BCT - Instrength and Outstrength" identifier="ISOS">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.bct_degree_adapters.StrengthISOS"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="connectivity"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[connectivity]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.histogram.HistogramViewer"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="input_data"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="BCT - Instrength and Outstrength- Topo" identifier="ISOSTOPO">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.bct_degree_adapters.StrengthISOS"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="connectivity"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[connectivity]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.topographic.TopographicViewer"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="data_0"/>
+                <label value="Overwrite data_0 parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="data_1"/>
+                <label value="Overwrite data_1 parameter of second adapter with the second release of the first adapter."/>
+                <type value="dynamic" default="step_1[1]"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="data_2"/>
+                <label value="Overwrite data_2 parameter of second adapter with the third release of the first adapter."/>
+                <type value="dynamic" default="step_1[2]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="BCT - Strength and Weight" identifier="STW">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.bct_degree_adapters.StrengthWeights" />
+            </input>
+            <input overwrite="chain_1">
+                <name value="connectivity"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[connectivity]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.topographic.TopographicViewer"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="data_0"/>
+                <label value="Overwrite data_0 parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="data_1"/>
+                <label value="Overwrite data_1 parameter of second adapter with the second release of the first adapter."/>
+                <type value="dynamic" default="step_1[1]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+</tvb>

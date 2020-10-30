@@ -1,0 +1,22 @@
+<fieldset>
+    <dl>
+        {% include 'flow/color_scheme.html' %}
+        <dt>Toggle</dt>
+        <dd>
+            <input id="displayFaceChkId" type="checkbox" onchange="switchFaceObject();"
+                   autocomplete="off" tabindex="1"
+                   title="Face approximative will move along with brain navigator."/>
+            <label for="displayFaceChkId">shell surface</label>
+        </dd>
+
+        {% if urlVertices is defined %}
+            <dt></dt>
+            <dd>
+                <input id="ctrl-action-points" type="checkbox" onchange="wireFrame();"
+                       autocomplete="off" tabindex="1"
+                       title="Display only a cloud of points, without triangles"/>
+                <label for="ctrl-action-points">points display</label>
+            </dd>
+        {% endif %}
+    </dl>
+</fieldset>

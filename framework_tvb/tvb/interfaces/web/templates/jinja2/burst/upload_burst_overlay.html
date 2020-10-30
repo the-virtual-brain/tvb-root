@@ -1,0 +1,27 @@
+<form method="post" enctype="multipart/form-data" action="/burst/load_simulator_configuration_from_zip">
+    <section class="uploader upload-burst active">
+        <fieldset class="toolbar-inline">
+            <ul>
+                <li>
+                    <button type="submit" class="action action-upload" onClick="showOverlayProgress()">Upload</button>
+                </li>
+            </ul>
+        </fieldset>
+
+        <fieldset>
+            <dl>
+                <dt class="field-mandatory">
+                    <label for="uploadedfile">Simulation ZIP</label>
+                </dt>
+                <dd>
+                    <p class="field-data">
+                        <input id="uploadedfile" type="file" tabindex='3' name='uploadedfile' class="inputField" accept=".zip"/>
+                    </p>
+                </dd>
+            </dl>
+            <legend>
+            	Please be aware that large uploads might take some time and are not interruptible.
+            </legend>
+        </fieldset>
+    </section>
+</form>

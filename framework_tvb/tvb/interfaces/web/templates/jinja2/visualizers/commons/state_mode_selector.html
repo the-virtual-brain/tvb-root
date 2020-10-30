@@ -1,0 +1,14 @@
+{% macro drawStateModeSelector(modeOrStates, componentId, name, callback) -%}
+    {% if (modeOrStates | length) > 1 %}
+        <dt>
+        <label for="{{ componentId }}">{{ name }}</label>
+        </dt>
+        <dd>
+            <select id="{{ componentId }}" onchange="{{ callback }}()">
+                {% for entry in modeOrStates %}
+                    <option {{ 'selected' if loop.index0==0 }} value="{{ loop.index0 }}">{{ entry }}</option>
+                {% endfor %}
+            </select>
+        </dd>
+    {% endif %}
+{%- endmacro %}

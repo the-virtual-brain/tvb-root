@@ -1,0 +1,670 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by @twotribes, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: SECTION CONNECTIVITY */
+/* Version: Odinson / 2.13.4 */
+/* !-------------------------------------------- */
+
+/* NOTE: All selectors should be stripped of their prefixed .ss-connectivity dependency.  */
+
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Main view container */
+/* We construct our own column scheme here as we get no guidance from base.css/base_flow.html due to some ancient architecture decisions. Yes, really. */
+/* !-------------------------------------------- */
+
+/* :not is only needed to raise specificity here */
+#main:not(.portlet-frame) {
+right: 15px;
+}
+
+#main .view-column.connectivity-viewer {
+margin-right: 1%;
+min-width: 610px; /* some leeway above 602px. A magic number so far. */
+overflow-x: hidden; /* Well, ok... I'm seriously weaseling out here. Sorry, code freeze is very imminent now for v0.9.8. Maybe this well get fixed later. */
+width: 40%;
+}
+
+#main .view-column.matrix-controller {
+margin-right: 0;
+width: 59%;
+}
+
+/* !-------------------------------------------- */
+/* !VIEWER COMPONENT: Viewer toolbar */
+/* !-------------------------------------------- */
+
+/* -- 3D edges */
+.ss-connectivity .monitor-control {
+margin-bottom: 0;
+min-width: 610px;
+}
+
+.ss-connectivity .monitor-control > li {
+line-height: 28px;
+margin-right: 5px;
+}
+
+/*.ss-connectivity .monitor-control > li:first-child {*/
+/*font-weight: bold;*/
+/*margin-right: 10px;*/
+/*}*/
+
+/* -- 2D, various POVs */
+/* -- 3D View */
+.ss-connectivity .monitor-2d .monitor-control > li, 
+.ss-connectivity .monitor-3d-view .monitor-control > li {
+line-height: 26px;
+margin-right: 10px;
+}
+
+.ss-connectivity .monitor-2d .monitor-control > li:first-child, 
+.ss-connectivity .monitor-3d-view .monitor-control > li:first-child {
+font-weight: normal;
+}
+
+.ss-connectivity .monitor-2d .monitor-control > li:last-child {
+float: right;
+}
+
+.ss-connectivity .monitor-2d .monitor-control > li mark, 
+.ss-connectivity .monitor-3d-view .monitor-control > li mark {
+display: inline-block;
+padding-left: 4px;
+padding-right: 4px;
+}
+
+/* !-------------------------------------------- */
+/* !VIEWER COMPONENT: Viewer */
+/* !-------------------------------------------- */
+
+/* !!! legacy stuff. Check this... */
+.ss-connectivity .monitor .viewer {
+background: -webkit-gradient(radial, center 30%, 0, center 30%, 600, from(rgba(60, 60, 60, 1)), to(rgba(0, 0, 0, 1)));
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(60, 60, 60, 1) 0%, rgba(0, 0, 0, 1) 100%);
+border: 1px solid #000;
+display: block;
+height: 700px;
+min-width: 602px;
+position: relative;
+width: 100%;
+}
+
+.ss-connectivity .specialviewer {
+position: relative;
+}
+
+.ss-connectivity .specialviewer canvas{
+    width:100%;
+    height:645px;
+}
+
+.ss-connectivity .specialviewer canvas:focus {
+outline: none !important; /* fixing a side effect from having tabindex on this */
+}
+
+/* -- Color legend for 3D edges */
+.ss-connectivity .monitor-legend li:before {
+background: #000;
+border: 1px solid #000;
+content: "";
+display: inline-block;
+height: 13px;
+margin-right: 5px;
+vertical-align: baseline;
+width: 13px;
+}
+
+.ss-connectivity .monitor-legend .legend-3d-front:before {
+background-color: yellow;
+}
+
+.ss-connectivity .monitor-legend .legend-3d-left:before {
+background-color: red;
+}
+
+.ss-connectivity .monitor-legend .legend-3d-right:before {
+background-color: blue;
+}
+
+.ss-connectivity .monitor-legend .node-3d-picked:before {
+background-color: yellow;
+}
+
+.ss-connectivity .monitor-legend .node-3d-column:before {
+background-color: blue;
+}
+
+.ss-connectivity .monitor-legend .node-3d-row:before {
+background-color: red;
+}
+
+.ss-connectivity .monitor-legend .node-3d-interest:before {
+background-color: green;
+}
+
+
+/* !-------------------------------------------- */
+/* !VIEWER COMPONENT: Node inspector inside viewer */
+/* !-------------------------------------------- */
+
+.ss-connectivity aside.menu-node {
+background: rgb(255, 254, 246);
+font-size: 12px;
+margin-top: 26px;
+padding: 5px;
+position: absolute;
+width: 150px;
+-webkit-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+-moz-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+
+right: 100px; /* this position is for demo purposes only ! */
+top: 200px; /* this position is for demo purposes only ! */
+}
+
+.ss-connectivity aside.menu-node mark {
+border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+color: #646a6f;
+display: block;
+font-size: 12px;
+font-weight: bold;
+margin-bottom: 5px;
+padding-bottom: 5px;
+text-align: center;
+}
+
+.ss-connectivity aside.menu-node .node-lines {
+margin-bottom: 5px;
+padding-bottom: 5px;
+}
+
+.ss-connectivity aside.menu-node .node-lines .action {
+width: 100%;
+}
+
+/* TO BE DEPRECATED: .node-stimuli isn't used anymore
+
+.ss-connectivity aside.menu-node .node-stimuli li {
+position: relative;
+}
+
+.ss-connectivity aside.menu-node .node-stimuli li:hover:before {
+background: #fff 0 0 no-repeat;
+content: "";
+display: block;
+height: 26px;
+left: -80px;
+position: absolute;
+top: 0;
+width: 57px;
+-webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+-moz-box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+}
+
+.ss-connectivity aside.menu-node .node-stimuli li.node-static-stim1:hover:before {
+background-image: url("/static/style/img/stimulus_static_1.png")
+}
+
+.ss-connectivity aside.menu-node .node-stimuli li.node-static-stim2:hover:before {
+background-image: url("/static/style/img/stimulus_static_2.png")
+}
+
+.ss-connectivity aside.menu-node .node-stimuli li.node-static-stim3:hover:before {
+background-image: url("/static/style/img/stimulus_static_3.png")
+}
+ */
+ 
+/* !-------------------------------------------- */
+/* !MATRIX COMPONENT: Column headline */
+/* !-------------------------------------------- */
+
+#main .matrix-controller hgroup {
+background: rgba(250, 247, 228, 0.1);
+border-bottom: 1px solid rgba(250, 247, 228, 0.2);
+height: 26px;
+margin: 0 0 10px 0;
+padding: 10px 0 0 10px;
+}
+
+#main .matrix-controller hgroup h4 {
+background: none;
+border: none;
+display: inline-block;
+height: auto;
+margin: 0;
+padding: 0;
+}
+
+.matrix-controller hgroup input {
+display: inline-block;
+margin-left: 10px;
+margin-top: 0;
+}
+
+.matrix-controller hgroup label {
+position: absolute;
+right: 150px;
+color: #fff;
+}
+
+
+
+/* !-------------------------------------------- */
+/* !MATRIX COMPONENT: Matrix toolbar */
+/* !-------------------------------------------- */
+
+.ss-connectivity .matrix-control {
+}
+
+.ss-connectivity .matrix-control > li {
+line-height: 28px;
+}
+
+.ss-connectivity .matrix-control > li:first-child {
+font-weight: bold;
+}
+
+/* Special action button case: Only icon, no text */
+.ss-connectivity #main .matrix-control > li > .action-store, 
+.ss-connectivity #main .matrix-control > li > form > .action-new {
+text-indent: -1000em;
+width: 20px;
+}
+
+.ss-connectivity .matrix-control .selector-storage {
+float: right;
+}
+
+.ss-connectivity .matrix-control > li:last-child {
+margin-right: 10px;
+}
+
+.ss-connectivity .matrix-control > li.storage-submitter {
+margin-right: 0;
+}
+
+/* !-------------------------------------------- */
+/* !MATRIX COMPONENT: Matrix operations/quick-select tools */
+/* !-------------------------------------------- */
+
+.ss-connectivity .matrix-control .selection-setter .extension, 
+.ss-connectivity .matrix-control .selection-ops .extension {
+left: 0;
+right: auto;
+}
+
+.ss-connectivity .matrix-control .selection-ops .dropdown-pane {
+font-size: 12px;
+min-width: 200px;
+}
+
+.ss-connectivity .matrix-control .selection-setter .dropdown-pane {
+font-size: 12px;
+min-width: 300px;
+}
+
+/* Overriding some settings from the toolbar's first level */
+.ss-connectivity .matrix-control .dropdown-pane {
+line-height: normal;
+}
+
+/* Overriding some generic settings from base.css */
+.ss-connectivity .matrix-control .dropdown-pane li {
+float: none;
+}
+
+.ss-connectivity .matrix-control .selection-ops select, 
+.ss-connectivity .matrix-control .selection-ops input {
+margin: 0 0 10px 0;
+width: 100%;
+}
+
+.ss-connectivity .matrix-control .selection-ops .action-analyze {
+width: 100%;
+}
+
+.ss-connectivity .matrix-control .selection-setter textarea {
+height: 15em;
+margin: 5px 0 5px 0;
+}
+
+.ss-connectivity .matrix-control .selection-setter .action-analyze {
+width: 100%;
+}
+
+/* !-------------------------------------------- */
+/* !MATRIX COMPONENT: Weight & Tracts matrices (the BIG-ASS TABLES) */
+/* !-------------------------------------------- */
+
+.ss-connectivity .matrix-table table {
+border-collapse: separate;
+font-size: 9px;
+width: 100%;
+}
+
+/* -- Column/row headers */
+.ss-connectivity .matrix-table th {
+background: rgba(250, 247, 228, 0.2);
+padding: 3px 2px 3px 2px;
+vertical-align: bottom;
+height: 80px;
+cursor:pointer;
+}
+
+.ss-connectivity .matrix-table td.identifier {
+background: rgba(250, 247, 228, 0.2);
+font-weight: bold;
+padding: 2px 5px 2px 2px;
+white-space: nowrap;
+}
+
+.ss-connectivity .matrix-table th[scope="col"] a {
+-moz-transform: rotate(-90deg);
+-webkit-transform: rotate(-90deg);
+width: 14px;
+white-space: nowrap;
+}
+
+.ss-connectivity .matrix-table th[scope="col"] a,
+.ss-connectivity .matrix-table th[scope="col"] a:hover,
+.ss-connectivity .matrix-table td.identifier a,
+.ss-connectivity .matrix-table td.identifier a:hover {
+color: #7e7b66;
+letter-spacing: 1px;
+}
+
+.ss-connectivity .matrix-table th[scope="col"].selected a,
+.ss-connectivity .matrix-table th[scope="col"].selected a:hover,
+
+.ss-connectivity .matrix-table td.identifier.selected{
+border: none;
+}
+.ss-connectivity .matrix-table td.identifier.selected a,
+.ss-connectivity .matrix-table td.identifier.selected a:hover {
+color: #2E2D26;
+}
+
+/* Currently, colors are set within the app on-the-fly so some settings here will be overridden! */
+.ss-connectivity .matrix-table td {
+background: rgba(250, 247, 228, 0.2);
+/* This looks a little bit too heavy...
+border-right: 1px solid rgb(250, 247, 228);
+border-bottom: 1px solid rgb(250, 247, 228);
+border-top: 1px solid rgb(50, 50, 50);
+border-left: 1px solid rgb(50, 50, 50);
+*/
+}
+
+/* -- Selected state for headers and nodes */
+.ss-connectivity .matrix-table th[scope="col"].selected,
+.ss-connectivity .matrix-table td.identifier.selected {
+background: rgba(250, 247, 228, 0.5);
+}
+
+.ss-connectivity .matrix-table td.selected {
+border-top: 1px solid rgb(250, 247, 228);
+border-left: 1px solid rgb(250, 247, 228);
+border-right: 1px solid rgb(50, 50, 50);
+border-bottom: 1px solid rgb(50, 50, 50);
+}
+
+/* -- Arranging the "legendary" color strip with labels and the matrix */
+.ss-connectivity .matrix-viewer {
+position: relative;
+}
+
+.ss-connectivity .matrix-table {
+padding-left: 10px;
+padding-right: 45px; /* hopefully ample space for the legend */
+width: 100%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+.ss-connectivity .matrix-legend {
+font-size: 10px;
+font-weight: bold;
+position: absolute;
+height: 100%;
+right: 5px;
+text-align: center;
+top: 0;
+}
+
+.ss-connectivity .table-legend-labels{
+width: 20px;
+height: 100%;
+}
+
+/* !-------------------------------------------- */
+/* !MATRIX COMPONENT: Quadrant selector */
+/* !-------------------------------------------- */
+
+.ss-connectivity .matrix thead th:first-child {
+background: none;
+font-size: 12px;
+position: relative;
+}
+
+.ss-connectivity .matrix .quadrant-selector .extension {
+left: 0;
+right: auto;
+}
+
+.ss-connectivity .matrix .quadrant-selector .dropdown-pane {
+width: 214px;
+}
+
+.ss-connectivity .matrix .quadrant-selector li {
+background-color: transparent;
+border: 1px solid rgba(0, 0, 0, 0.2);
+display: inline-block;
+height: 100px;
+line-height: 100px;
+margin: 0 5px 5px 0;
+width: 100px;
+-webkit-transition: background-color .5s ease;
+-moz-transition: background-color .5s ease;
+}
+
+.ss-connectivity .matrix .quadrant-selector li.active, 
+.ss-connectivity .matrix .quadrant-selector li:hover {
+background-color: #706E68;
+-webkit-transition: background-color .5s ease;
+-moz-transition: background-color .5s ease;
+}
+
+.ss-connectivity .matrix .quadrant-selector li.active a, 
+.ss-connectivity .matrix .quadrant-selector li a:hover {
+color: #FAF7E4;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+.ss-connectivity .matrix .quadrant-selector li a {
+color: #2E2D26;
+height: 100%;
+width: 100%;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+
+/* !-------------------------------------------- */
+/* !MATRIX COMPONENT: Node inspector inside matrix */
+/* !-------------------------------------------- */
+
+/* -- Context placement */
+.ss-connectivity td aside {
+display: none;
+}
+
+.ss-connectivity .matrix td.edited {
+border: 2px solid #0047a4;
+}
+
+/* -- Dropdown styling */
+.ss-connectivity aside.menu-cell {
+background: rgb(255, 254, 246);
+display: block;
+font-size: 12px;
+min-height: 100px;
+padding: 5px;
+position: absolute;
+width: 200px;
+z-index: 200;
+-webkit-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+-moz-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+
+left: -210px; /* this value isn't seriously used, right? */
+top: 0; /* this value isn't seriously used, right? */
+}
+
+.ss-connectivity aside.menu-cell mark {
+border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+color: #646a6f;
+display: block;
+font-size: 12px;
+font-weight: bold;
+margin-bottom: 5px;
+padding-bottom: 5px;
+text-align: center;
+}
+
+.ss-connectivity aside.menu-cell div {
+float: left;
+margin-bottom: 10px;
+width: 50%;
+}
+
+.ss-connectivity aside.menu-cell .node-drawing + .node-cutting {
+margin-top: 10px;
+}
+
+.ss-connectivity aside.menu-cell input {
+margin: 0 0 10px 0;
+text-align: center;
+width: 100%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+.ss-connectivity aside.menu-cell ul .action {
+display: block;
+width: 100%;
+}
+
+/* Special action button case: Only icon, no text */
+.ss-connectivity #main aside.menu-cell .action-reset {
+float: right;
+text-indent: -1000em;
+width: 20px;
+}
+
+/* !-------------------------------------------- */
+/* !MATRIX COMPONENT: Matrix Hemisphere tables */
+/* !-------------------------------------------- */
+
+.ss-connectivity .matrix-selection .submatrix {
+float: left;
+padding: 0 10px 0 10px;
+width: 50%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+.ss-connectivity .matrix-selection:after {
+clear: both;
+content: "";
+display: block;
+}
+
+.ss-connectivity .matrix-selection .submatrix table {
+font-size: 12px;
+width: 100%;
+}
+
+.ss-connectivity .matrix-selection .submatrix h5 {
+font-size: 12px;
+margin-bottom: 10px;
+text-align: center;
+}
+
+.ss-connectivity .matrix-selection .submatrix td {
+background: rgba(250, 247, 228, 0.2);
+/* This looks a little bit too heavy...
+border-right: 1px solid rgb(250, 247, 228);
+border-bottom: 1px solid rgb(250, 247, 228);
+border-top: 1px solid rgb(50, 50, 50);
+border-left: 1px solid rgb(50, 50, 50);
+*/
+color: #7e7b66;
+cursor: pointer;
+text-align: center;
+}
+
+.ss-connectivity .matrix-selection .submatrix td.selected {
+background: rgba(250, 247, 228, 0.5);
+border-top: 1px solid rgb(250, 247, 228);
+border-left: 1px solid rgb(250, 247, 228);
+border-right: 1px solid rgb(50, 50, 50);
+border-bottom: 1px solid rgb(50, 50, 50);
+color: #2E2D26;
+}
+
+.ss-connectivity .matrix-selection .submatrix .node-scale {
+color: #7e7b66;
+float: right;
+margin-right: 2px;
+}
+
+/* !============================================================================ */
+/* !============================================================================ */
+/* !TEMPORARY STUFF BELOW - ONLY FOR BACK-END DEVELOPERS! */
+/* !============================================================================ */
+/* !Needs major cleanup and will possibly be replaced completely! */
+/* !============================================================================ */
+/* !============================================================================ */
+
+.viewer-portlet {
+	width: 100%;
+	height: 100%;
+	background-color: #2C2F3B;
+}
+
+.space-time-input {
+	width: 40px;
+}
+/* Style the 2 "new connectivity" buttons. Selectors have to be this specific.
+ * Otherwise more specific styles will cascade them */
+#main .view-column .action.action-new-connectivity {
+    right:40px;
+}
+
+#main .view-column .action.action-branch-connectivity {
+    background-position: -18px -1327px;
+    right: -15px;
+}

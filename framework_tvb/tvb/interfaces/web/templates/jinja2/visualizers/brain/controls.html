@@ -1,0 +1,41 @@
+<fieldset>
+
+    <dl>
+        <div id="divForSliderSpeed">
+            <dt>
+                <label for="sliderStep">Speed</label>
+            </dt>
+
+            <dd>
+                <div class="sliderStepDiv" ondblclick="resetSpeedSlider();">
+                    <div id="sliderStep" class="shadow"></div>
+                </div>
+
+                <span class="slider-value" id="slider-value">0</span>
+                <span class="slider-value"> timesteps per Frame.</span>
+            </dd>
+
+        </div>
+
+        {% include 'flow/color_scheme.html' %}
+
+        {% if isSEEG is not defined %}
+
+            {% with %}
+                {% set hasRegionMap = not isOneToOneMapping %}
+                {% include 'visualizers/commons/brain_toggle_controls.html' %}
+            {% endwith %}
+
+            {% if not extended_view %}
+                <dt></dt>
+                <dd><input id="inTimeRefreshChkId" type="checkbox" onchange="VB_BrainNavigator.setInTimeRefresh(this);"
+                           autocomplete="off" tabindex="1" />
+                    <label for="inTimeRefreshChkId">In time refresh</label>
+                </dd>
+            {% endif %}
+
+        {% endif %}
+
+    </dl>
+
+</fieldset>

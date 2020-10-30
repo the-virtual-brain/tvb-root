@@ -1,0 +1,93 @@
+<!-- ====================================================== --> 
+<!-- Display Short-Burst page with 2 areas (left and right) --> 
+<!-- ====================================================== -->
+<div id="main" class="columnized colscheme-3-1st-narrow">
+
+    <script type="text/javascript" src="/static/js/bursts.js?{{ currentVersionJS }}"></script>
+    <!--! We need projectTree.js for the Results TAB. -->
+    <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="/static_view/commons/scripts/matrix2d.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/pse_discrete/pse_discreet.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="/static_view/pse_isocline/pse_isocline.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="/static/js/filters.js?{{ currentVersionJS }}"></script>
+
+	<script type="text/javascript">
+    	$(document).ready(function(){
+    		initBurstConfiguration('{{ burstConfig.id if (burstConfig.id != None) else ""  }}', '{{ burstConfig.name if (burstConfig.name != None) else ""  }}', '{{ burstConfig.selected_tab }}');
+		});
+    </script>
+    
+    <!--! Select from Burst History -->
+	<section id="section-view-history" class="view-history view-column col-1">
+		<h4><mark></mark> History</h4>
+	</section>
+	
+	<!--! Configure Simulation -->
+	<section id="section-simulator-main" class="edit-simulator view-column col-2 is-created">
+		<h4><span id="title-simulation"><mark>Configure</mark> New simulation core</span></h4>
+
+		<div id="div-simulator-parameters">
+            <div class="adaptersDiv">
+                {% include 'simulator_fragment.html' %}
+            </div>
+		</div>
+	</section>
+
+	
+	<!--! View Parameter space exploration or ISO Parameter space for selected Burst -->
+	<section id="section-pse" class="parameter-space-exploration view-column col-3" style="display: none;">
+		<h4><mark>Parameter Space Exploration</mark> <span id="title-pse"></span></h4>
+		<a href="#" title="Maximize View" class="column-control action action-zoom-in" id="button-maximize-iso"
+			onclick="toggleMaximizeBurst(this);">Maximize</a>
+		<ul id="section-portlets-ul-pse" class="view-switcher tabswitcher">
+			<li id="pse-flot" class="active">
+				<a href="#" onclick="changePSETab(this, 'flot');"> View Parameter Space Discrete </a>
+			</li>
+			<li id="pse-iso">
+				<a href="#" onclick="changePSETab(this, 'iso');"> View Parameter Space Continuous </a>
+			</li>
+		</ul>
+		<div class="flex-wrapper" id="burst-pse-flot"></div>
+		<div class="flex-wrapper" id="burst-pse-iso" style="display: none"></div>
+	</section>
+	
+	<!--! Configure + View portlets for selected Burst -->
+	<section id="section-portlets" class="view-portlets view-column col-3">
+		<h4><mark>Visualize</mark> <span id="title-visualizers">New simulation</span></h4>
+		<a href="#" title="Maximize View" class="column-control action action-zoom-in" id="button-maximize-portlets"
+			onclick="toggleMaximizeColumn(this, 'section-portlets');">Maximize</a>
+		
+		<ul id="section-portlets-ul" class="view-switcher tabswitcher">
+			{% for tab_idx in (burstConfig.nr_of_tabs | xrange) %}
+                {% set activeTab = (tab_idx | string) == (burstConfig.selected_tab | string) %}
+                <li class="{{ 'active' if activeTab else none }}">
+                    <a href="#" id="portletTab_{{ tab_idx }}" onclick="changeBurstTile(this);">View {{ tab_idx+1 }}</a>
+                </li>
+        	{% endfor %}
+
+            <li class="{{ 'active' if '-1' == (burstConfig.selected_tab | string) else none }}">
+                {% set currentBurstID = burstConfig.id if burstConfig.id else undefined %}
+                <a href="#" id="tab-burst-tree"
+                   onclick="displayBurstTree({{ currentBurstID }});">Results</a>
+            </li>
+		</ul>
+
+		<div class="portlet-container portlet-run visible-2-2" id="portlets-display">
+			No visualizers configured for this tab yet.
+		</div>
+        <div class="portlet-container portlet-configure visible-2-2" id="portlet-param-config" style="display: none;"></div>
+
+		
+		<div class="portlet-container specialviewer visible-2-2" id="div-burst-tree" style="display: none;">
+			<div id="treeOverlay"></div>
+		</div>      
+	</section>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        renderAllSimulatorForms('{{ renderer.FIRST_FORM_URL }}', '{{ renderer.last_form_url }}');
+    });
+</script>
+

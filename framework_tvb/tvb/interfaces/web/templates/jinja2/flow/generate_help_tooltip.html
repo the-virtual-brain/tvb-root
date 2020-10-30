@@ -1,0 +1,20 @@
+{% macro generate_help_tooltip(inputRow) -%}
+    <!--!     Generate Green hookpoint for help-text. 	 -->
+    {% if showOnlineHelp %}
+        {% if 'description' in inputRow and inputRow.description is not none and isCallout is not defined %}
+            <nav class="inline-menu helper">
+                <a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
+                <div class="extension">
+                    <div class="dropdown-pane">
+                        <mark>{{ inputRow.label if 'label' in inputRow else inputRow.name }}</mark>
+                        <div class="dropdown-pane-overlay">{{ inputRow.description | replace('\n', '<br/>') | safe }}</div>
+                    </div>
+                </div>
+            </nav>
+        {% endif %}
+
+        {% if inputRow.get('inline_description') is not none %}
+            <nav class="inline-description">{{ inputRow.inline_description | replace('\n', '<br/>') | safe }}</nav>
+        {% endif %}
+    {% endif %}
+{%- endmacro %}

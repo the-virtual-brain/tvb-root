@@ -1,0 +1,16 @@
+<fieldset>
+
+    <dl>
+        {% include 'flow/color_scheme.html' %}
+
+        <dt>
+            <label for="surfaceTransparencyInput" >Surface Transparency</label>
+        </dt>
+
+        <dd>
+            <input id="surfaceTransparencyInput" type="text" onchange="changeSurfaceTransparency(this);" value="0.1" tabindex="1"
+                   title="Value between 0 and 1, saying how opaque the surface around the connectivity is. 0= surface invisible, 1=surface fully opaque."/>
+        </dd>
+    </dl>
+
+</fieldset>

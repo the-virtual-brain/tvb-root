@@ -1,0 +1,678 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by @twotribes, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: SECTION PROJECT */
+/* Version: Odinson / 2.13.6 */
+/* !-------------------------------------------- */
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Main view container */
+/* Adjusting column widths, inherited from columnizer of base.css */
+/* !-------------------------------------------- */
+
+.ss-operations #main.colscheme-2-1st-narrow .view-column {
+width: 15%;
+}
+
+.ss-operations #main.colscheme-2-1st-narrow .view-column.col-2 {
+width: 84%;
+}
+
+.ss-operations #main,
+.ss-figures #main {
+right: 15px;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Filter arbitrary project data/ops lists */
+/* !-------------------------------------------- */
+
+.ss-figures .session-filter li,
+.ss-data .data-filter li,
+.ss-operations .ops-filter li {
+background: rgba(250, 247, 228, 0.1);
+font-weight: bold;
+padding: 5px 30px 5px 5px;
+position: relative;
+margin-bottom: 5px;
+-webkit-transition: background .5s ease;
+-moz-transition: background .5s ease;
+}
+
+.ss-figures .session-filter li.active,
+.ss-data .data-filter li.active,
+.ss-operations .ops-filter li.active {
+background: rgba(250, 247, 228, 0.6);
+}
+
+.ss-figures .session-filter li:hover,
+.ss-data .data-filter li:hover,
+.ss-operations .ops-filter li:hover {
+background: rgba(0, 0, 0, 0.1);
+-webkit-transition: background .5s ease;
+-moz-transition: background .5s ease;
+}
+
+.ss-figures .session-filter li.active:hover,
+.ss-data .data-filter li.active:hover,
+.ss-operations .ops-filter li.active:hover {
+background: rgba(250, 247, 228, 0.6);
+}
+
+.ss-figures .session-filter li.active:hover a,
+.ss-data .data-filter li.active:hover a,
+.ss-operations .ops-filter li.active:hover a {
+color: #646a6f;
+}
+
+.ss-figures .session-filter .counter, 
+.ss-data .data-filter .counter, 
+.ss-operations .ops-filter .counter {
+background: rgba(250, 247, 228, 0.5);
+border-radius: 8px;
+display: block;
+font-size: 10px;
+font-weight: bold;
+min-width: 15px;
+padding: 2px 5px 2px 5px;
+position: absolute;
+right: 5px;
+text-align: center;
+top: 5px;
+}
+
+/* Display of inline menu for figure category editing */
+.ss-figures .session-filter li {
+padding-left: 40px;
+}
+
+.ss-figures .session-filter .inline-menu {
+left: 0;
+position: absolute;
+top: 0;
+}
+
+/* Special action button case: Only icon, no text */
+.ss-figures #main .session-filter .inline-menu .action-menu {
+padding-left: 0;
+text-indent: -1000em;
+width: 32px;
+}
+
+.ss-figures .session-filter .inline-menu .extension {
+left: 0;
+right: auto;
+}
+
+.ss-figures .session-filter .inline-menu .dropdown-pane {
+margin-top: 1px;
+margin-left: 32px;
+}
+
+.ss-figures #main .session-filter .inline-menu .dropdown-pane .action {
+margin-top: 5px;
+width: 100%;
+}
+
+.ss-figures #main .session-filter .inline-menu .dropdown-pane .action-delete {
+margin-top: 10px;}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Data viewer */
+/* !-------------------------------------------- */
+
+.ss-data .specialviewer {
+/* background: rgba(250, 247, 228, 0.2); */
+margin-top: -10px;
+min-height: 200px;
+padding-top: 10px;
+width: 100%;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Data node editor */
+/* !-------------------------------------------- */
+
+/* !!! Temporary bugfix as there a some <br>s after the last column, so :last-child doesn't fire */
+#main.colscheme-3-1st-narrow .view-column.col-3 {
+margin-right: 0;
+}
+
+
+/* !-------------------------------------------- */
+/* !PAGE: Edit attributes */
+/* !-------------------------------------------- */
+
+.ss-properties .project-attributes textarea {
+height: 10em;
+}
+
+/* !-------------------------------------------- */
+/* !PAGE: Operations list */
+/* !-------------------------------------------- */
+
+.ss-operations table {
+border-collapse: collapse;
+width: 100%;
+}
+
+.ss-operations th,
+.ss-operations td {
+padding: 5px 5px 5px 5px;
+vertical-align: bottom;
+}
+
+.ss-operations table th {
+color: #fff;
+text-align: left;
+}
+
+.ss-operations tr {
+border-bottom: 1px solid rgba(250, 247, 228, 0.2);
+-webkit-transition: background-color .3s ease;
+-moz-transition: background-color .3s ease;
+}
+
+.ss-operations tr.ops-paused td {
+color: #666;
+}
+
+.ss-operations thead tr {
+border-bottom: 2px solid rgba(250, 247, 228, 0.3);
+}
+
+.ss-operations tbody tr:hover {
+background-color: rgba(250, 247, 228, 0.1);
+-webkit-transition: background-color .3s ease;
+-moz-transition: background-color .3s ease;
+}
+
+.ss-operations table th:first-child,
+.ss-operations table td:first-child {
+padding-left: 10px;
+}
+
+.ss-operations table th:last-child,
+.ss-operations table td:last-child {
+padding-right: 10px;
+}
+
+.ss-operations table td {
+vertical-align: top;
+}
+
+/* -- Ops ID */
+.ss-operations td.id {
+background: transparent url("./img/control/sprite_row_ops_state.png") 0 0 no-repeat;
+color: #fff;
+min-width: 2ex;
+text-align: right;
+white-space: nowrap;
+}
+
+.ss-operations .ops-submitted td.id {
+background-position: 0 -476px;
+}
+
+.ss-operations .ops-started td.id {
+background-position: 0 0;
+}
+
+.ss-operations .ops-paused td.id {
+background-position: 0 -354px;
+}
+
+/* Let's support some poor back-end dev's typo, shall we? */
+.ss-operations .ops-canceled td.id, 
+.ss-operations .ops-cancelled td.id {
+background-position: 0 -354px;
+}
+
+.ss-operations .ops-finished td.id {
+background-position: 0 -236px;
+}
+
+.ss-operations .ops-error td.id {
+background-position: 0 -118px;
+}
+
+/* -- Ops State (including error dropdowns & overlay triggers) */
+.ss-operations .state > .action {
+width: 100%;
+}
+
+.ss-operations .state .inline-menu .action-menu mark {
+color: inherit;
+}
+
+.ss-operations .state .inline-menu .extension {
+left: 0;
+right: auto;
+text-transform: none;
+min-width: 250px;
+}
+
+/* -- Ops Timing */
+.ss-operations .control,
+.ss-operations .time {
+border-right: 2px solid rgba(250, 247, 228, 0.2);
+}
+
+/* -- Ops type */
+.ss-operations td.ops {
+background: transparent url("./img/control/sprite_opstype.png") 5px 5px no-repeat;
+font-weight: bold;
+padding-left: 32px;
+}
+
+.ss-operations tr.ops-type-view td.ops {
+background-position: 5px 5px;
+}
+
+.ss-operations tr.ops-type-analyze td.ops {
+background-position: 5px -95px;
+}
+
+.ss-operations tr.ops-type-create td.ops {
+background-position: 5px -195px;
+}
+
+.ss-operations tr.ops-type-upload td.ops {
+background-position: 5px -295px;
+}
+
+.ss-operations tr.ops-type-simulate td.ops {
+background-position: 5px -395px;
+}
+
+.ss-operations td.ops mark {
+color: inherit;
+display: none;
+font-weight: normal;
+}
+
+/* -- Ops Start/End timestamps */
+.ss-operations td.start-end {
+font-size: 10px;
+}
+
+.ss-operations td.start-end mark {
+color: inherit;
+}
+
+.ss-operations td.start-end mark:after {
+content: " - ";
+}
+
+/* -- Ops results (data node icons and preview images) */
+.ss-operations td.result {
+white-space: nowrap;
+}
+
+.ss-operations td.result .image-container {
+height: 2em;
+max-width: 150px;
+overflow: hidden;
+width: 100%;
+}
+
+.ss-operations td.result .image-container + .image-container {
+margin-top: 5px;
+}
+
+.ss-operations td.result .image-container .action-crosslink {
+width: 100%;
+}
+
+.ss-operations td.result .image-container div {
+height: 20px;
+margin: 1px 0 0 0;
+overflow: hidden;
+position: relative;
+width: 100%;
+}
+
+.ss-operations td.result .image-container img {
+display: inline-block;
+height:20px;
+}
+
+.ss-operations .result .inline-menu .extension {
+min-width: 250px;
+}
+
+/* -- Ops relevancy buttons */
+.ss-operations th.relevancy,
+.ss-operations td.relevancy {
+text-align: right;
+}
+
+/* !-------------------------------------------- */
+/* !PAGE: Figures list */
+/* !-------------------------------------------- */
+
+.ss-figures .figure-list ul {
+margin: 0 0 0 10px;
+}
+
+.ss-figures .figure-list li {
+background: rgba(250, 247, 228, 0.2);
+float: left;
+margin: 0 10px 10px 0;
+padding: 2px 2px 5px 2px;
+width: 250px;
+-webkit-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+-moz-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+}
+
+.ss-figures .image-container {
+border-bottom: 2px solid rgba(250, 247, 228, 0.5);
+height: 150px;
+margin-bottom: 5px;
+overflow: hidden;
+position: relative;
+text-align: center;
+width: 100%;
+}
+
+.ss-figures .image-container img {
+display: inline-block;
+/*margin-left: -50%;*/
+/*margin-top: -50%;*/
+    width:100%;
+}
+
+/* Image-related buttons */
+.ss-figures #main .image-container .action {
+position: absolute;
+}
+
+.ss-figures .image-container .action-zoom-in {
+right: 0;
+}
+
+/* Special action button case: Only icon, no text */
+.ss-figures .image-container .action-download {
+bottom: 2px;
+right: 5px;
+padding-left: 0;
+text-indent: -1000em;
+width: 32px;
+}
+
+/* Special action button case: Only icon, no text */
+.ss-figures .image-container .action-delete {
+bottom: 2px;
+left: 5px;
+padding-left: 0;
+text-indent: -1000em;
+width: 32px;
+}
+
+/* Special action button case: Only icon, no text */
+.ss-figures .figure-list li .action-store {
+float: right;
+padding-left: 0;
+text-indent: -1000em;
+width: 32px;
+}
+
+.ss-figures .figure-list li label {
+clear: left;
+display: inline-block;
+float: left;
+margin: 3px 0 0 5px;
+width: 60px;
+}
+
+.ss-figures .figure-list li input[type="text"] {
+float: left;
+margin: 0 0 5px 5px;
+width: 120px;
+}
+
+/* !-------------------------------------------- */
+/* !PAGE: Project list */
+/* !-------------------------------------------- */
+
+.ss-list table {
+border-collapse: collapse;
+width: 100%;
+}
+
+.ss-list th,
+.ss-list td {
+padding: 5px 5px 5px 5px;
+vertical-align: bottom;
+}
+
+.ss-list table th {
+color: #fff;
+text-align: left;
+}
+
+.ss-list tr:not(.toolbar-inline) th {
+padding-top: 10px;
+}
+
+.ss-list tr {
+border-bottom: 1px solid rgba(250, 247, 228, 0.2);
+-webkit-transition: background-color .3s ease;
+-moz-transition: background-color .3s ease;
+}
+
+.ss-list thead tr {
+border-bottom: 2px solid rgba(250, 247, 228, 0.3);
+}
+
+.ss-list tbody tr.project-active {
+background-color: rgba(250, 247, 228, 0.3);
+}
+
+.ss-list tbody tr:not(.project-active):hover {
+background-color: rgba(250, 247, 228, 0.1);
+-webkit-transition: background-color .3s ease;
+-moz-transition: background-color .3s ease;
+}
+
+.ss-list table th:first-child,
+.ss-list table td:first-child {
+padding-left: 10px;
+}
+
+.ss-list table th:last-child,
+.ss-list table td:last-child {
+padding-right: 10px;
+}
+
+.ss-list table th.id {
+padding-left: 50px;
+}
+
+.ss-list th.title {
+padding-left: 80px;
+}
+
+.ss-list table td {
+vertical-align: top;
+}
+
+/* -- Selector errors */
+.ss-list tr.selector-error td {
+font-weight: bold;
+text-align: center;
+}
+
+/* -- Project ID & selection */
+.ss-list td.id {
+font-size: 18px;
+font-weight: bold;
+}
+
+.ss-list tr.project-active td.id {
+color: #fff;
+}
+
+/* -- Project title */
+.ss-list td.title {
+/* background: transparent url("./img/nav/icon_nav_file.png") 55px -80px no-repeat; */
+background: transparent url("./nodes/nodeRoot.png") 55px 7px no-repeat;
+font-size: 18px;
+}
+
+.ss-list tr.project-active td.title {
+/* background-position: 55px 7px; */
+color: #fff;
+}
+
+/* Special action button case: Only icon, no text */
+.ss-list td.title .action-edit {
+bottom: 0;
+left: 0;
+margin-right: 27px;
+padding-left: 0;
+text-indent: -1000em;
+width: 32px;
+}
+
+/* -- Project owner */
+.ss-list td.owner {
+background: transparent url("./img/nav/icon_nav_user.png") 0 -80px no-repeat;
+padding: 10px 5px 5px 25px;
+}
+
+.ss-list tr.project-owned td.owner {
+background-position: 0 7px;
+}
+
+/* -- Project operations */
+.ss-list td.ops a {
+top: -8px; /* this is a mystery */
+}
+
+.ss-list td.ops ul {
+display: inline-block;
+height: 25px;
+}
+
+.ss-list td.ops li {
+background: rgba(250, 247, 228, 0.2) url("./img/control/sprite_row_ops_state.png") 0 0 no-repeat;
+float: left;
+font-weight: bold;
+height: 20px;
+margin-right: 5px;
+padding: 5px 5px 0 20px;
+width: 4ex;
+}
+
+.ss-list td.ops li.ops-zero {
+color: rgba(250, 247, 228, 0.5);
+}
+
+.ss-list td.ops li.ops-submitted{
+background-position: 0 -476px;
+}
+
+.ss-list td.ops li.ops-started{
+background-position: 0 0;
+}
+
+.ss-list td.ops li.ops-paused {
+background-position: 0 -354px;
+}
+
+.ss-list td.ops li.ops-error {
+background-position: 0 -118px;
+}
+
+.ss-list td.ops li.ops-canceled, 
+.ss-list td.ops li.ops-cancelled {
+background-position: 0 -354px;
+}
+
+.ss-list td.ops li.ops-finished {
+background-position: 0 -236px;
+}
+
+/* -- Project data */
+.ss-list td.data {
+}
+
+.ss-list .disk_size {
+text-align: right;
+padding: 10px 5px 5px 25px;
+}
+
+/* !============================================================================ */
+/* !============================================================================ */
+/* !TEMPORARY STUFF BELOW - ONLY FOR BACK-END DEVELOPERS! */
+/* !============================================================================ */
+/* !Needs major cleanup and will possibly be replaced completely! */
+/* !============================================================================ */
+/* !============================================================================ */
+
+/**
+ * 	Project Data Structure Page
+ **/
+
+span.name {
+  cursor: pointer;
+}
+
+/**
+ * 	Project Data Structure Page ends here.
+ **/
+
+
+/* Project Edit-One page */
+
+#checkboxesList {
+    text-align: left;
+    margin-left: 5%;
+}
+
+.userRole {
+    width: 18px;
+    height: 15px;
+    padding-left: 10px;
+}
+
+.projectmembers-pagetab {
+   width: 60px;
+   height: 20px;
+   background: #51565C; 
+   cursor: pointer;
+   border: outset 1px white;
+   text-align: center;
+}
+
+.projectmembers-pagetab-selected {
+   background: #BCC9D8;
+   border: outset 2px white;
+}
+
+/* Project Edit-One page ends here */
+
+

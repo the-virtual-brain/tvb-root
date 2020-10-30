@@ -1,0 +1,24 @@
+<div id="s-brain" class="brain">
+    {% include 'visualizers/commons/gl_view_header.html' %}
+    {% include 'visualizers/commons/fragment_shader.html' %}
+
+    {% with %}
+        {% set isOneToOneMapping = false %}
+        {% include 'visualizers/commons/vertex_shader.html' %}
+    {% endwith %}
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            VS_StartEEGSensorViewer('{{ urlVertices | safe }}', '{{ urlLines | safe }}', '{{ urlTriangles | safe }}', '{{ urlNormals | safe }}',
+                    '{{ urlMeasurePoints | safe }}', '{{ noOfMeasurePoints }}', '{{ urlMeasurePointsLabels }}',
+                    '{{ shelfObject | safe if shelfObject else null }}', {{ minMeasure }}, {{ maxMeasure }}, '{{ urlMeasure }}');
+        });
+    </script>
+
+    {% with %}
+        {% set show_navigator = false %}
+        {% set extended_view = false %}
+        {% include 'visualizers/commons/gl_view_after.html' %}
+    {% endwith %}
+
+</div>

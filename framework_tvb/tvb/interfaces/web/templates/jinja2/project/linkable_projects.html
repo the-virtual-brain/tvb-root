@@ -1,0 +1,44 @@
+{% for i in range(1) %}
+    {% macro displayLinkProjects(projectsforlink, projectslinked, datatype_id, isGroup, entity_gid) -%}
+        <div class="link-outgoing">
+            {% if projectslinked %}
+                <h5>Create link in other project(s): </h5>
+                <ul>
+                    {% for prj in projectslinked %}
+                        <li>
+                            <button class="action action-unlink"
+                                    onclick="removeLink('{{ datatype_id }}', '{{ prj }}' , '{{ isGroup }}'); updateLinkableProjects('{{ datatype_id }}', '{{ isGroup }}', '{{ entity_gid }}');">
+                                Unlink from project: "{{ projectslinked[prj] }}"
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <h5>Current entity in not linked in any project!</h5>
+            {% endif %}
+        </div>
+
+        <div class="link-incoming">
+            {% if projectsforlink %}
+                <h5>Create link in other project(s): </h5>
+                <ul>
+                    {% for prj in projectsforlink %}
+                        <li>
+                            <button class="action action-link"
+                                    onclick="createLink('{{ datatype_id }}', '{{ prj }}' , '{{ isGroup }}');
+                                            updateLinkableProjects('{{ datatype_id }}', '{{ isGroup }}', '{{ entity_gid }}');">
+                                Link into project: "{{ projectsforlink[prj] }}"
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <h5>There are no project available where this datatype could be linked!</h5>
+            {% endif %}
+        </div>
+    {%- endmacro %}
+
+    {{ displayLinkProjects(projectsforlink, projectslinked, datatype_id, isGroup, entity_gid) }}
+{% endfor %}
+		
+		

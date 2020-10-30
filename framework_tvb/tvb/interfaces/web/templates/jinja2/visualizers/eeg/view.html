@@ -1,0 +1,81 @@
+ <link type="text/css" rel="stylesheet" href="/static/style/subsection_eeg.css?{{ currentVersionJS }}"/>
+ <script type="text/javascript" src="/static/jquery/jquery.contextmenu.js"></script>
+ <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
+ <script type="text/javascript" src="/static/flot/jquery.flot.navigate.js"></script>
+ <script type="text/javascript" src="/static/flot/jquery.flot.selection.js"></script>
+ <!--! we use the method HLPR_readJSONfromFile-->
+ <script type="text/javascript" src="/static/js/webGL_Connectivity.js?{{ currentVersionJS }}"></script>
+ <script type="text/javascript" src="/static_view/eeg/scripts/animated_graph.js?{{ currentVersionJS }}" ></script>
+ <script type="text/javascript" src="/static_view/eeg/scripts/graph_events.js?{{ currentVersionJS }}"></script>
+ <script type="text/javascript" src="/static_view/commons/scripts/visualizers_commons.js?{{ currentVersionJS }}"></script>
+ <script type="text/javascript" src="/static_view/commons/scripts/regionSelector.js?{{ currentVersionJS }}"></script>
+
+ <script type="text/javascript">
+     $(document).ready(function() {
+         AG_startAnimatedChart({{ ag_settings | safe }});
+     });
+ </script>
+
+ <section id="eegSectionId" class="view-column eeg-display col-1">
+     <!--! Inner visualizer controls and legend -->
+     <ul class="toolbar-inline">
+
+         {% if not extended_view %}
+
+            <li>
+                <button id="ctrl-action-pause" class="action action-controller-pause" title="Pause/Start Drawing"
+                        onclick="stopAnimation();" tabindex="1">Pause</button>
+            </li>
+
+            <!--! Zoom action buttons -->
+            <li class="zoom-control">
+                <button class="action action-mini-zoom-out" onclick='resetToDefaultView()'>Zoom out to 100%</button>
+            </li>
+
+            <li class="zoom-control">
+                <button class="action action-reset" onclick='zoomBack()'>Zoom out one level</button>
+            </li>
+
+            <!--! Value inspector -->
+            <li class="value-inspector value-channel">
+                <mark>Channel</mark>
+                <span id="info-channel">0</span>
+            </li>
+
+            <li class="value-inspector value-time">
+                <mark>Time</mark>
+                <span id="info-time">0</span>
+            </li>
+
+            <li class="value-inspector value-value">
+                <mark>Value</mark>
+                <span id="info-value">0</span>
+            </li>
+
+         {% endif %}
+
+         <!--! Channel selector -->
+         {% include channelsPage %}
+
+         {% import 'visualizers/commons/timeseries_selector_button.html' as tsb  %}
+
+         {% for name in tsNames %}
+            {% if channelsPage != none %}
+                <li class="channel-selector">
+                    {{ tsb.drawTimeseriesSelectorButton(
+                        name, tsStateVars[name], tsModes[name],
+                        groupedLabels[loop.index0], initialSelection[loop.index0],
+                        containerId="channelSelector" ~ (loop.index0 | string),
+                        buttonTitle="Select signals from Input %d" % (loop.index0+1)) }}
+                </li>
+            {% endif %}
+         {% endfor %}
+
+     </ul>
+     <!--! Actual visualizer -->
+     <div id="EEGcanvasDiv" class="mainCanvas {{ 'canvasExtended' if extended_view else '' }}"></div>
+
+     <div class="chart-x-label">{{ label_x  }}</div>
+
+     <input type="hidden" id="columnIndexId"/>
+ </section>

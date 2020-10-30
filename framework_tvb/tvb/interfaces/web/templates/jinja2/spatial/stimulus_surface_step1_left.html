@@ -1,0 +1,30 @@
+<section class="configure-stimulus-equation view-column col-2">
+	<div>
+		<h4><mark>Define</mark> Stimulus</h4>
+
+		{{ surfaceStimulusSelectForm | safe }}
+
+        {{ surfaceStimulusCreateForm | safe }}
+
+	    <script type="text/javascript">
+	    	$(document).ready(function() {
+	    		$("select[name='existentEntitiesSelect']").change(function () { BS_loadEntity(); });
+                {% if displayedMessage is defined and displayedMessage != none %}
+					displayMessage('{{ displayedMessage }}', '{{ messageType }}');
+				{% endif %}
+                setEventsOnStaticFormFields({{ spatialFieldsPrefixes | safe }});
+                plotEquations();
+                redrawPlotOnMinMaxChanges()
+	        });
+	    </script>
+
+	    <form id="load-existing-entity" action="{{ loadExistentEntityUrl }}" method="POST">
+	    	<input type="hidden" id="entity-gid" name="surface_stimulus_gid" value="none"/>
+	    	<input type="hidden" name="from_step" value="1"/>
+	    </form>
+
+	    <form id="reset-to-default" action="{{ resetToDefaultUrl }}" method="POST">
+	    	<input type="hidden" name="from_step" value="1"/>
+	    </form>
+	</div>
+</section>

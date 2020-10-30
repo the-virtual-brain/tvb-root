@@ -1,0 +1,69 @@
+<aside id="overlay" class="{{ overlay_class }} {{'dialog-sidebar' if overlay_tabs_vertical else '' }}">
+	<hgroup>
+		{% if show_overlay_pagination %}
+			<ul class="action-block block-pager">
+				<li><a href="#" onclick="{{ action_overlay_previous }}" class="action action-page-back">&lt;</a></li>
+				<li><a href="#" onclick="{{ action_overlay_next }}" class="action action-page-fwd">&gt;</a></li>
+			</ul>
+		{% endif %}
+
+		<h4>
+			<mark>{{ overlay_title }}</mark>
+			{{ overlay_description }}
+		</h4>
+
+		<a href="#" title="Close this dialog..." class="action action-exit" onClick="closeOverlay()">Exit</a>
+	</hgroup>
+	
+	{% if overlay_tabs_horizontal %}
+		<ul class="view-switcher tabswitcher">
+			{% for idx in ((overlay_tabs_horizontal | length) | xrange) %}
+                {% set  tab = overlay_tabs_horizontal[idx] %}
+                {% set li_class = tab.css_class if tab.css_class else '' %}
+                {% set li_class = li_class ~ ' disabled' if not tab.enabled %}
+                {% set tab_select_action = 'selectOverlayTab(\'overlayTab_\', '~ (overlay_indexes[idx] | string) ~ ')'
+                                           if tab.enabled else 'return false;' %}
+
+                <li id="overlayTab_{{ overlay_indexes[idx] }}" class="{{ li_class }}">
+                    <a href="#" title="{{ tab.description }}" onclick="{{ tab_select_action }}" >{{ tab.name }}</a>
+                </li>
+			{% endfor %}
+   		 </ul>
+	{% endif %}
+	
+	<section class="overlay-content">
+		{% include overlay_content_template ~ ".html" %}
+    	<section class="uploader upload-progress blocker">
+    		Please wait until this upload has finished. Interrupting it may cause serious data loss.
+    	</section>
+	</section>
+
+    {% if overlay_tabs_vertical %}
+    	<aside class="overlay-sidebar">
+        	<h4></h4>
+        	<ul>
+				{% for idx in ((overlay_tabs_vertical | length) | xrange) %}
+                    {% set  tab = overlay_tabs_vertical[idx] %}
+                    {% set li_class = tab.css_class if tab.css_class else '' %}
+                    {% set li_class = li_class ~ ' disabled' if not tab.enabled %}
+                    {% set tab_select_action = 'selectOverlayTab(\'overlayTabHorizontal_\', '+ (idx | string) + ')'
+                                                if tab.enabled else 'return false;' %}
+
+                    <li id="overlayTabHorizontal_{{ idx }}" class="{{ li_class }}">
+                        <a href="#" title="{{ tab.description }}" onclick="{{ tab_select_action }}" >{{ tab.name }}</a>
+                    </li>
+            	{% endfor %}
+        	</ul>
+    	</aside>
+	{% endif %}
+
+
+    <script type="text/javascript">
+        //select the first tab on load
+        $(document).ready(function() {
+            selectOverlayTab('overlayTab_', 0);
+            selectOverlayTab('overlayTabHorizontal_', 0);
+			displayMessage('{{ message }}', '{{messageType}}');
+        });
+    </script>
+</aside>

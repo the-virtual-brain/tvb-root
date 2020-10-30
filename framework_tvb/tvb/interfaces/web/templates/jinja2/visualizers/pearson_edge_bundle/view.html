@@ -1,0 +1,51 @@
+<div class="view-column">
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_svg.css"/>
+
+    <script type="text/javascript" src="/static/js/d3.v4.min.js"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/hierarchicalEdgeBundle.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/pearson_edge_bundle/pearson_edge_bundle.js?{{ currentVersionJS }}"></script>
+
+    <script type="text/javascript">
+        $('document').ready(function () {
+            PE_InitChord("{{ url_base }}", {{ matrix_labels | safe  }}, "{{ state_variable }}", "{{ mode }}", {{ thresh }});
+            $("#main").addClass("colscheme-1");
+        })
+    </script>
+
+    <ul class="toolbar-inline">
+        <li>
+            <label for="mode_select">Mode</label>
+            <select id="mode_select" onchange="PE_TriggerRedraw()">
+                {% for mod in mode_list %}
+                    {% if mod==mode %}
+                        <option value="{{ mod }}" selected="selected">{{ mod }}</option>
+                    {% else %}
+                        <option value="{{ mod }}">{{ mod }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+        <li>
+            <label for="state_select">State Variable</label>
+            <select id="state_select" onchange="PE_TriggerRedraw()">
+                {% for state in state_list %}
+                    {% if state==state_variable %}
+                        <option value="{{ loop.index0 }}" selected="selected">{{ state }}</option>
+                    {% else %}
+                        <option value="{{ loop.index0 }}">{{ state }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+        <li>
+            <input id="slider" type="range" oninput="PE_ChangeThreshold(this.value)"
+                   value="{{ thresh }}" min="{{ pearson_min }}" max="{{ pearson_max }}" step="{{ (pearson_max - pearson_min) / 40.0 }}"/>
+            <output id="slider-value" type="text">{{ thresh }}</output>
+        </li>
+
+    </ul>
+
+    <svg viewBox="0 0 700 700" preserveAspectRatio="xMidYMid meet" class="diagram-svg" id="middle-edge-bundle"></svg>
+</div>

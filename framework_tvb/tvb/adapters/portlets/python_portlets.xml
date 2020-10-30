@@ -1,0 +1,311 @@
+<?xml version="1.0"?>
+
+
+<tvb xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../core/portlets/tvb.xsd">
+
+    <!--  For each portlet, a preview with the name $identifider$.png should be present in:
+         tvb/interfaces/static/style/img/portlets
+         and a style in section_burst.css
+   -->
+    <portlet name="Fourier Spectrum" identifier="Fourier">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.fourier_adapter.FourierAdapter"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.fourier_spectrum.FourierSpectrumDisplay"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="input_data"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+
+    <portlet name="Imaginary Coherence" identifier="ImCoherence">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.node_complex_coherence_adapter.NodeComplexCoherenceAdapter"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.complex_imaginary_coherence.ImaginaryCoherenceDisplay"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="input_data"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="Wavelet Spectrogram" identifier="Wavelet">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.wavelet_adapter.ContinuousWaveletTransformAdapter"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.wavelet_spectrogram.WaveletSpectrogramVisualizer"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="input_data"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="Principal Components Analysis" identifier="PCA">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.pca_adapter.PCAAdapter"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.pca.PCA"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="pca"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="Independent Components Analysis" identifier="ICA">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.ica_adapter.ICAAdapter"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.ica.ICA"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="datatype"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="Covariance" identifier="COV">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.node_covariance_adapter.NodeCovarianceAdapter"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.covariance.CovarianceVisualizer"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="datatype"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+
+    <portlet name="Cross-correlation" identifier="XCORR">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.cross_correlation_adapter.CrossCorrelateAdapter"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.cross_correlation.CrossCorrelationVisualizer"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="datatype"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+
+    <portlet name="Pearson-correlation-coefficient" identifier="XPCC">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.cross_correlation_adapter.PearsonCorrelationCoefficientAdapter"
+                />
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.pearson_cross_correlation.PearsonCorrelationCoefficientVisualizer"
+                />
+            </input>
+            <input overwrite="chain_2">
+                <name value="datatype"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+
+    <portlet name="Cross-coherence" identifier="XCOHER">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.analyzers.node_coherence_adapter.NodeCoherenceAdapter"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+
+            <input>
+                <name value="chain_2"/>
+                <label value="Second adapter from chain"/>
+                <type value="tvb.adapters.visualizers.cross_coherence.CrossCoherenceVisualizer"/>
+            </input>
+            <input overwrite="chain_2">
+                <name value="datatype"/>
+                <label value="Overwrite input_data parameter of second adapter with the first release of the first adapter."/>
+                <type value="dynamic" default="step_1[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+
+    <portlet name="Connectivity 2D Visualizer" identifier="Connectivity2D">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.visualizers.connectivity.ConnectivityViewer"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="input_data"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[connectivity]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="Brain Visualizer" identifier="BrainV">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.visualizers.brain.BrainViewer"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="EEG lines Visualizer" identifier="EegLinesV">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.visualizers.eeg_monitor.EegMonitor"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="input_data"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+    <portlet name="Time Series" identifier="TimeSeries">
+        <inputs>
+            <input>
+                <name value="chain_1"/>
+                <label value="First adapter from chain"/>
+                <type value="tvb.adapters.visualizers.time_series.TimeSeries"/>
+            </input>
+            <input overwrite="chain_1">
+                <name value="time_series"/>
+                <label value="Overwrite with first input of the simulator adapter."/>
+                <type value="dynamic" default="step_0[0]"/>
+            </input>
+        </inputs>
+    </portlet>
+
+</tvb>

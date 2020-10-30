@@ -1,0 +1,93 @@
+<!-- ============================= -->
+<!--     Main Content              -->
+<!-- ============================= -->
+<div id="main">
+	<form id='userManagementTableForm' method="post">
+		<aside class="header-component toolbar can-extend auto-extends">
+        	<h3>User Management Toolbar</h3>
+     	    <div class="extension">
+     	       <div class="dropdown-pane">
+			   		<ul>
+						{% if keycloakConfigWebFile is not defined %}
+                		<li><button tabindex='50' type="submit" class="action action-new" onclick="document.getElementById('create-new-user').submit(); return false;">Create New</button></li>
+						{% endif %}
+                    	<li><button tabindex='50' type="submit" class="action action-confirm" onclick="document.getElementById('doPersist').value = 'true';">Save Changes</button></li>
+                    	<li class="action-dismiss"><button tabindex='50' type="submit" value="Cancel" name="cancel" class="action action-cancel">Cancel</button></li>
+                	</ul>
+               </div>
+        	</div>
+    	</aside>
+
+		<input type="hidden" name="page" value="{{  page_number }}" id="currentPage"/>
+		<input type="hidden" name="do_persist" value="false" id="doPersist"/>
+		<table class="contentTable" summary="Manage Users">
+			<thead><tr><td colspan='4'><h2><mark>Users</mark> management</h2></td></tr></thead>
+			<tr>
+				<td>User display name</td>
+				<td>User name</td>
+            	<td>User email</td>
+				<td>Role</td>
+				<td>Validated</td>
+			</tr>
+
+			{% for user in userList %}
+				{% with %}
+					{% set tabindex = 3 %}
+					<tr>
+						<td>{{ user.display_name }}</td>
+						<td><i>{{ user.username }}</i></td>
+						<td>{{ user.email }}</td>
+						<td>
+							{% if keycloakConfigWebFile is not defined %}
+								<select tabindex='{{ tabindex }}'name="role_{{ user.id }}">
+									{% for role in allRoles %}
+									<option value="{{ role }}" {{ 'selected' if role==user.role}}>{{ role }}</option>
+									{% endfor %}
+								</select>
+							{% else %}
+								<input tabindex='{{ tabindex }}' name="role_{{ user.id }}" type="text" value="{{user.role}}" readonly=true/>
+							{% endif %}
+						</td>
+
+						<td>
+							<input tabindex='{{ tabindex }}' name="validate_{{ user.id }}" type="checkbox"
+							   	{{ 'checked' if user.validated }} />
+						</td>
+					</tr>
+				{% endwith %}
+			{% endfor %}
+		</table>
+
+		{% if total_pages > 1 %}
+			<table class="contentTable">
+				<tr>
+					<td colspan='2'>
+						<label>Page {{ page_number }} of {{ total_pages }}</label>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						{% if page_number != 1 %}
+							<input tabindex='51' type="button" value="Previous Page" onclick="changeDisplayPage({{ page_number-1 }}, 'userManagementTableForm')"/>
+						{% endif %}
+						{% if page_number <= 1 %}
+		    				<input tabindex='51' type="button" value="Previous Page" disabled="disabled"/>
+						{% endif %}
+					</td>
+					<td>
+						{% if page_number < total_pages %}
+							<input tabindex='51' type="button" value="Next Page" onclick="changeDisplayPage({{ page_number+1 }}, 'userManagementTableForm')"/>
+						{% else %}
+	    					<input tabindex='51' type="button" value="Next Page" disabled="disabled"/>
+						{% endif %}
+					</td>
+				</tr>
+			</table>
+		{% endif %}
+		<br/>
+	</form>
+<!--! Form submitted by the Create New button from the aside panel -->
+	{% if keycloakConfigWebFile is not defined %}
+		<form id="create-new-user" action="/user/create_new"></form>
+	{% endif %}
+</div>

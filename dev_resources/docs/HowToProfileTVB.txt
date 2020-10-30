@@ -1,0 +1,52 @@
+TVB profile
+
+After analysing a few tools which allow us to profile a python application we chose
+cherrypy profile, for generating the profile data, and for viewing the generated data we use RunSnakeRun.
+
+I. Generate the profile data
+
+In order to profile a certain piece of code using the cherrypy profile please follow the next steps:
+ 1. Import the profiler into your script
+    e.g.: import cherrypy.lib.profiler as profiler
+ 2. Specify the path where you want to be saved the resulted profile data
+    e.g.: p = profiler.Profiler("$path_where_to_save_data")
+ 3. Pass the method which you want to profile, and its parameters, to the run method of the profiler
+    e.g.: p.run($method_to_profile, $method_to_profile_param_0, ...)
+ 4. run the script
+    e.g: python $myScript.py $param_0
+
+Example for profiling the 'do_operation_launch' method from operation_async_launcher.py
+
+import cherrypy.lib.profiler as profiler
+....
+if __name__ == '__main__':
+    OPERATION_ID = argv[1]
+    # Make sure DB events are linked.
+    db_events.attach_db_events()
+    p = profiler.Profiler("d:/TVB/profiler/")
+    p.run(do_operation_launch, OPERATION_ID)
+    exit(0)
+
+!! Important: When running an operation in profile mode, make sure no other Python calls are running in paralel. Otherwise the results might be wrong.
+
+II. Visualize the profile data
+
+1. Install RunSnakeRun
+You will need to have all of wxPython, SquareMap and RunSnakeRun installed to use RunSnakeRun. For Debian/Ubuntu
+distributions the prerequisite setup looks like this:
+ E.g.: apt-get install python-profiler python-wxgtk2.8 python-setuptools
+
+If you already have Python setuptools installed (a.k.a. easy_install), you should be able to install the Python packages with:
+ E.g.: easy_install SquareMap RunSnakeRun
+
+You will require a modern wxPython (e.g. 2.8) and Python 2.x (e.g. 2.5 through 2.7) installation.
+The setup will create a script named "runsnake" on Linux machines which launches the profile viewer.
+On OS-X machines a wrapper script runsnake is created that runs the runsnake32 executable with a flag to tell
+Python to use the 32-bit implementation (for wxPython compatibility).
+On Win32 machines, a Scripts\runsnake.exe executable is created.
+If you have added your scripts directory to the PATH then this will be available from the command-line.
+
+
+2. Open the resulted profile data into runsnake
+ E.g.: runsnake my_profile_data.prof
+

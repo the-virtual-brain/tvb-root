@@ -1,0 +1,28 @@
+<div class="portlet-frame" id="main">
+	
+	<script type="text/javascript" src="/static/jquery/jquery.js"></script>
+    <script type="text/javascript" src="/static/jquery/jquery-ui.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="/static/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    {% include 'mathjax_config.html' %}
+
+    <link rel="stylesheet" type="text/css" href="/static/jquery/jquery-ui.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/base.css?{{ currentVersionJS }}" />
+
+    {% if launch_success %}
+        <div class="infoMessage"><div id="messageDiv"></div></div>
+    {% else %}
+        <div>
+    	Visualization step failed with message:
+    	<div class="errorMessage" id="messageDiv">{{ error_msg }}</div>
+    	    It could be because current visualizer is not compatible with Simulation's chosen Monitor, or because of a miss-configured additional parameter.
+    	    Please check your configuration and in extreme cases review user-manual.
+        </div>
+    {% endif %}
+
+    {% if launch_success %}
+        {% include mainContent ~ ".html" %}
+    {% endif %}
+		
+</div>

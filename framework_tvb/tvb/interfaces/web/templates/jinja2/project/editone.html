@@ -1,0 +1,118 @@
+<!-- ============= -->
+<!-- Main Content -->
+<!-- ============================= -->
+<div id="main" class="columnized colscheme-2-2nd-third">
+    <form id="editProjectForm" method="post">
+        <input type="hidden" name="visited_pages" id="visitedPages" value="{{ '1' if editUsersEnabled else '' }}"/>
+
+        <!-- Toolbar -->
+        <aside class="header-component toolbar can-extend auto-extends">
+            <h3>Edit Project</h3>
+            <div class="extension">
+                <div class="dropdown-pane">
+                    <ul>
+                        {% if not isCreate %}
+                            <li>
+                                <button type="submit" tabindex='50' class="action action-delete"
+                                        value="Delete" name="delete"
+                                        onclick="showQuestionOverlay('Are you sure you want to delete the project {{ data.name }}?', 'removeProject(\'{{ data.project_id }}\', \'editProjectForm\')');
+                                                return false; ">Delete Project
+                                </button>
+                            </li>
+                            <li>
+                                <button type="button" tabindex='50' class="action action-download" value="Export"
+                                        name="export" onclick="exportProject('{{ data.project_id }}')">Export Project
+                                </button>
+                            </li>
+                        {% endif %}
+
+                        <li>
+                            <button type="submit" tabindex='50' class="action action-confirm" value="Save" name="save">
+                                Save Changes
+                            </button>
+                        </li>
+                        <li class="action-dismiss">
+                            <button type="submit" tabindex='50' class="action action-cancel" value="Cancel"
+                                    name="cancel">Cancel
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!--! Column containing editable project fields -->
+        <section class="project-attributes view-column col-1">
+            <h4>
+                <mark>Edit</mark>
+                Project attributes
+            </h4>
+
+            <fieldset>
+                <dl>
+                    <dt class="field-mandatory">
+                        <label for="name">Project Name</label>
+                    </dt>
+
+                    <dd>
+                        <p class="field-data"><input tabindex='1' id="name" type="text" name="name"
+                                                     value="{{ data.name if ('name' in data) else '' }}"/></p>
+                        {% if 'name' in errors %}
+                            <p class="field-comment errorMessage">{{ errors.name }}</p>
+                        {% endif %}
+                    </dd>
+
+                    <dt>
+                        <label for="description">Project description</label>
+                    </dt>
+
+                    <dd>
+                        <p class="field-data"><textarea tabindex='2' id="description"
+                                                        name="description">{{ data.description if ('description' in data) else '' }}</textarea>
+                        </p>
+                        {% if 'description' in errors %}
+                            <p class="field-comment errorMessage">{{ errors.description }}</p>
+                        {% endif %}
+                    </dd>
+
+                    <dt>
+                        <label for="administrator">Administrator</label>
+                    </dt>
+
+                    <dd>
+                        <p class="field-data"><input tabindex='3' id="administrator" type="text"
+                                                     value="{{ data.administrator if ('administrator' in data) else '' }}"
+                                                     disabled="disabled"/></p>
+                    </dd>
+                </dl>
+            </fieldset>
+        </section>
+
+        <!--! Column containing user list the project is shared with -->
+        <section class="project-shares view-column col-2">
+            <h4>
+                <mark>Share</mark>
+                Data with other users
+            </h4>
+            <table>
+                <tr>
+                    {% for i in range(usersPages) %}
+                        <td id="tab-{{ i + 1 }}" tabindex="4" onkeypress="fireOnClick(this)"
+                            onclick="changeMembersPage({{ data.project_id if data.project_id else 'null' }}, {{ i + 1 }}, 'checkboxesList', {{ editUsersEnabled | string | lower }})"
+                            class="projectmembers-pagetab
+                                    {{ 'projectmembers-pagetab-selected' if i+1==usersCurrentPage else '' }}">
+                            Page {{ i+1 }}
+                        </td>
+                    {% endfor %}
+                </tr>
+            </table>
+
+            {% if usersList %}
+                <div id="checkboxesList">
+                    {% include 'project/project_members.html' %}
+                </div>
+            {% endif %}
+
+        </section>
+    </form>
+</div>

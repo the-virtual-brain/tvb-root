@@ -1,0 +1,6 @@
+include LICENSE
+include tvb/config/logger/*.conf
+recursive-include tvb *
+recursive-exclude tvb *.pyc
+prune tvb/interfaces/rest/client
+prune *_rest_client.*

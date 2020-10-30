@@ -1,0 +1,6 @@
+include LICENSE
+recursive-include tvb/basic *
+recursive-include tvb/simulator *
+recursive-include tvb/tests *
+recursive-include tvb/rateML *
+recursive-exclude tvb *.pyc

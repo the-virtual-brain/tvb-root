@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+
+    environment {
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-build'
+        LATEST_TAG = 'latest'
+    }
+
+    stages {
+        stage('Copy Step 1') {
+             steps {
+                 sh '''#!/bin/bash
+                       rm -R -f tvb_build/build
+                 '''
+                 step ([$class: 'CopyArtifact',
+                     projectName: 'TVB - Step1',
+                     selector: lastSuccessful(),
+                     filter: 'tvb_build/build/TVB_build_step1.zip']);
+                 sh '''#!/bin/bash
+                       ls -all tvb_build/build
+                 '''
+                 stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
+             }
+        }
+        stage ('Build TVB Distribution') {
+            agent {
+                docker {
+                    image '${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG}'
+                    alwaysPull true
+                }
+            }
+            steps {
+                unstash 'step1'
+                sh '''#!/bin/bash
+                    source activate tvb-run
+                    cd tvb_build
+                    bash install_full_tvb.sh
+                    rm -R -f build/TVB_Distribution
+                    python build_from_conda.py
+                '''
+                archiveArtifacts artifacts: 'tvb_build/build/TVB_Linux*.zip'
+            }
+        }
+    }
+    post {
+        changed {
+            mail to: 'lia.domide@codemart.ro',
+            subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
+            body: """
+                Result: ${currentBuild.result}
+                Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
+                Check console output at ${env.BUILD_URL}"""
+        }
+    }
+}

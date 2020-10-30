@@ -1,0 +1,26 @@
+<div class="adaptersDiv">
+    <script type="text/javascript" src="/static/js/filters.js?{{ currentVersionJS }}"></script>
+
+    {% with %}
+        {% set drawHiddenRanges =  draw_hidden_ranges if draw_hidden_ranges is defined else false %}
+        {% set tree_session_key = treeSessionKey if treeSessionKey is defined else 'defaultTree' %}
+
+        {% if adapter_form is defined %}
+            {{ adapter_form | safe }}
+        {% endif %}
+    {% endwith %}
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('.adaptersDiv select').each(function () {
+                if (!this.disabled)
+                    if (this.onchange)
+                        this.onchange();
+            });
+            $('.adaptersDiv input[type="radio"]').each(function () {
+                if (!this.disabled) if (this.checked) if (this.onchange)
+                    this.onchange();
+            });
+        });
+    </script>
+</div>

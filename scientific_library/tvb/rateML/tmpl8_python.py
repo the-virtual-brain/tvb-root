@@ -26,7 +26,7 @@ class ${modelname}(ModelNumbaDfun):
         default={\
 %for limit in dynamics.state_variables:
 % if (limit.exposure!='None' and limit.exposure!=''):
-"${limit.name}": numpy.array([${limit.exposure}]), \
+"${limit.name}": numpy.array([${limit.exposure}])\
 % endif
 %endfor
 },
@@ -83,8 +83,6 @@ ${itemI.name}, \
 local_coupling, dx):
     "Gufunc for ${modelname} model equations."
 
-    coupling = coupling[0]
-
     % for i, itemF in enumerate(dynamics.state_variables):
     ${itemF.name} = vw[${i}]
     % endfor
@@ -113,13 +111,15 @@ local_coupling, dx):
             %endif
         % endfor
     % endfor
-% endif \
+% endif /
+
 
     % for j, itemH in enumerate(dynamics.time_derivatives):
     dx[${j}] = ${itemH.value}
-    % endfor \
+    % endfor
     \
-    ## TVB numpy constant declarations /
+    \
+    ## TVB numpy constant declarations
     <%def name="NArray(nconst)">
     ${nconst.name} = NArray(
         label=":math:`${nconst.name}`",

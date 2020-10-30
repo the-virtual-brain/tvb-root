@@ -1,0 +1,17 @@
+<ul class="toolbar-inline">
+
+    <div class="slider-div lastChild">
+        <button id="ctrl-action-pause" class="action action-controller-pause" title="Pause/Start Drawing"
+                onclick="pauseMovie();" tabindex="1"></button>
+        <div id="slider"></div>
+        <div class="movie-time"> <input type="text" id="TimeNow" value="0" /> ms </div>
+    </div>
+
+    {% if not isOneToOneMapping and not extended_view %}
+        <li class="channel-selector can-extend">
+            {% import 'visualizers/commons/timeseries_selector_button.html' as tsb with context %}
+            {{ tsb.drawTimeseriesSelectorButton(measurePointsTitle,labelsStateVar, labelsModes, groupedLabels, initialSelection) }}
+        </li>
+    {% endif %}
+
+</ul>

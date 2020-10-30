@@ -217,6 +217,3 @@ Eplain that exposure attritbute in state variable will lead to :
 Description bug in LEMS. The description attibute is mapped to the symbol attribute in LEMS.py. For now no description 
 in the model. 
 
-Make XSD cases for coupling and noise.
-
-Classname has to be capitalized, filename does not

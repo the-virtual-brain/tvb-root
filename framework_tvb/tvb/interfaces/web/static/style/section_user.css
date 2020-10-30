@@ -1,0 +1,441 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by @twotribes, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: SECTION USER */
+/* Version: Odinson / 2.1.2 */
+/* !-------------------------------------------- */
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Header toolbar */
+/* !Section-specific changes here */
+/* !-------------------------------------------- */
+
+/* The logout button shouldn't be treated as a common dismiss action. */
+
+.user-authorized .toolbar .action-dismiss .action-cancel {
+background-position: 35px -115px;
+bottom: inherit;
+padding-top: 40px;
+position: static;
+text-indent: 0;
+}
+
+.user-authorized .toolbar .action-dismiss .action-cancel:hover {
+background-position: -201px -115px;
+}
+
+.user-authorized .toolbar li.action-dismiss:only-child .action-cancel {
+border-top-width: 507px;
+}
+
+.user-authorized .toolbar .action-dismiss {
+background: transparent url("./img/line_dark.png") 0 bottom repeat-x;
+}
+
+/* don't show a top line for the current login page */
+.toolbar li:first-child:before {
+background: none;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Update notification */
+/* !-------------------------------------------- */
+
+#notification {
+background: rgba(250, 247, 228, 0.6);
+left: 530px;
+min-height: 24px;
+padding: 8px 60px 8px 8px;
+position: absolute;
+top: 50px;
+width: 336px;
+z-index: 100;
+-webkit-box-shadow: 0 3px 10px 2px rgba(0, 0, 0, 0.2);
+-moz-box-shadow: 0 3px 10px 2px rgba(0, 0, 0, 0.2);
+box-shadow: 0 3px 10px 2px rgba(0, 0, 0, 0.2);
+}
+
+body.user-anon #notification {
+left: 450px;
+width: 420px;
+}
+
+#notification h1 {
+background: rgba(250, 247, 228, 0.8);
+color: #646a6f;
+font-size: 16px;
+height: 22px;
+left: 0;
+padding: 8px 8px 0 8px;
+position: absolute;
+top: -30px;
+width: auto;
+}
+
+#s-user #notification h1 mark {
+color: #000;
+font-size: 16px;
+text-transform: uppercase;
+}
+
+#notification p + p {
+margin-top: 5px;
+}
+
+/* For now, redundantly copied from base.css. This should be applied globally. */
+#notification .action-download {
+background: transparent url("./img/control/sprite_butt_columncontrol.png") 0 -1576px no-repeat;
+border: none;
+height: 36px;
+overflow: hidden;
+position: absolute;
+right: 0;
+text-indent: -1000em;
+top: 0;
+width: 55px;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Message box */
+/* !-------------------------------------------- */
+
+/* !!! This is a temporary treatment !!! */
+
+.generic-message  {
+background: rgba(255, 255, 255, 0.6);
+font-weight: bold;
+font-size: 12px;
+height: 20px;
+left: 414px;
+overflow: hidden;
+padding: 4px 0 0 10px;
+position: absolute;
+text-align: left;
+top: 163px;
+width: 1990px;
+z-index: 100;
+}
+
+.generic-message.no-message  {
+display: none;
+}
+
+/* !============================================================================ */
+/* !============================================================================ */
+/* !OLD STUFF BELOW!!! */
+/* !============================================================================ */
+/* !Needs major cleanup and will possibly be replaced completely! */
+/* !============================================================================ */
+/* !============================================================================ */
+
+/* !-------------------------------------------- */
+/* !General layout */
+/* !-------------------------------------------- */
+
+html#s-user {
+background: #70777e url("./img/back_login.png") 0 0 no-repeat;
+}
+
+body#s-user {
+margin-top: 180px;
+overflow: hidden;
+}
+
+/* white login box */
+body#s-user div#main {
+background: rgba(255, 255, 255, 0.6);
+border: none;
+height: 556px;
+left: 414px;
+margin: 0;
+min-height: inherit;
+padding-top: 20px;
+position: absolute;
+top: 163px;
+width: 2000px;
+}
+
+body#s-user div#main section.intro {
+left: 40px; /* 1600x1200: 113px */
+position: absolute;
+top: 0;
+width: 320px;
+}
+
+body#s-user.user-anon div#main dl {
+left: 303px; /* 1600x1200: 433px */
+position: absolute;
+top: 0;
+width: 1000px;
+}
+
+/* blueish sponsor box */
+body#s-user aside.credits {
+background: rgba(181, 192, 199, 0.78);
+height: 556px;
+left: 0;
+padding-top: 20px;
+position: absolute;
+top: 163px;
+width: 414px;
+}
+
+/* !-------------------------------------------- */
+/* !User profile */
+/* !-------------------------------------------- */
+
+body#s-user.user-authorized div#main section {
+float: left;
+}
+
+body#s-user.user-authorized div#main section.profile {
+margin-left: 116px;
+width: 404px;
+}
+
+body#s-user.user-authorized div#main section.updates {
+margin-left: 85px;
+}
+
+body#s-user.user-authorized section.updates em {
+font-weight: bold;
+font-style: normal;
+}
+
+body#s-user.user-authorized section.updates p + p {
+margin-top: 10px;
+}
+
+body#s-user.user-authorized h2 {
+color: #2d87b1;
+font-size: 33px;
+font-weight: bold;
+letter-spacing: -2px;
+margin: 68px 0 46px 0;
+text-transform: uppercase;
+text-shadow: rgba(0, 0, 0, 0.5) -0px 1px 0px, rgba(255, 255, 255, 0.2) 0px -1px 0px;
+display: inline-block;
+}
+
+body#s-user.user-authorized mark {
+color: #194343;
+}
+
+body#s-user.user-authorized div#main dt {
+border-top: 1px solid #2272a3;
+clear: left;
+color: #153333;
+float: left;
+font-size: 18px;
+font-weight: bold;
+padding: 5px 0 5px 0;
+text-transform: uppercase;
+width: 131px;
+}
+
+body#s-user.user-authorized div#main dd {
+border-top: 1px solid #2272a3;
+color: #194343;
+float: left;
+font-family: "Georgia", "Times", serif;
+padding: 10px 0 5px 0;
+width: 273px;
+}
+
+body#s-user.user-authorized div#main dt:first-child, 
+body#s-user.user-authorized div#main dt:first-child + dd {
+border-top: none;
+}
+
+body#s-user.user-authorized section.updates li {
+background: transparent url("./img/icon_bullet.png") 0 0 no-repeat;
+border-bottom: 1px solid #2272a3;
+color: #194343;
+font-family: "Georgia", "Times", serif;
+margin: 5px 0 0 0;
+padding: 1px 0 5px 22px;
+max-width: 400px;
+}
+
+body#s-user.user-authorized section.updates li:last-child {
+border-bottom: none;
+}
+
+/* !-------------------------------------------- */
+/* !Login form */
+/* !-------------------------------------------- */
+
+body#s-user.user-anon form dl {
+margin-top: 240px;
+}
+
+body#s-user.user-anon form dt {
+clear: left;
+float: left;
+margin-right: 16px;
+padding-top: 6px;
+text-align: right;
+width: 220px;
+}
+
+body#s-user.user-anon form dd {
+float: left;
+width: 370px;
+}
+
+body#s-user.user-anon form dl > * {
+margin-bottom: 21px;
+}
+
+body#s-user label {
+color: #194343;
+font-size: 22px;
+text-shadow: rgba(255, 255, 255, 0.5) 0px 1px 0px, rgba(0, 0, 0, 1) 0px -1px 0px;
+text-transform: uppercase;
+font-weight: bold;
+}
+
+body#s-user input {
+background: rgba(255, 255, 255, 0.8);
+border: none;
+font-size: 20px;
+height: 36px;
+margin: 0;
+padding: 0;
+width: 100%;
+-webkit-box-shadow: inset 2px 3px 10px -2px rgba(0, 0, 0, 0.3);
+-webkit-transition: background .7s ease;
+-moz-box-shadow: inset 2px 3px 10px -2px rgba(0, 0, 0, 0.3);
+-moz-transition: background .7s ease;
+}
+
+body#s-user input:focus {
+background: #fff;
+-webkit-transition: background .7s ease;
+-moz-transition: background .7s ease;
+}
+
+body#s-user #main dl .info {
+font-family: "Georgia", "Times", serif;
+margin-bottom: 8px;
+padding-top: 0;
+}
+
+body#s-user dt.info {
+color: #2d87b1;
+}
+
+body#s-user div.main-settings input {
+font-size: 18px;
+height: 30px;
+}
+
+/* !-------------------------------------------- */
+/* !Logo & description */
+/* !-------------------------------------------- */
+
+body#s-user .intro h1 {
+background: url("./img/logo_tvb_login.png") 0 0 no-repeat;
+height: 202px;
+margin: 68px 0 25px 0;
+overflow: hidden;
+text-indent: -1000em;
+width: 308px;
+}
+
+body#s-user .intro p {
+color: #4c555e;
+font-family: "Georgia", "Times", serif;
+}
+
+body#s-user .intro p + p {
+margin-top: 5px;
+}
+
+/* !-------------------------------------------- */
+/* !Sponsor logos */
+/* !-------------------------------------------- */
+
+body#s-user aside.credits hgroup {
+margin: 68px 0 30px 155px;
+}
+
+body#s-user aside.credits a {
+background: transparent 0 0 no-repeat;
+background-size: 100%;
+margin: 0 0 30px 155px;
+overflow: hidden;
+text-indent: -1000em;
+width: 180px;
+}
+
+body#s-user aside.credits .unimed {
+background-image: url("./img/logo_amu.svg");
+height: 70px;
+}
+
+body#s-user aside.credits .baycrest {
+background-image: url("./img/logo_baycrest.svg");
+height: 80px;
+}
+
+body#s-user aside.credits .charite {
+background-image: url("./img/logo_charite.svg");
+height: 80px;
+}
+
+/* !============================================================================ */
+/* !============================================================================ */
+/* !TEMPORARY STUFF BELOW - ONLY FOR BACK-END DEVELOPERS! */
+/* !============================================================================ */
+/* !Needs major cleanup and will possibly be replaced completely! */
+/* !============================================================================ */
+/* !============================================================================ */
+
+.contentTable {
+    padding-left: 3%;
+    /*padding-top: 10px;*/
+    border-spacing: 0;
+}
+
+.contentTable td{
+    padding-right: 15px;
+}
+
+body#s-user div.main-settings table.contentTable input {
+	min-width: 350px;
+	font-size: 14px;
+	height: 20px;
+}
+
+
+body#s-user section.profile input {
+	font-size: 15px;
+	height: 24px;
+}
+
+body#s-user section.intro em {
+    color: black;
+    font-size: 15px;
+}

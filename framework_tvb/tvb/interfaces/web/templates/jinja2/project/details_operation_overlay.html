@@ -1,0 +1,99 @@
+<form id="form_edit_metadata" method="post">
+    <fieldset class="toolbar-inline">
+        <ul>
+            {% if 'operation' not in nodeType %}
+                <li>
+                    <button type="button" value="Save" tabindex="4"
+                            onclick="overlaySubmitMetadata('form_edit_metadata', 'null');"
+                            class="action action-confirm" title="Submit current changes to node attributes">Save
+                    </button>
+                </li>
+            {% else %}
+                {% if displayReloadBtn %}
+                    <li>
+                        <button type="button" value="Reload"
+                                onclick="reloadOperation({{ operationId }}, 'form_edit_metadata');"
+                                class="action action-confirm" title="Reload the selected operation">Reload
+                        </button>
+                    </li>
+                {% endif %}
+            {% endif %}
+
+            <!--MakeRelevant/MakeNotRelevant-->
+            {% with %}
+                {% set toBeStatus = 'false' if isRelevant else 'true' %}
+                {% set buttonLabel = 'Make irrelevant' if isRelevant else 'Make relevant' %}
+                {% set buttonClass = 'action-make-irrelevant' if isRelevant else 'action-make-relevant' %}
+
+                <li>
+                    <button type="button" class="action action-relevancy {{ buttonClass }}"
+                            title="Make this operation(s) {{ 'Irrelevant' if isRelevant else 'Relevant' }}"
+                            onclick="overlayMarkVisibility('{{ entity_gid }}', '{{ nodeType }}', '{{ toBeStatus }}', '{{ backPageIdentifier }}');">{{ buttonLabel }}</button>
+                </li>
+            {% endwith %}
+
+            {% if 'operation' not in nodeType %}
+                <li class="tool-removal">
+                    <button type="button" tabindex='2' value="Remove"
+                            onclick="overlayRemoveEntity({{ project.id }}, '{{ entity_gid }}', '{{ backPageIdentifier }}');"
+                            class="action action-remove" title="Delete currently selected node">Remove
+                    </button>
+                </li>
+            {% endif %}
+        </ul>
+    </fieldset>
+
+    <input type="hidden" name="nodeType" value="{{ nodeType }}"/>
+    <div class="metadata-body">
+        {% for fields_dictionary in nodeFields %}
+            <fieldset>
+                {% if (loop.index0 > 0) or ((nodeFields | length) == 1) %}
+                    <legend>Generic Metadata</legend>
+                {% endif %}
+
+                {% if (loop.index0 == 0) and ((nodeFields | length) > 1) and 'operation' not in nodeType %}
+                    <legend>Scientific Metadata</legend>
+                {% endif %}
+
+                {% if (loop.index0 == 0) and ((nodeFields | length) > 1) and 'operation' in nodeType %}
+                    <legend>Summary Input Parameters</legend>
+                {% endif %}
+
+                <dl>
+                    {% for 	field_key in (fields_dictionary.keys() | sort) %}
+                        {% set  field_def = fields_dictionary[field_key] %}
+                        {% if field_def and not field_def.get('hidden')=='True' %}
+                            <dt class="">
+                                <label for="{{ field_key }}">{{ field_def['name'] }} :</label>
+                            </dt>
+                            <dd>
+                                <p class="field-data">
+                                    {% if field_key != 'data_state' %}
+                                        <input id="{{ field_key }}" type="text" name="{{ field_key }}"
+                                               class="inputField" tabindex="3"
+                                               value="{{ field_def.get('value', '') if field_def.get('value', '') != none else '' }}"
+                                                {{ 'readonly' if field_def.get('readonly') == 'True' }}
+                                                {{ ("disabled='disabled'") | safe if field_def.get('disabled') == 'True' }}/>
+                                    {% else %}
+                                        <select id="{{ field_key }}" name="{{ field_key }}" class="inputField"
+                                                tabindex="3">
+                                            {% for state in allStates %}
+                                                <option value="{{ state }}" {{ 'selected' if state == field_def['value'] }}>{{ allStates[state] }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endif %}
+                                </p>
+                            </dd>
+                        {% endif %}
+
+                        {% if field_def and field_def.get('hidden') == 'True' %}
+                            <input id="{{ field_key }}" type="hidden" name="{{ field_key }}"
+                                   value="{{ field_def.get('value', '') }}"/>
+                        {% endif %}
+                    {% endfor %}
+                </dl>
+            </fieldset>
+        {% endfor %}
+    </div>
+</form>
+

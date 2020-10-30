@@ -1,0 +1,12 @@
+<p class="field-data">
+<input type="number" name="{{ field.name }}" id="{{ field.name }}" tabindex="1"
+    {{ 'required' if field.required }} {{ 'disabled' if field.disabled }}
+    {% if field.value is not none %}
+       value="{{ field.value }}"
+    {% endif %}
+    {% if field.min is not none %} min="{{ field.min }}" {% endif %}
+    {% if field.max is not none %} max="{{ field.max }}" {% endif %}
+    {% if field.step %} step="{{ field.step }}" {% endif %}
+    class="form-control"
+>
+</p>

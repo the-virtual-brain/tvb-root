@@ -1,0 +1,302 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+/**
+ * This file should contain CSS related to SVG drawings in TVB.
+ * We recommend only the SVG CSS to go here, because this one will get exported with TVB SVG figures.
+ */
+
+
+.vt-pm-sign { font-size: small; stroke: #999; font-family: "Helvetica", "Arial", sans-serif;}
+.vt-node-labels { font-size: small; font-family: "Helvetica", "Arial", sans-serif;}
+.pca-text { font-size: small; font-family: "Helvetica", "Arial", sans-serif;}
+#pca-viewer-id { padding-top: 40px; padding-left: 20px; }
+
+.axis path,
+.axis line { fill: none; stroke: black; shape-rendering: crispEdges;}
+.line-plot { fill: none; stroke: blue; }
+
+.brush { fill-opacity: 0.2; stroke: red }
+.instructions { font-size: small; font-family: "Helvetica", "Arial", sans-serif; }
+.matrix-text { font-size: medium; font-family: "Helvetica", "Arial", sans-serif;}
+.node-labels { font-size: small; font-family: "Helvetica", "Arial", sans-serif; }
+
+/* added while developing time series visualizer */
+.tv-fig-bg { fill: #ddd }
+.tv-data-bg { fill: white }
+.tv-resizer { fill: #0af; fill-opacity: 0.1; }
+.tv-ctx-line path { fill: none; stroke: black; stroke-width: 1px }
+.tv-ctx-error path { fill: blue; fill-opacity:0.3; stroke: none; stroke-width: 1px }
+/* used in the matrix plots to almost hide matrix elements
+    not falling within a user selected range on colorbar */
+.tv-colorbar-unselected { fill-opacity: 0.2 }
+
+
+/* used to style numpy slices*/
+.npy-slice { font-family: monospace; color: #002580; }
+
+.slice-info, .matrix-info { margin-top: 10px;  margin-left: 20px;}
+
+/************** START -- TS from TSVolume Viewer ********/
+
+.tsv-axis {
+	shape-rendering: crispEdges;
+}
+
+.tsv-x.tsv-axis line {
+    stroke: lightgrey;
+}
+
+.tsv-x.tsv-axis .minor {
+	stroke-opacity: 0.5;
+}
+
+.tsv-x.tsv-axis path {
+	display: none;
+}
+
+.tsv-y.tsv-axis line,
+.tsv-y.tsv-axis path {
+    fill: none;
+    stroke: #000;
+}
+
+.tsv-svg-component {
+    background-color: #d3d3d3;
+}
+
+.tsv-colored-line {
+    fill: none;
+    stroke-width: 1px;
+    stroke-opacity: 0.3;
+}
+
+.tsv-colored-line.tsv-highlight {
+    stroke-width: 2px;
+    stroke-opacity: 1;
+}
+
+g.tsv-moving {
+    opacity: 0.1;
+}
+
+.tsv-colored-line.mini {
+    stroke-width: 1px;
+    stroke-opacity: 1;
+}
+
+.tsv-text-highlight {
+    fill: white;
+    text-shadow: 2px 2px #1122aa;
+}
+
+.tsv-brush {
+	background-color: white;
+}
+
+.tsv-brush .extent {
+    stroke: #fff;
+    fill-opacity: .5;
+    shape-rendering: crispEdges;
+}
+
+.tsv-line {
+    stroke: steelblue;
+    stroke-width: 1;
+    fill: none;
+    clip-path: url(#clip);
+}
+/************** END -- TS from TSVolume Viewer ********/
+
+
+/************** START -- Phase plane ********/
+
+.dynamicChart {
+    width: 100%;
+    height: 99%;
+    padding: 5px;
+    box-sizing: border-box;
+    background-color: #fafafd;
+}
+
+.dynamicChart .title{
+    text-anchor: middle;
+    font-size: 20px;
+}
+
+.phasePlane line{
+    stroke: #88A;
+    stroke-width: 1;
+    /*marker-start: url(#markerCircle);*/
+    marker-end: url("/burst/dynamic/#markerArrow");
+}
+
+.dynamicChart .overlay{
+    fill:none;
+    cursor: crosshair;
+}
+
+.dynamicChart .traj{
+    fill: none;
+    stroke-width: 2;
+}
+
+.dynamicChart #markerArrow{
+    stroke: #88B;
+}
+
+.dynamicChart .axis line, .dynamicChart .axis path{
+    shape-rendering: crispEdges;
+    fill: none;
+    stroke: black;
+}
+
+.dynamicChart .axisZero line, .dynamicChart .axisZero path {
+    shape-rendering: auto;
+    fill: none;
+    stroke: #ddd;
+}
+
+.phaseLine line{
+    stroke-width: 4;
+    /*marker-start: url(#markerCircle);*/
+    marker-end: url("/burst/dynamic/#markerArrow");
+}
+
+.dynamicChart .axislabel{
+    font-size: 15px;
+}
+
+.dynamicChart .axis text{
+}
+
+.node {
+  font: 300 16px "Helvetica Neue", Helvetica, Arial, sans-serif;
+  fill: #bbb;
+}
+
+.node:hover {
+  fill: #000;
+}
+
+.link {
+  stroke: steelblue;
+  stroke-opacity: 0.4;
+  fill: none;
+  pointer-events: none;
+}
+
+.node:hover,
+.node-source,
+.node-target {
+  font-weight: 700;
+}
+
+.node-source {
+  fill: #2ca02c;
+}
+
+.node-target {
+  fill: #d62728;
+}
+
+.link-source,
+.link-target {
+  stroke-opacity: 1;
+  stroke-width: 2px;
+}
+
+.link-source {
+  stroke: #d62728;
+}
+
+.link-target {
+  stroke: #2ca02c;
+}
+
+.diagram-svg {
+  width: 100%;
+  height: 90%;
+  display: block;
+  margin: auto;
+}
+
+.switch-input {
+  display: none;
+}
+.switch-label {
+  position: relative;
+  display: inline-block;
+  min-width: 112px;
+  cursor: pointer;
+  font-weight: 500;
+  text-align: left;
+  margin: 16px;
+  padding:0 0 0 44px;
+}
+.switch-label:before, .switch-label:after {
+  content: "";
+  position: absolute;
+  margin: 0;
+  outline: 0;
+  top: 50%;
+  -ms-transform: translate(0, -50%);
+  -webkit-transform: translate(0, -50%);
+  transform: translate(0, -50%);
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}
+.switch-label:before {
+  left: 1px;
+  width: 34px;
+  height: 14px;
+  background-color: #cdcbcb;
+  border-radius: 8px;
+}
+.switch-label:after {
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background-color: #7c7b7b;
+  border-radius: 50%;
+  box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.14), 0 2px 2px 0 rgba(0, 0, 0, 0.098), 0 1px 5px 0 rgba(0, 0, 0, 0.084);
+}
+.switch-label .toggle-on {
+  display: none;
+}
+.switch-label .toggle-off {
+  display: inline-block;
+}
+.switch-input:checked + .switch-label:before {
+  background-color: #7c7b7b;
+}
+.switch-input:checked + .switch-label:after {
+  background-color: #cdcbcb;
+  -ms-transform: translate(80%, -50%);
+  -webkit-transform: translate(80%, -50%);
+  transform: translate(80%, -50%);
+}
+.switch-input:checked + .switch-label .toggle-on {
+  display: inline-block;
+}
+.switch-input:checked + .switch-label .toggle-off {
+  display: none;
+}
+
+/************** END -- Phase plane ********/

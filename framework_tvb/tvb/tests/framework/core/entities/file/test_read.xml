@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+ 
+		
+<tvb_data>
+	<status>
+		5-FINISHED
+	</status>
+	<range_values>
+		None
+	</range_values>
+	<gid>
+		497b3d59-b3c1-11e1-b2e4-68a86d1bd4fa
+	</gid>
+	<parameters>
+		{&quot;cff&quot;: &quot;/WORK/TVB/tvb-root/tvb_data/tvb_data/cff/connectivities.cff&quot;, &quot;uid&quot;: &quot;demoCFF&quot;}
+	</parameters>
+	<fk_launched_in>
+		496e1b21-b3c1-11e1-9818-68a86d1bd4fa
+	</fk_launched_in>
+	<fk_from_algo>
+		{&quot;classname&quot;: &quot;CFF_Importer&quot;, &quot;identifier&quot;: null, &quot;module&quot;: &quot;tvb.adapters.uploaders.cff_importer&quot;}
+	</fk_from_algo>
+	<start_date>
+		2012-06-11,15-30-54
+	</start_date>
+	<visible>
+		True
+	</visible>
+	<completion_date>
+		2012-06-11,15-30-55
+	</completion_date>
+	<meta_data>
+		{&quot;Data_State&quot;: &quot;RAW_DATA&quot;, &quot;Data_Subject&quot;: &quot;John Doe&quot;, &quot;Source_Operation_Category&quot;: &quot;Uploaders-&gt;Upload CFF-&gt;CFF_Importer&quot;, &quot;Source_Author&quot;: &quot;TVB system&quot;, &quot;Creation_Date&quot;: &quot;2012-06-11,15-30-54&quot;}
+	</meta_data>
+	<user_group>
+		cff_74
+	</user_group>
+	<fk_operation_group>
+		null
+	</fk_operation_group>
+	<additional_info>
+		
+	</additional_info>
+</tvb_data>

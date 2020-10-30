@@ -1,0 +1,44 @@
+<div>
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/js/tvbviz.js?{{ currentVersionJS }}"></script>
+    <link rel="stylesheet" href="/static/style/subsection_svg.css?{{ currentVersionJS }}" type="text/css"/>
+
+    <div id="cross-coherence-viewer-id"></div>
+
+    <script type="text/javascript">
+        function initCrossCoherence(width, height) {
+            $("#cross-coherence-viewer-id").empty();
+            const div = d3.select("#cross-coherence-viewer-id").attr("style", "width:" + width + "px; height:" + height + "px;");
+            const svg = div.append("svg").attr("width", width).attr("height", height);
+            const plot = tv.plot.coh().w(width).h(height);
+            // set data on plotter
+            const frequency = tv.ndar.from($.parseJSON('{{ frequency }}'));
+            const coherence = tv.ndar.from($.parseJSON('{{ matrix_data }}'));
+            coherence.shape = $.parseJSON('{{ matrix_shape }}');
+            coherence.strides = $.parseJSON('{{ matrix_strides  }}');
+            plot.f(frequency).coh(coherence);
+            // run the plotter on specified svg element
+            plot(svg);
+            // add usage notes
+            tv.util.usage(div, "Frequency band selector (left)",
+                ["Click and drag to select frequency band",
+                    "Drag highlighted area to move",
+                    "Drag borders to expand or reduce area",
+                    "Click outside highlighted area to cancel selection"]);
+            tv.util.usage(div, "Coherence matrix view (right)",
+                ["Hover over matrix entries to inspect value",
+                    "Drag in colorbar to select and show entries in a range of values"]);
+        }
+        // For the burst Preview part
+        function launchViewer(width, height) {
+            initCrossCoherence(width, height);
+        }
+
+        $(document).ready(function () {
+            if (! {{ 'true' if isPreview is defined else 'false' }}) {
+                initCrossCoherence(1200, 600);
+            }
+        });
+    </script>
+
+</div>

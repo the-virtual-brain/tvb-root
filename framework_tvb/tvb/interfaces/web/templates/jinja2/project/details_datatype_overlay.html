@@ -1,0 +1,81 @@
+<div>
+    <!--! Overlay: Metadata -->
+    <section id="overlayTabContent_0" class="node-data node-metadata active">
+        {% include 'project/details_operation_overlay.html' %}
+    </section>
+    {% macro displayAlgoGroupButtons(transient_group, category, launchAsync) -%}
+        {% set groupName = transient_group.name %}
+        {% set groupDescription = transient_group.description %}
+        {% set algorithmsList = transient_group.children %}
+
+        {% if groupName or groupDescription %}
+            <h5> {{ groupName }} - {{ groupDescription }}</h5>
+        {% endif %}
+
+        <ul>
+            {% for algo in (algorithmsList | sort(attribute='displayname')) %}
+                <li>
+                    {% set paramName = algo.parameter_name %}
+                    {% set displayName = algo.displayname %}
+                    {% set isPartOfGroup = isGroup and category != 'view' %}
+                    {% set url = '/flow' if not isPartOfGroup else '/flow/prepare_group_launch/' ~ entity_gid %}
+                    {% set url = url ~ '/' ~ (algo.fk_category | string) ~ '/' ~ (algo.id | string) %}
+                    {% set launchParamName = paramName if not isPartOfGroup else 'range_param_name' %}
+                    {% set launchParamVal = entity_gid if not isPartOfGroup else paramName %}
+
+                    <button class="action action-{{ category }} {{ category }}-{{ displayName | lower | replace(' ', '') | safe }}"
+                            onclick="launchAdapter('{{ url }}', '{{ launchParamName }}', '{{ launchParamVal }}', '{{ backPageIdentifier }}', {{ launchAsync }});">
+                        {{ displayName }}
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+    {%- endmacro %}
+
+    <!--! Overlay: Analyzers -->
+    <section id="overlayTabContent_1" class="node-data node-analyze ">
+        {% if categories and 'Analyze' in categories %}
+            <div>
+                {% for transient_group in (categories['Analyze'] | sort(attribute='name')) %}
+                    {{ displayAlgoGroupButtons(transient_group, 'analyze', 'true') }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+    <!--! Overlay: Visualizers -->
+    <section id="overlayTabContent_2" class="node-data node-view ">
+        {% if categories and 'View' in categories %}
+            <div>
+                {% for transient_group in (categories['View'] | sort(attribute='name')) %}
+                    {{ displayAlgoGroupButtons(transient_group, 'view', 'false') }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+    <!--! Overlay: Project Links -->
+    <section id="overlayTabContent_3" class="node-data node-link ">
+        <div id="linkable_projects_div_{{ entity_gid }}" class="link-incoming">
+            {% include 'project/linkable_projects.html' %}
+        </div>
+    </section>
+
+    <!--! Overlay: Data Exporters -->
+    <section id="overlayTabContent_4" class="node-data node-export ">
+
+        {% if exporters %}
+            <ul>
+                {% for exporter in exporters %}
+                    <li>
+                        <button class="action action-export" onclick="window.location='/project/downloaddata/{{ entity_gid }}/{{ exporter }}';">{{ exporters[exporter] }}</button>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <label>No exporters are currently available for this DataType.</label>
+        {% endif %}
+
+    </section>
+</div>
+

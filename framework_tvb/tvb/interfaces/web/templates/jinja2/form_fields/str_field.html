@@ -1,0 +1,9 @@
+<p class="field-data">
+<input type="text" name="{{ field.name }}" id="{{ field.name }}" tabindex="1"
+    {{ 'required' if field.required }} {{ 'disabled' if field.disabled }}
+    {% if field.value is not none %}
+       value="{{ field.value }}"
+    {% endif %}
+    class="form-control"
+>
+</p>

@@ -1,0 +1,57 @@
+<!--! =========================================== -->
+<!--! Show multiple Algorithms on the same page -->
+<!--! =========================================== -->
+<div id="main" class="columnized colscheme-2-even">
+
+    {% for part in [algorithms[:((algorithms | length)/2) | int], algorithms[((algorithms | length)/2) | int :]] %}
+         <section class="view-column col-2">
+            <h4><mark>Choose</mark> Algorithm</h4>
+            {% for algorithm in part %}
+                <fieldset>
+                    <legend>{{ algorithm.displayname }}</legend>
+
+                    {% if showOnlineHelp and algorithm.description is not none %}
+                        <nav class="inline-menu helper">
+                            <a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
+                            <div class="extension">
+                                <div class="dropdown-pane">
+                                    <mark>{{ algorithm.displayname }}</mark>
+                                        <div class="dropdown-pane-overlay">{{ algorithm.description | replace('\n', '<br/>') | safe }}</div>
+                                </div>
+                            </div>
+                        </nav>
+                    {% endif %}
+
+                    <form id="{{ algorithm.id }}">
+                        {{ algorithm.form | safe }}
+                        <button class="action action-confirm" onclick="submitParentForm('{{ algorithm.id }}', '{{ algorithm.link }}');return false;">Launch</button>
+                    </form>
+                </fieldset>
+             {% endfor %}
+         </section>
+    {% endfor %}
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('.adaptersDiv select').each(function () {
+                if (!this.disabled)
+                    if (this.onchange)
+                        this.onchange();
+            });
+            $('.adaptersDiv input[type="radio"]').each(function () {
+                if (!this.disabled) if (this.checked) if (this.onchange)
+                    this.onchange();
+            });
+        });
+    </script>
+
+    <aside class="header-component toolbar can-extend auto-extends">
+        <h3>Group of Algorithms</h3>
+        <div class="extension">
+            <div class="dropdown-pane">
+                <ul></ul>
+            </div>
+        </div>
+    </aside>
+
+</div>

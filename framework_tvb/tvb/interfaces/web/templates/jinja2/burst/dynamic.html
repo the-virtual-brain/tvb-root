@@ -1,0 +1,101 @@
+<div id="main" class="columnized colscheme-2-even">
+    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
+    <link rel="stylesheet" type="text/css" href="/static/style/subsection_svg.css?{{ currentVersionJS }}"/>
+
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static/js/phase_plane_d3.js"></script>
+    <script type="text/javascript" src="/static/jquery/jquery.ba-throttle-debounce.js"></script>
+    <script type="text/javascript" src="/static/js/canvas2image.js"></script>
+    <script type="text/javascript" src="/static/js/bursts_dynamic.js"></script>
+
+    <section class="configure-stimulus-shape view-column col-1">
+        <h4> Model parameter configuration </h4>
+            <div id="left_input_tree">{{ model_name_fragment | safe }}{{ model_form | safe }}
+            {% import 'flow/generate_help_tooltip.html' as ght with context %}
+                <fieldset>
+                    <dl>
+                        <dt></dt>
+                        <dd>
+                            {% for model in model_description %}
+                                <div id="data_model_{{ model.name }}" style="display:none">
+                                    {{ ght.generate_help_tooltip(model) }}
+                                </div>
+                            {% endfor %}
+                        </dd>
+                    </dl>
+                </fieldset>
+            </div>
+
+        <fieldset id='div_spatial_model_params'></fieldset>
+
+        <h4> Phase plane viewer settings </h4>
+        <div id="integrator_input_tree">{{ integrator_form | safe }}</div>
+
+        <fieldset id='div_phase_plane_settings'></fieldset>
+    </section>
+
+    <section class="configure-stimulus-shape view-column">
+
+        <svg class="dynamicChart" id="phasePlane" >
+            <defs>
+                <marker id="markerCircle" markerWidth="8" markerHeight="8" refx="5" refy="5">
+                    <circle cx="5" cy="5" r="2"/>
+                </marker>
+                <marker id="markerArrow" markerWidth="5" markerHeight="5" refx="1" refy="2"
+                       orient="auto">
+                    <path d="M0,0 L0,4 L4,2 L0,0" />
+                </marker>
+            </defs>
+        </svg>
+
+        <svg class="dynamicChart" id="phaseGraph" display="none">
+            <defs>
+                <marker id="markerCircle" markerWidth="8" markerHeight="8" refx="5" refy="5">
+                    <circle cx="5" cy="5" r="2"/>
+                </marker>
+                <marker id="markerArrow" markerWidth="5" markerHeight="5" refx="1" refy="2"
+                       orient="auto">
+                    <path d="M0,0 L0,4 L4,2 L0,0" />
+                </marker>
+            </defs>
+        </svg>
+
+    </section>
+
+    <form id="base_spatio_temporal_form">
+	    <aside class="header-component toolbar can-extend auto-extends">
+	      <h3>Dynamic</h3>
+		  <div class="extension">
+		   <div class="dropdown-pane">
+	        <ul>
+
+                <li>
+                    <button class="action action-download" type="button" id="ctrl-action-export">
+                    	Save Figure
+                    </button>
+                </li>
+
+	        	<li>
+                    <button class="action action-confirm">
+                    	Save new parameter configuration
+                    </button>
+                </li>
+
+	        </ul>
+	       </div>
+	      </div>
+	    </aside>
+	</form>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            dynamicPage.main('{{ dynamic_gid }}');
+            fillDoc();
+            $("#ctrl-action-export").click(function(){
+                C2I_exportFigures({suggestedName:"region-parameters"});
+                return false;
+            });
+
+        });
+    </script>
+</div>

@@ -1,0 +1,2674 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by @twotribes, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: GENERAL APPLICATION */
+/* Version: Odinson / 2.30.0 */
+/* -------------------------------------------- */
+
+/* !-------------------------------------------- */
+/* !Reset-styles */
+/* !-------------------------------------------- */
+
+html, body, ul, li, dl, dt, dd, p, 
+h1, h2, h3, h4, h5, h6, fieldset, legend {
+border: none;
+list-style: none;
+margin: 0;
+padding: 0;
+}
+
+mark {
+background: none;
+}
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Basics */
+/* !-------------------------------------------- */
+
+/* !!! needs background alternatives for Chrome 11+/Safari Nightly */
+html {
+background-color: #838590;
+background-image: -webkit-gradient(radial, center 20%, 0, center 20%, 600, from(rgba(182, 182, 182, 0.7)), to(rgba(182, 182, 182, 0))), url("./img/back_master_top.png"), url("./img/back_master_left.png"), url("./img/back_master_right.png"), url("./img/back_master.png");
+background-image: -moz-radial-gradient(center 20%, circle farthest-corner, rgba(182, 182, 182, 0.7), rgba(182, 182, 182, 0)), url("./img/back_master_top.png"), url("./img/back_master_left.png"), url("./img/back_master_right.png"), url("./img/back_master.png");
+background-position: center 0, 0 top, left 0, right 0, 0 0;
+background-repeat: no-repeat, repeat-x, repeat-y, repeat-y, repeat;
+font-family: "Helvetica", "Arial", sans-serif;
+font-size: small;
+min-height: 1000px;
+overflow: hidden;
+}
+
+a {
+color: #646a6f;
+display: block;
+outline: 0;
+text-decoration: none;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+a:hover, 
+a:active {
+color: #c8d4de;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Header bar */
+/* !-------------------------------------------- */
+
+header {
+background: #8d8b97 url("./img/nav/back_header.png") 0 0 repeat-x;
+color: #646a6f;
+font-size: 12px;
+height: 60px;
+left: 0;
+margin: 0;
+position: fixed;
+top: 0;
+width: 100%;
+z-index: 3; /* Only necessary for Chrome v22+ */
+-webkit-box-shadow: 0 -3px 10px 2px rgba(0, 0, 0, 0.7);
+-moz-box-shadow: 0 -3px 10px 2px rgba(0, 0, 0, 0.7);
+box-shadow: 0 -3px 10px 2px rgba(0, 0, 0, 0.7);
+}
+
+header .header-component {
+float: left;
+height: 100%;
+}
+
+header .project {
+background: #3e4252 url("./img/nav/back_header_trigger.png") 0 0 repeat-x;
+position: relative;
+width: 106px;
+}
+
+header nav {
+background: #3e4252 url("./img/nav/back_header_trigger.png") 0 0 repeat-x;
+position: relative;
+width: 185px;
+}
+
+header .back-nav {
+position: relative;
+width: 50px;
+}
+
+header hgroup {
+padding-left: 42px;
+position: relative;
+}
+
+header .message-container {
+float: none;
+position: absolute;
+right: 114px;
+top: 0;
+width: 393px;
+}
+
+/* this is just an empty placeholder for toolbars & controllers. They are actually located inside div#main and get hooked up here visually */
+header .actionhook {
+background: #3e4252 url("./img/nav/back_header_trigger.png") 0 0 repeat-x;
+float: none;
+position: absolute;
+right: 0;
+top: 0;
+width: 114px;
+}
+
+/* smuggling in the idle icon */
+header .actionhook:before {
+background: transparent url("./img/nav/butt_toolbar.png") 0 -96px no-repeat;
+content: "";
+display: block;
+height: 42px;
+right: 33px;
+position: absolute;
+top: 6px;
+width: 57px;
+}
+
+/* the actual toolbar & controller */
+#main .header-component.toolbar,
+#main .header-component.controller {
+background: #3e4252 url("./img/nav/back_header_trigger.png") 0 0 repeat-x;
+height: 60px;
+position: fixed;
+right: 0;
+top: 0;
+width: 114px;
+z-index: 100; /* Only necessary for Chrome v22+ */
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Project widget */
+/* !-------------------------------------------- */
+
+header .project h3 {
+background: transparent url("./img/nav/icon_nav_file.png") 13px 3px no-repeat;
+font-size: 22px;
+margin-top: 18px;
+padding-left: 40px;
+text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0;
+}
+
+header .project.can-extend:not(.auto-extends):hover h3 {
+background-position: 13px -85px;
+color: #c8d4de;
+}
+
+header .project h3 mark {
+display: none;
+}
+
+header .project .ops-beacon {
+background: transparent url("./img/nav/icon_opsbeacon_idle.png") 0 0 no-repeat;
+height: 51px;
+overflow: hidden;
+position: absolute;
+right: 0;
+text-indent: -1000em;
+top: 0;
+width: 21px;
+}
+
+header .project .ops-beacon.ops-pending {
+background-image: url("./img/nav/icon_opsbeacon_active.png");
+}
+
+/* Design for project dropdown */
+header .project .extension:before {
+width: 295px;
+}
+
+header .project .dropdown-pane {
+background: transparent url("./img/nav/back_project_inspector.png") 0 0 repeat-y;
+color: #8b8d97;
+padding: 18px 0 0 0;
+width: 308px;
+}
+
+header .project .dropdown-pane:after {
+background: transparent url("./img/nav/back_project_inspector_bottom.png") 0 bottom no-repeat;
+bottom: -50px;
+content: "";
+display: block;
+left: 0;
+position: absolute;
+height: 50px; /* this is a trick, cropping the too tall image */
+width: 308px;
+}
+
+header .project h4 {
+color: #646a6f;
+font-size: 15px;
+margin: 10px 13px 0 20px;
+}
+
+header .project .extension p {
+background: transparent url("./img/line_dark.png") 0 bottom repeat-x;
+font-weight: bold;
+margin: 0 13px 20px 0;
+padding: 5px 0 20px 20px;
+}
+
+header .project .extension p a {
+color: #8b8d97;
+}
+
+header .project .extension p a:hover {
+color: #c8d4de;
+}
+
+header .project .extension dl {
+margin-right: 13px;
+padding: 0 0 0 20px;
+}
+
+header .project dt {
+background: transparent url("./img/line_light.png") 0 top repeat-x;
+float: left;
+line-height: 14px;
+padding: 10px 0 0 20px;
+margin: 0 0 5px -20px;
+width: 198px;
+}
+
+header .project dt mark {
+color: #c8d4de;
+font-weight: bold;
+}
+
+header .project dt mark:after {
+content: ":";
+}
+
+header .project dd {
+background: transparent url("./img/line_light.png") 0 top repeat-x;
+float: right;
+padding: 10px 0 0 0;
+margin-bottom: 5px;
+width: 77px;
+}
+
+/* !!! Non-standard button design. May need harmonizing. */
+header .project dd a {
+background: transparent url("./img/nav/butt_launch_project.png") 0 0 no-repeat;
+min-height: 14px;
+padding-left: 20px;
+text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0;
+}
+
+header .project dt:first-child, 
+header .project dt:first-child + dd {
+background: none;
+}
+
+/* Counters for background operations of this project */
+header .project .extension ul {
+margin-right: 13px;
+padding: 20px 0 0 20px;
+}
+
+header .project li {
+background: transparent 0 0 no-repeat;
+float: left;
+height: 22px;
+margin: 0 5px 0 0;
+overflow: visible;
+padding: 0;
+position: relative;
+width: 83px;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+header .project .extension .ops-pending {
+background-color: #4fa9e6;
+background-image: url("./img/nav/back_ops_pending.png");
+}
+header .project .extension .ops-error {
+background-color: #bc1841;
+background-image: url("./img/nav/back_ops_error.png");
+}
+header .project .extension .ops-done {
+background-color: #408343;
+background-image: url("./img/nav/back_ops_done.png");
+}
+
+header .project li a {
+color: #c8d4de;
+font-weight: bold;
+height: auto;
+left: 0;
+position: absolute;
+text-align: center;
+top: 5px;
+width: 100%;
+z-index: 550;
+}
+
+header .project li mark {
+color: #fff;
+display: block;
+padding-bottom: 10px;
+}
+
+header .project dl:after,
+header .project ul:after {
+clear: both;
+content: "";
+display: block;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Menu widget */
+/* !-------------------------------------------- */
+
+header nav h3 {
+background: transparent url("./img/nav/butt_menu.png") 0 -79px no-repeat;
+height: 25px;
+left: 20px;
+/* There's a special place reserved in hell for the developers of Firefox' rendering engine. Messing w/ click event when overflow: hidden is set here... I mean... What the fuck???? */
+/* overflow: hidden; */
+position: absolute;
+text-indent: -1000em;
+top: 17px;
+width: 131px;
+}
+
+header nav.can-extend h3 {
+background-position: 0 0;
+}
+
+header nav.can-extend:not(.auto-extends):hover h3 {
+background-position: 0 -158px;
+}
+
+header nav .extension {
+left: -10px;
+}
+
+header nav .extension:before {
+width: 1038px;
+}
+
+header nav .dropdown-pane {
+background: transparent url("./img/nav/back_menu.png") 0 0 repeat-y;
+padding: 0 0 0 26px;
+width: 1048px;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+header nav .dropdown-pane:after {
+background: transparent url("./img/nav/back_menu_bottom.png") 0 0 no-repeat;
+bottom: -64px;
+content: "";
+display: block;
+left: 0;
+position: absolute;
+height: 64px;
+width: 1048px;
+}
+
+header nav ul {
+position: relative;
+top: 42px;
+z-index: 510; /* above footer graphics of the dropdown */
+}
+
+header nav li {
+background: transparent url("./img/nav/img_ss_generic1.png") 0 0 no-repeat;
+float: left;
+font-size: 21px;
+font-weight: bold;
+margin: 0 20px 25px 0;
+min-height: 56px;
+padding: 0 0 10px 0;
+text-shadow: rgba(0, 0, 0, 0.3) 1px 1px 0;
+width: 478px;
+}
+
+header nav li:last-child {
+margin-bottom: 0;
+}
+
+header nav li.active a {
+color: #c8d4de;
+}
+
+header nav li a {
+display: block;
+height: 100%;
+min-height: 56px;
+padding: 0 0 0 135px;
+width: 100%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+header nav li p + p {
+font-size: 14px;
+text-shadow: none;
+}
+
+header nav ul:after {
+clear: both;
+content: "";
+display: block;
+}
+
+/* TODO: Real nav images for section USER */
+/* Not sure whether we're going to use them. */
+header nav li#nav-user-login {
+background-image: url("./img/nav/img_ss_generic1.png");
+}
+header nav li#nav-user-account {
+background-image: url("./img/nav/img_ss_generic2.png");
+}
+
+/* TODO: Real nav images for section PROJECT */
+header nav li#nav-project-operations {
+background-image: url("./img/nav/img_ss_generic1.png");
+}
+header nav li#nav-project-data {
+background-image: url("./img/nav/img_ss_generic2.png");
+}
+header nav li#nav-project-properties {
+background-image: url("./img/nav/img_ss_generic3.png");
+}
+header nav li#nav-project-list {
+background-image: url("./img/nav/img_ss_generic4.png");
+}
+
+
+/* TODO: Real nav images for section BURST */
+header nav li#nav-burst-viewbrain {
+background-image: url("./img/nav/img_ss_generic1.png");
+}
+header nav li#nav-burst-vieweeg {
+background-image: url("./img/nav/img_ss_generic2.png");
+}
+header nav li#nav-burst-viewhistogram {
+background-image: url("./img/nav/img_ss_generic3.png");
+}
+header nav li#nav-burst-viewfourier {
+background-image: url("./img/nav/img_ss_generic4.png");
+}
+header nav li#nav-burst-viewtimeseries {
+background-image: url("./img/nav/img_ss_generic5.png");
+}
+header nav li#nav-burst-viewtopographic {
+background-image: url("./img/nav/img_ss_generic6.png");
+}
+header nav li#nav-burst-viewwavelet {
+background-image: url("./img/nav/img_ss_generic7.png");
+}
+header nav li#nav-burst-burst {
+background-image: url("./img/nav/img_ss_generic5.png");
+}
+header nav li#nav-burst-dynamic {
+background-image: url("./img/nav/img_ss_generic1.png");
+}
+
+/* TODO: Real nav images for section STIMULUS */
+header nav li#nav-stimulus-regionstim {
+background-image: url("./img/nav/img_ss_generic2.png");
+}
+header nav li#nav-stimulus-surfacestim {
+background-image: url("./img/nav/img_ss_generic3.png");
+}
+header nav li#nav-stimulus-regionmodel {
+background-image: url("./img/nav/img_ss_generic4.png");
+}
+header nav li#nav-stimulus-surfacemodel {
+background-image: url("./img/nav/img_ss_generic5.png");
+}
+
+/* TODO: Real nav images for section ANALYZE */
+header nav li#nav-analyze-crosscorr {
+background-image: url("./img/nav/img_ss_generic1.png");
+}
+header nav li#nav-analyze-ccpearson {
+background-image: url("./img/nav/img_ss_generic1.png");
+}
+header nav li#nav-analyze-fourier {
+background-image: url("./img/nav/img_ss_generic2.png");
+}
+header nav li#nav-analyze-timeseries {
+background-image: url("./img/nav/img_ss_generic3.png");
+}
+header nav li#nav-analyze-coherence {
+background-image: url("./img/nav/img_ss_generic4.png");
+}
+header nav li#nav-analyze-complexcoherence {
+background-image: url("./img/nav/img_ss_generic4.png");
+}
+header nav li#nav-analyze-covariance {
+background-image: url("./img/nav/img_ss_generic5.png");
+}
+header nav li#nav-analyze-components {
+background-image: url("./img/nav/img_ss_generic6.png");
+}
+header nav li#nav-analyze-wavelet {
+background-image: url("./img/nav/img_ss_generic5.png");
+}
+header nav li#nav-analyze-ica {
+background-image: url("./img/nav/img_ss_generic8.png");
+}
+header nav li#nav-analyze-balloon {
+background-image: url("./img/nav/img_ss_generic6.png");
+}
+header nav li#nav-analyze-bct {
+background-image: url("./img/nav/img_ss_generic9.png");
+}
+header nav li#nav-analyze-bctcentrality {
+background-image: url("./img/nav/img_ss_generic9.png");
+}
+header nav li#nav-analyze-bctclustering {
+background-image: url("./img/nav/img_ss_generic9.png");
+}
+header nav li#nav-analyze-bctdegree {
+background-image: url("./img/nav/img_ss_generic9.png");
+}
+header nav li#nav-analyze-bctdistance {
+background-image: url("./img/nav/img_ss_generic9.png");
+}
+header nav li#nav-analyze-bctdensity {
+background-image: url("./img/nav/img_ss_generic9.png");
+}
+
+/* TODO: Real nav images for section VIEW */
+/* As this section will have NO subsections, we're not going to use it. Just in case. */
+header nav li#nav-connectivity-local {
+background-image: url("./img/nav/img_ss_generic1.png");
+}
+header nav li#nav-connectivity-connectivity {
+background-image: url("./img/nav/img_ss_generic2.png");
+}
+header nav li#nav-connectivity-allen {
+background-image: url("./img/nav/img_ss_generic3.png");
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Header Back button */
+/* !-------------------------------------------- */
+
+header .back-nav:before {
+background: transparent url("./img/nav/back_header_headline_left_back.png") 0 0 no-repeat;
+content: "";
+display: block;
+height: 58px; /* a little awkward */
+left: -23px;
+position: absolute;
+top: 0;
+width: 23px;
+}
+
+header .back-nav {
+background: #3e4252 url("./img/nav/back_header_trigger.png") 0 0 repeat-x;
+}
+
+header .back-nav a {
+background: transparent url("./img/nav/butt_menu_back.png") 2px 13px no-repeat;
+display: block;
+height: 100%;
+overflow: hidden;
+text-indent: -1000em;
+width: 100%;
+}
+
+header .back-nav:hover a {
+background-position: 2px -143px;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Header headlines */
+/* !-------------------------------------------- */
+
+header hgroup:before {
+background: transparent url("./img/nav/back_header_headline_left.png") 0 0 no-repeat;
+content: "";
+display: block;
+height: 60px;
+left: -23px;
+position: absolute;
+top: 0;
+width: 23px;
+}
+
+header hgroup {
+background: transparent url("./img/nav/icon_nav_user.png") 13px -79px no-repeat;
+}
+
+#s-stimulus header hgroup {background-image: url("./img/nav/icon_nav_needle.png");}
+#s-project header hgroup {background-image: url("./img/nav/icon_nav_file.png");}
+#s-analyze header hgroup {background-image: url("./img/nav/icon_nav_gear.png");}
+#s-connectivity header hgroup {background-image: url("./img/nav/icon_nav_connectivity.png");}
+#s-burst header hgroup {background-image: url("./img/nav/icon_nav_rocket.png");}
+
+header h1 {
+color: #c8d4de;
+display: inline-block; /* needed as helper hooks may follow as inline-block */
+font-size: 22px;
+margin: 6px 0 3px 0;
+text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0;
+}
+
+header h1 mark {
+color: #c8d4de;
+}
+
+header h1 mark:after {
+content: ":";
+}
+
+header h2 {
+color: #3e4252;
+font-size: 14px;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Header Messages */
+/* !-------------------------------------------- */
+
+header .message-container {
+background: transparent url("./img/nav/back_msg_neutral.png") 0 0 no-repeat;
+}
+
+header .message-container:before {
+background: transparent url("./img/nav/back_header_message_left.png") 0 0 no-repeat;
+content: "";
+display: block;
+height: 60px;
+left: 0;
+position: absolute;
+top: 0;
+width: 26px;
+z-index: 10;
+}
+
+header .message-container:after {
+background: transparent url("./img/nav/back_header_message_right.png") 0 0 no-repeat;
+content: "";
+display: block;
+height: 60px;
+right: 0;
+position: absolute;
+top: 0;
+width: 26px;
+z-index: 10;
+}
+
+header .message-container h3 {
+display: none;
+}
+
+header .message-container li {
+background-color: transparent;
+background-position: 0 0;
+background-repeat: no-repeat;
+/* border-bottom: 2px solid #5c5f6d; */
+color: #c8d4de;
+display: table;
+height: 60px;
+left: 0;
+opacity: 0;
+padding: 0 30px 0 30px;
+position: absolute;
+text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0;
+top: 0;
+width: 100%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+header .message-container li > div {
+display: table-cell;
+height: 60px;
+text-align: center;
+vertical-align: middle;
+width: 330px;
+}
+
+header .message-container li.msg-transient {
+-webkit-animation: msg-fading 5s linear forwards;
+-moz-animation: msg-fading 5s linear forwards;
+}
+
+header .message-container li.msg-transient.transient-medium {
+-webkit-animation-duration: 10s;
+-moz-animation-duration: 10s;
+}
+
+header .message-container li.msg-transient.transient-long {
+-webkit-animation-duration: 15s;
+-moz-animation-duration: 15s;
+}
+
+@-webkit-keyframes msg-fading {
+0%  { opacity: 0; }
+10% { opacity: 1; }
+90% { opacity: 1; transform: translateY(0px);}
+99% { opacity: 0; transform: translateY(-30px);}
+100% { opacity: 0; }
+}
+
+@-moz-keyframes msg-fading {
+0%  { opacity: 0; }
+10% { opacity: 1; }
+90% { opacity: 1; transform: translateY(0px);}
+99% { opacity: 0; transform: translateY(-30px);}
+100% { opacity: 0; }
+}
+
+header .message-container li.msg-sticky {
+display: block;
+opacity: 1;
+}
+
+header .msg-level-fatal {
+background-image: url("./img/nav/back_msg_level_fatal.png");
+font-weight: bold;
+}
+header .msg-level-warn {
+background-image: url("./img/nav/back_msg_level_warn.png");
+}
+header .msg-level-confirm {
+background-image: url("./img/nav/back_msg_level_confirm.png");
+}
+header .msg-level-info {
+background-image: url("./img/nav/back_msg_level_info.png");
+}
+
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Header toolbar */
+/* !-------------------------------------------- */
+
+#main .toolbar h3,
+#main .controller h3 {
+background: transparent url("./img/nav/butt_toolbar.png") 0 0 no-repeat;
+height: 42px;
+right: 33px;
+/* There's a special place reserved in hell for the developers of Firefox' rendering engine. Messing w/ click events when overflow: hidden is set here... I mean... What the fuck???? */
+/* overflow: hidden; */
+position: absolute;
+text-indent: -1000em;
+top: 6px;
+width: 57px;
+}
+
+#main .toolbar.can-extend:not(.auto-extends):hover h3,
+#main .controller.can-extend:not(.auto-extends):hover h3 {
+background-position: 0 -192px;
+}
+
+#main .header-component.toolbar .extension {
+left: auto;
+right: 0;
+width: 121px;
+}
+
+#main .header-component.toolbar .extension:before {
+left: 8px;
+width: 113px;
+}
+
+#main .header-component.toolbar .dropdown-pane {
+background: transparent url("./img/nav/back_toolbar.png") 0 0 repeat-y;
+height: 624px;
+width: 121px;
+}
+
+#main .toolbar .dropdown-pane:after {
+background: transparent url("./img/nav/back_toolbar_bottom.png") 0 0 no-repeat;
+bottom: -48px;
+content: "";
+display: block;
+left: 0;
+position: absolute;
+height: 76px;
+width: 121px;
+}
+
+.toolbar ul {
+display: -webkit-box;
+display: -moz-box;
+height: 594px;
+padding-top: 10px;
+-webkit-box-orient: vertical;
+-moz-box-orient: vertical;
+-webkit-box-pack: end;
+-moz-box-pack: end;
+}
+
+/* Special buttons for toolbar */
+/* z-index only necessary as temporary fix for old buttons */
+.toolbar li {
+background: transparent url("./img/line_dark.png") 0 bottom repeat-x;
+margin: 0 0 5px 8px;
+padding: 0 0 12px 0;
+position: relative;
+width: 113px;
+z-index: 510;
+}
+
+.toolbar li:first-child:before {
+background: transparent url("./img/line_dark.png") 0 0 repeat-x;
+content: "";
+display: block;
+width: 113px;
+height: 8px;
+}
+
+/* redundant font declarations to tame <button> exceptions */
+.toolbar .action {
+background: transparent url("./img/control/sprite_butt_toolbar.png") 35px 5px no-repeat;
+border: none;
+color: #646674;
+cursor: pointer;
+display: block;
+font-family: "Helvetica", "Arial", sans-serif;
+font-size: 12px;
+font-weight: normal;
+padding: 40px 5px 0 5px;
+text-align: center;
+text-shadow: rgba(0, 0, 0, 0.9) 1px 1px 0;
+vertical-align: bottom;
+width: 100%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+.toolbar .action.action-idle {
+color: rgba(0, 0, 0, 0.3);
+text-shadow: none;
+}
+
+.toolbar .action:not(.action-idle):hover {
+background-position: -201px 5px;
+color: #c8d4de;
+}
+
+.toolbar .action-back {background-position: 35px 5px;}
+.toolbar .action-back.action-idle {background-position: -438px 5px;}
+.toolbar .action-back:not(.action-idle):hover {background-position: -201px 5px;}
+.toolbar .action-cancel {background-position: 35px -115px;}
+.toolbar .action-cancel.action-idle {background-position: -438px -115px;}
+.toolbar .action-cancel:not(.action-idle):hover {background-position: -201px -115px;}
+.toolbar .action-pause {background-position: 35px -238px;}
+.toolbar .action-pause.action-idle {background-position: -438px -238px;}
+.toolbar .action-pause:not(.action-idle):hover {background-position: -201px -238px;}
+.toolbar .action-play {background-position: 35px -363px;}
+.toolbar .action-play.action-idle {background-position: -438px -363px;}
+.toolbar .action-play:not(.action-idle):hover {background-position: -201px -363px;}
+.toolbar .action-view {background-position: 35px -485px;}
+.toolbar .action-view.action-idle {background-position: -438px -485px;}
+.toolbar .action-view:not(.action-idle):hover {background-position: -201px -485px;}
+.toolbar .action-analyze {background-position: 35px -605px;}
+.toolbar .action-analyze.action-idle {background-position: -438px -605px;}
+.toolbar .action-analyze:not(.action-idle):hover {background-position: -201px -605px;}
+.toolbar .action-new {background-position: 35px -731px;}
+.toolbar .action-new.action-idle {background-position: -438px -731px;}
+.toolbar .action-new:not(.action-idle):hover {background-position: -201px -731px;}
+.toolbar .action-download {background-position: 35px -858px;}
+.toolbar .action-download.action-idle {background-position: -438px -858px;}
+.toolbar .action-download:not(.action-idle):hover {background-position: -201px -858px;}
+.toolbar .action-confirm {background-position: 35px -982px;}
+.toolbar .action-confirm.action-idle {background-position: -438px -982px;}
+.toolbar .action-confirm:not(.action-idle):hover {background-position: -201px -982px;}
+.toolbar .action-upload {background-position: 35px -1105px;}
+.toolbar .action-upload.action-idle {background-position: -438px -1105px;}
+.toolbar .action-upload:not(.action-idle):hover {background-position: -201px -1105px;}
+.toolbar .action-plus {background-position: 35px -1230px;}
+.toolbar .action-plus.action-idle {background-position: -438px -1230px;}
+.toolbar .action-plus:not(.action-idle):hover {background-position: -201px -1230px;}
+.toolbar .action-minus {background-position: 35px -1345px;}
+.toolbar .action-minus.action-idle {background-position: -438px -1345px;}
+.toolbar .action-minus:not(.action-idle):hover {background-position: -201px -1345px;}
+.toolbar .action-delete {background-position: 35px -1462px;}
+.toolbar .action-delete.action-idle {background-position: -438px -1462px;}
+.toolbar .action-delete:not(.action-idle):hover {background-position: -201px -1462px;}
+
+/* Put cancel buttons right on the bottom, strip text away */
+/* These rules get partially overriden in section USER! */
+.toolbar .action-dismiss .action-cancel {
+background-position: 35px -100px;
+bottom: -70px;
+left: 0;
+padding-top: 70px;
+position: absolute;
+text-indent: -1000em;
+z-index: 500;
+}
+
+.toolbar .action-dismiss .action-cancel:hover {
+background-position: -201px -100px;
+}
+
+.toolbar .action-dismiss {
+background: none;
+}
+
+/* Make some single buttons really, really big */
+.toolbar li:only-child .action {
+background-clip: padding-box;
+border-top: 507px solid transparent;
+border-bottom: 15px solid transparent;
+height: 50px;
+}
+
+.toolbar li:only-child button.action {
+border-bottom: none;
+height: 577px;
+}
+
+.toolbar li.action-dismiss:only-child .action-cancel {
+border-top-width: 565px
+}
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Header view controller */
+/* !-------------------------------------------- */
+
+#main .header-component.controller .extension {
+left: auto;
+right: 0;
+}
+
+/* this are preliminary stylings until final design is ready */
+#main .header-component.controller .dropdown-pane {
+/* should have a custom background image with integrated shadow and fixed width */
+color: #fff;
+/* min-height: 200px; */
+min-width: 500px;
+padding: 20px 20px 10px 20px;
+-webkit-box-shadow: 3px 3px 8px 0 rgba(0, 0, 0, 0.7);
+-moz-box-shadow: 3px 3px 8px 0 rgba(0, 0, 0, 0.7);
+}
+
+#main .header-component.controller .form-action {
+margin: 10px 0 10px 0;
+padding-left: 10px;
+width: 100%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+/* TODO */
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Header drop-downs (General rules) */
+/* !-------------------------------------------- */
+
+header .header-component.can-extend,
+#main .header-component.can-extend {
+cursor: pointer;
+}
+
+header .header-component.auto-extends,
+#main .header-component.auto-extends {
+cursor: inherit;
+}
+
+header .header-component:focus,
+#main .header-component:focus {
+outline: none !important; /* removes unwanted outline caused by tabindex */
+}
+
+header .extension,
+#main .header-component .extension {
+top: 58px; /* menu dropdown should not extend over parent so that we can click the parent */
+display: none;
+left: 0;
+position: absolute;
+z-index: 500;
+}
+
+header .header-component.auto-extends .extension,
+#main .header-component.auto-extends .extension {
+z-index: 400;
+}
+
+header .dropdown-pane,
+#main .header-component .dropdown-pane {
+background: #3e4252;
+}
+
+header .header-component.can-extend:active .extension,
+#main .header-component.can-extend:active .extension,
+header .header-component.can-extend .extension:hover,
+#main .header-component.can-extend .extension:hover,
+header .header-component.can-extend.auto-extends .extension,
+#main .header-component.can-extend.auto-extends .extension {
+cursor: text;
+}
+
+header .header-component.can-extend.auto-extends .extension,
+#main .header-component.can-extend.auto-extends .extension {
+display: block;
+}
+
+header .extension:before,
+#main .header-component .extension:before {
+background-image: -webkit-linear-gradient(top, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+background-image: -moz-linear-gradient(top, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
+content: "";
+display: block;
+height: 10px;
+left: 0;
+position: absolute;
+/*top: 58px; menu dropdown should not extend over parent*/
+width: 100%;
+}
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Main view container */
+/* Including an auto-columnizer for various purposes */
+/* !-------------------------------------------- */
+
+/* We have to use a pseudo #main when portlet viewers are embedded through an <iframe> to make sure the action button frameworks actually functions. But: We don't want to limit the size of the pseudo div#main so we're specifically disabling it by using a :not selector. */
+#main:not(.portlet-frame) {
+bottom: 60px;
+left: 15px;
+overflow: auto;
+position: absolute;
+right: 128px;
+top: 75px;
+}
+
+/* Needed for basic wrapper within portlet viewers embedded within an <iframe> */
+.portlet-frame {
+height: 100%;
+}
+
+#main.columnized .view-column {
+background: rgba(250, 247, 228, 0.1);
+float: left;
+height: 100%;
+overflow-y: auto;
+position: relative;
+-webkit-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+-moz-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+/* !!! Cautionary fix for when technical inner wrappers initialize to height 0. That's removing .view-column's reference point for height: 100% */
+/* The fix may not apply when a pseudo div#main is used for portlet viewers embedded by an <iframe> */
+body:not(#s-user) #main:not(.portlet-frame) > div,
+body:not(#s-user) #main > form {
+height: 100%;
+}
+
+/* --- */
+
+#main.columnized .view-column:last-child {
+margin-right: 0;
+}
+
+#main.columnized:after {
+clear: both;
+content: "";
+display: block;
+}
+
+/* Auto-columnize: Just 1 big column */
+#main.colscheme-1 .view-column {
+margin-right: 0;
+width: 100%;
+}
+
+/* Auto-columnize: 3 even columns */
+#main.colscheme-3-even .view-column {
+margin-right: 2%;
+width: 32%;
+}
+
+/* Auto-columnize: 3 columns, first narrower */
+#main.colscheme-3-1st-narrow .view-column {
+margin-right: 1%;
+width: 39%;
+}
+
+#main.colscheme-3-1st-narrow .view-column.col-1 {
+width: 20%;
+}
+
+/* Auto-columnize: 3 columns, middle narrower */
+#main.colscheme-3-2nd-narrow .view-column {
+margin-right: 1%;
+width: 39%;
+}
+
+#main.colscheme-3-2nd-narrow .view-column.col-2 {
+width: 20%;
+}
+
+/* Auto-columnize: 2 even columns */
+#main.colscheme-2-even .view-column {
+margin-right: 2%;
+width: 48%;
+}
+
+/* Auto-columnize: 2 columns, 1st narrow */
+#main.colscheme-2-1st-narrow .view-column {
+margin-right: 1%;
+width: 20%;
+}
+
+#main.colscheme-2-1st-narrow .view-column.col-2 {
+width: 79%;
+}
+
+/* Auto-columnize: 2 columns, 2nd of third's width */
+#main.colscheme-2-2nd-third .view-column {
+margin-right: 1%;
+width: 66%;
+}
+
+#main.colscheme-2-2nd-third .view-column.col-2 {
+width: 33%;
+}
+
+/* Auto-columnize: 2 columns, 2nd narrow */
+#main.colscheme-2-2nd-narrow .view-column {
+margin-right: 1%;
+width: 65%;
+}
+
+#main.colscheme-2-2nd-narrow .view-column.col-2 {
+width: 33%;
+}
+
+/* Column headlines (may be adjusted for certain situations) */
+#main.columnized h4 {
+background: rgba(250, 247, 228, 0.1);
+border-bottom: 1px solid rgba(250, 247, 228, 0.2);
+color: #fff;
+font-size: 15px;
+height: 26px;
+margin: 0 0 10px 0;
+padding: 10px 0 0 10px;
+text-overflow: ellipsis;
+white-space: nowrap;
+/* text-shadow: 0 -1px 0 rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.3); */
+}
+
+#main.columnized h4 mark {
+color: #646a6f;
+text-transform: uppercase;
+}
+
+#main.columnized h4 mark:after {
+content: ":";
+}
+
+/* Column maximizing is handled within particular section_*.css files */
+
+
+/* !-------------------------------------------- */
+/* !LAYOUT: "Stray pages" */
+/* All of them are full-screen visualizers, fired up by Project/Operations or Burst */
+/* !-------------------------------------------- */
+
+html[class*="ss-view_"] #main {
+right: 15px;
+}
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Generic forms */
+/* !-------------------------------------------- */
+
+fieldset {
+font-size: 12px;
+margin-bottom: 10px;
+padding: 0 10px 0 10px;
+}
+
+/* the controllers have their own outside padding */
+.header-component.controller fieldset {
+padding: 0;
+}
+
+fieldset.fullscreen {
+/* TO DO */
+}
+
+fieldset fieldset {
+margin-top: 10px;
+padding: 0;
+}
+
+legend {
+color: #3e4252;
+font-weight: bold;
+padding-bottom: 10px;
+}
+
+label{
+cursor: pointer;
+}
+/* --- Labels */
+fieldset dt {
+border-top: 1px solid rgba(0, 0, 0, 0.2);
+clear: left;
+float: left;
+font-weight: bold;
+margin-bottom: 5px;
+padding: 5px 5% 0 0;
+width: 27%;
+}
+
+fieldset.fullscreen dt {
+width: 15%;
+}
+
+/* --- Field containers */
+fieldset dd {
+border-top: 1px solid rgba(0, 0, 0, 0.2);
+float: left;
+margin: 0 0 5px 0;
+padding: 5px 0 0 0;
+position: relative;
+width: 68%;
+}
+
+fieldset.fullscreen dd {
+width: 80%;
+}
+
+fieldset dt.field-mandatory + dd:before {
+background: #bc1841;
+content: "";
+display: block;
+height: 19px;
+left: -8px;
+position: absolute;
+top: 5px;
+width: 2px;
+}
+
+fieldset .field-comment {
+color: #3e4252;
+margin-top: 5px;
+}
+
+/* TODO: .field-comment.longtext */
+
+/* --- Actual form elements */
+fieldset dd .field-series input {
+clear: left;
+float: left;
+margin: 0 5px 5px 0;
+}
+
+fieldset dd .field-series label {
+float: left;
+margin: 0 0 5px 0;
+}
+
+fieldset dd .field-series:after {
+clear: both;
+content: "";
+display: block;
+}
+
+fieldset input[disabled="disabled"],
+fieldset input:read-only {
+background: rgba(0, 0, 0, 0.1);
+border: none;
+color: #3e4252;
+padding: 2px 2px 2px 2px;
+-webkit-text-fill-color: #3e4252;
+/* width: auto;*/
+}
+
+fieldset input,
+fieldset textarea,
+fieldset select {
+margin: 0;
+width: 100%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+fieldset input[type="radio"],
+fieldset input[type="checkbox"],
+fieldset input[type="submit"] {
+width: auto;
+}
+
+/* --- Field adapters */
+fieldset .field-adapters input,
+fieldset .field-adapters select {
+margin: 5px 5px 0 0;
+width: auto;
+}
+
+fieldset .field-adapters .ranger-button{
+margin:0;
+position: absolute;
+right:4px;
+top: 8px;
+}
+
+/* --- Button vectors below a form */
+.form-action {
+background: rgba(0, 0, 0, 0.2);
+}
+
+.form-action li {
+float: left;
+}
+
+/* not sure if we really need this */
+.form-action li.action-dismissal {
+float: right;
+}
+
+/* --- SPECIAL: Config checkboxes for Burst forms */
+fieldset input.param-config-checkbox {
+left: -24px;
+position: absolute;
+top: 0;
+}
+
+/* --- Inline toolbar for particular forms */
+.toolbar-inline {
+border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+border-top: 1px solid rgba(255, 255, 255, 0.3);
+background: rgba(250, 247, 228, 0.2);
+color: #fff;
+margin-bottom: 10px;
+padding: 5px 5px 5px 10px;
+}
+
+/* We're overriding the controller's padding and width here. This should be checked sometime. */
+.header-component.controller .toolbar-inline {
+background: transparent url("./img/line_dark.png") 0 top repeat-x;
+border: none;
+left: -20px;
+padding-right: 30px;
+padding-top: 14px;
+position: relative;
+width: 100%;
+}
+
+.toolbar-inline li {
+float: left;
+margin-right: 10px;
+}
+
+.toolbar-inline li:last-child {
+margin-right: 0;
+}
+
+.toolbar-inline:after {
+clear: both;
+content: "";
+display: block;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Helper hooks */
+/* !-------------------------------------------- */
+
+.helper-hook {
+background: #41921f;
+background: #598032;
+border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+border-right: 1px solid rgba(0, 0, 0, 0.4);
+border-left: 1px solid rgba(250, 247, 228, 0.4);
+border-top: 1px solid rgba(250, 247, 228, 0.4);
+border-radius: 7px;
+color: #eee;
+cursor: help;
+display: none;
+font-size: 10px;
+font-weight: normal;
+height: 14px;
+text-align: center;
+margin: 0 4px 0 4px;
+vertical-align: text-bottom;
+width: 14px;
+-webkit-transition: background-color .5s ease;
+-moz-transition: background-color .5s ease;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+.helper-hook:hover {
+background: #1a4c45;
+-webkit-transition: background-color .5s ease;
+-moz-transition: background-color .5s ease;
+}
+
+#s-user.user-authorized h2 + .helper-hook,
+header .helper-hook {
+background: rgba(250, 247, 228, 0.3);
+border-radius: 11px;
+font-size: 14px;
+height: 22px;
+line-height: 20px;
+margin: 0 0 0 8px;
+width: 22px;
+}
+
+header nav.auto-extends + hgroup .helper-hook {
+position: relative;
+z-index: 500;
+}
+
+#s-user.user-authorized h2 + .helper-hook {
+color: #222;
+}
+
+#s-user.user-authorized h2 + .helper-hook:hover, 
+header .helper-hook:hover {
+background: rgba(250, 247, 228, 0.7);
+color: #333;
+}
+
+body.is-helping .helper-hook {
+display: inline-block;
+}
+
+nav.inline-menu.helper {
+display: inline-block;
+}
+
+nav.inline-menu .helper-hook.action-menu {
+width: 14px;
+}
+
+nav.inline-menu.helper .extension {
+font-weight: normal;
+left: 0;
+min-width: 440px;
+right: auto;
+}
+
+nav.inline-menu.helper .dropdown-pane {
+margin-top: 20px;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Standard buttons for inner views */
+/* !-------------------------------------------- */
+
+/* redundant font/color declarations to tame <button> exceptions */
+#main .view-column .action,
+#main .controller .action,
+#overlay .action {
+background: none;
+border-width: 0 11px 0 11px;
+border-color: transparent;
+border-style: solid;
+-webkit-border-image: url("./img/control/butt_action.png") 0 11 0 11;
+-moz-border-image: url("./img/control/butt_action.png") 0 11 0 11 repeat;
+border-image: url("./img/control/butt_action.png") 0 11 0 11 fill repeat;
+color: #4e4c40;
+cursor: pointer;
+display: inline-block;
+font-family: "Helvetica", "Arial", sans-serif;
+font-size: 12px;
+font-weight: normal;
+height: 28px;
+line-height: 23px;
+min-width: 24px;
+padding: 2px 0 2px 20px;
+position: relative;
+text-align: left;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+#main .view-column .action:before,
+#main .controller .action:before,
+#overlay .action:before {
+background: transparent url("./img/control/sprite_icon_action.png") 0 0 no-repeat;
+content: "";
+display: block;
+height: 27px;
+left: -12px;
+position: absolute;
+top: -1px;
+width: 32px;
+}
+
+#main .view-column button.action, 
+#main .controller button.action, 
+#overlay button.action {
+margin: 0;
+}
+
+/* --- Idle & hover states */
+#main .view-column .action-idle,
+#main .controller .action-idle,
+#overlay .action-idle {
+-webkit-border-image: url("./img/control/butt_action_idle.png") 0 11 0 11;
+-moz-border-image: url("./img/control/butt_action_idle.png") 0 11 0 11 repeat;
+border-image: url("./img/control/butt_action_idle.png") 0 11 0 11 fill repeat;
+}
+
+#main .view-column .action:not(.action-idle):hover, 
+#main .controller .action:not(.action-idle):hover, 
+#overlay .action:not(.action-idle):hover {
+}
+
+/* --- Action buttons w/ icon & text */
+#main .view-column .action-menu:before,
+#main .controller .action-menu:before,
+#overlay .action-menu:before {
+background-position: 0 -83px;
+}
+#main .view-column .action-crosslink:before,
+#main .controller .action-crosslink:before,
+#overlay .action-crosslink:before {
+background-position: 0 -2156px;
+}
+#main .view-column .action-copy:before,
+#main .controller .action-copy:before,
+#overlay .action-copy:before {
+background-position: 0 -2408px;
+}
+#main .view-column .action-remove:before,
+#main .controller .action-remove:before,
+#overlay .action-remove:before, 
+#main .view-column .action-delete:before,
+#main .controller .action-delete:before,
+#overlay .action-delete:before {
+background-position: -2px -1409px;
+}
+#main .view-column .action-export:before,
+#main .controller .action-export:before,
+#overlay .action-export:before, 
+#main .view-column .action-download:before,
+#main .controller .action-download:before,
+#overlay .action-download:before {
+background-position: -2px -1575px;
+}
+#main .view-column .action-upload:before,
+#main .controller .action-upload:before,
+#overlay .action-upload:before {
+background-position: -2px -1492px;
+}
+/* action-play is used on Burst page for launching a new one */
+#main .view-column .action-play:before,
+#main .controller .action-play:before,
+#overlay .action-play:before, 
+#main .view-column .action-store:before,
+#main .controller .action-store:before,
+#overlay .action-store:before, 
+#main .view-column .action-confirm:before,
+#main .controller .action-confirm:before,
+#overlay .action-confirm:before {
+background-position: 0 -1658px;
+}
+#main .view-column .action-new:before,
+#main .controller .action-new:before,
+#overlay .action-new:before {
+background-position: 0 -1740px;
+}
+#main .view-column .action-reset:before,
+#main .controller .action-reset:before,
+#overlay .action-reset:before {
+background-position: 0 -1824px;
+}
+#main .view-column .action-edit:before,
+#main .controller .action-edit:before,
+#overlay .action-edit:before, 
+#main .view-column .action-configure:before,
+#main .controller .action-configure:before,
+#overlay .action-configure:before {
+background-position: 0 -1907px;
+}
+#main .view-column .action-analyze:before,
+#main .controller .action-analyze:before,
+#overlay .action-analyze:before {
+background-position: 0 -1990px;
+}
+#main .view-column .action-view:before,
+#main .controller .action-view:before,
+#overlay .action-view:before {
+background-position: 0 -2073px;
+}
+#main .view-column .action-mini-zoom-in:before,
+#main .controller .action-mini-zoom-in:before,
+#overlay .action-mini-zoom-in:before {
+background-position: 0 -994px;
+}
+#main .view-column .action-mini-zoom-out:before,
+#main .controller .action-mini-zoom-out:before,
+#overlay .action-mini-zoom-out:before {
+background-position: 0 -1077px;
+}
+#main .view-column .action-plus:before,
+#main .controller .action-plus:before,
+#overlay .action-link:before {
+background-position: 0 -1161px;
+}
+#main .view-column .action-minus:before,
+#main .controller .action-minus:before,
+#overlay .action-link:before {
+background-position: 0 -1243px;
+}
+#main .view-column .action-link:before,
+#main .controller .action-link:before,
+#overlay .action-link:before {
+background-position: 0 -1326px;
+}
+#main .view-column .action-controller-launch:before,
+#main .controller .action-controller-launch:before,
+#overlay .action-controller-launch:before {
+background-position: -2px -165px;
+}
+#main .view-column .action-controller-pause:before,
+#main .controller .action-controller-pause:before,
+#overlay .action-controller-launch:before {
+background-position: -1px -247px;
+}
+
+/* --- Action buttons only w/ icon */
+/* 
+action-relevancy action-make-relevant action-make-irrelevant
+action-toggle action-all-on action-all-off
+
+Block-styled:
+action-run action-launch
+action-pause
+action-stop
+action-page-back
+action-page-fwd
+action-go-first
+action-go-last
+*/
+
+#main .view-column .action-toggle,
+#main .controller .action-toggle,
+#overlay .action-toggle, 
+#main .view-column .action-run,
+#main .controller .action-run,
+#overlay .action-run, 
+#main .view-column .action-launch,
+#main .controller .action-launch,
+#overlay .action-launch, 
+#main .view-column .action-pause,
+#main .controller .action-pause,
+#overlay .action-pause, 
+#main .view-column .action-stop,
+#main .controller .action-stop,
+#overlay .action-stop, 
+#main .view-column .action-page-back,
+#main .controller .action-page-back,
+#overlay .action-page-back, 
+#main .view-column .action-page-fwd,
+#main .controller .action-page-fwd,
+#overlay .action-page-fwd,
+#main .view-column .action-go-first,
+#main .controller .action-go-first,
+#overlay .action-go-first,
+#main .view-column .action-go-last,
+#main .controller .action-go-last,
+#overlay .action-go-last,
+#main .view-column .action-relevancy,
+#main .controller .action-relevancy,
+#overlay .action-relevancy,
+#main .view-column .action-remove {
+padding-left: 0;
+text-indent: -1000em;
+width: 35px;
+}
+
+#main .view-column .action-make-relevant:before,
+#main .controller .action-make-relevant:before,
+#overlay .action-make-relevant:before {
+background-position: 0 -662px;
+}
+#main .view-column .action-make-irrelevant:before,
+#main .controller .action-make-irrelevant:before,
+#overlay .action-make-irrelevant:before {
+background-position: 0 -579px;
+}
+#main .view-column .action-all-on:before,
+#main .controller .action-all-on:before,
+#overlay .action-all-on:before {
+background-position: 0 -746px;
+}
+#main .view-column .action-all-off:before,
+#main .controller .action-all-off:before,
+#overlay .action-all-off:before {
+background-position: 0 -828px;
+}
+#main .view-column .action-run:before,
+#main .controller .action-run:before,
+#overlay .action-run:before, 
+#main .view-column .action-launch:before,
+#main .controller .action-launch:before,
+#overlay .action-launch:before {
+background-position: -2px -165px;
+}
+#main .view-column .action-pause:before,
+#main .controller .action-pause:before,
+#overlay .action-pause:before {
+background-position: -1px -247px;
+}
+#main .view-column .action-stop:before,
+#main .controller .action-stop:before,
+#overlay .action-stop:before {
+background-position: 0 -329px;
+}
+#main .view-column .action-page-back:before,
+#main .controller .action-page-back:before,
+#overlay .action-page-back:before {
+background-position: 0 -413px;
+}
+#main .view-column .action-page-fwd:before,
+#main .controller .action-page-fwd:before,
+#overlay .action-page-fwd:before {
+background-position: 0 -496px;
+}
+#main .view-column .action-go-first:before,
+#main .controller .action-go-first:before,
+#overlay .action-go-first:before {
+background-position: 0 -2517px;
+}
+#main .view-column .action-go-last:before,
+#main .controller .action-go-last:before,
+#overlay .action-go-last:before {
+background-position: 0 -2462px;
+}
+
+/* --- Special action buttons for column & viewer control */
+/* We have to override positioning here! */
+#main .view-column .action.column-control {
+position: absolute;
+right: 0;
+top: 0;
+}
+
+
+#main .view-column .action-big-launch:before,
+#overlay .action-big-launch:before, 
+#main .view-column .action-big-new:before,
+#overlay .action-big-new:before, 
+#main .view-column .action-big-continue:before,
+#main .view-column .action-big-branch:before,
+#main .view-column .action-big-analyze:before,
+#main .view-column .action-refresh:before,
+#overlay .action-refresh:before, 
+#main .view-column .action-zoom-in:before,
+#overlay .action-zoom-in:before, 
+#main .view-column .action-zoom-out:before,
+#overlay .action-zoom-out:before, 
+#main .view-column .action-exit:before,
+#overlay .action-exit:before {
+display: none;
+}
+
+#main .view-column .action-big-launch,
+#overlay .action-big-launch, 
+#main .view-column .action-big-new,
+#overlay .action-big-new, 
+#main .view-column .action-big-upload,
+#main .view-column .action-big-continue,
+#main .view-column .action-big-branch,
+#main .view-column .action-big-analyze,
+#main .view-column .action-refresh,
+#overlay .action-refresh, 
+#main .view-column .action-zoom-in,
+#overlay .action-zoom-in, 
+#main .view-column .action-zoom-out,
+#overlay .action-zoom-out, 
+#main .view-column .action-exit,
+#overlay .action-exit {
+background: transparent url("./img/control/sprite_butt_columncontrol.png") 0 0 no-repeat;
+border: none;
+-webkit-border-image: none;
+-moz-border-image: none;
+border-image: none;
+height: 36px;
+overflow: hidden;
+text-indent: -1000em;
+width: 55px;
+}
+
+#main .view-column .action-big-new,
+#overlay .action-big-new {
+background-position: 0 -1742px;
+}
+#main .view-column .action-big-launch,
+#overlay .action-big-launch {
+background-position: 0 -165px;
+}
+#main .view-column .action-big-upload {
+background-position: 0  -1493px;
+position: absolute;
+top: 0;
+right: 55px;
+/* TODO we need 2 controls on the same bar. This is an afterwards hack, as it hasn't been implemented initially */
+}
+#main .view-column .action-refresh,
+#overlay .action-refresh {
+background-position: 0 -912px;
+}
+#main .view-column .action-plus,
+#overlay .action-plus, 
+#main .view-column .action-zoom-in,
+#overlay .action-zoom-in {
+background-position: 0 -995px;
+}
+#main .view-column .action-minus,
+#overlay .action-minus, 
+#main .view-column .action-zoom-out,
+#overlay .action-zoom-out {
+background-position: 0 -1078px;
+}
+#main .view-column .action-exit,
+#overlay .action-exit {
+background-position: 0 -2322px;
+}
+
+/* --- Action blocks: Compound series of several action buttons */
+.action-block {
+white-space: nowrap;
+}
+
+.block-player button {
+}
+
+.block-pager {
+}
+
+.block-pager li {
+float: left;
+margin-right: 10px;
+}
+
+.block-pager li.signpost {
+line-height: 27px;
+}
+
+.block-pager li:last-child {
+margin-right: 0;
+}
+
+.block-pager:after {
+clear: both;
+content: "";
+display: block;
+}
+
+/* --- Inline dropdown menus */
+nav.inline-menu {
+position: relative;
+}
+
+nav.inline-menu .action-menu {
+width: 100%;
+}
+
+nav.inline-menu .extension {
+display: none;
+right: 0;
+position: absolute;
+top: 0;
+z-index: 400;
+}
+
+nav.inline-hover-menu:active .extension,
+nav.inline-hover-menu .extension:hover {
+display: block;
+}
+
+nav.inline-menu .dropdown-pane {
+background: rgb(255, 254, 246);
+margin-top: 26px;
+padding: 5px;
+-webkit-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+-moz-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+}
+
+nav.inline-menu .dropdown-pane mark {
+border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+color: #646a6f;
+display: block;
+font-weight: bold;
+margin-bottom: 5px;
+padding-bottom: 5px;
+}
+
+nav.inline-menu .dropdown-pane p {
+margin-bottom: 10px;
+}
+
+nav.inline-menu .dropdown-pane table {
+color: #000;
+}
+
+/* inline description boxes */
+nav.inline-description{
+max-width: 600px;
+max-height: 120px;
+overflow-y: auto;
+}
+/* !-------------------------------------------- */
+/* !COMPONENT: Tab switcher */
+/* !-------------------------------------------- */
+
+.tabswitcher {
+border-bottom: 1px solid #4A4945;
+height: 30px;
+width: 100%;
+}
+
+.tabswitcher li {
+background: #706e68 url("./img/tab_off_mid.png") 0 0 repeat-x;
+bottom: -1px;
+float: left;
+margin-left: 21px;
+position: relative;
+}
+
+.tabswitcher li.disabled {
+background-image: url("./img/tab_idle_mid.png");
+}
+
+.tabswitcher li:first-child {
+margin-left: 31px;
+}
+
+.tabswitcher li:before {
+background: transparent url("./img/tab_off_left.png") 0 0 no-repeat;
+content: "";
+display: block;
+height: 30px;
+left: -20px;
+position: absolute;
+top: 0;
+width: 21px;
+}
+
+.tabswitcher li.disabled:before {
+background-image: url("./img/tab_idle_left.png");
+}
+
+.tabswitcher li:after {
+background-color: transparent, transparent;
+background-image: url("./img/tab_off_right.png"), url("./img/tab_off_mid.png");
+background-repeat: no-repeat, no-repeat;
+background-position: right 0, -2px 0;
+content: "";
+display: block;
+height: 30px;
+position: absolute;
+right: -10px;
+top: 0;
+width: 10px;
+}
+
+.tabswitcher li.disabled:after {
+background-image: url("./img/tab_idle_right.png"), url("./img/tab_idle_mid.png");
+}
+
+.tabswitcher li a {
+color: #2e2d26;
+font-weight: bold;
+display: block;
+height: 22px;
+left: -9px;
+padding: 8px 0 0 0;
+position: relative;
+width: 100%;
+z-index: 2;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+.tabswitcher li.disabled a {
+cursor: text;
+}
+
+.tabswitcher li.active {
+background: #a29f97 url("./img/tab_on_mid.png") 0 0 repeat-x;
+}
+
+.tabswitcher li.active:before {
+background-image: url("./img/tab_on_left.png");
+}
+
+.tabswitcher li.active:after {
+background-image: url("./img/tab_on_right.png"), url("./img/tab_on_mid.png");
+}
+
+.tabswitcher li:not(.disabled) a:hover,
+.tabswitcher li:not(.disabled).active a {
+color: #faf7e4;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+.tabswitcher:after {
+clear: both;
+content: "";
+display: block;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Project data nodes */
+/* !!! NOT USED YET IN v0.9.7 */
+/* !-------------------------------------------- */
+
+.datanode {
+background: rgba(0, 0, 0, 0.3);
+border: 1px solid transparent;
+font-size: 12px;
+height: 15px;
+padding: 2px;
+position: relative;
+width: 30px;
+}
+
+.datanode mark {
+display: block;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+width: 100%;
+}
+
+.datanode:hover mark {
+background: #000;
+color: #fff;
+left: 2px;
+overflow: visible;
+position: absolute;
+top: 2px;
+width: auto;
+z-index: 10;
+}
+
+img.result_icon {
+cursor: pointer;
+}
+
+.result_icon {
+padding-right: 10px;
+}
+
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Footer */
+/* !-------------------------------------------- */
+
+footer {
+bottom: 0;
+height: 45px;
+position: fixed;
+width: 100%;
+z-index: 3;
+}
+
+/* --- Login page: Add shadow + keep it down */
+body#s-user footer {
+-webkit-box-shadow: 0 -3px 10px -2px rgba(0, 0, 0, 0.5);
+-moz-box-shadow: 0 -3px 10px -2px rgba(0, 0, 0, 0.5);
+box-shadow: 0 -3px 10px -2px rgba(0, 0, 0, 0.5);
+}
+
+body.user-anon#s-user footer,
+body.user-anon#s-user footer:hover {
+height: 45px;
+}
+
+/* --- Basic background & sizes */
+footer nav li {
+background: #2f3242 url("./img/nav/back_footer_off.png") 0 0 repeat-x;
+float: left;
+font-size: 23px;
+font-weight: bold;
+height: 45px;
+padding-top: 9px;
+position: relative;
+text-align: center;
+}
+
+/* --- Login page: Keep it down */
+body.user-anon#s-user footer nav li, 
+body.user-anon#s-user footer:hover nav li {
+padding-top: 11px;
+}
+
+footer nav li#nav-user {
+width: 11%;
+}
+footer nav li#nav-project {
+width: 16%;
+}
+footer nav li#nav-burst {
+width: 21%;
+}
+footer nav li#nav-analyze {
+width: 17%;
+}
+footer nav li#nav-stimulus {
+width: 17%;
+}
+footer nav li#nav-connectivity {
+width: 18%;
+}
+
+footer nav li.active {
+background: #242632 url("./img/nav/back_footer_on.png") 0 0 repeat-x;
+}
+
+/* --- Corners & Borders */
+footer nav li span {
+background-image: url("./img/nav/sprite_footer.png");
+background-origin: border-box;
+background-position: 0 0;
+background-repeat: no-repeat;
+display: block;
+height: 60px;
+position: absolute;
+top: 0;
+width: 9px;
+}
+
+footer nav li span.left {
+left: 0;
+}
+
+footer nav li span.right {
+right: 0;
+}
+
+/* --- User tab */
+footer nav li.idle#nav-user span.left,
+footer nav li.enabled#nav-user span.left {
+background-position: 0 0;
+width: 4px;
+}
+
+footer nav li.active#nav-user span.left {
+background-position: -60px 0;
+width: 4px;
+}
+
+footer nav li.idle#nav-user span.right,
+footer nav li.enabled#nav-user span.right {
+background-position: -30px 0;
+width: 6px;
+}
+
+footer nav li.active#nav-user span.right {
+background-position: -90px 0;
+width: 6px;
+}
+
+/* --- Project tab */
+footer nav li.idle#nav-project span.left,
+footer nav li.enabled#nav-project span.left {
+background-position: 0 -60px;
+left: -5px;
+width: 6px;
+}
+
+footer nav li.active#nav-project span.left {
+background-position: -60px -60px;
+left: -15px;
+width: 16px;
+}
+
+footer nav li.idle#nav-project span.right,
+footer nav li.enabled#nav-project span.right {
+background-position: -30px -60px;
+width: 16px;
+}
+
+footer nav li.active#nav-project span.right {
+background-position: -90px -60px;
+width: 16px;
+}
+
+/* --- Burst tab */
+footer nav li.idle#nav-burst span.left,
+footer nav li.enabled#nav-burst span.left {
+background-position: 0 -120px;
+left: -14px;
+width: 16px;
+}
+
+footer nav li.active#nav-burst span.left {
+background-position: -60px -120px;
+left: -26px;
+width: 27px;
+}
+
+footer nav li.idle#nav-burst span.right,
+footer nav li.enabled#nav-burst span.right {
+background-position: -30px -120px;
+width: 9px;
+}
+
+footer nav li.active#nav-burst span.right {
+background-position: -90px -120px;
+width: 9px;
+}
+
+/* --- Analyze tab */
+footer nav li.idle#nav-analyze span.left,
+footer nav li.enabled#nav-analyze span.left {
+background-position: 0 -180px;
+left: -7px;
+width: 9px;
+}
+
+footer nav li.active#nav-analyze span.left {
+background-position: -60px -180px;
+left: -26px;
+width: 27px;
+}
+
+footer nav li.idle#nav-analyze span.right,
+footer nav li.enabled#nav-analyze span.right {
+background-position: -30px -180px;
+width: 16px;
+}
+
+footer nav li.active#nav-analyze span.right {
+background-position: -90px -180px;
+width: 16px;
+}
+
+/* --- Stimulus tab */
+footer nav li.idle#nav-stimulus span.left,
+footer nav li.enabled#nav-stimulus span.left {
+background-position: 0 -240px;
+left: -15px;
+width: 16px;
+}
+
+footer nav li.active#nav-stimulus span.left {
+background-position: -60px -240px;
+left: -26px;
+width: 27px;
+}
+
+footer nav li.idle#nav-stimulus span.right,
+footer nav li.enabled#nav-stimulus span.right {
+background-position: -30px -240px;
+width: 19px;
+}
+
+footer nav li.active#nav-stimulus span.right {
+background-position: -90px -240px;
+width: 19px;
+}
+
+/* --- View tab */
+footer nav li.idle#nav-connectivity span.left,
+footer nav li.enabled#nav-connectivity span.left {
+background-position: 0 -300px;
+left: -16px;
+width: 17px;
+}
+
+footer nav li.active#nav-connectivity span.left {
+background-position: -60px -300px;
+left: -26px;
+width: 27px;
+}
+
+footer nav li.idle#nav-connectivity span.right,
+footer nav li.enabled#nav-connectivity span.right {
+background-position: -30px -300px;
+width: 4px;
+}
+
+footer nav li.active#nav-connectivity span.right {
+background-position: -90px -300px;
+width: 4px;
+}
+
+/* --- Link size, Text coloring */
+footer nav li a {
+color: #646a6f;
+height: 100%;
+text-shadow: rgba(0, 0, 0, 0.3) 1px 1px 0;
+width: 90%;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+footer nav li.idle a, 
+footer nav li.idle:hover a {
+color: #2c2f3b;
+text-shadow: none;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+footer nav li.active a,
+footer nav li:hover a {
+color: #c8d4de;
+-webkit-transition: color .5s ease;
+-moz-transition: color .5s ease;
+}
+
+/* --- Icons */
+footer nav li a:before {
+background: 0 0 no-repeat;
+content: "";
+display: inline-block;
+height: 22px;
+margin-right: 10px;
+vertical-align: bottom;
+width: 20px;
+}
+
+footer nav li.idle a:before {
+background-position: 0 -175px;
+}
+
+footer nav li.active a:before, 
+footer nav li.enabled:hover a:before {
+background-position: 0 -87px;
+}
+
+/* Sorry about that. Screen designer made a boo-boo. */
+footer nav li#nav-stimulus.active a:before, 
+footer nav li#nav-stimulus.enabled:hover a:before {
+background-position: 0 -88px;
+}
+
+footer nav li#nav-connectivity.active a:before, 
+footer nav li#nav-connectivity.enabled:hover a:before {
+background-position: 0 -88px;
+}
+
+footer nav li#nav-user a:before {
+background-image: url("./img/nav/icon_nav_user.png");
+}
+footer nav li#nav-project a:before {
+background-image: url("./img/nav/icon_nav_file.png");
+}
+footer nav li#nav-burst a:before {
+background-image: url("./img/nav/icon_nav_rocket.png");
+}
+footer nav li#nav-analyze a:before {
+background-image: url("./img/nav/icon_nav_gear.png");
+}
+footer nav li#nav-stimulus a:before {
+background-image: url("./img/nav/icon_nav_needle.png");
+}
+footer nav li#nav-connectivity a:before {
+background-image: url("./img/nav/icon_nav_connectivity.png");
+}
+
+/* !============================================================================ */
+/* !============================================================================ */
+/* !OLD STUFF BELOW!!! */
+/* !============================================================================ */
+/* !Needs major cleanup and will possibly be replaced completely! */
+/* !============================================================================ */
+/* !============================================================================ */
+
+/* !-------------------------------------------- */
+/* !Common treatment of general elements */
+/* ODINSON state: Only use on login page. Delete after fixing that. */
+/* !-------------------------------------------- */
+
+/* --- headlines, only for inside boxes */
+hgroup .boxtitle {
+color: #fff;
+font-size: 22px;
+font-weight: bold;
+letter-spacing: -2px;
+text-transform: uppercase;
+}
+
+hgroup .boxtitle,
+hgroup .boxtitle + * {
+text-shadow: rgba(255, 255, 255, 0.2) 0 1px 0, rgba(0, 0, 0, 0.5) 0 -1px 0;
+}
+
+
+/* !============================================================================ */
+/* !============================================================================ */
+/* !TEMPORARY STUFF BELOW - ONLY FOR BACK-END DEVELOPERS! */
+/* !============================================================================ */
+/* !Needs major cleanup and will possibly be replaced completely! */
+/* !============================================================================ */
+/* !============================================================================ */
+
+.dropdown-pane h4 a {
+display: inline;
+}
+
+#main .view-column .action.column-control-prev {
+position: absolute;
+right: 53px;
+top: 0;
+}
+
+#main .view-column .action-big-continue {
+background-position: 0 -2157px;
+}
+
+#main .view-column .action-big-branch {
+background-position: 0 -1327px;
+}
+
+#main .view-column .action-big-analyze {
+background-position: 0 -1991px;
+}
+
+.errorMessage {
+  color: #cc1122;
+  font-style: italic;
+}
+
+.warningMessage {
+  color: yellow;
+}
+
+.infoMessage {
+  color: green;
+}
+
+.importantMessage {
+  color: purple;
+}
+
+.inputField {
+    width: 100%;
+    min-width: 250px;
+}
+
+.inputArea {
+    width: 100%;
+    max-width: 500px;
+}
+
+.shadow { 
+   -moz-box-shadow: 3px 3px 4px #000; 
+   -webkit-box-shadow: 3px 3px 4px #000;
+   box-shadow: 3px 3px 4px #000; 
+}
+
+.inputDescription {
+   text-align: right;
+   font-style: italic;
+   font-size: 10px;
+}
+
+a:focus {
+	color: white
+}
+
+.ranger-value {
+	border:0; 
+	color:#f6931f; 
+	font-weight:bold;
+}
+
+.dropdown-pane-overlay {
+    overflow-y: auto;
+    max-height:300px;
+}
+
+/*===============================================*/
+/*CSS related to connectivity selection component*/
+/*===============================================*/
+
+.toolbar-connectivity-selection > li > .action-store {
+text-indent: -1000em;
+width: 20px;
+}
+
+.toolbar-connectivity-selection .selector-storage {
+float: right;
+}
+
+.toolbar-connectivity-selection > li:last-child {
+margin-right: 10px;
+}
+
+.toolbar-connectivity-selection > li.storage-submitter {
+margin-right: 0;
+}
+
+.toolbar-connectivity-selection .selection-setter .extension{
+left: 0;
+right: auto;
+}
+
+/* Overriding some generic settings from base.css */
+.toolbar-connectivity-selection .dropdown-pane li {
+float: none;
+}
+
+/* An image produced by the tvb export; checkerboard background*/
+.tvb-snapshot-image {
+    background: white url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJElEQVQYV2Pcv3//fwYk4OjoyIjMZ6SDAmT7QGx0K1EcRBsFAFAcHPlrTpAmAAAAAElFTkSuQmCC") 0 0 repeat;
+    width:100%;
+}
+
+/* Results TAB */
+#treeStructure, #treeOverlay{
+    background-color: rgba(152, 153, 161, 0.1);
+}
+
+/**
+ * Region selector styling. Adapted from section_connectivity.css
+ */
+
+.regionSelector{
+width: 670px;
+overflow-y: auto;
+color: black;
+}
+
+.regionSelector h5{
+font-size: 16px;
+margin: 5px;
+text-align: center;
+}
+
+.regionSelector h6 {
+font-size: 12px;
+font-weight: normal;
+margin-bottom: 5px;
+text-align: center;
+}
+
+.regionSelector .selection-toolbar{
+text-align: center;
+padding: 5px 0;
+}
+
+.regionSelector .submatrix {
+float: left;
+font-size: 11px;
+padding: 0 0 0 5px;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+.regionSelector .submatrix:first-of-type{
+padding: 0 5px 0 0;
+}
+
+.regionSelector .submatrix label{
+display: block;
+width: 80px;
+height: 20px;
+float: left;
+overflow: hidden;
+white-space: nowrap;
+text-overflow: clip;
+margin: 0 2px 2px 0;
+background: rgba(250, 247, 228, 0.5);
+}
+
+.regionSelector .submatrix label.selected {
+border-color: #41921f;
+font-weight: bold;
+}
+
+.regionSelector .modeSelectorInline{
+margin:5px 0;
+padding:10px;
+font-size: 14px;
+border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+text-align: right;
+}
+
+.regionSelector .modeSelectorInline select{
+min-width: 100px;
+margin:0 10px 0 5px;
+padding:2px;
+font-size: 14px;
+}
+
+.quickSelector li{
+float: none;
+}
+
+fieldset input[type="button"]
+{
+    background-color: #ddd;
+    color: #222;
+    font-size: 10px;
+    padding: 0 2px;
+}
+
+/**
+ * Styling for the overlay legends used by viewers.
+ */
+
+.specialviewer .monitor-legend {
+left: 10px;
+position: absolute;
+top: 10px;
+z-index: 2;
+}
+
+.specialviewer .monitor-legend .extension {
+left: 0;
+right: auto;
+}
+
+.monitor-legend .dropdown-pane {
+min-width: 240px;
+}
+
+.monitor-legend ul {
+margin-bottom: 10px;
+}
+
+.monitor-legend li {
+margin-bottom: 2px;
+}
+
+
+/** styling the context menu that appears when clicking measure points in 3d viewers */
+aside.menu-node {
+background: rgb(255, 254, 246);
+font-size: 12px;
+padding: 5px;
+position: absolute;
+-webkit-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+-moz-box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+box-shadow: 2px 2px 10px 0 rgba(0, 0, 0, 0.7);
+}

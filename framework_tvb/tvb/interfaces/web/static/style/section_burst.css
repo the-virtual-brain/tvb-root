@@ -1,0 +1,696 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by @twotribes, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: SECTION BURST */
+/* Version: Odinson / 2.14.0 */
+/* !-------------------------------------------- */
+
+/* !-------------------------------------------- */
+/* !LAYOUT: Main view container */
+/* Adjusting column widths, inherited from columnizer of base.css */
+/* !-------------------------------------------- */
+
+/* :not is only needed to raise specificity here */
+#main:not(.portlet-frame) {
+right: 15px;
+}
+
+#main.colscheme-3-1st-narrow .view-column.view-history {
+overflow-x: hidden;
+width: 12%;
+}
+
+#main.colscheme-3-1st-narrow .view-column {
+margin-right: 1%;
+width: 43%;
+}
+
+/* Special rule as the PSE column gets injected dynamically BEFORE the usual portlet column which receives :last-child */
+#main.colscheme-3-1st-narrow .view-column.parameter-space-exploration {
+margin-right: 0;
+}
+
+/* --- Maximizing the Portlet/PSE column */
+#s-burst #main.is-maximized .view-column.edit-simulator {
+display: none;
+}
+
+#s-burst #main .view-column.shows-maximized {
+width: 87%;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Simulator parameters */
+/* !-------------------------------------------- */
+
+/* Adjust column widths a little bit */
+.edit-simulator fieldset dt {
+padding-right: 5%;
+width: 20%;
+}
+
+.edit-simulator fieldset dd {
+width: 75%;
+}
+
+/* Special case: Headline is multi-component here */
+#main .edit-simulator hgroup {
+background: rgba(250, 247, 228, 0.1);
+border-bottom: 1px solid rgba(250, 247, 228, 0.2);
+height: 26px;
+margin: 0 0 10px 0;
+padding: 10px 0 0 10px;
+}
+
+#main .edit-simulator hgroup h4 {
+background: none;
+border: none;
+display: inline-block;
+height: auto;
+margin: 0;
+padding: 0;
+}
+
+.edit-simulator hgroup input {
+display: none;
+margin-left: 10px;
+margin-top: 0;
+}
+
+#main .edit-simulator .action-big-launch {
+display: none;
+}
+
+/* Special mode when a burst creation is happening */
+#main .edit-simulator.is-created hgroup {
+background: rgba(141, 139, 151, 0.5);
+border-color: rgba(141, 139, 151, 1);
+}
+
+#main .edit-simulator.is-created hgroup h4 mark {
+color: #3E4252;
+}
+
+.edit-simulator.is-created hgroup input {
+display: inline-block;
+}
+
+#main .edit-simulator.is-created .action-big-launch {
+display: block;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Burst history */
+/* !-------------------------------------------- */
+
+/* no fucking idea why we have to offset the background position of state coloring by -2px. */
+
+.view-history .burst {
+background: rgba(250, 247, 228, 0.1) url("./img/control/sprite_row_ops_state.png") 0 -1px no-repeat;
+border-top: 1px solid transparent;
+border-bottom: 1px solid transparent;
+font-weight: bold;
+margin: 0 0 5px 0;
+padding: 5px 25px 5px 16px;
+position: relative;
+-webkit-transition: background-color .5s ease;
+-moz-transition: background-color .5s ease;
+}
+
+.view-history .burst.burst-started {
+background-position: 0 -1px;
+}
+
+.view-history .burst.burst-paused {
+background-position: 0 -355px;
+}
+
+/* Let's support some poor back-end dev's typo, shall we? */
+.view-history .burst.burst-canceled, 
+.view-history .burst.burst-cancelled {
+background-position: 0 -355px;
+}
+
+.view-history .burst.burst-finished {
+background-position: 0 -237px;
+}
+
+.view-history .burst.burst-error {
+background-position: 0 -119px;
+}
+
+.view-history .burst:hover {
+background-color: rgba(0, 0, 0, 0.1);
+-webkit-transition: background-color .5s ease;
+-moz-transition: background-color .5s ease;
+}
+
+.view-history .burst-active {
+background-color: rgba(250, 247, 228, 0.5);
+border-top: 1px solid rgba(0, 0, 0, 0.5);
+border-bottom: 1px solid rgba(250, 247, 228, 0.5);
+}
+
+.view-history .burst-active:hover {
+background-color: rgba(250, 247, 228, 0.5);
+}
+
+.view-history .burst-active:hover a:not(.action) {
+color: #646a6f;
+}
+
+.view-history .burst a:not(.action) {
+padding: 5px 0 5px 0;
+word-wrap: break-word;
+}
+
+/* Marking of Parameter Space Exploration */
+.view-history .burst-group a:not(.action):before {
+content: "";
+display: inline-block;
+border: 2px solid #646A6F;
+border-radius: 0.6em;
+margin-right: 5px;
+width: 0.5em;
+height: 0.5em;
+vertical-align: baseline;
+}
+
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Editor for single burst in history list */
+/* !-------------------------------------------- */
+
+.view-history .inline-menu {
+height: 100%;
+position: absolute;
+right: 2px;
+top: 0;
+}
+
+.view-history .inline-menu:active,
+.view-history .inline-menu:hover {
+width: 100%;
+}
+
+/* Special action button case: Only icon, no text */
+#main .view-history .inline-menu .action-menu {
+float: right;
+overflow: hidden;
+right: -2px;
+text-indent: -1000em;
+width: 20px;
+}
+
+.view-history .inline-menu .extension {
+left: auto;
+padding-right: 0;
+top: -4px;
+width: 100%;
+}
+
+/* We want to completely cover the invoking burst entry here */
+.view-history .inline-menu .dropdown-pane {
+margin-top: 0;
+}
+
+/* --- Content for dropdown Burst editor */
+#main .view-history .inline-menu .burst-prop-state {
+background: transparent url("./img/control/sprite_row_ops_state.png") 0 0 no-repeat;
+border: none;
+height: 50px;
+left: 0;
+position: absolute;
+top: 4px;
+width: 20px;
+z-index: 10;
+}
+
+#main .view-history .burst.burst-started .burst-prop-state {
+background-position: 0 -1px;
+}
+
+#main .view-history .burst.burst-paused .burst-prop-state {
+background-position: 0 -355px;
+}
+
+/* Let's support some poor back-end dev's typo, shall we? */
+#main .view-history .burst.burst-canceled .burst-prop-state, 
+#main .view-history .burst.burst-cancelled .burst-prop-state {
+background-position: 0 -355px;
+}
+
+#main .view-history .burst.burst-finished .burst-prop-state {
+background-position: 0 -237px;
+}
+
+#main .view-history .burst.burst-error .burst-prop-state {
+background-position: 0 -119px;
+}
+
+.view-history .inline-menu .burst-prop-title {
+padding-right: 50px;
+position: relative;
+z-index: 11;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+.view-history .inline-menu textarea {
+background-color: rgba(255, 255, 255, 0.6);
+height: 2em;
+margin: 0;
+width: 100%;
+}
+
+/* Special action button case: Only icon, no text */
+#main .view-history .inline-menu .action-store {
+overflow: hidden;
+position: absolute;
+right: -2px;
+text-indent: -1000em;
+top: 4px;
+width: 20px;
+z-index: 450;
+}
+
+#main .view-history .inline-menu mark {
+border: none;
+display: inline;
+}
+
+#main .view-history .inline-menu p {
+border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+font-weight: normal;
+margin-bottom: 5px;
+padding-bottom: 5px;
+}
+
+#main .view-history .inline-menu .extension .action-copy, 
+#main .view-history .inline-menu .extension .action-export,
+#main .view-history .inline-menu .extension .action-delete {
+display: block;
+width: 100%;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Portlet viewers */
+/* !-------------------------------------------- */
+
+.view-portlets .flex-wrapper {
+display: -webkit-box;
+height: 100%;
+width: 100%; /* not really needed, maybe just to be safe for the epic maximizer function */
+-webkit-box-orient: vertical;
+-webkit-box-pack: justify;
+}
+
+.view-portlets .flex-wrapper h4 {
+-webkit-box-flex: 0;
+}
+
+.view-portlets .flex-wrapper .toolbar-inline {
+-webkit-box-flex: 0;
+}
+
+.view-portlets .flex-wrapper .portlet-container {
+-webkit-box-flex: 1;
+}
+
+/* Move the Burst results tab to the right */
+.view-portlets .tabswitcher li:last-child {
+float: right;
+left: -10px;
+}
+
+.view-portlets .portlet {
+border: 2px solid rgba(0, 0, 0, 0.2);
+float: left;
+min-height: 300px;
+overflow: hidden;
+position: relative;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+#main .view-portlets .portlet h5,
+#main .view-portlets .portlet .action {
+font-size: 12px;
+position: absolute;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+.view-portlets .portlet h5 {
+background: rgba(250, 247, 228, 0.5);
+min-height: 32px;
+padding: 2px 45px 2px 8px;
+right: 0;
+top: 0;
+width: 100%;
+}
+
+/* Special action button case: Only icon, no text */
+.view-portlets .portlet .action {
+bottom: auto;
+right: 1px;
+text-indent: -1000em;
+top: 2px;
+width: 20px;
+}
+
+/* 1 portlet */
+.view-portlets .portlet-container.visible-1 .portlet {
+height: 100%;
+width: 100%;
+}
+
+/* 1 portlet on top, 1 on bottom */
+.view-portlets .portlet-container.visible-1-1 .portlet {
+height: 50%;
+width: 100%;
+}
+
+/* 1 portlet on top, 2 on bottom */
+.view-portlets .portlet-container.visible-1-2 .portlet {
+height: 50%;
+width: 50%;
+}
+
+.view-portlets .portlet-container.visible-1-2 .portlet-0 {
+width: 100%;
+}
+
+/* 2 portlets on top, 1 on bottom */
+.view-portlets .portlet-container.visible-2-1 .portlet {
+height: 50%;
+width: 50%;
+}
+
+.view-portlets .portlet-container.visible-2-1 .portlet-2 {
+width: 100%;
+}
+
+/* 2 portlet on top, 2 on bottom */
+.view-portlets .portlet-container.visible-2-2 .portlet {
+height: 50%;
+width: 50%;
+}
+
+/* --- Portlet mode: Setting up portlet types */
+.view-portlets .portlet-container.portlet-edit .portlet {
+border-color: transparent;
+-webkit-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+-moz-box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 247, 228, 0.4);
+}
+
+.view-portlets .portlet-container.portlet-edit .portlet dt, 
+.view-portlets .portlet-container.portlet-edit .portlet dd {
+border: none;
+float: none;
+margin-bottom: 0;
+padding: 10px 0 5px 0;
+width: 100%;
+}
+
+.view-portlets .portlet-container.portlet-edit .portlet dd {
+padding-top: 0;
+}
+
+/* --- Portlet mode: Preview */
+.view-portlets .portlet-container.portlet-preview .portlet {
+background-position: center 0, center center;
+background-repeat: no-repeat, no-repeat;
+background-size: 100%, contain;
+}
+
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-brainv {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/brainv.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/brainv.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-ccwd {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/ccwd.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/ccwd.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-nbcb {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/nbcb.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/nbcb.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-isos {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/isos.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/isos.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-connectivity2d {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/connectivity2d.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/connectivity2d.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-cov {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/cov.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/cov.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-eeglinesv {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/eeglinesv.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/eeglinesv.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-fourier {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/fourie.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/fourie.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-imcoherence {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/imcoherence.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/imcoherence.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-isostopo {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/isostopo.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/isostopo.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-ica {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/ica.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/ica.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-pca {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/pca.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/pca.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-stw {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/stw.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/stw.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-timeseries {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/timeseries.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/timeseries.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-wavelet {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/wavelet.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/wavelet.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-xcoher {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/xcoher.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/xcoher.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-xcorr {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/xcorr.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/xcorr.png");
+}
+.view-portlets .portlet-container.portlet-preview .portlet.portlet-type-xpcc {
+background-image: -webkit-gradient(radial, center 30%, 0, center 30%, 300, from(rgba(0, 0, 0, 0.2)), to(rgba(0, 0, 0, 0.8))), url("./img/portlets/xpcc.png");
+background-image: -moz-radial-gradient(center 30%, circle farthest-corner, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url("./img/portlets/xpcc.png");
+}
+
+/* --- Portlet mode: Configuring a single portlet's parameters */
+/* This mode is triggered by .portlet-container.portlet-configure */
+/* not much to style yet: Just use a <h5> for the portlet's type and a standard <fieldset> list for its fields */
+
+/* --- Portlet mode: Running */
+.view-portlets .portlet-container.portlet-run .portlet h5 {
+padding-right: 100px;
+}
+
+.view-portlets .portlet-container.portlet-run .portlet .action-view {
+right: 45px;
+}
+
+.view-portlets .portlet-container.portlet-run .portlet .specialviewer {
+background: #ccc; /* THIS IS FOR DEMO PURPOSES ONLY !!!*/
+height: 100%; /* no idea why this doesn't work out yet */
+padding-top: 38px;
+width: 100%;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+}
+
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Parameter Space Exploration */
+/* !-------------------------------------------- */
+
+.parameter-space-exploration .flex-wrapper {
+display: -webkit-box;
+height: 93%;
+width: 100%; /* not really needed, maybe just to be safe for the epic maximizer function */
+-webkit-box-orient: vertical;
+-webkit-box-pack: justify;
+}
+
+.parameter-space-exploration .flex-wrapper h4 {
+-webkit-box-flex: 0;
+}
+
+.parameter-space-exploration .flex-wrapper .toolbar-inline {
+-webkit-box-flex: 0;
+}
+
+.parameter-space-exploration .flex-wrapper .specialviewer {
+width: 97%;
+-webkit-box-flex: 1;
+-moz-box-flex: 1;
+}
+
+@-moz-document url-prefix() {
+	.parameter-space-exploration .flex-wrapper .specialviewer {
+		min-height: 500px;
+	}
+}
+
+/* Special action button case: Only icon, no text */
+#main .parameter-space-exploration .burst-pse-metrics .action-view {
+float: right;
+right: -2px;
+text-indent: -1000em;
+width: 20px;
+}
+
+.parameter-space-exploration .burst-pse-colors mark {
+display: block;
+}
+
+.parameter-space-exploration .burst-pse-colors li + .color-swatch {
+margin-left: 10px;
+}
+
+.parameter-space-exploration .color-swatch .colorSelector {
+height: 30px;
+width: 30px;
+}
+
+.parameter-space-exploration .color-swatch .colorSelector div {
+left: 0;
+top: 0;
+}
+
+/* !============================================================================ */
+/* !============================================================================ */
+/* !TEMPORARY STUFF BELOW - ONLY FOR BACK-END DEVELOPERS! */
+/* !============================================================================ */
+/* !Needs major cleanup and will possibly be replaced completely! */
+/* !============================================================================ */
+/* !============================================================================ */
+
+/* reset styles */
+iframe{
+    border:none;
+}
+
+/* Form handling*/
+
+.right-display {
+	float: right;
+	padding-right: 30px;
+}
+
+/* Portlets toolbar shows/hides buttons based on current state:*/
+ul#portlets-toolbar li a.hideable.action {
+	display: none;
+}
+
+#portlets-toolbar.select-portlets-toolbar a#save-configure-tabs-button,
+#portlets-toolbar.select-portlets-toolbar a#cancel-configure-tabs-button {
+	display: inline-block;
+}
+
+#portlets-toolbar.parameters-portlets-toolbar a#save-portlet-params-button,
+#portlets-toolbar.parameters-portlets-toolbar a#cancel-configure-portlet-params-button {
+	display: inline-block;
+}
+
+#portlets-toolbar.standard-portlets-toolbar a#configure-tabs-button {
+	display: inline-block;
+}
+
+/* PSE Message Incompatible */
+.pse-incompatible {
+    margin: 5%;
+}
+
+.pse-incompatible mark {
+    font-style: italic;
+}
+
+.pse-incompatible h3 {
+    margin-bottom: 10px;
+}
+
+.pse-graph-title {
+    color: #646a6f;
+    text-transform: uppercase;
+}
+
+/* scroll the burst parameters keep the header fixed at top*/
+#div-simulator-parameters {
+    position: absolute;
+    top: 50px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow-y: auto;
+}
+
+.edit-simulator  > .toolbar-inline{
+    margin-bottom: 0;
+}
+
+/* Rotate Axis Labels in PSE */
+.flot-x-axis div.flot-tick-label {
+    transform: rotate(15deg);
+    -ms-transform: rotate(15deg);
+    -moz-transform: rotate(15deg);
+    -webkit-transform: rotate(15deg);
+    -o-transform: rotate(15deg);
+}
+
+.matrix-legend {
+    font-size: 10px;
+    font-weight: bold;
+    position: absolute;
+    height: 100%;
+    right: 5px;
+    text-align: center;
+    top: 0;
+}
+
+.table-legend-labels {
+    width: 20px;
+    height: 100%;
+}

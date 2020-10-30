@@ -1,0 +1,51 @@
+ <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css"/>
+ <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+
+ <!--! Controls for changing metrics -->
+ <ul class="toolbar-inline">
+     <li>
+         <label for="color_metric_select">Color metric</label>
+         <select id="color_metric_select" onchange="redrawCanvas(this.value)">
+             {% for metric in available_metrics %}
+                {% if metric==color_metric %}
+                    <option value="{{ metric }}" selected="selected">{{ metric }}</option>
+                {% else %}
+                    <option value="{{ metric }}">{{ metric }}</option>
+                {% endif %}
+             {% endfor %}
+         </select>
+    </li>
+</ul>
+
+ <div class="matrix2d-draw-content" id="canvasParent">
+
+     <div class="matrix-legend" id="colorWeightsLegendISO"></div>
+
+     <div class="matrix-legend">
+         <table id="table-colorWeightsLegendISO" class="table-legend-labels">
+             {% for label in range(7) %}
+                {% if label != 0 %}
+                    <tr height="{{ ((100/8) | string) ~ '%' }}" style='vertical-align: bottom;'>
+                        <td>{{ label }}</td>
+                    </tr>
+                {% else %}
+                    <tr height="20px"><td>{{ label }}</td></tr>
+                {% endif %}
+             {% endfor %}
+         </table>
+     </div>
+
+     <svg class="matrix2d-svg-container" id="svg-container"></svg>
+     <canvas class="matrix2d-main-canvas" id="main-canvas-2d"></canvas>
+
+ </div>
+
+ <div class="matrix2d-toolTip"></div>
+
+ <script type="text/javascript">
+     $(document).ready(function () {
+         pse_isocline_init('{{ canvasName }}', '{{ xAxisName  }}', '{{ yAxisName }}', '{{ matrix_shape  }}', {{ matrix_guids | safe }},
+         {{ x_min }}, {{ x_max }}, {{ y_min }}, {{ y_max }}, '{{ url_base }}', '{{ node_info_url }}');
+         window.onresize = drawAxis;
+     });
+ </script>

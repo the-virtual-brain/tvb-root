@@ -1,0 +1,18 @@
+<section id="section-pse" class="parameter-space-exploration view-column">
+	<link rel="stylesheet" type="text/css" href="/static/style/section_burst.css"/>
+    <script type="text/javascript" src="/static_view/pse_discrete/pse_discreet.js?{{ currentVersionJS }}"></script>
+    <!--! We need projectTree.js for launching algorithm methods, from overlay. -->
+	<script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $("#main").addClass("colscheme-1");
+        });
+    </script>
+
+    <div id="pse_discreet_top_id" class="flex-wrapper">
+        {% import 'visualizers/pse_discrete/function_pse.html' as fp with context %}
+        {{ fp.generateFramePSE(datatype_group_gid, available_metrics) }}
+    </div>
+
+</section>

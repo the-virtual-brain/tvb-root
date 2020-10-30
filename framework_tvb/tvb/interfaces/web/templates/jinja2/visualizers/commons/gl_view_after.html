@@ -1,0 +1,29 @@
+<div class="monitor master assisted" id="brain-3d">
+    <!--! Draw brain-->
+    {% import 'visualizers/commons/brain_component.html' as bc  %}
+
+    {{ bc.draw_brain_component("GLcanvas", 'legendLabels' if legendLabels is defined else none) }}
+
+    <div class="helper">
+        <span id="FramesPerSecond">0.0</span><span> fps</span>
+    </div>
+</div>
+
+{% if show_navigator %}
+
+    <div class="monitor slave" id="brain-x" >
+        <br/>
+        <span class="brainArea"></span>
+    </div>
+
+    <div class="monitor slave" id="brain-y" >
+        <br/>
+        <span class="brainArea"></span>
+    </div>
+
+    <div class="monitor slave" id="brain-z" >
+        <br/>
+        <span class="brainArea"></span>
+    </div>
+
+{% endif %}

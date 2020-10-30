@@ -1,0 +1,29 @@
+<div>
+    {% macro plotEquations(allSeries, prefix, message) -%}
+        <div id="equationCanvasId_{{ prefix }}" class="specialviewer equationDisplay"></div>
+
+        <script type="text/javascript">
+            $(document).ready(function () {
+                var options = {xaxes: [{axisLabel: "{{ 'Time (ms)' if prefix=='temporal' else 'Distance (mm)' }}"}]};
+                $.plot($("#equationCanvasId_{{ prefix }}"), {{ allSeries | safe }}, options);
+            });
+        </script>
+
+        {% if message %}
+            <!--! if the message is empty we don't want to clear the other messages-->
+            <script type="text/javascript">
+                displayMessage("{{ message }}", "warningMessage");
+            </script>
+        {% endif %}
+    {%- endmacro %}
+
+    {% if allSeries is not none %}
+        {{ plotEquations(allSeries, prefix, message) }}
+    {% else %}
+        <script type="text/javascript">
+            $(document).ready(function () {
+                displayMessage('{{ errorMsg }}', "errorMessage");
+            });
+        </script>
+    {% endif %}
+</div>

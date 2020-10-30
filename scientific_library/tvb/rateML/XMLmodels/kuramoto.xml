@@ -10,15 +10,15 @@
         <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
         <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
 
-        <Constant name="omega" value="60.0 * 2.0 * 3.1415927 / 1e3" dimension=""  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
+        <Constant name="omega" value="60.0 * 2.0 * M_PI_F / 1e3" dimension=""  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
 
-        <Exposure name="V" dimension="V" />
+        <Exposure name="V" dimension="sin(V)" />
 
         <Dynamics>
             <!-- Use PI to select the PI wrapper (ie Kuramoto) -->
-            <StateVariable name="V" dimension="-2, 1"/>
+            <StateVariable name="V" dimension="-2, 1" exposure="PI"/>
 
-            <TimeDerivative variable="dV" value="omega + coupling"/>
+            <TimeDerivative variable="dV" value="omega + c_0"/>
         </Dynamics>
 
     </ComponentType>

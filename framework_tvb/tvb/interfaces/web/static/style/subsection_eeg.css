@@ -1,0 +1,157 @@
+/**
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * Web-UI helpful to run brain-simulations. To use it, you also need do download
+ * TheVirtualBrain-Scientific Package (for simulators). See content of the
+ * documentation-folder for more details. See also http://www.thevirtualbrain.org
+ *
+ * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ *
+ * This program is free software: you can redistribute it and/or modify it under the
+ * terms of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License along with this
+ * program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **/
+
+/* -------------------------------------------- */
+/* The Virtual Brain: System */
+/* -------------------------------------------- */
+/* Created by @twotribes, Stuttgart */
+/* -------------------------------------------- */
+/* StyleSheet Scope: SUBSECTION EEG VIEW */
+/* Version: Odinson / 2.1.1 */
+/* -------------------------------------------- */
+
+/* !-------------------------------------------- */
+/* !LAYOUT: General */
+/* !-------------------------------------------- */
+/* We're setting up our own columns here as we get no guidance from base.css and flow-control */
+
+.eeg-display {
+width: 100%;
+height:100%;
+}
+
+/* !-------------------------------------------- */
+/* !COMPONENT: Inline toolbar for EEG controls */
+/* !-------------------------------------------- */
+
+.toolbar-inline .dropdown-pane {
+color: #000;
+min-width: 200px;
+}
+
+.toolbar-inline .zoom-control .extension {
+left: 0;
+right: auto;
+}
+
+.toolbar-inline .value-inspector.value-channel {
+margin-left: 20px;
+width: 100px;
+}
+
+.toolbar-inline .value-inspector.value-time {
+width: 100px;
+}
+
+.toolbar-inline .value-inspector.value-value {
+width: 150px;
+}
+
+.toolbar-inline .value-inspector mark {
+display: block;
+}
+
+.toolbar-inline .value-inspector span {
+font-weight: bold;
+}
+
+.toolbar-inline .channel-selector {
+float: right;
+}
+
+.toolbar-inline .channel-selector .dropdown-pane {
+width: auto;
+}
+
+#main .toolbar-inline .channel-selector .action-view {
+margin-right: 20px;
+}
+
+.toolbar-inline .channel-selector table td {
+padding-right: 10px;
+white-space: nowrap;
+}
+
+/* !============================================================================ */
+/* !============================================================================ */
+/* !TEMPORARY STUFF BELOW - ONLY FOR BACK-END DEVELOPERS! */
+/* !============================================================================ */
+/* !Needs major cleanup and will possibly be replaced completely! */
+/* !============================================================================ */
+/* !============================================================================ */
+
+
+.sliderLabels {
+    text-align: left;
+}
+
+.sliderDiv {
+   width: 90%;
+   height: 20px;
+   padding-top: 5px;
+   margin: auto auto;
+}
+
+.sliderPosition {
+}
+
+.subtableCheckboxes {
+	margin: auto; 
+	margin-top:10px; 
+	margin-bottom:10px; 
+	border: solid 1px white;
+}
+
+.subtableCheckboxes thead {
+	font-weight: bold;
+	text-align: center;
+}
+
+.mainCanvas {
+	width:1200px;
+	height:550px;
+	resize:both; 
+	overflow:hidden;
+}
+
+/* NOTE: This width is simply too wide when use together w/ a 3D brain viewer on the left! */
+.canvasExtended {
+	/*width:700px;*/
+	/*height:600px; */
+	/*float:right; */
+	/*top:100px;*/
+    /*margin-left: 10px;*/
+    /*margin-right: 10px;*/
+	/*position: absolute;*/
+}
+
+.chart-x-label {
+	width:100%;
+	text-align:center;
+}
+
+.flot-y-axis .tickLabel{
+    font-weight: bold;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 1);
+}
+
+.flot-overlay{
+    cursor: crosshair;
+}
+

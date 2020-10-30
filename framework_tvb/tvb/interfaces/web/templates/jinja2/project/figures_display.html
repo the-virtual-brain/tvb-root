@@ -1,0 +1,70 @@
+<div id="main" class="columnized colscheme-2-1st-narrow">
+    <!--! Column w/ filters for the session list -->
+    <section class="session-filter view-column col-1">
+        <h4><mark>Categories</mark> List</h4>
+        <ul>
+            <li class="filter-all {{ 'active' if selected_session == 'all_sessions' else '' }}">
+                <a href="#" onclick="displayFiguresForSession('all_sessions');"  title="Enable this filter...">All categories</a>
+                <p class="counter">{{ all_sessions_info.values() | sum  }}</p>
+            </li>
+
+            {% for session_name in all_sessions_info %}
+                <li class="ops-pending {{ 'active' if selected_session == session_name else '' }}">
+                    <nav class="inline-menu">
+                        <button class="action action-edit action-menu">Edit</button>
+                        <div class="extension">
+                            <div class="dropdown-pane">
+                                <form action="/project/figure/editresultfigures" method="post">
+                                    <input type="hidden" name="old_session_name" value="{{ session_name }}"/>
+                                    <input type="text" name="new_session_name" value="{{ session_name }}"/>
+                                    <button type="submit" name="rename_session" value="Rename session" class="action action-store" title="Save changed category name">Rename</button>
+                                    <button type="submit" name="remove_session" value="Remove session" class="action action-delete" title="Delete category including all images">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </nav>
+                    <a href="#" onclick="displayFiguresForSession('{{ session_name }}');"  title="Enable this category filter...">{{ session_name }}</a>
+                    <p class="counter">{{ all_sessions_info[session_name] }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <!--! Column displaying a session's images -->
+    <section class="figure-list view-column col-2">
+        <h4><mark>Manage</mark>{{ manageFigureTitle }}</h4>
+        <ul>
+            {% for sessionName in selected_sessions_data %}
+                {% for figure in selected_sessions_data[sessionName] %}
+                    <li>
+                        <form action="/project/figure/editresultfigures" method="post">
+                            <input type="hidden" name="figure_id" value="{{ figure.id }}"/>
+                            <input type="hidden" name="selected_session" value="{{ selected_session }}"/>
+                            <div class="image-container">
+                                <a href="#" onclick="zoomInFigure({{ figure.id }});" title="Zoom in" class="action action-zoom-in">Zoom in</a>
+								<!-- Need separate cases since firefox won't display normal images properly if we
+									use object element, and also both chrome and firefox will change .png images
+									sizes if used with object element. -->
+                                {% if not figure.file_path.endswith('.svg') %}
+									<img src="/flow/readserverstaticfile/{{ figure.file_path }}" class="tvb-snapshot-image"/>
+                                {% else %}
+                                    <object style="width:100%; height:100%" data="/flow/readserverstaticfile/{{ figure.file_path }}"></object>
+                                {% endif %}
+
+                                <button onclick="window.location='/project/figure/downloadimage/{{ figure.id }}'; return false;" title="Download this image..." class="action action-download">Download</button>
+                                <button type="submit" class="action action-delete" name="remove_figure" title="Delete this image..." value="Remove">Remove</button>
+                            </div>
+
+							<label for="category_name_{{ figure.id }}">Category</label>
+                            <input id="category_name_{{ figure.id }}" type="text" name="session_name" value="{{ figure.session_name }}"/>
+							<label for="image_name_{{ figure.id }}">Title</label>
+                            <input id="image_name_{{ figure.id }}" type="text" name="name" value="{{ figure.name }}"/>
+                            <button type="submit" title="Save changed category and title..." class="action action-store">Save</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+

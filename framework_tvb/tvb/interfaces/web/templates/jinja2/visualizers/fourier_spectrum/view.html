@@ -1,0 +1,100 @@
+<div id="fourier_spectrum" class="view-column">
+
+    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="/static_view/fourier_spectrum/fourier_spectrum.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="/static_view/commons/scripts/drawCurve.js?{{ currentVersionJS }}"></script>
+
+    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
+
+    <div id="svg-viewer"></div>
+
+    <ul class="toolbar-inline">
+
+        <li>
+            <label for="xScale_select">X Scale</label>
+
+            <select id="xScale_select" onchange="Plot_changeXScale(this.value)">
+                {% for scale in available_scales %}
+                    {% if scale==xscale %}
+                        <option value="{{ scale }}" selected="selected">{{ scale }}</option>
+                    {% else %}
+                        <option value="{{ scale }}">{{ scale }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+        <li>
+            <label for="yScale_select">Y Scale</label>
+
+            <select id="yScale_select" onchange="Plot_changeYScale(this.value)">
+                {% for scale in available_scales %}
+                    {% if scale==yscale %}
+                        <option value="{{ scale }}" selected="selected">{{ scale }}</option>
+                    {% else %}
+                        <option value="{{ scale }}">{{ scale }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+        <li>
+            <label for="mode_select">Mode</label>
+            <select id="mode_select" onchange="Fourier_changeMode(this.value)">
+                {% for mod in mode_list %}
+                    {% if mod==mode %}
+                        <option value="{{ mod }}" selected="selected">{{ mod }}</option>
+                    {% else %}
+                        <option value="{{ mod }}">{{ mod }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+        <li>
+            <label for="state_select">State Variable</label>
+            <select id="state_select" onchange="Fourier_changeState(this.value)">
+                {% for state in state_list %}
+                    {% if state==state_variable %}
+                        <option value="{{ loop.index0 }}" selected="selected">{{ state }}</option>
+                    {% else %}
+                        <option value="{{ loop.index0 }}">{{ state }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+        <li>
+            <label for="normalize_select">Normalize</label>
+            <select id="normalize_select" onchange="Fourier_changeNormalize(this.value)">
+                {% for norm in normalize_list %}
+                    {% if norm==normalize %}
+                        <option value="{{ norm }}" selected="selected">{{ norm }}</option>
+                    {% else %}
+                        <option value="{{ norm }}">{{ norm }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </li>
+
+    </ul>
+
+    <div class="curve_draw_area">
+        <svg class="draw-svg-container" id="svg-container"></svg>
+    </div>
+
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            $("#main").addClass("colscheme-1");
+            Fourier_fourier_spectrum_init({{ matrix_shape }}, '{{ plotName }}', '{{ xAxisName }}', '{{ yAxisName }}', {{ xmin }}, {{ xmax }}, '{{ url_base }}', "svg-container", "{{ x_values }}");
+            Fourier_getData($("#state_select option:selected").val(), $("#mode_select option:selected").text(), $("#normalize_select option:selected").text());
+            window.onresize = Plot_drawGraph;
+        });
+
+        // For the burst Preview part
+        function launchViewer(width, height) {
+        }
+    </script>
+
+</div>
