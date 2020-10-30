@@ -129,6 +129,7 @@ class TVBImporter(ABCUploader):
                     datatype = None
                     try:
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
+                        service.check_import_references(view_model.data_file, datatype)
                         service.store_datatype(datatype, view_model.data_file)
                         self.nr_of_datatypes += 1
                     except ImportException as excep:

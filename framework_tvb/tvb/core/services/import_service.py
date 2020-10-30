@@ -222,6 +222,23 @@ class ImportService(object):
                     self.logger.exception("Incompatibility details ...")
         return all_datatypes
 
+    @staticmethod
+    def check_import_references(file_path, datatype):
+        h5_class = H5File.h5_class_from_file(file_path)
+        reference_list = h5_class(file_path).gather_references()
+
+        for _, reference_gid in reference_list:
+            if not reference_gid:
+                continue
+
+            ref_index = dao.get_datatype_by_gid(reference_gid.hex)
+            if ref_index is None:
+                os.remove(file_path)
+                dao.remove_entity(datatype.__class__, datatype.id)
+                raise MissingReferenceException(
+                    'Imported file depends on datatypes that do not exist. Please upload '
+                    'those first!')
+
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
         # type: (Project, dict) -> int
         sorted_dts = sorted(all_datatypes.items(),
@@ -237,20 +254,7 @@ class ImportService(object):
                 AlgorithmService.create_link([datatype_already_in_tvb.id], project.id)
 
             file_path = h5.h5_file_for_index(datatype).path
-            h5_class = H5File.h5_class_from_file(file_path)
-            reference_list = h5_class(file_path).gather_references()
-
-            for _, reference_gid in reference_list:
-                if not reference_gid:
-                    continue
-
-                ref_index = dao.get_datatype_by_gid(reference_gid.hex)
-                if ref_index is None:
-                    os.remove(file_path)
-                    dao.remove_entity(datatype.__class__, datatype.id)
-                    raise MissingReferenceException(
-                        'Imported file depends on datatypes that do not exist. Please upload '
-                        'those first!')
+            self.check_import_references(file_path, datatype)
 
         return count
 
