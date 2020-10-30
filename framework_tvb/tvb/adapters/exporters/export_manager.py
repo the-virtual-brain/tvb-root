@@ -125,17 +125,22 @@ class ExportManager(object):
 
         return None, result_path, False
 
-    def get_data_with_references_list(self, data):
+    def get_data_with_references_list(self, data, text_dict=None):
         data_path = h5.path_for_stored_index(data)
-        dt_list = []
-        dt_list.append(data)
+
+        if not text_dict:
+            text_dict = dict()
+        if data.gid and data.gid not in text_dict.keys():
+            text_dict[data.gid] = data
+
         with H5File.from_file(data_path) as f:
             sub_dt_refs = f.gather_references()
 
             for reference in sub_dt_refs:
-                dt = dao.get_datatype_by_gid(reference[1].hex)
-                dt_list.append(dt)
-        return dt_list
+                if reference[1]:
+                    dt = dao.get_datatype_by_gid(reference[1].hex)
+                    self.get_data_with_references_list(dt, text_dict)
+        return list(text_dict.values())
 
     def export_data(self, data, exporter_id, project):
         """
