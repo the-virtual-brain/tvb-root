@@ -43,7 +43,7 @@ class ${modelname}(ModelNumbaDfun):
 ),
         default=(\
 %for defa in (dynamics.state_variables):
-'${defa.name}', \
+'${choice.name}', \
 %endfor
 ),
         doc="Variables to monitor"
@@ -83,7 +83,11 @@ ${itemI.name}, \
 local_coupling, dx):
     "Gufunc for ${modelname} model equations."
 
-    coupling = coupling[0]
+    # long-range coupling
+    c_pop1 = coupling[0]
+    c_pop2 = coupling[1]
+    c_pop3 = coupling[2]
+    c_pop4 = coupling[3]
 
     % for i, itemF in enumerate(dynamics.state_variables):
     ${itemF.name} = vw[${i}]

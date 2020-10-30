@@ -28,14 +28,6 @@
         <Constant name="w_I" dimension="" value="0.7" description="Inhibitory population external input scaling weight"/>
         <Constant name="gamma_I" dimension="" value="1.0 / 1000.0" description="Inhibitory population kinetic parameter"/>
 
-        <!-- Make derived variables -->
-<!--        <Constant name="min_d_E" dimension="" value="-1.0 * d_E" description="Only in CUDA"/>-->
-<!--        <Constant name="min_d_I" dimension="" value="-1.0 * d_I" description="Only in CUDA"/>-->
-<!--        <Constant name="imintau_E" dimension="" value="-1.0 / tau_E" description="Only in CUDA"/>-->
-<!--        <Constant name="imintau_I" dimension="" value="-1.0 / tau_I" description="Only in CUDA"/>-->
-<!--        <Constant name="w_E__I_0" dimension="" value="w_E * I_0" description="Only in CUDA"/>-->
-<!--        <Constant name="w_I__I_0" dimension="" value="w_I * I_0" description="Only in CUDA"/>-->
-
         <Constant name="J_N" dimension="" value="0.15" description="[nA] NMDA current"/>
         <Constant name="J_I" dimension="" value="1.0" description="[nA] Local inhibitory current"/>
         <Constant name="G" dimension="" value="2.0" description="Global coupling scaling"/>
@@ -45,8 +37,6 @@
         <Constant name="J_NMDA" dimension="" value="0.15" description=""/>
         <Constant name="JI" dimension="" value="1.0" description=""/>
         <Constant name="J_NMDA" dimension="" value="0.15" description=""/>
-<!--        <Constant name="G_J_NMDA" dimension="" value="G*J_NMDA" description=""/>-->
-<!--        <Constant name="w_plus__J_NMDA" dimension="" value="w_plus * J_NMDA" description=""/>-->
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality-->
@@ -54,10 +44,20 @@
         <Exposure name="W" dimension="W"/>
 
         <Dynamics>
-            <StateVariable name="V" dimension="" exposure="0.0000001, 1"/>
-            <StateVariable name="W" dimension="" exposure="0.0000001, 1"/>
+            <StateVariable name="V" dimension="0.0, 1.0" exposure="0.0, 1.0"/>
+            <StateVariable name="W" dimension="0.0, 1.0" exposure="0.0, 1.0"/>
+            
+                    <!-- Make derived variables -->
+            <DerivedVariable name="min_d_E" value="-1.0 * d_E" />
+            <DerivedVariable name="min_d_I" value="-1.0 * d_I" />
+            <DerivedVariable name="imintau_E" value="-1.0 / tau_E" />
+            <DerivedVariable name="imintau_I" value="-1.0 / tau_I" />
+            <DerivedVariable name="w_E__I_0" value="w_E * I_0" />
+            <DerivedVariable name="w_I__I_0" value="w_I * I_0" />
+            <DerivedVariable name="G_J_NMDA" value="G*J_NMDA"/>
+            <DerivedVariable name="w_plus__J_NMDA" value="w_plus * J_NMDA"/>
 
-            <DerivedVariable name="tmp_I_E" value="a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_0 - JI*W) - b_E"/>
+            <DerivedVariable name="tmp_I_E" value="a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_pop1 - JI*W) - b_E"/>
             <DerivedVariable name="tmp_H_E" value="tmp_I_E/(1.0-exp(min_d_E * tmp_I_E))"/>
             <DerivedVariable name="tmp_I_I" value="(a_I*((w_I__I_0+(J_NMDA * V))-W))-b_I"/>
             <DerivedVariable name="tmp_H_I" value="tmp_I_I/(1.0-exp(min_d_I*tmp_I_I))"/>

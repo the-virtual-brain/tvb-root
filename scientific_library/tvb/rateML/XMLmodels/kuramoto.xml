@@ -18,7 +18,7 @@
             <!-- Use PI to select the PI wrapper (ie Kuramoto) -->
             <StateVariable name="V" dimension="-2, 1"/>
 
-            <TimeDerivative variable="dV" value="omega + coupling"/>
+            <TimeDerivative variable="dV" value="omega + c_pop1"/>
         </Dynamics>
 
     </ComponentType>

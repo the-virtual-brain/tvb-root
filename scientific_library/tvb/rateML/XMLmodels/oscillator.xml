@@ -35,7 +35,7 @@
             <StateVariable name="V" dimension="-2.0, 4.0" exposure=""/>
             <StateVariable name="W" dimension="-6.0, 6.0" exposure=""/>
 
-            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * coupling + local_coupling * V)"/>
+            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * c_pop1 + local_coupling * V)"/>
             <TimeDerivative variable="dW" value="d * (a + b * V + c * {V^2} - beta * W) / tau"/>
         </Dynamics>
 

@@ -43,10 +43,14 @@ class KuramotoT(ModelNumbaDfun):
 def _numba_dfun_KuramotoT(vw, coupling, omega, local_coupling, dx):
     "Gufunc for KuramotoT model equations."
 
+    # long-range coupling
+    c_pop1 = coupling[0]
+    c_pop2 = coupling[1]
+    c_pop3 = coupling[2]
+    c_pop4 = coupling[3]
+
     V = vw[0]
 
 
-
-
-    dx[0] = omega + coupling
-            
+    dx[0] = omega + c_pop1
+    

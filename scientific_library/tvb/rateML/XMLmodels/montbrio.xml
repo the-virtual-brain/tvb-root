@@ -29,7 +29,7 @@
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
         Choices and default list with a (,) separator-->
         <Exposure name="r" dimension="r"/>
-        <Exposure name="v" dimension="v"/>
+        <Exposure name="V" dimension="V"/>
         
         <Dynamics>
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
@@ -41,7 +41,7 @@
             <!-- Derived variables can be used to simplify the time derivatives, enter the local coupling formulas or any formula -->
             <!-- syntax: [name]=[expression] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
-            <DerivedVariable name="Coupling_global" value="alpha * coupling[0]"/>
+            <DerivedVariable name="Coupling_global" value="alpha * c_pop1"/>
             <DerivedVariable name="Coupling_local" value="(1-alpha) * local_coupling * r"/>
             <DerivedVariable name="Coupling_Term" value="Coupling_global + Coupling_local"/>
 

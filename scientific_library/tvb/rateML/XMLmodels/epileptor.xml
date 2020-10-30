@@ -40,18 +40,15 @@
 
         <Dynamics>
 
-            <StateVariable name="x1" dimension="" exposure="-2.0, 1.0"/>
-            <StateVariable name="y1" dimension="" exposure="-20.0, 2.0"/>
-            <StateVariable name="z" dimension="" exposure="-2.0, 5.0"/>
-            <StateVariable name="x2" dimension="" exposure="-2.0, 0.0"/>
-            <StateVariable name="y2" dimension="" exposure="0.0, 2.0"/>
-            <StateVariable name="g" dimension="" exposure="-1.0, 1.0"/>
-
-            <DerivedVariable name="bla" value="{x^2}"/>
+            <StateVariable name="x1" dimension="-2.0, 1.0" exposure=""/>
+            <StateVariable name="y1" dimension="-20.0, 2.0" exposure=""/>
+            <StateVariable name="z" dimension="-2.0, 5.0" exposure=""/>
+            <StateVariable name="x2" dimension="-2.0, 0.0" exposure=""/>
+            <StateVariable name="y2" dimension="0.0, 2.0" exposure=""/>
+            <StateVariable name="g" dimension="-1.0, 1.0" exposure=""/>
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to). Cases are separated with ; -->
             <!-- Population 1 -->
-<!--            <ConditionalDerivedVariable name="ydot0" dimension="x1 &lt; 0.0" cases="-a * powf(x1, 2) + b * x1; slope - x2 + 0.6 * powf((z - 4),2)"/>-->
             <ConditionalDerivedVariable name="ydot0">
                 <Case condition="x1 &lt; 0.0" value="-a * {x1^2} + b * x1"/>
                 <Case condition="else" value="slope - x2 + 0.6 * {z-4^2}"/>
@@ -62,13 +59,11 @@
                 <Case condition="else" value="0"/>
             </ConditionalDerivedVariable>
 
-<!--            <ConditionalDerivedVariable name="h" dimension="modification" cases="x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1)); 4 * (x1 - x0) + ydot2"/>-->
             <ConditionalDerivedVariable name="h">
                 <Case condition="modification" value="x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1))"/>
                 <Case condition="else" value="4 * (x1 - x0) + ydot2"/>
             </ConditionalDerivedVariable>
 
-<!--            <ConditionalDerivedVariable name="ydot4" dimension="x2 &lt; -0.25" cases="0.0; aa * (x2 + 0.25)"/>-->
             <ConditionalDerivedVariable name="ydot4">
                 <Case condition="x2 &lt; -0.25" value="0.0"/>
                 <Case condition="else" value="aa * (x2 + 0.25)"/>
@@ -76,13 +71,13 @@
 
             <!-- Use a different variable name then statevariable-->
             <TimeDerivative variable="dx1" value="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 )"/>
-            <TimeDerivative variable="dy1" value="tt * (c - d * powf(x1, 2) - y1)"/>
+            <TimeDerivative variable="dy1" value="tt * (c - d * {x1^2} - y1)"/>
 
             <!-- Energy -->
             <TimeDerivative variable="dz" value="tt * (r * (h - z + Ks * c_pop1))"/>
 
             <!-- Population 2 -->
-            <TimeDerivative variable="dx2" value="tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
+            <TimeDerivative variable="dx2" value="tt * (-y2 + x2 - {x2^3} + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)"/>
             <TimeDerivative variable="dy2" value="tt * (-y2 + ydot4) / tau"/>
             <TimeDerivative variable="dg" value="tt * (-0.01 * (g - 0.1 * x1) )"/>
 

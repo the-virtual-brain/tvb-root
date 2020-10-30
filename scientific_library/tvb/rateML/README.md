@@ -220,3 +220,9 @@ in the model.
 Make XSD cases for coupling and noise.
 
 Classname has to be capitalized, filename does not
+
+c_pop1 are the standard variables for python long range coupling and local_coupling. Standard
+4 c_pops are drawn from coupling array.
+
+In exposures the name field hold the variabls of with which in the dimension field an expression can be 
+formed for the monitors. 
