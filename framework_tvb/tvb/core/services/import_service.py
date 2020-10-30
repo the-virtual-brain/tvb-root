@@ -93,6 +93,10 @@ class Operation2ImportData(object):
     def order_field(self):
         return self.operation.create_date if (self.operation is not None) else datetime.now()
 
+    @property
+    def order_field_by_folder(self):
+        return int(os.path.basename(self.operation_folder)) if (self.operation_folder is not None) else datetime.now()
+
 
 class ImportService(object):
     """
@@ -368,7 +372,7 @@ class ImportService(object):
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
 
-        return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
+        return sorted(retrieved_operations, key=lambda op_data: op_data.order_field_by_folder)
 
     def create_view_model(self, operation_entity, operation_data, new_op_folder, generic_attributes=None,
                           add_params=None):

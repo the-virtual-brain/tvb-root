@@ -303,23 +303,25 @@ class FlowController(BaseController):
                 raise InvalidFormValues("Invalid form inputs! Could not fill algorithm from the given inputs!",
                                         error_dict=form.get_errors_dict())
 
-            adapter_instance.submit_form(form)
+            dts_imported = self.operation_services.import_dts(view_model, project_id)
+            if not dts_imported:
+                adapter_instance.submit_form(form)
 
-            if issubclass(type(adapter_instance), ABCDisplayer):
-                adapter_instance.current_project_id = project_id
-                adapter_instance.user_id = common.get_logged_user().id
-                result = adapter_instance.launch(view_model)
-                if isinstance(result, dict):
-                    return result
-                else:
-                    common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
-                return {}
+                if issubclass(type(adapter_instance), ABCDisplayer):
+                    adapter_instance.current_project_id = project_id
+                    adapter_instance.user_id = common.get_logged_user().id
+                    result = adapter_instance.launch(view_model)
+                    if isinstance(result, dict):
+                        return result
+                    else:
+                        common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
+                    return {}
 
-            result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
+                result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
                                                             project_id, view_model=view_model)
-            if isinstance(result, list):
-                result = "Launched %s operations." % len(result)
-            common.set_important_message(str(result))
+                if isinstance(result, list):
+                    result = "Launched %s operations." % len(result)
+                common.set_important_message(str(result))
 
         except formencode.Invalid as excep:
             errors = excep.unpack_errors()

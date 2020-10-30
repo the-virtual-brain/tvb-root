@@ -46,7 +46,7 @@ from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neotraits._h5core import H5File
+from tvb.core.neotraits.h5 import H5File
 
 
 class ExportManager(object):
