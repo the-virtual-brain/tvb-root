@@ -29,13 +29,14 @@
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality-->
         <Exposure name="V" dimension="V"/>
+        <Exposure name="W" dimension="W"/>
 
         <Dynamics>
-            <StateVariable name="V" dimension="" exposure="-2.0, 4.0"/>
-            <StateVariable name="W" dimension="" exposure="-6.0, 6.0"/>
+            <StateVariable name="V" dimension="-2.0, 4.0" exposure=""/>
+            <StateVariable name="W" dimension="-6.0, 6.0" exposure=""/>
 
-            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V)"/>
-            <TimeDerivative variable="dW" value="d * (a + b * V + c * powf(V, 2) - beta * W) / tau"/>
+            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * coupling + local_coupling * V)"/>
+            <TimeDerivative variable="dW" value="d * (a + b * V + c * {V^2} - beta * W) / tau"/>
         </Dynamics>
 
     </ComponentType>

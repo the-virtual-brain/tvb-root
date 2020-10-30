@@ -62,6 +62,7 @@ import re
 # from lems.model.model import Model
 
 from lems.model.model import Model
+from run.regular_run import regularRun
 
 # logger = get_logger(__name__)
 
@@ -250,9 +251,11 @@ class rateml:
 
         derivative_list = model.component_types['derivatives']
 
+        model_class_name = self.model_filename.capitalize() + 'T'
+
         # start templating
         model_str = self.model_template().render(
-            modelname=self.model_filename,                  # all
+            modelname=model_class_name,                     # all
             const=derivative_list.constants,                # all
             dynamics=derivative_list.dynamics,              # all
             exposures=derivative_list.exposures,            # all
@@ -285,14 +288,15 @@ class rateml:
             with open(os.path.join(os.path.dirname(tvb.simulator.models.__file__), '__init__.py'), "r+") as f:
                 lines = f.readlines()
                 for num, line in enumerate(lines):
-                    if (model_filename.upper() + 'T = ' + "\"" + model_filename + "T\"") in line:
+                    if (model_filename.upper() + 'T = ' + "\"" + model_filename.capitalize() + "T\"") in line:
                         doprint = False
                     elif ("class ModelsEnum(Enum):") in line:
                         modelenumnum = num
                     elif ("_module_models = {") in line:
                         modulemodnum = num
                 if doprint:
-                    lines.insert(modelenumnum + 1, "    " + model_filename.upper() + 'T = ' + "\"" + model_filename + "T\"\n")
+                    lines.insert(modelenumnum + 1, "    " + model_filename.upper() + 'T = ' + "\"" +
+                                 model_filename.capitalize() + "T\"\n")
                     lines.insert(modulemodnum + 2, "    " + "'" + model_filename.lower() + "T'" + ': '
                                  + "[ModelsEnum." + model_filename.upper() + "T],\n")
                     f.truncate(0)
@@ -316,13 +320,20 @@ if __name__ == "__main__":
     language='python'
     # language='cuda'
 
-    model_filename = 'montbrio'
-    # model_filename = 'oscillator'
+    # model_filename = 'montbrio'
+    model_filename = 'oscillator'
     # model_filename = 'kuramoto'
     # model_filename = 'rwongwang'
     # model_filename = 'epileptor'
 
     rateml(model_filename, language, './XMLmodels/', './generatedModels/')
+
+    simtime = 400
+    g = 32
+    s = 32
+    dt = 0.1
+    period = 10
+    regularRun(simtime, g, s, dt, period).simulate_python()
 
     # model_filenames = [
     #                    'montbrio',

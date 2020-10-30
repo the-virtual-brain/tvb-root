@@ -1,6 +1,0 @@
-[report]
-omit =
-    */tests/*
-    */_numba/*
-    */_opencl/*
-    */plot/*

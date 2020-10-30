@@ -79,7 +79,7 @@ class montbrio(ModelNumbaDfun):
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={"r": numpy.array([0.0, inf])},
+        default={"r": numpy.array([0.0, inf]),},
     )
     variables_of_interest = List(
         of=str,
@@ -116,5 +116,5 @@ def _numba_dfun_montbrio(vw, coupling, I, Delta, alpha, s, k, J, eta, Gamma, gam
 
 
     dx[0] = Delta / pi + 2 * V * r - k * r ** 2 + Gamma * r / pi
-    dx[1] = V**2 - pi ** 2 * r ** 2 + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term
+    dx[1] = V ** 2 - pi ** 2 * r ** 2 + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term
             
