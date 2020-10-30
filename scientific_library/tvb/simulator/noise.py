@@ -124,7 +124,10 @@ class Noise(HasTraits):
         # self.random_stream.seed(self.noise_seed)
 
     def reset_random_stream(self):
-        self.random_stream = numpy.random.RandomState(self.noise_seed)
+        if self.random_stream is None:
+            self.random_stream = numpy.random.RandomState(self.noise_seed)
+        else:
+            self.random_stream.seed(self.noise_seed)
 
     def __str__(self):
         return simple_gen_astr(self, 'dt ntau')

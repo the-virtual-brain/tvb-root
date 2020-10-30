@@ -276,11 +276,11 @@ class DynamicModelController(BurstBaseController):
         """
         if isinstance(integrator, IntegratorStochasticViewModel):
             shape = (model.nvar, 1, model.number_of_modes)
+            integrator.noise.reset_random_stream()
             if integrator.noise.ntau > 0.0:
                 integrator.noise.configure_coloured(integrator.dt, shape)
             else:
                 integrator.noise.configure_white(integrator.dt, shape)
-            integrator.noise.reset_random_stream()
 
     @expose_json
     def parameters_changed(self, dynamic_gid, params):
