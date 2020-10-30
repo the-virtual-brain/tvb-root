@@ -363,6 +363,7 @@ class ImportService(object):
                                                                                      operation_entity, datatype_group)
                     # Create and store view_model from operation
                     view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
+                    view_model.generic_attributes.operation_tag = operation_entity.user_group
                     h5.store_view_model(view_model, new_op_folder)
                     view_model_disk_size = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
                     operation_entity.view_model_disk_size = view_model_disk_size
@@ -409,8 +410,12 @@ class ImportService(object):
                     if stored_dts_count > 0 or not operation_data.is_self_generated:
                         imported_operations.append(operation_entity)
                         new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
+                        view_model_disk_size = 0
                         for h5_file in operation_data.all_view_model_files:
+                            view_model_disk_size += FilesHelper.compute_size_on_disk(h5_file)
                             shutil.move(h5_file, new_op_folder)
+                        operation_entity.view_model_disk_size = view_model_disk_size
+                        dao.store_entity(operation_entity)
                     else:
                         # In case all Dts under the current operation were Links and the ViewModel is dummy,
                         # don't keep the Operation empty in DB
