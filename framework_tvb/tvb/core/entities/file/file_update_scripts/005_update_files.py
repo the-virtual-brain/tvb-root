@@ -775,6 +775,7 @@ def _migrate_datatype_measure(**kwargs):
         operation_xml_parameters['start_point'] = float(operation_xml_parameters['start_point'])
         operation_xml_parameters['algorithms'] = [operation_xml_parameters['algorithms']]
         operation_xml_parameters['segment'] = int(operation_xml_parameters['segment'])
+    root_metadata['visible'] = "bool:False"
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -1113,16 +1114,24 @@ def update(input_file, burst_match_dict):
 
                         datatype_group = DataTypeGroup(ts_operation_group)
                         datatype_group.fk_parent_burst = burst_config.gid
-                        datatype_group.fk_from_operation = op_id
                         datatype_group.count_results = len(dao.get_operations_in_group(ts_operation_group.id))
                         datatype_group.fill_from_generic_attributes(generic_attributes)
                         metric_datatype_group = DataTypeGroup(metric_operation_group)
                         metric_datatype_group.fk_parent_burst = burst_config.gid
-                        metric_datatype_group.fk_from_operation = op_id
                         metric_datatype_group.count_results = datatype_group.count_results
                         metric_datatype_group.fill_from_generic_attributes(generic_attributes)
-                        dao.store_entity(datatype_group)
-                        dao.store_entity(metric_datatype_group)
+                        stored_datatype_group = dao.store_entity(datatype_group)
+                        stored_metric_datatype_group = dao.store_entity(metric_datatype_group)
+
+                        first_datatype_group_op = dao.get_operations_in_group(stored_datatype_group.fk_operation_group,
+                                                                              only_first_operation=True)
+                        first_metric_datatype_group_op = dao.get_operations_in_group(stored_metric_datatype_group.fk_operation_group,
+                                                                                     only_first_operation=True)
+                        stored_datatype_group.fk_from_operation = first_datatype_group_op.id
+                        stored_metric_datatype_group.fk_from_operation = first_metric_datatype_group_op.id
+                        dao.store_entity(stored_datatype_group)
+                        dao.store_entity(stored_metric_datatype_group)
+
                         datatype_group = dao.get_datatypegroup_by_op_group_id(burst_config.fk_operation_group)
                         datatype_index.fk_datatype_group = datatype_group.id
                 else:
