@@ -51,6 +51,7 @@ BURST_COLUMNS = [Column('range1', String), Column('range2', String), Column('fk_
 Column('fk_operation_group', Integer), Column('fk_metric_operation_group', Integer)]
 BURST_DELETED_COLUMN = Column('workflows_number', Integer)
 
+OP_COLUMN = Column('view_model_disk_size', Integer)
 OP_DELETED_COLUMN = Column('meta_data', String)
 
 USER_COLUMNS = [Column('gid', String), Column('display_name', String)]
@@ -206,12 +207,20 @@ def upgrade(migrate_engine):
                          """ WHERE BurstConfiguration.id = """ + str(burst_id)))
 
         for i in range(len(ranges_1)):
+            range1 =  str(new_ranges_1[i]).replace('\'', '')
+            range2 = str(new_ranges_2[i]).replace('\'', '')
 
             session.execute(text(
                 """UPDATE "BurstConfiguration" SET
-                range1 = '""" + str(new_ranges_1[i]).replace('\'', '') + """',
-                range2 = '""" + str(new_ranges_2[i]).replace('\'', '') + """'
+                range1 = '""" + range1 + """',
+                range2 = '""" + range2 + """'
                 WHERE fk_operation_group = """ + str(ranges[i][0])))
+
+            session.execute(text(
+                """UPDATE "OPERATION_GROUPS" SET
+                range1 = '""" + range1 + """',
+                range2 = '""" + range2 + """'
+                WHERE id = """ + str(ranges[i][0])))
 
         session.commit()
     except Exception:
@@ -285,6 +294,7 @@ def upgrade(migrate_engine):
         session.close()
 
     op_table = meta.tables['OPERATIONS']
+    create_column(OP_COLUMN, op_table)
     drop_column(OP_DELETED_COLUMN, op_table)
 
 

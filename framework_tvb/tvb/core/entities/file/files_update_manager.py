@@ -249,10 +249,10 @@ class FilesUpdateManager(UpdateManager):
 
                 file_paths = self._get_all_h5_paths()
                 total_count = len(file_paths)
-                count_ok, count_error = self.__upgrade_h5_list(file_paths)
+                no_ok, no_error = self.__upgrade_h5_list(file_paths)
 
                 self.log.info("Updated H5 files in total: %d [fine:%d, failed:%d in: %s min]" % (
-                    total_count, count_ok, count_error, int((datetime.now() - start_time).seconds / 60)))
+                    total_count, no_ok, no_error, int((datetime.now() - start_time).seconds / 60)))
                 delete_old_burst_table_after_migration()
 
             # Now update the configuration file since update was done
