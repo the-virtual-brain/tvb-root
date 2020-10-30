@@ -51,32 +51,28 @@ from enum import Enum
 
 
 class ModelsEnum(Enum):
-    MONTBRIOT = "montbrioT"
-    OSCILLATORT = "oscillatorT"
-    KURAMOTOT = "kuramotoT"
-    RWONGWANGT = "rwongwangT"
-    EPILEPTORT = "epileptorT"
+    OSCILLATORT = "OscillatorT"
     BASE_MODEL = "Model"
-    EPILEPTOR = "Epileptor"
-    EPILEPTOR_2D = "Epileptor2D"
-    EPILEPTOR_RS = "EpileptorRestingState"
-    EPILEPTOR_CODIM_3 = "EpileptorCodim3"
-    EPILEPTOR_CODIM_3_SLOW = "EpileptorCodim3SlowMod"
-    HOPFIELD = "Hopfield"
-    JANSEN_RIT = "JansenRit"
-    ZETTERBERG_JANSEN = "ZetterbergJansen"
-    LARTER_BREAKSPEAR = "LarterBreakspear"
-    LINEAR = "Linear"
+    # EPILEPTOR = "Epileptor"
+    # EPILEPTOR_2D = "Epileptor2D"
+    # EPILEPTOR_RS = "EpileptorRestingState"
+    # EPILEPTOR_CODIM_3 = "EpileptorCodim3"
+    # EPILEPTOR_CODIM_3_SLOW = "EpileptorCodim3SlowMod"
+    # HOPFIELD = "Hopfield"
+    # JANSEN_RIT = "JansenRit"
+    # ZETTERBERG_JANSEN = "ZetterbergJansen"
+    # LARTER_BREAKSPEAR = "LarterBreakspear"
+    # LINEAR = "Linear"
     GENERIC_2D_OSCILLATOR = "Generic2dOscillator"
     KURAMOTO = "Kuramoto"
     SUP_HOPF = "SupHopf"
-    REDUCED_SET_FITZ_HUGH_NAGUMO = "ReducedSetFitzHughNagumo"
-    REDUCED_SET_HINDMARSH_ROSE = "ReducedSetHindmarshRose"
-    WILSON_COWAN = "WilsonCowan"
-    REDUCED_WONG_WANG = "ReducedWongWang"
-    REDUCED_WONG_WANG_EXCH_INH = "ReducedWongWangExcInh"
-    ZERLAUT_FIRST_ORDER = "ZerlautAdaptationFirstOrder"
-    ZERLAUT_SECOND_ORDER = "ZerlautAdaptationSecondOrder"
+    # REDUCED_SET_FITZ_HUGH_NAGUMO = "ReducedSetFitzHughNagumo"
+    # REDUCED_SET_HINDMARSH_ROSE = "ReducedSetHindmarshRose"
+    # WILSON_COWAN = "WilsonCowan"
+    # REDUCED_WONG_WANG = "ReducedWongWang"
+    # REDUCED_WONG_WANG_EXCH_INH = "ReducedWongWangExcInh"
+    # ZERLAUT_FIRST_ORDER = "ZerlautAdaptationFirstOrder"
+    # ZERLAUT_SECOND_ORDER = "ZerlautAdaptationSecondOrder"
 
     def get_class(self):
         return _get_imported_model(self.value)
@@ -97,25 +93,21 @@ def _get_imported_model(model):
 
 
 _module_models = {
-    'montbrioT': [ModelsEnum.MONTBRIOT],
     'oscillatorT': [ModelsEnum.OSCILLATORT],
-    'kuramotoT': [ModelsEnum.KURAMOTOT],
-    'rwongwangT': [ModelsEnum.RWONGWANGT],
-    'epileptorT': [ModelsEnum.EPILEPTORT],
     'base': [ModelsEnum.BASE_MODEL],
-    'epileptor': [ModelsEnum.EPILEPTOR, ModelsEnum.EPILEPTOR_2D],
-    'epileptor_rs': [ModelsEnum.EPILEPTOR_RS],
-    'epileptorcodim3': [ModelsEnum.EPILEPTOR_CODIM_3, ModelsEnum.EPILEPTOR_CODIM_3_SLOW],
-    'hopfield': [ModelsEnum.HOPFIELD],
-    'jansen_rit': [ModelsEnum.JANSEN_RIT, ModelsEnum.ZETTERBERG_JANSEN],
-    'larter_breakspear': [ModelsEnum.LARTER_BREAKSPEAR],
-    'linear': [ModelsEnum.LINEAR],
+    # 'epileptor': [ModelsEnum.EPILEPTOR, ModelsEnum.EPILEPTOR_2D],
+    # 'epileptor_rs': [ModelsEnum.EPILEPTOR_RS],
+    # 'epileptorcodim3': [ModelsEnum.EPILEPTOR_CODIM_3, ModelsEnum.EPILEPTOR_CODIM_3_SLOW],
+    # 'hopfield': [ModelsEnum.HOPFIELD],
+    # 'jansen_rit': [ModelsEnum.JANSEN_RIT, ModelsEnum.ZETTERBERG_JANSEN],
+    # 'larter_breakspear': [ModelsEnum.LARTER_BREAKSPEAR],
+    # 'linear': [ModelsEnum.LINEAR],
     'oscillator': [ModelsEnum.GENERIC_2D_OSCILLATOR, ModelsEnum.KURAMOTO, ModelsEnum.SUP_HOPF],
-    'stefanescu_jirsa': [ModelsEnum.REDUCED_SET_HINDMARSH_ROSE, ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO],
-    'wilson_cowan': [ModelsEnum.WILSON_COWAN],
-    'wong_wang': [ModelsEnum.REDUCED_WONG_WANG],
-    'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXCH_INH],
-    'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
+    # 'stefanescu_jirsa': [ModelsEnum.REDUCED_SET_HINDMARSH_ROSE, ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO],
+    # 'wilson_cowan': [ModelsEnum.WILSON_COWAN],
+    # 'wong_wang': [ModelsEnum.REDUCED_WONG_WANG],
+    # 'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXCH_INH],
+    # 'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
 }
 
 
@@ -141,8 +133,10 @@ def _delay_import_one(mod, model):
     import importlib
     def do_import(_):
         module_name = f'tvb.simulator.models.{mod}'
+        # print('mod', mod)
         model_module = importlib.import_module(module_name)
         return getattr(model_module, model)
+    # print(property(do_import))
     return property(do_import)
 
 
@@ -157,6 +151,7 @@ def _delay_model_imports():
     # create properties for each model
     for mod, models in _module_models.items():
         for model in models:
+            print(model.value)
             setattr(_Module, model.value, _delay_import_one(mod, model.value))
     # register module object
     import sys
