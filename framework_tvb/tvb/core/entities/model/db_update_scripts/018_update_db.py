@@ -62,23 +62,28 @@ def migrate_range_params(ranges):
     for range in ranges:
         list_range = eval(range)
 
-        # in the range param name all the characters between the first and last underscores (including them)
+        # in the range param name if the range param is not a gid param then
+        # all the characters between the first and last underscores (including them)
         # must be deleted and replaced with a dot
+
         param_name = list_range[0]
-        first_us = param_name.index('_')
-        last_us = param_name.rfind('_')
-        string_to_be_replaced = param_name[first_us:last_us + 1]
-        param_name = "\"" + param_name.replace(string_to_be_replaced, '.') + "\""
-
-        # in the old version the range was a list of all values that the param had, but in the new one we
-        # need only the minimum, maximum and step value
         param_range = list_range[1]
-        range_dict = dict()
-        range_dict['\"lo\"'] = param_range[0]
-        range_dict['\"hi\"'] = param_range[-1]
-        range_dict['\"step\"'] = param_range[1] - param_range[0]
+        if '_' in param_name:
+            first_us = param_name.index('_')
+            last_us = param_name.rfind('_')
+            string_to_be_replaced = param_name[first_us:last_us + 1]
+            param_name = "\"" + param_name.replace(string_to_be_replaced, '.') + "\""
 
-        new_ranges.append([param_name, range_dict])
+            # in the old version the range was a list of all values that the param had, but in the new one we
+            # need only the minimum, maximum and step value
+            range_dict = dict()
+            range_dict['\"lo\"'] = param_range[0]
+            range_dict['\"hi\"'] = param_range[-1]
+            range_dict['\"step\"'] = param_range[1] - param_range[0]
+            new_ranges.append([param_name, range_dict])
+        else:
+            # We have a gid param
+            new_ranges.append(['\"' + param_name + '\"', 'null'])
     return new_ranges
 
 

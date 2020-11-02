@@ -417,6 +417,7 @@ def _migrate_time_series(metadata, **kwargs):
 
     root_metadata['sample_period'] = float(root_metadata['sample_period'])
     root_metadata['start_time'] = float(root_metadata['start_time'])
+    root_metadata['user_tag_1'] = ''
 
     root_metadata["sample_period_unit"] = root_metadata["sample_period_unit"].replace("\"", '')
     root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
@@ -776,6 +777,7 @@ def _migrate_datatype_measure(**kwargs):
         operation_xml_parameters['algorithms'] = [operation_xml_parameters['algorithms']]
         operation_xml_parameters['segment'] = int(operation_xml_parameters['segment'])
     root_metadata['visible'] = "bool:False"
+    root_metadata['user_tag_1'] = ''
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -870,6 +872,26 @@ def _set_parent_burst(time_series_gid, root_metadata, storage_manager, is_ascii=
     root_metadata['parent_burst'] = burst_gid
     storage_manager.set_metadata(root_metadata)
     return ts.fk_parent_burst, (ts.fk_datatype_group + 1) if ts.fk_datatype_group is not None else None
+
+
+def _migrate_operation_group(op_group_id, model):
+    operation_group = dao.get_operationgroup_by_id(op_group_id)
+    operation_group.name = operation_group.name.replace(
+        '_parameters_option_{}_'.format(model.__class__.__name__), '.')
+    return operation_group
+
+
+def _migrate_datatype_group(operation_group, burst_gid, generic_attributes):
+    datatype_group = DataTypeGroup(operation_group)
+    datatype_group.fk_parent_burst = burst_gid
+    datatype_group.count_results = len(dao.get_operations_in_group(operation_group.id))
+    datatype_group.fill_from_generic_attributes(generic_attributes)
+    stored_datatype_group = dao.store_entity(datatype_group)
+
+    first_datatype_group_op = dao.get_operations_in_group(stored_datatype_group.fk_operation_group,
+                                                          only_first_operation=True)
+    stored_datatype_group.fk_from_operation = first_datatype_group_op.id
+    dao.store_entity(stored_datatype_group)
 
 
 datatypes_to_be_migrated = {
@@ -1108,29 +1130,20 @@ def update(input_file, burst_match_dict):
                         history_index.fk_parent_burst = burst_config.gid
                         dao.store_entity(history_index)
                     else:
-                        ts_operation_group = dao.get_operationgroup_by_id(burst_config.fk_operation_group)
-                        metric_operation_group = dao.get_operationgroup_by_id(
-                            burst_config.fk_metric_operation_group)
 
-                        datatype_group = DataTypeGroup(ts_operation_group)
-                        datatype_group.fk_parent_burst = burst_config.gid
-                        datatype_group.count_results = len(dao.get_operations_in_group(ts_operation_group.id))
-                        datatype_group.fill_from_generic_attributes(generic_attributes)
-                        metric_datatype_group = DataTypeGroup(metric_operation_group)
-                        metric_datatype_group.fk_parent_burst = burst_config.gid
-                        metric_datatype_group.count_results = datatype_group.count_results
-                        metric_datatype_group.fill_from_generic_attributes(generic_attributes)
-                        stored_datatype_group = dao.store_entity(datatype_group)
-                        stored_metric_datatype_group = dao.store_entity(metric_datatype_group)
+                        ts_operation_group = _migrate_operation_group(burst_config.fk_operation_group,
+                                                                      operation_xml_parameters['model'])
+                        metric_operation_group = _migrate_operation_group(
+                            burst_config.fk_metric_operation_group,
+                            operation_xml_parameters['model'])
+                        ts_operation_group.name = ts_operation_group.name.replace(class_name, class_name + 'Index')
+                        metric_operation_group.name = metric_operation_group.name.replace('DatatypeMeasure',
+                                                                                          'DatatypeIndex')
+                        dao.store_entity(ts_operation_group)
+                        dao.store_entity(metric_operation_group)
 
-                        first_datatype_group_op = dao.get_operations_in_group(stored_datatype_group.fk_operation_group,
-                                                                              only_first_operation=True)
-                        first_metric_datatype_group_op = dao.get_operations_in_group(stored_metric_datatype_group.fk_operation_group,
-                                                                                     only_first_operation=True)
-                        stored_datatype_group.fk_from_operation = first_datatype_group_op.id
-                        stored_metric_datatype_group.fk_from_operation = first_metric_datatype_group_op.id
-                        dao.store_entity(stored_datatype_group)
-                        dao.store_entity(stored_metric_datatype_group)
+                        _migrate_datatype_group(ts_operation_group, burst_config.gid, generic_attributes)
+                        _migrate_datatype_group(metric_operation_group, burst_config.gid, generic_attributes)
 
                         datatype_group = dao.get_datatypegroup_by_op_group_id(burst_config.fk_operation_group)
                         datatype_index.fk_datatype_group = datatype_group.id
@@ -1143,6 +1156,20 @@ def update(input_file, burst_match_dict):
                 storage_manager.set_metadata(root_metadata)
 
             os.remove(os.path.join(folder, OPERATION_XML))
+
+            # Change range values
+            if operation.operation_group is not None:
+                for key, value in json.loads(operation.range_values).items():
+                    if '_' in key:
+                        first_underscore = key.index('_')
+                        last_undescore = key.rfind('_')
+                        replacement = key[:first_underscore] + '.' + key[last_undescore + 1:]
+
+                        operation.range_values = operation.range_values.replace(key, replacement)
+                    else:
+                        replaced_gid = value.replace('-', '')
+                        operation.range_values = operation.range_values.replace(value, replaced_gid)
+                dao.store_entity(operation)
 
         # Populate datatype
         datatype_index.fill_from_has_traits(datatype)
