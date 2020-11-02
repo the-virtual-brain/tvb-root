@@ -338,7 +338,7 @@ def _migrate_monitors(operation_xml_parameters, model):
         monitor = getattr(sys.modules['tvb.core.entities.file.simulator.view_model'],
                           monitor_name + 'ViewModel')()
         operation_xml_parameters['monitors'][i] = monitor
-        if monitor_name != 'RawRecording':
+        if monitor_name != 'Raw':
             monitor.period = float(operation_xml_parameters['monitors_parameters_option_' + monitor_name + '_period'])
             variables_of_interest = eval(operation_xml_parameters['monitors_parameters_option_' + monitor_name +
                                                                   '_variables_of_interest'])

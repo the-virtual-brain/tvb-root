@@ -305,7 +305,10 @@ class FilesUpdateManager(UpdateManager):
                     op_folder_path = os.path.join(project_full_path, op_folder)
                     for file in os.listdir(op_folder_path):
                         if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
-                            h5_files.append(os.path.join(op_folder_path, file))
+                            h5_file = os.path.join(op_folder_path, file)
+                            if FilesUpdateManager._is_empty_file(h5_file):
+                                continue
+                            h5_files.append(h5_file)
                 except ValueError:
                     pass
 
@@ -313,6 +316,10 @@ class FilesUpdateManager(UpdateManager):
         sorted_h5_files = sorted(h5_files, key=lambda h5_path: FilesUpdateManager._get_create_date_for_sorting(
             h5_path) or datetime.now())
         return sorted_h5_files
+
+    @staticmethod
+    def _is_empty_file(h5_file):
+        return H5File.get_metadata_param(h5_file, 'Create_date') is None
 
     @staticmethod
     def _get_create_date_for_sorting(h5_file):
