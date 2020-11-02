@@ -62,6 +62,10 @@ def migrate_range_params(ranges):
     for range in ranges:
         list_range = eval(range)
 
+        if list_range is None:
+            new_ranges.append('None')
+            continue
+
         # in the range param name if the range param is not a gid param then
         # all the characters between the first and last underscores (including them)
         # must be deleted and replaced with a dot

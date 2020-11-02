@@ -47,6 +47,7 @@ from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataSetException, \
     FileMigrationException, MissingMatlabOctavePathException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
@@ -1079,6 +1080,7 @@ def update(input_file, burst_match_dict):
         datatype, generic_attributes = h5.load_with_references(input_file)
         datatype_index = REGISTRY.get_index_for_datatype(datatype.__class__)()
         datatype_index.create_date = root_metadata['create_date']
+        datatype_index.disk_size = FilesHelper.compute_size_on_disk(input_file)
 
         if has_vm is False:
             # Get parent_burst when needed
@@ -1128,6 +1130,8 @@ def update(input_file, burst_match_dict):
                                                           generic_attributes=vm.generic_attributes)
                         history_index.fk_from_operation = op_id
                         history_index.fk_parent_burst = burst_config.gid
+                        history_index.disk_size = FilesHelper.compute_size_on_disk(
+                            os.path.join(folder, 'SimulationHistory_' + history_index.gid) + '.h5')
                         dao.store_entity(history_index)
                     else:
 
@@ -1149,6 +1153,12 @@ def update(input_file, burst_match_dict):
                         datatype_index.fk_datatype_group = datatype_group.id
                 else:
                     datatype_group = dao.get_datatypegroup_by_op_group_id(burst_config.fk_operation_group)
+                    datatype_group.disk_size = dao.get_datatype_group_disk_size(datatype_group.id)
+                    dao.store_entity(datatype_group)
+
+                    metric_datatype_group = dao.get_datatypegroup_by_op_group_id(burst_config.fk_metric_operation_group)
+                    metric_datatype_group.disk_size = dao.get_datatype_group_disk_size(metric_datatype_group.id)
+                    dao.store_entity(metric_datatype_group)
                     datatype_index.fk_datatype_group = datatype_group.id
 
                 burst_match_dict[possible_burst_id] = new_burst_id
