@@ -300,6 +300,7 @@ class ProjectService:
                 dao.remove_entity(burst.__class__, burst.id)
 
             project_datatypes = dao.get_datatypes_in_project(project_id)
+            project_datatypes.sort(key=lambda dt: dt.create_date, reverse=True)
             for one_data in project_datatypes:
                 self.remove_datatype(project_id, one_data.gid, True)
 
