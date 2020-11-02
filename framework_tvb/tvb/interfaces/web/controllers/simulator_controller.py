@@ -29,6 +29,7 @@
 #
 
 import threading
+
 from cherrypy.lib.static import serve_file
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
@@ -43,8 +44,8 @@ from tvb.adapters.simulator.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel, RawViewModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -220,7 +221,9 @@ class SimulatorFragmentRenderingRules(object):
         return False
 
     def to_dict(self):
-        return {"renderer": self}
+        return {"renderer": self,
+                "showOnlineHelp": common.get_logged_user().is_online_help_active(),
+                "isCallout": False}
 
 
 @traced
