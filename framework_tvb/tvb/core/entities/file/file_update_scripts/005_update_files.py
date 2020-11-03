@@ -1170,15 +1170,17 @@ def update(input_file, burst_match_dict):
             # Change range values
             if operation.operation_group is not None:
                 for key, value in json.loads(operation.range_values).items():
-                    if '_' in key:
+                    if key.count('_') > 1:
                         first_underscore = key.index('_')
-                        last_undescore = key.rfind('_')
-                        replacement = key[:first_underscore] + '.' + key[last_undescore + 1:]
+                        last_underscore = key.rfind('_')
+                        replacement = key[:first_underscore] + '.' + key[last_underscore + 1:]
 
                         operation.range_values = operation.range_values.replace(key, replacement)
-                    else:
+                    elif isinstance(value, str):
                         replaced_gid = value.replace('-', '')
                         operation.range_values = operation.range_values.replace(value, replaced_gid)
+                    # else:
+                    #     operation.range_values = operation.range_values.replace(str(value), '\"' + str(value) + '\"')
                 dao.store_entity(operation)
 
         # Populate datatype

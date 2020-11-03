@@ -73,10 +73,13 @@ def migrate_range_params(ranges):
         param_name = list_range[0]
         param_range = list_range[1]
         if '_' in param_name:
-            first_us = param_name.index('_')
-            last_us = param_name.rfind('_')
-            string_to_be_replaced = param_name[first_us:last_us + 1]
-            param_name = "\"" + param_name.replace(string_to_be_replaced, '.') + "\""
+            if param_name.count('_') > 1:
+                first_us = param_name.index('_')
+                last_us = param_name.rfind('_')
+                string_to_be_replaced = param_name[first_us:last_us + 1]
+                param_name = param_name.replace(string_to_be_replaced, '.')
+
+            param_name = "\"" + param_name  + "\""
 
             # in the old version the range was a list of all values that the param had, but in the new one we
             # need only the minimum, maximum and step value
