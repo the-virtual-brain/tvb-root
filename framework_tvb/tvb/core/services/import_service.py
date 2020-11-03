@@ -347,7 +347,7 @@ class ImportService(object):
 
         return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
 
-    def create_view_model(self, operation_entity, operation_data, new_op_folder, add_params=None):
+    def create_view_model(self, operation_entity, operation_data, new_op_folder, generic_attributes, add_params=None):
         view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
         if add_params is not None:
             for element in add_params:
@@ -359,6 +359,7 @@ class ImportService(object):
             view_model.operation_group_gid = uuid.UUID(operation_entity.operation_group.gid)
             view_model.ranges = json.dumps(operation_entity.operation_group.range_references)
             view_model.is_metric_operation = 'DatatypeMeasure' in operation_entity.operation_group.name
+        view_model.generic_attributes = generic_attributes
         h5.store_view_model(view_model, new_op_folder)
         view_model_disk_size = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
         operation_entity.view_model_disk_size = view_model_disk_size

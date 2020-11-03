@@ -777,7 +777,6 @@ def _migrate_datatype_measure(**kwargs):
         operation_xml_parameters['start_point'] = float(operation_xml_parameters['start_point'])
         operation_xml_parameters['algorithms'] = [operation_xml_parameters['algorithms']]
         operation_xml_parameters['segment'] = int(operation_xml_parameters['segment'])
-    root_metadata['visible'] = "bool:False"
     root_metadata['user_tag_1'] = ''
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
@@ -1091,7 +1090,13 @@ def update(input_file, burst_match_dict):
                     fk_datatype_group = fk_datatype_group + 1
                     datatype_group = dao.get_datatype_by_id(fk_datatype_group)
                     datatype_group.disk_size = datatype_group.disk_size + datatype_index.disk_size
+                    datatype_index.fk_datatype_group = fk_datatype_group
                     dao.store_entity(datatype_group)
+
+                    root_metadata['visible'] = "bool:False"
+                    generic_attributes.visible = False
+                    storage_manager.set_metadata(root_metadata)
+
                 generic_attributes.parent_burst = burst_gid
 
             alg_json = json.loads(params['algorithm'])
@@ -1107,8 +1112,8 @@ def update(input_file, burst_match_dict):
             operation_data = Operation2ImportData(operation, folder, info_from_xml=operation_xml_parameters)
             operation_entity, _ = import_service.import_operation(operation_data.operation, True)
             possible_burst_id = operation.view_model_gid
-            vm = import_service.create_view_model(operation, operation_data, folder, additional_params)
-            vm.generic_attributes = generic_attributes
+            vm = import_service.create_view_model(operation, operation_data, folder,
+                                                  generic_attributes, additional_params)
 
             if 'TimeSeries' in class_name:
                 burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
