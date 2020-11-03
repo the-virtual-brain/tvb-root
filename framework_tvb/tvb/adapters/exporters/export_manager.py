@@ -94,52 +94,30 @@ class ExportManager(object):
 
         return results
 
-    def export_data_with_references(self, dt_list, project, exporter):
-        files_helper = FilesHelper()
-        considered_op_ids = []
-        to_be_exported_folders = []
+    def get_export_data_zip_path(self, data, exporter):
+        zip_file_name = exporter.get_export_file_name(data)
+        zip_file_name = zip_file_name.replace('.h5', '.zip')
+        return os.path.join(self.export_folder, zip_file_name)
 
-        data_export_folder = self._build_data_export_folder(dt_list[0])
-        name = exporter.get_export_file_name(dt_list[0], False)
+    def export_data_with_references(self, export_data_zip_path, data_export_folder):
+        with TvbZip(export_data_zip_path, "w") as zip_file:
+            for filename in os.listdir(data_export_folder):
+                zip_file.write(os.path.join(data_export_folder, filename), filename)
 
-        zip_file_name = "%s.%s" % (name, self.ZIP_FILE_EXTENSION)
-        result_path = os.path.join(data_export_folder, zip_file_name)
+        return None, export_data_zip_path, True
 
-        for dt in dt_list:
-            op_id = dt.fk_from_operation
-            if op_id not in considered_op_ids:
-                to_be_exported_folders.append({'folder': files_helper.get_project_folder(project, str(op_id)),
-                                               'archive_path_prefix': str(op_id) + os.sep,
-                                               'exclude': ''})
-                considered_op_ids.append(op_id)
-
-        with TvbZip(result_path, "w") as zip_file:
-            # Pack project [filtered] content into a ZIP file:
-            self.logger.debug("Done preparing, now we will write folders " + str(len(to_be_exported_folders)))
-            self.logger.debug(str(to_be_exported_folders))
-            for pack in to_be_exported_folders:
-                zip_file.write_folder(**pack)
-            self.logger.debug("Done exporting files, now we will export linked DTs")
-            self.logger.debug("Done, closing")
-
-        return None, result_path, name
-
-    def get_data_with_references_list(self, data, text_dict=None):
+    def copy_dt_to_export_folder(self, data, data_export_folder):
         data_path = h5.path_for_stored_index(data)
-
-        if not text_dict:
-            text_dict = dict()
-        if data.gid and data.gid not in text_dict.keys():
-            text_dict[data.gid] = data
-
         with H5File.from_file(data_path) as f:
+            file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
+            if not os.path.exists(file_destination):
+                FilesHelper().copy_file(data_path, file_destination)
             sub_dt_refs = f.gather_references()
 
             for reference in sub_dt_refs:
                 if reference[1]:
                     dt = dao.get_datatype_by_gid(reference[1].hex)
-                    self.get_data_with_references_list(dt, text_dict)
-        return list(text_dict.values())
+                    self.copy_dt_to_export_folder(dt, data_export_folder)
 
     def export_data(self, data, exporter_id, project):
         """
@@ -171,23 +149,24 @@ class ExportManager(object):
         if not exporter.accepts(data):
             raise InvalidExportDataException("Current data can not be exported by specified exporter")
 
-        dt_list = self.get_data_with_references_list(data)
-        if len(dt_list) > 1:
-            export_data = self.export_data_with_references(dt_list, project, exporter)
-        else:
-            # Now compute and create folder where to store exported data
-            # This will imply to generate a folder which is unique for each export
-            data_export_folder = None
-            try:
-                data_export_folder = self._build_data_export_folder(data)
+        # Now compute and create folder where to store exported data
+        # This will imply to generate a folder which is unique for each export
+        data_export_folder = None
+        try:
+            data_export_folder = self._build_data_export_folder(data)
 
+            self.copy_dt_to_export_folder(data, data_export_folder)
+            if data_export_folder is not None and len(os.listdir(data_export_folder)) > 1:
+                export_data_zip_path = self.get_export_data_zip_path(data, exporter)
+                export_data = self.export_data_with_references(export_data_zip_path, data_export_folder)
+            else:
                 # Here is the real export
                 self.logger.debug("Start export of data: %s" % data.type)
                 export_data = exporter.export(data, data_export_folder, project)
-            finally:
-                # In case export did not generated any file delete folder
-                if data_export_folder is not None and len(os.listdir(data_export_folder)) == 0:
-                    os.rmdir(data_export_folder)
+        finally:
+            # In case export did not generated any file delete folder
+            if data_export_folder is not None and len(os.listdir(data_export_folder)) == 0:
+                os.rmdir(data_export_folder)
 
         return export_data
 
