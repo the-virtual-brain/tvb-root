@@ -872,7 +872,7 @@ def _set_parent_burst(time_series_gid, root_metadata, storage_manager, is_ascii=
         burst_gid = burst_gid.encode('ascii', 'ignore')
     root_metadata['parent_burst'] = burst_gid
     storage_manager.set_metadata(root_metadata)
-    return ts.fk_parent_burst, (ts.fk_datatype_group + 1) if ts.fk_datatype_group is not None else None
+    return ts.fk_parent_burst, ts.fk_datatype_group
 
 
 def _migrate_operation_group(op_group_id, model):
@@ -1085,8 +1085,13 @@ def update(input_file, burst_match_dict):
         if has_vm is False:
             # Get parent_burst when needed
             if 'time_series' in operation_xml_parameters:
-                burst_gid, datatype_index.fk_datatype_group = _set_parent_burst(operation_xml_parameters['time_series'],
+                burst_gid, fk_datatype_group = _set_parent_burst(operation_xml_parameters['time_series'],
                                                                                 root_metadata, storage_manager)
+                if fk_datatype_group is not None:
+                    fk_datatype_group = fk_datatype_group + 1
+                    datatype_group = dao.get_datatype_by_id(fk_datatype_group)
+                    datatype_group.disk_size = datatype_group.disk_size + datatype_index.disk_size
+                    dao.store_entity(datatype_group)
                 generic_attributes.parent_burst = burst_gid
 
             alg_json = json.loads(params['algorithm'])
@@ -1153,12 +1158,8 @@ def update(input_file, burst_match_dict):
                         datatype_index.fk_datatype_group = datatype_group.id
                 else:
                     datatype_group = dao.get_datatypegroup_by_op_group_id(burst_config.fk_operation_group)
-                    datatype_group.disk_size = dao.get_datatype_group_disk_size(datatype_group.id)
+                    datatype_group.disk_size = dao.get_datatype_group_disk_size(datatype_group.id) + datatype_index.disk_size
                     dao.store_entity(datatype_group)
-
-                    metric_datatype_group = dao.get_datatypegroup_by_op_group_id(burst_config.fk_metric_operation_group)
-                    metric_datatype_group.disk_size = dao.get_datatype_group_disk_size(metric_datatype_group.id)
-                    dao.store_entity(metric_datatype_group)
                     datatype_index.fk_datatype_group = datatype_group.id
 
                 burst_match_dict[possible_burst_id] = new_burst_id

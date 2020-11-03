@@ -178,9 +178,6 @@ class FilesUpdateManager(UpdateManager):
 
             # Keep track of how many DataTypes were properly updated and how many 
             # were marked as invalid due to missing files or invalid manager.
-            no_ok = 0
-            no_error = 0
-            no_ignored = 0
             start_time = datetime.now()
 
             file_paths = self._get_all_h5_paths()
