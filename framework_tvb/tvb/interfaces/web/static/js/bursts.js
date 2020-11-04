@@ -62,6 +62,7 @@ function resetToNewBurst() {
             displayMessage("Completely new configuration loaded!");
             changeBurstHistory(null, true);
             $("button.btn-next").first().focus();
+            setupMenuEvents();
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
@@ -125,6 +126,7 @@ function renderAllSimulatorForms(url, stop_at_url = '', onFinishFunction = null)
             onFinishFunction();
         }
     }
+    setupMenuEvents();
 }
 
 /*
@@ -685,6 +687,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 simulator_params.appendChild(t);
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
                 setInitialFocusOnButton(simulator_params);
+                setupMenuEvents();
             }
         }
     })

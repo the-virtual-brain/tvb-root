@@ -43,6 +43,7 @@ import sys
 import uuid
 import zipfile
 from copy import copy
+
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -61,6 +62,7 @@ from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERRO
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.backend_client_factory import BackendClientFactory
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
@@ -171,11 +173,16 @@ class OperationService:
         view_model.generic_attributes = ga
 
         parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'gid')[0]
+        metric_op_group = dao.get_operationgroup_by_id(parent_burst.fk_metric_operation_group)
         metric_operation_group_id = parent_burst.fk_metric_operation_group
         range_values = sim_operation.range_values
-        metric_operation = Operation(view_model.gid.hex, sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
-                                     user_group=ga.operation_tag,
-                                     op_group_id=metric_operation_group_id, range_values=range_values)
+        view_model.operation_group_gid = uuid.UUID(metric_op_group.gid)
+        view_model.ranges = json.dumps(parent_burst.ranges)
+        view_model.range_values = range_values
+        view_model.is_metric_operation = True
+        metric_operation = Operation(view_model.gid.hex, sim_operation.fk_launched_by, sim_operation.fk_launched_in,
+                                     metric_algo.id, user_group=ga.operation_tag, op_group_id=metric_operation_group_id,
+                                     range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
 
@@ -183,8 +190,9 @@ class OperationService:
                                                         'fk_operation_group')[0]
         if metrics_datatype_group.fk_from_operation is None:
             metrics_datatype_group.fk_from_operation = metric_operation.id
+            dao.store_entity(metrics_datatype_group)
 
-        self._store_view_model(metric_operation, sim_operation.project, view_model)
+        self.store_view_model(metric_operation, sim_operation.project, view_model)
         return metric_operation
 
     @transactional
@@ -249,14 +257,16 @@ class OperationService:
                 dao.store_entity(existing_dt_group)
 
         for operation in operations:
-            self._store_view_model(operation, project, view_model)
+            self.store_view_model(operation, project, view_model)
 
         return operations, group
 
-    @staticmethod
-    def _store_view_model(operation, project, view_model):
+    def store_view_model(self, operation, project, view_model):
         storage_path = FilesHelper().get_project_folder(project, str(operation.id))
         h5.store_view_model(view_model, storage_path)
+        view_model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)
+        operation.view_model_disk_size = view_model_size_on_disk
+        dao.store_entity(operation)
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
@@ -328,8 +338,9 @@ class OperationService:
     def _update_vm_generic_operation_tag(view_model, operation):
         project = dao.get_project_by_id(operation.fk_launched_in)
         storage_path = FilesHelper().get_project_folder(project, str(operation.id))
-        view_model.generic_attributes.operation_tag = operation.user_group
-        h5.store_view_model(view_model, storage_path)
+        h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid, type(view_model).__name__)
+        with ViewModelH5(h5_path, view_model) as vm_h5:
+            vm_h5.operation_tag.store(operation.user_group)
 
     def launch_operation(self, operation_id, send_to_cluster=False, adapter_instance=None):
         """

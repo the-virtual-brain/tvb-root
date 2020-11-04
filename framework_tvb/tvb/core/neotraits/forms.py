@@ -393,8 +393,10 @@ class ArrayField(TraitField):
     template = 'form_fields/str_field.html'
 
     def _from_post(self):
-        data = json.loads(self.unvalidated_data)
-        self.data = numpy.array(data, dtype=self.trait_attribute.dtype)
+        self.data = None
+        if self.unvalidated_data is not None:
+            data = json.loads(self.unvalidated_data)
+            self.data = numpy.array(data, dtype=self.trait_attribute.dtype)
 
     @property
     def value(self):
@@ -647,6 +649,22 @@ class Form(object):
         for field in self.trait_fields:
             f_name = field.trait_attribute.field_name
             if f_name is None:
+                # skipp attribute that does not seem to belong to a traited type
+                continue
+            try:
+                setattr(datatype, f_name, field.data)
+            except TraitError as ex:
+                # as field.data is clearly tainted set it to None so that field.unvalidated_data
+                # will render and the user can fix the typo's
+                field.data = None
+                field.errors.append(ex)
+                raise
+
+    def fill_trait_partially(self, datatype, fields = None):
+        for field in self.trait_fields:
+            f_name = field.trait_attribute.field_name
+            if f_name is None or \
+                    fields is not None and f_name not in fields :
                 # skipp attribute that does not seem to belong to a traited type
                 continue
             try:

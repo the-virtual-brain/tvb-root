@@ -36,11 +36,12 @@ given action are described here.
 """
 
 import json
+import sys
+
 import cherrypy
 import formencode
 import numpy
 import six
-import sys
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -61,8 +62,8 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
@@ -340,7 +341,8 @@ class FlowController(BaseController):
             template_specification[common.KEY_ERRORS] = errors
         return template_specification
 
-    def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, is_burst=True):
+    def get_template_for_adapter(self, project_id, step_key, stored_adapter, submit_url, is_burst=True,
+                                 is_callout=False):
         """ Get Input HTML Interface template or a given adapter """
         try:
             group = None
@@ -357,7 +359,8 @@ class FlowController(BaseController):
                 adapter_form.fill_from_trait(vm)
             else:
                 self.context.clean_from_session()
-            template_specification = dict(submitLink=submit_url, adapter_form=self.render_adapter_form(adapter_form),
+            template_specification = dict(submitLink=submit_url,
+                                          adapter_form=self.render_adapter_form(adapter_form, is_callout=is_callout),
                                           title=title)
 
             self._populate_section(stored_adapter, template_specification, is_burst)
@@ -483,11 +486,11 @@ class FlowController(BaseController):
         AJAX exposed method. Will return only a piece of a page,
         to be integrated as part in another page.
         """
-        template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page)
+        template_specification = self.get_adapter_template(project_id, algorithm_id, False, back_page, is_callout=True)
         template_specification["isCallout"] = True
         return self.fill_default_attributes(template_specification)
 
-    def get_adapter_template(self, project_id, algorithm_id, is_upload=False, back_page=None):
+    def get_adapter_template(self, project_id, algorithm_id, is_upload=False, back_page=None, is_callout=False):
         """
         Get the template for an adapter based on the algo group id.
         """
@@ -501,7 +504,7 @@ class FlowController(BaseController):
             submit_link = self.get_url_adapter(algorithm.fk_category, algorithm.id, back_page)
 
         template_specification = self.get_template_for_adapter(project_id, algorithm.fk_category, algorithm,
-                                                               submit_link)
+                                                               submit_link, is_callout=is_callout)
         if template_specification is None:
             return ""
         template_specification[common.KEY_DISPLAY_MENU] = not is_upload
