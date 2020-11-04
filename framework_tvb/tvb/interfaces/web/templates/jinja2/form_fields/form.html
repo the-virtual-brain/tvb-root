@@ -1,35 +1,24 @@
-{% macro generate_help_tooltip(field) %}
-    <nav class="inline-menu helper">
-        <a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
-        <div class="extension">
-            <div class="dropdown-pane">
-                <mark>{{ field.label }}</mark>
-                <div class="dropdown-pane-overlay">{{ field.doc.replace('\n', '<br/>' )}}</div>
-            </div>
-        </div>
-    </nav>
-{% endmacro %}
-
+{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
 
 <fieldset>
-{% if adapter_form.draw_ranges %}
-    <input type="hidden" id="{{ adapter_form.RANGE_1_NAME }}" name="{{ adapter_form.RANGE_1_NAME }}" value="0">
-    <input type="hidden" id="{{ adapter_form.RANGE_2_NAME }}" name="{{ adapter_form.RANGE_1_NAME }}" value="0">
-{% endif %}
-<dl>
-{% for field in adapter_form.fields %}
-    <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ')}}" {% endif %}>
-        <label for="{{ field.name }}">{{ field.label }}</label>
-{#        {{ generate_help_tooltip(field) }}#}
-    </dt>
-    <dd>
-        {{ field | safe }}
-        <p class="errorMessage">
-            {% for error in field.errors %}
-                <span> {{ error }} </span>
-            {% endfor %}
-        </p>
-    </dd>
-{% endfor %}
-</dl>
+    {% if adapter_form.draw_ranges %}
+        <input type="hidden" id="{{ adapter_form.RANGE_1_NAME }}" name="{{ adapter_form.RANGE_1_NAME }}" value="0">
+        <input type="hidden" id="{{ adapter_form.RANGE_2_NAME }}" name="{{ adapter_form.RANGE_1_NAME }}" value="0">
+    {% endif %}
+    <dl>
+        {% for field in adapter_form.fields %}
+            <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
+                <label for="{{ field.name }}">{{ field.label }}</label>
+                {{ ght.generate_help_tooltip(field) }}
+            </dt>
+            <dd>
+                {{ field | safe }}
+                <p class="errorMessage">
+                    {% for error in field.errors %}
+                        <span> {{ error }} </span>
+                    {% endfor %}
+                </p>
+            </dd>
+        {% endfor %}
+    </dl>
 </fieldset>

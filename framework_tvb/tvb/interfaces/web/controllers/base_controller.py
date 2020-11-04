@@ -357,5 +357,6 @@ class BaseController(object):
             common.add2session(common.KEY_PROJECT, project)
 
     @using_template('form_fields/form')
-    def render_adapter_form(self, adapter_form):
-        return {'adapter_form': adapter_form}
+    def render_adapter_form(self, adapter_form, is_callout=False):
+        show_online_help = common.get_logged_user().is_online_help_active()
+        return {'adapter_form': adapter_form, 'showOnlineHelp': show_online_help, 'isCallout': is_callout}

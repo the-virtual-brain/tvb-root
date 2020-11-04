@@ -149,4 +149,8 @@ class SpatioTemporalController(BaseController):
 
     @using_template('spatial/spatial_fragment')
     def render_spatial_form(self, adapter_form):
-        return adapter_form.get_rendering_dict()
+        show_online_help = common.get_logged_user().is_online_help_active()
+        rendering_dict = adapter_form.get_rendering_dict()
+        rendering_dict.update({'showOnlineHelp': show_online_help})
+        rendering_dict.update({'isCallout': False})
+        return rendering_dict

@@ -198,16 +198,11 @@ class BurstService(object):
         return burst_config
 
     def prepare_burst_for_pse(self, burst_config):
-        # type: (BurstConfiguration) -> None
-        if burst_config.range2:
-            ranges = [burst_config.range1, burst_config.range2]
-        else:
-            ranges = [burst_config.range1]
-
-        operation_group = OperationGroup(burst_config.fk_project, ranges=ranges)
+        # type: (BurstConfiguration) -> (BurstConfiguration)
+        operation_group = OperationGroup(burst_config.fk_project, ranges=burst_config.ranges)
         operation_group = dao.store_entity(operation_group)
 
-        metric_operation_group = OperationGroup(burst_config.fk_project, ranges=ranges)
+        metric_operation_group = OperationGroup(burst_config.fk_project, ranges=burst_config.ranges)
         metric_operation_group = dao.store_entity(metric_operation_group)
 
         burst_config.operation_group = operation_group

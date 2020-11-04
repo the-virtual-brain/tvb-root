@@ -296,11 +296,11 @@ class TestProjectService(TransactionalTestCase):
             assert '0.0 KiB' != project.disk_size_human
 
             prj_folder = self.structure_helper.get_project_folder(project)
-            actual_disk_size = self.compute_recursive_h5_disk_usage(prj_folder)[0]
+            actual_disk_size = FilesHelper.compute_recursive_h5_disk_usage(prj_folder)
 
             ratio = float(actual_disk_size) / project.disk_size
             msg = "Real disk usage: %s The one recorded in the db : %s" % (actual_disk_size, project.disk_size)
-            assert ratio < 1.7, msg
+            assert ratio < 1.1, msg
 
     def test_get_linkable_projects(self):
         """
