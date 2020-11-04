@@ -111,26 +111,28 @@ class PSEModel(object):
         KEY_OPERATION_ID = "operationId"
 
         node_info = dict()
+        ts = dao.get_datatype_by_gid(self.datatype_measure.fk_source_gid)
         if self.operation.has_finished and self.datatype_measure is not None:
-            node_info[KEY_GID] = self.datatype_measure.gid
-            node_info[KEY_NODE_TYPE] = self.datatype_measure.type
-            node_info[KEY_OPERATION_ID] = self.operation.id
-            node_info[KEY_TOOLTIP] = self._prepare_node_text()
+            node_info[KEY_GID] = ts.gid
+            node_info[KEY_NODE_TYPE] = ts.type
+            node_info[KEY_OPERATION_ID] = ts.fk_from_operation
+            node_info[KEY_TOOLTIP] = self._prepare_node_text(ts)
         else:
             tooltip = "No result available. Operation is in status: %s" % self.operation.status.split('-')[1]
             node_info[KEY_TOOLTIP] = tooltip
         return node_info
 
-    def _prepare_node_text(self):
+    @staticmethod
+    def _prepare_node_text(ts):
         """
         Prepare text to display as tooltip for a PSE circle
         :return: str
         """
-        return str("Operation id: " + str(self.operation.id) + LINE_SEPARATOR +
-                   "Datatype gid: " + str(self.datatype_measure.gid) + LINE_SEPARATOR +
-                   "Datatype type: " + str(self.datatype_measure.type) + LINE_SEPARATOR +
-                   "Datatype subject: " + str(self.datatype_measure.subject) + LINE_SEPARATOR +
-                   "Datatype invalid: " + str(self.datatype_measure.invalid))
+        return str("Operation id: " + str(ts.fk_from_operation) + LINE_SEPARATOR +
+                   "Datatype gid: " + str(ts.gid) + LINE_SEPARATOR +
+                   "Datatype type: " + str(ts.type) + LINE_SEPARATOR +
+                   "Datatype subject: " + str(ts.subject) + LINE_SEPARATOR +
+                   "Datatype invalid: " + str(ts.invalid))
 
     def determine_operation_result(self):
         datatype_measure = None
@@ -219,7 +221,8 @@ class PSEGroupModel(object):
         if len(self.all_metrics) == 0:
             for pse_model in self.pse_model_list:
                 if pse_model.datatype_measure:
-                    self.all_metrics.update({pse_model.datatype_measure.gid: pse_model.metrics})
+                    ts = dao.get_datatype_by_gid(pse_model.datatype_measure.fk_source_gid)
+                    self.all_metrics.update({ts.gid: pse_model.metrics})
         return self.all_metrics
 
     def get_available_metric_keys(self):

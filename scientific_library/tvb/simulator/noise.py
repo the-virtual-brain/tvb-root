@@ -45,7 +45,6 @@ from .common import simple_gen_astr
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Int, Float
 
 
-
 class Noise(HasTraits):
     """
     Defines a base class for noise. Specific noises are derived from this class
@@ -78,7 +77,7 @@ class Noise(HasTraits):
 
     """
 
-    #NOTE: nsig is not declared here because we use this class directly as the
+    # NOTE: nsig is not declared here because we use this class directly as the
     #      inital conditions noise source, and in that use the job of nsig is
     #      filled by the state_variable_range attribute of the Model.
 
@@ -124,6 +123,9 @@ class Noise(HasTraits):
         # XXX: reseeding here will destroy a maybe carefully set random_stream!
         # self.random_stream.seed(self.noise_seed)
 
+    def reset_random_stream(self):
+        self.random_stream = numpy.random.RandomState(self.noise_seed)
+
     def __str__(self):
         return simple_gen_astr(self, 'dt ntau')
 
@@ -163,17 +165,20 @@ class Noise(HasTraits):
                 \eta_{t+\delta\,t} &= \eta_{t}E + h
 
         """
-        #TODO: Probably best to change the docstring to be consistent with the
+        # TODO: Probably best to change the docstring to be consistent with the
         #      below, ie, factoring out the explicit Box-Muller.
-        #NOTE: The actual implementation factors out the explicit Box-Muller,
+        # NOTE: The actual implementation factors out the explicit Box-Muller,
         #      using numpy's normal() instead.
         self.dt = dt
         self._E = numpy.exp(-self.dt / self.ntau)
         self._sqrt_1_E2 = numpy.sqrt((1.0 - self._E ** 2))
         self._eta = self.random_stream.normal(size=shape)
         self._dt_sqrt_lambda = self.dt * numpy.sqrt(1.0 / self.ntau)
-        self.log.info('Colored noise configured with dt=%g E=%g sqrt_1_E2=%g eta=%g & dt_sqrt_lambda=%g',
-                  self.dt, self._E, self._sqrt_1_E2, self._eta, self._dt_sqrt_lambda)
+        self.log.info(
+            'Colored noise configured with dt={} E={} sqrt_1_E2={} eta={} & dt_sqrt_lambda={}'.format(self.dt, self._E,
+                                                                                                      self._sqrt_1_E2,
+                                                                                                      self._eta,
+                                                                                                      self._dt_sqrt_lambda))
 
     def generate(self, shape, lo=-1.0, hi=1.0):
         "Generate noise realization."
@@ -186,7 +191,7 @@ class Noise(HasTraits):
     def coloured(self, shape):
         "Generate colored noise. [FoxVemuri_1988]_"
         self._h = self._sqrt_1_E2 * self.random_stream.normal(size=shape)
-        self._eta =  self._eta * self._E + self._h
+        self._eta = self._eta * self._E + self._h
         return self._dt_sqrt_lambda * self._eta
 
     def white(self, shape):

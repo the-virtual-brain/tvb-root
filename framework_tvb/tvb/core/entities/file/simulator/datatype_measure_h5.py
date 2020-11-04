@@ -48,6 +48,6 @@ class DatatypeMeasureH5(H5File):
     def __init__(self, path):
         super(DatatypeMeasureH5, self).__init__(path)
         # Actual measure (dictionary Algorithm: single Value)
-        self.metrics = Json(Attr(str), self, name='metrics')
+        self.metrics = Json(DatatypeMeasure.metrics, self)
         # DataType for which the measure was computed.
-        self.analyzed_datatype = Reference(Attr(field_type=TimeSeries), self, "analyzed_datatype")
+        self.analyzed_datatype = Reference(DatatypeMeasure.analyzed_datatype, self)

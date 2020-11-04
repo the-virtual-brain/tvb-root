@@ -4,7 +4,7 @@
         <div class="extension">
             <div class="dropdown-pane">
                 <mark>{{ field.label }}</mark>
-                <div class="dropdown-pane-overlay">{{ field.doc.replace('\n', '<br/>' ) }}</div>
+                <div class="dropdown-pane-overlay">{{ field.doc }}</div>
             </div>
         </div>
     </nav>
@@ -15,7 +15,9 @@
         {% for field in adapter_form.fields %}
             <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
                 <label for="{{ field.name }}">{{ field.label }}</label>
-                {# {{ generate_help_tooltip(field) }}#}
+                {% if field.doc %}
+                    {{ generate_help_tooltip(field) }}
+                {% endif %}
             </dt>
             <dd>
                 {{ field | safe }}

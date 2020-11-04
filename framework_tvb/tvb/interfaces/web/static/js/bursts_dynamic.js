@@ -527,8 +527,13 @@ function plotEquation(subformDiv = null) {
 }
 
 function setEventsOnFormFields(param, div_id) {
-    $('#' + div_id + ' input').change(function () {
-        setIntegratorParamAndRedrawChart('integrator_parameters_changed', this.name, this.value, param)
+    $('#' + div_id + ' input:not([type=radio])').each(function () {
+        let events = $._data(document.getElementById($(this).attr('id')),'events')
+        if (!events || !("change" in events)){
+            $(this).change(function () {
+                setIntegratorParamAndRedrawChart('integrator_parameters_changed', this.name, this.value, param)
+            })
+        }
     });
 }
 

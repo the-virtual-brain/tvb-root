@@ -187,3 +187,11 @@ class BurstConfiguration(HasTraitsIndex):
 
     def is_pse_burst(self):
         return self.range1 is not None
+
+    @property
+    def ranges(self):
+        if self.range2:
+            return [self.range1, self.range2]
+        if self.range1:
+            return [self.range1]
+        return None
