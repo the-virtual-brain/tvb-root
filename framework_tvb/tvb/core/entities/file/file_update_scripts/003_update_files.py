@@ -32,6 +32,7 @@
 Upgrade script from H5 version 2 to version 3
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. creationdate:: beginning of 2015
 """
 
 import os

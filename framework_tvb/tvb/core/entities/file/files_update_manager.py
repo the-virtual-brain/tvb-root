@@ -109,9 +109,7 @@ class FilesUpdateManager(UpdateManager):
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
 
         :param input_file_name the path to the file which needs to be upgraded
-        :return 0 when update was not necessary, 1 when update was successful and -1 when it resulted in an error.
-        False, the the file is already up to date.
-
+        :return True when update was successful and False when it resulted in an error.
         """
         if self.is_file_up_to_date(input_file_name):
             # Avoid running the DB update of size, when H5 is not being changed, to speed-up

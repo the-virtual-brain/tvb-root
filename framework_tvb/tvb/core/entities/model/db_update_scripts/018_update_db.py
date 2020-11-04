@@ -211,12 +211,12 @@ def upgrade(migrate_engine):
 
             if 'time_series' in op[1]:
                 session.execute(
-                    text("""UPDATE "BurstConfiguration" SET fk_metric_operation_group = """ + str(op[0]) +
-                         """ WHERE BurstConfiguration.id = """ + str(burst_id)))
+                    text("""UPDATE "BurstConfiguration" as B SET fk_metric_operation_group = """ + str(op[0]) +
+                         """ WHERE B.id = """ + str(burst_id)))
             else:
                 session.execute(
-                    text("""UPDATE "BurstConfiguration" SET fk_operation_group = """ + str(op[0]) +
-                         """ WHERE BurstConfiguration.id = """ + str(burst_id)))
+                    text("""UPDATE "BurstConfiguration" as B SET fk_operation_group = """ + str(op[0]) +
+                         """ WHERE B.id = """ + str(burst_id)))
 
         for i in range(len(ranges_1)):
             range1 =  str(new_ranges_1[i]).replace('\'', '')
@@ -224,15 +224,24 @@ def upgrade(migrate_engine):
 
             session.execute(text(
                 """UPDATE "BurstConfiguration" SET
-                range1 = '""" + range1 + """',
-                range2 = '""" + range2 + """'
+                range1 = '""" + range1 + """'
                 WHERE fk_operation_group = """ + str(ranges[i][0])))
 
             session.execute(text(
                 """UPDATE "OPERATION_GROUPS" SET
-                range1 = '""" + range1 + """',
-                range2 = '""" + range2 + """'
+                range1 = '""" + range1 + """'
                 WHERE id = """ + str(ranges[i][0])))
+
+            if range2 != 'None':
+                session.execute(text(
+                    """UPDATE "BurstConfiguration" SET
+                    range2 = '""" + range2 + """'
+                    WHERE fk_operation_group = """ + str(ranges[i][0])))
+
+                session.execute(text(
+                    """UPDATE "OPERATION_GROUPS" SET
+                    range2 = '""" + range2 + """'
+                    WHERE id = """ + str(ranges[i][0])))
 
         session.commit()
     except Exception:

@@ -32,6 +32,7 @@
 Upgrade script from H5 version 3 to version 4 (for tvb release 1.4.1)
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. creationdate:: August of 2015
 """
 
 import os

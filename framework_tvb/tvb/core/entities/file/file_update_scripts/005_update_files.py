@@ -33,6 +33,7 @@ Upgrade script from H5 version 4 to version 5 (for tvb release 2.0)
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
+.. creationdate:: Autumn of 2020
 """
 
 import json
