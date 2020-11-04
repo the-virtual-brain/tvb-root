@@ -828,7 +828,7 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
 
 def data_xarray_from_continuous_events(events, times, senders, variables=[],
                                        filter_senders=None, exclude_senders=[], name=None,
-                                       dims_names=["Variable", "Neuron", "Time"]):
+                                       dims_names=["Time", "Variable", "Neuron"]):
     unique_times = np.unique(times).tolist()
     if filter_senders is None:
         filter_senders = np.unique(senders).tolist()
@@ -842,12 +842,12 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         variables = list(events.keys())
     dims_names = ensure_list(dims_names)
     coords = OrderedDict()
-    coords[dims_names[0]] = variables
-    coords[dims_names[1]] = filter_senders
-    coords[dims_names[2]] = unique_times
+    coords[dims_names[0]] = unique_times
+    coords[dims_names[1]] = variables
+    coords[dims_names[2]] = filter_senders
     n_senders = len(filter_senders)
     n_times = len(unique_times)
-    data = np.empty((len(variables), n_senders, n_times))
+    data = np.empty((n_times, len(variables), n_senders))
     last_time = times[0]
     i_time = unique_times.index(last_time)
     i_sender = -1
@@ -870,7 +870,7 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
             if time != unique_times[i_time]:
                 i_time = unique_times.index(time)
         for i_var, var in enumerate(variables):
-            data[i_var, i_sender, i_time] = events[var][id]
+            data[i_time, i_var, i_sender] = events[var][id]
     try:
         from xarray import DataArray
         return DataArray(data, dims=list(coords.keys()), coords=coords, name=name)
@@ -880,7 +880,8 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
 
 
 def concatenate_heterogeneous_DataArrays(data, concat_dim_name,
-                                         data_keys=None, name=None, fill_value=np.nan, transpose_dims=None):
+                                         data_keys=None, name=None, fill_value=np.nan, transpose_dims=None,
+                                         **kwargs):
     from pandas import Series
     from xarray import concat
     from pandas import Index
@@ -893,7 +894,7 @@ def concatenate_heterogeneous_DataArrays(data, concat_dim_name,
             if name is None:
                 name = data.name
             data = ensure_list(data.values)
-    data = concat(data, Index(data_keys, name=concat_dim_name), fill_value=fill_value)
+    data = concat(data, Index(data_keys, name=concat_dim_name), fill_value=fill_value, **kwargs)
     data.name = name
     if transpose_dims:
         data = data.transpose(*transpose_dims)
