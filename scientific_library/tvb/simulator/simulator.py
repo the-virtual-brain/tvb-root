@@ -379,7 +379,7 @@ class Simulator(HasTraits):
     def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)
         output = [monitor.record(step,
-                                 node_coupling if isinstance(monitor, monitors.Coupling) else observed)
+                                 node_coupling if isinstance(monitor, monitors.AfferentCoupling) else observed)
                   for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output

@@ -75,8 +75,8 @@ class Simulator(object):
         gavg = monitors.GlobalAverage(period=2 ** -2)
         subsamp = monitors.SubSample(period=2 ** -2)
         tavg = monitors.TemporalAverage(period=2 ** -2)
-        coupl = monitors.Coupling()
-        coupltavg = monitors.CouplingTemporalAverage(period=2 ** -2)
+        coupl = monitors.AfferentCoupling()
+        coupltavg = monitors.AfferentCouplingTemporalAverage(period=2 ** -2)
         eeg = monitors.EEG.from_file()
         eeg.period = 2 ** -2
         eeg2 = monitors.EEG.from_file()

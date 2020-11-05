@@ -402,7 +402,7 @@ class TemporalAverage(Monitor):
             return [time, avg_stock]
 
 
-class Coupling(RawVoi):
+class AfferentCoupling(RawVoi):
     """
     A monitor that records the variables_of_interest from node_coupling data from a tvb simulation
     for all the integration time steps.
@@ -422,10 +422,10 @@ class Coupling(RawVoi):
             self.voi = numpy.r_[:len(simulator.model.cvar)]
 
     def sample(self, step, node_coupling):
-        return super(Coupling, self).sample(step, node_coupling)
+        return super(AfferentCoupling, self).sample(step, node_coupling)
 
 
-class CouplingTemporalAverage(Coupling, TemporalAverage):
+class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
     """
     Monitors the averaged value for the model's coupling variable/s of interest over all
     the nodes at each sampling period. Time steps that are not modulo ``istep``
@@ -436,7 +436,7 @@ class CouplingTemporalAverage(Coupling, TemporalAverage):
     _ui_name = "Coupling Temporal average"
 
     def _config_vois(self, simulator):
-        Coupling._config_vois(self, simulator)
+        AfferentCoupling._config_vois(self, simulator)
 
     def _config_time(self, simulator):
         TemporalAverage._config_time(self, simulator)
