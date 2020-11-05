@@ -1,0 +1,108 @@
+/* -------------------------------------------- */
+/* The Virtual Brain: DOCS website */
+/* Version: 1 */
+/* -------------------------------------------- */
+/* Created by @twotribes, Germany */
+/* -------------------------------------------- */
+/* Browser Scope: ALL */
+/* StyleSheet Scope: ALL */
+/* -------------------------------------------- */
+
+/* !-------------------------------------------- */
+/* !Fonts */
+/* !-------------------------------------------- */
+
+/*
+This CSS resource incorporates links to font software which is the valuable copyrighted
+property of Monotype Imaging and/or its suppliers. You may not attempt to copy, install,
+redistribute, convert, modify or reverse engineer this font software. Please contact Monotype
+Imaging with any questions regarding Web Fonts:  http://webfonts.fonts.com
+*/
+
+/* Book variant */
+@font-face{
+font-family:"ITC Century W01";
+src: url("./fonts/5d75b52c-2805-4443-a810-06af987956f8.woff") format("woff");
+font-weight: 300;
+font-style: italic;
+}
+
+@font-face{
+font-family:"ITC Century W01";
+src: url("./fonts/542ac53f-a0a5-44ac-ac30-822ce4bcbb3a.woff") format("woff");
+font-weight: 300;
+font-style: normal;
+}
+
+/* Bold variant */
+@font-face{
+font-family:"ITC Century W01";
+src: url("./fonts/48bc6d9a-821f-4d40-ae05-4023923a5a2e.woff") format("woff");
+font-weight: 700;
+font-style: normal;
+}
+
+@font-face{
+font-family:"ITC Century W01";
+src: url("./fonts/060880a2-4b46-418e-8407-a628c07cc95a.woff") format("woff");
+font-weight: 700;
+font-style: italic;
+}
+
+/**
+ * @license
+ * MyFonts Webfont Build ID 2758626, 2014-02-28T17:53:16-0500
+ * 
+ * The fonts listed in this notice are subject to the End User License
+ * Agreement(s) entered into by the website owner. All other parties are 
+ * explicitly restricted from using the Licensed Webfonts(s).
+ * 
+ * You may obtain a valid license at the URLs below.
+ * 
+ * Webfont: Standard CT Medium by CastleType
+ * URL: http://www.myfonts.com/fonts/castletype/standard/medium/
+ * Copyright: Copyright (c) CastleType, 2005. All rights reserved.
+ * 
+ * Webfont: Standard CT ExtraBold by CastleType
+ * URL: http://www.myfonts.com/fonts/castletype/standard/ct-extra-bold/
+ * Copyright: Copyright (c) 2008 by CastleType. All rights reserved.
+ * 
+ * 
+ * License: http://www.myfonts.com/viewlicense?type=web&buildid=2758626
+ * Licensed pageviews: 10,000
+ * 
+ * 2014 MyFonts Inc
+*/
+
+@font-face {
+    font-family: 'StandardCT';
+    src: url('./fonts/2A17E2_0_0.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+
+@font-face {
+    font-family: 'StandardCT';
+    src: url('./fonts/2A17E2_1_0.woff') format('woff');
+	font-weight: bold;
+	font-style: normal;
+}
+
+/* !-------------------------------------------- */
+/* !TEMPORARY: reformat static header */
+/* !-------------------------------------------- */
+
+#tvb_header {
+    background-color: white;
+    text-align: left;
+    padding: 10px 10px 15px 15px;
+}
+
+#tvb_header .header-logo img {
+    height: 148px;
+    border: none;
+}
+
+#tvb_header .header-title {
+    display: none;
+}
