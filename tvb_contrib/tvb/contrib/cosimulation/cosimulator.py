@@ -189,13 +189,13 @@ class CoSimulator(Simulator):
         # If indeed the state has changed:
         if numpy.any(new_state != state):
             # ...first bound and clamp the new state
-            self.bound_and_clamp(new_state)
+            self.integrator.bound_and_clamp(new_state)
             # ...if we have to further update some of the state variables...
             if self.cosim_to_tvb_interfaces.update_variables_fun:
                 # ...we do so...
                 new_state = self.cosim_to_tvb_interfaces.update_variables_fun(new_state)
                 # ...and we bound and clamp again:
-                self.bound_and_clamp(new_state)
+                self.integrator.bound_and_clamp(new_state)
         return new_state
 
     def _loop_update_history(self, step, n_reg, state, cosim_updates=[]):
@@ -230,15 +230,15 @@ class CoSimulator(Simulator):
                     # ...get the assumed updated state from the CosimHistory...
                     istate = self.cosim_history.query_state(istep)
                     # ...bound and clamp it...
-                    self.bound_and_clamp(istate)
+                    self.integrator.bound_and_clamp(istate)
                     # ...if we have to further update some of the state variables...
                     if self.cosim_to_tvb_interfaces.update_variables_fun:
                         # ...we do so...
                         istate = self.cosim_to_tvb_interfaces.update_variables_fun(istate)
                         # ...bound and clamp it again...
-                        self.bound_and_clamp(istate)
+                        self.integrator.bound_and_clamp(istate)
                     # ...put it back to CosimHistory...
-                    self.cosim_history.update_state(istep, self.bound_and_clamp(istate))
+                    self.cosim_history.update_state(istep, self.integrator.bound_and_clamp(istate))
                     # ...and finally update the TVB history as well...
                     self.history.update(istep, self.cosim_history.query_state(istep))
 
