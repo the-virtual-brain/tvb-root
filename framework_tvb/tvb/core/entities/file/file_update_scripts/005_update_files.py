@@ -1211,7 +1211,8 @@ def update(input_file, burst_match_dict):
             vm = import_service.create_view_model(operation, operation_data, folder,
                                                   generic_attributes, additional_params)
 
-            if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname:
+            if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname\
+                    and time_series_gid is None:
                 burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
                                                                   TvbProfile.current.db.SELECTED_DB, DATE_FORMAT_V4_DB)
                 if burst_config:
