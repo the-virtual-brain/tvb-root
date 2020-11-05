@@ -70,7 +70,7 @@ def get_burst_for_migration(burst_id, burst_match_dict, selected_db, date_format
     burst_params = session.execute("""SELECT * FROM "BURST_CONFIGURATION" WHERE id = """ + burst_id).fetchone()
 
     if burst_params is None:
-        return None
+        return None, False
 
     if selected_db == 'sqlite':
         burst_params_dict = {'datatypes_number': burst_params[0], 'dynamic_ids': burst_params[1],
