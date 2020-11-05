@@ -90,6 +90,13 @@ class EquationForm(Form):
             if field.name in form_data:
                 field.fill_from_post(form_data)
 
+    def fill_trait_partially(self, datatype, fields = None):
+        if fields is None:
+            fields = []
+
+        for field_str in fields:
+            datatype.parameters[field_str] = getattr(self, field_str).value
+
 
 class LinearEquationForm(EquationForm):
 

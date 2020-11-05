@@ -93,30 +93,32 @@ function drawConnectivity(json, shouldRefreshNodes) {
         rgraph.canvas.canvases[0].canvas.afterImageExport   = __restoreCanvasAfterExport;
 
     }
-    var selection_empty = true;
-    var first_json_node = hasNodesInJson(json);
-    if (first_json_node >= 0) {
-    	selection_empty = false;
-    	rootNode = first_json_node;
-    }
-
-    if (selection_empty) {
-        rgraph.loadJSON([{id:'root', name:'SELECT AT LEAST ONE NODE FROM THIS REGION TO REVEAL CONNECTIONS...',
+    if(!json){
+        rgraph.loadJSON([{id:'root', name:'THIS HEMISPHERE IS EMPTY',
                           data: {radius: 0, angle: 0} }]);
-
     } else {
-        //load graph.
-        if (shouldRefreshNodes) {
-            rgraph.loadJSON(json, rootNode);
-        } else {
-            rgraph.loadJSON(json, 1);
-        }
-        // remove all the nodes that were not selected by the user
-        rgraph.graph.eachNode(function(node) {
-            if (shouldRefreshNodes && selectedPoints.length > 0 && !isNodeSelected(node.id)) {
-                rgraph.graph.removeNode(node.id);
+        var first_json_node = hasNodesInJson(json);
+        if (first_json_node >= 0) {
+            rootNode = first_json_node;
+
+            //load graph.
+            if (shouldRefreshNodes) {
+                rgraph.loadJSON(json, rootNode);
+            } else {
+                rgraph.loadJSON(json, 1);
             }
-        });
+            // remove all the nodes that were not selected by the user
+            rgraph.graph.eachNode(function (node) {
+                if (shouldRefreshNodes && selectedPoints.length > 0 && !isNodeSelected(node.id)) {
+                    rgraph.graph.removeNode(node.id);
+                }
+            });
+        } else {
+            rgraph.loadJSON([{
+                id: 'root', name: 'SELECT AT LEAST ONE NODE FROM THIS REGION TO REVEAL CONNECTIONS...',
+                data: {radius: 0, angle: 0}
+            }]);
+        }
     }
 
     //compute positions and plot

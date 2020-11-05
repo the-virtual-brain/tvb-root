@@ -59,12 +59,12 @@ function _STIM_server_update_scaling() {
 /**
  * Saves the given weight for all the selected nodes.
  */
-function _STIM_saveWeightForSelectedNodes() {
+function _STIM_saveWeightForSelectedNodes(selected_indices) {
     const weightElement = $("#current_weight");
     let newWeight = parseFloat(weightElement.val());
     if (!isNaN(newWeight)) {
-        for (let i = 0; i < GVAR_interestAreaNodeIndexes.length; i++) {
-            const nodeIndex = GVAR_interestAreaNodeIndexes[i];
+        for (let i = 0; i < selected_indices.length; i++) {
+            const nodeIndex = selected_indices[i];
             updatedRegionStimulusWeights[nodeIndex] = newWeight;
         }
         weightElement.val("");
