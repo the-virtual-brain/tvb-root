@@ -185,7 +185,7 @@ def __upgrade_file(input_file_name, output_file_name):
     h5py_h5_file.close()
     
 
-def update(input_file):
+def update(input_file, burst_match_dict=None):
     """
     In order to avoid segmentation faults when updating a batch of files just
     start every conversion on a different Python process.

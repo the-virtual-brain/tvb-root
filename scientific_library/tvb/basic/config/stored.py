@@ -96,6 +96,14 @@ class SettingsManager(object):
                 config_dict[name] = value
         return config_dict
 
+    def _store_config_file(self, config_dict):
+
+        with open(self.config_file_location, 'w') as file_writer:
+            for key in config_dict:
+                file_writer.write(key + '=' + str(config_dict[key]) + '\n')
+
+        self.stored_settings = self._read_config_file()
+
     def add_entries_to_config_file(self, input_data):
         """
         Add to the dictionary of settings already existent in the settings file.
@@ -109,11 +117,21 @@ class SettingsManager(object):
         for entry in input_data:
             config_dict[entry] = input_data[entry]
 
-        with open(self.config_file_location, 'w') as file_writer:
-            for key in config_dict:
-                file_writer.write(key + '=' + str(config_dict[key]) + '\n')
+        self._store_config_file(config_dict)
 
-        self.stored_settings = self._read_config_file()
+    def delete_entries_from_config_file(self, data_to_be_deleted):
+        """
+        Delete from the dictionary of settings existent in the settings file.
+
+        :param data_to_be_deleted: A list of attributes that need to be deleted from the config file.
+        """
+        config_dict = self._read_config_file()
+
+        for entry in data_to_be_deleted:
+            if entry in config_dict:
+                config_dict.pop(entry)
+
+        self._store_config_file(config_dict)
 
     def write_config_data(self, config_dict):
         """

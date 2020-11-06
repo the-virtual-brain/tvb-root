@@ -91,3 +91,23 @@ class IncompatibleFileManagerException(FileVersioningException):
 
     def __init__(self, message):
         FileVersioningException.__init__(self, message)
+
+
+class FileMigrationException(TVBException):
+    """
+    Exception to be thrown in case of an unexpected problem
+    when migrating an H5 file to a newer version.
+    """
+
+    def __init__(self, message):
+        TVBException.__init__(self, message)
+
+
+class MissingMatlabOctavePathException(FileMigrationException):
+    """
+    Exception to be thrown in case of an unexpected problem
+    when migrating an H5 file to a newer version.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)
