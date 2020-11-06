@@ -275,6 +275,8 @@ class Simulator(HasTraits):
                 new_parameters = region_parameters.reshape(spatial_reshape)
                 setattr(self.model, param, new_parameters)
         # Configure spatial component of any stimuli
+        # TODO FIXME here region_mapping should be specified
+        # to also include the subcortical regions
         self._configure_stimuli()
         # Set delays, provided in physical units, in integration steps.
         self.connectivity.set_idelays(self.integrator.dt)
@@ -545,6 +547,7 @@ class Simulator(HasTraits):
         """ Configure the defined Stimuli for this Simulator """
         if self.stimulus is not None:
             if self.surface:
+                # TODO FIXME the region mapping should be changed to one including also the subcortical areas
                 self.stimulus.configure_space(self.surface.region_mapping)
             else:
                 self.stimulus.configure_space()
