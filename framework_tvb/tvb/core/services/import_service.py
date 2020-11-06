@@ -362,6 +362,7 @@ class ImportService(object):
 
         if generic_attributes is not None:
             view_model.generic_attributes = generic_attributes
+        view_model.generic_attributes.operation_tag = operation_entity.user_group
 
         h5.store_view_model(view_model, new_op_folder)
         view_model_disk_size = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
@@ -523,6 +524,9 @@ class ImportService(object):
             # Add all the required attributes
             if datatype_group:
                 datatype_index.fk_datatype_group = datatype_group.id
+                if len(datatype_group.subject) == 0:
+                    datatype_group.subject = datatype_index.subject
+                    dao.store_entity(datatype_group)
             datatype_index.fk_from_operation = op_id
 
             associated_file = h5.path_for_stored_index(datatype_index)
