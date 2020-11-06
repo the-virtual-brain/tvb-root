@@ -290,6 +290,33 @@ class Simulator(HasTraits):
             if region_parameters.size == self.number_of_nodes:
                 new_parameters = region_parameters.reshape(spatial_reshape)
                 setattr(self.model, param, new_parameters)
+        # Configure spatial component of any stimuli
+        # TODO FIXME here region_mapping should be specified
+        # to also include the subcortical regions
+        self._configure_stimuli()
+        # Set delays, provided in physical units, in integration steps.
+        self.connectivity.set_idelays(self.integrator.dt)
+        self.horizon = self.connectivity.idelays.max() + 1
+        # Reshape integrator.noise.nsig, if necessary.
+        if isinstance(self.integrator, integrators.IntegratorStochastic):
+            self._configure_integrator_noise()
+        # Setup history
+        self._configure_history(self.initial_conditions)
+        # Configure Monitors to work with selected Model, etc...
+        self._configure_monitors()
+        # Estimate of memory usage.
+        self._census_memory_requirement()
+        # Allow user to chain configure to another call or assignment.
+        return self
+
+    def _handle_random_state(self, random_state):
+        if random_state is not None:
+            if isinstance(self.integrator, integrators.IntegratorStochastic):
+                self.integrator.noise.random_stream.set_state(random_state)
+                msg = "random_state supplied with seed %s"
+                self.log.info(msg, self.integrator.noise.random_stream.get_state()[1][0])
+            else:
+                self.log.warn("random_state supplied for non-stochastic integration")
 
     def _prepare_local_coupling(self):
         if self.surface is None:
@@ -524,6 +551,7 @@ class Simulator(HasTraits):
         """ Configure the defined Stimuli for this Simulator """
         if self.stimulus is not None:
             if self.surface:
+                # TODO FIXME the region mapping should be changed to one including also the subcortical areas
                 self.stimulus.configure_space(self.surface.region_mapping)
             else:
                 self.stimulus.configure_space()
