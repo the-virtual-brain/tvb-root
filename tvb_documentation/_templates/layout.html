@@ -16,11 +16,14 @@
 {% block relbar1 %}
 
 <div id="tvb_header">
-    <a class="header-logo" href="http://www.thevirtualbrain.org/" title="Visit The Virtual Brain main website…">
+    <a class="header-logo" href="http://www.thevirtualbrain.org/" title="Visit The Virtual Brain main website…" target="_blank">
         <img src="{{ pathto('_static/tvb_design/logo_tvb_main.svg', 1) }}" alt="The Virtual Brain logo"/>
     </a>
     
-    <p class="header-title">Documentation<span>website</span></p>
+    <a class="header-title" href="{{ pathto('index') }}" title="Back to documentation homepage…">
+        <p class="title-tvb">The<span>Virtual</span>Brain:</p>
+        <p class="title-site"><span>The</span>Documentation<span>website</span>.</p>
+    </a>
 </div>
 {{ super() }}
 {% endblock %}
