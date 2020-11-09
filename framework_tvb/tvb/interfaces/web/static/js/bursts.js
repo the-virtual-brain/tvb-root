@@ -70,10 +70,18 @@ function resetToNewBurst() {
     });
 }
 
+
+/*
+ * When clicking the branch button on a burst-history entry, a clone of that burst is prepared.
+ */
+function branchBurst(burstID, first_wizzard_form_url, is_branch) {
+    copyBurst(burstID, first_wizzard_form_url, is_branch)
+}
+
 /*
  * When clicking the copy button on a burst-history entry, a clone of that burst is prepared.
  */
-function copyBurst(burstID, first_wizzard_form_url) {
+function copyBurst(burstID, first_wizzard_form_url, is_branch) {
     doAjaxCall({
         type: "POST",
         url: '/burst/get_last_fragment_url/' + burstID,
@@ -82,7 +90,7 @@ function copyBurst(burstID, first_wizzard_form_url) {
             stop_at_url = response;
             doAjaxCall({
                 type: "POST",
-                url: '/burst/copy_simulator_configuration/' + burstID,
+                url: '/burst/copy_simulator_configuration/' + burstID + '/' + is_branch,
                 showBlockerOverlay: true,
                 success: function (response) {
                     let simParamElem = $("#div-simulator-parameters");

@@ -58,29 +58,30 @@
         </button>
     {% endif %}
 
-    {% if renderer.include_launch_button %}
-        <button id="launch_simulation" name="launch_simulation" type="button" class="btn btn-primary" tabindex="1"
-                onclick="launchNewBurst(this.parentElement, 'new')"
-                {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Launch
-        </button>
-    {% endif %}
-
-    {% if renderer.include_setup_pse %}
-        <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary" tabindex="1"
-                onclick="wizzard_submit(this.parentElement)"
-                {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Setup PSE
-        </button>
-    {% endif %}
-
     {% if renderer.include_branch_button %}
         <button id="branch_simulation" name="branch_simulation" type="button" class="btn btn-primary" tabindex="1"
                 onclick="launchNewBurst(this.parentElement, 'branch')"
-                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Branch
+                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Launch Branch
         </button>
-    {% endif %}
+    {% else %}
 
-    {% if renderer.include_launch_pse_button %}
-        <button id="launch_pse" name="launch_pse" type="button" class="btn btn-primary" tabindex="1"
-                onclick="launchNewPSEBurst(this.parentElement)">Launch PSE</button>
+        {% if renderer.include_launch_button %}
+            <button id="launch_simulation" name="launch_simulation" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="launchNewBurst(this.parentElement, 'new')"
+                    {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Launch
+            </button>
+        {% endif %}
+
+        {% if renderer.include_setup_pse %}
+            <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="wizzard_submit(this.parentElement)"
+                    {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Setup PSE
+            </button>
+        {% endif %}
+
+        {% if renderer.include_launch_pse_button %}
+            <button id="launch_pse" name="launch_pse" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="launchNewPSEBurst(this.parentElement)">Launch PSE</button>
+        {% endif %}
     {% endif %}
 </form>

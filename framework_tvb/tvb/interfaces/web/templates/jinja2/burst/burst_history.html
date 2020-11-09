@@ -24,8 +24,10 @@
                                 <button class="action action-store" onclick="renameBurstEntry({{ burst.id }}, 'new_name_{{ burst.id }}')"
                                         title="Rename with new name from above input-field">Rename</button>
                             {% endif %}
-                            <p><button class="action action-copy" onclick="copyBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a copy of the current simulation configuration.">
+                            <p><button class="action action-copy" onclick="copyBurst({{ burst.id }}, '{{ first_fragment_url }}', '{{ False }}')" title="Create a copy of the current simulation configuration.">
                                 Copy</button></p>
+                            <p><button class="action action-copy" onclick="branchBurst({{ burst.id }}, '{{ first_fragment_url }}', '{{ True }}')" title="Create a branch of the current simulation configuration.">
+                                Branch</button></p>
                             <p><button class="action action-export" onclick="window.location='/burst/export/{{ burst.id }}'; return false;"
                                         title="Export simulation as ZIP, for later import or use in command line">
                                 Export ZIP</button></p>
