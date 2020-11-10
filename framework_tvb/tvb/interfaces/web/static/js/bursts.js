@@ -70,18 +70,10 @@ function resetToNewBurst() {
     });
 }
 
-
 /*
  * When clicking the branch button on a burst-history entry, a clone of that burst is prepared.
  */
-function branchBurst(burstID, first_wizzard_form_url, is_branch) {
-    copyBurst(burstID, first_wizzard_form_url, is_branch)
-}
-
-/*
- * When clicking the copy button on a burst-history entry, a clone of that burst is prepared.
- */
-function copyBurst(burstID, first_wizzard_form_url, is_branch) {
+function branchBurst(burstID, first_wizzard_form_url) {
     doAjaxCall({
         type: "POST",
         url: '/burst/get_last_fragment_url/' + burstID,
@@ -90,7 +82,40 @@ function copyBurst(burstID, first_wizzard_form_url, is_branch) {
             stop_at_url = response;
             doAjaxCall({
                 type: "POST",
-                url: '/burst/copy_simulator_configuration/' + burstID + '/' + is_branch,
+                url: '/burst/branch_simulator_configuration/' + burstID,
+                showBlockerOverlay: true,
+                success: function (response) {
+                    let simParamElem = $("#div-simulator-parameters");
+                    simParamElem.html(response);
+                    renderAllSimulatorForms(first_wizzard_form_url, stop_at_url, function() {
+                        const newName = $("#input_simulation_name_id").val();
+                        fill_burst_name(newName, false);
+                    });
+                    changeBurstHistory(null, true);
+                    displayBurstTree(undefined);
+                    displayMessage("A copy of previous simulation was prepared for you!");
+                },
+                error: function () {
+                    displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
+                }
+            });
+        }
+    });
+}
+
+/*
+ * When clicking the copy button on a burst-history entry, a clone of that burst is prepared.
+ */
+function copyBurst(burstID, first_wizzard_form_url) {
+    doAjaxCall({
+        type: "POST",
+        url: '/burst/get_last_fragment_url/' + burstID,
+        showBlockerOverlay: true,
+        success: function (response) {
+            stop_at_url = response;
+            doAjaxCall({
+                type: "POST",
+                url: '/burst/copy_simulator_configuration/' + burstID,
                 showBlockerOverlay: true,
                 success: function (response) {
                     let simParamElem = $("#div-simulator-parameters");

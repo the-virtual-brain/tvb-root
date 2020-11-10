@@ -540,7 +540,7 @@ class FlowController(BaseController):
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             first_op = ProjectService.get_operations_in_group(op_group)[0]
             operation = OperationService.load_operation(int(first_op.id))
-        self.simulator_controller.copy_simulator_configuration(operation.burst.id, False)
+        self.simulator_controller.copy_simulator_configuration(operation.burst.id)
 
         raise cherrypy.HTTPRedirect("/burst/")
 

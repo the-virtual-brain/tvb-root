@@ -114,7 +114,7 @@ class SimulatorFragmentRenderingRules(object):
                  is_simulation_readonly_load=False, last_form_url=SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                  last_request_type=GET_REQUEST, is_first_fragment=False, is_launch_fragment=False,
                  is_model_fragment=False, is_surface_simulation=False, is_noise_fragment=False,
-                 is_launch_pse_fragment=False, is_pse_launch=False, monitor_name=None, is_branch_selected=False):
+                 is_launch_pse_fragment=False, is_pse_launch=False, monitor_name=None):
         """
         :param is_first_fragment: True only for the first form in the wizzard, to hide Previous button
         :param is_launch_fragment: True only for the last form in the wizzard to diplay Launch/SetupPSE/Branch, hide Next
@@ -141,7 +141,6 @@ class SimulatorFragmentRenderingRules(object):
         self.is_launch_pse_fragment = is_launch_pse_fragment
         self.is_pse_launch = is_pse_launch
         self.monitor_name = monitor_name
-        self.is_branch_selected = is_branch_selected
 
     @property
     def load_readonly(self):
@@ -205,7 +204,8 @@ class SimulatorFragmentRenderingRules(object):
 
     @property
     def include_branch_button(self):
-        if self.is_branch_selected and self.is_launch_fragment and self.is_simulation_copy and not self.is_pse_launch:
+        is_branch = common.get_from_session(common.KEY_BRANCH)
+        if is_branch and self.is_launch_fragment and self.is_simulation_copy and not self.is_pse_launch:
             return True
         return False
 
@@ -780,7 +780,7 @@ class SimulatorController(BurstBaseController):
             self._update_last_loaded_fragment_url(last_loaded_fragment_url)
 
         rendering_rules = SimulatorFragmentRenderingRules(None, None, None, is_simulator_copy, is_simulator_load,
-                                                          self.last_loaded_form_url, cherrypy.request.method, is_branch_selected=self.is_branch_selected)
+                                                          self.last_loaded_form_url, cherrypy.request.method)
 
         if isinstance(monitor, BoldViewModel):
             next_form = get_form_for_equation(type(monitor.hrf_kernel))()
@@ -1030,7 +1030,24 @@ class SimulatorController(BurstBaseController):
             raise
 
     @expose_fragment('simulator_fragment')
-    def copy_simulator_configuration(self, burst_config_id, is_branch):
+    def copy_simulator_configuration(self, burst_config_id):
+        form = self.get_first_fragment(burst_config_id)
+        common.add2session(common.KEY_BRANCH, False)
+        rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
+                                                          is_simulation_copy=True, is_simulation_readonly_load=True,
+                                                          is_first_fragment=True)
+        return rendering_rules.to_dict()
+
+    @expose_fragment('simulator_fragment')
+    def branch_simulator_configuration(self, burst_config_id):
+        form = self.get_first_fragment(burst_config_id)
+        common.add2session(common.KEY_BRANCH, True)
+        rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
+                                                          is_simulation_copy=True, is_simulation_readonly_load=True,
+                                                          is_first_fragment=True)
+        return rendering_rules.to_dict()
+
+    def get_first_fragment(self, burst_config_id):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
         burst_config_copy = burst_config.clone()
         burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
@@ -1045,12 +1062,7 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
 
         self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config_copy))
-        form = self.prepare_first_fragment()
-        self.is_branch_selected = self.srt_to_bool(is_branch)
-        rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
-                                                          is_simulation_copy=True, is_simulation_readonly_load=True,
-                                                          is_first_fragment=True)
-        return rendering_rules.to_dict()
+        return self.prepare_first_fragment()
 
     @expose_fragment('simulator_fragment')
     def reset_simulator_configuration(self):
