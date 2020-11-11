@@ -90,7 +90,7 @@ class OscillatorT(ModelNumbaDfun):
         of=str,
         label="Variables or quantities available to Monitors",
         choices=('V', 'W', ),
-        default=('V', 'W', ),
+        default=('W', 'W', ),
         doc="Variables to monitor"
     )
 
@@ -110,12 +110,16 @@ class OscillatorT(ModelNumbaDfun):
 def _numba_dfun_OscillatorT(vw, coupling, tau, I, a, b, c, d, e, f, g, alpha, beta, gamma, local_coupling, dx):
     "Gufunc for OscillatorT model equations."
 
-    coupling = coupling[0]
+    # long-range coupling
+    c_pop1 = coupling[0]
+    c_pop2 = coupling[1]
+    c_pop3 = coupling[2]
+    c_pop4 = coupling[3]
 
     V = vw[0]
     W = vw[1]
 
 
-    dx[0] = d * tau * (alpha * W - f * V ** 3 + e * V ** 2 + g * V + gamma * I + gamma * coupling + local_coupling * V)
+    dx[0] = d * tau * (alpha * W - f * V ** 3 + e * V ** 2 + g * V + gamma * I + gamma * c_pop1 + local_coupling * V)
     dx[1] = d * (a + b * V + c * V ** 2 - beta * W) / tau
     

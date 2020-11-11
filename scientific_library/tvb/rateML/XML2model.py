@@ -66,7 +66,7 @@ from run.regular_run import regularRun
 
 # logger = get_logger(__name__)
 
-class rateml:
+class RateML:
 
     def __init__(self, model_filename, language='python', XMLfolder=None, GENfolder=None):
         self.model_filename = model_filename
@@ -161,7 +161,7 @@ class rateml:
         # cuda only
         noisepresent=False
         for ct in (model.component_types):
-            if ct.name == 'noise' and ct.description == 'on':
+            if ct.name == 'noise':
                 noisepresent=True
 
         # see if nsig derived parameter is present for noise
@@ -198,7 +198,10 @@ class rateml:
                                 target = power.group(1)
                                 powersplit = target.split('^')
                                 powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
-                                pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace(target, powf)
+                                if hasattr(pwr_obj, 'name'):
+                                    pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace(target, powf)
+                                if hasattr(pwr_obj, 'variable'):
+                                    pwr_parse_object[pwr_obj.variable].value = pwr_obj.value.replace(target, powf)
 
             for pwr_obj in powlst.exposures:
                 if '^' in pwr_obj.dimension:
@@ -317,23 +320,23 @@ class rateml:
 
 if __name__ == "__main__":
 
-    language='python'
-    # language='cuda'
+    # language='python'
+    language='cuda'
 
-    model_filename = 'montbrio'
+    # model_filename = 'montbrio'
     # model_filename = 'oscillator'
     # model_filename = 'kuramoto'
     # model_filename = 'rwongwang'
-    # model_filename = 'epileptor'
+    model_filename = 'epileptor'
 
-    rateml(model_filename, language, './XMLmodels/', './generatedModels/')
+    RateML(model_filename, language, './XMLmodels/', './generatedModels/')
 
-    simtime = 400
-    g = 32
-    s = 32
-    dt = 0.1
-    period = 10
-    regularRun(simtime, g, s, dt, period).simulate_python()
+    # simtime = 400
+    # g = 32
+    # s = 32
+    # dt = 0.1
+    # period = 10
+    # regularRun(simtime, g, s, dt, period).simulate_python()
 
     # model_filenames = [
     #                    'montbrio',

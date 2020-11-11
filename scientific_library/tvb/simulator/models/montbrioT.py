@@ -5,7 +5,7 @@ from numpy import *
 from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
-class montbrio(ModelNumbaDfun):
+class MontbrioT(ModelNumbaDfun):
         
     I = NArray(
         label=":math:`I`",
@@ -79,13 +79,13 @@ class montbrio(ModelNumbaDfun):
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={"r": numpy.array([0.0, inf]),},
+        default={"r": numpy.array([0.0, inf]), },
     )
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
-        choices=('r', 'v', ),
-        default=('r', 'V', ),
+        choices=('r', 'V', ),
+        default=('V', 'V', ),
         doc="Variables to monitor"
     )
 
@@ -97,24 +97,28 @@ class montbrio(ModelNumbaDfun):
     def dfun(self, vw, c, local_coupling=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_montbrio(vw_, c_, self.I, self.Delta, self.alpha, self.s, self.k, self.J, self.eta, self.Gamma, self.gamma, local_coupling)
+        deriv = _numba_dfun_MontbrioT(vw_, c_, self.I, self.Delta, self.alpha, self.s, self.k, self.J, self.eta, self.Gamma, self.gamma, local_coupling)
 
         return deriv.T[..., numpy.newaxis]
 
 @guvectorize([(float64[:], float64[:], float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64[:])], '(n),(m)' + ',()'*10 + '->(n)', nopython=True)
-def _numba_dfun_montbrio(vw, coupling, I, Delta, alpha, s, k, J, eta, Gamma, gamma, local_coupling, dx):
-    "Gufunc for montbrio model equations."
+def _numba_dfun_MontbrioT(vw, coupling, I, Delta, alpha, s, k, J, eta, Gamma, gamma, local_coupling, dx):
+    "Gufunc for MontbrioT model equations."
+
+    # long-range coupling
+    c_pop1 = coupling[0]
+    c_pop2 = coupling[1]
+    c_pop3 = coupling[2]
+    c_pop4 = coupling[3]
 
     r = vw[0]
     V = vw[1]
 
     # derived variables
-    Coupling_global = alpha * coupling[0]
+    Coupling_global = alpha * c_pop1
     Coupling_local = (1-alpha) * local_coupling * r
     Coupling_Term = Coupling_global + Coupling_local
 
-
-
     dx[0] = Delta / pi + 2 * V * r - k * r ** 2 + Gamma * r / pi
     dx[1] = V ** 2 - pi ** 2 * r ** 2 + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term
-            
+    

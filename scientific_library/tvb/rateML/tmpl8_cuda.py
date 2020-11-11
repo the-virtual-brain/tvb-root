@@ -158,7 +158,7 @@ __global__ void ${modelname}(
                 if (wij == 0.0)
                     continue;
 
-                % if hasattr(derparams, 'rec_speed_dt') and derparams['rec_speed_dt'].value != '0':
+                % if 'rec_speed_dt' in derparams and derparams['rec_speed_dt'].value != '0':
                 // Get the delay between node i and node j
                 unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
                     % else:

@@ -5,145 +5,141 @@ from numpy import *
 from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
-class epileptor(ModelNumbaDfun):
+class EpileptorT(ModelNumbaDfun):
         
     a = NArray(
         label=":math:`a`",
         default=numpy.array([1.0]),
-        doc="""Coefficient of the cubic term in the first state-variable."""
+        doc=""""""
     )    
         
     b = NArray(
         label=":math:`b`",
         default=numpy.array([3.0]),
-        doc="""Coefficient of the squared term in the first state-variable."""
+        doc=""""""
     )    
         
     c = NArray(
         label=":math:`c`",
         default=numpy.array([1.0]),
-        doc="""Additive coefficient for the second state-variable x_{2}, called :math:`y_{0}` in Jirsa paper."""
+        doc=""""""
     )    
         
     d = NArray(
         label=":math:`d`",
         default=numpy.array([5.0]),
-        doc="""Coefficient of the squared term in the second state-variable x_{2}."""
+        doc=""""""
     )    
         
     r = NArray(
         label=":math:`r`",
         default=numpy.array([0.00035]),
         domain=Range(lo=0.0, hi=0.001, step=0.00005),
-        doc="""Temporal scaling in the slow state-variable, called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor)."""
+        doc=""""""
     )    
         
     s = NArray(
         label=":math:`s`",
         default=numpy.array([4.0]),
-        doc="""Linear coefficient in the third state variable"""
+        doc=""""""
     )    
         
     x0 = NArray(
         label=":math:`x0`",
         default=numpy.array([-1.6]),
         domain=Range(lo=-3.0, hi=-1.0, step=0.1),
-        doc="""Epileptogenicity parameter."""
+        doc=""""""
     )    
         
     Iext = NArray(
         label=":math:`Iext`",
         default=numpy.array([3.1]),
         domain=Range(lo=1.5, hi=5.0, step=0.1),
-        doc="""External input current to the first state-variable."""
+        doc=""""""
     )    
         
     slope = NArray(
         label=":math:`slope`",
         default=numpy.array([0.]),
         domain=Range(lo=-16.0, hi=6.0, step=0.1),
-        doc="""Linear coefficient in the first state-variable."""
+        doc=""""""
     )    
         
     Iext2 = NArray(
         label=":math:`Iext2`",
         default=numpy.array([0.45]),
         domain=Range(lo=0.0, hi=1.0, step=0.05),
-        doc="""External input current to the first state-variable."""
+        doc=""""""
     )    
         
     tau = NArray(
         label=":math:`tau`",
         default=numpy.array([10.0]),
-        doc="""Temporal scaling coefficient in fifth state variable."""
+        doc=""""""
     )    
         
     aa = NArray(
         label=":math:`aa`",
         default=numpy.array([6.0]),
-        doc="""Linear coefficient in fifth state variable."""
+        doc=""""""
     )    
         
     bb = NArray(
         label=":math:`bb`",
         default=numpy.array([2.0]),
-        doc="""Linear coefficient of lowpass excitatory coupling in fourth state variable."""
+        doc=""""""
     )    
         
     Kvf = NArray(
         label=":math:`Kvf`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
-        doc="""Coupling scaling on a very fast time scale."""
+        doc=""""""
     )    
         
     Kf = NArray(
         label=":math:`Kf`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
-        doc="""Correspond to the coupling scaling on a fast time scale."""
+        doc=""""""
     )    
         
     Ks = NArray(
         label=":math:`Ks`",
         default=numpy.array([0.0]),
         domain=Range(lo=-4.0, hi=4.0, step=0.1),
-        doc="""Permittivity coupling, that is from the fast time scale toward the slow time scale."""
+        doc=""""""
     )    
         
     tt = NArray(
         label=":math:`tt`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.001, hi=10.0, step=0.001),
-        doc="""Time scaling of the whole system to the system in real time."""
+        doc=""""""
     )    
         
     modification = NArray(
         label=":math:`modification`",
         default=numpy.array([False]),
-        doc="""When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."""
+        doc=""""""
     )    
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"x1": numpy.array([]), 
-				 "y1": numpy.array([]), 
-				 "z": numpy.array([]), 
-				 "x2": numpy.array([]), 
-				 "y2": numpy.array([]), 
-				 "g": numpy.array([])},
+        default={"x1": numpy.array([-2.0, 1.0]), 
+				 "y1": numpy.array([-20.0, 2.0]), 
+				 "z": numpy.array([-2.0, 5.0]), 
+				 "x2": numpy.array([-2.0, 0.0]), 
+				 "y2": numpy.array([0.0, 2.0]), 
+				 "g": numpy.array([-1.0, 1.0])},
         doc="""state variables"""
     )
 
-    state_variable_boundaries = Final(
-        label="State Variable boundaries [lo, hi]",
-        default={"x1": numpy.array([-2.0, 1.0])"y1": numpy.array([-20.0, 2.0])"z": numpy.array([-2.0, 5.0])"x2": numpy.array([-2.0, 0.0])"y2": numpy.array([0.0, 2.0])"g": numpy.array([-1.0, 1.0])},
-    )
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
         choices=('x1 ** x2', 'x2', ),
-        default=('x1', 'y1', 'z', 'x2', 'y2', 'g', ),
+        default=('x2', 'x2', 'x2', 'x2', 'x2', 'x2', ),
         doc="Variables to monitor"
     )
 
@@ -155,13 +151,19 @@ class epileptor(ModelNumbaDfun):
     def dfun(self, vw, c, local_coupling=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_epileptor(vw_, c_, self.a, self.b, self.c, self.d, self.r, self.s, self.x0, self.Iext, self.slope, self.Iext2, self.tau, self.aa, self.bb, self.Kvf, self.Kf, self.Ks, self.tt, self.modification, local_coupling)
+        deriv = _numba_dfun_EpileptorT(vw_, c_, self.a, self.b, self.c, self.d, self.r, self.s, self.x0, self.Iext, self.slope, self.Iext2, self.tau, self.aa, self.bb, self.Kvf, self.Kf, self.Ks, self.tt, self.modification, local_coupling)
 
         return deriv.T[..., numpy.newaxis]
 
 @guvectorize([(float64[:], float64[:], float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64[:])], '(n),(m)' + ',()'*19 + '->(n)', nopython=True)
-def _numba_dfun_epileptor(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext2, tau, aa, bb, Kvf, Kf, Ks, tt, modification, local_coupling, dx):
-    "Gufunc for epileptor model equations."
+def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext2, tau, aa, bb, Kvf, Kf, Ks, tt, modification, local_coupling, dx):
+    "Gufunc for EpileptorT model equations."
+
+    # long-range coupling
+    c_pop1 = coupling[0]
+    c_pop2 = coupling[1]
+    c_pop3 = coupling[2]
+    c_pop4 = coupling[3]
 
     x1 = vw[0]
     y1 = vw[1]
@@ -170,8 +172,6 @@ def _numba_dfun_epileptor(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext2
     y2 = vw[4]
     g = vw[5]
 
-    # derived variables
-    bla = x ** 2
 
     # Conditional variables
     if x1 < 0.0:
@@ -194,12 +194,10 @@ def _numba_dfun_epileptor(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext2
     else:
         ydot4 = aa * (x2 + 0.25)
 
-
-
     dx[0] = tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 )
-    dx[1] = tt * (c - d * powf(x1, 2) - y1)
+    dx[1] = tt * (c - d * x1 ** 2 - y1)
     dx[2] = tt * (r * (h - z + Ks * c_pop1))
-    dx[3] = tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)
+    dx[3] = tt * (-y2 + x2 - x2 ** 3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)
     dx[4] = tt * (-y2 + ydot4) / tau
     dx[5] = tt * (-0.01 * (g - 0.1 * x1) )
-            
+    

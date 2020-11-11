@@ -10,9 +10,9 @@
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
 <!--        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>-->
-        <DerivedParameter name="rec_speed_dt" value="{1.0f^global_speed} / dt * {x^2}"/>
+        <DerivedParameter name="rec_speed_dt" value="{2.0f^global_speed} / dt * {x^2}"/>
         <!-- nsig is the default variable for noise amplitude. Is equal to 1 if not defined -->
-<!--        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>-->
+        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
 
 <!-- If empty then none -->
         <Constant name="a" dimension="None" value="1.0" description="Coefficient of the cubic term in the first state-variable."/>
@@ -93,6 +93,7 @@
         <Parameter name="x1_j" dimension='0'/>
         <DerivedParameter name="c_pop1" value="global_coupling"/>
 
+
     <Dynamics>
         <DerivedVariable name="pre" value="sin(x1_j - x1)"/>
         <DerivedVariable name="post" value="c_a"/>
@@ -110,7 +111,7 @@
 
     </ComponentType>
 
-    <ComponentType name="noise" description="off"/>
+    <ComponentType name="noise"/>
 
 </Lems>
 

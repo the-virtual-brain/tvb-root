@@ -109,7 +109,11 @@ class CudaRun:
 		#}}}
 
 		gridx = args.n_coupling // args.blockszx
+		if (gridx==0):
+			gridx=1;
 		gridy = args.n_speed // args.blockszy
+		if (gridy==0):
+			gridy=1;
 		final_block_dim = args.blockszx, args.blockszy, 1
 		final_grid_dim = gridx, gridy
 

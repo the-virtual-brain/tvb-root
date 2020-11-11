@@ -27,7 +27,7 @@ __device__ float wrap_it_PI(float x)
 }
 __device__ float wrap_it_x1(float x1)
 {
-    float x1dim[] = {-2.0, 1.0};
+    float x1dim[] = {};
     if (x1 < x1dim[0]) x1 = x1dim[0];
     else if (x1 > x1dim[1]) x1 = x1dim[1];
 
@@ -35,7 +35,7 @@ __device__ float wrap_it_x1(float x1)
 }
 __device__ float wrap_it_y1(float y1)
 {
-    float y1dim[] = {-20.0, 2.0};
+    float y1dim[] = {};
     if (y1 < y1dim[0]) y1 = y1dim[0];
     else if (y1 > y1dim[1]) y1 = y1dim[1];
 
@@ -43,7 +43,7 @@ __device__ float wrap_it_y1(float y1)
 }
 __device__ float wrap_it_z(float z)
 {
-    float zdim[] = {-2.0, 5.0};
+    float zdim[] = {};
     if (z < zdim[0]) z = zdim[0];
     else if (z > zdim[1]) z = zdim[1];
 
@@ -51,7 +51,7 @@ __device__ float wrap_it_z(float z)
 }
 __device__ float wrap_it_x2(float x2)
 {
-    float x2dim[] = {-2.0, 0.0};
+    float x2dim[] = {};
     if (x2 < x2dim[0]) x2 = x2dim[0];
     else if (x2 > x2dim[1]) x2 = x2dim[1];
 
@@ -59,7 +59,7 @@ __device__ float wrap_it_x2(float x2)
 }
 __device__ float wrap_it_y2(float y2)
 {
-    float y2dim[] = {0.0, 2.0};
+    float y2dim[] = {};
     if (y2 < y2dim[0]) y2 = y2dim[0];
     else if (y2 > y2dim[1]) y2 = y2dim[1];
 
@@ -67,14 +67,14 @@ __device__ float wrap_it_y2(float y2)
 }
 __device__ float wrap_it_g(float g)
 {
-    float gdim[] = {-1.0, 1.0};
+    float gdim[] = {};
     if (g < gdim[0]) g = gdim[0];
     else if (g > gdim[1]) g = gdim[1];
 
     return g;
 }
 
-__global__ void epileptor(
+__global__ void EpileptorT(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
@@ -127,9 +127,8 @@ __global__ void epileptor(
 
     // derived parameters
     const float rec_n = 1 / n_node;
-    const float rec_speed_dt = {powf(1.0f, global_speed)} / dt * {powf(x, 2)};
-    // the dynamic derived variables declarations
-    float bla = 0.0;
+    const float rec_speed_dt = {powf(2.0f, global_speed)} / dt * {powf(x, 2)};
+    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
 
     // conditional_derived variable declaration
     float ydot0 = 0.0;
@@ -137,6 +136,8 @@ __global__ void epileptor(
     float h = 0.0;
     float ydot4 = 0.0;
 
+    curandState crndst;
+    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float x1 = 0.0;
     float y1 = 0.0;
@@ -187,8 +188,8 @@ __global__ void epileptor(
                 if (wij == 0.0)
                     continue;
 
-                // no delay specified
-                unsigned int dij = 0;
+                // Get the delay between node i and node j
+                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
 
                 //***// Get the state of node j which is delayed by dij
                 float x1_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
@@ -201,8 +202,6 @@ __global__ void epileptor(
             // rec_n is used for the scaling over nodes
             c_pop1 *= global_coupling;
             c_pop2 *= g;
-            // the dynamic derived variables
-            bla = {powf(x, 2)};
 
             // The conditional variables
             if (x1 < 0.0) {
@@ -228,19 +227,19 @@ __global__ void epileptor(
 
             // Integrate with stochastic forward euler
             dx1 = dt * (tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 ));
-            dy1 = dt * (tt * (c - d * powf(x1, 2) - y1));
+            dy1 = dt * (tt * (c - d * {powf(x1, 2)} - y1));
             dz = dt * (tt * (r * (h - z + Ks * c_pop1)));
-            dx2 = dt * (tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2));
+            dx2 = dt * (tt * (-y2 + x2 - {powf(x2, 3)} + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2));
             dy2 = dt * (tt * (-y2 + ydot4) / tau);
             dg = dt * (tt * (-0.01 * (g - 0.1 * x1) ));
 
-            // No noise is added because it is not present in model
-            x1 += dx1;
-            y1 += dy1;
-            z += dz;
-            x2 += dx2;
-            y2 += dy2;
-            g += dg;
+            // Add noise because component_type Noise is present in model
+            x1 += nsig * curand_normal(&crndst) + dx1;
+            y1 += nsig * curand_normal(&crndst) + dy1;
+            z += nsig * curand_normal(&crndst) + dz;
+            x2 += nsig * curand_normal(&crndst) + dx2;
+            y2 += nsig * curand_normal(&crndst) + dy2;
+            g += nsig * curand_normal(&crndst) + dg;
 
             // Wrap it within the limits of the model
             x1 = wrap_it_x1(x1);
