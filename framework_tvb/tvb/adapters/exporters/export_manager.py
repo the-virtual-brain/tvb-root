@@ -36,6 +36,7 @@ Class responsible for all TVB exports (datatype or project).
 
 import os
 from datetime import datetime
+from tvb.adapters.exporters.TVBLinkedExporter import TVBLinkedExporter
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
@@ -45,7 +46,6 @@ from tvb.core.entities.model import model_operation
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
 
 
 class ExportManager(object):
@@ -62,6 +62,7 @@ class ExportManager(object):
         # Here we register all available data type exporters
         # If new exporters supported, they should be added here
         self._register_exporter(TVBExporter())
+        self._register_exporter(TVBLinkedExporter())
         self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
     def _register_exporter(self, exporter):
@@ -93,31 +94,6 @@ class ExportManager(object):
                 results[exporterId] = exporter.get_label()
 
         return results
-
-    def get_export_data_zip_path(self, data, exporter):
-        zip_file_name = exporter.get_export_file_name(data)
-        zip_file_name = zip_file_name.replace('.h5', '.zip')
-        return os.path.join(self.export_folder, zip_file_name)
-
-    def export_data_with_references(self, export_data_zip_path, data_export_folder):
-        with TvbZip(export_data_zip_path, "w") as zip_file:
-            for filename in os.listdir(data_export_folder):
-                zip_file.write(os.path.join(data_export_folder, filename), filename)
-
-        return None, export_data_zip_path, True
-
-    def copy_dt_to_export_folder(self, data, data_export_folder):
-        data_path = h5.path_for_stored_index(data)
-        with H5File.from_file(data_path) as f:
-            file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
-            if not os.path.exists(file_destination):
-                FilesHelper().copy_file(data_path, file_destination)
-            sub_dt_refs = f.gather_references()
-
-            for reference in sub_dt_refs:
-                if reference[1]:
-                    dt = dao.get_datatype_by_gid(reference[1].hex)
-                    self.copy_dt_to_export_folder(dt, data_export_folder)
 
     def export_data(self, data, exporter_id, project):
         """
@@ -154,15 +130,8 @@ class ExportManager(object):
         data_export_folder = None
         try:
             data_export_folder = self._build_data_export_folder(data)
-
-            self.copy_dt_to_export_folder(data, data_export_folder)
-            if data_export_folder is not None and len(os.listdir(data_export_folder)) > 1:
-                export_data_zip_path = self.get_export_data_zip_path(data, exporter)
-                export_data = self.export_data_with_references(export_data_zip_path, data_export_folder)
-            else:
-                # Here is the real export
-                self.logger.debug("Start export of data: %s" % data.type)
-                export_data = exporter.export(data, data_export_folder, project)
+            self.logger.debug("Start export of data: %s" % data.type)
+            export_data = exporter.export(data, data_export_folder, project)
         finally:
             # In case export did not generated any file delete folder
             if data_export_folder is not None and len(os.listdir(data_export_folder)) == 0:
