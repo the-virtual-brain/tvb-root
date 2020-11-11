@@ -38,28 +38,33 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 
 import json
 import uuid
-
 import numpy
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
-from tvb.analyzers.node_coherence import NodeCoherence
+from tvb.analyzers.node_coherence import evaluate_node_coherenec_analyzer
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.basic.neotraits.api import HasTraits, Attr, Int
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.spectral import CoherenceSpectrum
 from tvb.datatypes.time_series import TimeSeries
 
 
-class NodeCoherenceModel(ViewModel, NodeCoherence):
+class NodeCoherenceModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
         required=True,
         doc="""The timeseries to which the FFT is to be applied."""
     )
+
+    nfft = Int(
+        label="Data-points per block",
+        default=256,
+        doc="""Should be a power of 2...""")
 
 
 class NodeCoherenceForm(ABCAdapterForm):
@@ -87,9 +92,6 @@ class NodeCoherenceForm(ABCAdapterForm):
     def get_input_name():
         return "time_series"
 
-    def get_traited_datatype(self):
-        return NodeCoherence()
-
 
 class NodeCoherenceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeCoherence algorithm. """
@@ -116,10 +118,6 @@ class NodeCoherenceAdapter(ABCAdapter):
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
         self.log.debug("Time series shape is %s" % str(self.input_shape))
-        # -------------------- Fill Algorithm for Analysis -------------------##
-        self.algorithm = NodeCoherence()
-        if view_model.nfft is not None:
-            self.algorithm.nfft = view_model.nfft
 
     def get_required_memory_size(self, view_model):
         # type: (NodeCoherenceModel) -> int
@@ -131,7 +129,7 @@ class NodeCoherenceAdapter(ABCAdapter):
                       self.input_shape[2],
                       self.input_shape[3])
         input_size = numpy.prod(used_shape) * 8.0
-        output_size = self.algorithm.result_size(used_shape)
+        output_size = self.result_size(used_shape, view_model.nfft)
         return input_size + output_size
 
     def get_required_disk_size(self, view_model):
@@ -143,7 +141,7 @@ class NodeCoherenceAdapter(ABCAdapter):
                       1,
                       self.input_shape[2],
                       self.input_shape[3])
-        return self.array_size2kb(self.algorithm.result_size(used_shape))
+        return self.array_size2kb(self.result_size(used_shape, view_model.nfft))
 
     def launch(self, view_model):
         # type: (NodeCoherenceModel) -> [CoherenceSpectrumIndex]
@@ -158,7 +156,7 @@ class NodeCoherenceAdapter(ABCAdapter):
         coherence_h5 = CoherenceSpectrumH5(dest_path)
         coherence_h5.gid.store(uuid.UUID(coherence_spectrum_index.gid))
         coherence_h5.source.store(view_model.time_series)
-        coherence_h5.nfft.store(self.algorithm.nfft)
+        coherence_h5.nfft.store(view_model.nfft)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
         input_shape = time_series_h5.data.shape
@@ -172,8 +170,7 @@ class NodeCoherenceAdapter(ABCAdapter):
         for var in range(input_shape[1]):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
-            self.algorithm.time_series = small_ts
-            partial_coh = self.algorithm.evaluate()
+            partial_coh = evaluate_node_coherenec_analyzer(small_ts, view_model.nfft)
             coherence_h5.write_data_slice(partial_coh)
         coherence_h5.frequency.store(partial_coh.frequency)
         array_metadata = coherence_h5.array_data.get_cached_metadata()
@@ -195,3 +192,19 @@ class NodeCoherenceAdapter(ABCAdapter):
         coherence_spectrum_index.subtype = CoherenceSpectrum.__name__
 
         return coherence_spectrum_index
+
+    def result_size(self, input_shape, nfft):
+        """
+        Returns the storage size in Bytes of the main result of NodeCoherence.
+        """
+        # TODO This depends on input array dtype!
+        result_size = numpy.sum(list(map(numpy.prod, self.result_shape(input_shape, nfft)))) * 8.0 #Bytes
+
+        return result_size
+
+    def result_shape(self, input_shape, nfft):
+        """Returns the shape of the main result of NodeCoherence."""
+        freq_len = nfft / 2 + 1
+        freq_shape = (freq_len,)
+        result_shape = (freq_len, input_shape[2], input_shape[2], input_shape[1], input_shape[3])
+        return [result_shape, freq_shape]

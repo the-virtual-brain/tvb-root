@@ -39,22 +39,97 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 import numpy
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
+from tvb.analyzers.node_complex_coherence import result_size, evaluate_node_complex_coherence_analyzer
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
+from tvb.basic.neotraits.api import HasTraits, Attr, Int, Float, narray_describe
 
 
-class NodeComplexCoherenceModel(ViewModel, NodeComplexCoherence):
+class NodeComplexCoherenceModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
         required=True,
         doc="""The timeseries for which the CrossCoherence and ComplexCoherence is to be computed."""
     )
+
+    epoch_length = Float(
+        label="Epoch length [ms]",
+        default=1000.0,
+        required=False,
+        doc="""In general for lengthy EEG recordings (~30 min), the timeseries are divided into equally
+        sized segments (~ 20-40s). These contain the  event that is to be characterized by means of the
+        cross coherence. Additionally each epoch block will be further divided into segments to  which
+        the FFT will be applied.""")
+
+    segment_length = Float(
+        label="Segment length [ms]",
+        default=500.0,
+        required=False,
+        doc="""The timeseries can be segmented into equally sized blocks (overlapping if necessary).
+        The segment length determines the frequency resolution of the resulting power spectra --
+        longer windows produce finer frequency resolution. """)
+
+    segment_shift = Float(
+        label="Segment shift [ms]",
+        default=250.0,
+        required=False,
+        doc="""Time length by which neighboring segments are shifted. e.g.
+        `segment shift` = `segment_length` / 2 means 50% overlapping segments.""")
+
+    window_function = Attr(
+        field_type=str,
+        label="Windowing function",
+        default='hanning',
+        required=False,
+        doc="""Windowing functions can be applied before the FFT is performed. Default is `hanning`,
+        possibilities are: 'hamming'; 'bartlett'; 'blackman'; and 'hanning'. See, numpy.<function_name>.""")
+
+    average_segments = Attr(
+        field_type=bool,
+        label="Average across segments",
+        default=True,
+        required=False,
+        doc="""Flag. If `True`, compute the mean Cross Spectrum across  segments.""")
+
+    subtract_epoch_average = Attr(
+        field_type=bool,
+        label="Subtract average across epochs",
+        default=True,
+        required=False,
+        doc="""Flag. If `True` and if the number of epochs is > 1, you can optionally subtract the
+        mean across epochs before computing the complex coherence.""")
+
+    zeropad = Int(
+        label="Zeropadding",
+        default=0,
+        required=False,
+        doc="""Adds `n` zeros at the end of each segment and at the end of window_function.
+        It is not yet functional.""")
+
+    detrend_ts = Attr(
+        field_type=bool,
+        label="Detrend time series",
+        default=False,
+        required=False,
+        doc="""Flag. If `True` removes linear trend along the time dimension before applying FFT.""")
+
+    max_freq = Float(
+        label="Maximum frequency",
+        default=1024.0,
+        required=False,
+        doc="""Maximum frequency points (e.g. 32., 64., 128.) represented in the output.
+        Default is segment_length / 2 + 1.""")
+
+    npat = Float(
+        label="dummy variable",
+        default=1.0,
+        required=False,
+        doc="""This attribute appears to be related to an input projection matrix... Which is not yet implemented""")
 
 
 class NodeComplexCoherenceForm(ABCAdapterForm):
@@ -80,9 +155,6 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
     def get_input_name():
         return "time_series"
 
-    def get_traited_datatype(self):
-        return NodeComplexCoherence()
-
 
 class NodeComplexCoherenceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeComplexCoherence algorithm. """
@@ -103,13 +175,10 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         Return the required memory to run this algorithm.
         """
         input_size = numpy.prod(self.input_shape) * 8.0
-        output_size = self.algorithm.result_size(self.input_shape, self.algorithm.max_freq,
-                                                 self.algorithm.epoch_length,
-                                                 self.algorithm.segment_length,
-                                                 self.algorithm.segment_shift,
-                                                 self.input_time_series_index.sample_period,
-                                                 self.algorithm.zeropad,
-                                                 self.algorithm.average_segments)
+        output_size = result_size(self.input_shape,
+                                  view_model.max_freq, view_model.epoch_length, view_model.segment_length,
+                                  view_model.segment_shift, self.input_time_series_index.sample_period,
+                                  view_model.zeropad, view_model.average_segments)
 
         return input_size + output_size
 
@@ -118,13 +187,9 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
-        result = self.algorithm.result_size(self.input_shape, self.algorithm.max_freq,
-                                            self.algorithm.epoch_length,
-                                            self.algorithm.segment_length,
-                                            self.algorithm.segment_shift,
-                                            self.input_time_series_index.sample_period,
-                                            self.algorithm.zeropad,
-                                            self.algorithm.average_segments)
+        result = result_size(self.input_shape, view_model.max_freq, view_model.epoch_length,
+                                            view_model.segment_length, view_model.segment_shift,
+                                            self.input_time_series_index.sample_period, view_model.zeropad, view_model.average_segments)
         return self.array_size2kb(result)
 
     def configure(self, view_model):
@@ -139,7 +204,6 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
                             self.input_time_series_index.data_length_4d)
         self.log.debug("Time series shape is %s" % (str(self.input_shape)))
         # -------------------- Fill Algorithm for Analysis -------------------##
-        self.algorithm = NodeComplexCoherence()
         self.memory_factor = 1
 
     def launch(self, view_model):
@@ -148,8 +212,15 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         Launch algorithm and build results.
         """
         # TODO ---------- Iterate over slices and compose final result ------------##
-        self.algorithm.time_series = h5.load_from_index(self.input_time_series_index)
-        ht_result = self.algorithm.evaluate()
+        time_series = h5.load_from_index(self.input_time_series_index)
+        ht_result = evaluate_node_complex_coherence_analyzer(time_series, view_model.epoch_length,
+                                                             view_model.segment_length,
+                                                             view_model.segment_shift,
+                                                             view_model.window_function,
+                                                             view_model.average_segments,
+                                                             view_model.subtract_epoch_average,
+                                                             view_model.zeropad, view_model.detrend_ts,
+                                                             view_model.max_freq, view_model.npat)
         self.log.debug("got ComplexCoherenceSpectrum result")
         self.log.debug("ComplexCoherenceSpectrum segment_length is %s" % (str(ht_result.segment_length)))
         self.log.debug("ComplexCoherenceSpectrum epoch_length is %s" % (str(ht_result.epoch_length)))
