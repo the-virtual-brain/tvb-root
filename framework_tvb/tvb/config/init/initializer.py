@@ -31,16 +31,19 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import datetime
 import importlib
 import os
 import shutil
-import datetime
 import threading
 from types import ModuleType
 from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import VIEW_MODEL2ADAPTER
+from tvb.config.init.datatypes_registry import populate_datatypes_registry
+from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.config.init.model_manager import initialize_startup, reset_database
 from tvb.core import removers_factory
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.constants import ELEM_INPUTS, ATT_TYPE, ATT_NAME
@@ -51,14 +54,12 @@ from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
 from tvb.core.entities.model.model_workflow import Portlet
 from tvb.core.entities.storage import dao, SA_SESSIONMAKER
+from tvb.core.entities.storage.session_maker import build_db_engine
 from tvb.core.neotraits.db import Base
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.services.project_service import initialize_storage
-from tvb.core.services.user_service import UserService
 from tvb.core.services.settings_service import SettingsService
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.config.init.datatypes_registry import populate_datatypes_registry
-from tvb.config.init.model_manager import initialize_startup, reset_database
+from tvb.core.services.user_service import UserService
 
 
 def reset():
@@ -68,7 +69,23 @@ def reset():
     reset_database()
 
 
-def initialize(skip_import=False):
+def command_initializer(persist_settings=True, skip_import=False):
+    if persist_settings and TvbProfile.is_first_run():
+        settings_service = SettingsService()
+        settings = {}
+        # Save default settings
+        for key, setting in settings_service.configurable_keys.items():
+            settings[key] = setting['value']
+        settings_service.save_settings(**settings)
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    # Build new db engine in case DB URL value changed
+    new_db_engine = build_db_engine()
+    SA_SESSIONMAKER.configure(bind=new_db_engine)
+
+    # Initialize application
+    initialize(skip_import)
+
+def initialize(skip_import=False, skip_updates=False):
     """
     Initialize when Application is starting.
     Check for new algorithms or new DataTypes.
@@ -95,7 +112,7 @@ def initialize(skip_import=False):
     for entity in to_remove:
         dao.remove_entity(entity.__class__, entity.id)
 
-    if not TvbProfile.is_first_run():
+    if not TvbProfile.is_first_run() and not skip_updates:
         # Create default users.
         if is_db_empty:
             dao.store_entity(

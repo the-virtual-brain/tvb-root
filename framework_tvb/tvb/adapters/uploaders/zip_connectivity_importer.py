@@ -172,14 +172,15 @@ class ZIPConnectivityImporter(ABCUploader):
             if view_model.normalization:
                 result.weights = result.scaled_weights(view_model.normalization)
 
-        # Fill and check tracts
+        # Fill and check tracts. Allow empty files for tracts, they will be computed by tvb-library.
         if tract_matrix is not None:
-            if numpy.any([x < 0 for x in tract_matrix.flatten()]):
-                raise Exception("Negative values are not accepted in tracts matrix! "
-                                "Please check your file, and use values >= 0")
-            if tract_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
-                raise Exception("Unexpected shape for tracts matrix! "
-                                "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
+            if tract_matrix.size != 0:
+                if numpy.any([x < 0 for x in tract_matrix.flatten()]):
+                    raise Exception("Negative values are not accepted in tracts matrix! "
+                                    "Please check your file, and use values >= 0")
+                if tract_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
+                    raise Exception("Unexpected shape for tracts matrix! "
+                                    "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
             result.tract_lengths = tract_matrix
 
         if orientation is not None:

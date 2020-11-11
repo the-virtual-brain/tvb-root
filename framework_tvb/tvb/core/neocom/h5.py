@@ -32,6 +32,7 @@ import os
 import typing
 import uuid
 from datetime import datetime
+
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
@@ -223,8 +224,8 @@ def store_view_model(view_model, base_dir):
                     store_view_model(model_attr[idx], base_dir)
             else:
                 store_view_model(model_attr, base_dir)
-    return h5_path
 
+    return h5_path
 
 def determine_filepath(gid, base_dir):
     dir_loader = DirLoader(base_dir, REGISTRY, False)

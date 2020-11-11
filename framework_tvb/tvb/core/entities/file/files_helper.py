@@ -84,6 +84,9 @@ class FilesHelper(object):
             self.logger.exception("COULD NOT CREATE FOLDER! CHECK ACCESS ON IT!")
             raise FileStructureException("Could not create Folder" + str(path))
 
+    def get_projects_folder(self):
+        return os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER)
+
     def get_project_folder(self, project, *sub_folders):
         """
         Retrieve the root path for the given project. 
@@ -91,7 +94,7 @@ class FilesHelper(object):
         """
         if hasattr(project, 'name'):
             project = project.name
-        complete_path = os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER, project)
+        complete_path = os.path.join(self.get_projects_folder(), project)
         if sub_folders is not None:
             complete_path = os.path.join(complete_path, *sub_folders)
         if not os.path.exists(complete_path):
@@ -418,6 +421,23 @@ class FilesHelper(object):
             return int(os.path.getsize(file_path) / 1024)
         return 0
 
+    @staticmethod
+    def compute_recursive_h5_disk_usage(start_path='.'):
+        """
+        Computes the disk usage of all h5 files under the given directory.
+        :param start_path:
+        :return: A tuple of size in kiB
+        """
+        total_size = 0
+        n_files = 0
+        for dir_path, _, file_names in os.walk(start_path):
+            for f in file_names:
+                if f.endswith('.h5'):
+                    fp = os.path.join(dir_path, f)
+                    total_size += os.path.getsize(fp)
+                    n_files += 1
+        return int(round(total_size / 1024.))
+
 
 class TvbZip(ZipFile):
     def __init__(self, dest_path, mode="r"):
@@ -440,6 +460,7 @@ class TvbZip(ZipFile):
 
         for root, dirs, files in os.walk(folder):
             for ex in exclude:
+                ex = str(ex)
                 if ex in dirs:
                     dirs.remove(ex)
                 if ex in files:

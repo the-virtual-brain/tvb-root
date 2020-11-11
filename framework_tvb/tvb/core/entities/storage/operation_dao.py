@@ -42,6 +42,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import case as case_, desc
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
@@ -165,6 +166,19 @@ class OperationDAO(RootDAO):
             result = None
         return result
 
+
+    def get_operations_with_error_in_project(self, project_id):
+        """
+        Retrieve OPERATION with errors entities for a given project.
+        """
+        result = None
+        try:
+            query = self.session.query(Operation).filter_by(fk_launched_in=project_id).filter(
+                Operation.status == STATUS_ERROR)
+            result = query.all()
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+        return result
 
     def get_operations_in_group(self, operation_group_id, is_count=False,
                                 only_first_operation=False, only_gids=False):

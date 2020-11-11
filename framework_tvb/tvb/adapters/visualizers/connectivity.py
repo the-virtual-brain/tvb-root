@@ -380,14 +380,20 @@ class Connectivity2DViewer(object):
         norm_rays, min_ray, max_ray = self._normalize_rays(rays, input_data.number_of_regions)
         colors, step = self._prepare_colors(colors, input_data.number_of_regions, step)
 
-        right_json = self._get_json(input_data.ordered_labels[input_data.hemispheres],
-                                    input_data.ordered_centres[input_data.hemispheres], weights[1],
-                                    math.pi, 1, 2, numpy.asarray(norm_rays)[input_data.hemispheres],
-                                    numpy.asarray(colors)[input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
-        left_json = self._get_json(input_data.ordered_labels[~input_data.hemispheres],
-                                   input_data.ordered_centres[~input_data.hemispheres], weights[0],
-                                   math.pi, 1, 2, numpy.asarray(norm_rays)[~input_data.hemispheres],
-                                   numpy.asarray(colors)[~input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
+        if numpy.all((input_data.hemispheres == False)):
+            right_json = ""
+        else:
+            right_json = self._get_json(input_data.ordered_labels[input_data.hemispheres],
+                                        input_data.ordered_centres[input_data.hemispheres], weights[1],
+                                        math.pi, 1, 2, numpy.asarray(norm_rays)[input_data.hemispheres],
+                                        numpy.asarray(colors)[input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
+        if numpy.all((input_data.hemispheres == True)):
+            left_json = ""
+        else:
+            left_json = self._get_json(input_data.ordered_labels[~input_data.hemispheres],
+                                       input_data.ordered_centres[~input_data.hemispheres], weights[0],
+                                       math.pi, 1, 2, numpy.asarray(norm_rays)[~input_data.hemispheres],
+                                       numpy.asarray(colors)[~input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
         full_json = self._get_json(input_data.ordered_labels, input_data.ordered_centres, normalized_weights,
                                    math.pi, 0, 1, norm_rays, colors, X_CANVAS_FULL, Y_CANVAS_FULL)
 

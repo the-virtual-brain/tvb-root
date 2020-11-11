@@ -61,7 +61,8 @@ RegionAssociatorView.prototype.createSelector = function(selectionGID){
     TVBUI.quickSelector(selector, "#selection-text-area", "#loadSelectionFromTextBtn");
 
     selector.change(function () {
-        GVAR_interestAreaNodeIndexes = selector.val();
+        GVAR_interestAreaNodeIndexes = selector.selectedIndices();
+        GFUNC_updateLeftSideVisualization();
     });
     selector.checkAll();
     return selector;

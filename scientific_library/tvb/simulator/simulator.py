@@ -434,7 +434,7 @@ class Simulator(HasTraits):
             if self.surface is not None and n_node == nr:
                 initial_conditions = initial_conditions[:, :, self._regmap]
                 return self._configure_history(initial_conditions)
-            elif ic_shape[1:] != self.good_history_shape[1:]:
+            elif self.surface is None and ic_shape[1:] != self.good_history_shape[1:]:
                 raise ValueError("Incorrect history sample shape %s, expected %s"
                                  % (ic_shape[1:], self.good_history_shape[1:]))
             else:
@@ -446,7 +446,15 @@ class Simulator(HasTraits):
                     history = self.model.initial(self.integrator.dt, self.good_history_shape, rng)
                     shift = self.current_step % self.horizon
                     history = numpy.roll(history, -shift, axis=0)
-                    history[:ic_shape[0], :, :, :] = initial_conditions
+                    if self.surface is not None:
+                        n_reg = self.connectivity.number_of_regions
+                        (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
+                        region_initial_conditions = numpy.zeros((nt, ns, n_reg, nm))
+                        numpy_add_at(region_initial_conditions.transpose(ax), self._regmap, initial_conditions.transpose(ax))
+                        region_initial_conditions /= numpy.bincount(self._regmap).reshape((-1, 1))
+                        history[:region_initial_conditions.shape[0], :, :, :] = region_initial_conditions
+                    else:
+                        history[:ic_shape[0], :, :, :] = initial_conditions
                     history = numpy.roll(history, shift, axis=0)
                 self.current_step += ic_shape[0] - 1
 
