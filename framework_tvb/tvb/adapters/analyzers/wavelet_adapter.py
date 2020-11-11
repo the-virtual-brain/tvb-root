@@ -44,7 +44,7 @@ from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.analyzers.wavelet import result_size, evaluate
+from tvb.analyzers.wavelet import evaluate_wavelet_analyzer
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -190,7 +190,7 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
                       1,
                       self.input_shape[3])
         input_size = numpy.prod(used_shape) * 8.0
-        output_size = result_size(view_model.frequencies, view_model.sample_period,
+        output_size = self.result_size(view_model.frequencies, view_model.sample_period,
                                   used_shape, self.input_time_series_index.sample_period)
         return input_size + output_size
 
@@ -202,7 +202,7 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
                       self.input_shape[1],
                       1,
                       self.input_shape[3])
-        return self.array_size2kb(result_size(view_model.frequencies, view_model.sample_period,
+        return self.array_size2kb(self.result_size(view_model.frequencies, view_model.sample_period,
                                               used_shape, self.input_time_series_index.sample_period))
 
     def launch(self, view_model):
@@ -239,7 +239,8 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
         for node in range(self.input_shape[2]):
             node_slice[2] = slice(node, node + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
-            partial_wavelet = evaluate(small_ts, view_model)
+            partial_wavelet = evaluate_wavelet_analyzer(small_ts, view_model.frequencies, view_model.sample_period,
+                                                        view_model.q_ratio, view_model.normalisation, view_model.mother)
             wavelet_h5.write_data_slice(partial_wavelet)
 
         wavelet_h5.close()
@@ -254,3 +255,24 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
         wavelet_index.frequencies_min, wavelet_index.frequencies_max, _ = from_ndarray(frequencies_array)
 
         return wavelet_index
+
+    @staticmethod
+    def result_shape(frequencies, sample_period, input_shape, input_sample_period):
+        """
+        Returns the shape of the main result (complex array) of the continuous
+        wavelet transform.
+        """
+        freq_len = int((frequencies.hi - frequencies.lo) / frequencies.step)
+        temporal_step = max((1, sample_period / input_sample_period))
+        nt = int(round(input_shape[0] / temporal_step))
+        result_shape = (freq_len, nt,) + input_shape[1:]
+        return result_shape
+
+    def result_size(self, frequencies, sample_period, input_shape, input_sample_period):
+        """
+        Returns the storage size in Bytes of the main result (complex array) of
+        the continuous wavelet transform.
+        """
+        result_size = numpy.prod(
+            self.result_shape(frequencies, sample_period, input_shape, input_sample_period)) * 2.0 * 8.0  # complex*Bytes
+        return result_size

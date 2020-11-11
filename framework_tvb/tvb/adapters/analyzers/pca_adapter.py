@@ -41,7 +41,7 @@ import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5
-from tvb.analyzers.pca import PCA
+from tvb.analyzers.pca import evaluate_pca_analyzer
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -50,7 +50,7 @@ from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
 
-class PCAAdapterModel(ViewModel, PCA):
+class PCAAdapterModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
@@ -86,9 +86,6 @@ class PCAAdapterForm(ABCAdapterForm):
     def get_input_name():
         return "time_series"
 
-    def get_traited_datatype(self):
-        return PCA()
-
 
 class PCAAdapter(ABCAdapter):
     """ TVB adapter for calling the PCA algorithm. """
@@ -116,7 +113,6 @@ class PCAAdapter(ABCAdapter):
                             self.input_time_series_index.data_length_4d)
         self.log.debug("Time series shape is %s" % str(self.input_shape))
         # -------------------- Fill Algorithm for Analysis -------------------##
-        self.algorithm = PCA()
 
     def get_required_memory_size(self, view_model):
         # type: (PCAAdapterModel) -> int
@@ -125,7 +121,7 @@ class PCAAdapter(ABCAdapter):
         """
         used_shape = (self.input_shape[0], 1, self.input_shape[2], self.input_shape[3])
         input_size = numpy.prod(used_shape) * 8.0
-        output_size = self.algorithm.result_size(used_shape)
+        output_size = self.result_size(used_shape)
         return input_size + output_size
 
     def get_required_disk_size(self, view_model):
@@ -134,7 +130,7 @@ class PCAAdapter(ABCAdapter):
         Returns the required disk size to be able to run the adapter (in kB).
         """
         used_shape = (self.input_shape[0], 1, self.input_shape[2], self.input_shape[3])
-        return self.array_size2kb(self.algorithm.result_size(used_shape))
+        return self.array_size2kb(self.result_size(used_shape))
 
     def launch(self, view_model):
         # type: (PCAAdapterModel) -> [PrincipalComponentsIndex]
@@ -163,10 +159,30 @@ class PCAAdapter(ABCAdapter):
         for var in range(input_shape[1]):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
-            self.algorithm.time_series = small_ts
-            partial_pca = self.algorithm.evaluate()
+            self.time_series = small_ts.gid
+            partial_pca = evaluate_pca_analyzer(small_ts)
             pca_h5.write_data_slice(partial_pca)
         pca_h5.close()
         time_series_h5.close()
 
         return principal_components_index
+
+    def result_size(self, input_shape):
+        """
+        Returns the storage size in Bytes of the results of the PCA analysis.
+        """
+        result_size = numpy.sum(list(map(numpy.prod,
+                                         self.result_shape(input_shape)))) * 8.0  # Bytes
+        return result_size
+
+    @staticmethod
+    def result_shape(input_shape):
+        """
+        Returns the shape of the main result of the PCA analysis -- compnnent
+        weights matrix and a vector of fractions.
+        """
+        weights_shape = (input_shape[2], input_shape[2], input_shape[1],
+                         input_shape[3])
+        fractions_shape = (input_shape[2], input_shape[1], input_shape[3])
+
+        return [weights_shape, fractions_shape]
