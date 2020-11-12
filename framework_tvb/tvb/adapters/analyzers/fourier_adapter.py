@@ -37,22 +37,30 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 import math
 import uuid
-
 import numpy
 import psutil
-import tvb.analyzers.fft as fft
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
+from tvb.analyzers.fft import evaluate_fourier_analyzer
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField, FloatField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
+from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_describe
 
 
-class FFTAdapterModel(ViewModel, fft.FFT):
+SUPPORTED_WINDOWING_FUNCTIONS = {
+    'hamming': numpy.hamming,
+    'bartlett': numpy.bartlett,
+    'blackman': numpy.blackman,
+    'hanning': numpy.hanning
+}
+
+
+class FFTAdapterModel(ViewModel):
     """
     Parameters have the following meaning:
     - time_series: the input time series to which the fft is to be applied
@@ -65,6 +73,32 @@ class FFTAdapterModel(ViewModel, fft.FFT):
         label="Time Series",
         doc="""The TimeSeries to which the FFT is to be applied."""
     )
+
+    segment_length = Float(
+        label="Segment(window) length (ms)",
+        default=1000.0,
+        required=False,
+        doc="""The TimeSeries can be segmented into equally sized blocks
+            (overlapping if necessary). The segment length determines the
+            frequency resolution of the resulting power spectra -- longer
+            windows produce finer frequency resolution.""")
+
+    window_function = Attr(
+        field_type=str,
+        label="Windowing function",
+        choices=tuple(SUPPORTED_WINDOWING_FUNCTIONS),
+        required=False,
+        doc="""Windowing functions can be applied before the FFT is performed.
+             Default is None, possibilities are: 'hamming'; 'bartlett';
+            'blackman'; and 'hanning'. See, numpy.<function_name>.""")
+
+    detrend = Attr(
+        field_type=bool,
+        label="Detrending",
+        default=True,
+        required=False,
+        doc="""Detrending is not always appropriate.
+            Default is True, False means no detrending is performed on the time series""")
 
 
 class FFTAdapterForm(ABCAdapterForm):
@@ -93,9 +127,6 @@ class FFTAdapterForm(ABCAdapterForm):
     def get_input_name():
         return "time_series"
 
-    def get_traited_datatype(self):
-        return fft.FFT()
-
 
 class FourierAdapter(ABCAdapter):
     """ TVB adapter for calling the FFT algorithm. """
@@ -106,7 +137,6 @@ class FourierAdapter(ABCAdapter):
 
     def __init__(self):
         super(FourierAdapter, self).__init__()
-        self.algorithm = fft.FFT()
         self.memory_factor = 1
 
     def get_form_class(self):
@@ -130,17 +160,10 @@ class FourierAdapter(ABCAdapter):
         self.log.debug("Provided segment_length is %s" % view_model.segment_length)
         self.log.debug("Provided window_function is %s" % view_model.window_function)
         self.log.debug("Detrend is %s" % view_model.detrend)
-        # -------------------- Fill Algorithm for Analysis -------------------
-        # The enumerate set function isn't working well. A get around strategy is to create a new algorithm
-        if view_model.segment_length is not None:
-            self.algorithm.segment_length = view_model.segment_length
 
-        self.algorithm.window_function = view_model.window_function
-        self.algorithm.detrend = view_model.detrend
-
-        self.log.debug("Using segment_length is %s" % self.algorithm.segment_length)
-        self.log.debug("Using window_function  is %s" % self.algorithm.window_function)
-        self.log.debug("Using detrend  is %s" % self.algorithm.detrend)
+        self.log.debug("Using segment_length is %s" % view_model.segment_length)
+        self.log.debug("Using window_function  is %s" % view_model.window_function)
+        self.log.debug("Using detrend  is %s" % view_model.detrend)
 
     def get_required_memory_size(self, view_model):
         # type: (FFTAdapterModel) -> int
@@ -148,7 +171,7 @@ class FourierAdapter(ABCAdapter):
         Returns the required memory to be able to run the adapter.
         """
         input_size = numpy.prod(self.input_shape) * 8.0
-        output_size = self.algorithm.result_size(self.input_shape, self.algorithm.segment_length,
+        output_size = self.result_size(self.input_shape, view_model.segment_length,
                                                  self.input_time_series_index.sample_period)
         total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
         total_required_memory = input_size + output_size
@@ -161,7 +184,7 @@ class FourierAdapter(ABCAdapter):
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
-        output_size = self.algorithm.result_size(self.input_shape, self.algorithm.segment_length,
+        output_size = self.result_size(self.input_shape, view_model.segment_length,
                                                  self.input_time_series_index.sample_period)
         return self.array_size2kb(output_size)
 
@@ -203,8 +226,14 @@ class FourierAdapter(ABCAdapter):
         for block in range(blocks):
             node_slice[2] = slice(block * block_size, min([(block + 1) * block_size, self.input_shape[2]]), 1)
             small_ts.data = input_time_series_h5.read_data_slice(tuple(node_slice))
-            self.algorithm.time_series = small_ts
-            partial_result = self.algorithm.evaluate()
+            view_model.time_series = small_ts.gid
+
+            window_function = None
+            if view_model.window_function is not None:
+                window_function = SUPPORTED_WINDOWING_FUNCTIONS[view_model.window_function]
+
+            partial_result = evaluate_fourier_analyzer(small_ts, view_model.segment_length,
+                                                       window_function, view_model.detrend)
 
             if blocks <= 1 and len(partial_result.array_data) == 0:
                 self.add_operation_additional_info(
@@ -214,15 +243,33 @@ class FourierAdapter(ABCAdapter):
         fft_index.ndim = len(spectra_file.array_data.shape)
         input_time_series_h5.close()
 
-        fft_index.windowing_function = self.algorithm.window_function
-        fft_index.segment_length = self.algorithm.segment_length
-        fft_index.detrend = self.algorithm.detrend
+        fft_index.windowing_function = view_model.window_function
+        fft_index.segment_length = view_model.segment_length
+        fft_index.detrend = view_model.detrend
         fft_index.frequency_step = partial_result.freq_step
         fft_index.max_frequency = partial_result.max_freq
 
-        spectra_file.segment_length.store(self.algorithm.segment_length)
-        spectra_file.windowing_function.store(str(self.algorithm.window_function))
+        spectra_file.segment_length.store(view_model.segment_length)
+        spectra_file.windowing_function.store(str(view_model.window_function))
         spectra_file.close()
 
         self.log.debug("partial segment_length is %s" % (str(partial_result.segment_length)))
         return fft_index
+
+    @staticmethod
+    def result_shape(input_shape, segment_length, sample_period):
+        """Returns the shape of the main result (complex array) of the FFT."""
+        freq_len = (segment_length / sample_period) / 2.0
+        freq_len = int(min((input_shape[0], freq_len)))
+        nseg = max((1, int(numpy.ceil(input_shape[0] * sample_period / segment_length))))
+        result_shape = (freq_len, input_shape[1], input_shape[2], input_shape[3], nseg)
+        return result_shape
+
+    def result_size(self, input_shape, segment_length, sample_period):
+        """
+        Returns the storage size in Bytes of the main result (complex array) of
+        the FFT.
+        """
+        result_size = numpy.prod(self.result_shape(input_shape, segment_length,
+                                                   sample_period)) * 2.0 * 8.0  # complex*Bytes
+        return result_size
