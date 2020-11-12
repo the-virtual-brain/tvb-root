@@ -117,9 +117,12 @@ def coherence(data, sample_rate, nfft=256, imag=False):
     return numpy.transpose(C[..., mask], (4, 0, 1, 2, 3)), fs[mask]
 
 
-def evaluate_node_coherenec_analyzer(time_series, nfft):
+def evaluate_node_coherence_analyzer(time_series, nfft):
+    """
+    # type: (TimeSeries, int)  -> CoherenceSpectrum
     # Adapter for cross-coherence algorithm(s)
     # Evaluate coherence on time series."
+    """
     # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
     srate = time_series.sample_rate
     coh, freq = coherence(time_series.data, srate, nfft=nfft)

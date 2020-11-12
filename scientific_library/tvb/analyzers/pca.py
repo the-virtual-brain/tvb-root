@@ -84,7 +84,7 @@ NOTE: The TimeSeries must be longer(more time-points) than the number of
 # #      matrix has a size ~ 2GB * modes * vars...
 def evaluate_pca_analyzer(time_series):
     """
-    # type: (Range, float, float, str, str)  -> WaveletCoefficients
+    # type: (TimeSeries)  -> PrincipalComponents
     Compute the temporal covariance between nodes in the time_series.
     """
     # self.time_series.trait["data"].log_debug(owner = cls_attr_name)

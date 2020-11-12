@@ -82,33 +82,11 @@ second 50% overlapping `segments` to which a Hanning function is applied.
 """
 
 
-def result_shape(input_shape, max_freq, epoch_length, segment_length, segment_shift, sample_period, zeropad,
-                 average_segments):
-    """
-    Returns the shape of the main result and the average over epochs
-    """
-    # this is useless here unless the input could actually be a 2D TimeSeries
-    nchan = input_shape[2] if len(input_shape) > 2 else input_shape[1]
-    seg_tpts = segment_length / sample_period
-    seg_shift_tpts = segment_shift / sample_period
-    tpts = (epoch_length / sample_period) if epoch_length > 0.0 else input_shape[0]
-    nfreq = int(numpy.min([max_freq, numpy.floor((seg_tpts + zeropad) / 2.0) + 1]))
-    nseg = int(numpy.floor((tpts - seg_tpts) / seg_shift_tpts) + 1)
-
-    if not average_segments:
-        result_shape = (nchan, nchan, nfreq, nseg)
-        av_result_shape = (nchan, nfreq, nseg)
-    else:
-        result_shape = (nchan, nchan, nfreq)
-        av_result_shape = (nchan, nfreq)
-
-    return [result_shape, av_result_shape]
-
-
 def evaluate_node_complex_coherence_analyzer(time_series, epoch_length, segment_length, segment_shift, window_function,
                                              average_segments, subtract_epoch_average, zeropad, detrend_ts, max_freq,
                                              npat):
     """
+    # type: (TimeSeries, float, float, float, str, bool, bool, int, bool, float, float)  -> ComplexCoherenceSpectrum
     Calculate the FFT, Cross Coherence and Complex Coherence of time_series
     broken into (possibly) epochs and segments of length `epoch_length` and
     `segment_length` respectively, filtered by `window_function`.
@@ -144,9 +122,9 @@ def evaluate_node_complex_coherence_analyzer(time_series, epoch_length, segment_
     nfreq = int(numpy.min([max_freq, numpy.floor((seg_tpts + zeropad) / 2.0) + 1]))
 
     resulted_shape, av_result_shape = result_shape(time_series.data.shape, max_freq, epoch_length,
-                                                 segment_length, segment_shift,
-                                                 time_series.sample_period, zeropad,
-                                                 average_segments)
+                                                   segment_length, segment_shift,
+                                                   time_series.sample_period, zeropad,
+                                                   average_segments)
     cs = numpy.zeros(resulted_shape, dtype=numpy.complex128)
     av = numpy.matrix(numpy.zeros(av_result_shape, dtype=numpy.complex128))
     coh = numpy.zeros(resulted_shape, dtype=numpy.complex128)
@@ -157,8 +135,8 @@ def evaluate_node_complex_coherence_analyzer(time_series, epoch_length, segment_
             log.error("Windowing function is: %s" % window_function)
             log.error("Must be in: %s" % str(SUPPORTED_WINDOWING_FUNCTIONS))
 
-        window_function = eval("".join(("numpy.", window_function)))
-        win = window_function(seg_tpts)
+        window_func = eval("".join(("numpy.", window_function)))
+        win = window_func(seg_tpts)
         window_mask = (numpy.kron(numpy.ones((time_series_data.shape[1], 1)), win)).T
 
     nave = 0
@@ -167,12 +145,12 @@ def evaluate_node_complex_coherence_analyzer(time_series, epoch_length, segment_
         data = time_series_data[j * epoch_tpts:(j + 1) * epoch_tpts, :]
 
         for i in numpy.arange(nseg):  # average over all segments;
-            time_series = data[i * seg_shift_tpts: i * seg_shift_tpts + seg_tpts, :]
+            ts = data[i * seg_shift_tpts: i * seg_shift_tpts + seg_tpts, :]
 
             if detrend_ts:
-                time_series = sp_signal.detrend(time_series, axis=0)
+                ts = sp_signal.detrend(ts, axis=0)
 
-            datalocfft = numpy.fft.fft(time_series * window_mask, axis=0)
+            datalocfft = numpy.fft.fft(ts * window_mask, axis=0)
             datalocfft = numpy.matrix(datalocfft)
 
             for f in numpy.arange(nfreq):  # for all frequencies
@@ -246,7 +224,6 @@ def evaluate_node_complex_coherence_analyzer(time_series, epoch_length, segment_
     return spectra
 
 
-
 def result_size(input_shape, max_freq, epoch_length, segment_length,
                 segment_shift, sample_period, zeropad, average_segments):
     """
@@ -254,7 +231,30 @@ def result_size(input_shape, max_freq, epoch_length, segment_length,
     the ComplexCoherence
     """
     result_size = numpy.prod(result_shape(input_shape, max_freq,
-                                               epoch_length, segment_length,
-                                               segment_shift, sample_period,
-                                               zeropad, average_segments)[0]) * 2.0 * 8.0
+                                          epoch_length, segment_length,
+                                          segment_shift, sample_period,
+                                          zeropad, average_segments)[0]) * 2.0 * 8.0
     return result_size
+
+
+def result_shape(input_shape, max_freq, epoch_length, segment_length, segment_shift, sample_period, zeropad,
+                 average_segments):
+    """
+    Returns the shape of the main result and the average over epochs
+    """
+    # this is useless here unless the input could actually be a 2D TimeSeries
+    nchan = input_shape[2] if len(input_shape) > 2 else input_shape[1]
+    seg_tpts = segment_length / sample_period
+    seg_shift_tpts = segment_shift / sample_period
+    tpts = (epoch_length / sample_period) if epoch_length > 0.0 else input_shape[0]
+    nfreq = int(numpy.min([max_freq, numpy.floor((seg_tpts + zeropad) / 2.0) + 1]))
+    nseg = int(numpy.floor((tpts - seg_tpts) / seg_shift_tpts) + 1)
+
+    if not average_segments:
+        result_shape = (nchan, nchan, nfreq, nseg)
+        av_result_shape = (nchan, nfreq, nseg)
+    else:
+        result_shape = (nchan, nchan, nfreq)
+        av_result_shape = (nchan, nfreq)
+
+    return [result_shape, av_result_shape]
