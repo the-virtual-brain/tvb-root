@@ -114,7 +114,7 @@ class SimulatorFragmentRenderingRules(object):
                  is_simulation_readonly_load=False, last_form_url=SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                  last_request_type=GET_REQUEST, is_first_fragment=False, is_launch_fragment=False,
                  is_model_fragment=False, is_surface_simulation=False, is_noise_fragment=False,
-                 is_launch_pse_fragment=False, is_pse_launch=False, monitor_name=None):
+                 is_launch_pse_fragment=False, is_pse_launch=False, monitor_name=None, is_branch=False):
         """
         :param is_first_fragment: True only for the first form in the wizzard, to hide Previous button
         :param is_launch_fragment: True only for the last form in the wizzard to diplay Launch/SetupPSE/Branch, hide Next
@@ -141,6 +141,7 @@ class SimulatorFragmentRenderingRules(object):
         self.is_launch_pse_fragment = is_launch_pse_fragment
         self.is_pse_launch = is_pse_launch
         self.monitor_name = monitor_name
+        self.is_branch = is_branch
 
     @property
     def load_readonly(self):
@@ -204,8 +205,7 @@ class SimulatorFragmentRenderingRules(object):
 
     @property
     def include_branch_button(self):
-        is_branch = common.get_from_session(common.KEY_BRANCH)
-        if is_branch and self.is_launch_fragment and self.is_simulation_copy and not self.is_pse_launch:
+        if self.is_branch and self.is_launch_fragment:
             return True
         return False
 
@@ -683,11 +683,13 @@ class SimulatorController(BurstBaseController):
             form.fill_from_post({'input_simulation_name_id': simulation_name,
                                  'simulation_length': str(session_stored_simulator.simulation_length)})
 
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
         form.fill_from_trait(session_stored_simulator)
 
         rendering_rules.form = form
         rendering_rules.form_action_url = SimulatorWizzardURLs.SETUP_PSE_URL
         rendering_rules.is_launch_fragment = True
+        rendering_rules.is_branch = is_branch
         rendering_rules.is_pse_launch = session_stored_burst.is_pse_burst()
         return rendering_rules.to_dict()
 
@@ -1031,8 +1033,9 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def copy_simulator_configuration(self, burst_config_id):
-        form = self.get_first_fragment(burst_config_id)
-        common.add2session(common.KEY_BRANCH, False)
+        form = self._get_form(burst_config_id)
+        common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
+        common.add2session(common.KEY_IS_SIMULATOR_BRANCH, False)
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
                                                           is_first_fragment=True)
@@ -1040,14 +1043,14 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def branch_simulator_configuration(self, burst_config_id):
-        form = self.get_first_fragment(burst_config_id)
-        common.add2session(common.KEY_BRANCH, True)
+        form = self._get_form(burst_config_id)
+        common.add2session(common.KEY_IS_SIMULATOR_BRANCH, True)
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
                                                           is_first_fragment=True)
         return rendering_rules.to_dict()
 
-    def get_first_fragment(self, burst_config_id):
+    def _get_form(self, burst_config_id):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
         burst_config_copy = burst_config.clone()
         burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
@@ -1057,7 +1060,6 @@ class SimulatorController(BurstBaseController):
         simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
 
         common.add2session(common.KEY_SIMULATOR_CONFIG, simulator)
-        common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
         common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
         common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
 
@@ -1147,10 +1149,4 @@ class SimulatorController(BurstBaseController):
             common.set_warning_message(excep.message)
 
         raise cherrypy.HTTPRedirect('/burst/')
-
-    @staticmethod
-    def srt_to_bool(str):
-        if str.lower() == 'true':
-            return True
-        return False
 

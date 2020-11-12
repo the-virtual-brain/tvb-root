@@ -87,7 +87,7 @@ KEY_LAST_LOADED_FORM_URL = 'last_loaded_form_url'
 KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"
 KEY_SUBSECTION_TITLES = "sub_section_titles"
-KEY_BRANCH = "is_branch"
+KEY_IS_SIMULATOR_BRANCH = "is_branch"
 
 # Overlay specific keys
 KEY_OVERLAY_TITLE = "overlay_title"
