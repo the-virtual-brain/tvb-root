@@ -224,6 +224,7 @@ def start_tvb(arguments, browser=True):
     if DataEncryptionHandler.encryption_enabled():
         queue_consumer = FoldersQueueConsumer()
         queue_consumer.start()
+        DataEncryptionHandler.startup_cleanup()
 
     #### Fire a browser page at the end.
     if browser:

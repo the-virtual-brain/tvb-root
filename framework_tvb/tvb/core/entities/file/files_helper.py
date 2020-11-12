@@ -84,12 +84,13 @@ class FilesHelper(object):
             self.logger.exception("COULD NOT CREATE FOLDER! CHECK ACCESS ON IT!")
             raise FileStructureException("Could not create Folder" + str(path))
 
-    def get_projects_folder(self):
+    @staticmethod
+    def get_projects_folder():
         base_path = TvbProfile.current.TVB_STORAGE
         if TvbProfile.current.web.ENCRYPT_STORAGE and TvbProfile.current.hpc.CAN_ENCRYPT_STORAGE and TvbProfile.current.web.DECRYPT_PATH:
             base_path = TvbProfile.current.web.DECRYPT_PATH
 
-        return os.path.join(base_path, self.PROJECTS_FOLDER)
+        return os.path.join(base_path, FilesHelper.PROJECTS_FOLDER)
 
     def get_project_folder(self, project, *sub_folders):
         """

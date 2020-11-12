@@ -67,6 +67,7 @@ class DataEncryptionHandlerMeta(type):
 
 
 class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
+    ENCRYPTED_FOLDER_SUFFIX = "_encrypted"
     CRYPTO_PASS = "CRYPTO_PASS"
 
     fie_helper = FilesHelper()
@@ -165,7 +166,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     def compute_encrypted_folder_path(project_folder):
         project_name = os.path.basename(project_folder)
         project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project_name)
-        return "{}_encrypted".format(project_path)
+        return "{}{}".format(project_path, DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX)
 
     @staticmethod
     def sync_folders(folder):
@@ -232,6 +233,22 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             raise InvalidSettingsException(
                 "We can not enable STORAGE ENCRYPTION. Most probably syncrypto is not installed!")
         return True
+
+    @staticmethod
+    def _get_unencrypted_projects():
+        projects_folder = FilesHelper.get_projects_folder()
+        project_list = os.listdir(projects_folder)
+        return list(map(lambda project: os.path.join(projects_folder, str(project)),
+                        filter(lambda project: not str(project).endswith(DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX),
+                               project_list)))
+
+    @staticmethod
+    def startup_cleanup():
+        projects_list = DataEncryptionHandler._get_unencrypted_projects()
+        for project in projects_list:
+            LOGGER.info("Sync and clean project: {}".format(project))
+            DataEncryptionHandler.sync_folders(project)
+            shutil.rmtree(project)
 
 
 class FoldersQueueConsumer(threading.Thread):
