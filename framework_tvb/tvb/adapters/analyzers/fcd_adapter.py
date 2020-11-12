@@ -60,15 +60,13 @@ from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.time_series import TimeSeriesRegion
 
 
-class FcdCalculator(HasTraits):
-    """
-    Model class defining the traited attributes used by the FcdAdapter.
-    """
-    time_series = Attr(
-        field_type=TimeSeriesRegion,
+class FCDAdapterModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeriesRegion,
         label="Time Series",
         required=True,
-        doc="""The time-series for which the fcd matrices are calculated.""")
+        doc="""The time-series for which the fcd matrices are calculated."""
+    )
 
     sw = Float(
         label="Sliding window length (ms)",
@@ -87,15 +85,6 @@ class FcdCalculator(HasTraits):
         overlapping of fixed length. The data-points within each window, centered at time ti, are used to calculate
         FC(ti) as Pearson Correlation. The ij element of the FCD matrix is calculated as the Pearson correlation
         between FC(ti) and FC(tj) arranged in a vector""")
-
-
-class FCDAdapterModel(ViewModel, FcdCalculator):
-    time_series = DataTypeGidAttr(
-        linked_datatype=TimeSeriesRegion,
-        label="Time Series",
-        required=True,
-        doc="""The time-series for which the fcd matrices are calculated."""
-    )
 
 
 class FCDAdapterForm(ABCAdapterForm):
@@ -122,9 +111,6 @@ class FCDAdapterForm(ABCAdapterForm):
     @staticmethod
     def get_input_name():
         return "time_series"
-
-    def get_traited_datatype(self):
-        return FcdCalculator()
 
 
 class FunctionalConnectivityDynamicsAdapter(ABCAdapter):

@@ -37,12 +37,10 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 import json
 import uuid
-
 import numpy
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
-from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
@@ -53,18 +51,7 @@ from tvb.datatypes.graph import Covariance
 from tvb.datatypes.time_series import TimeSeries
 
 
-class NodeCovariance(HasTraits):
-    """
-    Model class defining the traited attributes used by the NodeCovarianceAdapter.
-    """
-    time_series = Attr(
-        field_type=TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The timeseries to which the NodeCovariance is to be applied.""")
-
-
-class NodeCovarianceAdapterModel(ViewModel, NodeCovariance):
+class NodeCovarianceAdapterModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",

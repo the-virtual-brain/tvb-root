@@ -39,7 +39,6 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 import json
 import uuid
-
 import numpy
 from scipy.signal.signaltools import correlate
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
@@ -60,18 +59,7 @@ from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.datatypes.time_series import TimeSeries
 
 
-class CrossCorrelate(HasTraits):
-    """
-    Model class defining the traited attributes used by the CrossCorrelateAdapter.
-    """
-    time_series = Attr(
-        field_type=TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The time-series for which the cross correlation sequences are calculated.""")
-
-
-class CrossCorrelateAdapterModel(ViewModel, CrossCorrelate):
+class CrossCorrelateAdapterModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
@@ -249,16 +237,14 @@ class CrossCorrelateAdapter(ABCAdapter):
         return result_size
 
 
-class CorrelationCoefficient(HasTraits):
-    """
-    Model class defining the traited attributes used by the CorrelationCoefficientAdapter.
-    """
-    time_series = Attr(
-        field_type=TimeSeries,
+class PearsonCorrelationCoefficientAdapterModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
         label="Time Series",
         required=True,
         doc="""The time-series for which the cross correlation matrices are
-        calculated.""")
+            calculated."""
+    )
 
     t_start = Float(
         label=":math:`t_{start}`",
@@ -272,16 +258,6 @@ class CorrelationCoefficient(HasTraits):
         default=1000.,
         required=True,
         doc=""" End time point (ms) """)
-
-
-class PearsonCorrelationCoefficientAdapterModel(ViewModel, CorrelationCoefficient):
-    time_series = DataTypeGidAttr(
-        linked_datatype=TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The time-series for which the cross correlation matrices are
-            calculated."""
-    )
 
 
 class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
@@ -309,9 +285,6 @@ class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
     @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
-
-    def get_traited_datatype(self):
-        return CorrelationCoefficient()
 
 
 class PearsonCorrelationCoefficientAdapter(ABCAdapter):
