@@ -51,10 +51,28 @@ blocks and no windowing function is applied.
 """
 
 
-def evaluate_fourier_analyzer(time_series, segment_length, window_function, detrend):
+def compute_fast_fourier_transform(time_series, segment_length, window_function, detrend):
     """
+    # type: (TimeSeries, float, function, bool) -> FourierSpectrum
     Calculate the FFT of time_series broken into segments of length
     segment_length and filtered by window_function.
+
+    Parameters
+    __________
+
+    time_series : TimeSeries
+    The TimeSeries to which the FFT is to be applied.
+
+    segment_length : float
+    The segment length determines the frequency resolution of the resulting power spectra -- longer
+    windows produce finer frequency resolution
+
+    window_function : str
+    Windowing functions can be applied before the FFT is performed. Default is None, possibilities are: 'hamming';
+    'bartlett';'blackman'; and 'hanning'. See, numpy.<function_name>.
+
+    detrend : bool
+    Default is True, False means no detrending is performed on the time series.
     """
 
     tpts = time_series.data.shape[0]
@@ -95,11 +113,15 @@ def evaluate_fourier_analyzer(time_series, segment_length, window_function, detr
 
     log.debug("result " + narray_describe(result))
 
+    wf = None
+    if window_function is not None:
+        wf = window_function.__name__
+
     spectra = FourierSpectrum(
         source=time_series,
         segment_length=segment_length,
         array_data=result,
-        windowing_function=window_function
+        windowing_function=wf
     )
     spectra.configure()
 

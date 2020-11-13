@@ -57,8 +57,20 @@ See also: http://scikit-learn.org/stable/modules/generated/sklearn.decomposition
 """
 
 
-def evaluate_ica_analyzer(time_series, n_components):
-    """Run FastICA on the given time series data."""
+def compute_ica_decomposition(time_series, n_components):
+    """
+    # type: (TimeSeries, int) -> IndependentComponents
+    Run FastICA on the given time series data.
+
+    Parameters
+    __________
+
+    time_series : TimeSeries
+    The timeseries to which the ICA is to be applied.
+
+    n_components : int
+    Number of principal components to unmix.
+    """
 
     # problem dimensions
     data = time_series.data

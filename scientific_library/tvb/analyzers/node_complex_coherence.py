@@ -82,14 +82,56 @@ second 50% overlapping `segments` to which a Hanning function is applied.
 """
 
 
-def evaluate_node_complex_coherence_analyzer(time_series, epoch_length, segment_length, segment_shift, window_function,
-                                             average_segments, subtract_epoch_average, zeropad, detrend_ts, max_freq,
-                                             npat):
+def calculate_complex_cross_coherence(time_series, epoch_length, segment_length, segment_shift, window_function,
+                                      average_segments, subtract_epoch_average, zeropad, detrend_ts, max_freq,
+                                      npat):
     """
     # type: (TimeSeries, float, float, float, str, bool, bool, int, bool, float, float)  -> ComplexCoherenceSpectrum
     Calculate the FFT, Cross Coherence and Complex Coherence of time_series
     broken into (possibly) epochs and segments of length `epoch_length` and
     `segment_length` respectively, filtered by `window_function`.
+
+    Parameters
+    __________
+
+    time_series : TimeSeries
+    The timeseries for which the CrossCoherence and ComplexCoherence is to be computed.
+
+    epoch_length : float
+    In general for lengthy EEG recordings (~30 min), the timeseries are divided into equally
+    sized segments (~ 20-40s). These contain the  event that is to be characterized by means of the
+    cross coherence. Additionally each epoch block will be further divided into segments to  which
+    the FFT will be applied.
+
+    segment_length : float
+    The segment length determines the frequency resolution of the resulting power spectra --
+    longer windows produce finer frequency resolution.
+
+    segment_shift : float
+    Time length by which neighboring segments are shifted. e.g.
+    `segment shift` = `segment_length` / 2 means 50% overlapping segments.
+
+    window_function : str
+    Windowing functions can be applied before the FFT is performed.
+
+    average_segments : bool
+    Flag. If `True`, compute the mean Cross Spectrum across  segments.
+
+    subtract_epoch_average: bool
+    Flag. If `True` and if the number of epochs is > 1, you can optionally subtract the
+    mean across epochs before computing the complex coherence.
+
+    zeropad : int
+    Adds `n` zeros at the end of each segment and at the end of window_function. It is not yet functional.
+
+    detrend_ts : bool
+    Flag. If `True` removes linear trend along the time dimension before applying FFT.
+
+    max_freq : float
+    Maximum frequency points (e.g. 32., 64., 128.) represented in the output. Default is segment_length / 2 + 1.
+
+    npat : float
+    This attribute appears to be related to an input projection matrix... Which is not yet implemented.
     """
     # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
     tpts = time_series.data.shape[0]
@@ -121,10 +163,10 @@ def evaluate_node_complex_coherence_analyzer(time_series, epoch_length, segment_
     # Frequency
     nfreq = int(numpy.min([max_freq, numpy.floor((seg_tpts + zeropad) / 2.0) + 1]))
 
-    resulted_shape, av_result_shape = result_shape(time_series.data.shape, max_freq, epoch_length,
-                                                   segment_length, segment_shift,
-                                                   time_series.sample_period, zeropad,
-                                                   average_segments)
+    resulted_shape, av_result_shape = complex_coherence_result_shape(time_series.data.shape, max_freq, epoch_length,
+                                                                     segment_length, segment_shift,
+                                                                     time_series.sample_period, zeropad,
+                                                                     average_segments)
     cs = numpy.zeros(resulted_shape, dtype=numpy.complex128)
     av = numpy.matrix(numpy.zeros(av_result_shape, dtype=numpy.complex128))
     coh = numpy.zeros(resulted_shape, dtype=numpy.complex128)
@@ -224,21 +266,9 @@ def evaluate_node_complex_coherence_analyzer(time_series, epoch_length, segment_
     return spectra
 
 
-def result_size(input_shape, max_freq, epoch_length, segment_length,
-                segment_shift, sample_period, zeropad, average_segments):
-    """
-    Returns the storage size in Bytes of the main result (complex array) of
-    the ComplexCoherence
-    """
-    result_size = numpy.prod(result_shape(input_shape, max_freq,
-                                          epoch_length, segment_length,
-                                          segment_shift, sample_period,
-                                          zeropad, average_segments)[0]) * 2.0 * 8.0
-    return result_size
-
-
-def result_shape(input_shape, max_freq, epoch_length, segment_length, segment_shift, sample_period, zeropad,
-                 average_segments):
+def complex_coherence_result_shape(input_shape, max_freq, epoch_length, segment_length, segment_shift, sample_period,
+                                   zeropad,
+                                   average_segments):
     """
     Returns the shape of the main result and the average over epochs
     """

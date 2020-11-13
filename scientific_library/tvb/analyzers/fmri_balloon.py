@@ -57,11 +57,13 @@ References:
 
 import numpy
 import tvb.datatypes.time_series as time_series
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Float
-import tvb.simulator.integrators as integrators_module
+from tvb.basic.logger.builder import get_logger
 
 
-class BalloonModel(HasTraits):
+log = get_logger(__name__)
+
+
+class BalloonModel:
     """
 
     A class for calculating the simulated BOLD signal given a TimeSeries
@@ -74,131 +76,92 @@ class BalloonModel(HasTraits):
     # NOTE: a potential problem when the input is a TimeSeriesSurface.
     # TODO: add an spatial averaging for TimeSeriesSurface.
 
-    time_series = Attr(
-        field_type=time_series.TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The timeseries that represents the input neural activity""")
-    # it also sets the bold sampling period.
-    dt = Float(
-        label=":math:`dt`",
-        default=0.002,
-        required=True,
-        doc="""The integration time step size for the balloon model (s).
-        If none is provided, by default, the TimeSeries sample period is used.""")
-
-    integrator = Attr(
-        field_type=integrators_module.Integrator,
-        label="Integration scheme",
-        default=integrators_module.HeunDeterministic(),
-        required=True,
-        doc=""" A tvb.simulator.Integrator object which is
-        an integration scheme with supporting attributes such as 
-        integration step size and noise specification for stochastic 
-        methods. It is used to compute the time courses of the balloon model state 
-        variables.""")
-
-    bold_model = Attr(
-        field_type=str,
-        label="Select BOLD model equations",
-        choices=("linear", "nonlinear"),
-        default="nonlinear",
-        doc="""Select the set of equations for the BOLD model.""")
-
-    RBM = Attr(
-        field_type=bool,
-        label="Revised BOLD Model",
-        default=True,
-        required=True,
-        doc="""Select classical vs revised BOLD model (CBM or RBM).
-        Coefficients  k1, k2 and k3 will be derived accordingly.""")
-
-    neural_input_transformation = Attr(
-        field_type=str,
-        label="Neural input transformation",
-        choices=("none", "abs_diff", "sum"),
-        default="none",
-        doc=""" This represents the operation to perform on the state-variable(s) of
-        the model used to generate the input TimeSeries. ``none`` takes the
-        first state-variable as neural input; `` abs_diff`` is the absolute
-        value of the derivative (first order difference) of the first state variable; 
-        ``sum``: sum all the state-variables of the input TimeSeries.""")
-
-    tau_s = Float(
-        label=r":math:`\tau_s`",
-        default=1.54,
-        required=True,
-        doc="""Balloon model parameter. Time of signal decay (s)""")
-
-    tau_f = Float(
-        label=r":math:`\tau_f`",
-        default=1.44,
-        required=True,
-        doc=""" Balloon model parameter. Time of flow-dependent elimination or
-        feedback regulation (s). The average  time blood take to traverse the
-        venous compartment. It is the  ratio of resting blood volume (V0) to
-        resting blood flow (F0).""")
-
-    tau_o = Float(
-        label=r":math:`\tau_o`",
-        default=0.98,
-        required=True,
-        doc="""
-        Balloon model parameter. Haemodynamic transit time (s). The average
-        time blood take to traverse the venous compartment. It is the  ratio
-        of resting blood volume (V0) to resting blood flow (F0).""")
-
-    alpha = Float(
-        label=r":math:`\tau_f`",
-        default=0.32,
-        required=True,
-        doc="""Balloon model parameter. Stiffness parameter. Grubb's exponent.""")
-
-    TE = Float(
-        label=":math:`TE`",
-        default=0.04,
-        required=True,
-        doc="""BOLD parameter. Echo Time""")
-
-    V0 = Float(
-        label=":math:`V_0`",
-        default=4.0,
-        required=True,
-        doc="""BOLD parameter. Resting blood volume fraction.""")
-
-    E0 = Float(
-        label=":math:`E_0`",
-        default=0.4,
-        required=True,
-        doc="""BOLD parameter. Resting oxygen extraction fraction.""")
-
-    epsilon = NArray(
-        label=":math:`\epsilon`",
-        default=numpy.array([0.5]),
-        domain=Range(lo=0.5, hi=2.0, step=0.25),
-        required=True,
-        doc=""" BOLD parameter. Ratio of intra- and extravascular signals. In principle  this
-        parameter could be derived from empirical data and spatialized.""")
-
-    nu_0 = Float(
-        label=r":math:`\nu_0`",
-        default=40.3,
-        required=True,
-        doc="""BOLD parameter. Frequency offset at the outer surface of magnetized vessels (Hz).""")
-
-    r_0 = Float(
-        label=":math:`r_0`",
-        default=25.,
-        required=True,
-        doc=""" BOLD parameter. Slope r0 of intravascular relaxation rate (Hz). Only used for
-        ``revised`` coefficients. """)
-
-    def evaluate(self):
+    def __init__(self, time_series, dt, integrator, bold_model, RBM, neural_input_transformation,
+                                        tau_s, tau_f, tau_o, alpha, TE, V0, E0, epsilon, nu_0, r_0):
         """
+        Parameters
+        __________
+
+        time_series : TimeSeries
+        The timeseries for which the CrossCoherence and ComplexCoherence is to be computed.
+
+        dt : float
+        The integration time step size for the balloon model (s).
+
+        integrator : Integrator
+        A tvb.simulator.Integrator object which is an integration scheme with supporting attributes such as
+        integration step size and noise specification for stochastic methods.
+        It is used to compute the time courses of the balloon model state variables.
+
+        bold_model : str
+        Select the set of equations for the BOLD model.
+
+        RBM : bool
+        Select classical vs revised BOLD model (CBM or RBM).
+
+        neural_input_transformation : str
+        This represents the operation to perform on the state-variable(s) of the model used to generate
+        the input TimeSeries. ``none`` takes the first state-variable as neural input; `` abs_diff`` is the absolute
+        value of the derivative (first order difference) of the first state variable;
+        ``sum``: sum all the state-variables of the input TimeSeries.
+
+        tau_s : float
+        Balloon model parameter. Time of signal decay (s).
+
+        tau_f : float
+        Balloon model parameter. Time of flow-dependent elimination or feedback regulation (s).
+        The average  time blood take to traverse the venous compartment. It is the  ratio of resting blood
+        volume (V0) to resting blood flow (F0).
+
+        tau_o : float
+        Balloon model parameter. Haemodynamic transit time (s). The average time blood take to traverse
+        the venous compartment. It is the  ratio of resting blood volume (V0) to resting blood flow (F0).
+
+        alpha : float
+        Balloon model parameter. Stiffness parameter. Grubb's exponent.
+
+        TE : float
+        BOLD parameter. Echo Time
+
+        V0 : float
+        BOLD parameter. Resting blood volume fraction.
+
+        E0 : float
+        BOLD parameter. Resting oxygen extraction fraction.
+
+        epsilon : ndarray
+        BOLD parameter. Ratio of intra- and extravascular signals. In principle  this
+        parameter could be derived from empirical data and spatialized.
+
+        nu_0: float
+        BOLD parameter. Frequency offset at the outer surface of magnetized vessels (Hz).
+
+        r_0: float
+        BOLD parameter. Slope r0 of intravascular relaxation rate (Hz). Only used for ``revised`` coefficients.
+        """
+
+        self.time_series = time_series
+        self.dt = dt
+        self.integrator = integrator
+        self.bold_model = bold_model
+        self.RBM = RBM
+        self.neural_input_transformation = neural_input_transformation
+        self.tau_s = tau_s
+        self.tau_f = tau_f
+        self.tau_o = tau_o
+        self.alpha = alpha
+        self.TE = TE
+        self.V0 = V0
+        self.E0 = E0
+        self.epsilon = epsilon
+        self.nu_0 = nu_0
+        self.r_0 = r_0
+
+    def calculate_simulated_bold_signal(self):
+        """
+         # type: ( ) -> TimeSeriesRegion
         Calculate simulated BOLD signal
         """
-        cls_attr_name = self.__class__.__name__ + ".time_series"
-        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
 
         # NOTE: Just using the first state variable, although in the Bold monitor
         #      input is the sum over the state-variables. Only time-series
@@ -206,18 +169,16 @@ class BalloonModel(HasTraits):
 
         neural_activity, t_int = self.input_transformation(self.time_series, self.neural_input_transformation)
         input_shape = neural_activity.shape
-        result_shape = self.result_shape(input_shape)
-        self.log.debug("Result shape will be: %s" % str(result_shape))
 
         if self.dt is None:
             self.dt = self.time_series.sample_period / 1000.  # (s) integration time step
             msg = "Integration time step size for the balloon model is %s seconds" % str(self.dt)
-            self.log.debug(msg)
+            log.debug(msg)
 
         # NOTE: Avoid upsampling ...
         if self.dt < (self.time_series.sample_period / 1000.):
             msg = "Integration time step shouldn't be smaller than the sampling period of the input signal."
-            self.log.error(msg)
+            log.error(msg)
 
         balloon_nvar = 4
 
@@ -234,7 +195,7 @@ class BalloonModel(HasTraits):
         # prepare integrator
         self.integrator.dt = self.dt
         self.integrator.configure()
-        self.log.debug("Integration time step size will be: %s seconds" % str(self.integrator.dt))
+        log.debug("Integration time step size will be: %s seconds" % str(self.integrator.dt))
 
         scheme = self.integrator.scheme
 
@@ -246,7 +207,7 @@ class BalloonModel(HasTraits):
 
         # Do some checks:
         if numpy.isnan(neural_activity).any():
-            self.log.warning("NaNs detected in the neural activity!!")
+            log.warning("NaNs detected in the neural activity!!")
 
         # normalise the time-series.
         neural_activity = neural_activity - neural_activity.mean(axis=0)[numpy.newaxis, :]
@@ -256,7 +217,7 @@ class BalloonModel(HasTraits):
             state[step, :] = scheme(state[step - 1, :], self.balloon_dfun,
                                     neural_activity[step, :], local_coupling, stimulus)
             if numpy.isnan(state[step, :]).any():
-                self.log.warning("NaNs detected...")
+                log.warning("NaNs detected...")
 
         # NOTE: just for the sake of clarity, define the variables used in the BOLD model
         s = state[:, 0, :]
@@ -274,7 +235,7 @@ class BalloonModel(HasTraits):
             """
             y_bold = numpy.array(self.V0 * (k1 * (1. - q) + k2 * (1. - q / v) + k3 * (1. - v)))
             y_b = y_bold[:, numpy.newaxis, :, :]
-            self.log.debug("Max value: %s" % str(y_b.max()))
+            log.debug("Max value: %s" % str(y_b.max()))
 
         else:
             """
@@ -324,7 +285,7 @@ class BalloonModel(HasTraits):
         Perform an operation on the input time-series.
         """
 
-        self.log.debug("Computing: %s on the input time series" % str(mode))
+        log.debug("Computing: %s on the input time series" % str(mode))
 
         if mode == "none":
             ts = time_series.data[:, 0, :, :]
@@ -341,8 +302,8 @@ class BalloonModel(HasTraits):
             t_int = time_series.time / 1000.  # (s)
 
         else:
-            self.log.error("Bad operation/transformation mode, must be one of:")
-            self.log.error("('abs_diff', 'sum', 'none')")
+            log.error("Bad operation/transformation mode, must be one of:")
+            log.error("('abs_diff', 'sum', 'none')")
             raise Exception("Bad transformation mode")
 
         return ts, t_int
@@ -373,25 +334,3 @@ class BalloonModel(HasTraits):
                                   (v ** (1. / self.alpha)) * (q / v))
 
         return numpy.array([ds, df, dv, dq])
-
-    def result_shape(self, input_shape):
-        """Returns the shape of the main result of fmri balloon ..."""
-        result_shape = (input_shape[0], input_shape[1],
-                        input_shape[2], input_shape[3])
-        return result_shape
-
-    def result_size(self, input_shape):
-        """
-        Returns the storage size in Bytes of the main result of .
-        """
-        result_size = numpy.sum(list(map(numpy.prod, self.result_shape(input_shape)))) * 8.0  # Bytes
-        return result_size
-
-    def extended_result_size(self, input_shape):
-        """
-        Returns the storage size in Bytes of the extended result of the ....
-        That is, it includes storage of the evaluated ... attributes
-        such as ..., etc.
-        """
-        extend_size = self.result_size(input_shape)  # Currently no derived attributes.
-        return extend_size

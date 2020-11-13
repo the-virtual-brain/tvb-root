@@ -39,15 +39,15 @@ E.g. A list with all the modules where adapters are implemented.
 
 from collections import OrderedDict
 # Import metrics here, so that Traits will find them and return them as known subclasses
-from tvb.analyzers.metric_kuramoto_index import calculate_kuramoto_index_metric
-from tvb.analyzers.metric_proxy_metastability import calculate_proxy_metastability_metric
-from tvb.analyzers.metric_variance_global import calculate_variance_global_metric
-from tvb.analyzers.metric_variance_of_node_variance import calculate_variance_of_node_variance_metric
+from tvb.analyzers.metric_kuramoto_index import compute_kuramoto_index_metric
+from tvb.analyzers.metric_proxy_metastability import compute_proxy_metastability_metric
+from tvb.analyzers.metric_variance_global import compute_variance_global_metric
+from tvb.analyzers.metric_variance_of_node_variance import compute_variance_of_node_variance_metric
 
-ALGORITHMS = {'GlobalVariance': calculate_variance_global_metric,
-              'KuramotoIndex': calculate_kuramoto_index_metric,
-              'ProxyMetastabilitySynchrony': calculate_proxy_metastability_metric,
-              'VarianceNodeVariance': calculate_variance_of_node_variance_metric}
+ALGORITHMS = {'GlobalVariance': compute_variance_global_metric,
+              'KuramotoIndex': compute_kuramoto_index_metric,
+              'ProxyMetastabilitySynchrony': compute_proxy_metastability_metric,
+              'VarianceNodeVariance': compute_variance_of_node_variance_metric}
 
 
 SIMULATION_DATATYPE_CLASS = "SimulationState"

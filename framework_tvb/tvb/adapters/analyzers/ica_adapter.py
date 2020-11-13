@@ -41,7 +41,7 @@ import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
-from tvb.analyzers.ica import evaluate_ica_analyzer
+from tvb.analyzers.ica import compute_ica_decomposition
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -167,7 +167,7 @@ class ICAAdapter(ABCAdapter):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
             view_model.time_series = small_ts.gid
-            partial_ica = evaluate_ica_analyzer(small_ts, view_model.n_components)
+            partial_ica = compute_ica_decomposition(small_ts, view_model.n_components)
             ica_h5.write_data_slice(partial_ica)
         array_metadata = ica_h5.unmixing_matrix.get_cached_metadata()
         ica_index.array_has_complex = array_metadata.has_complex

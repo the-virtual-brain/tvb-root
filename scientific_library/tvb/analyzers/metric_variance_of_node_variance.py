@@ -55,9 +55,23 @@ from node to node.
 log = get_logger(__name__)
 
 
-def calculate_variance_of_node_variance_metric(params):
+def compute_variance_of_node_variance_metric(params):
     """
+    # type: dict(TimeSeries, float, int)  -> float
     Compute the zero centered variance of node variances for the time_series.
+
+    Parameters
+    ----------
+    params : a dictionary containing
+        time_series : TimeSeries
+        Input time series for which the metric will be computed.
+
+        start_point : float
+        Determines how many points of the TimeSeries will be discarded before computing the metric
+
+        segment : int
+        Divides the input time-series into discrete equally sized sequences and use the last segment to compute
+        the metric. Only used when the start point is larger than the time-series length
     """
 
     time_series = params['time_series']

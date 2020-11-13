@@ -42,7 +42,7 @@ import psutil
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
-from tvb.analyzers.fft import evaluate_fourier_analyzer
+from tvb.analyzers.fft import compute_fast_fourier_transform
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -232,7 +232,7 @@ class FourierAdapter(ABCAdapter):
             if view_model.window_function is not None:
                 window_function = SUPPORTED_WINDOWING_FUNCTIONS[view_model.window_function]
 
-            partial_result = evaluate_fourier_analyzer(small_ts, view_model.segment_length,
+            partial_result = compute_fast_fourier_transform(small_ts, view_model.segment_length,
                                                        window_function, view_model.detrend)
 
             if blocks <= 1 and len(partial_result.array_data) == 0:

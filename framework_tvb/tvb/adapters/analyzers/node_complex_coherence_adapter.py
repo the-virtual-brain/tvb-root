@@ -39,7 +39,7 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 import numpy
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.analyzers.node_complex_coherence import result_size, evaluate_node_complex_coherence_analyzer
+from tvb.analyzers.node_complex_coherence import calculate_complex_cross_coherence, complex_coherence_result_shape
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -156,6 +156,11 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
         return "time_series"
 
 
+def result_shape(input_shape, max_freq, epoch_length, segment_length, segment_shift, sample_period, zeropad,
+                 average_segments):
+    pass
+
+
 class NodeComplexCoherenceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeComplexCoherence algorithm. """
 
@@ -175,7 +180,7 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         Return the required memory to run this algorithm.
         """
         input_size = numpy.prod(self.input_shape) * 8.0
-        output_size = result_size(self.input_shape,
+        output_size = self.result_size(self.input_shape,
                                   view_model.max_freq, view_model.epoch_length, view_model.segment_length,
                                   view_model.segment_shift, self.input_time_series_index.sample_period,
                                   view_model.zeropad, view_model.average_segments)
@@ -187,7 +192,7 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         """
         Returns the required disk size to be able to run the adapter (in kB).
         """
-        result = result_size(self.input_shape, view_model.max_freq, view_model.epoch_length,
+        result = self.result_size(self.input_shape, view_model.max_freq, view_model.epoch_length,
                                             view_model.segment_length, view_model.segment_shift,
                                             self.input_time_series_index.sample_period, view_model.zeropad, view_model.average_segments)
         return self.array_size2kb(result)
@@ -213,7 +218,7 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         """
         # TODO ---------- Iterate over slices and compose final result ------------##
         time_series = h5.load_from_index(self.input_time_series_index)
-        ht_result = evaluate_node_complex_coherence_analyzer(time_series, view_model.epoch_length,
+        ht_result = calculate_complex_cross_coherence(time_series, view_model.epoch_length,
                                                              view_model.segment_length,
                                                              view_model.segment_shift,
                                                              view_model.window_function,
@@ -228,3 +233,16 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         # LOG.debug("ComplexCoherenceSpectrum frequency vector is %s" % (str(ht_result.frequency)))
 
         return h5.store_complete(ht_result, self.storage_path)
+
+    @staticmethod
+    def result_size(input_shape, max_freq, epoch_length, segment_length,
+                    segment_shift, sample_period, zeropad, average_segments):
+        """
+        Returns the storage size in Bytes of the main result (complex array) of
+        the ComplexCoherence
+        """
+        result_size = numpy.prod(complex_coherence_result_shape(input_shape, max_freq,
+                                              epoch_length, segment_length,
+                                              segment_shift, sample_period,
+                                              zeropad, average_segments)[0]) * 2.0 * 8.0
+        return result_size

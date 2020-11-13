@@ -41,7 +41,6 @@ import numpy
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
 from tvb.analyzers.fmri_balloon import BalloonModel
-from tvb.basic.neotraits.api import Float, Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -49,6 +48,8 @@ from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField, StrField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Float
+import tvb.simulator.integrators as integrators_module
 
 
 class BalloonModelAdapterModel(ViewModel):
@@ -110,6 +111,71 @@ class BalloonModelAdapterModel(ViewModel):
         doc="""Select classical vs revised BOLD model (CBM or RBM).
             Coefficients  k1, k2 and k3 will be derived accordingly."""
     )
+
+    integrator = Attr(
+        field_type=integrators_module.Integrator,
+        label="Integration scheme",
+        default=integrators_module.HeunDeterministic(),
+        required=True,
+        doc=""" A tvb.simulator.Integrator object which is
+        an integration scheme with supporting attributes such as 
+        integration step size and noise specification for stochastic 
+        methods. It is used to compute the time courses of the balloon model state 
+        variables.""")
+
+    tau_o = Float(
+        label=r":math:`\tau_o`",
+        default=0.98,
+        required=True,
+        doc="""
+        Balloon model parameter. Haemodynamic transit time (s). The average
+        time blood take to traverse the venous compartment. It is the  ratio
+        of resting blood volume (V0) to resting blood flow (F0).""")
+
+    alpha = Float(
+        label=r":math:`\tau_f`",
+        default=0.32,
+        required=True,
+        doc="""Balloon model parameter. Stiffness parameter. Grubb's exponent.""")
+
+    TE = Float(
+        label=":math:`TE`",
+        default=0.04,
+        required=True,
+        doc="""BOLD parameter. Echo Time""")
+
+    V0 = Float(
+        label=":math:`V_0`",
+        default=4.0,
+        required=True,
+        doc="""BOLD parameter. Resting blood volume fraction.""")
+
+    E0 = Float(
+        label=":math:`E_0`",
+        default=0.4,
+        required=True,
+        doc="""BOLD parameter. Resting oxygen extraction fraction.""")
+
+    epsilon = NArray(
+        label=":math:`\epsilon`",
+        default=numpy.array([0.5]),
+        domain=Range(lo=0.5, hi=2.0, step=0.25),
+        required=True,
+        doc=""" BOLD parameter. Ratio of intra- and extravascular signals. In principle  this
+        parameter could be derived from empirical data and spatialized.""")
+
+    nu_0 = Float(
+        label=r":math:`\nu_0`",
+        default=40.3,
+        required=True,
+        doc="""BOLD parameter. Frequency offset at the outer surface of magnetized vessels (Hz).""")
+
+    r_0 = Float(
+        label=":math:`r_0`",
+        default=25.,
+        required=True,
+        doc=""" BOLD parameter. Slope r0 of intravascular relaxation rate (Hz). Only used for
+        ``revised`` coefficients. """)
 
 
 class BalloonModelAdapterForm(ABCAdapterForm):
@@ -173,24 +239,15 @@ class BalloonModelAdapter(ABCAdapter):
 
         self.log.debug("time_series shape is %s" % str(self.input_shape))
         # -------------------- Fill Algorithm for Analysis -------------------##
-        algorithm = BalloonModel()
 
-        if view_model.dt is not None:
-            algorithm.dt = view_model.dt
-        else:
-            algorithm.dt = self.input_time_series_index.sample_period / 1000.
-
-        if view_model.tau_s is not None:
-            algorithm.tau_s = view_model.tau_s
-        if view_model.tau_f is not None:
-            algorithm.tau_f = view_model.tau_f
-        if view_model.bold_model is not None:
-            algorithm.bold_model = view_model.bold_model
-        if view_model.RBM is not None:
-            algorithm.RBM = view_model.RBM
-        if view_model.neural_input_transformation is not None:
-            algorithm.neural_input_transformation = view_model.neural_input_transformation
-
+        if view_model.dt is None:
+            view_model.dt = self.input_time_series_index.sample_period / 1000.
+        algorithm = BalloonModel(view_model.time_series, view_model.dt, view_model.integrator,
+                                 view_model.bold_model,
+                                 view_model.RBM, view_model.neural_input_transformation, view_model.tau_s,
+                                 view_model.tau_f, view_model.tau_o, view_model.alpha, view_model.TE,
+                                 view_model.V0,
+                                 view_model.E0, view_model.epsilon, view_model.nu_0, view_model.r_0)
         self.algorithm = algorithm
 
     def get_required_memory_size(self, view_model):
@@ -200,7 +257,7 @@ class BalloonModelAdapter(ABCAdapter):
         """
         used_shape = self.input_shape
         input_size = numpy.prod(used_shape) * 8.0
-        output_size = self.algorithm.result_size(used_shape)
+        output_size = self.result_size(used_shape)
         return input_size + output_size
 
     def get_required_disk_size(self, view_model):
@@ -209,7 +266,7 @@ class BalloonModelAdapter(ABCAdapter):
         Returns the required disk size to be able to run the adapter.(in kB)
         """
         used_shape = (self.input_shape[0], self.input_shape[1], self.input_shape[2], self.input_shape[3])
-        return self.array_size2kb(self.algorithm.result_size(used_shape))
+        return self.array_size2kb(self.result_size(used_shape))
 
     def launch(self, view_model):
         # type: (BalloonModelAdapterModel) -> [TimeSeriesRegionIndex]
@@ -241,7 +298,7 @@ class BalloonModelAdapter(ABCAdapter):
             node_slice[2] = slice(node, node + 1)
             small_ts.data = input_time_series_h5.read_data_slice(tuple(node_slice))
             self.algorithm.time_series = small_ts
-            partial_bold = self.algorithm.evaluate()
+            partial_bold = self.algorithm.calculate_simulated_bold_signal()
             bold_signal_h5.write_data_slice_on_grow_dimension(partial_bold.data, grow_dimension=2)
 
         bold_signal_h5.write_time_slice(time_line)
@@ -283,3 +340,17 @@ class BalloonModelAdapter(ABCAdapter):
         result_h5.region_mapping_volume.store(input_h5.region_mapping_volume.load())
         result_h5.region_mapping.store(input_h5.region_mapping.load())
         result_h5.title.store(input_h5.title.load())
+
+    @staticmethod
+    def result_shape(input_shape):
+        """Returns the shape of the main result of fmri balloon ..."""
+        result_shape = (input_shape[0], input_shape[1],
+                        input_shape[2], input_shape[3])
+        return result_shape
+
+    def result_size(self, input_shape):
+        """
+        Returns the storage size in Bytes of the main result of .
+        """
+        result_size = numpy.sum(list(map(numpy.prod, self.result_shape(input_shape)))) * 8.0  # Bytes
+        return result_size

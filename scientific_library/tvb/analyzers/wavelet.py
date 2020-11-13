@@ -66,10 +66,32 @@ References:
 """
 
 
-def evaluate_wavelet_analyzer(time_series, frequencies, sample_period, q_ratio, normalisation, mother):
+def compute_continuous_wavelet_transform(time_series, frequencies, sample_period, q_ratio, normalisation, mother):
     """
     # type: (TimeSeries, Range, float, float, str, str)  -> WaveletCoefficients
     Calculate the continuous wavelet transform of time_series.
+
+    Parameters
+    __________
+
+    time_series : TimeSeries
+    The timeseries to which the wavelet is to be applied.
+
+    frequencies : Range
+    The frequency resolution and range returned. Requested frequencies
+    are converted internally into appropriate scales.
+
+    sample_period : float
+    The sampling period of the computed wavelet spectrum.
+
+    q_ratio : float
+    NFC. Must be greater than 5. Ratios of the center frequencies to bandwidths.
+
+    normalisation : str
+    The type of normalisation for the resulting wavet spectrum. Default is 'energy', options are: 'energy'; 'gabor'.
+
+    mother : str
+    The mother wavelet function used in the transform.
     """
     ts_shape = time_series.data.shape
 

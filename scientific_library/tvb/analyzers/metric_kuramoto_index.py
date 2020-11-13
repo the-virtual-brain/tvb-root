@@ -75,10 +75,18 @@ analyzer.
 log = get_logger(__name__)
 
 
-def calculate_kuramoto_index_metric(params):
+def compute_kuramoto_index_metric(params):
     """
+    # type: dict(TimeSeries)  -> float
     Kuramoto Synchronization Index
+
+    Parameters
+    ----------
+    params : a dictionary containing
+        time_series : TimeSeries
+        Input time series for which the metric will be computed.
     """
+
     time_series = params['time_series']
     if time_series.data.shape[1] < 2:
         msg = " The number of state variables should be at least 2."

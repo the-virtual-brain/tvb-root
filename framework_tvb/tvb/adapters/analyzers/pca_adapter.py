@@ -41,7 +41,7 @@ import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5
-from tvb.analyzers.pca import evaluate_pca_analyzer
+from tvb.analyzers.pca import compute_pca
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -160,7 +160,7 @@ class PCAAdapter(ABCAdapter):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
             self.time_series = small_ts.gid
-            partial_pca = evaluate_pca_analyzer(small_ts)
+            partial_pca = compute_pca(small_ts)
             pca_h5.write_data_slice(partial_pca)
         pca_h5.close()
         time_series_h5.close()

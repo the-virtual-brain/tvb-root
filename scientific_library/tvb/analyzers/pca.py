@@ -82,12 +82,16 @@ NOTE: The TimeSeries must be longer(more time-points) than the number of
 # # TODO: Maybe should support first N components or neccessary components to
 # #      explain X% of the variance. NOTE: For default surface the weights
 # #      matrix has a size ~ 2GB * modes * vars...
-def evaluate_pca_analyzer(time_series):
+def compute_pca(time_series):
     """
     # type: (TimeSeries)  -> PrincipalComponents
     Compute the temporal covariance between nodes in the time_series.
+
+    Parameters
+    __________
+    time_series : TimeSeries
+    The timeseries to which the PCA is to be applied.
     """
-    # self.time_series.trait["data"].log_debug(owner = cls_attr_name)
 
     ts_shape = time_series.data.shape
 

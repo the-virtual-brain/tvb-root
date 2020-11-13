@@ -42,7 +42,7 @@ import numpy
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
-from tvb.analyzers.node_coherence import evaluate_node_coherence_analyzer
+from tvb.analyzers.node_coherence import calculate_cross_coherence
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -58,7 +58,7 @@ class NodeCoherenceModel(ViewModel):
         linked_datatype=TimeSeries,
         label="Time Series",
         required=True,
-        doc="""The timeseries to which the FFT is to be applied."""
+        doc="""The timeseries to which the Cross Coherence is to be applied."""
     )
 
     nfft = Int(
@@ -170,7 +170,7 @@ class NodeCoherenceAdapter(ABCAdapter):
         for var in range(input_shape[1]):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
-            partial_coh = evaluate_node_coherence_analyzer(small_ts, view_model.nfft)
+            partial_coh = calculate_cross_coherence(small_ts, view_model.nfft)
             coherence_h5.write_data_slice(partial_coh)
         coherence_h5.frequency.store(partial_coh.frequency)
         array_metadata = coherence_h5.array_data.get_cached_metadata()
