@@ -18,3 +18,5 @@ RUN cd /opt \
 RUN pip install h5py>=2.10 tvb-gdist pytest-xdist
 
 RUN pip install mako
+
+RUN pip install pylems
