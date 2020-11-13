@@ -244,7 +244,7 @@ class FourierAdapter(ABCAdapter):
         input_time_series_h5.close()
 
         fft_index.windowing_function = view_model.window_function
-        fft_index.segment_length = view_model.segment_length
+        fft_index.segment_length = partial_result.segment_length
         fft_index.detrend = view_model.detrend
         fft_index.frequency_step = partial_result.freq_step
         fft_index.max_frequency = partial_result.max_freq
