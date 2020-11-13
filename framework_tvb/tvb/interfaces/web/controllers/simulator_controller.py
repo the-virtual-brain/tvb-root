@@ -114,7 +114,8 @@ class SimulatorFragmentRenderingRules(object):
                  is_simulation_readonly_load=False, last_form_url=SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                  last_request_type=GET_REQUEST, is_first_fragment=False, is_launch_fragment=False,
                  is_model_fragment=False, is_surface_simulation=False, is_noise_fragment=False,
-                 is_launch_pse_fragment=False, is_pse_launch=False, monitor_name=None, is_branch=False):
+                 is_launch_pse_fragment=False, is_pse_launch=False, monitor_name=None,
+                 is_branch=False, enable_branch_class=None):
         """
         :param is_first_fragment: True only for the first form in the wizzard, to hide Previous button
         :param is_launch_fragment: True only for the last form in the wizzard to diplay Launch/SetupPSE/Branch, hide Next
@@ -142,6 +143,7 @@ class SimulatorFragmentRenderingRules(object):
         self.is_pse_launch = is_pse_launch
         self.monitor_name = monitor_name
         self.is_branch = is_branch
+        self.enable_branch_class = enable_branch_class
 
     @property
     def load_readonly(self):
@@ -322,6 +324,9 @@ class SimulatorController(BurstBaseController):
                                                           last_request_type=cherrypy.request.method,
                                                           is_first_fragment=True)
 
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+        if is_branch:
+            rendering_rules.enable_branch_class = "enable_branch"
         template_specification.update(**rendering_rules.to_dict())
         return self.fill_default_attributes(template_specification)
 
@@ -379,6 +384,9 @@ class SimulatorController(BurstBaseController):
                                                           SimulatorWizzardURLs.SET_COUPLING_PARAMS_URL,
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method)
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+        if is_branch:
+            rendering_rules.enable_branch_class = "enable_branch"
         return rendering_rules.to_dict()
 
     @staticmethod
@@ -412,6 +420,9 @@ class SimulatorController(BurstBaseController):
                                                           is_simulation_readonly_load=is_simulator_load,
                                                           last_form_url=self.last_loaded_form_url,
                                                           last_request_type=cherrypy.request.method)
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+        if is_branch:
+            rendering_rules.enable_branch_class = "enable_branch"
         if cherrypy.request.method == POST_REQUEST:
             form = SimulatorSurfaceFragment()
             form.fill_from_post(data)
@@ -466,6 +477,9 @@ class SimulatorController(BurstBaseController):
                                                           is_simulator_load, self.last_loaded_form_url,
                                                           cherrypy.request.method, is_model_fragment=True,
                                                           is_surface_simulation=session_stored_simulator.is_surface_simulation)
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+        if is_branch:
+            rendering_rules.enable_branch_class = "enable_branch"
         return rendering_rules.to_dict()
 
     @expose_fragment('simulator_fragment')
@@ -510,6 +524,9 @@ class SimulatorController(BurstBaseController):
                                                           SimulatorWizzardURLs.SET_MODEL_PARAMS_URL, is_simulator_copy,
                                                           is_simulator_load, self.last_loaded_form_url,
                                                           cherrypy.request.method)
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+        if is_branch:
+            rendering_rules.enable_branch_class = "enable_branch"
         return rendering_rules.to_dict()
 
     @expose_fragment('simulator_fragment')
@@ -543,6 +560,9 @@ class SimulatorController(BurstBaseController):
 
         rendering_rules.form = monitor_fragment
         rendering_rules.form_action_url = SimulatorWizzardURLs.SET_MONITORS_URL
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+        if is_branch:
+            rendering_rules.enable_branch_class = "enable_branch"
         return rendering_rules.to_dict()
 
     @expose_fragment('simulator_fragment')
@@ -1048,6 +1068,9 @@ class SimulatorController(BurstBaseController):
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
                                                           is_first_fragment=True)
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+        if is_branch:
+            rendering_rules.enable_branch_class = "enable_branch"
         return rendering_rules.to_dict()
 
     def _get_form(self, burst_config_id):

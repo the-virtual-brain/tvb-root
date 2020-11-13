@@ -659,7 +659,9 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     if (config_branch_button != null){
         config_branch_button.style.visibility = 'visible';
     }
-    fieldset.disabled = false;
+    if (fieldset.className == "") {
+        fieldset.disabled = false;
+    }
     setInitialFocusOnButton(simulator_params);
 }
 

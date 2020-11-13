@@ -1,7 +1,7 @@
 {% import 'form_fields/generate_help_tooltip.html' as ght with context %}
 
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data">
-    <fieldset {% if renderer.disable_fields %} disabled {% endif %}>
+    <fieldset {% if renderer.enable_branch_class %} class="{{ renderer.enable_branch_class }}" {% endif %} {% if renderer.disable_fields %} disabled {% endif %}>
         <dl>
             {% if renderer.monitor_name %}
             <legend>{{ renderer.monitor_name }}</legend>
