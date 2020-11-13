@@ -55,16 +55,16 @@ import os, sys
 import tvb.simulator.models
 from mako.template import Template
 import re
-# from tvb.basic.logger.builder import get_logger
+from tvb.basic.logger.builder import get_logger
 
 # not ideal but avoids modifying  the vendored LEMS itself
 # sys.path.append(os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir))))
 # from lems.model.model import Model
 
 from lems.model.model import Model
-# from run.regular_run import regularRun
+# # from run.regular_run import regularRun
 
-# logger = get_logger(__name__)
+logger = get_logger(__name__)
 
 class RateML:
 
@@ -305,10 +305,9 @@ class RateML:
                     f.truncate(0)
                     f.seek(0)
                     f.writelines(lines)
-                # logger.info("model file generated {}".format(modelfile))
+                logger.info("model file generated {}".format(modelfile))
         except IOError as e:
-            print(e)
-            # logger.error('ioerror: %s', e)
+            logger.error('ioerror: %s', e)
 
     def write_model_file(self, model_location, model_str):
 
