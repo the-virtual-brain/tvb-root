@@ -62,7 +62,7 @@ import re
 # from lems.model.model import Model
 
 from lems.model.model import Model
-from run.regular_run import regularRun
+# from run.regular_run import regularRun
 
 # logger = get_logger(__name__)
 
