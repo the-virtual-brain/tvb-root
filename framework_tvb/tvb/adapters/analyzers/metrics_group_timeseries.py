@@ -44,9 +44,8 @@ import uuid
 import numpy
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
 from tvb.basic.neotraits.api import List
-from tvb.config import choices, ALGORITHMS
+from tvb.config import ALGORITHMS
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.filters.chain import FilterChain
@@ -54,9 +53,10 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, MultiSelectField, FloatField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
+from tvb.basic.neotraits.api import Int, Float
 
 
-class TimeseriesMetricsAdapterModel(ViewModel, BaseTimeseriesMetricAlgorithm):
+class TimeseriesMetricsAdapterModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
@@ -66,10 +66,26 @@ class TimeseriesMetricsAdapterModel(ViewModel, BaseTimeseriesMetricAlgorithm):
 
     algorithms = List(
         of=str,
-        choices=tuple(choices.values()),
+        choices=tuple(ALGORITHMS.keys()),
         label='Selected metrics to be applied',
         doc='The selected algorithms will all be applied on the input TimeSeries'
     )
+
+    start_point = Float(
+        label="Start point (ms)",
+        default=500.0,
+        required=False,
+        doc=""" The start point determines how many points of the TimeSeries will
+        be discarded before computing the metric. By default it drops the
+        first 500 ms.""")
+
+    segment = Int(
+        label="Segmentation factor",
+        default=4,
+        required=False,
+        doc=""" Divide the input time-series into discrete equally sized sequences and
+        use the last segment to compute the metric. It is only used when
+        the start point is larger than the time-series length.""")
 
 
 class TimeseriesMetricsAdapterForm(ABCAdapterForm):
@@ -167,11 +183,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
         metrics_results = {}
         for algorithm_name in algorithms:
 
-            algorithm = ALGORITHMS[algorithm_name](time_series=dt_timeseries)
-            if view_model.segment is not None:
-                algorithm.segment = view_model.segment
-            if view_model.start_point is not None:
-                algorithm.start_point = view_model.start_point
+            algorithm = ALGORITHMS[algorithm_name]
 
             # Validate that current algorithm's filter is valid.
             algorithm_filter = TimeseriesMetricsAdapterForm.get_extra_algorithm_filters().get(algorithm_name)
@@ -183,7 +195,8 @@ class TimeseriesMetricsAdapter(ABCAdapter):
             else:
                 self.log.debug("Applying measure: " + str(algorithm_name))
 
-            unstored_result = algorithm.evaluate()
+            unstored_result = algorithm({'time_series': dt_timeseries, 'start_point': view_model.start_point,
+                                         'segment': view_model.segment})
             # ----------------- Prepare a Float object(s) for result ----------------##
             if isinstance(unstored_result, dict):
                 metrics_results.update(unstored_result)
