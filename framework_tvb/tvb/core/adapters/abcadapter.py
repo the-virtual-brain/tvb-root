@@ -154,13 +154,6 @@ class ABCAdapterForm(Form):
         """
         raise NotImplementedError
 
-    def get_traited_datatype(self):
-        """
-        This is used to fill in defaults for GET requests.
-        Makes sense for analyzers, because for each form, we have an algorithm to relate to.
-        """
-        return None
-
     def fill_from_post_plus_defaults(self, form_data):
         self.fill_from_trait(self.get_view_model()())
         for field in self.fields:

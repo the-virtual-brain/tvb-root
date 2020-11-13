@@ -143,9 +143,6 @@ class BalloonModelAdapterForm(ABCAdapterForm):
     def get_input_name():
         return 'time_series'
 
-    def get_traited_datatype(self):
-        return BalloonModel()
-
 
 class BalloonModelAdapter(ABCAdapter):
     """

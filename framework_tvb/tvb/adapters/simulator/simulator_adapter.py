@@ -110,9 +110,6 @@ class SimulatorAdapterForm(ABCAdapterForm):
     def get_required_datatype():
         return ConnectivityIndex
 
-    def get_traited_datatype(self):
-        return Simulator()
-
     def __str__(self):
         pass
 
