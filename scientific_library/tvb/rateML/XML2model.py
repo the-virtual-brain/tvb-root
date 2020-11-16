@@ -305,7 +305,7 @@ class RateML:
                     f.truncate(0)
                     f.seek(0)
                     f.writelines(lines)
-                logger.info("model file generated {}".format(modelfile))
+                logger.info("model file generated {}".format(model_filename))
         except IOError as e:
             logger.error('ioerror: %s', e)
 
