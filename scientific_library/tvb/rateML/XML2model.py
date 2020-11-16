@@ -68,7 +68,7 @@ logger = get_logger(__name__)
 
 class RateML:
 
-    def __init__(self, model_filename, language='python', XMLfolder='./XMLmodels/', GENfolder='./generatedModels/'):
+    def __init__(self, model_filename, language='python', XMLfolder=None, GENfolder=None):
         self.model_filename = model_filename
         self.language = language
         self.XMLfolder = XMLfolder
