@@ -147,6 +147,7 @@ class ICAAdapter(ABCAdapter):
         """
         # --------- Prepare a IndependentComponents object for result ----------##
         ica_index = IndependentComponentsIndex()
+        ica_index_gid = ica_index.gid
         ica_index.fk_source_gid = view_model.time_series.hex
 
         time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
@@ -166,13 +167,12 @@ class ICAAdapter(ABCAdapter):
         for var in range(input_shape[1]):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
-            view_model.time_series = small_ts.gid
             partial_ica = compute_ica_decomposition(small_ts, view_model.n_components)
+            partial_ica.source.gid = view_model.time_series
             ica_h5.write_data_slice(partial_ica)
-        array_metadata = ica_h5.unmixing_matrix.get_cached_metadata()
-        ica_index.array_has_complex = array_metadata.has_complex
-        ica_index.shape = json.dumps(ica_h5.unmixing_matrix.shape)
-        ica_index.ndim = len(ica_h5.unmixing_matrix.shape)
+
+        ica_index.fill_from_has_traits(partial_ica)
+        ica_index.gid = ica_index_gid
         ica_h5.close()
         time_series_h5.close()
 

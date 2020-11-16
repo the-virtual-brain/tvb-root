@@ -51,7 +51,7 @@ log = get_logger(__name__)
 #      coherence, etc in a similar fashion to the FourierSpectrum datatype...
 
 
-def hamming(M, sym=True):
+def _hamming(M, sym=True):
     """
     The M-point Hamming window.
     From scipy.signal
@@ -90,7 +90,7 @@ def coherence_mlab(data, sample_rate, nfft=256):
     return coh, freq
 
 
-def coherence(data, sample_rate, nfft=256, imag=False):
+def _coherence(data, sample_rate, nfft=256, imag=False):
     "Vectorized coherence calculation by windowed FFT"
     nt, ns, nn, nm = data.shape
     nwin = nt // nfft
@@ -103,7 +103,7 @@ def coherence(data, sample_rate, nfft=256, imag=False):
         .copy()\
         .transpose((2, 1, 3, 0))\
         .reshape((nn, ns, nm, nwin, nfft))
-    wins *= hamming(nfft)
+    wins *= _hamming(nfft)
     F = numpy.fft.fft(wins)
     fs = numpy.fft.fftfreq(nfft, 1e3 / sample_rate)
     # broadcasts to [node_i, node_j, ..., window, time]
@@ -133,7 +133,7 @@ def calculate_cross_coherence(time_series, nfft):
     """
 
     srate = time_series.sample_rate
-    coh, freq = coherence(time_series.data, srate, nfft=nfft)
+    coh, freq = _coherence(time_series.data, srate, nfft=nfft)
     log.debug("coherence")
     log.debug(narray_describe(coh))
     log.debug("freq")

@@ -44,7 +44,7 @@ from tvb.basic.neotraits.api import HasTraits, Attr, narray_describe
 log = get_logger(__name__)
 
 
-def compute_weights_and_fractions(data):
+def _compute_weights_and_fractions(data):
     """
     The code for this function has been taken and adapted from Matplotlib 2.1.0
     Aug 2019
@@ -116,7 +116,7 @@ def compute_pca(time_series):
         for var in range(ts_shape[1]):
             data = time_series.data[:, var, :, mode]
 
-            fracts, w = compute_weights_and_fractions(data)
+            fracts, w = _compute_weights_and_fractions(data)
             fractions[:, var, mode] = fracts
             weights[:, :, var, mode] = w
 

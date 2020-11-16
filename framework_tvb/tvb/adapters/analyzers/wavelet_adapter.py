@@ -218,6 +218,7 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
         assert isinstance(time_series_h5, TimeSeriesH5)
 
         wavelet_index = WaveletCoefficientsIndex()
+        wavelet_index_gid = wavelet_index.gid
         dest_path = h5.path_for(self.storage_path, WaveletCoefficientsH5, wavelet_index.gid)
 
         wavelet_h5 = WaveletCoefficientsH5(path=dest_path)
@@ -243,18 +244,14 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
                                                                    view_model.sample_period,
                                                                    view_model.q_ratio, view_model.normalisation,
                                                                    view_model.mother)
+            partial_wavelet.source.gid = view_model.time_series
             wavelet_h5.write_data_slice(partial_wavelet)
 
         wavelet_h5.close()
         time_series_h5.close()
 
-        wavelet_index.fk_source_gid = self.input_time_series_index.gid
-        wavelet_index.mother = view_model.mother
-        wavelet_index.normalisation = view_model.normalisation
-        wavelet_index.q_ratio = view_model.q_ratio
-        wavelet_index.sample_period = view_model.sample_period
-        wavelet_index.number_of_scales = frequencies_array.shape[0]
-        wavelet_index.frequencies_min, wavelet_index.frequencies_max, _ = from_ndarray(frequencies_array)
+        wavelet_index.fill_from_has_traits(partial_wavelet)
+        wavelet_index.gid = wavelet_index_gid
 
         return wavelet_index
 

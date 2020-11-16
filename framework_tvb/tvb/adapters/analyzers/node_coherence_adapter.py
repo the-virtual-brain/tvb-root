@@ -150,6 +150,7 @@ class NodeCoherenceAdapter(ABCAdapter):
         """
         # --------- Prepare a CoherenceSpectrum object for result ------------##
         coherence_spectrum_index = CoherenceSpectrumIndex()
+        coherence_spectrum_index_gid = coherence_spectrum_index.gid
         time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         dest_path = h5.path_for(self.storage_path, CoherenceSpectrumH5, coherence_spectrum_index.gid)
@@ -171,25 +172,14 @@ class NodeCoherenceAdapter(ABCAdapter):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
             partial_coh = calculate_cross_coherence(small_ts, view_model.nfft)
+            partial_coh.source.gid = view_model.time_series
             coherence_h5.write_data_slice(partial_coh)
         coherence_h5.frequency.store(partial_coh.frequency)
-        array_metadata = coherence_h5.array_data.get_cached_metadata()
-        freq_metadata = coherence_h5.frequency.get_cached_metadata()
         coherence_h5.close()
         time_series_h5.close()
 
-        coherence_spectrum_index.array_data_min = array_metadata.min
-        coherence_spectrum_index.array_data_max = array_metadata.max
-        coherence_spectrum_index.array_data_mean = array_metadata.mean
-        coherence_spectrum_index.array_has_complex = array_metadata.has_complex
-        coherence_spectrum_index.array_is_finite = array_metadata.is_finite
-        coherence_spectrum_index.shape = json.dumps(coherence_h5.array_data.shape)
-        coherence_spectrum_index.ndim = len(coherence_h5.array_data.shape)
-        coherence_spectrum_index.fk_source_gid = self.input_time_series_index.gid
-        coherence_spectrum_index.nfft = partial_coh.nfft
-        coherence_spectrum_index.frequencies_min = freq_metadata.min
-        coherence_spectrum_index.frequencies_max = freq_metadata.max
-        coherence_spectrum_index.subtype = CoherenceSpectrum.__name__
+        coherence_spectrum_index.fill_from_has_traits(partial_coh)
+        coherence_spectrum_index.gid = coherence_spectrum_index_gid
 
         return coherence_spectrum_index
 

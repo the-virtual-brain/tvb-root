@@ -156,11 +156,6 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
         return "time_series"
 
 
-def result_shape(input_shape, max_freq, epoch_length, segment_length, segment_shift, sample_period, zeropad,
-                 average_segments):
-    pass
-
-
 class NodeComplexCoherenceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeComplexCoherence algorithm. """
 

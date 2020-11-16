@@ -203,6 +203,7 @@ class FourierAdapter(ABCAdapter):
 
         """
         fft_index = FourierSpectrumIndex()
+        fft_index_gid = fft_index.gid
         fft_index.fk_source_gid = view_model.time_series.hex
 
         block_size = int(math.floor(self.input_shape[2] / self.memory_factor))
@@ -226,7 +227,6 @@ class FourierAdapter(ABCAdapter):
         for block in range(blocks):
             node_slice[2] = slice(block * block_size, min([(block + 1) * block_size, self.input_shape[2]]), 1)
             small_ts.data = input_time_series_h5.read_data_slice(tuple(node_slice))
-            view_model.time_series = small_ts.gid
 
             window_function = None
             if view_model.window_function is not None:
@@ -234,6 +234,7 @@ class FourierAdapter(ABCAdapter):
 
             partial_result = compute_fast_fourier_transform(small_ts, view_model.segment_length,
                                                        window_function, view_model.detrend)
+            partial_result.source.gid = view_model.time_series
 
             if blocks <= 1 and len(partial_result.array_data) == 0:
                 self.add_operation_additional_info(
@@ -243,14 +244,10 @@ class FourierAdapter(ABCAdapter):
         fft_index.ndim = len(spectra_file.array_data.shape)
         input_time_series_h5.close()
 
-        fft_index.windowing_function = view_model.window_function
-        fft_index.segment_length = partial_result.segment_length
-        fft_index.detrend = view_model.detrend
-        fft_index.frequency_step = partial_result.freq_step
-        fft_index.max_frequency = partial_result.max_freq
+        fft_index.fill_from_has_traits(partial_result)
+        fft_index.gid = fft_index_gid
 
-        spectra_file.segment_length.store(view_model.segment_length)
-        spectra_file.windowing_function.store(str(view_model.window_function))
+        spectra_file.store(partial_result, scalars_only=True)
         spectra_file.close()
 
         self.log.debug("partial segment_length is %s" % (str(partial_result.segment_length)))
