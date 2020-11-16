@@ -92,13 +92,26 @@ def new_project(name):
     return proj
 
 
-def import_conn_zip(project_id, zip_path):
+def import_conn_zip(project_id, zip_path, view_model_config=None):
+    if view_model_config is None:
+        view_model_config = {}
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
     project = dao.get_project_by_id(project_id)
 
     importer = ABCAdapter.build_adapter_from_class(ZIPConnectivityImporter)
     view_model = ZIPConnectivityImporterModel()
     view_model.uploaded = zip_path
+
+    for config_key in view_model_config.keys():
+        obj = view_model
+        paths = config_key.split(".")
+        n = len(paths)
+        if n > 1:
+            for i in range(n - 1):
+                assert (hasattr(obj, paths[i]))
+                obj = getattr(obj, paths[i])
+        assert (hasattr(obj, paths[n - 1]))
+        setattr(obj, paths[n - 1], view_model_config[config_key])
 
     return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)[0]
 
