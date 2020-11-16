@@ -319,8 +319,8 @@ class RateML:
 
 if __name__ == "__main__":
 
-    # language='python'
-    language='cuda'
+    language='python'
+    # language='cuda'
 
     # model_filename = 'montbrio'
     # model_filename = 'oscillator'
