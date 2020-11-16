@@ -127,11 +127,11 @@ class RateML:
         from urllib.request import urlopen
 
         # Local XSD file location
-        schema_file = urlopen("file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd")
+        # schema_file = urlopen("file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd")
 
         # Global XSD file location
-        # schema_file = urlopen(
-        #     "https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
+        schema_file = urlopen(
+            "https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
         xmlschema = etree.XMLSchema(etree.parse(schema_file))
         print("Validating {0} against {1}".format(self.xml_location, schema_file.geturl()))
         xmlschema.assertValid(etree.parse(self.xml_location))
