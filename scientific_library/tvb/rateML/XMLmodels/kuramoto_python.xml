@@ -1,0 +1,21 @@
+<Lems description="Kuramoto Base type of any cell/population which has a (dimensionless) rate _R.">
+
+    <ComponentType name="derivatives">
+
+        <Constant name="omega" 
+                  value="1.0" 
+                  dimension="lo=0.01, hi=200.0, step=0.1"  
+                  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
+
+        <Exposure name="theta" dimension="theta" />
+
+        <Dynamics>
+            <!-- Use PI to select the PI wrapper (ie Kuramoto) -->
+            <StateVariable name="theta" dimension="0.0, numpy.pi * 2.0"/>
+            
+            <DerivedVariable name="coupl_strength" value="c_pop1 * sin(theta)" />
+
+            <TimeDerivative variable="dtheta" value="omega + coupl_strength"/>
+        </Dynamics>
+    </ComponentType>
+</Lems>
