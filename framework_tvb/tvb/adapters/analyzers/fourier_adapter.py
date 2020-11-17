@@ -42,7 +42,7 @@ import psutil
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
-from tvb.analyzers.fft import compute_fast_fourier_transform
+from tvb.analyzers.fft import compute_fast_fourier_transform, SUPPORTED_WINDOWING_FUNCTIONS
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
@@ -50,14 +50,6 @@ from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField, Floa
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_describe
-
-
-SUPPORTED_WINDOWING_FUNCTIONS = {
-    'hamming': numpy.hamming,
-    'bartlett': numpy.bartlett,
-    'blackman': numpy.blackman,
-    'hanning': numpy.hanning
-}
 
 
 class FFTAdapterModel(ViewModel):
@@ -172,7 +164,7 @@ class FourierAdapter(ABCAdapter):
         """
         input_size = numpy.prod(self.input_shape) * 8.0
         output_size = self.result_size(self.input_shape, view_model.segment_length,
-                                                 self.input_time_series_index.sample_period)
+                                       self.input_time_series_index.sample_period)
         total_free_memory = psutil.virtual_memory().free + psutil.swap_memory().free
         total_required_memory = input_size + output_size
         while total_required_memory / self.memory_factor / total_free_memory > 0.8:
@@ -185,7 +177,7 @@ class FourierAdapter(ABCAdapter):
         Returns the required disk size to be able to run the adapter (in kB).
         """
         output_size = self.result_size(self.input_shape, view_model.segment_length,
-                                                 self.input_time_series_index.sample_period)
+                                       self.input_time_series_index.sample_period)
         return self.array_size2kb(output_size)
 
     def launch(self, view_model):
@@ -203,7 +195,6 @@ class FourierAdapter(ABCAdapter):
 
         """
         fft_index = FourierSpectrumIndex()
-        fft_index_gid = fft_index.gid
         fft_index.fk_source_gid = view_model.time_series.hex
 
         block_size = int(math.floor(self.input_shape[2] / self.memory_factor))
@@ -213,8 +204,6 @@ class FourierAdapter(ABCAdapter):
 
         dest_path = h5.path_for(self.storage_path, FourierSpectrumH5, fft_index.gid)
         spectra_file = FourierSpectrumH5(dest_path)
-        spectra_file.gid.store(uuid.UUID(fft_index.gid))
-        spectra_file.source.store(uuid.UUID(self.input_time_series_index.gid))
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------
         node_slice = [slice(self.input_shape[0]), slice(self.input_shape[1]), None, slice(self.input_shape[3])]
@@ -228,26 +217,24 @@ class FourierAdapter(ABCAdapter):
             node_slice[2] = slice(block * block_size, min([(block + 1) * block_size, self.input_shape[2]]), 1)
             small_ts.data = input_time_series_h5.read_data_slice(tuple(node_slice))
 
-            window_function = None
-            if view_model.window_function is not None:
-                window_function = SUPPORTED_WINDOWING_FUNCTIONS[view_model.window_function]
-
             partial_result = compute_fast_fourier_transform(small_ts, view_model.segment_length,
-                                                       window_function, view_model.detrend)
-            partial_result.source.gid = view_model.time_series
+                                                            view_model.window_function, view_model.detrend)
 
             if blocks <= 1 and len(partial_result.array_data) == 0:
                 self.add_operation_additional_info(
                     "Fourier produced empty result (most probably due to a very short input TimeSeries).")
                 return None
             spectra_file.write_data_slice(partial_result)
+
+        partial_result.source.gid = view_model.time_series
+        partial_result.gid = uuid.UUID(fft_index.gid)
         fft_index.ndim = len(spectra_file.array_data.shape)
         input_time_series_h5.close()
 
         fft_index.fill_from_has_traits(partial_result)
-        fft_index.gid = fft_index_gid
 
         spectra_file.store(partial_result, scalars_only=True)
+        spectra_file.windowing_function.store(str(view_model.window_function))
         spectra_file.close()
 
         self.log.debug("partial segment_length is %s" % (str(partial_result.segment_length)))

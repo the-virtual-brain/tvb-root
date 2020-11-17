@@ -147,16 +147,12 @@ class ICAAdapter(ABCAdapter):
         """
         # --------- Prepare a IndependentComponents object for result ----------##
         ica_index = IndependentComponentsIndex()
-        ica_index_gid = ica_index.gid
         ica_index.fk_source_gid = view_model.time_series.hex
 
         time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         result_path = h5.path_for(self.storage_path, IndependentComponentsH5, ica_index.gid)
         ica_h5 = IndependentComponentsH5(path=result_path)
-        ica_h5.gid.store(uuid.UUID(ica_index.gid))
-        ica_h5.source.store(view_model.time_series)
-        ica_h5.n_components.store(view_model.n_components)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
         input_shape = time_series_h5.data.shape
@@ -168,11 +164,12 @@ class ICAAdapter(ABCAdapter):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
             partial_ica = compute_ica_decomposition(small_ts, view_model.n_components)
-            partial_ica.source.gid = view_model.time_series
             ica_h5.write_data_slice(partial_ica)
 
+        partial_ica.source.gid = view_model.time_series
+        partial_ica.gid = uuid.UUID(ica_index.gid)
+
         ica_index.fill_from_has_traits(partial_ica)
-        ica_index.gid = ica_index_gid
         ica_h5.close()
         time_series_h5.close()
 

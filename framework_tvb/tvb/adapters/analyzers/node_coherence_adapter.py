@@ -150,14 +150,10 @@ class NodeCoherenceAdapter(ABCAdapter):
         """
         # --------- Prepare a CoherenceSpectrum object for result ------------##
         coherence_spectrum_index = CoherenceSpectrumIndex()
-        coherence_spectrum_index_gid = coherence_spectrum_index.gid
         time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         dest_path = h5.path_for(self.storage_path, CoherenceSpectrumH5, coherence_spectrum_index.gid)
         coherence_h5 = CoherenceSpectrumH5(dest_path)
-        coherence_h5.gid.store(uuid.UUID(coherence_spectrum_index.gid))
-        coherence_h5.source.store(view_model.time_series)
-        coherence_h5.nfft.store(view_model.nfft)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
         input_shape = time_series_h5.data.shape
@@ -172,14 +168,17 @@ class NodeCoherenceAdapter(ABCAdapter):
             node_slice[1] = slice(var, var + 1)
             small_ts.data = time_series_h5.read_data_slice(tuple(node_slice))
             partial_coh = calculate_cross_coherence(small_ts, view_model.nfft)
-            partial_coh.source.gid = view_model.time_series
             coherence_h5.write_data_slice(partial_coh)
-        coherence_h5.frequency.store(partial_coh.frequency)
-        coherence_h5.close()
+
+        partial_coh.source.gid = view_model.time_series
+        partial_coh.gid = uuid.UUID(coherence_spectrum_index.gid)
         time_series_h5.close()
 
         coherence_spectrum_index.fill_from_has_traits(partial_coh)
-        coherence_spectrum_index.gid = coherence_spectrum_index_gid
+
+        coherence_h5.store(partial_coh, scalars_only=True)
+        coherence_h5.frequency.store(partial_coh.frequency)
+        coherence_h5.close()
 
         return coherence_spectrum_index
 

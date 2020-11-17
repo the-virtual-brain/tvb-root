@@ -163,7 +163,7 @@ def calculate_complex_cross_coherence(time_series, epoch_length, segment_length,
     # Frequency
     nfreq = int(numpy.min([max_freq, numpy.floor((seg_tpts + zeropad) / 2.0) + 1]))
 
-    resulted_shape, av_result_shape = _complex_coherence_result_shape(time_series.data.shape, max_freq, epoch_length,
+    resulted_shape, av_result_shape = complex_coherence_result_shape(time_series.data.shape, max_freq, epoch_length,
                                                                      segment_length, segment_shift,
                                                                      time_series.sample_period, zeropad,
                                                                      average_segments)
@@ -266,7 +266,7 @@ def calculate_complex_cross_coherence(time_series, epoch_length, segment_length,
     return spectra
 
 
-def _complex_coherence_result_shape(input_shape, max_freq, epoch_length, segment_length, segment_shift, sample_period,
+def complex_coherence_result_shape(input_shape, max_freq, epoch_length, segment_length, segment_shift, sample_period,
                                    zeropad,
                                    average_segments):
     """

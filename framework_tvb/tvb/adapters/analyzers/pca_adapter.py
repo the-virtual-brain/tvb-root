@@ -147,8 +147,6 @@ class PCAAdapter(ABCAdapter):
 
         dest_path = h5.path_for(self.storage_path, PrincipalComponentsH5, principal_components_index.gid)
         pca_h5 = PrincipalComponentsH5(path=dest_path)
-        pca_h5.source.store(time_series_h5.gid.load())
-        pca_h5.gid.store(uuid.UUID(principal_components_index.gid))
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
         input_shape = time_series_h5.data.shape
@@ -162,6 +160,11 @@ class PCAAdapter(ABCAdapter):
             self.time_series = small_ts.gid
             partial_pca = compute_pca(small_ts)
             pca_h5.write_data_slice(partial_pca)
+
+        partial_pca.source.gid = view_model.time_series
+        partial_pca.gid = uuid.UUID(principal_components_index.gid)
+
+        pca_h5.store(partial_pca, scalars_only=True)
         pca_h5.close()
         time_series_h5.close()
 

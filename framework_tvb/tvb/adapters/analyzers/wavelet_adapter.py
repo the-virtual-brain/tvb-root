@@ -218,17 +218,9 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
         assert isinstance(time_series_h5, TimeSeriesH5)
 
         wavelet_index = WaveletCoefficientsIndex()
-        wavelet_index_gid = wavelet_index.gid
         dest_path = h5.path_for(self.storage_path, WaveletCoefficientsH5, wavelet_index.gid)
 
         wavelet_h5 = WaveletCoefficientsH5(path=dest_path)
-        wavelet_h5.gid.store(uuid.UUID(wavelet_index.gid))
-        wavelet_h5.source.store(time_series_h5.gid.load())
-        wavelet_h5.mother.store(view_model.mother)
-        wavelet_h5.q_ratio.store(view_model.q_ratio)
-        wavelet_h5.sample_period.store(view_model.sample_period)
-        wavelet_h5.frequencies.store(frequencies_array)
-        wavelet_h5.normalisation.store(view_model.normalisation)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
         node_slice = [slice(self.input_shape[0]), slice(self.input_shape[1]), None, slice(self.input_shape[3])]
@@ -244,14 +236,17 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
                                                                    view_model.sample_period,
                                                                    view_model.q_ratio, view_model.normalisation,
                                                                    view_model.mother)
-            partial_wavelet.source.gid = view_model.time_series
             wavelet_h5.write_data_slice(partial_wavelet)
 
-        wavelet_h5.close()
+        partial_wavelet.source.gid = view_model.time_series
+        partial_wavelet.gid = uuid.UUID(wavelet_index.gid)
         time_series_h5.close()
 
         wavelet_index.fill_from_has_traits(partial_wavelet)
-        wavelet_index.gid = wavelet_index_gid
+
+        wavelet_h5.store(partial_wavelet, scalars_only=True)
+        wavelet_h5.frequencies.store(frequencies_array)
+        wavelet_h5.close()
 
         return wavelet_index
 

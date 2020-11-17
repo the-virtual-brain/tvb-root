@@ -43,6 +43,14 @@ from tvb.datatypes.spectral import FourierSpectrum
 
 log = get_logger(__name__)
 
+
+SUPPORTED_WINDOWING_FUNCTIONS = {
+    'hamming': numpy.hamming,
+    'bartlett': numpy.bartlett,
+    'blackman': numpy.blackman,
+    'hanning': numpy.hanning
+}
+
 """
 A module for calculating the FFT of a TimeSeries object of TVB and returning
 a FourierSpectrum object. A segment length and windowing function can be
@@ -102,7 +110,8 @@ def compute_fast_fourier_transform(time_series, segment_length, window_function,
 
     # Apply windowing function
     if window_function is not None:
-        window_mask = numpy.reshape(window_function(int(seg_tpts)),
+        wf = SUPPORTED_WINDOWING_FUNCTIONS[window_function]
+        window_mask = numpy.reshape(wf(int(seg_tpts)),
                                     (int(seg_tpts), 1, 1, 1, 1))
         ts = ts * window_mask
 
@@ -113,15 +122,11 @@ def compute_fast_fourier_transform(time_series, segment_length, window_function,
 
     log.debug("result " + narray_describe(result))
 
-    wf = None
-    if window_function is not None:
-        wf = window_function.__name__
-
     spectra = FourierSpectrum(
         source=time_series,
         segment_length=segment_length,
         array_data=result,
-        windowing_function=wf
+        windowing_function=window_function
     )
     spectra.configure()
 
