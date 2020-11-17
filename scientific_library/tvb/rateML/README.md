@@ -1,28 +1,153 @@
-# CUDA model generation using LEMS format
-This readme describes the usage of the code generation for models defined in LEMS based XML to Cuda (C) format.
-The LEMS framework has been adopted and altered to match TVB model names. 
-In LEMS2CUDA.py the function "cuda_templating('Modelname', 'path/to/your/XMLmodels')" will start the code generation.
-It expects a [model+'_CUDA'].xml file to be present in ['path/to/your/XMLmodels']. 
-The generated file will be placed in '~/scientific_libary/tvb/rateML/rateML_CUDA/CUDAmodels/' which is relative to your
-project path.  The produced filename is a lower cased [model+'_CUDA'].c which contains a class named [model].
+# Rate based model generation for Python TVB or CUDA models
+This readme describes the usage of the code generation for models defined in LEMS based XML to Cuda or Python.
+The pyLEMS framework is used and will be installed with TVB. 
+XML2model.py holds the class which start the templating.
+To use RateML, create an object of the RateML class in which the arguments: the model filename, language, XML file location and model output location, are entered.
+```python
+RateML('model_filename', language=('python' | 'cuda'), 'path/to/your/XMLmodels', 'path/to/your/generatedModels')
+```
+The model filename is the name of XML file which will also be the name of the model class for Python models and the kernel name for CUDA models. 
+The language (python | cuda) determines if either a python or cuda model will be generated. 
+It expects a model_filename.xml to be present in 'path/to/your/XMLmodels' for either Python or CUDA model generation.
+The generated file will be placed in ''path/to/your/generatedModels'.
+The produced filename is a lower cased model_filename.c or -.py which contains a kernel called model_filename or a class named Model_filenameT.
 
     .. moduleauthor:: Michiel. A. van der Vlag <m.van.der.vlag@fz-juelich.de>
     .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
     .. moduleauthor:: Sandra Diaz <s.diaz@fz-juelich.de>
-    
-# The CUDA memory model specification
-![](GPUmemindex.png)
+
+# XML template
+The XML template below can be found in /XMLmodels and can be used to start the construction of a model. This section describes each of the constructs need to define the model.
+Both CUDA and Python can be generated from the same XML model file, however the CUDA variant would need componenttypes for coupling and noise. 
+The order of constructs in this figure denotes the sequences in which they need to appear in the XML file. The Pylems expression parser, which checks for mathematical correctness, is active on all the fields which hold expressions. The power symbol in the expression fields needs to be entered within curly brackets: {x^2}, because it needs to be translated to the specific power operator for each language.
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Lems description="Rate based generic template">
+
+```
+To define the time derivatives of the model, a component type with the name: “derivatives”, should be created. This component type can hold other constructs which define the initialization and dynamics definition of the model. 
+```xml
+    <ComponentType name="derivatives">
+```
+The **Parameter** construct defines variables to be used in a parameter sweep. The name keyword specifies the name and the dimension keyword specifies the type of the parameter. Parameter is only supported by CUDA. rateML/run/__main__.py holds an example of coupling and speed exploration. In this example the coupling parameters have the range: logspace(1.6, 3.0, coupling_runtime_dimension) and speed parameters have the range logspace(1.6, 3.0, speed_runtime_dimension)
+```xml
+        <Parameter name="[p_name0]" dimension='[type=float]'/>
+        <Parameter name="[p_name1]" dimension='[type=float]'/>
+```
+The **DerivedParameter** construct specifies parameters which are derived during run-time of the model in dependence of the parameters used in sweeps. This construct is only supported by the CUDA models and will generate a float with the const keyword, which is initialized with the expression. Special derived parameters are “rec_speed_dt” and “nsig”. If “rec_speed_dt” is not defined the coupling will not have a temporal aspect, meaning that the delay between nodes will be set to 0. If the added noise needs to be amplified the keyword “nsig” should be used. See coupling and noise sections for more information.
+```xml
+        <DerivedParameter name="[name]" expression="[expression]"/>
+```
+The **Constant** construct is used to create constants of the type float. The value field represents the initial value and a description can be entered optionally in the description field. (TODO. Description bug in LEMS: The description attibute is mapped to the symbol attribute in LEMS.py. For now no description field does not translate to description field in Python generations). For the Python models a domain must be specified, this can be done in the dimension field. Either the domain in the format as listed is entered, or None is entered to exclude it. This domain is used to generate GUI slider bars and value validation in the TVB Framework. For the CUDA models, the dimension field can be omitted.
+```xml
+        <Constant name="[name]" domain="lo=[value], hi=[value], step=[value]" default="[value]" description="[optional]"/>
+```
+The **Exposures** construct specifies variables that the user wants to monitor and that are returned by the computing kernel: name is the name of the variable to be monitored, the keyword dimension defines any mathematical operation performed on a variable of interest. 
+```xml
+        <Exposure name="[name]" dimension="[Expression]"/>
+```
+The **StateVariable** construct is used to define the state variables of the model. The state variables in a Python TVB model are initialized with a numpy.array with the values entered in the dimension field. This field can be omitted in the CUDA models, in which state variables are single variables initialized to 0. The exposure field sets the state variables' upper and lower boundaries, for both languages. These boundaries ensure that the values of state variables stay within the set boundaries and resets the state if the boundaries are exceeded.
+```xml
+        <Dynamics>
+            <StateVariable name="[name]" dimension="[range]" exposure="[lower_bound], [upper_bound]"/>
+```
+The **DerivedVariable** construct can be used to define temporary variables which are the building blocks of the time derivatives. Any formula can be used, and the syntax is: name=value.
+```xml
+            <DerivedVariable name="[name]" value="[expression]" />
+```
+The **ConditionalDerivedVariable** construct can be used to create if-else constructs. Within the construct a number of Cases can be defined to indicate what action is valid when the condition is true of false. The condition field holds the condition for the action. The escape sequences '\&lt(=);' and '\&gt;(=)' for less- or greater then (or equal to) are used to specify the condition. The value field holds the expression of which the value will be assigned to the variable indicated with the name field. At least one case should be defined. Two cases will produce an if-else structure. There is no need to enter the ‘else’ keyword as is shown in the example, this will be produced automatically. More than two cases will result in the usage of ‘else-if’ statements.
+```xml
+            <!--if [condition]: [name] = [expression1]
+                else if [condition]: [name] = [expression2] 
+                else: [expression3] -->
+            <ConditionalDerivedVariable name="[name]">
+                <Case condition="[variable] [conditional operator] [value]" value="[expression1]"/>
+                <Case condition="[variable] [conditional operator] [value]" value="[expression2]"/>
+                <Case condition="" value="[expression3]"/>
+            </ConditionalDerivedVariable>
+```
+The **TimeDerivative** construct defines the model dynamics in terms of  derivative functions. The variable field specifies the variable on the left-hand side of the differential equation, while the value field specifies the right-hand side expression. 
+```xml
+            <TimeDerivative variable="[name]" value="[expression]"/>
+        </Dynamics>
+    </ComponentType>
+```
+
+To define **coupling functions**, which is only applicable for CUDA models, the user can create a coupling component type.
+To identify this coupling component type, the name field should include the phrase coupling. It will construct a double for loop in which for every node, every other node's state is fetched according to connection delay, multiplied by connection weight.
+The Python models have coupling functionality defined in a separate class which contains pre-defined functions for pre- and post synaptic behavior. With RateML it is not possible to define the coupling function for the Python models. For the python models, a number of hardcoded c_pop variables are defined, which can be used to implement the coupling value per population. Each of these variables define the coupling for each neuron population defined.
+```xml
+    <ComponentType name="coupling_[name]">
+```
+The coupling **Parameter** construct specifies the variable that stores intermediate results from computing coupling inputs and its dimension field indicates which state variable the coupling computation should consider and which is fetched from memory. For instance, in case of the Epileptor model, six state variables are present and either one of them could (theoretically) be considered in computing the coupling. This function has been added to give the user more freedom in defining the coupling function. The dimension param indicates the nth defined statevariable of which values are fetched from memory.
+The parameter name should appear in the user defined 'pre' or 'post' coupling function, if user want temporal model aspects.
+```xml
+        <Parameter name="[name]" dimension='[0-n]'/>
+```
+The coupling **DerivedParameter** construct defines the name of the variable to store the final coupling result and the value field contains a function that transforms the sums of all inputs to a specific node. This variable, 'dp_name', can be used to incorporate the coupling value in the dynamics of the model and is eventually used to 'export' the coupling value out of the for loops. This value should then be used in time derivative definition 
+Syntax: [name] *= [expression].
+```xml
+        <!-- Name of the variable which  -->
+        <DerivedParameter name="[dp_name]" value="[expression]"/>
+```
+The DerivedVariable construct can be used to enter a 'pre'- and 'post'-synaptic coupling function. The final result is that the pre- is multiplied with the post synaptic coupling function and again multiplied with the weights of the node. This result is assigned to 'dp_name', which is shown on line 16 of the listing below. If the derivatives component type does not have a derived parameter named 'rec_speed_dt' the coupling function will not have the delay aspect and thus does not have a temporal component. The listing below also shows the fetching of the delays and the usage of 'rec_speed_dt'. If 'rec_speed_dt' is not defined 'dij' will be set to 0. Other variables or constants defined inside or outside of this component type, can also be used to populate this function.
+```xml
+        <Dynamics>
+            <!-- Construct to define the pre and post coupling function
+                Name should always be 'pre' and 'post'
+                [dp_name] += node_weight * [pre.expression] * [post.expression] -->
+            <DerivedVariable name="[pre]" value="[expression]"/>
+            <DerivedVariable name="[post]" value="[expression]"/>
+        </Dynamics>
+    </ComponentType>
+
+    <!-- It is possible to decribe a 2nd coupling funtion, with the same as the syntax as previous. -->
+    <ComponentType name="coupling_function_pop2">
+            
+        <!-- etc... -->
+    </ComponentType>
+```
+To specify noise addition to the model dynamics, a component type with the name 'noise' can be defined, which is only applicable for CUDA models. The CUDA models make use of the Curand library to add a random value to the calculated derivatives. As is mentioned in the derivatives section, if the derivatives component type has a derived parameter with the name 'nsig' a noise amplification of value will be used to amplify the noise. 
+```xml
+    <!--Type noise for noise. Only for CUDA models. 
+        Will add curand noise to state variable and amplify with constant 'nsig' if defined.
+        [state_var_name] += nsig * curand_normal(&crndst) + [time_der_var] -->
+    <ComponentType name="noise"/>
+
+
+</Lems>
+```
+```c
+// Loop over nodes
+for (int i_node = 0; i_node < n_node; i_node++){
+    c_pop1 = 0.0f;
+    V = state((t) % nh, i_node + 0 * n_node);
+  unsigned int i_n = i_node * n_node
+     // Loop over nodes
+     for (unsigned int j_node = 0; j_node < n_node; j_node++){
+       // Get the weight of the coupling between node i and node j
+       float wij = weights[i_n + j_node];
+       if (wij == 0.0) continue;
+       // Get the delay between node i and node j
+       unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
+       // Get the state of node j which is delayed by dij
+       float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
+       // Sum using coupling function (constant * weight * pre * post)
+       c_pop1 += wij * c_c_a * 2 * sin(V_j - V);
+    }
+}
+// Export c_pop1 outside loop and process
+c_pop1 *= global_coupling;
+// Do derivative calculation
+...
+```
 
 # Files in ~/rateML_CUDA/
-* LEMS2CUDA.py   		    : python script for initiating model code generation
-* tmpl8_CUDA.py 		    : Mako template converting XML to CUDA
-* /XMLmodels                : folder containing LEMS based XML model example files
-* /CUDAmodels               : resulting model folder
-* /lems/                    : modified pyLEMS library tuned for CUDA model generation
-* /lems/component.py        : maintains constants and exposures
-* /lems/dynamics.py         : maintains all dynamic attributes
-* /lems/LEMS.py             : LEMS XML file parser
-* /lems/expr.py             : expression parser
+* XML2model.py   		    : python script for initiating model code generation of either CUDA or Python models
+* tmpl8_cuda.py 		    : Mako template converting XML to CUDA
+* tmpl8_python.py 		    : Mako template converting XML to Python
+* /XMLmodels                : folder containing LEMS based XML model example files as well as a model template
+* /generatedModels          : resulting model folder
 * /run/                     : folder with example script to run generated model
 * /run/__main__.py          : cuda setup file
 * /run/cuda_run.py          : cuda run file using Pycuda
@@ -33,196 +158,11 @@ project path.  The produced filename is a lower cased [model+'_CUDA'].c which co
 # Requirements
 Mako templating
 Pycuda
-tvb-library
-tvb-data
-
-# XML LEMS Definitions 
-Based on http://lems.github.io/LEMS/elements.html, a number of attributes are tuned for CUDA models.
-As an example an XML line and its translation to CUDA are given below.
-
-* Constants\
-If domain = 'none' no domain range will be added.\
-Label is fixed to ':math:constant.name'
-
-```xml
-<Constant name="x0" domain="" default="-1.6" description="Epileptogenicity parameter."/>
-```
-translates to:
-```c
-const float x0 = -1.6;
-```
-
-* State variables
-State variable ranges [lo, hi]" values are entered with keyword "boundaries" with a comma separator.\
-The default option can be used to initialize if necessary (future)
-For each state variable a set of boundaries can be added to encompass the dynamic range.\
-A wrapping function according to the values entered will be generated and in numerical solving the wrapper 
-will be applied. \
-
-```xml
-<StateVariable name="x1" default="0.0" boundaries="-2., 1."/>
-```
-translates to:
-```c
-    __device__ float wrap_it_x1(float x1)
-{
-    float x1dim[] = {-2.0, 1.0};
-    if (x1 < x1dim[0]) x1 = x1dim[0];
-    else if (x1 > x1dim[1]) x1 = x1dim[1];
-
-    return x1;
-}
-
-    double x1 = 0.0;
-    
-    for(nsteps)
-        for(inodes)
-            x1 = state((t) % nh, i_node + 0 * n_node);
-```
-
-* Exposures\
-Exposures are used for observables and translate to variables_of_interest.\
-For the name enter variable to be observed (usually states).\
-The field 'choices' are treated as lists with a (,) separator.\
-The define is hardcoded for the the term tavg.\
-Tavg is the datastruct containing the results of the parameter sweep simulation.
-
-```xml
- <Exposure name="o_x1" choices="x1"/>
-```
-translates to:
-```c
-#define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
-tavg(i_node + 0 * n_node) = x1;
-```
-
-* Derived variables\
-DerivedVariables can be used to 'easify' the time derivatives, enter the local coupling formulas or any formula.\
-sytax: [name]=[expression].\
-Define for example global and local coupling: c_0 = coupling.\
-            
-```xml
-<DerivedVariable name="c_pop1" expression="coupling[0]"/>
-```
-translates to:
-```c
-c_pop1 *= global_coupling;
-```
-
-* Conditional Derived Variables\
-ConditionalDerivedVariables are used to created if, else constructs.\
-Use &lt(=); or &gt;(=) for less- or greater then (equal to).\
-Syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,).\
-It will not produce an else if {cases[1]} is not present.
-```xml
-<ConditionalDerivedVariable name="ydot0" condition="x1 &lt; 0.0" cases="-a * x1**2 + b * x1, slope - x2 + 0.6 * (z - 4)**2 "/>
-```
-translates to:
-```c
-if (x1 < 0.0)
-    ydot0 = -a * x1**2 + b * x1;
-else
-    ydot0 = slope - x2 + 0.6 * (z - 4)**2;
-```
-
-* Time Derivatives\
-Used to define the models derivates functions solved numerically.\
-Syntax: {name} = {expression}. Name field should not be equal to state variable name!
-```xml
-<TimeDerivative name="dV" expression="tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1)"/>
-<TimeDerivative name="dW" expression="..."/>
-```
-translates to:
-```c
-dV = tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 * x1);
-dW = ...
-```
-
-* Coupling function\
-For the coupling function a new component type can be defined.\
-The dynamics can be defined with attributes similar to the solving of the numerical analysis.\
-
-```xml
-<ComponentType name="coupling_function_pop1">
-
-<!--        Added function for pre and post synaptic activity. Fixed the power being **, however no parse checks for it-->
-
-    <Constant name="c_a" domain="lo=0.0, hi=10., step=0.1" default="1" description="Rescales the connection strength."/>
-
-        <!-- variable for pre synaptic function, only 1 param is allowed (and should be sufficient))  -->
-        <!-- the dimension param indicates the nth statevariable to which the coupling function should apply  -->
-        <!-- param name appears in the pre or post coupling function.  -->
-    <Parameter name="x1_j" dimension='0'/>
-
-    <Dynamics>
-        <DerivedVariable name="pre" expression="sin(x1_j - x1)" description="pre synaptic function for coupling activity"/>
-        <DerivedVariable name="post" expression="c_a" description="post synaptic = a * pre"/>
-    </Dynamics>
-        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
-        <DerivedParameter name="c_pop1" expression="global_coupling * coupling" value="None"/>
-
-    </ComponentType>
-```
-translates to:
-```c
-for (unsigned int j_node = 0; j_node < n_node; j_node++)
-    {
-        //***// Get the weight of the coupling between node i and node j
-        float wij = weights[i_n + j_node]; // nb. not coalesced
-        if (wij == 0.0)
-            continue;
-
-        //***// Get the delay between node i and node j
-        unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
-
-        //***// Get the state of node j which is delayed by dij
-        float x1_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
-
-        // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-        coupling += c_a * sin(x1_j - x1);
-
-    } // j_node */
-
-    // rec_n is used for the scaling over nodes
-    c_pop1 *= global_coupling * coupling;
-    c_pop2 *= g;
-```
+pyLEMS
 
 
 # Running an example from ~/run folder
-Create a model, name it ['modelname'+'_CUDA'.xml] and execute the "cuda_templating('Modelname',
-'path/to/your/XMLmodels')" function from LEMS2CUDA.py. The resulting model will be placed in the CUDA model 
-folder (tvb/rateML/rateML_CUDA/CUDAmodels). This location is relative to your project path.
 In the folder 'tvb/rateML/rateML_CUDA/run/' an example can be found on how to run the model generator and the CUDA model
-on a GPU. From this folder, execute __main__.py on a CUDA enabled machine or execute 
-'./run_example_on_cluster [Modelname]' on a SLURM cluster with GPU nodes to start model generation and 
-a parameters sweep simulation with the produced model file on a GPU. The sbatch parameters in 'submit_sbatch.sh' 
-should be altered to match the cluster of choice. The block dimensions default to 32x32 which has shown to have 
+on a GPU. From this folder, execute __main__.py on a CUDA enabled machine. The block dimensions default to 32x32 which has shown to have 
 the best occupancy, the grid is adjusted accordingly. In the output.out a small report on the success of 
 the simulation is printed. 
-
-# TODO
-Process in Readme: The parameters with name 'rec_speed_dt' is conidered to be integral part of tv coupling calculation
-if not present, the delay part of coupling will be 0 for each node.
-Powers in expressions should be entered between curly braces: {x^2}. The parser will pick this up and translate to
-correct expression for the selected language: powf(x, 2) for CUDA and x**2 for Python models.
-The 'nsig' variable is used for noise amplification. If noise component is present but this variable is not it will be
-set to 1. 
-Eplain that exposure attritbute in state variable will lead to :   
-        
-        state_variable_boundaries = Final(
-        label="State Variable boundaries [lo, hi]",
-        default={"V": numpy.array([0.0000001, 1])"W": numpy.array([0.0000001, 1])},
-        )
-Description bug in LEMS. The description attibute is mapped to the symbol attribute in LEMS.py. For now no description 
-in the model. 
-
-Make XSD cases for coupling and noise.
-
-Classname has to be capitalized, filename does not
-
-c_pop1 are the standard variables for python long range coupling and local_coupling. Standard
-4 c_pops are drawn from coupling array.
-
-In exposures the name field hold the variabls of with which in the dimension field an expression can be 
-formed for the monitors. 
