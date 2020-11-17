@@ -92,26 +92,14 @@ def new_project(name):
     return proj
 
 
-def import_conn_zip(project_id, zip_path, view_model_config=None):
-    if view_model_config is None:
-        view_model_config = {}
+def import_conn_zip(project_id, zip_path):
+
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
     project = dao.get_project_by_id(project_id)
 
     importer = ABCAdapter.build_adapter_from_class(ZIPConnectivityImporter)
     view_model = ZIPConnectivityImporterModel()
     view_model.uploaded = zip_path
-
-    for config_key in view_model_config.keys():
-        obj = view_model
-        paths = config_key.split(".")
-        n = len(paths)
-        if n > 1:
-            for i in range(n - 1):
-                assert (hasattr(obj, paths[i]))
-                obj = getattr(obj, paths[i])
-        assert (hasattr(obj, paths[n - 1]))
-        setattr(obj, paths[n - 1], view_model_config[config_key])
 
     return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)[0]
 
@@ -130,7 +118,6 @@ def import_conn_h5(project_id, h5_path):
     importer = ABCAdapter.build_adapter_from_class(TVBImporter)
     view_model = importer.get_view_model_class()()
     view_model.data_file = new_path
-
     return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)[0]
 
 
@@ -171,7 +158,7 @@ def fire_operation(project_id, adapter_instance, view_model):
 def wait_to_finish(operation):
     # Wait for the operation to finish
     while not operation.has_finished:
-        sleep(5)
+        sleep(1)
         operation = dao.get_operation_by_id(operation.id)
 
     if operation.status == STATUS_FINISHED:

@@ -36,7 +36,10 @@ Import connectivities from Brain Tumor zip archives
 """
 import sys
 
+from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporter, RegionMappingImporterModel
+from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.readers import try_get_absolute_path
 from tvb.config import DEFAULT_PROJECT_GID
 from tvb.interfaces.command.lab import *
 
@@ -45,6 +48,7 @@ LOG = get_logger(__name__)
 
 
 def import_tumor_connectivities(project_id, folder_path):
+    conn_gids = []
     for patient in os.listdir(folder_path):
         patient_path = os.path.join(folder_path, patient)
         if os.path.isdir(patient_path):
@@ -55,17 +59,43 @@ def import_tumor_connectivities(project_id, folder_path):
                 if not os.path.exists(connectivity_zip):
                     LOG.error("File {} does not exist.".format(connectivity_zip))
                     continue
-                data = {
-                    'data_subject': patient,
-                    'generic_attributes.user_tag_1': user_tag
-                }
-                import_op = import_conn_zip(project_id, connectivity_zip, data)
-                # wait_to_finish(import_op)
+                import_conn_adapter = ABCAdapter.build_adapter_from_class(ZIPConnectivityImporter)
+                import_conn_model = ZIPConnectivityImporterModel()
+                import_conn_model.uploaded = connectivity_zip
+                import_conn_model.data_subject = patient
+                import_conn_model.generic_attributes.user_tag_1 = user_tag
+                import_op = fire_operation(project_id, import_conn_adapter, import_conn_model)
+                import_op = wait_to_finish(import_op)
+                conn_gids.append(dao.get_results_for_operation(import_op.id)[0].gid)
+    return conn_gids
+
+
+def import_surface_rm(project_id, conn_gid):
+    # Import surface and region mapping from tvb_data berlin subjects (68 regions)
+    rm_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_RegionMapping.txt")
+    surface_zip_file = try_get_absolute_path("tvb_data", "berlinSubjects/DH_20120806/DH_20120806_Surface_Cortex.zip")
+
+    surface_importer = ABCAdapter.build_adapter_from_class(ZIPSurfaceImporter)
+    surface_imp_model = ZIPSurfaceImporterModel()
+    surface_imp_model.uploaded = surface_zip_file
+    surface_imp_operation = fire_operation(project_id, surface_importer, surface_imp_model)
+    surface_imp_operation = wait_to_finish(surface_imp_operation)
+
+    surface_gid = dao.get_results_for_operation(surface_imp_operation.id)[0].gid
+    rm_importer = ABCAdapter.build_adapter_from_class(RegionMappingImporter)
+    rm_imp_model = RegionMappingImporterModel()
+    rm_imp_model.mapping_file = rm_file
+    rm_imp_model.surface = surface_gid
+    rm_imp_model.connectivity = conn_gid
+    rm_import_operation = fire_operation(project_id, rm_importer, rm_imp_model)
+    wait_to_finish(rm_import_operation)
 
 
 if __name__ == '__main__':
-    default_prj_id = dao.get_project_by_gid(DEFAULT_PROJECT_GID).id
-
     # Path to TVB folder
     input_folder = sys.argv[1]
-    import_tumor_connectivities(default_prj_id, input_folder)
+    # Project where DTs will be imported
+    project_id = sys.argv[2]
+
+    conn_gids = import_tumor_connectivities(project_id, input_folder)
+    import_surface_rm(project_id, conn_gids[0])
