@@ -110,36 +110,6 @@ class Field(object):
         return jinja_env.get_template(self.template).render(field=self)
 
 
-class SimpleStrField(Field):
-    template = 'form_fields/str_field.html'
-
-    def _from_post(self):
-        if self.required and (self.unvalidated_data is None or self.unvalidated_data.strip() == ''):
-            raise ValueError('Field required')
-        self.data = self.unvalidated_data
-
-
-class SimpleHiddenField(Field):
-    template = 'form_fields/hidden_field.html'
-
-
-class SimpleFloatField(Field):
-    template = 'form_fields/number_field.html'
-    input_type = "number"
-    min = None
-    max = None
-    step = 'any'
-
-    def _from_post(self):
-        super(SimpleFloatField, self)._from_post()
-        if self.unvalidated_data and len(self.unvalidated_data) == 0:
-            self.unvalidated_data = None
-        if self.unvalidated_data:
-            self.data = float(self.unvalidated_data)
-        else:
-            self.data = None
-
-
 class TraitField(Field):
     # mhtodo: while this is consistent with the h5 api, it has the same problem
     #         it couples the system to traited attr declarations
@@ -468,27 +438,6 @@ class SelectField(TraitField):
                 checked=self.value == self.choices.get(choice)
             )
 
-    # def _from_post(self):
-    #     # encode None as a string
-    #     if self.unvalidated_data == self.missing_value:
-    #         self.unvalidated_data = None
-    #
-    #     if self.required and not self.unvalidated_data:
-    #         raise ValueError('Field required')
-    #
-    #     if self.unvalidated_data is not None:
-    #         # todo muliple values
-    #         self.data = self.trait_attribute.field_type(self.unvalidated_data)
-    #     else:
-    #         self.data = None
-    #
-    #     allowed = self.trait_attribute.choices
-    #     if not self.trait_attribute.required:
-    #         allowed = (None,) + allowed
-    #
-    #     if self.data not in allowed:
-    #         raise ValueError('must be one of {}'.format(allowed))
-
     def fill_from_post(self, post_data):
         super(SelectField, self).fill_from_post(post_data)
         self.data = self.choices.get(self.data)
@@ -533,6 +482,14 @@ class MultiSelectField(TraitField):
             data.append(converted_s)
 
         self.data = data
+
+
+class HiddenField(TraitField):
+    template = 'form_fields/hidden_field.html'
+
+    def __init__(self, trait_attribute, form, name=None, disabled=False):
+        super(HiddenField, self).__init__(trait_attribute, form, name, disabled)
+        self.trait_attribute.label = ''
 
 
 # noinspection PyPep8Naming

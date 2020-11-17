@@ -39,10 +39,10 @@ from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, SIGMOID_EQUATION
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import Attr, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import Form, SimpleFloatField, FormField, SelectField
+from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.datatypes.equations import Gaussian, SpatialApplicableEquation
@@ -96,10 +96,12 @@ class SurfaceModelParametersForm(ABCAdapterForm):
 class EquationPlotForm(Form):
     def __init__(self):
         super(EquationPlotForm, self).__init__()
-        self.min_x = SimpleFloatField(self, name='min_x', label='Min distance(mm)',
-                                      doc="The minimum value of the x-axis for spatial equation plot.", default=0)
-        self.max_x = SimpleFloatField(self, name='max_x', label='Max distance(mm)',
-                                      doc="The maximum value of the x-axis for spatial equation plot.", default=100)
+        self.min_x = FloatField(Float(label='Min distance(mm)', default=0,
+                                      doc="The minimum value of the x-axis for spatial equation plot."), self,
+                                name='min_x')
+        self.max_x = FloatField(Float(label='Max distance(mm)', default=100,
+                                      doc="The maximum value of the x-axis for spatial equation plot."), self,
+                                name='max_x')
 
     def fill_from_post(self, form_data):
         if self.min_x.name in form_data:

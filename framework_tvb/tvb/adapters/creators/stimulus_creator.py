@@ -44,7 +44,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, 
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import FormField, SimpleStrField, TraitDataTypeSelectField, SelectField
+from tvb.core.neotraits.forms import FormField, TraitDataTypeSelectField, SelectField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.equations import Sigmoid, PulseTrain, TemporalApplicableEquation, FiniteSupportEquation
@@ -58,7 +58,7 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
         super(StimulusSurfaceSelectorForm, self).__init__(project_id=project_id)
         traited_attr = Attr(StimuliSurfaceIndex, label='Load Surface Stimulus', required=False)
         self.surface_stimulus = TraitDataTypeSelectField(traited_attr, self, name='existentEntitiesSelect')
-        self.display_name = SimpleStrField(self, name='display_name', label='Display name')
+        self.display_name = StrField(SurfaceStimulusCreatorModel.display_name, self, name='display_name')
 
     def get_rendering_dict(self):
         return {'adapter_form': self, 'legend': 'Loaded stimulus'}
@@ -207,7 +207,7 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
         super(StimulusRegionSelectorForm, self).__init__(project_id=project_id)
         traited_attr = Attr(StimuliRegionIndex, label='Load Region Stimulus', required=False)
         self.region_stimulus = TraitDataTypeSelectField(traited_attr, self, name='existentEntitiesSelect')
-        self.display_name = SimpleStrField(self, name='display_name', label='Display name')
+        self.display_name = StrField(RegionStimulusCreatorModel.display_name, self, name='display_name')
 
     def get_rendering_dict(self):
         return {'adapter_form': self, 'legend': 'Loaded stimulus'}

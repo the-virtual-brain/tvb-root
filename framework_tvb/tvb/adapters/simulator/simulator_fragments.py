@@ -43,8 +43,8 @@ from tvb.core.entities.file.simulator.view_model import CortexViewModel, Simulat
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, ArrayField, SimpleFloatField, SimpleHiddenField, SelectField, \
-    MultiSelectField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import ScalarField, ArrayField, SelectField, MultiSelectField, \
+    TraitDataTypeSelectField, FloatField, HiddenField
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.models.base import Model
@@ -75,9 +75,9 @@ class SimulatorRMFragment(ABCAdapterForm):
         lc_conditions = None
         if surface_index:
             rm_conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid',
-                                             FilterChain.datatype + '.fk_connectivity_gid'],
-                                     operations=["==", "=="],
-                                     values=[str(surface_index.gid), str(connectivity_gid.hex)])
+                                                FilterChain.datatype + '.fk_connectivity_gid'],
+                                        operations=["==", "=="],
+                                        values=[str(surface_index.gid), str(connectivity_gid.hex)])
             lc_conditions = FilterChain(fields=[rm_conditions.fields[0]], operations=[rm_conditions.operations[0]],
                                         values=[rm_conditions.values[0]])
         self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, self, name='region_mapping',
@@ -227,7 +227,8 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
 
     def _add_pse_field(self, param, param_key=KEY_PARAM1):
         # type: (RangeParameter, str) -> None
-        pse_param_name = SimpleHiddenField(self, name=self.NAME_FIELD.format(param_key), default=param.name)
+        pse_param_name = HiddenField(Str(default=param.name, required=False), self,
+                                           self.NAME_FIELD.format(param_key))
         self.__setattr__(self.NAME_FIELD.format(param_key), pse_param_name)
         if param.type is float:
             self._add_fields_for_float(param, param_key)
