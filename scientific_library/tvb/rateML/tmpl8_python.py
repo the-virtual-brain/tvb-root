@@ -26,7 +26,7 @@ class ${modelname}(ModelNumbaDfun):
         default={\
 %for limit in dynamics.state_variables:
 % if (limit.exposure!='None' and limit.exposure!=''):
-"${limit.name}": numpy.array([${limit.exposure}]), \
+"${limit.name}": numpy.array([${limit.exposure}])${'' if loop.last else ', \n\t\t\t\t '}\
 % endif
 %endfor
 },

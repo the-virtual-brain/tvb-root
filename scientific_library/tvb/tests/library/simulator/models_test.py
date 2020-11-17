@@ -250,18 +250,20 @@ class TestModels(BaseTestCase):
 class TestDSLModels(BaseTestCase):
 
     def test_load_model(self):
-        model, _ = RateML.load_model('epileptor')
+        name = 'epileptor'
+        model, _, _, _, _ = RateML(name).load_model()
         assert model is not None
 
     def test_render_model(self):
         name = 'epileptor'
-        model_str = RateML.render_model(name)
+        model_str = RateML(name).render_model()
         assert '_numba_dfun_EpileptorT' in model_str
 
     def test_eval_model_str(self):
-        name = 'epileptor'
+        filename = 'epileptor'
+        classname = 'EpileptorT'
         module = {}
-        exec(RateML(name).render_model, module)
-        assert issubclass(module[name], Model)
-        model = module[name]()
+        exec(RateML(filename).render_model(), module)
+        assert issubclass(module[classname], Model)
+        model = module[classname]()
         assert isinstance(model, Model)
