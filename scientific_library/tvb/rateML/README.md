@@ -1,4 +1,4 @@
-﻿# CUDA model generation using LEMS format
+# CUDA model generation using LEMS format
 This readme describes the usage of the code generation for models defined in LEMS based XML to Cuda (C) format.
 The LEMS framework has been adopted and altered to match TVB model names. 
 In LEMS2CUDA.py the function "cuda_templating('Modelname', 'path/to/your/XMLmodels')" will start the code generation.
