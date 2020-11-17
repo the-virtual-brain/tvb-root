@@ -50,7 +50,8 @@ from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import SimpleStrField
+from tvb.core.neotraits.forms import StrField
+from tvb.core.neotraits.view_model import Str
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -109,8 +110,7 @@ class SessionCache(object):
 class _InputTreeFragment(ABCAdapterForm):
     def __init__(self):
         super(_InputTreeFragment, self).__init__()
-        self.dynamic_name = SimpleStrField(self, name='dynamic_name', label="Parameter configuration name",
-                                           doc="""The name of this parameter configuration""")
+        self.dynamic_name = StrField(Str(label='Dynamic name'), self, name='dynamic_name')
 
 
 @traced
