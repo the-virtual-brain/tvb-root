@@ -310,7 +310,7 @@ class SpatialAverage(Monitor):
                           " simulations when using SpatioTemporal monitor!"
                     raise Exception(msg)
 
-        number_of_nodes = simulator.number_of_nodes
+        number_of_nodes = simulator.monitor_space_nodes
         if self.spatial_mask.size != number_of_nodes:
             msg = "spatial_mask must be a vector of length number_of_nodes."
             raise Exception(msg)
@@ -389,7 +389,7 @@ class TemporalAverage(Monitor):
     def _config_time(self, simulator):
         super(TemporalAverage, self)._config_time(simulator)
         stock_size = (self.istep, self.voi.shape[0],
-                      simulator.number_of_nodes,
+                      simulator.monitor_space_nodes,
                       simulator.model.number_of_modes)
         self.log.debug("Temporal average stock_size is %s" % (str(stock_size),))
         self._stock = numpy.zeros(stock_size)
@@ -930,7 +930,7 @@ class Bold(Monitor):
     def _config_time(self, simulator):
         super(Bold, self)._config_time(simulator)
         self.compute_hrf()
-        sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
+        sample_shape = self.voi.shape[0], simulator.monitor_space_nodes, simulator.model.number_of_modes
         self._interim_stock = numpy.zeros((self._interim_istep,) + sample_shape)
         self.log.debug("BOLD inner buffer %s %.2f MB" % (
             self._interim_stock.shape, self._interim_stock.nbytes / 2 ** 20))

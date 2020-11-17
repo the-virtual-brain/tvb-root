@@ -177,6 +177,7 @@ class Simulator(HasTraits):
     calls = 0
     current_step = 0
     number_of_nodes = None
+    monitor_space_nodes = None
     _memory_requirement_guess = None
     _memory_requirement_census = None
     _storage_requirement = None
@@ -229,6 +230,9 @@ class Simulator(HasTraits):
         for monitor in self.monitors:
             monitor.configure()
         self._set_number_of_nodes()
+
+        self.monitor_space_nodes = self.number_of_nodes
+
         self._guesstimate_memory_requirement()
 
     def _set_number_of_nodes(self):
@@ -318,11 +322,21 @@ class Simulator(HasTraits):
             state = self.backend.surface_state_to_rois(self._regmap, self.connectivity.number_of_regions, state)
         self.history.update(step, state)
 
+    def _project_observed_state_to_monitor_space(self, state):
+        """
+        This allows decoupling the internal state of the simulator from the
+        state that the monitors observe.
+        For example the monitors may expect a value for each node in a folded surface while the simulator
+        operates on a regular spherical grid.
+        """
+        return state
+
     def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)
+        observed_monitor_space = self._project_observed_state_to_monitor_space(observed)
         output = [monitor.record(step,
-                                 node_coupling if isinstance(monitor, monitors.AfferentCoupling) else observed)
-                  for monitor in self.monitors]
+                                 node_coupling if isinstance(monitor, monitors.AfferentCoupling) else
+                                 observed_monitor_space) for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
 
