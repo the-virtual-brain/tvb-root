@@ -172,6 +172,7 @@ class Simulator(HasTraits):
     calls = 0
     current_step = 0
     number_of_nodes = None
+    monitor_space_nodes = None
     _memory_requirement_guess = None
     _memory_requirement_census = None
     _storage_requirement = None
@@ -232,6 +233,9 @@ class Simulator(HasTraits):
             self.number_of_nodes = self._regmap.shape[0]
             self.log.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
                      rm.size, unmapped.size, self.number_of_nodes)
+
+        self.monitor_space_nodes = self.number_of_nodes
+
         self._guesstimate_memory_requirement()
 
     def configure(self, full_configure=True):
@@ -357,9 +361,19 @@ class Simulator(HasTraits):
             state = region_state.transpose((1, 0, 2))                                   # (cvar, node, mode)
         self.history.update(step, state)
 
+    def _project_observed_state_to_monitor_space(self, state):
+        """
+        This allows decoupling the internal state of the simulator from the
+        state that the monitors observe.
+        For example the monitors may expect a value for each node in a folded surface while the simulator
+        operates on a regular spherical grid.
+        """
+        return state
+
     def _loop_monitor_output(self, step, state):
         observed = self.model.observe(state)
-        output = [monitor.record(step, observed) for monitor in self.monitors]
+        observed_monitor_space = self._project_observed_state_to_monitor_space(observed)
+        output = [monitor.record(step, observed_monitor_space) for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
 
