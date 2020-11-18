@@ -46,6 +46,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel, RawViewModel
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, IntegratorStochasticViewModel
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -152,7 +153,7 @@ class SimulatorFragmentRenderingRules(object):
 
     @property
     def disable_fields(self):
-        if self.is_branch:
+        if self.is_branch and self.form_action_url != self.last_form_url:
             return True
         if self.load_readonly:
             return True
@@ -328,9 +329,11 @@ class SimulatorController(BurstBaseController):
         template_specification.update(**rendering_rules.to_dict())
         return self.fill_default_attributes(template_specification)
 
-    def prepare_first_fragment(self):
+    def prepare_first_fragment(self, burst_config=None):
         adapter_instance = ABCAdapter.build_adapter(self.cached_simulator_algorithm)
         form = adapter_instance.get_form()('', common.get_current_project().id)
+
+        self.filter_connectivity(form, burst_config)
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
@@ -339,6 +342,19 @@ class SimulatorController(BurstBaseController):
 
         form.fill_from_trait(session_stored_simulator)
         return form
+
+    def filter_connectivity(self, form, burst_config=None):
+        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+
+        if is_branch and burst_config:
+            project = common.get_current_project()
+            storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
+            simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
+            conn = dao.get_datatype_by_gid(simulator.connectivity.hex)
+
+            if conn.number_of_regions:
+                form.connectivity.conditions = FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
+                                                           operations=["=="], values=[conn.number_of_regions])
 
     @expose_fragment('simulator_fragment')
     def set_connectivity(self, **data):
@@ -1047,9 +1063,9 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def copy_simulator_configuration(self, burst_config_id):
+        common.add2session(common.KEY_IS_SIMULATOR_BRANCH, False)
         form = self._get_form(burst_config_id)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
-        common.add2session(common.KEY_IS_SIMULATOR_BRANCH, False)
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
                                                           is_first_fragment=True)
@@ -1057,12 +1073,11 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def branch_simulator_configuration(self, burst_config_id):
-        form = self._get_form(burst_config_id)
         common.add2session(common.KEY_IS_SIMULATOR_BRANCH, True)
-        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
+        form = self._get_form(burst_config_id)
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
-                                                          is_first_fragment=True,is_branch=is_branch)
+                                                          is_first_fragment=True)
 
         return rendering_rules.to_dict()
 
@@ -1080,7 +1095,7 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
 
         self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config_copy))
-        return self.prepare_first_fragment()
+        return self.prepare_first_fragment(burst_config)
 
     @expose_fragment('simulator_fragment')
     def reset_simulator_configuration(self):
