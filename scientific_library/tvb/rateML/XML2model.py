@@ -330,12 +330,19 @@ if __name__ == "__main__":
 
     # for simulation
     # from run.regular_run import regularRun
+    # from matplotlib.pyplot import *
     #
-    # simtime = 400
+    # simtime = 5000
     # g = 32
     # s = 32
-    # dt = 0.1
-    # period = 10
-    # modelExec = 'Kuramoto_pythonT'
-    # regularRun(simtime, g, s, dt, period).simulate_python(modelExec)
+    # dt = 1
+    # period = 1.
+    # # modelExec = 'KuramotoT'
+    # modelExec = 'RwongwangT'
+    # # modelExec = 'ReducedWongWang'
+    # (time, data) = regularRun(simtime, g, s, dt, period).simulate_python(modelExec)
+    #
+    # figure()
+    # plot(time, data[:, 0, :, 0], 'k', alpha=0.1)
+    # show()
 

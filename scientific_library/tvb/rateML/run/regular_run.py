@@ -9,7 +9,6 @@ import math
 from numpy import corrcoef
 import seaborn as sns
 
-
 class regularRun:
 
 	def __init__(self, sim_length, g, s, dt, period, omega = 60, filename='connectivity_68.zip'):
@@ -48,13 +47,15 @@ class regularRun:
 		# Initialize Model
 		model = self.tvb_python_model(modelExec)
 		# Initialize integrator
-		integrator = integrators.EulerDeterministic(dt=self.dt)
+		# integrator = integrators.EulerDeterministic(dt=self.dt)
+		integrator = integrators.EulerStochastic(dt=1, noise=noise.Additive(nsig=np.array([1e-5])))
 		# Initialize Monitors
 		monitorsen = (monitors.TemporalAverage(period=self.period))
 		# Initialize Simulator
-		sim = simulator.Simulator(model=model, connectivity=self.connectivity, coupling=self.coupling, integrator=integrator,
+		sim = simulator.Simulator(model=model, connectivity=self.connectivity,
+								  coupling=coupling.Linear(a=np.array([0.5 / 50.0])), integrator=integrator,
 									  monitors=[monitorsen])
 		sim.configure()
-		(_,tavg_data) = sim.run(simulation_length=self.sim_length)[0]
+		(time, data) = sim.run(simulation_length=self.sim_length)[0]
 
-		return np.array(tavg_data)
+		return (time, data)
