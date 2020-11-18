@@ -669,7 +669,16 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
+    var fieldset = currentForm.elements[0];
+    var disabledFieldset = false
+    if (fieldset.hasAttribute('disabled')) {
+        disabledFieldset = true
+        $(fieldset).removeAttr('disabled')
+    }
     var form_data = $(currentForm).serialize(); //Encode form elements for submission
+    if (disabledFieldset){
+        $(fieldset).attr('disabled', 'disabled')
+    }
     var next_button = currentForm.elements.namedItem('next');
     var previous_button = currentForm.elements.namedItem('previous');
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
