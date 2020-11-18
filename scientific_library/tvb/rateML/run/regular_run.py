@@ -30,22 +30,23 @@ class regularRun:
 		white_matter_coupling = coupling.Linear(a=self.g)
 		return white_matter, white_matter_coupling
 	
-	def tvb_python_model(self):
+	def tvb_python_model(self, modelExec):
 # 		populations = models.Generic2dOscillator()	# original
 # 		populations = models.KuramotoT()				# generated
 		# populations = models.OscillatorT()			# generated
 # 		populations = models.MontbrioT()				# generated
 		# populations = models.RwongwangT()				# generated
 		# populations = models.EpileptorT()				# generated
-        populations = model.Kuramoto_pythonT()
+		model = 'models.' + modelExec + '()'
+		populations = eval(model)
 		populations.configure()
 		populations.omega = np.array([self.omega])
 		return populations
 
 
-	def simulate_python(self):
+	def simulate_python(self, modelExec):
 		# Initialize Model
-		model = self.tvb_python_model()
+		model = self.tvb_python_model(modelExec)
 		# Initialize integrator
 		integrator = integrators.EulerDeterministic(dt=self.dt)
 		# Initialize Monitors
