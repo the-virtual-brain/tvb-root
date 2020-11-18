@@ -1,4 +1,4 @@
-# Rate based model generation for Python TVB or CUDA models
+## Rate based model generation for Python TVB or CUDA models
 This readme describes the usage of the code generation for models defined in LEMS based XML to Cuda or Python.
 The pyLEMS framework is used and will be installed with TVB. 
 XML2model.py holds the class which start the templating.
@@ -16,7 +16,7 @@ The produced filename is a lower cased model_filename.c or -.py which contains a
     .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
     .. moduleauthor:: Sandra Diaz <s.diaz@fz-juelich.de>
 
-# XML template
+## XML template
 The XML template below can be found in /XMLmodels and can be used to start the construction of a model. This section describes each of the constructs need to define the model.
 Both CUDA and Python can be generated from the same XML model file, however the CUDA variant would need componenttypes for coupling and noise. 
 The order of constructs in this figure denotes the sequences in which they need to appear in the XML file. The Pylems expression parser, which checks for mathematical correctness, is active on all the fields which hold expressions. The power symbol in the expression fields needs to be entered within curly brackets: {x^2}, because it needs to be translated to the specific power operator for each language.
@@ -27,6 +27,7 @@ The order of constructs in this figure denotes the sequences in which they need 
 
 ```
 \
+### Derivatives
 To define the time derivatives of the model, a component type with the name: “derivatives”, should be created. This component type can hold other constructs which define the initialization and dynamics definition of the model. 
 ```xml
     <ComponentType name="derivatives">
@@ -83,6 +84,7 @@ The **TimeDerivative** construct defines the model dynamics in terms of  derivat
     </ComponentType>
 ```
 \
+### Coupling
 To define **coupling functions**, which is only applicable for CUDA models, the user can create a coupling component type.
 To identify this coupling component type, the name field should include the phrase coupling. It will construct a double for loop in which for every node, every other node's state is fetched according to connection delay, multiplied by connection weight.
 The Python models have coupling functionality defined in a separate class which contains pre-defined functions for pre- and post synaptic behavior. With RateML it is not possible to define the coupling function for the Python models. For the python models, a number of hardcoded c_pop variables are defined, which can be used to implement the coupling value per population. Each of these variables define the coupling for each neuron population defined.
@@ -121,6 +123,7 @@ The **DerivedVariable** construct can be used to enter a 'pre'- and 'post'-synap
     </ComponentType>
 ```
 \
+### Noise
 To specify **noise addition** to the model dynamics, a component type with the name 'noise' can be defined, which is only applicable for CUDA models. The CUDA models make use of the Curand library to add a random value to the calculated derivatives. As is mentioned in the derivatives section, if the derivatives component type has a derived parameter with the name 'nsig' a noise amplification of value will be used to amplify the noise. 
 ```xml
     <!--Type noise for noise. Only for CUDA models. 
@@ -158,7 +161,7 @@ c_pop1 *= global_coupling;
 ```
 *Listing 1. Generated CUDA code for the coupling functionality*
 
-# Files in ~/rateML_CUDA/
+## Files in ~/rateML/
 * XML2model.py   		    : python script for initiating model code generation of either CUDA or Python models
 * tmpl8_cuda.py 		    : Mako template converting XML to CUDA
 * tmpl8_python.py 		    : Mako template converting XML to Python
@@ -169,13 +172,13 @@ c_pop1 *= global_coupling;
 * /run/cuda_run.py          : cuda run file using Pycuda
 
 
-# Requirements
+## Requirements
 * Mako templating
 * Pycuda
 * pyLEMS
 
 
-# Running an example from ~/run folder
+## Running an example from ~/run folder
 In the folder 'tvb/rateML/run/' an example can be found on how to run the model generator and the CUDA model on a GPU. From this folder, execute \_\_main\_\_.py on a CUDA enabled machine: 
 ```bash 
 python ./__main__.py --model [model_filename] -c [coupling dimension] -s [speed dimension] 
