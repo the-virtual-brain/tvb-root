@@ -133,9 +133,8 @@ class RateML:
         schema_file = urlopen(
             "https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
         xmlschema = etree.XMLSchema(etree.parse(schema_file))
-        print("Validating {0} against {1}".format(self.xml_location, schema_file.geturl()))
         xmlschema.assertValid(etree.parse(self.xml_location))
-        print("It's valid!")
+        logger.info("True validation of {0} against {1}".format(self.xml_location, schema_file.geturl()))
 
     def preprocess_model(self, model):
 
