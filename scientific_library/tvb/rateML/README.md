@@ -86,10 +86,12 @@ The **TimeDerivative** construct defines the model dynamics in terms of  derivat
 
 ### Coupling
 To define **coupling functions**, which is only applicable for CUDA models, the user can create a coupling component type.
-To identify this coupling component type, the name field should include the phrase coupling. It will construct a double for loop in which for every node, every other node's state is fetched according to connection delay, multiplied by connection weight.
+To identify this coupling component type, the name field should include the phrase coupling. It will construct a double for loop in which for every node, every other node's state is fetched according to connection delay, multiplied by connection weight. It is possible to create more coupling functions relating to other neuron populations for example.
 The Python models have coupling functionality defined in a separate class which contains pre-defined functions for pre- and post synaptic behavior. With RateML it is not possible to define the coupling function for the Python models. For the python models, a number of hardcoded c_pop variables are defined, which can be used to implement the coupling value per population. Each of these variables define the coupling for each neuron population defined.
 ```xml
     <ComponentType name="coupling_[name]">
+    
+    <ComponentType name="coupling_[name2]">
 ```
 \
 The coupling **Parameter** construct specifies the variable that stores intermediate results from computing coupling inputs and its dimension field indicates which state variable the coupling computation should consider and which is fetched from memory. For instance, in case of the Epileptor model, six state variables are present and either one of them could (theoretically) be considered in computing the coupling. This function has been added to give the user more freedom in defining the coupling function. The dimension param indicates the nth defined statevariable of which values are fetched from memory.
@@ -114,12 +116,6 @@ The **DerivedVariable** construct can be used to enter a 'pre'- and 'post'-synap
             <DerivedVariable name="[post]" value="[expression]"/>
         </Dynamics>
     </ComponentType>
-
-    <!-- It is possible to decribe a 2nd coupling funtion, with the same as the syntax as previous. -->
-    <ComponentType name="coupling_function_pop2">
-            
-        <!-- etc... -->
-    </ComponentType>
 ```
 
 ### Noise
@@ -129,8 +125,6 @@ To specify **noise addition** to the model dynamics, a component type with the n
         Will add curand noise to state variable and amplify with constant 'nsig' if defined.
         [state_var_name] += nsig * curand_normal(&crndst) + [time_der_var] -->
     <ComponentType name="noise"/>
-
-
 </Lems>
 ```
 
