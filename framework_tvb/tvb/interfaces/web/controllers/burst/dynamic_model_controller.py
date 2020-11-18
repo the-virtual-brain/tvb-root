@@ -145,7 +145,9 @@ class DynamicModelController(BurstBaseController):
         dynamic_gid = utils.generate_guid()
         model_name_fragment = _InputTreeFragment()
         model_fragment = SimulatorModelFragment()
+        model_fragment = self.algorithm_service.set_form_datatypes(model_fragment)
         integrator_fragment = SimulatorIntegratorFragment()
+        integrator_fragment = self.algorithm_service.set_form_datatypes(integrator_fragment)
         model_description = configure_matjax_doc(self.available_models)
 
         params = {

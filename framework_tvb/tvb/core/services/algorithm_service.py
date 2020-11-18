@@ -38,12 +38,14 @@ Code related to launching/duplicating operations is placed here.
 
 from inspect import getmro
 from tvb.basic.logger.builder import get_logger
+from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.services.exceptions import OperationException
 
 
@@ -87,9 +89,41 @@ class AlgorithmService(object):
         """ Count total number of operations started for current project. """
         return dao.get_operation_numbers(proj_id)
 
-    @staticmethod
-    def prepare_adapter_form(adapter_instance, project_id):
-        return adapter_instance.get_form()(project_id=project_id)
+    def set_form_datatypes(self, form, extra_conditions=None):
+        for form_field in form.trait_fields:
+            if isinstance(form_field, TraitDataTypeSelectField):
+                filtering_conditions = FilterChain()
+                filtering_conditions += form_field.conditions
+                filtering_conditions += extra_conditions
+                datatypes, _ = dao.get_values_of_datatype(form_field.owner.project_id,
+                                                          form_field.datatype_index,
+                                                          filtering_conditions)
+                datatype_options = []
+                for datatype in datatypes:
+                    display_name = self._prepare_dt_display_name(form_field.datatype_index, datatype)
+                    datatype_options.append((datatype, display_name))
+                form_field.datatype_options = datatype_options
+        return form
+
+    def _prepare_dt_display_name(self, dt_index, dt):
+        # dt is a result of the get_values_of_datatype function
+        db_dt = dao.get_generic_entity(dt_index, dt[2], "gid")
+        display_name = db_dt[0].display_name
+        display_name += ' - ' + (dt[3] or "None ")  # Subject
+        if dt[5]:
+            display_name += ' - From: ' + str(dt[5])
+        else:
+            display_name += utils.date2string(dt[4])
+        if dt[6]:
+            display_name += ' - ' + str(dt[6])
+        display_name += ' - ID:' + str(dt[0])
+
+        return display_name
+
+    def prepare_adapter_form(self, adapter_instance, skip_filling_form=True, project_id=None, extra_conditions=None):
+        form = adapter_instance.get_form()(project_id=project_id)
+        form = self.set_form_datatypes(form, extra_conditions)
+        return form
 
     def prepare_adapter(self, stored_adapter):
 

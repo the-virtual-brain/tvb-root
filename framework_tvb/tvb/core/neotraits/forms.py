@@ -172,7 +172,7 @@ class TraitDataTypeSelectField(TraitField):
     missing_value = 'explicit-None-value'
 
     def __init__(self, trait_attribute, project_id, name=None, conditions=None,
-                 draw_dynamic_conditions_buttons=True, dynamic_conditions=None, has_all_option=False,
+                 draw_dynamic_conditions_buttons=True, has_all_option=False,
                  show_only_all_option=False):
         super(TraitDataTypeSelectField, self).__init__(trait_attribute, project_id, name)
 
@@ -187,9 +187,9 @@ class TraitDataTypeSelectField(TraitField):
             self.datatype_index = REGISTRY.get_index_for_datatype(type_to_query)
         self.conditions = conditions
         self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
-        self.dynamic_conditions = dynamic_conditions
         self.has_all_option = has_all_option
         self.show_only_all_option = show_only_all_option
+        self.datatype_options = []
 
     def from_trait(self, trait, f_name):
         if hasattr(trait, f_name):
@@ -205,20 +205,9 @@ class TraitDataTypeSelectField(TraitField):
     def get_form_filters(self):
         return self.conditions
 
-    def _get_values_from_db(self):
-        all_conditions = FilterChain()
-        all_conditions += self.conditions
-        all_conditions += self.dynamic_conditions
-        filtered_datatypes, count = dao.get_values_of_datatype(self.project_id,
-                                                               self.datatype_index,
-                                                               all_conditions)
-        return filtered_datatypes
-
     def options(self):
         if not self.project_id:
             raise ValueError('A project_id is required in order to query the DB')
-
-        filtered_datatypes = self._get_values_from_db()
 
         if not self.required:
             choice = None
@@ -230,19 +219,19 @@ class TraitDataTypeSelectField(TraitField):
             )
 
         if not self.show_only_all_option:
-            for i, datatype in enumerate(filtered_datatypes):
+            for i, dt_opt in enumerate(self.datatype_options):
                 yield Option(
                     id='{}_{}'.format(self.name, i),
-                    value=datatype[2],
-                    label=self._prepare_display_name(datatype),
-                    checked=self.data == datatype[2]
+                    value=dt_opt[0][2],
+                    label=dt_opt[1],
+                    checked=self.data == dt_opt[0][2]
                 )
 
         if self.has_all_option:
 
             all_values = ''
-            for fdt in filtered_datatypes:
-                all_values += str(fdt[2]) + ','
+            for fdt in self.datatype_options:
+                all_values += str(fdt[0][2]) + ','
 
             choice = "All"
             yield Option(
@@ -251,33 +240,6 @@ class TraitDataTypeSelectField(TraitField):
                 label=choice,
                 checked=self.data is choice
             )
-
-    def get_dt_from_db(self):
-        return dao.get_datatype_by_gid(self.data)
-
-    def _prepare_display_name(self, value):
-        """
-        Populate meta-data fields for data_list (list of DataTypes).
-
-        Private method, to be called recursively.
-        It will receive a list of Attributes, and it will populate 'options'
-        entry with data references from DB.
-        """
-        # Here we only populate with DB data, actual
-        # XML check will be done after select and submit.
-        entity_gid = value[2]
-        actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
-        display_name = actual_entity[0].display_name
-        display_name += ' - ' + (value[3] or "None ")  # Subject
-        if value[5]:
-            display_name += ' - From: ' + str(value[5])
-        else:
-            display_name += utils.date2string(value[4])
-        if value[6]:
-            display_name += ' - ' + str(value[6])
-        display_name += ' - ID:' + str(value[0])
-
-        return display_name
 
     def _from_post(self):
         if self.unvalidated_data == self.missing_value:
@@ -569,11 +531,11 @@ class Form(object):
                 field.errors.append(ex)
                 raise
 
-    def fill_trait_partially(self, datatype, fields = None):
+    def fill_trait_partially(self, datatype, fields=None):
         for field in self.trait_fields:
             f_name = field.trait_attribute.field_name
             if f_name is None or \
-                    fields is not None and f_name not in fields :
+                    fields is not None and f_name not in fields:
                 # skipp attribute that does not seem to belong to a traited type
                 continue
             try:

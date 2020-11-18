@@ -172,7 +172,7 @@ class FlowController(BaseController):
             algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
             adapter_instance = self.algorithm_service.prepare_adapter(algorithm)
-            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project.id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, False, project.id)
             algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
@@ -287,7 +287,7 @@ class FlowController(BaseController):
         adapter_instance = ABCAdapter.build_adapter(algorithm)
 
         try:
-            form = adapter_instance.get_form()(project_id=project_id)
+            form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,project_d=project_id)
             if 'fill_defaults' in data:
                 form.fill_from_post_plus_defaults(data)
             else:
@@ -353,7 +353,7 @@ class FlowController(BaseController):
 
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
-            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, False, project_id)
             vm = self.context.get_view_model_from_session()
             if vm and type(vm) == adapter_form.get_view_model():
                 adapter_form.fill_from_trait(vm)

@@ -326,15 +326,16 @@ class SimulatorController(BurstBaseController):
                                                           is_simulator_copy, is_simulator_load,
                                                           last_form_url=self.last_loaded_form_url,
                                                           last_request_type=cherrypy.request.method,
-                                                          is_first_fragment=True, is_branch=is_branch)
+                                                          is_first_fragment=True,
+                                                          is_branch=is_branch)
         template_specification.update(**rendering_rules.to_dict())
         return self.fill_default_attributes(template_specification)
 
     def prepare_first_fragment(self):
         adapter_instance = ABCAdapter.build_adapter(self.cached_simulator_algorithm)
-        form = adapter_instance.get_form()(common.get_current_project().id)
-
-        self.filter_connectivity(form)
+        form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
+                                                           project_id=common.get_current_project().id,
+                                                           extra_conditions=self._compute_conn_branch_conditions())
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
@@ -344,7 +345,7 @@ class SimulatorController(BurstBaseController):
         form.fill_from_trait(session_stored_simulator)
         return form
 
-    def filter_connectivity(self, form):
+    def _compute_conn_branch_conditions(self):
         is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
 
         if is_branch:
@@ -352,8 +353,9 @@ class SimulatorController(BurstBaseController):
             conn = dao.get_datatype_by_gid(simulator.connectivity.hex)
 
             if conn.number_of_regions:
-                form.connectivity.conditions = FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
-                                                           operations=["=="], values=[conn.number_of_regions])
+                return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
+                                   operations=["=="], values=[conn.number_of_regions])
+        return None
 
     @expose_fragment('simulator_fragment')
     def set_connectivity(self, **data):
@@ -369,6 +371,7 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(session_stored_simulator)
 
         next_form = get_form_for_coupling(type(session_stored_simulator.coupling))()
+        next_form = self.algorithm_service.set_form_datatypes(next_form)
         self.range_parameters.coupling_parameters = next_form.get_range_parameters()
         next_form.fill_from_trait(session_stored_simulator.coupling)
 
@@ -391,6 +394,7 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(session_stored_simulator.coupling)
 
         surface_fragment = SimulatorSurfaceFragment(common.get_current_project().id)
+        surface_fragment = self.algorithm_service.set_form_datatypes(surface_fragment)
         surface_fragment.fill_from_trait(session_stored_simulator.surface)
         is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
 
@@ -402,20 +406,24 @@ class SimulatorController(BurstBaseController):
 
         return rendering_rules.to_dict()
 
-    @staticmethod
-    def _prepare_cortex_fragment(session_stored_simulator, rendering_rules):
+    def _prepare_cortex_fragment(self, session_stored_simulator, rendering_rules):
         surface_index = load_entity_by_gid(session_stored_simulator.surface.surface_gid)
         rm_fragment = SimulatorRMFragment(common.get_current_project().id, surface_index,
                                           session_stored_simulator.connectivity)
+        rm_fragment = self.algorithm_service.set_form_datatypes(rm_fragment)
+
         rm_fragment.fill_from_trait(session_stored_simulator.surface)
 
         rendering_rules.form = rm_fragment
         rendering_rules.form_action_url = SimulatorWizzardURLs.SET_CORTEX_URL
         return rendering_rules.to_dict()
 
-    @staticmethod
-    def _prepare_stimulus_fragment(session_stored_simulator, rendering_rules, is_surface_simulation):
-        stimuli_fragment = SimulatorStimulusFragment(common.get_current_project().id, is_surface_simulation)
+    def _prepare_stimulus_fragment(self, session_stored_simulator, rendering_rules, is_surface_simulation):
+        stimuli_fragment = SimulatorStimulusFragment('', common.get_current_project().id, is_surface_simulation)
+        stimuli_fragment = self.algorithm_service.set_form_datatypes(stimuli_fragment)
+
+        stimuli_fragment = self.algorithm_service.set_form_datatypes(stimuli_fragment)
+
         stimuli_fragment.fill_from_trait(session_stored_simulator)
 
         rendering_rules.form = stimuli_fragment
@@ -483,6 +491,8 @@ class SimulatorController(BurstBaseController):
             stimuli_fragment.fill_trait(session_stored_simulator)
 
         model_fragment = SimulatorModelFragment(common.get_current_project().id)
+        model_fragment = self.algorithm_service.set_form_datatypes(model_fragment)
+
         model_fragment.fill_from_trait(session_stored_simulator)
         is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
 
@@ -508,6 +518,7 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(session_stored_simulator)
 
         form = get_form_for_model(type(session_stored_simulator.model))()
+        form = self.algorithm_service.set_form_datatypes(form)
         self.range_parameters.model_parameters = form.get_range_parameters()
         form.fill_from_trait(session_stored_simulator.model)
 
@@ -526,10 +537,12 @@ class SimulatorController(BurstBaseController):
         if cherrypy.request.method == POST_REQUEST:
             self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
             form = get_form_for_model(type(session_stored_simulator.model))()
+            form = self.algorithm_service.set_form_datatypes(form)
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.model)
 
         integrator_fragment = SimulatorIntegratorFragment(common.get_current_project().id)
+        integrator_fragment = self.algorithm_service.set_form_datatypes(integrator_fragment)
         integrator_fragment.integrator.display_subform = False
         integrator_fragment.fill_from_trait(session_stored_simulator)
         is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
@@ -554,6 +567,8 @@ class SimulatorController(BurstBaseController):
             fragment.fill_trait(session_stored_simulator)
 
         form = get_form_for_integrator(type(session_stored_simulator.integrator))()
+        form = self.algorithm_service.set_form_datatypes(form)
+
         if hasattr(form, 'noise'):
             form.noise.display_subform = False
         form.fill_from_trait(session_stored_simulator.integrator)
@@ -564,10 +579,10 @@ class SimulatorController(BurstBaseController):
                                                           cherrypy.request.method)
         return rendering_rules.to_dict()
 
-    @staticmethod
-    def _prepare_monitor_form(session_stored_simulator, rendering_rules):
+    def _prepare_monitor_form(self, session_stored_simulator, rendering_rules):
         monitor_fragment = SimulatorMonitorFragment(common.get_current_project().id,
                                                     session_stored_simulator.is_surface_simulation)
+        monitor_fragment = self.algorithm_service.set_form_datatypes(monitor_fragment)
         monitor_fragment.fill_from_trait(session_stored_simulator.monitors)
 
         rendering_rules.form = monitor_fragment
@@ -700,12 +715,12 @@ class SimulatorController(BurstBaseController):
                                                           type(monitors[first_monitor_index]).__name__)
         return first_monitor_index, last_loaded_fragment_url
 
-    @staticmethod
-    def _prepare_final_fragment(session_stored_simulator, rendering_rules):
+    def _prepare_final_fragment(self, session_stored_simulator, rendering_rules):
         session_stored_burst = common.get_from_session(common.KEY_BURST_CONFIG)
         default_simulation_name, simulation_number = BurstService.prepare_name(session_stored_burst,
                                                                                common.get_current_project().id)
         form = SimulatorFinalFragment(default_simulation_name=default_simulation_name)
+        form = self.algorithm_service.set_form_datatypes(form)
 
         if cherrypy.request.method != POST_REQUEST:
             simulation_name = session_stored_burst.name
@@ -862,6 +877,7 @@ class SimulatorController(BurstBaseController):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
         next_form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
+        next_form = self.algorithm_service.set_form_datatypes(next_form)
 
         if cherrypy.request.method == POST_REQUEST:
             session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
@@ -901,6 +917,7 @@ class SimulatorController(BurstBaseController):
         is_simulator_copy = common.get_from_session(common.KEY_IS_SIMULATOR_COPY) or False
         is_simulator_load = common.get_from_session(common.KEY_IS_SIMULATOR_LOAD) or False
         form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
+        form = self.algorithm_service.set_form_datatypes(form)
         burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
 
         if cherrypy.request.method == POST_REQUEST:
@@ -917,6 +934,7 @@ class SimulatorController(BurstBaseController):
             param1, param2 = self._handle_range_params_at_loading()
         project_id = common.get_current_project().id
         next_form = SimulatorPSERangeFragment(param1, param2, project_id=project_id)
+        next_form = self.algorithm_service.set_form_datatypes(next_form)
 
         rendering_rules = SimulatorFragmentRenderingRules(next_form, SimulatorWizzardURLs.LAUNCH_PSE_URL,
                                                           SimulatorWizzardURLs.SET_PSE_PARAMS_URL,

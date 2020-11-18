@@ -251,7 +251,7 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
         # type: (RangeParameter, str) -> None
         traited_attr = Attr(h5.REGISTRY.get_index_for_datatype(param.type), label='Choice for {}'.format(param.name))
         pse_param_dt = TraitDataTypeSelectField(traited_attr, self.project_id, name=self.GID_FIELD.format(param_key),
-                                                dynamic_conditions=param.range_definition, has_all_option=True,
+                                                conditions=param.range_definition, has_all_option=True,
                                                 show_only_all_option=True)
         self.__setattr__(self.GID_FIELD.format(param_key), pse_param_dt)
 
