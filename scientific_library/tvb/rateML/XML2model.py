@@ -62,7 +62,6 @@ from tvb.basic.logger.builder import get_logger
 # from lems.model.model import Model
 
 from lems.model.model import Model
-# # from run.regular_run import regularRun
 
 logger = get_logger(__name__)
 
@@ -329,21 +328,14 @@ if __name__ == "__main__":
 
     RateML(model_filename, language, './XMLmodels/', './generatedModels/')
 
+    # for simulation
+    # from run.regular_run import regularRun
+    #
     # simtime = 400
     # g = 32
     # s = 32
     # dt = 0.1
     # period = 10
-    # regularRun(simtime, g, s, dt, period).simulate_python()
+    # modelExec = 'Kuramoto_pythonT'
+    # regularRun(simtime, g, s, dt, period).simulate_python(modelExec)
 
-    # model_filenames = [
-    #                    'montbrio',
-    #                    'oscillator',
-    #                    'kuramoto',
-    #                    'epileptor',
-    #                    'rwongwang'
-    # ]
-    # #
-    # for model_filename in model_filenames:
-    #     # this will start generating the model
-    #     rateml(model_filename, language, './XMLmodels/', './generatedModels/')

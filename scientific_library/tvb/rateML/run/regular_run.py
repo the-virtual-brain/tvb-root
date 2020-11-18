@@ -31,10 +31,10 @@ class regularRun:
 		return white_matter, white_matter_coupling
 	
 	def tvb_python_model(self, modelExec):
-# 		populations = models.Generic2dOscillator()	# original
-# 		populations = models.KuramotoT()				# generated
+		# populations = models.Generic2dOscillator()	# original
+		# populations = models.KuramotoT()				# generated
 		# populations = models.OscillatorT()			# generated
-# 		populations = models.MontbrioT()				# generated
+		# populations = models.MontbrioT()				# generated
 		# populations = models.RwongwangT()				# generated
 		# populations = models.EpileptorT()				# generated
 		model = 'models.' + modelExec + '()'
