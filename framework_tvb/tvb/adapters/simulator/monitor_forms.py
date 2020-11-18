@@ -90,7 +90,7 @@ class MonitorForm(Form):
         super(MonitorForm, self).__init__(prefix, project_id)
         self.session_stored_simulator = session_stored_simulator
         self.project_id = project_id
-        self.period = ScalarField(Monitor.period, self)
+        self.period = ScalarField(Monitor.period, self.project_id)
         self.variables_of_interest_indexes = {}
 
         if session_stored_simulator is not None:
@@ -99,7 +99,7 @@ class MonitorForm(Form):
 
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
                                                            choices=tuple(self.variables_of_interest_indexes.keys())),
-                                                      self, name='variables_of_interest')
+                                                      self.project_id, name='variables_of_interest')
 
     def fill_from_trait(self, trait):
         super(MonitorForm, self).fill_from_trait(trait)
@@ -157,8 +157,8 @@ class SpatialAverageMonitorForm(MonitorForm):
 
     def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
         super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
-        self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self)
-        self.default_mask = ScalarField(SpatialAverage.default_mask, self)
+        self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self.project_id)
+        self.default_mask = ScalarField(SpatialAverage.default_mask, self.project_id)
 
     def fill_from_trait(self, trait):
         super(SpatialAverageMonitorForm, self).fill_from_trait(trait)
@@ -200,8 +200,8 @@ class ProjectionMonitorForm(MonitorForm):
             rm_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=['=='],
                                     values=[session_stored_simulator.surface.region_mapping_data.hex])
 
-        self.region_mapping = TraitDataTypeSelectField(ProjectionViewModel.region_mapping, self,
-                                                       name='region_mapping', conditions=rm_filter)
+        self.region_mapping = TraitDataTypeSelectField(ProjectionViewModel.region_mapping, self.project_id,
+                                                       self.draw_ranges, name='region_mapping', conditions=rm_filter)
 
 
 class EEGMonitorForm(ProjectionMonitorForm):
@@ -215,11 +215,11 @@ class EEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[ProjectionsType.EEG.value])
 
-        self.projection = TraitDataTypeSelectField(EEGViewModel.projection, self, name='projection',
+        self.projection = TraitDataTypeSelectField(EEGViewModel.projection, self.project_id, self.draw_ranges, name='projection',
                                                    conditions=projection_filter)
-        self.reference = ScalarField(EEG.reference, self)
-        self.sensors = TraitDataTypeSelectField(EEGViewModel.sensors, self, name='sensors', conditions=sensor_filter)
-        self.sigma = ScalarField(EEG.sigma, self)
+        self.reference = ScalarField(EEG.reference, self.project_id)
+        self.sensors = TraitDataTypeSelectField(EEGViewModel.sensors, self.project_id,self.draw_ranges, name='sensors', conditions=sensor_filter)
+        self.sigma = ScalarField(EEG.sigma, self.project_id)
 
 
 class MEGMonitorForm(ProjectionMonitorForm):
@@ -233,9 +233,10 @@ class MEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[ProjectionsType.MEG.value])
 
-        self.projection = TraitDataTypeSelectField(MEGViewModel.projection, self, name='projection',
-                                                   conditions=projection_filter)
-        self.sensors = TraitDataTypeSelectField(MEGViewModel.sensors, self, name='sensors', conditions=sensor_filter)
+        self.projection = TraitDataTypeSelectField(MEGViewModel.projection, self.project_id, self.draw_ranges,
+                                                   name='projection', conditions=projection_filter)
+        self.sensors = TraitDataTypeSelectField(MEGViewModel.sensors, self.project_id, self.draw_ranges,
+                                                name='sensors', conditions=sensor_filter)
 
 
 class iEEGMonitorForm(ProjectionMonitorForm):
@@ -249,10 +250,11 @@ class iEEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[ProjectionsType.SEEG.value])
 
-        self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, self, name='projection',
-                                                   conditions=projection_filter)
-        self.sigma = ScalarField(iEEG.sigma, self)
-        self.sensors = TraitDataTypeSelectField(iEEGViewModel.sensors, self, name='sensors', conditions=sensor_filter)
+        self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, self.project_id, self.draw_ranges,
+                                                   name='projection', conditions=projection_filter)
+        self.sigma = ScalarField(iEEG.sigma, self.project_id)
+        self.sensors = TraitDataTypeSelectField(iEEGViewModel.sensors, self.project_id, self.draw_ranges,
+                                                name='sensors', conditions=sensor_filter)
 
 
 class BoldMonitorForm(MonitorForm):
@@ -262,9 +264,9 @@ class BoldMonitorForm(MonitorForm):
         self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
         default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
 
-        self.period = ScalarField(Bold.period, self)
+        self.period = ScalarField(Bold.period, self.project_id)
         self.hrf_kernel = SelectField(Attr(HRFKernelEquation, label='Equation', default=default_hrf_kernel),
-                                      self, name='hrf_kernel', choices=self.hrf_kernel_choices)
+                                      self.project_id, name='hrf_kernel', choices=self.hrf_kernel_choices)
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)

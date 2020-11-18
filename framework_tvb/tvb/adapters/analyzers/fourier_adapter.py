@@ -71,11 +71,12 @@ class FFTAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(FFTAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self, name='time_series',
-                                                    conditions=self.get_filters(), has_all_option=True)
-        self.segment_length = ScalarField(FFTAdapterModel.segment_length, self)
-        self.window_function = SelectField(FFTAdapterModel.window_function, self)
-        self.detrend = ScalarField(FFTAdapterModel.detrend, self)
+        self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self.project_id, self.draw_ranges,
+                                                    name='time_series', conditions=self.get_filters(),
+                                                    has_all_option=True)
+        self.segment_length = ScalarField(FFTAdapterModel.segment_length, self.project_id)
+        self.window_function = SelectField(FFTAdapterModel.window_function, self.project_id)
+        self.detrend = ScalarField(FFTAdapterModel.detrend, self.project_id)
 
     @staticmethod
     def get_view_model():

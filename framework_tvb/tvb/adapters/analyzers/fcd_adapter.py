@@ -101,10 +101,11 @@ class FCDAdapterModel(ViewModel, FcdCalculator):
 class FCDAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(FCDAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, self, name=self.get_input_name(),
-                                                    conditions=self.get_filters(), has_all_option=True)
-        self.sw = ScalarField(FCDAdapterModel.sw, self)
-        self.sp = ScalarField(FCDAdapterModel.sp, self)
+        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, self.project_id, self.draw_ranges,
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
+        self.sw = ScalarField(FCDAdapterModel.sw, self.project_id)
+        self.sp = ScalarField(FCDAdapterModel.sp, self.project_id)
 
     @staticmethod
     def get_view_model():

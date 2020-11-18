@@ -276,8 +276,8 @@ class FlowController(BaseController):
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
         data_type_gid_attr.required = not string2bool(has_none_option)
 
-        select_field = TraitDataTypeSelectField(data_type_gid_attr, form, conditions=filter,
-                                                has_all_option=string2bool(has_all_option))
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, form.project_id, form.draw_ranges,
+                                                conditions=filter, has_all_option=string2bool(has_all_option))
 
         return {'options': select_field.options()}
 

@@ -51,7 +51,8 @@ class LocalConnectivitySelectorForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(LocalConnectivitySelectorForm, self).__init__(prefix, project_id)
         traited_attr = Attr(self.get_required_datatype(), label='Load Local Connectivity', required=False)
-        self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, self, name='existentEntitiesSelect')
+        self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, self.project_id, self.draw_ranges,
+                                                               name='existentEntitiesSelect')
 
     @staticmethod
     def get_required_datatype():
@@ -86,12 +87,14 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
 
     def __init__(self, equation_choices, prefix='', project_id=None):
         super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
-        self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name(),
+        self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self.project_id,
+                                                self.draw_ranges, name=self.get_input_name(),
                                                 conditions=self.get_filters())
-        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
+        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self.project_id, name='spatial',
                                    choices=equation_choices, display_none_choice=False, subform=GaussianEquationForm)
-        self.cutoff = ScalarField(LocalConnectivityCreatorModel.cutoff, self)
-        self.display_name = ScalarField(LocalConnectivityCreatorModel.display_name, self, name='display_name')
+        self.cutoff = ScalarField(LocalConnectivityCreatorModel.cutoff, self.project_id)
+        self.display_name = ScalarField(LocalConnectivityCreatorModel.display_name, self.project_id,
+                                        name='display_name')
 
     @staticmethod
     def get_view_model():

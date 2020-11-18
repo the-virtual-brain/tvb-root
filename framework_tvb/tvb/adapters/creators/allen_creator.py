@@ -107,10 +107,10 @@ class AllenConnectomeBuilderForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(AllenConnectomeBuilderForm, self).__init__(prefix, project_id)
-        self.resolution = SelectField(AllenConnectModel.resolution, self, choices=RESOLUTION_OPTIONS)
-        self.weighting = SelectField(AllenConnectModel.weighting, self, choices=WEIGHTS_OPTIONS)
-        self.inj_f_thresh = ScalarField(AllenConnectModel.inj_f_thresh, self)
-        self.vol_thresh = ScalarField(AllenConnectModel.vol_thresh, self)
+        self.resolution = SelectField(AllenConnectModel.resolution, self.project_id, choices=RESOLUTION_OPTIONS)
+        self.weighting = SelectField(AllenConnectModel.weighting, self.project_id, choices=WEIGHTS_OPTIONS)
+        self.inj_f_thresh = ScalarField(AllenConnectModel.inj_f_thresh, self.project_id)
+        self.vol_thresh = ScalarField(AllenConnectModel.vol_thresh, self.project_id)
 
     @staticmethod
     def get_view_model():

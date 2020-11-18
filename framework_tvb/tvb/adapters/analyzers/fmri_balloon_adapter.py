@@ -116,15 +116,16 @@ class BalloonModelAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BalloonModelAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self,
-                                                    name=self.get_input_name(),
+        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self.project_id,
+                                                    self.draw_ranges, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.dt = ScalarField(BalloonModelAdapterModel.dt, self)
-        self.tau_s = ScalarField(BalloonModelAdapterModel.tau_s, self)
-        self.tau_f = ScalarField(BalloonModelAdapterModel.tau_f, self)
-        self.neural_input_transformation = ScalarField(BalloonModelAdapterModel.neural_input_transformation, self)
-        self.bold_model = ScalarField(BalloonModelAdapterModel.bold_model, self)
-        self.RBM = ScalarField(BalloonModelAdapterModel.RBM, self)
+        self.dt = ScalarField(BalloonModelAdapterModel.dt, self.project_id)
+        self.tau_s = ScalarField(BalloonModelAdapterModel.tau_s, self.project_id)
+        self.tau_f = ScalarField(BalloonModelAdapterModel.tau_f, self.project_id)
+        self.neural_input_transformation = ScalarField(BalloonModelAdapterModel.neural_input_transformation,
+                                                       self.project_id)
+        self.bold_model = ScalarField(BalloonModelAdapterModel.bold_model, self.project_id)
+        self.RBM = ScalarField(BalloonModelAdapterModel.RBM, self.project_id)
 
     @staticmethod
     def get_view_model():

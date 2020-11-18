@@ -64,9 +64,10 @@ class ICAAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ICAAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(ICAAdapterModel.time_series, self, name='time_series',
-                                                    conditions=self.get_filters(), has_all_option=True)
-        self.n_components = ScalarField(ICAAdapterModel.n_components, self)
+        self.time_series = TraitDataTypeSelectField(ICAAdapterModel.time_series, self.project_id, self.draw_ranges,
+                                                    name='time_series', conditions=self.get_filters(),
+                                                    has_all_option=True)
+        self.n_components = ScalarField(ICAAdapterModel.n_components, self, project_id)
         self.project_id = project_id
 
     @staticmethod

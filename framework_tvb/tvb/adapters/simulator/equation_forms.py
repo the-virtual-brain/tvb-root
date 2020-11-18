@@ -82,9 +82,9 @@ class EquationForm(Form):
 
     def __init__(self, prefix=''):
         super(EquationForm, self).__init__(prefix)
-        self.equation = ScalarField(self.get_traited_equation().equation, self, disabled=True)
+        self.equation = ScalarField(self.get_traited_equation().equation, self.project_id, disabled=True)
         for param_key, param in self.get_traited_equation().parameters.default().items():
-            setattr(self, param_key, FloatField(Float(label=param_key, default=param), self, name=param_key))
+            setattr(self, param_key, FloatField(Float(label=param_key, default=param), self.project_id, name=param_key))
 
     def fill_from_post(self, form_data):
         for field in self.fields:

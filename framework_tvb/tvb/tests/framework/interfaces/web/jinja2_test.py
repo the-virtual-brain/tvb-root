@@ -56,7 +56,7 @@ class TraitAdapterForm(ABCAdapterForm):
 
     def __init__(self):
         super(TraitAdapterForm, self).__init__()
-        self.test_array = ArrayField(TestTrait.test_array, self, name='test_array')
+        self.test_array = ArrayField(TestTrait.test_array, self.project_id, name='test_array')
 
 
 class TraitAdapter(ABCAdapter):

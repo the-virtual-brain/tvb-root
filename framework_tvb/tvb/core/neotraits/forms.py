@@ -61,10 +61,10 @@ def prepare_prefixed_name_for_field(prefix, name):
 class Field(object):
     template = None
 
-    def __init__(self, form, name, disabled=False, required=False, label='', doc='', default=None):
-        # type: (Form, str, bool, bool, str, str, object) -> None
-        self.owner = form
-        self.name = prepare_prefixed_name_for_field(form.prefix, name)
+    def __init__(self, project_id, name, disabled=False, required=False, label='', doc='', default=None, prefix=''):
+        # type: (int, str, bool, bool, str, str, object, str) -> None
+        self.project_id = project_id
+        self.name = prepare_prefixed_name_for_field(prefix, name)
         self.disabled = disabled
         self.required = required
         self.label = label
@@ -113,14 +113,14 @@ class Field(object):
 class TraitField(Field):
     # mhtodo: while this is consistent with the h5 api, it has the same problem
     #         it couples the system to traited attr declarations
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
-        # type: (Attr, Form, str, bool) -> None
+    def __init__(self, trait_attribute, project_id, name=None, disabled=False):
+        # type: (Attr, int, str, bool) -> None
         self.trait_attribute = trait_attribute  # type: Attr
         name = name or trait_attribute.field_name
         label = trait_attribute.label or name
 
         super(TraitField, self).__init__(
-            form,
+            project_id,
             name,
             disabled,
             trait_attribute.required,
@@ -139,9 +139,10 @@ TEMPORARY_PREFIX = ".tmp"
 class TraitUploadField(TraitField):
     template = 'form_fields/upload_field.html'
 
-    def __init__(self, traited_attribute, required_type, form, name, disabled=False):
-        super(TraitUploadField, self).__init__(traited_attribute, form, name, disabled)
+    def __init__(self, traited_attribute, required_type, project_id, name, temporary_files, disabled=False):
+        super(TraitUploadField, self).__init__(traited_attribute, project_id, name, disabled)
         self.required_type = required_type
+        self.temporary_files = temporary_files
         self.files_helper = FilesHelper()
 
     def fill_from_post(self, post_data):
@@ -151,7 +152,7 @@ class TraitUploadField(TraitField):
             self.data = None
             return
 
-        project = dao.get_project_by_id(self.owner.project_id)
+        project = dao.get_project_by_id(self.project_id)
         temporary_storage = self.files_helper.get_project_folder(project, self.files_helper.TEMP_FOLDER)
 
         file_name = None
@@ -170,16 +171,19 @@ class TraitUploadField(TraitField):
 
         if file_name:
             self.data = file_name
-            self.owner.temporary_files.append(file_name)
+            self.temporary_files.append(file_name)
 
 
 class TraitDataTypeSelectField(TraitField):
     template = 'form_fields/datatype_select_field.html'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, form, name=None, conditions=None, draw_dynamic_conditions_buttons=True,
-                 dynamic_conditions=None, has_all_option=False, show_only_all_option=False):
-        super(TraitDataTypeSelectField, self).__init__(trait_attribute, form, name)
+    def __init__(self, trait_attribute, project_id, draw_ranges, name=None, conditions=None,
+                 draw_dynamic_conditions_buttons=True, dynamic_conditions=None, has_all_option=False,
+                 show_only_all_option=False):
+        super(TraitDataTypeSelectField, self).__init__(trait_attribute, project_id, name)
+        self.draw_ranges = draw_ranges
+
         if issubclass(type(trait_attribute), DataTypeGidAttr):
             type_to_query = trait_attribute.linked_datatype
         else:
@@ -213,13 +217,13 @@ class TraitDataTypeSelectField(TraitField):
         all_conditions = FilterChain()
         all_conditions += self.conditions
         all_conditions += self.dynamic_conditions
-        filtered_datatypes, count = dao.get_values_of_datatype(self.owner.project_id,
+        filtered_datatypes, count = dao.get_values_of_datatype(self.project_id,
                                                                self.datatype_index,
                                                                all_conditions)
         return filtered_datatypes
 
     def options(self):
-        if not self.owner.project_id:
+        if not self.project_id:
             raise ValueError('A project_id is required in order to query the DB')
 
         filtered_datatypes = self._get_values_from_db()
@@ -243,7 +247,7 @@ class TraitDataTypeSelectField(TraitField):
                 )
 
         if self.has_all_option:
-            if not self.owner.draw_ranges:
+            if not self.draw_ranges:
                 raise ValueError("The owner form should draw ranges inputs in order to support 'All' option")
 
             all_values = ''
@@ -309,15 +313,6 @@ class StrField(TraitField):
         if self.required and (self.unvalidated_data is None or self.unvalidated_data.strip() == ''):
             raise ValueError('Field required')
         self.data = self.unvalidated_data
-
-
-class BytesField(StrField):
-    """ StrField for byte strings. """
-    template = 'form_fields/str_field.html'
-
-    def _from_post(self):
-        super(BytesField, self)._from_post()
-        self.data = self.unvalidated_data.encode('utf-8')
 
 
 class BoolField(TraitField):
@@ -396,9 +391,9 @@ class SelectField(TraitField):
         if len(choices) > 4:
             self.template = 'form_fields/select_field.html'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True,
+    def __init__(self, trait_attribute, project_id, name=None, disabled=False, choices=None, display_none_choice=True,
                  subform=None, display_subform=True):
-        super(SelectField, self).__init__(trait_attribute, form, name, disabled)
+        super(SelectField, self).__init__(trait_attribute, project_id, name, disabled)
         if choices:
             self.choices = choices
         else:
@@ -408,7 +403,7 @@ class SelectField(TraitField):
         self.display_none_choice = display_none_choice
         self.subform_field = None
         if subform:
-            self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
+            self.subform_field = FormField(subform, project_id, self.subform_prefix + self.name)
             self.display_subform = display_subform
         self._prepare_template(self.choices)
 
@@ -446,8 +441,8 @@ class SelectField(TraitField):
 class MultiSelectField(TraitField):
     template = 'form_fields/checkbox_field.html'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
-        super(MultiSelectField, self).__init__(trait_attribute, form, name, disabled)
+    def __init__(self, trait_attribute, project_id, name=None, disabled=False):
+        super(MultiSelectField, self).__init__(trait_attribute, project_id, name, disabled)
         if not isinstance(trait_attribute, List):
             raise NotImplementedError('only List in multi select for now')
 
@@ -487,16 +482,15 @@ class MultiSelectField(TraitField):
 class HiddenField(TraitField):
     template = 'form_fields/hidden_field.html'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
-        super(HiddenField, self).__init__(trait_attribute, form, name, disabled)
+    def __init__(self, trait_attribute, project_id, name=None, disabled=False):
+        super(HiddenField, self).__init__(trait_attribute, project_id, name, disabled)
         self.trait_attribute.label = ''
 
 
 # noinspection PyPep8Naming
-def ScalarField(trait_attribute, form, name=None, disabled=False):
+def ScalarField(trait_attribute, project_id, name=None, disabled=False):
     # as this makes introspective decisions it has to be moved at a different level
     field_type_for_trait_type = {
-        # str: BytesField,
         str: StrField,
         int: IntField,
         float: FloatField,
@@ -514,14 +508,14 @@ def ScalarField(trait_attribute, form, name=None, disabled=False):
     if cls is None:
         raise ValueError('can not make a scalar field for trait attribute {}'.format(trait_attribute))
 
-    return cls(trait_attribute, form, name=name, disabled=disabled)
+    return cls(trait_attribute, project_id, name=name, disabled=disabled)
 
 
 class FormField(Field):
     template = 'form_fields/form_field.html'
 
-    def __init__(self, form_class, form, name, label='', doc=''):
-        super(FormField, self).__init__(form, name, False, False, label, doc)
+    def __init__(self, form_class, project_id, name, label='', doc=''):
+        super(FormField, self).__init__(project_id, name, False, False, label, doc)
         self.form = form_class()
 
     def fill_from_post(self, post_data):
