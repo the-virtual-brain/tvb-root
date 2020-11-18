@@ -68,28 +68,28 @@ class RangeForm(Form):
     def __init__(self, prefix=''):
         super(RangeForm, self).__init__(prefix)
         self.lo = FloatField(
-            Float(label='Lo', default=ContinuousWaveletTransform.frequencies.default.lo, doc='start of range'), self,
-            name='Lo')
+            Float(label='Lo', default=ContinuousWaveletTransform.frequencies.default.lo, doc='start of range'),
+            self.project_id, name='Lo')
         self.hi = FloatField(
-            Float(label='Hi', default=ContinuousWaveletTransform.frequencies.default.hi, doc='end of range'), self,
-            name='Hi')
+            Float(label='Hi', default=ContinuousWaveletTransform.frequencies.default.hi, doc='end of range'),
+            self.project_id, name='Hi')
         self.step = FloatField(
-            Float(label='Step', default=ContinuousWaveletTransform.frequencies.default.step, doc='step of range'), self,
-            name='Step')
+            Float(label='Step', default=ContinuousWaveletTransform.frequencies.default.step, doc='step of range'),
+            self.project_id, name='Step')
 
 
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(ContinuousWaveletTransformAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, self,
+        self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, self.project_id, self.draw_ranges,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)
-        self.mother = ScalarField(ContinuousWaveletTransform.mother, self)
-        self.sample_period = ScalarField(ContinuousWaveletTransform.sample_period, self)
-        self.normalisation = ScalarField(ContinuousWaveletTransform.normalisation, self)
-        self.q_ratio = ScalarField(ContinuousWaveletTransform.q_ratio, self)
-        self.frequencies = FormField(RangeForm, self, name='frequencies',
+        self.mother = ScalarField(ContinuousWaveletTransform.mother, self.project_id)
+        self.sample_period = ScalarField(ContinuousWaveletTransform.sample_period, self.project_id)
+        self.normalisation = ScalarField(ContinuousWaveletTransform.normalisation, self.project_id)
+        self.q_ratio = ScalarField(ContinuousWaveletTransform.q_ratio, self.project_id)
+        self.frequencies = FormField(RangeForm, self.project_id, name='frequencies',
                                      label=ContinuousWaveletTransform.frequencies.label,
                                      doc=ContinuousWaveletTransform.frequencies.doc)
 

@@ -58,8 +58,8 @@ class TestAdapter3Form(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TestAdapter3Form, self).__init__(prefix, project_id)
-        self.param_5 = IntField(TestModel.param_5, self, name='param_5')
-        self.param_6 = IntField(TestModel.param_6, self, name='param_6')
+        self.param_5 = IntField(TestModel.param_5, self.project_id, name='param_5')
+        self.param_6 = IntField(TestModel.param_6, self.project_id, name='param_6')
 
     @staticmethod
     def get_view_model():
@@ -127,7 +127,7 @@ class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TestAdapterHugeMemoryRequiredForm, self).__init__(prefix, project_id)
-        self.test = IntField(TestModelRequired.test, self, name='test')
+        self.test = IntField(TestModelRequired.test, self.project_id, name='test')
 
     @staticmethod
     def get_view_model():
@@ -180,7 +180,7 @@ class TestAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(TestAdapterHDDRequiredForm, self).__init__(prefix, project_id)
-        self.test = IntField(TestModelRequired.test, self, name='test')
+        self.test = IntField(TestModelRequired.test, self.project_id, name='test')
 
     @staticmethod
     def get_view_model():

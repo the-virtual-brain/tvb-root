@@ -54,8 +54,8 @@ class NoiseForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(NoiseForm, self).__init__(prefix)
-        self.ntau = ScalarField(NoiseViewModel.ntau, self)
-        self.noise_seed = ScalarField(NoiseViewModel.noise_seed, self)
+        self.ntau = ScalarField(NoiseViewModel.ntau, self.project_id)
+        self.noise_seed = ScalarField(NoiseViewModel.noise_seed, self.project_id)
         # TODO: should we display something for random_stream?
         # self.random_stream = ScalarField(Noise.random_stream)
 
@@ -64,7 +64,7 @@ class AdditiveNoiseForm(NoiseForm):
 
     def __init__(self, prefix=''):
         super(AdditiveNoiseForm, self).__init__(prefix)
-        self.nsig = ArrayField(AdditiveNoiseViewModel.nsig, self)
+        self.nsig = ArrayField(AdditiveNoiseViewModel.nsig, self.project_id)
 
     def get_range_parameters(self):
         ntau_range_param = RangeParameter(NoiseViewModel.ntau.field_name, float, Range(lo=0.0, hi=20.0, step=1.0))
@@ -81,9 +81,10 @@ class MultiplicativeNoiseForm(NoiseForm):
         self.equation_choices = get_ui_name_to_equation_dict()
         default_equation = list(self.equation_choices.values())[0]
 
-        self.nsig = ArrayField(MultiplicativeNoiseViewModel.nsig, self)
-        self.equation = SelectField(Attr(Equation, label='Equation', default=default_equation), self, name='equation',
-                                    choices=self.equation_choices, subform=get_form_for_equation(default_equation))
+        self.nsig = ArrayField(MultiplicativeNoiseViewModel.nsig, self.project_id)
+        self.equation = SelectField(Attr(Equation, label='Equation', default=default_equation), self.project_id,
+                                    name='equation', choices=self.equation_choices,
+                                    subform=get_form_for_equation(default_equation))
 
     def fill_trait(self, datatype):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)

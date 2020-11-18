@@ -84,8 +84,8 @@ class CrossCorrelateAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(CrossCorrelateAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self,
-                                                    name=self.get_input_name(),
+        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self.project_id,
+                                                    self.draw_ranges, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
@@ -288,11 +288,11 @@ class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PearsonCorrelationCoefficientAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series, self,
-                                                    name=self.get_input_name(), conditions=self.get_filters(),
-                                                    has_all_option=True)
-        self.t_start = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_start, self)
-        self.t_end = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_end, self)
+        self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series,
+                                                    self.project_id, self.draw_ranges, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.t_start = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_start, self.project_id)
+        self.t_end = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_end, self.project_id)
 
     @staticmethod
     def get_view_model():

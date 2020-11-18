@@ -70,10 +70,11 @@ class ConnectivityMeasureImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityMeasureImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', self, name='data_file')
-        self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, self, name='dataset_name')
-        self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, self,
-                                                     name='connectivity')
+        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', self.project_id,
+                                          'data_file', self.temporary_files)
+        self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, self.project_id, 'dataset_name')
+        self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, self.project_id,
+                                                     self.draw_ranges, name='connectivity')
 
     @staticmethod
     def get_view_model():

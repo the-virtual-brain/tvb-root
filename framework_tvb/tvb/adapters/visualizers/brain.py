@@ -72,9 +72,10 @@ class BrainViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BrainViewerForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(BrainViewerModel.time_series, self, name='time_series',
-                                                    conditions=self.get_filters())
-        self.shell_surface = TraitDataTypeSelectField(BrainViewerModel.shell_surface, self, name='shell_surface')
+        self.time_series = TraitDataTypeSelectField(BrainViewerModel.time_series, self.project_id, self.draw_ranges,
+                                                    name='time_series', conditions=self.get_filters())
+        self.shell_surface = TraitDataTypeSelectField(BrainViewerModel.shell_surface, self.project_id, self.draw_ranges,
+                                                      name='shell_surface')
 
     @staticmethod
     def get_view_model():
@@ -405,11 +406,13 @@ class DualBrainViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(DualBrainViewerForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(DualBrainViewerModel.time_series, self, name='time_series',
+        self.time_series = TraitDataTypeSelectField(DualBrainViewerModel.time_series, self.project_id,
+                                                    self.draw_ranges, name='time_series',
                                                     conditions=self.get_filters())
-        self.projection_surface = TraitDataTypeSelectField(DualBrainViewerModel.projection_surface, self,
-                                                           name='projection_surface')
-        self.shell_surface = TraitDataTypeSelectField(DualBrainViewerModel.shell_surface, self, name='shell_surface')
+        self.projection_surface = TraitDataTypeSelectField(DualBrainViewerModel.projection_surface, self.project_id,
+                                                           self.draw_ranges, name='projection_surface')
+        self.shell_surface = TraitDataTypeSelectField(DualBrainViewerModel.shell_surface, self.project_id,
+                                                      self.draw_ranges, name='shell_surface')
 
     @staticmethod
     def get_view_model():

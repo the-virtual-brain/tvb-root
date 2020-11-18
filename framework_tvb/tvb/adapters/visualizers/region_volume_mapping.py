@@ -285,7 +285,8 @@ class BaseVolumeVisualizerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BaseVolumeVisualizerForm, self).__init__(prefix, project_id)
-        self.background = TraitDataTypeSelectField(BaseVolumeVisualizerModel.background, self, name='background')
+        self.background = TraitDataTypeSelectField(BaseVolumeVisualizerModel.background, self.project_id,
+                                                   self.draw_ranges, name='background')
 
 
 class VolumeVisualizerModel(BaseVolumeVisualizerModel):
@@ -312,11 +313,12 @@ class VolumeVisualizerForm(BaseVolumeVisualizerForm):
 
     def __init__(self, prefix='', project_id=None):
         super(VolumeVisualizerForm, self).__init__(prefix, project_id)
-        self.measure = TraitDataTypeSelectField(VolumeVisualizerModel.measure, self, name='measure',
-                                                conditions=self.get_filters())
-        self.region_mapping_volume = TraitDataTypeSelectField(VolumeVisualizerModel.region_mapping_volume, self,
+        self.measure = TraitDataTypeSelectField(VolumeVisualizerModel.measure, self.project_id, self.draw_ranges,
+                                                name='measure', conditions=self.get_filters())
+        self.region_mapping_volume = TraitDataTypeSelectField(VolumeVisualizerModel.region_mapping_volume,
+                                                              self.project_id, self.draw_ranges,
                                                               name='region_mapping_volume')
-        self.data_slice = StrField(VolumeVisualizerModel.data_slice, self, name='data_slice')
+        self.data_slice = StrField(VolumeVisualizerModel.data_slice, self.project_id, name='data_slice')
 
     @staticmethod
     def get_view_model():
@@ -386,10 +388,11 @@ class ConnectivityMeasureVolumeVisualizerForm(BaseVolumeVisualizerForm):
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityMeasureVolumeVisualizerForm, self).__init__(prefix, project_id)
         self.connectivity_measure = TraitDataTypeSelectField(
-            ConnectivityMeasureVolumeVisualizerModel.connectivity_measure, self, name='connectivity_measure',
-            conditions=self.get_filters())
+            ConnectivityMeasureVolumeVisualizerModel.connectivity_measure, self.project_id, self.draw_ranges,
+            name='connectivity_measure', conditions=self.get_filters())
         self.region_mapping_volume = TraitDataTypeSelectField(
-            ConnectivityMeasureVolumeVisualizerModel.region_mapping_volume, self, name='region_mapping_volume')
+            ConnectivityMeasureVolumeVisualizerModel.region_mapping_volume, self.project_id, self.draw_ranges,
+            name='region_mapping_volume')
 
     @staticmethod
     def get_view_model():
@@ -455,15 +458,16 @@ class RegionVolumeMappingVisualiserForm(BaseVolumeVisualizerForm):
     def __init__(self, prefix='', project_id=None):
         super(RegionVolumeMappingVisualiserForm, self).__init__(prefix, project_id)
         self.region_mapping_volume = TraitDataTypeSelectField(RegionVolumeMappingVisualiserModel.region_mapping_volume,
-                                                              self, name='region_mapping_volume',
+                                                              self.project_id, self.draw_ranges,
+                                                              name='region_mapping_volume',
                                                               conditions=self.get_filters())
 
         cm_conditions = FilterChain(
             fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_volume_mapping'],
             operations=["==", "=="], values=[1, True])
         self.connectivity_measure = TraitDataTypeSelectField(RegionVolumeMappingVisualiserModel.connectivity_measure,
-                                                             self, name='connectivity_measure',
-                                                             conditions=cm_conditions)
+                                                             self.project_id, self.draw_ranges,
+                                                             name='connectivity_measure', conditions=cm_conditions)
 
     @staticmethod
     def get_view_model():

@@ -69,9 +69,10 @@ class SurfaceModelParametersForm(ABCAdapterForm):
     def __init__(self, model_params, prefix=''):
         super(SurfaceModelParametersForm, self).__init__(prefix)
 
-        self.model_param = SelectField(Str(label='Model parameter'), self, choices=model_params, name='model_param')
+        self.model_param = SelectField(Str(label='Model parameter'), self.project_id, choices=model_params,
+                                       name='model_param')
         self.equation = SelectField(Attr(SpatialApplicableEquation, label='Equation', default=self.default_equation),
-                                    self, choices=self.equation_choices, name='equation',
+                                    self.project_id, choices=self.equation_choices, name='equation',
                                     subform=get_form_for_equation(self.default_equation))
 
     @staticmethod
@@ -88,7 +89,7 @@ class SurfaceModelParametersForm(ABCAdapterForm):
 
     def fill_from_trait(self, trait):
         self.equation.data = type(trait)
-        self.equation.subform_field = FormField(get_form_for_equation(type(trait)), self,
+        self.equation.subform_field = FormField(get_form_for_equation(type(trait)), self.project_id,
                                                 self.NAME_EQATION_PARAMS_DIV)
         self.equation.subform_field.form.fill_from_trait(trait)
 
@@ -97,11 +98,11 @@ class EquationPlotForm(Form):
     def __init__(self):
         super(EquationPlotForm, self).__init__()
         self.min_x = FloatField(Float(label='Min distance(mm)', default=0,
-                                      doc="The minimum value of the x-axis for spatial equation plot."), self,
-                                name='min_x')
+                                      doc="The minimum value of the x-axis for spatial equation plot."),
+                                self.project_id, name='min_x')
         self.max_x = FloatField(Float(label='Max distance(mm)', default=100,
-                                      doc="The maximum value of the x-axis for spatial equation plot."), self,
-                                name='max_x')
+                                      doc="The maximum value of the x-axis for spatial equation plot."),
+                                self.project_id, name='max_x')
 
     def fill_from_post(self, form_data):
         if self.min_x.name in form_data:

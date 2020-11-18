@@ -65,11 +65,12 @@ class GIFTITimeSeriesImporterForm(ABCUploaderForm):
     def __init__(self, prefix='', project_id=None):
         super(GIFTITimeSeriesImporterForm, self).__init__(prefix, project_id)
 
-        self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, '.gii', self, name='data_file')
+        self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, '.gii', self.project_id,
+                                          'data_file', self.temporary_files)
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
-        self.surface = TraitDataTypeSelectField(GIFTITimeSeriesImporterModel.surface, self, name='surface',
-                                                conditions=surface_conditions)
+        self.surface = TraitDataTypeSelectField(GIFTITimeSeriesImporterModel.surface, self.project_id, self.draw_ranges,
+                                                name='surface', conditions=surface_conditions)
 
     @staticmethod
     def get_view_model():

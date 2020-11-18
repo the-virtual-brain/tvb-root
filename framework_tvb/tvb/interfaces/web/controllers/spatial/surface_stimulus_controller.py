@@ -67,10 +67,10 @@ class EquationTemporalPlotForm(Form):
         super(EquationTemporalPlotForm, self).__init__()
         self.min_tmp_x = FloatField(Float(label='Temporal Start Time(ms)', default=0, doc="The minimum value of the "
                                                 "x-axis for temporal equation plot. Not persisted, used only for "
-                                                "visualization."), self, name='min_tmp_x')
+                                                "visualization."), self.project_id, name='min_tmp_x')
         self.max_tmp_x = FloatField(Float(label='Temporal End Time(ms)', default=100, doc="The maximum value of the"
                                                 " x-axis for temporal equation plot. Not persisted, used only for"
-                                                " visualization."), self, name='max_tmp_x')
+                                                " visualization."), self.project_id, name='max_tmp_x')
 
     def fill_from_post(self, form_data):
         if self.min_tmp_x.name in form_data:
@@ -83,9 +83,9 @@ class EquationSpatialPlotForm(Form):
     def __init__(self):
         super(EquationSpatialPlotForm, self).__init__()
         self.min_space_x = FloatField(Float(label='Spatial Start Distance(mm)', default=0, doc="The minimum value of"
-                                            " the x-axis for spatial equation plot."), self, name='min_space_x')
+                                            " the x-axis for spatial equation plot."), self.project_id, name='min_space_x')
         self.max_space_x = FloatField(Float(label='Spatial End Distance(mm)', default=100, doc="The maximum value of "
-                                            "the x-axis for spatial equation plot."), self, name='max_space_x')
+                                            "the x-axis for spatial equation plot."), self.project_id, name='max_space_x')
 
     def fill_from_post(self, form_data):
         if self.min_space_x.name in form_data:

@@ -158,13 +158,16 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
-        self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
+        self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self.project_id,
+                                                   self.draw_ranges, name='region_map')
         conn_filter = FilterChain(
             fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_surface_mapping'],
             operations=["==", "=="], values=[1, True])
-        self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
+        self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure,
+                                                             self.project_id, self.draw_ranges,
                                                              name='connectivity_measure', conditions=conn_filter)
-        self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
+        self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self.project_id,
+                                                      self.draw_ranges, name='shell_surface')
 
     @staticmethod
     def get_filters():
@@ -189,7 +192,8 @@ class SurfaceViewerForm(BaseSurfaceViewerForm):
         # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
 
         super(SurfaceViewerForm, self).__init__(prefix, project_id)
-        self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, self, name='surface')
+        self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, self.project_id, self.draw_ranges,
+                                                name='surface')
 
     @staticmethod
     def get_view_model():
