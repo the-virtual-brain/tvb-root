@@ -26,7 +26,7 @@ The order of constructs in this figure denotes the sequences in which they need 
 <Lems description="Rate based generic template">
 
 ```
-\
+
 ### Derivatives
 To define the time derivatives of the model, a component type with the name: “derivatives”, should be created. This component type can hold other constructs which define the initialization and dynamics definition of the model. 
 ```xml
@@ -83,7 +83,7 @@ The **TimeDerivative** construct defines the model dynamics in terms of  derivat
         </Dynamics>
     </ComponentType>
 ```
-\
+
 ### Coupling
 To define **coupling functions**, which is only applicable for CUDA models, the user can create a coupling component type.
 To identify this coupling component type, the name field should include the phrase coupling. It will construct a double for loop in which for every node, every other node's state is fetched according to connection delay, multiplied by connection weight.
@@ -101,7 +101,6 @@ The parameter name should appear in the user defined 'pre' or 'post' coupling fu
 The coupling **DerivedParameter** construct defines the name of the variable to store the final coupling result and the value field contains a function that transforms the sums of all inputs to a specific node. This variable, 'dp_name', can be used to incorporate the coupling value in the dynamics of the model and is eventually used to 'export' the coupling value out of the for loops. This value should then be used in time derivative definition 
 Syntax: [name] *= [expression].
 ```xml
-        <!-- Name of the variable which  -->
         <DerivedParameter name="[dp_name]" value="[expression]"/>
 ```
 \
@@ -122,7 +121,7 @@ The **DerivedVariable** construct can be used to enter a 'pre'- and 'post'-synap
         <!-- etc... -->
     </ComponentType>
 ```
-\
+
 ### Noise
 To specify **noise addition** to the model dynamics, a component type with the name 'noise' can be defined, which is only applicable for CUDA models. The CUDA models make use of the Curand library to add a random value to the calculated derivatives. As is mentioned in the derivatives section, if the derivatives component type has a derived parameter with the name 'nsig' a noise amplification of value will be used to amplify the noise. 
 ```xml
@@ -160,6 +159,25 @@ c_pop1 *= global_coupling;
 ...
 ```
 *Listing 1. Generated CUDA code for the coupling functionality*
+
+### Numba and Python coupling
+In RateML the dynamics of the Python rate models are integrated using Numba vectorization (Lam et al., 2015). They are mapped to a generalized universal function (gufuncs) using Numba's guvectorize decorator to compile a pure Python function directly into machine code that operates over NumPy arrays, as fast as a C implementation (Numba, “Creating NumPy universal functions.”, https://numba.pydata.org/numba-doc/latest/user/vectorize.html). An example of a Numba generated guvectorize function is displayed in Listing 2. In this example the gufunc *_numba_dfun_Epileptor* accepts two n and m sized float64 arrays and 19 scalars as input and returns a n sized float64 array. The benefit of writing Numpy gufuncs with Numba's decorators, is that it automatically uses features such as reduction, accumulation and broadcasting to efficiently implement the algorithm in question.
+The Python models have coupling functionality defined in a separate class which contains pre-defined functions for pre- and post synaptic behavior. With RateML it is not possible to define the coupling function for the Python models. For these models, as is shown in listing 2, a number of hardcoded c_pop*n* variables are defined, which can be used to implement the coupling value per population. Each of these variables define the coupling for each neuron population defined.
+```python
+@guvectorize([(float64[:], float64[:], (float64 * 19), float64[:])], 
+    '(n),(m)' + ',()'*19 + '->(n)', nopython=True)
+def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, 
+    Iext2, tau, aa, bb, Kvf, Kf, Ks, tt, modification, local_coupling, dx):
+
+    c_pop1 = coupling[0]
+    c_pop2 = coupling[1]
+    c_pop3 = coupling[2]
+    c_pop4 = coupling[3]
+    ... # calculate derivatives
+    
+    return dx
+```
+*Listing 2. Generated CUDA code for the coupling functionality*
 
 ## Files in ~/rateML/
 * XML2model.py   		    : python script for initiating model code generation of either CUDA or Python models
