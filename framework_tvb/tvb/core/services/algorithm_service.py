@@ -35,17 +35,19 @@ Code related to launching/duplicating operations is placed here.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import os
 from inspect import getmro
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.adapters.abcuploader import ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX
 from tvb.core.services.exceptions import OperationException
 
 
@@ -119,6 +121,31 @@ class AlgorithmService(object):
         display_name += ' - ID:' + str(dt[0])
 
         return display_name
+
+    def prepare_upload_form(self, form, post_data):
+        if not isinstance(form, ABCUploaderForm):
+            return
+
+        for form_field in form.trait_fields:
+            if isinstance(form_field, TraitUploadField) and form_field.name in post_data:
+                field = post_data[form_field.name]
+                file_name = None
+                if hasattr(field, 'file') and field.file is not None:
+                    project = dao.get_project_by_id(form_field.owner.project_id)
+                    temporary_storage = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
+                    try:
+                        uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
+                        file_name = TEMPORARY_PREFIX + uq_name + '_' + field.filename
+                        file_name = os.path.join(temporary_storage, file_name)
+
+                        with open(file_name, 'wb') as file_obj:
+                            file_obj.write(field.file.read())
+                    except Exception as excep:
+                        # TODO: is this handled properly?
+                        self.file_helper.remove_files([file_name])
+                        excep.message = 'Could not continue: Invalid input files'
+                        raise excep
+                post_data[form_field.name] = file_name
 
     def prepare_adapter_form(self, adapter_instance, skip_filling_form=True, project_id=None, extra_conditions=None):
         form = adapter_instance.get_form()(project_id=project_id)

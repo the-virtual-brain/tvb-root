@@ -141,30 +141,8 @@ class TraitUploadField(TraitField):
     def fill_from_post(self, post_data):
         super(TraitUploadField, self).fill_from_post(post_data)
 
-        if self.data.file is None:
-            self.data = None
-            return
-
-        project = dao.get_project_by_id(self.project_id)
-        temporary_storage = self.files_helper.get_project_folder(project, self.files_helper.TEMP_FOLDER)
-
-        file_name = None
-        try:
-            uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
-            file_name = TEMPORARY_PREFIX + uq_name + '_' + self.data.filename
-            file_name = os.path.join(temporary_storage, file_name)
-
-            with open(file_name, 'wb') as file_obj:
-                file_obj.write(self.data.file.read())
-        except Exception as excep:
-            # TODO: is this handled properly?
-            self.files_helper.remove_files([file_name])
-            excep.message = 'Could not continue: Invalid input files'
-            raise excep
-
-        if file_name:
-            self.data = file_name
-            self.temporary_files.append(file_name)
+        if self.data:
+            self.temporary_files.append(self.data)
 
 
 class TraitDataTypeSelectField(TraitField):
