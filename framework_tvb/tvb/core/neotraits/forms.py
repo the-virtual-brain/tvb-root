@@ -28,19 +28,16 @@
 #
 #
 
-import os
 import json
 import uuid
 from collections import namedtuple
-from datetime import datetime
+
 import numpy
-from tvb.core import utils
+from tvb.basic.neotraits.api import List, Attr
+from tvb.basic.neotraits.ex import TraitError
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
-from tvb.basic.neotraits.ex import TraitError
-from tvb.basic.neotraits.api import List, Attr
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 
