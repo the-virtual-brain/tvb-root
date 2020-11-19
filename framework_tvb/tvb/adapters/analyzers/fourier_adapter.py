@@ -232,6 +232,7 @@ class FourierAdapter(ABCAdapter):
         input_time_series_h5.close()
 
         fft_index.fill_from_has_traits(partial_result)
+        self.fill_from_h5(fft_index, spectra_file)
 
         spectra_file.store(partial_result, scalars_only=True)
         spectra_file.windowing_function.store(str(view_model.window_function))

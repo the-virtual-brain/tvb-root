@@ -175,6 +175,7 @@ class NodeCoherenceAdapter(ABCAdapter):
         time_series_h5.close()
 
         coherence_spectrum_index.fill_from_has_traits(partial_coh)
+        self.fill_from_h5(coherence_spectrum_index, coherence_h5)
 
         coherence_h5.store(partial_coh, scalars_only=True)
         coherence_h5.frequency.store(partial_coh.frequency)

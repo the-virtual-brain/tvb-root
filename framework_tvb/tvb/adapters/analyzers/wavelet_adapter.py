@@ -243,6 +243,7 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
         time_series_h5.close()
 
         wavelet_index.fill_from_has_traits(partial_wavelet)
+        self.fill_from_h5(wavelet_index, wavelet_h5)
 
         wavelet_h5.store(partial_wavelet, scalars_only=True)
         wavelet_h5.frequencies.store(frequencies_array)

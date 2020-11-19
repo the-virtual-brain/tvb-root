@@ -54,6 +54,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
@@ -61,6 +62,7 @@ from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
+from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits.forms import Form
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
@@ -550,3 +552,16 @@ class ABCAdapter(object):
         :return: size in kB
         """
         return size * TvbProfile.current.MAGIC_NUMBER / 8 / 2 ** 10
+
+    @staticmethod
+    def fill_from_h5(analyzer_index, analyzer_h5):
+        # Method used by analyzers only
+        array_data = analyzer_h5.array_data.load()
+        metadata = DataSetMetaData.from_array(array_data).to_dict()
+        analyzer_index.array_data_max = metadata['Maximum']
+        analyzer_index.array_data_min = metadata['Minimum']
+        analyzer_index.array_data_mean = metadata['Mean']
+        analyzer_index.aray_has_complex = metadata['HasComplex']
+        analyzer_index.array_is_finite = metadata['IsFinite']
+        analyzer_index.shape = str(array_data.shape)
+        analyzer_index.ndim = len(array_data.shape)

@@ -170,6 +170,7 @@ class ICAAdapter(ABCAdapter):
         partial_ica.gid = uuid.UUID(ica_index.gid)
 
         ica_index.fill_from_has_traits(partial_ica)
+        self.fill_from_h5(ica_index, ica_h5)
         ica_h5.close()
         time_series_h5.close()
 
