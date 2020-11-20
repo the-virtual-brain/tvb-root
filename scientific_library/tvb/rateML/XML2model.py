@@ -252,7 +252,10 @@ class RateML:
 
         derivative_list = model.component_types['derivatives']
 
-        model_class_name = self.model_filename.capitalize() + 'T'
+        if language == 'python':
+            model_class_name = self.model_filename.capitalize() + 'T'
+        else:
+            model_class_name = self.model_filename
 
         # start templating
         model_str = self.model_template().render(
@@ -317,14 +320,14 @@ class RateML:
 
 if __name__ == "__main__":
 
-    language='python'
-    # language='cuda'
+    # language='python'
+    language='cuda'
 
     # model_filename = 'montbrio'
     # model_filename = 'oscillator'
-    # model_filename = 'kuramoto'
+    model_filename = 'kuramoto'
     # model_filename = 'rwongwang'
-    model_filename = 'epileptor'
+    # model_filename = 'epileptor'
 
     RateML(model_filename, language, './XMLmodels/', './generatedModels/')
 

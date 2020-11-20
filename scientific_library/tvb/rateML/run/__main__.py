@@ -127,7 +127,8 @@ class TVB_test:
 
 	def start_cuda(self, logger):
 		# logger.info('start Cuda run')
-		from tvb.rateML.rateML_CUDA import CudaRun
+		from tvb.rateML.
+		import CudaRun
 		cudarun = CudaRun()
 		tavg_data = cudarun.run_simulation(self.weights, self.lengths, self.params, self.speeds, logger,
 										   self.args, self.n_nodes, self.n_work_items, self.n_params, self.nstep,
