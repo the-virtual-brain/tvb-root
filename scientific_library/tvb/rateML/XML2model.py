@@ -252,7 +252,7 @@ class RateML:
 
         derivative_list = model.component_types['derivatives']
 
-        if language == 'python':
+        if self.language == 'python':
             model_class_name = self.model_filename.capitalize() + 'T'
         else:
             model_class_name = self.model_filename
