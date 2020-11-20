@@ -329,11 +329,11 @@ class SimulatorController(BurstBaseController):
         template_specification.update(**rendering_rules.to_dict())
         return self.fill_default_attributes(template_specification)
 
-    def prepare_first_fragment(self, burst_config=None):
+    def prepare_first_fragment(self):
         adapter_instance = ABCAdapter.build_adapter(self.cached_simulator_algorithm)
         form = adapter_instance.get_form()('', common.get_current_project().id)
 
-        self.filter_connectivity(form, burst_config)
+        self.filter_connectivity(form)
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
@@ -343,13 +343,11 @@ class SimulatorController(BurstBaseController):
         form.fill_from_trait(session_stored_simulator)
         return form
 
-    def filter_connectivity(self, form, burst_config=None):
+    def filter_connectivity(self, form):
         is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
 
-        if is_branch and burst_config:
-            project = common.get_current_project()
-            storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
-            simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
+        if is_branch:
+            simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
             conn = dao.get_datatype_by_gid(simulator.connectivity.hex)
 
             if conn.number_of_regions:
@@ -1095,7 +1093,7 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_BURST_CONFIG, burst_config_copy)
 
         self._update_last_loaded_fragment_url(self._prepare_last_fragment_by_burst_type(burst_config_copy))
-        return self.prepare_first_fragment(burst_config)
+        return self.prepare_first_fragment()
 
     @expose_fragment('simulator_fragment')
     def reset_simulator_configuration(self):
