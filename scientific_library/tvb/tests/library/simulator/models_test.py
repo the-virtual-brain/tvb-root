@@ -282,3 +282,63 @@ class TestDSLModels(BaseTestCase):
         assert issubclass(module[name], Model)
         model = module[name]()
         assert isinstance(model, Model)
+
+
+
+
+class TestFastMontbrio(BaseTestCase):
+
+    def _integrator(self, dt):
+        from tvb.simulator.integrators import RungeKutta4thOrderDeterministic
+        return RungeKutta4thOrderDeterministic(dt=dt)
+
+    def _tvb_sim(self, dt):
+        import numpy as np
+        from tvb.simulator.simulator import Simulator, models, connectivity, monitors
+        sim = Simulator(
+            connectivity=connectivity.Connectivity.from_file(),
+            model=models.MontbrioPazoRoxin(
+                I=np.r_[1.0], Delta=np.r_[1.0], eta=np.r_[-5.0], tau=np.r_[100.0],
+                J=np.r_[15.], cr=np.r_[0.01], cv=np.r_[0.0]),
+            integrator=self._integrator(dt=dt),
+            monitors=[monitors.Raw()],
+        ).configure()
+        assert sim.history.buffer.shape==(513, 2, 76, 1)
+        sim.history.buffer[:, 0] = 0.0
+        sim.history.buffer[:, 1] = -2.0
+        sim.current_state[:] = sim.history.buffer[0]
+        return sim
+
+    def _numba_loop(self, dt, T, sim):
+        from tvb.simulator.models.fast_montbrio import run_loop
+        y0, _ = run_loop(
+            weights=sim.connectivity.weights,
+            delays=sim.connectivity.delays,
+            total_time=T,
+            coupling_scaling=sim.coupling.a[0],
+            r_sigma=0.0, V_sigma=0.0,
+            I=sim.model.I[0],
+            Delta=sim.model.Delta[0],
+            eta=sim.model.eta[0],
+            tau=sim.model.tau[0],
+            J=sim.model.J[0],
+            cr=sim.model.cr[0],
+            cv=sim.model.cv[0],
+            dt=dt,
+            nh=512,
+            nto=512,
+        )
+        return y0
+
+    def test_warmup(self):
+        import numpy as np
+        dt = 0.1
+        T = dt * 512
+        sim = self._tvb_sim(dt=dt)
+        y0 = self._numba_loop(dt, T, sim)
+        (_, y1), = sim.run(simulation_length=T)
+        y1 = y1[..., 0]
+        assert y0.shape == y1.shape
+        from numpy.testing import assert_allclose
+        # TVB includes initial conditions as first time step
+        assert_allclose(y0[:100], y1[1:101], 1e-4, 1e-6)
