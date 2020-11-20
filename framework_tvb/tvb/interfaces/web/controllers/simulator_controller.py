@@ -234,7 +234,8 @@ class SimulatorFragmentRenderingRules(object):
 @traced
 class SimulatorController(BurstBaseController):
     KEY_IS_LOAD_AFTER_REDIRECT = "is_load_after_redirect"
-    DEFAULT_COPY_PREFIX = "copy_of_"
+    COPY_NAME_FORMAT = "copy_of_{}"
+    BRANCH_NAME_FORMAT = "{}_branch{}"
 
     def __init__(self):
         BurstBaseController.__init__(self)
@@ -396,7 +397,8 @@ class SimulatorController(BurstBaseController):
         rendering_rules = SimulatorFragmentRenderingRules(surface_fragment, SimulatorWizzardURLs.SET_SURFACE_URL,
                                                           SimulatorWizzardURLs.SET_COUPLING_PARAMS_URL,
                                                           is_simulator_copy, is_simulator_load,
-                                                          self.last_loaded_form_url, cherrypy.request.method, is_branch=is_branch)
+                                                          self.last_loaded_form_url, cherrypy.request.method,
+                                                          is_branch=is_branch)
 
         return rendering_rules.to_dict()
 
@@ -431,7 +433,8 @@ class SimulatorController(BurstBaseController):
                                                           is_simulation_copy=is_simulator_copy,
                                                           is_simulation_readonly_load=is_simulator_load,
                                                           last_form_url=self.last_loaded_form_url,
-                                                          last_request_type=cherrypy.request.method, is_branch=is_branch)
+                                                          last_request_type=cherrypy.request.method,
+                                                          is_branch=is_branch)
 
         if cherrypy.request.method == POST_REQUEST:
             form = SimulatorSurfaceFragment()
@@ -534,7 +537,7 @@ class SimulatorController(BurstBaseController):
         rendering_rules = SimulatorFragmentRenderingRules(integrator_fragment, SimulatorWizzardURLs.SET_INTEGRATOR_URL,
                                                           SimulatorWizzardURLs.SET_MODEL_PARAMS_URL, is_simulator_copy,
                                                           is_simulator_load, self.last_loaded_form_url,
-                                                          cherrypy.request.method,is_branch=is_branch)
+                                                          cherrypy.request.method, is_branch=is_branch)
 
         return rendering_rules.to_dict()
 
@@ -982,8 +985,6 @@ class SimulatorController(BurstBaseController):
 
         if launch_mode == self.burst_service.LAUNCH_BRANCH:
             parent_burst = session_burst_config.parent_burst_object
-            count = dao.count_bursts_with_name(parent_burst.name, session_burst_config.fk_project)
-            session_burst_config.name = parent_burst.name + "_" + launch_mode + str(count + 1)
             simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex,
                                                             parent_burst.gid, "fk_parent_burst")
             if simulation_state_index is None or len(simulation_state_index) < 1:
@@ -1062,8 +1063,8 @@ class SimulatorController(BurstBaseController):
     @expose_fragment('simulator_fragment')
     def copy_simulator_configuration(self, burst_config_id):
         common.add2session(common.KEY_IS_SIMULATOR_BRANCH, False)
-        form = self._get_form(burst_config_id)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, True)
+        form = self._prepare_first_fragment_for_burst_copy(burst_config_id, self.COPY_NAME_FORMAT)
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
                                                           is_first_fragment=True)
@@ -1072,17 +1073,19 @@ class SimulatorController(BurstBaseController):
     @expose_fragment('simulator_fragment')
     def branch_simulator_configuration(self, burst_config_id):
         common.add2session(common.KEY_IS_SIMULATOR_BRANCH, True)
-        form = self._get_form(burst_config_id)
+        common.add2session(common.KEY_IS_SIMULATOR_COPY, False)
+        form = self._prepare_first_fragment_for_burst_copy(burst_config_id, self.BRANCH_NAME_FORMAT)
         rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_simulation_copy=True, is_simulation_readonly_load=True,
                                                           is_first_fragment=True)
 
         return rendering_rules.to_dict()
 
-    def _get_form(self, burst_config_id):
+    def _prepare_first_fragment_for_burst_copy(self, burst_config_id, burst_name_format):
         burst_config = self.burst_service.load_burst_configuration(burst_config_id)
         burst_config_copy = burst_config.clone()
-        burst_config_copy.name = self.DEFAULT_COPY_PREFIX + burst_config.name
+        count = dao.count_bursts_with_name(burst_config.name, burst_config.fk_project)
+        burst_config_copy.name = burst_name_format.format(burst_config.name, count + 1)
 
         project = common.get_current_project()
         storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
@@ -1100,6 +1103,7 @@ class SimulatorController(BurstBaseController):
         common.add2session(common.KEY_SIMULATOR_CONFIG, None)
         common.add2session(common.KEY_IS_SIMULATOR_COPY, False)
         common.add2session(common.KEY_IS_SIMULATOR_LOAD, False)
+        common.add2session(common.KEY_IS_SIMULATOR_BRANCH, False)
 
         self._update_last_loaded_fragment_url(SimulatorWizzardURLs.SET_CONNECTIVITY_URL)
         project = common.get_current_project()
@@ -1178,4 +1182,3 @@ class SimulatorController(BurstBaseController):
             common.set_warning_message(excep.message)
 
         raise cherrypy.HTTPRedirect('/burst/')
-
