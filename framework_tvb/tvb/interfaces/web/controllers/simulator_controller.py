@@ -153,7 +153,7 @@ class SimulatorFragmentRenderingRules(object):
 
     @property
     def disable_fields(self):
-        if self.is_branch and self.form_action_url != self.last_form_url:
+        if self.is_branch and not self.include_launch_button:
             return True
         if self.load_readonly:
             return True

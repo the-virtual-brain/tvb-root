@@ -88,7 +88,6 @@ KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"
 KEY_SUBSECTION_TITLES = "sub_section_titles"
 KEY_IS_SIMULATOR_BRANCH = "is_branch"
-KEY_NUMBER_OF_REGIONS = "number_of_regions"
 
 # Overlay specific keys
 KEY_OVERLAY_TITLE = "overlay_title"
