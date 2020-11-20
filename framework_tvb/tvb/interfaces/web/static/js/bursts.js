@@ -71,6 +71,39 @@ function resetToNewBurst() {
 }
 
 /*
+ * When clicking the branch button on a burst-history entry, a clone of that burst is prepared.
+ */
+function branchBurst(burstID, first_wizzard_form_url) {
+    doAjaxCall({
+        type: "POST",
+        url: '/burst/get_last_fragment_url/' + burstID,
+        showBlockerOverlay: true,
+        success: function (response) {
+            stop_at_url = response;
+            doAjaxCall({
+                type: "POST",
+                url: '/burst/branch_simulator_configuration/' + burstID,
+                showBlockerOverlay: true,
+                success: function (response) {
+                    let simParamElem = $("#div-simulator-parameters");
+                    simParamElem.html(response);
+                    renderAllSimulatorForms(first_wizzard_form_url, stop_at_url, function() {
+                        const newName = $("#input_simulation_name_id").val();
+                        fill_burst_name(newName, false);
+                    });
+                    changeBurstHistory(null, true);
+                    displayBurstTree(undefined);
+                    displayMessage("A copy of previous simulation was prepared for you!");
+                },
+                error: function () {
+                    displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
+                }
+            });
+        }
+    });
+}
+
+/*
  * When clicking the copy button on a burst-history entry, a clone of that burst is prepared.
  */
 function copyBurst(burstID, first_wizzard_form_url) {
@@ -644,7 +677,9 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     if (config_branch_button != null){
         config_branch_button.style.visibility = 'visible';
     }
-    fieldset.disabled = false;
+    if (fieldset.className == "") {
+        fieldset.disabled = false;
+    }
     setInitialFocusOnButton(simulator_params);
 }
 
@@ -652,7 +687,16 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
+    var fieldset = currentForm.elements[0];
+    var disabledFieldset = false
+    if (fieldset.hasAttribute('disabled')) {
+        disabledFieldset = true
+        $(fieldset).removeAttr('disabled')
+    }
     var form_data = $(currentForm).serialize(); //Encode form elements for submission
+    if (disabledFieldset){
+        $(fieldset).attr('disabled', 'disabled')
+    }
     var next_button = currentForm.elements.namedItem('next');
     var previous_button = currentForm.elements.namedItem('previous');
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
