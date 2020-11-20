@@ -25,6 +25,14 @@ __device__ float wrap_it_PI(float x)
     float neg_val = PI_2 - fmodf(-x, PI_2);
     return neg_mask * neg_val + pos_mask * pos_val;
 }
+__device__ float wrap_it_V(float V)
+{
+    float Vdim[] = {None};
+    if (V < Vdim[0]) V = Vdim[0];
+    else if (V > Vdim[1]) V = Vdim[1];
+
+    return V;
+}
 
 __global__ void kuramoto(
 
@@ -52,7 +60,7 @@ __global__ void kuramoto(
     const float global_coupling = params(1);
 
     // regular constants
-    const float omega = 60.0 * 2.0 * M_PI_F / 1e3;
+    const float omega = 60.0 * 2.0 * 3.1415927 / 1e3;
 
     // coupling constants, coupling itself is hardcoded in kernel
     const float a = 1;
@@ -102,8 +110,8 @@ __global__ void kuramoto(
                 if (wij == 0.0)
                     continue;
 
-                // no delay specified
-                unsigned int dij = 0;
+                // Get the delay between node i and node j
+                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
 
                 //***// Get the state of node j which is delayed by dij
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
@@ -118,20 +126,20 @@ __global__ void kuramoto(
 
 
             // Integrate with stochastic forward euler
-            dV = dt * (omega + c_0);
+            dV = dt * (omega + c_pop1);
 
             // Add noise because component_type Noise is present in model
             V += nsig * curand_normal(&crndst) + dV;
 
             // Wrap it within the limits of the model
-            V = wrap_it_PI(V);
+            V = wrap_it_V(V);
 
             // Update the state
             state((t + 1) % nh, i_node + 0 * n_node) = V;
 
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = sin(V);
+                tavg(i_node + 0 * n_node) = V;
             }
 
             // sync across warps executing nodes for single sim, before going on to next time step

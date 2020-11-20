@@ -254,7 +254,7 @@ class RateML:
 
         if self.language == 'python':
             model_class_name = self.model_filename.capitalize() + 'T'
-        else:
+        if self.language == 'cuda':
             model_class_name = self.model_filename
 
         # start templating
