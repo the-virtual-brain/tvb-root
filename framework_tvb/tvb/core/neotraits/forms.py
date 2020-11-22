@@ -354,15 +354,17 @@ class ArrayField(TraitField):
     template = 'form_fields/str_field.html'
 
     def _from_post(self):
+        super(ArrayField, self)._from_post()
         self.data = None
-        if self.unvalidated_data is not None:
+        if len(self.unvalidated_data) == 0:
+            self.unvalidated_data = None
+        else:
             data = json.loads(self.unvalidated_data)
             self.data = numpy.array(data, dtype=self.trait_attribute.dtype)
 
     @property
     def value(self):
         if self.data is None:
-            # todo: maybe we need to distinguish None from missing data
             # this None means self.data is missing, either not set or unset cause of validation error
             return self.unvalidated_data
         try:
