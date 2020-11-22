@@ -329,12 +329,10 @@ class IntField(TraitField):
 
     def _from_post(self):
         super(IntField, self)._from_post()
-        if self.unvalidated_data and len(self.unvalidated_data) == 0:
+        if len(self.unvalidated_data) == 0:
             self.unvalidated_data = None
-        if self.unvalidated_data:
-            self.data = int(self.unvalidated_data)
         else:
-            self.data = None
+            self.data = int(self.unvalidated_data)
 
 
 class FloatField(TraitField):
@@ -346,12 +344,10 @@ class FloatField(TraitField):
 
     def _from_post(self):
         super(FloatField, self)._from_post()
-        if self.unvalidated_data and len(self.unvalidated_data) == 0:
+        if len(self.unvalidated_data) == 0:
             self.unvalidated_data = None
-        if self.unvalidated_data:
-            self.data = float(self.unvalidated_data)
         else:
-            self.data = None
+            self.data = float(self.unvalidated_data)
 
 
 class ArrayField(TraitField):
