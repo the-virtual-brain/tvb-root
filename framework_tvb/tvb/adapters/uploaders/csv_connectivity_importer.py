@@ -154,7 +154,7 @@ class CSVConnectivityImporterForm(ABCUploaderForm):
         self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, self.project_id,
                                             name='tracts_delimiter', choices=DELIMITER_OPTIONS)
         self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, self.project_id,
-                                                   self.draw_ranges, 'input_data')
+                                                   'input_data')
 
     @staticmethod
     def get_view_model():

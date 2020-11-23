@@ -178,11 +178,10 @@ class TraitDataTypeSelectField(TraitField):
     template = 'form_fields/datatype_select_field.html'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, project_id, draw_ranges, name=None, conditions=None,
+    def __init__(self, trait_attribute, project_id, name=None, conditions=None,
                  draw_dynamic_conditions_buttons=True, dynamic_conditions=None, has_all_option=False,
                  show_only_all_option=False):
         super(TraitDataTypeSelectField, self).__init__(trait_attribute, project_id, name)
-        self.draw_ranges = draw_ranges
 
         if issubclass(type(trait_attribute), DataTypeGidAttr):
             type_to_query = trait_attribute.linked_datatype
@@ -247,8 +246,6 @@ class TraitDataTypeSelectField(TraitField):
                 )
 
         if self.has_all_option:
-            if not self.draw_ranges:
-                raise ValueError("The owner form should draw ranges inputs in order to support 'All' option")
 
             all_values = ''
             for fdt in filtered_datatypes:
@@ -537,12 +534,11 @@ class Form(object):
     range_1 = None
     range_2 = None
 
-    def __init__(self, prefix='', project_id=None, draw_ranges=True):
+    def __init__(self, prefix='', project_id=None):
         # TODO: makes sense here?
         self.project_id = project_id
         self.prefix = prefix
         self.errors = []
-        self.draw_ranges = draw_ranges
 
     def get_subform_key(self):
         """

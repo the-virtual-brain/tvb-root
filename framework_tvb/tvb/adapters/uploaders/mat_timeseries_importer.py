@@ -113,7 +113,7 @@ class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
         self.sampling_rate = IntField(RegionMatTimeSeriesImporterModel.sampling_rate, self.project_id, name='sampling_rate')
         self.start_time = IntField(RegionMatTimeSeriesImporterModel.start_time, self.project_id, name='start_time')
         self.datatype = TraitDataTypeSelectField(RegionMatTimeSeriesImporterModel.datatype, self.project_id,
-                                                 self.draw_ranges, name='tstype_parameters')
+                                                 name='tstype_parameters')
 
     @staticmethod
     def get_view_model():

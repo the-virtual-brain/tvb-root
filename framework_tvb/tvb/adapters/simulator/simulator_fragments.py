@@ -55,8 +55,8 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
         super(SimulatorSurfaceFragment, self).__init__(prefix, project_id)
         conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                  values=[CORTICAL])
-        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, self.project_id, self.draw_ranges,
-                                                name='surface', conditions=conditions)
+        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, self.project_id, name='surface',
+                                                conditions=conditions)
 
     def fill_trait(self, datatype):
         surface_gid = self.surface.value
@@ -80,10 +80,10 @@ class SimulatorRMFragment(ABCAdapterForm):
                                         values=[str(surface_index.gid), str(connectivity_gid.hex)])
             lc_conditions = FilterChain(fields=[rm_conditions.fields[0]], operations=[rm_conditions.operations[0]],
                                         values=[rm_conditions.values[0]])
-        self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, self.project_id, self.draw_ranges,
-                                           name='region_mapping', conditions=rm_conditions)
+        self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, self.project_id, name='region_mapping',
+                                           conditions=rm_conditions)
 
-        self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, self.project_id, self.draw_ranges,
+        self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, self.project_id,
                                            name='local_connectivity', conditions=lc_conditions)
         self.coupling_strength = ArrayField(CortexViewModel.coupling_strength, self.project_id)
 
@@ -97,7 +97,7 @@ class SimulatorStimulusFragment(ABCAdapterForm):
         traited_field = Attr(stimuli_index_class, doc=SimulatorAdapterModel.stimulus.doc,
                              label=SimulatorAdapterModel.stimulus.label,
                              required=SimulatorAdapterModel.stimulus.required)
-        self.stimulus = TraitDataTypeSelectField(traited_field, self.project_id, self.draw_ranges, name='stimulus')
+        self.stimulus = TraitDataTypeSelectField(traited_field, self.project_id, name='stimulus')
 
     def fill_trait(self, datatype):
         setattr(datatype, self.stimulus.name, self.stimulus.data)
@@ -251,8 +251,7 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
     def _add_field_for_gid(self, param, param_key):
         # type: (RangeParameter, str) -> None
         traited_attr = Attr(h5.REGISTRY.get_index_for_datatype(param.type), label='Choice for {}'.format(param.name))
-        pse_param_dt = TraitDataTypeSelectField(traited_attr, self.project_id, self.draw_ranges,
-                                                name=self.GID_FIELD.format(param_key),
+        pse_param_dt = TraitDataTypeSelectField(traited_attr, self.project_id, name=self.GID_FIELD.format(param_key),
                                                 dynamic_conditions=param.range_definition, has_all_option=True,
                                                 show_only_all_option=True)
         self.__setattr__(self.GID_FIELD.format(param_key), pse_param_dt)

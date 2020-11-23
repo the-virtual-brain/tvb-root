@@ -201,7 +201,7 @@ class ProjectionMonitorForm(MonitorForm):
                                     values=[session_stored_simulator.surface.region_mapping_data.hex])
 
         self.region_mapping = TraitDataTypeSelectField(ProjectionViewModel.region_mapping, self.project_id,
-                                                       self.draw_ranges, name='region_mapping', conditions=rm_filter)
+                                                       name='region_mapping', conditions=rm_filter)
 
 
 class EEGMonitorForm(ProjectionMonitorForm):
@@ -215,10 +215,11 @@ class EEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[ProjectionsType.EEG.value])
 
-        self.projection = TraitDataTypeSelectField(EEGViewModel.projection, self.project_id, self.draw_ranges, name='projection',
+        self.projection = TraitDataTypeSelectField(EEGViewModel.projection, self.project_id, name='projection',
                                                    conditions=projection_filter)
         self.reference = ScalarField(EEG.reference, self.project_id)
-        self.sensors = TraitDataTypeSelectField(EEGViewModel.sensors, self.project_id,self.draw_ranges, name='sensors', conditions=sensor_filter)
+        self.sensors = TraitDataTypeSelectField(EEGViewModel.sensors, self.project_id, name='sensors',
+                                                conditions=sensor_filter)
         self.sigma = ScalarField(EEG.sigma, self.project_id)
 
 
@@ -233,10 +234,10 @@ class MEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[ProjectionsType.MEG.value])
 
-        self.projection = TraitDataTypeSelectField(MEGViewModel.projection, self.project_id, self.draw_ranges,
-                                                   name='projection', conditions=projection_filter)
-        self.sensors = TraitDataTypeSelectField(MEGViewModel.sensors, self.project_id, self.draw_ranges,
-                                                name='sensors', conditions=sensor_filter)
+        self.projection = TraitDataTypeSelectField(MEGViewModel.projection, self.project_id, name='projection',
+                                                   conditions=projection_filter)
+        self.sensors = TraitDataTypeSelectField(MEGViewModel.sensors, self.project_id, name='sensors',
+                                                conditions=sensor_filter)
 
 
 class iEEGMonitorForm(ProjectionMonitorForm):
@@ -250,11 +251,11 @@ class iEEGMonitorForm(ProjectionMonitorForm):
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
                                         values=[ProjectionsType.SEEG.value])
 
-        self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, self.project_id, self.draw_ranges,
-                                                   name='projection', conditions=projection_filter)
+        self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, self.project_id, name='projection',
+                                                   conditions=projection_filter)
         self.sigma = ScalarField(iEEG.sigma, self.project_id)
-        self.sensors = TraitDataTypeSelectField(iEEGViewModel.sensors, self.project_id, self.draw_ranges,
-                                                name='sensors', conditions=sensor_filter)
+        self.sensors = TraitDataTypeSelectField(iEEGViewModel.sensors, self.project_id, name='sensors',
+                                                conditions=sensor_filter)
 
 
 class BoldMonitorForm(MonitorForm):

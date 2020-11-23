@@ -99,10 +99,9 @@ class ProjectionMatrixImporterForm(ABCUploaderForm):
         self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self.project_id, name='dataset_name')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=['Cortical Surface'])
-        self.surface = TraitDataTypeSelectField(ProjectionMatrixImporterModel.surface, self.project_id, self.draw_ranges,
-                                                name='surface', conditions=surface_conditions)
-        self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self.project_id,
-                                                self.draw_ranges, name='sensors')
+        self.surface = TraitDataTypeSelectField(ProjectionMatrixImporterModel.surface, self.project_id, name='surface',
+                                                conditions=surface_conditions)
+        self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self.project_id, name='sensors')
 
     @staticmethod
     def get_view_model():

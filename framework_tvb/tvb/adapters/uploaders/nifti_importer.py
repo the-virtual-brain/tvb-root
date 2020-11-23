@@ -98,7 +98,7 @@ class NIFTIImporterForm(ABCUploaderForm):
                                            name='apply_corrections')
         self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', self.project_id,
                                               'mappings_file', self.temporary_files)
-        self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, self.project_id, self.draw_ranges,
+        self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, self.project_id,
                                                      name='connectivity')
 
     @staticmethod

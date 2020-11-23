@@ -64,8 +64,7 @@ class BRCOImporterForm(ABCUploaderForm):
 
         self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', self.project_id, 'data_file',
                                           self.temporary_files)
-        self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, self.project_id, self.draw_ranges,
-                                                     'connectivity')
+        self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, self.project_id, 'connectivity')
 
     @staticmethod
     def get_view_model():
