@@ -35,7 +35,7 @@ from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewMod
     VODEViewModel, VODEStochasticViewModel, Dopri5ViewModel, Dopri5StochasticViewModel, Dop853ViewModel, \
     Dop853StochasticViewModel, IntegratorViewModel, NoiseViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
-from tvb.core.neotraits.forms import Form, ScalarField, SelectField
+from tvb.core.neotraits.forms import Form, SelectField, FloatField
 
 
 def get_integrator_to_form_dict():
@@ -67,7 +67,7 @@ class IntegratorForm(Form):
 
     def __init__(self, prefix=''):
         super(IntegratorForm, self).__init__(prefix)
-        self.dt = ScalarField(IntegratorViewModel.dt, self.project_id)
+        self.dt = FloatField(IntegratorViewModel.dt, self.project_id)
 
 
 class IntegratorStochasticForm(IntegratorForm):

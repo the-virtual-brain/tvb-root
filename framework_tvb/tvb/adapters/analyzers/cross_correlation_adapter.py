@@ -53,7 +53,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import FloatField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.datatypes.temporal_correlations import CrossCorrelation
@@ -291,8 +291,8 @@ class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
         self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series,
                                                     self.project_id, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.t_start = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_start, self.project_id)
-        self.t_end = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_end, self.project_id)
+        self.t_start = FloatField(PearsonCorrelationCoefficientAdapterModel.t_start, self.project_id)
+        self.t_end = FloatField(PearsonCorrelationCoefficientAdapterModel.t_end, self.project_id)
 
     @staticmethod
     def get_view_model():

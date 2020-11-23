@@ -47,7 +47,7 @@ from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, SelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField, FloatField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
@@ -73,9 +73,9 @@ class FFTAdapterForm(ABCAdapterForm):
         super(FFTAdapterForm, self).__init__(prefix, project_id)
         self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self.project_id, name='time_series',
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.segment_length = ScalarField(FFTAdapterModel.segment_length, self.project_id)
+        self.segment_length = FloatField(FFTAdapterModel.segment_length, self.project_id)
         self.window_function = SelectField(FFTAdapterModel.window_function, self.project_id)
-        self.detrend = ScalarField(FFTAdapterModel.detrend, self.project_id)
+        self.detrend = BoolField(FFTAdapterModel.detrend, self.project_id)
 
     @staticmethod
     def get_view_model():

@@ -33,7 +33,7 @@ from tvb.basic.neotraits.api import List
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.neotraits.forms import Form, ScalarField, ArrayField, MultiSelectField
+from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField, FloatField, StrField
 from tvb.core.neotraits.forms import SelectField, TraitDataTypeSelectField
 from tvb.datatypes.projections import ProjectionsType
 from tvb.datatypes.sensors import SensorTypes
@@ -90,7 +90,7 @@ class MonitorForm(Form):
         super(MonitorForm, self).__init__(prefix, project_id)
         self.session_stored_simulator = session_stored_simulator
         self.project_id = project_id
-        self.period = ScalarField(Monitor.period, self.project_id)
+        self.period = FloatField(Monitor.period, self.project_id)
         self.variables_of_interest_indexes = {}
 
         if session_stored_simulator is not None:
@@ -158,7 +158,7 @@ class SpatialAverageMonitorForm(MonitorForm):
     def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
         super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self.project_id)
-        self.default_mask = ScalarField(SpatialAverage.default_mask, self.project_id)
+        self.default_mask = StrField(SpatialAverage.default_mask, self.project_id)
 
     def fill_from_trait(self, trait):
         super(SpatialAverageMonitorForm, self).fill_from_trait(trait)
@@ -217,10 +217,10 @@ class EEGMonitorForm(ProjectionMonitorForm):
 
         self.projection = TraitDataTypeSelectField(EEGViewModel.projection, self.project_id, name='projection',
                                                    conditions=projection_filter)
-        self.reference = ScalarField(EEG.reference, self.project_id)
+        self.reference = StrField(EEG.reference, self.project_id)
         self.sensors = TraitDataTypeSelectField(EEGViewModel.sensors, self.project_id, name='sensors',
                                                 conditions=sensor_filter)
-        self.sigma = ScalarField(EEG.sigma, self.project_id)
+        self.sigma = FloatField(EEG.sigma, self.project_id)
 
 
 class MEGMonitorForm(ProjectionMonitorForm):
@@ -253,7 +253,7 @@ class iEEGMonitorForm(ProjectionMonitorForm):
 
         self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, self.project_id, name='projection',
                                                    conditions=projection_filter)
-        self.sigma = ScalarField(iEEG.sigma, self.project_id)
+        self.sigma = FloatField(iEEG.sigma, self.project_id)
         self.sensors = TraitDataTypeSelectField(iEEGViewModel.sensors, self.project_id, name='sensors',
                                                 conditions=sensor_filter)
 
@@ -265,7 +265,7 @@ class BoldMonitorForm(MonitorForm):
         self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
         default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
 
-        self.period = ScalarField(Bold.period, self.project_id)
+        self.period = FloatField(Bold.period, self.project_id)
         self.hrf_kernel = SelectField(Attr(HRFKernelEquation, label='Equation', default=default_hrf_kernel),
                                       self.project_id, name='hrf_kernel', choices=self.hrf_kernel_choices)
 

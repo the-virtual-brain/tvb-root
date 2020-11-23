@@ -327,7 +327,7 @@ class IntField(TraitField):
     def _from_post(self):
         super(IntField, self)._from_post()
         if len(self.unvalidated_data) == 0:
-            self.unvalidated_data = None
+            self.data = None
         else:
             self.data = int(self.unvalidated_data)
 
@@ -342,7 +342,7 @@ class FloatField(TraitField):
     def _from_post(self):
         super(FloatField, self)._from_post()
         if len(self.unvalidated_data) == 0:
-            self.unvalidated_data = None
+            self.data = None
         else:
             self.data = float(self.unvalidated_data)
 
@@ -484,30 +484,6 @@ class HiddenField(TraitField):
     def __init__(self, trait_attribute, project_id, name=None, disabled=False):
         super(HiddenField, self).__init__(trait_attribute, project_id, name, disabled)
         self.trait_attribute.label = ''
-
-
-# noinspection PyPep8Naming
-def ScalarField(trait_attribute, project_id, name=None, disabled=False):
-    # as this makes introspective decisions it has to be moved at a different level
-    field_type_for_trait_type = {
-        str: StrField,
-        int: IntField,
-        float: FloatField,
-        bool: BoolField,
-    }
-
-    if trait_attribute.choices is not None:
-        cls = SelectField
-    else:
-        cls = field_type_for_trait_type.get(trait_attribute.field_type)
-
-    if isinstance(trait_attribute, List) and trait_attribute.element_choices:
-        cls = MultiSelectField
-
-    if cls is None:
-        raise ValueError('can not make a scalar field for trait attribute {}'.format(trait_attribute))
-
-    return cls(trait_attribute, project_id, name=name, disabled=disabled)
 
 
 class FormField(Field):
