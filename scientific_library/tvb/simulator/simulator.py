@@ -456,6 +456,14 @@ class Simulator(HasTraits):
                     self.log.debug("Using last %d time-steps for history.", self.horizon)
                     history = initial_conditions[-self.horizon:, :, :, :].copy()
                 else:
+                    # maybe a better broadcast test than this?
+                    if ic_shape[2] != self._regmap.shape[0] or ic_shape[1] != len(self.model.state_variables):
+                        raise ValueError(
+                            'Incorrect initial condition shape for a surface sim. '
+                            'Expected broadcastable to (time, n_state_vars, n_nodes, n_modes) = (1, %s, %s, %s). '
+                            'Found %s' %
+                            (len(self.model.state_variables), self._regmap.shape[0], self.model.number_of_modes, ic_shape)
+                        )
                     self.log.debug('Padding initial conditions with model.initial')
                     history = self.model.initial(self.integrator.dt, self.good_history_shape, rng)
                     shift = self.current_step % self.horizon
