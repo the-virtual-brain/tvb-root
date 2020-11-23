@@ -485,8 +485,18 @@ class Simulator(HasTraits):
         self.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
-        self.current_state = history[self.current_step % self.horizon].copy()
-        self.log.debug('initial state has shape %r' % (self.current_state.shape, ))
+        # TODO: FIXME: initial state of a surface sim is nr of vertices long
+        # while history is kept for nr_conn_nodes delayed connections
+        # History is not enough to recover initial conditions
+
+        if self.surface is not None and initial_conditions is not None:
+            # here we take last time point in the initial conditions
+            # todo: check this time management
+            self.current_state = initial_conditions[-1]
+        else:
+            self.current_state = history[self.current_step % self.horizon].copy()
+            self.log.debug('initial state has shape %r' % (self.current_state.shape, ))
+
         if self.surface is not None and history.shape[2] > self.connectivity.number_of_regions:
             n_reg = self.connectivity.number_of_regions
             (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
