@@ -135,6 +135,14 @@ class RateML:
         xmlschema.assertValid(etree.parse(self.xml_location))
         logger.info("True validation of {0} against {1}".format(self.xml_location, schema_file.geturl()))
 
+    def powerswap(self, power):
+        target = power.group(1)
+        powersplit = target.split('^')
+        powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
+        target = '{' + target + '}'
+
+        return target, powf
+
     def preprocess_model(self, model):
 
         ''' Do some preprocessing on the template to easify rendering '''
@@ -193,9 +201,7 @@ class RateML:
                                     .replace('{', '').replace('^', ' ** ').replace('}', '')
                         if self.language=='cuda':
                             for power in re.finditer('\{(.*?)\}',  pwr_obj.value):
-                                target = power.group(1)
-                                powersplit = target.split('^')
-                                powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
+                                target, powf = self.powerswap(power)
                                 if hasattr(pwr_obj, 'name'):
                                     pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace(target, powf)
                                 if hasattr(pwr_obj, 'variable'):
@@ -208,9 +214,7 @@ class RateML:
                             .replace('{', '').replace('^', ' ** ').replace('}', '')
                     if self.language=='cuda':
                         for power in re.finditer('\{(.*?)\}', pwr_obj.dimension):
-                            target = power.group(1)
-                            powersplit = target.split('^')
-                            powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
+                            target, powf = self.powerswap(power)
                             powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension.replace(target, powf)
 
             for cdv in powlst.dynamics.conditional_derived_variables:
@@ -221,9 +225,7 @@ class RateML:
                                 .replace('{', '').replace('^', ' ** ').replace('}', '')
                         if self.language == 'cuda':
                             for power in re.finditer('\{(.*?)\}', case.value):
-                                target = power.group(1)
-                                powersplit = target.split('^')
-                                powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
+                                target, powf = self.powerswap(power)
                                 powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace(target, powf)
 
         return svboundaries, couplinglist, noisepresent, nsigpresent
@@ -325,8 +327,8 @@ if __name__ == "__main__":
 
     # model_filename = 'montbrio'
     # model_filename = 'oscillator'
-    model_filename = 'kuramoto'
-    # model_filename = 'rwongwang'
+    # model_filename = 'kuramoto'
+    model_filename = 'rwongwang'
     # model_filename = 'epileptor'
 
     RateML(model_filename, language, './XMLmodels/', './generatedModels/')
