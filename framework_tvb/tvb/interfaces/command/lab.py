@@ -93,6 +93,7 @@ def new_project(name):
 
 
 def import_conn_zip(project_id, zip_path):
+
     TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
     project = dao.get_project_by_id(project_id)
 
@@ -117,7 +118,6 @@ def import_conn_h5(project_id, h5_path):
     importer = ABCAdapter.build_adapter_from_class(TVBImporter)
     view_model = importer.get_view_model_class()()
     view_model.data_file = new_path
-
     return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)[0]
 
 
@@ -158,7 +158,7 @@ def fire_operation(project_id, adapter_instance, view_model):
 def wait_to_finish(operation):
     # Wait for the operation to finish
     while not operation.has_finished:
-        sleep(5)
+        sleep(1)
         operation = dao.get_operation_by_id(operation.id)
 
     if operation.status == STATUS_FINISHED:
