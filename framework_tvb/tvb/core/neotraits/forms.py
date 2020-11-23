@@ -428,8 +428,12 @@ class SelectField(TraitField):
                 checked=self.value == self.choices.get(choice)
             )
 
-    def fill_from_post(self, post_data):
-        super(SelectField, self).fill_from_post(post_data)
+    def _from_post(self):
+        super(SelectField, self)._from_post()
+
+        if self.data is not None and self.choices.get(self.data) is None:
+            raise ValueError("the entered value is not among the choices for this field!")
+
         self.data = self.choices.get(self.data)
 
 
