@@ -27,7 +27,7 @@ __device__ float wrap_it_PI(float x)
 }
 __device__ float wrap_it_V(float V)
 {
-    float Vdim[] = {-2.0, 4.0};
+    float Vdim[] = {};
     if (V < Vdim[0]) V = Vdim[0];
     else if (V > Vdim[1]) V = Vdim[1];
 
@@ -35,7 +35,7 @@ __device__ float wrap_it_V(float V)
 }
 __device__ float wrap_it_W(float W)
 {
-    float Wdim[] = {-6.0, 6.0};
+    float Wdim[] = {};
     if (W < Wdim[0]) W = Wdim[0];
     else if (W > Wdim[1]) W = Wdim[1];
 
@@ -133,8 +133,8 @@ __global__ void oscillator(
                 if (wij == 0.0)
                     continue;
 
-                // no delay specified
-                unsigned int dij = 0;
+                // Get the delay between node i and node j
+                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
 
                 //***// Get the state of node j which is delayed by dij
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
@@ -149,7 +149,7 @@ __global__ void oscillator(
 
 
             // Integrate with stochastic forward euler
-            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V));
+            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_pop1 + local_coupling * V));
             dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
 
             // Add noise because component_type Noise is present in model
@@ -167,6 +167,7 @@ __global__ void oscillator(
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
                 tavg(i_node + 0 * n_node) = V;
+                tavg(i_node + 1 * n_node) = W;
             }
 
             // sync across warps executing nodes for single sim, before going on to next time step

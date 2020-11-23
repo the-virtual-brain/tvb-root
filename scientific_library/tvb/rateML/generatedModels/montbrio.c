@@ -27,7 +27,7 @@ __device__ float wrap_it_PI(float x)
 }
 __device__ float wrap_it_r(float r)
 {
-    float rdim[] = {0.0, inf};
+    float rdim[] = {0.0, INFINITY};
     if (r < rdim[0]) r = rdim[0];
     else if (r > rdim[1]) r = rdim[1];
 
@@ -35,7 +35,7 @@ __device__ float wrap_it_r(float r)
 }
 __device__ float wrap_it_V(float V)
 {
-    float Vdim[] = {};
+    float Vdim[] = {-2.0, 1.5};
     if (V < Vdim[0]) V = Vdim[0];
     else if (V > Vdim[1]) V = Vdim[1];
 
@@ -82,7 +82,7 @@ __global__ void montbrio(
     const float a = 1;
 
     // coupling parameters
-    float c_0 = 0.0;
+    float c_pop1 = 0.0;
 
     // derived parameters
     const float nsig = 1;
@@ -118,7 +118,7 @@ __global__ void montbrio(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            c_0 = 0.0f;
+            c_pop1 = 0.0f;
 
             r = state((t) % nh, i_node + 0 * n_node);
             V = state((t) % nh, i_node + 1 * n_node);
@@ -133,28 +133,28 @@ __global__ void montbrio(
                 if (wij == 0.0)
                     continue;
 
-                // no delay specified
-                unsigned int dij = 0;
+                // Get the delay between node i and node j
+                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
 
                 //***// Get the state of node j which is delayed by dij
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_0 += wij * a * sin(V_j - V);
+                c_pop1 += wij * a * sin(V_j - V);
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_0 *= global_coupling * rec_n;
+            c_pop1 *= global_coupling * rec_n;
             // the dynamic derived variables
-            Coupling_global = alpha * coupling[0];
-            Coupling_local = (1-alpha) * local_coupling * r;
+            Coupling_global = alpha * c_pop1;
+            Coupling_local = (1-alpha) * rec_n * r;
             Coupling_Term = Coupling_global + Coupling_local;
 
 
             // Integrate with stochastic forward euler
-            dx = dt * (Delta / pi + 2 * V * r - k * r**2 + Gamma * r / pi);
-            dy = dt * (V**2 - pi**2 * r**2 + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term);
+            dx = dt * (Delta / M_PI + 2 * V * r - k * powf(r, 2) + Gamma * r / M_PI);
+            dy = dt * (powf(V, 2) - powf(M_PI, 2) * powf(r, 2) + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term);
 
             // Add noise because component_type Noise is present in model
             r += nsig * curand_normal(&crndst) + dx;
@@ -171,7 +171,7 @@ __global__ void montbrio(
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
                 tavg(i_node + 0 * n_node) = r;
-                tavg(i_node + 1 * n_node) = v;
+                tavg(i_node + 1 * n_node) = V;
             }
 
             // sync across warps executing nodes for single sim, before going on to next time step

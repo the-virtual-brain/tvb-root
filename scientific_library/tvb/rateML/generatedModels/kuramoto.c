@@ -27,7 +27,7 @@ __device__ float wrap_it_PI(float x)
 }
 __device__ float wrap_it_V(float V)
 {
-    float Vdim[] = {None};
+    float Vdim[] = {-2, 1};
     if (V < Vdim[0]) V = Vdim[0];
     else if (V > Vdim[1]) V = Vdim[1];
 
@@ -66,7 +66,7 @@ __global__ void kuramoto(
     const float a = 1;
 
     // coupling parameters
-    float c_0 = 0.0;
+    float c_pop1 = 0.0;
 
     // derived parameters
     const float rec_n = 1.0f / n_node;
@@ -96,7 +96,7 @@ __global__ void kuramoto(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            c_0 = 0.0f;
+            c_pop1 = 0.0f;
 
             V = state((t) % nh, i_node + 0 * n_node);
 
@@ -117,12 +117,12 @@ __global__ void kuramoto(
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_0 += wij * a * sin(V_j - V);
+                c_pop1 += wij * a * sin(V_j - V);
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_0 *= global_coupling * rec_n;
+            c_pop1 *= global_coupling * rec_n;
 
 
             // Integrate with stochastic forward euler

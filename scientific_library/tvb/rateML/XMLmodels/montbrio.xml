@@ -35,20 +35,20 @@
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, i.e. "1.0, None" -->
-            <StateVariable name="r" dimension="0., 2.0" exposure="0.0, inf"/>
-            <StateVariable name="V" dimension="-2.0, 1.5" exposure=""/>
+            <StateVariable name="r" dimension="" exposure="0.0, INFINITY"/>
+            <StateVariable name="V" dimension="" exposure="-2.0, 1.5"/>
 
             <!-- Derived variables can be used to simplify the time derivatives, enter the local coupling formulas or any formula -->
             <!-- syntax: [name]=[expression] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
             <DerivedVariable name="Coupling_global" value="alpha * c_pop1"/>
-            <DerivedVariable name="Coupling_local" value="(1-alpha) * local_coupling * r"/>
+            <DerivedVariable name="Coupling_local" value="(1-alpha) * rec_n * r"/>
             <DerivedVariable name="Coupling_Term" value="Coupling_global + Coupling_local"/>
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
             <!-- Conditional used for if statement, syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,) -->
-            <TimeDerivative variable="dx" value="Delta / pi + 2 * V * r - k * {r^2} + Gamma * r / pi"/>
-            <TimeDerivative variable="dy" value="{V^2} - {pi^2} * {r^2} + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
+            <TimeDerivative variable="dx" value="Delta / M_PI + 2 * V * r - k * {r^2} + Gamma * r / M_PI"/>
+            <TimeDerivative variable="dy" value="{V^2} - {M_PI^2} * {r^2} + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
 
         </Dynamics>
 
@@ -58,7 +58,7 @@
 
 <!--        variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
-        <DerivedParameter name="c_0" value="global_coupling * rec_n"/>
+        <DerivedParameter name="c_pop1" value="global_coupling * rec_n"/>
 
         <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
 

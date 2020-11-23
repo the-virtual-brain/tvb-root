@@ -16,7 +16,7 @@
 
         <Dynamics>
             <!-- Use PI to select the PI wrapper (ie Kuramoto) -->
-            <StateVariable name="V" dimension="-2, 1"/>
+            <StateVariable name="V" dimension="" exposure="-2, 1"/>
 
             <TimeDerivative variable="dV" value="omega + c_pop1"/>
         </Dynamics>
@@ -27,7 +27,7 @@
 
 <!--        variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
-        <DerivedParameter name="c_0" value="global_coupling * rec_n"/>
+        <DerivedParameter name="c_pop1" value="global_coupling * rec_n"/>
 
         <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
 
@@ -44,7 +44,7 @@
     </ComponentType>
 
     <!-- If noise needs to be present, just specify the component type. Detail might be added later -->
-    <ComponentType name="noise" description="on">
+    <ComponentType name="noise">
     </ComponentType>
 
 

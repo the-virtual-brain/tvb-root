@@ -73,7 +73,7 @@
         <!-- variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
         <!--        post coupling expression, needs to be present. If no temporary result needs to be computed enter 'None'-->
-        <DerivedParameter name="c_0" value="{V^2}"/>
+        <DerivedParameter name="c_pop1" value="{V^2}"/>
 
         <Constant name="a" dimension="" value="1" description="Rescales the connection strength."/>
 

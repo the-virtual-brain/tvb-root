@@ -10,7 +10,7 @@
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
 <!--        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>-->
-        <DerivedParameter name="rec_speed_dt" value="{2.0f^global_speed} / dt * {x^2}"/>
+        <DerivedParameter name="rec_speed_dt" value="{2.0f^global_speed} / dt"/>
         <!-- nsig is the default variable for noise amplitude. Is equal to 1 if not defined -->
         <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
 
@@ -32,7 +32,7 @@
         <Constant name="Kf" dimension="lo=0.0, hi=4.0, step=0.5" value="0.0" description="Correspond to the coupling scaling on a fast time scale."/>
         <Constant name="Ks" dimension="lo=-4.0, hi=4.0, step=0.1" value="0.0" description="Permittivity coupling, that is from the fast time scale toward the slow time scale."/>
         <Constant name="tt" dimension="lo=0.001, hi=10.0, step=0.001" value="1.0" description="Time scaling of the whole system to the system in real time."/>
-        <Constant name="modification" dimension="None" value="False" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
+        <Constant name="modification" dimension="None" value="0" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
 
         <!-- Exposures are used for observables. For dimension enter the reduction functionality. Name field is not used-->
         <Exposure name="x1" dimension="{x1^x2}"/>
@@ -40,12 +40,12 @@
 
         <Dynamics>
 
-            <StateVariable name="x1" dimension="-2.0, 1.0" exposure=""/>
-            <StateVariable name="y1" dimension="-20.0, 2.0" exposure=""/>
-            <StateVariable name="z" dimension="-2.0, 5.0" exposure=""/>
-            <StateVariable name="x2" dimension="-2.0, 0.0" exposure=""/>
-            <StateVariable name="y2" dimension="0.0, 2.0" exposure=""/>
-            <StateVariable name="g" dimension="-1.0, 1.0" exposure=""/>
+            <StateVariable name="x1" dimension="" exposure="-2.0, 1.0"/>
+            <StateVariable name="y1" dimension="" exposure="-20.0, 2.0"/>
+            <StateVariable name="z" dimension="" exposure="-2.0, 5.0"/>
+            <StateVariable name="x2" dimension="" exposure="-2.0, 0.0"/>
+            <StateVariable name="y2" dimension="" exposure="0.0, 2.0"/>
+            <StateVariable name="g" dimension="" exposure="-1.0, 1.0"/>
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to). Cases are separated with ; -->
             <!-- Population 1 -->
@@ -96,7 +96,7 @@
 
     <Dynamics>
         <DerivedVariable name="pre" value="sin(x1_j - x1)"/>
-        <DerivedVariable name="post" value="c_a"/>
+        <DerivedVariable name="post" value="1.0"/>
     </Dynamics>
         <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
 

@@ -8,8 +8,8 @@ import os, sys
 import numpy as np
 from numpy import corrcoef
 
-# from tvb.simulator.lab import *
-from tvb.rateML.rateML_CUDA import LEMS2CUDA
+from tvb.simulator.lab import *
+# from tvb.rateML.rateML_CUDA import LEMS2CUDA
 
 class TVB_test:
 
@@ -61,8 +61,8 @@ class TVB_test:
 		# 					)
 		parser.add_argument('--node_threads', default=1, type=int)
 		parser.add_argument('--model',
-							choices=['Rwongwang', 'Kuramoto', 'Epileptor', 'Oscillator', \
-									 'Oscillatorref', 'Kuramotoref', 'Rwongwangref', 'Epileptorref'],
+							#choices=['Rwongwang', 'Kuramoto', 'Epileptor', 'Oscillator', \
+							#		 'Oscillatorref', 'Kuramotoref', 'Rwongwangref', 'Epileptorref'],
 							help="neural mass model to be used during the simulation",
 							default='Oscillator'
 							)
@@ -71,7 +71,7 @@ class TVB_test:
 		parser.add_argument('--filename', default="kuramoto_network.c", type=str,
 							help="Filename to use as GPU kernel definition")
 
-		parser.add_argument('-b', '--bench', default="regular", type=str, help="What to bench: regular, numba, cuda")
+		# parser.add_argument('-b', '--bench', default="regular", type=str, help="What to bench: regular, numba, cuda")
 
 		parser.add_argument('-bx', '--blockszx', default="32", type=int, help="Enter block size x")
 		parser.add_argument('-by', '--blockszy', default="32", type=int, help="Enter block size y")
@@ -127,19 +127,18 @@ class TVB_test:
 
 	def start_cuda(self, logger):
 		# logger.info('start Cuda run')
-		import CudaRun
+		from cuda_run import CudaRun
 		cudarun = CudaRun()
 		tavg_data = cudarun.run_simulation(self.weights, self.lengths, self.params, self.speeds, logger,
 										   self.args, self.n_nodes, self.n_work_items, self.n_params, self.nstep,
 										   self.n_inner_steps, self.buf_len, self.states, self.dt, self.min_speed)
 
-		# Todo: fix this for cuda
 		# self.check_results(self.n_nodes, self.n_work_items, tavg_data, self.weights, self.speeds, self.couplings, logger, self.args)
 		return tavg_data
 
 	def set_CUDAmodel_dir(self):
 		# self.args.filename = os.path.join(os.path.join(os.getcwd(), os.pardir), 'cuda_refs', self.args.model.lower() + '.c')
-		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))), os.pardir, 'cuda_refs',
+		self.args.filename = os.path.join((os.path.dirname(os.path.abspath(__file__))), 
 								 self.args.model.lower() + '.c')
 
 	def set_states(self):
@@ -161,8 +160,8 @@ class TVB_test:
 
 		# compare output to check if same as template
 		comparison = (tavg0.ravel() == tavg1.ravel())
-		logger.info('Templated version is similar to original %d:', comparison.all())
-		logger.info('Correlation coefficient: %f', corrcoef(tavg0.ravel(), tavg1.ravel())[0, 1])
+		#logger.info('Templated version is similar to original %d:', comparison.all())
+		#logger.info('Correlation coefficient: %f', corrcoef(tavg0.ravel(), tavg1.ravel())[0, 1])
 
 	def startsim(self):
 
@@ -207,8 +206,8 @@ class TVB_test:
 
 		toc = time.time()
 		elapsed = toc - tic
-		logger.info('Finished python simulation successfully in: %0.3f', elapsed)
-		logger.info('%0.3f M step/s', 1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed)
+		print('Finished python simulation successfully in: {0:.3f}'.format(elapsed))
+		print('{0:.3f} M step/s'.format(1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed))
 		# logger.info('finished')
 
 
@@ -219,8 +218,8 @@ if __name__ == '__main__':
 	example = TVB_test()
 
 	# start templating the model specified on cli
-	here = os.path.abspath(os.path.dirname(__file__))
-	LEMS2CUDA.cuda_templating(example.args.model, os.path.join(here, '..', 'XMLmodels'))
+	#here = os.path.abspath(os.path.dirname(__file__))
+	#LEMS2CUDA.cuda_templating(example.args.model, os.path.join(here, '..', 'XMLmodels'))
 
 	# start simulation with templated model
 	example.startsim()

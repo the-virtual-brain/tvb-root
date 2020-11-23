@@ -27,7 +27,7 @@ __device__ float wrap_it_PI(float x)
 }
 __device__ float wrap_it_x1(float x1)
 {
-    float x1dim[] = {};
+    float x1dim[] = {-2.0, 1.0};
     if (x1 < x1dim[0]) x1 = x1dim[0];
     else if (x1 > x1dim[1]) x1 = x1dim[1];
 
@@ -35,7 +35,7 @@ __device__ float wrap_it_x1(float x1)
 }
 __device__ float wrap_it_y1(float y1)
 {
-    float y1dim[] = {};
+    float y1dim[] = {-20.0, 2.0};
     if (y1 < y1dim[0]) y1 = y1dim[0];
     else if (y1 > y1dim[1]) y1 = y1dim[1];
 
@@ -43,7 +43,7 @@ __device__ float wrap_it_y1(float y1)
 }
 __device__ float wrap_it_z(float z)
 {
-    float zdim[] = {};
+    float zdim[] = {-2.0, 5.0};
     if (z < zdim[0]) z = zdim[0];
     else if (z > zdim[1]) z = zdim[1];
 
@@ -51,7 +51,7 @@ __device__ float wrap_it_z(float z)
 }
 __device__ float wrap_it_x2(float x2)
 {
-    float x2dim[] = {};
+    float x2dim[] = {-2.0, 0.0};
     if (x2 < x2dim[0]) x2 = x2dim[0];
     else if (x2 > x2dim[1]) x2 = x2dim[1];
 
@@ -59,7 +59,7 @@ __device__ float wrap_it_x2(float x2)
 }
 __device__ float wrap_it_y2(float y2)
 {
-    float y2dim[] = {};
+    float y2dim[] = {0.0, 2.0};
     if (y2 < y2dim[0]) y2 = y2dim[0];
     else if (y2 > y2dim[1]) y2 = y2dim[1];
 
@@ -67,14 +67,14 @@ __device__ float wrap_it_y2(float y2)
 }
 __device__ float wrap_it_g(float g)
 {
-    float gdim[] = {};
+    float gdim[] = {-1.0, 1.0};
     if (g < gdim[0]) g = gdim[0];
     else if (g > gdim[1]) g = gdim[1];
 
     return g;
 }
 
-__global__ void EpileptorT(
+__global__ void epileptor(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
@@ -117,7 +117,7 @@ __global__ void EpileptorT(
     const float Kf = 0.0;
     const float Ks = 0.0;
     const float tt = 1.0;
-    const float modification = False;
+    const float modification = 0;
 
     // coupling constants, coupling itself is hardcoded in kernel
 
@@ -127,7 +127,7 @@ __global__ void EpileptorT(
 
     // derived parameters
     const float rec_n = 1 / n_node;
-    const float rec_speed_dt = {powf(2.0f, global_speed)} / dt * {powf(x, 2)};
+    const float rec_speed_dt = powf(2.0f, global_speed) / dt;
     const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
 
     // conditional_derived variable declaration
@@ -195,7 +195,7 @@ __global__ void EpileptorT(
                 float x1_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_pop1 += wij * c_a * sin(x1_j - x1);
+                c_pop1 += wij * 1.0 * sin(x1_j - x1);
 
             } // j_node */
 
@@ -205,12 +205,12 @@ __global__ void EpileptorT(
 
             // The conditional variables
             if (x1 < 0.0) {
-                ydot0 = -a * {powf(x1, 2)} + b * x1;
+                ydot0 = -a * powf(x1, 2) + b * x1;
             } else {
-                ydot0 = slope - x2 + 0.6 * {powf(z-4, 2)};
+                ydot0 = slope - x2 + 0.6 * powf(z-4, 2);
             }
             if (z < 0.0) {
-                ydot2 = - 0.1 * {powf(z, 7)};
+                ydot2 = - 0.1 * powf(z, 7);
             } else {
                 ydot2 = 0;
             }
@@ -227,9 +227,9 @@ __global__ void EpileptorT(
 
             // Integrate with stochastic forward euler
             dx1 = dt * (tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 ));
-            dy1 = dt * (tt * (c - d * {powf(x1, 2)} - y1));
+            dy1 = dt * (tt * (c - d * powf(x1, 2) - y1));
             dz = dt * (tt * (r * (h - z + Ks * c_pop1)));
-            dx2 = dt * (tt * (-y2 + x2 - {powf(x2, 3)} + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2));
+            dx2 = dt * (tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2));
             dy2 = dt * (tt * (-y2 + ydot4) / tau);
             dg = dt * (tt * (-0.01 * (g - 0.1 * x1) ));
 
@@ -259,7 +259,7 @@ __global__ void EpileptorT(
 
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = {powf(x1, x2)};
+                tavg(i_node + 0 * n_node) = powf(x1, x2);
                 tavg(i_node + 1 * n_node) = x2;
             }
 
