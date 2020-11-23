@@ -29,7 +29,7 @@
 #
 from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
 from tvb.datatypes.equations import *
-from tvb.core.neotraits.forms import Form, ScalarField, FloatField
+from tvb.core.neotraits.forms import Form, FloatField, StrField
 from tvb.basic.neotraits.api import Float
 
 
@@ -82,7 +82,7 @@ class EquationForm(Form):
 
     def __init__(self, prefix=''):
         super(EquationForm, self).__init__(prefix)
-        self.equation = ScalarField(self.get_traited_equation().equation, self.project_id, disabled=True)
+        self.equation = StrField(self.get_traited_equation().equation, self.project_id)
         for param_key, param in self.get_traited_equation().parameters.default().items():
             setattr(self, param_key, FloatField(Float(label=param_key, default=param), self.project_id, name=param_key))
 

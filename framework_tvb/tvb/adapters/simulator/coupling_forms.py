@@ -29,7 +29,7 @@
 #
 from tvb.simulator.coupling import *
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.core.neotraits.forms import ArrayField, ScalarField
+from tvb.core.neotraits.forms import ArrayField, BoolField
 
 
 def get_coupling_to_form_dict():
@@ -114,8 +114,8 @@ class PreSigmoidalCouplingForm(FormWithRanges):
         self.G = ArrayField(PreSigmoidal.G, self.project_id)
         self.P = ArrayField(PreSigmoidal.P, self.project_id)
         self.theta = ArrayField(PreSigmoidal.theta, self.project_id)
-        self.dynamic = ScalarField(PreSigmoidal.dynamic, self.project_id)
-        self.globalT= ScalarField(PreSigmoidal.globalT, self.project_id)
+        self.dynamic = BoolField(PreSigmoidal.dynamic, self.project_id)
+        self.globalT= BoolField(PreSigmoidal.globalT, self.project_id)
 
 
 class DifferenceCouplingForm(FormWithRanges):

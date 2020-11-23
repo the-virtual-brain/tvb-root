@@ -50,7 +50,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.db import from_ndarray
-from tvb.core.neotraits.forms import ScalarField, FormField, Form, TraitDataTypeSelectField, FloatField
+from tvb.core.neotraits.forms import FormField, Form, TraitDataTypeSelectField, StrField, FloatField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
@@ -85,10 +85,10 @@ class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
         self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, self.project_id,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)
-        self.mother = ScalarField(ContinuousWaveletTransform.mother, self.project_id)
-        self.sample_period = ScalarField(ContinuousWaveletTransform.sample_period, self.project_id)
-        self.normalisation = ScalarField(ContinuousWaveletTransform.normalisation, self.project_id)
-        self.q_ratio = ScalarField(ContinuousWaveletTransform.q_ratio, self.project_id)
+        self.mother = StrField(ContinuousWaveletTransform.mother, self.project_id)
+        self.sample_period = FloatField(ContinuousWaveletTransform.sample_period, self.project_id)
+        self.normalisation = StrField(ContinuousWaveletTransform.normalisation, self.project_id)
+        self.q_ratio = FloatField(ContinuousWaveletTransform.q_ratio, self.project_id)
         self.frequencies = FormField(RangeForm, self.project_id, name='frequencies',
                                      label=ContinuousWaveletTransform.frequencies.label,
                                      doc=ContinuousWaveletTransform.frequencies.doc)

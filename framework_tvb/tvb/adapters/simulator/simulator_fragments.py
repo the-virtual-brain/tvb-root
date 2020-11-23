@@ -43,11 +43,12 @@ from tvb.core.entities.file.simulator.view_model import CortexViewModel, Simulat
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, ArrayField, SelectField, MultiSelectField, \
+from tvb.core.neotraits.forms import ArrayField, SelectField, MultiSelectField, \
     TraitDataTypeSelectField, HiddenField, FloatField
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.models.base import Model
+from tvb.core.neotraits.forms import IntField, StrField
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):
@@ -170,8 +171,8 @@ class SimulatorFinalFragment(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None, default_simulation_name="simulation_1"):
         super(SimulatorFinalFragment, self).__init__(prefix, project_id)
-        self.simulation_length = ScalarField(SimulatorAdapterModel.simulation_length, self.project_id)
-        self.simulation_name = ScalarField(Attr(str, doc='Name for the current simulation configuration',
+        self.simulation_length = FloatField(SimulatorAdapterModel.simulation_length, self.project_id)
+        self.simulation_name = StrField(Attr(str, doc='Name for the current simulation configuration',
                                                 default=default_simulation_name, label='Simulation name'),
                                            self.project_id, name='input_simulation_name_id')
 

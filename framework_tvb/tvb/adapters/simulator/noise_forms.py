@@ -34,7 +34,7 @@ from tvb.basic.neotraits.api import Attr, Range
 from tvb.core.entities.file.simulator.view_model import NoiseViewModel, AdditiveNoiseViewModel, \
     MultiplicativeNoiseViewModel
 from tvb.core.entities.transient.range_parameter import RangeParameter
-from tvb.core.neotraits.forms import ScalarField, ArrayField, SelectField
+from tvb.core.neotraits.forms import ArrayField, SelectField, FloatField, IntField
 from tvb.datatypes.equations import Equation
 
 
@@ -54,10 +54,8 @@ class NoiseForm(FormWithRanges):
 
     def __init__(self, prefix=''):
         super(NoiseForm, self).__init__(prefix)
-        self.ntau = ScalarField(NoiseViewModel.ntau, self.project_id)
-        self.noise_seed = ScalarField(NoiseViewModel.noise_seed, self.project_id)
-        # TODO: should we display something for random_stream?
-        # self.random_stream = ScalarField(Noise.random_stream)
+        self.ntau = FloatField(NoiseViewModel.ntau, self.project_id)
+        self.noise_seed = IntField(NoiseViewModel.noise_seed, self.project_id)
 
 
 class AdditiveNoiseForm(NoiseForm):
