@@ -82,7 +82,7 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(TimeseriesMetricsAdapterForm, self).__init__(prefix, project_id)
         self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, self.project_id,
-                                                    self.draw_ranges, name="time_series")
+                                                    name="time_series")
         self.start_point = ScalarField(TimeseriesMetricsAdapterModel.start_point, self.project_id)
         self.segment = ScalarField(TimeseriesMetricsAdapterModel.segment, self.project_id)
         self.algorithms = MultiSelectField(TimeseriesMetricsAdapterModel.algorithms, self.project_id, name="algorithms")

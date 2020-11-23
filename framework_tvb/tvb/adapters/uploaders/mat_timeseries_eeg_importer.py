@@ -51,7 +51,7 @@ class EEGRegionMatTimeSeriesImporterForm(RegionMatTimeSeriesImporterForm):
         eeg_conditions = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=['=='],
                                      values=[SensorTypes.TYPE_EEG.value])
         self.datatype = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.datatype, self.project_id,
-                                                 self.draw_ranges, name='tstype_parameters', conditions=eeg_conditions)
+                                                 name='tstype_parameters', conditions=eeg_conditions)
 
     @staticmethod
     def get_view_model():

@@ -74,7 +74,7 @@ class ConnectivityMeasureImporterForm(ABCUploaderForm):
                                           'data_file', self.temporary_files)
         self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, self.project_id, 'dataset_name')
         self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, self.project_id,
-                                                     self.draw_ranges, name='connectivity')
+                                                     name='connectivity')
 
     @staticmethod
     def get_view_model():

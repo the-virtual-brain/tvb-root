@@ -80,7 +80,7 @@ class TrackImporterForm(ABCUploaderForm):
         self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', self.project_id, 'data_file',
                                           self.temporary_files)
         self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, self.project_id,
-                                                      self.draw_ranges, name='region_volume')
+                                                      name='region_volume')
 
     @staticmethod
     def get_view_model():

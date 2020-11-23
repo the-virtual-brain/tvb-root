@@ -74,9 +74,9 @@ class TimeSeriesVolumeVisualiserForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(TimeSeriesVolumeVisualiserForm, self).__init__(prefix, project_id)
         self.time_series = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.time_series, self.project_id,
-                                                    self.draw_ranges, name='time_series', conditions=self.get_filters())
+                                                    name='time_series', conditions=self.get_filters())
         self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, self.project_id,
-                                                   self.draw_ranges, name='background')
+                                                    name='background')
 
     @staticmethod
     def get_view_model():

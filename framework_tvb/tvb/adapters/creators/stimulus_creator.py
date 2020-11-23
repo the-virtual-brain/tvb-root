@@ -57,8 +57,7 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
     def __init__(self, project_id=None):
         super(StimulusSurfaceSelectorForm, self).__init__(project_id=project_id)
         traited_attr = Attr(StimuliSurfaceIndex, label='Load Surface Stimulus', required=False)
-        self.surface_stimulus = TraitDataTypeSelectField(traited_attr, self.project_id, self.draw_ranges,
-                                                         name='existentEntitiesSelect')
+        self.surface_stimulus = TraitDataTypeSelectField(traited_attr, self.project_id, name='existentEntitiesSelect')
         self.display_name = StrField(SurfaceStimulusCreatorModel.display_name, self.project_id, name='display_name')
 
     def get_rendering_dict(self):
@@ -93,8 +92,8 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
     def __init__(self, project_id=None):
         super(SurfaceStimulusCreatorForm, self).__init__(project_id=project_id)
 
-        self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, self.project_id, self.draw_ranges,
-                                                name='surface',conditions=self.get_filters())
+        self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, self.project_id, name='surface',
+                                                conditions=self.get_filters())
         self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, self.project_id, name='spatial',
                                    choices=self.choices_spatial,
                                    subform=get_form_for_equation(self.default_spatial))
@@ -207,8 +206,7 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
     def __init__(self, project_id=None):
         super(StimulusRegionSelectorForm, self).__init__(project_id=project_id)
         traited_attr = Attr(StimuliRegionIndex, label='Load Region Stimulus', required=False)
-        self.region_stimulus = TraitDataTypeSelectField(traited_attr, self.project_id, self.draw_ranges,
-                                                        name='existentEntitiesSelect')
+        self.region_stimulus = TraitDataTypeSelectField(traited_attr, self.project_id, name='existentEntitiesSelect')
         self.display_name = StrField(RegionStimulusCreatorModel.display_name, self.project_id, name='display_name')
 
     def get_rendering_dict(self):
@@ -238,7 +236,7 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
     def __init__(self, project_id=None):
         super(RegionStimulusCreatorForm, self).__init__(project_id=project_id)
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, self.project_id,
-                                                     self.draw_ranges, name='connectivity')
+                                                     name='connectivity')
         self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self.project_id, name='temporal',
                                     choices=self.choices, subform=get_form_for_equation(self.default_temporal))
 

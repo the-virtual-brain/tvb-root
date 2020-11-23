@@ -71,7 +71,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
         default_coupling = list(self.coupling_choices.values())[0]
 
         self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self.project_id,
-                                                     self.draw_ranges, name=self.get_input_name(),
+                                                     name=self.get_input_name(),
                                                      conditions=self.get_filters())
         self.coupling = SelectField(
             Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self.project_id,

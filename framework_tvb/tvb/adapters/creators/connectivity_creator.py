@@ -86,8 +86,7 @@ class ConnectivityCreatorForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(ConnectivityCreatorForm, self).__init__(prefix, project_id)
         self.original_connectivity = TraitDataTypeSelectField(ConnectivityCreatorModel.original_connectivity,
-                                                              self.project_id, self.draw_ranges,
-                                                              name='original_connectivity',
+                                                              self.project_id, name='original_connectivity',
                                                               conditions=self.get_filters())
         self.new_weights = ArrayField(ConnectivityCreatorModel.new_weights, self.project_id)
         self.new_tracts = ArrayField(ConnectivityCreatorModel.new_tracts, self.project_id)

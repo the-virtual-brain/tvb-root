@@ -60,7 +60,7 @@ class WaveletSpectrogramVisualizerForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(WaveletSpectrogramVisualizerForm, self).__init__(prefix, project_id)
         self.input_data = TraitDataTypeSelectField(WaveletSpectrogramVisualizerModel.input_data, self.project_id,
-                                                   self.draw_ranges, name='input_data', conditions=self.get_filters())
+                                                   name='input_data', conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():

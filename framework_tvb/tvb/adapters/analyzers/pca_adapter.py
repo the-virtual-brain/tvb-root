@@ -66,7 +66,7 @@ class PCAAdapterForm(ABCAdapterForm):
 
     def __init__(self, prefix='', project_id=None):
         super(PCAAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(PCAAdapterModel.time_series, self.project_id, self.draw_ranges,
+        self.time_series = TraitDataTypeSelectField(PCAAdapterModel.time_series, self.project_id,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)
 

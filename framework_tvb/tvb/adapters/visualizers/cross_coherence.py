@@ -58,7 +58,7 @@ class CrossCoherenceVisualizerForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(CrossCoherenceVisualizerForm, self).__init__(prefix, project_id)
         self.datatype = TraitDataTypeSelectField(CrossCoherenceVisualizerModel.datatype, self.project_id,
-                                                 self.draw_ranges, name='datatype', conditions=self.get_filters())
+                                                 name='datatype', conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():

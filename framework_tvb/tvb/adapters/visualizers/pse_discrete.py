@@ -56,8 +56,7 @@ class DiscretePSEAdapterForm(ABCAdapterForm):
     def __init__(self, prefix='', project_id=None):
         super(DiscretePSEAdapterForm, self).__init__(prefix, project_id)
         self.datatype_group = TraitDataTypeSelectField(DiscretePSEAdapterModel.datatype_group, self.project_id,
-                                                       self.draw_ranges, name='datatype_group',
-                                                       conditions=self.get_filters())
+                                                       name='datatype_group', conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():
