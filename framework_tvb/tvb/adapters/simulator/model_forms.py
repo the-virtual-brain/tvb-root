@@ -55,8 +55,8 @@ def get_model_to_form_dict():
         ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class(): MontbrioPazoRoxinModelForm,
         ModelsEnum.COOMBES_BYRNE.get_class(): CoombesByrneModelForm,
         ModelsEnum.COOMBES_BYRNE_2D.get_class(): CoombesByrne2DModelForm,
-        ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class(): GastSchmidtKnosche_SDModelForm,
-        ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class(): GastSchmidtKnosche_SFModelForm,
+        ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class(): GastSchmidtKnoscheSDModelForm,
+        ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class(): GastSchmidtKnoscheSFModelForm,
         ModelsEnum.DUMONT_GUTKIN.get_class(): DumontGutkinModelForm,
         ModelsEnum.LINEAR.get_class(): LinearModelForm,
         ModelsEnum.WILSON_COWAN.get_class(): WilsonCowanModelForm,
@@ -576,10 +576,10 @@ class CoombesByrne2DModelForm(FormWithRanges):
     def get_params_configurable_in_phase_plane():
         return ['Delta', 'v_syn', 'k', 'eta', 'variables_of_interest']
 
-class GastSchmidtKnosche_SDModelForm(FormWithRanges):
+class GastSchmidtKnoscheSDModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
-        super(GastSchmidtKnosche_SDModelForm, self).__init__(prefix)
+        super(GastSchmidtKnoscheSDModelForm, self).__init__(prefix)
         self.tau = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().tau, self)
         self.tau_A = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().tau_A, self)
         self.alpha = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().alpha, self)
@@ -595,10 +595,10 @@ class GastSchmidtKnosche_SDModelForm(FormWithRanges):
     def get_params_configurable_in_phase_plane():
         return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv', 'variables_of_interest']
 
-class GastSchmidtKnosche_SFModelForm(FormWithRanges):
+class GastSchmidtKnoscheSFModelForm(FormWithRanges):
 
     def __init__(self, prefix=''):
-        super(GastSchmidtKnosche_SFModelForm, self).__init__(prefix)
+        super(GastSchmidtKnoscheSFModelForm, self).__init__(prefix)
         self.tau = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().tau, self)
         self.tau_A = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().tau_A, self)
         self.alpha = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().alpha, self)
