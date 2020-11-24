@@ -545,7 +545,7 @@ class MontbrioPazoRoxinModelForm(FormWithRanges):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return ['tau', 'I', 'Delta', 'J', 'eta', 'Gamma', 'cr', 'cv', 'variables_of_interest']
+        return ['tau', 'I', 'Delta', 'J', 'eta', 'Gamma', 'cr', 'cv']
 
 class CoombesByrneModelForm(FormWithRanges):
 
@@ -560,7 +560,7 @@ class CoombesByrneModelForm(FormWithRanges):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return ['Delta', 'alpha', 'v_syn', 'k', 'eta', 'variables_of_interest']
+        return ['Delta', 'alpha', 'v_syn', 'k', 'eta']
 
 class CoombesByrne2DModelForm(FormWithRanges):
 
@@ -574,7 +574,7 @@ class CoombesByrne2DModelForm(FormWithRanges):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return ['Delta', 'v_syn', 'k', 'eta', 'variables_of_interest']
+        return ['Delta', 'v_syn', 'k', 'eta']
 
 class GastSchmidtKnoscheSDModelForm(FormWithRanges):
 
@@ -593,7 +593,7 @@ class GastSchmidtKnoscheSDModelForm(FormWithRanges):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv', 'variables_of_interest']
+        return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv']
 
 class GastSchmidtKnoscheSFModelForm(FormWithRanges):
 
@@ -612,7 +612,7 @@ class GastSchmidtKnoscheSFModelForm(FormWithRanges):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv', 'variables_of_interest']
+        return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv']
 
 class DumontGutkinModelForm(FormWithRanges):
 
@@ -637,7 +637,7 @@ class DumontGutkinModelForm(FormWithRanges):
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['I_e', 'Delta_e', 'eta_e', 'tau_e', 'I_i', 'Delta_i', 'eta_i', 'tau_i', 'tau_s',
-                'J_ee', 'J_ei', 'J_ie', 'J_ii', 'Gamma', 'variables_of_interest']
+                'J_ee', 'J_ei', 'J_ie', 'J_ii', 'Gamma']
 
 
 class LinearModelForm(FormWithRanges):
