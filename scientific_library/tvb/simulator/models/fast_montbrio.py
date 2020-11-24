@@ -83,7 +83,10 @@ def run_gpu_loop(weights, delays,
     w = weights.astype(np.float32)
     d = (delays / dt).astype(np.int32)
     assert d.max() < nh
-    nt = 32
+    assert nto <= nh, 'oversampling <= buffer size'
+    block_dim_x = 64
+    grid_dim_x = 64
+    nt = grid_dim_x * block_dim_x
     # inner loop setup dimensions, constants, buffers
     r, V = rV = np.zeros((2, nh, nn, nt), 'f')
     nrV = np.zeros((2, nt), 'f')  # no stack arrays in Numba
@@ -95,7 +98,7 @@ def run_gpu_loop(weights, delays,
     bold_out = np.zeros((nn, nt), 'f')                             # buffer for bold output
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
-    loop = make_gpu_loop(nh, nto, nn, dt, cfpre, cfpost)
+    loop = make_gpu_loop(nh, nto, nn, dt, cfpre, cfpost, block_dim_x)
     #loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
     # outer loop setup
     win_len = nh * dt
@@ -112,10 +115,10 @@ def run_gpu_loop(weights, delays,
     bold_trace = np.zeros((total_wins//bold_skip + 1, ) + bold_out.shape, 'f')
     # start time stepping
     for t in (tqdm.trange if progress else range)(total_wins):
-        loop[1, 32](g_nrV, g_r, g_V, g_rngs, g_w, g_d, tavg, g_bold_state, g_bold_out,
+        loop[grid_dim_x, block_dim_x](g_nrV, g_r, g_V, g_rngs, g_w, g_d, g_tavg, g_bold_state, g_bold_out,
                      I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
         g_tavg.copy_to_host(p_tavg)
-        print(tavg)
+        # print(p_tavg)
         tavg_trace[t] = p_tavg
         if t % bold_skip == 0:
             g_bold_out.copy_to_host(p_bold_out)
@@ -140,8 +143,12 @@ def grid_search(loop, **params):
 if __name__ == '__main__':
     nn = 96
     w = np.random.randn(nn, nn)**2
-    d = np.random.rand(nn, nn)**2 * 15
+    d = np.random.rand(nn, nn)**2 * 25
     ns = 60
-    params = dict(dt=1.0, total_time=5*60e3, I=1.0, r_sigma=3e-3, V_sigma=1e-3, tau=10.0, progress=True)
+    params = dict(dt=0.1, total_time=60e3, I=1.0, r_sigma=3e-3, V_sigma=1e-3, tau=10.0, progress=True)
 
-    run_gpu_loop(w, d, **params)
+    tavg, bold = run_gpu_loop(w, d, **params)
+    print(tavg.shape)
+
+    # GPU 64x64 grid ~32min for 1min sim, ~0.5s per sim
+    # CPU     1 grid ~15sec for 1min sim (w/ single core boost @ 5GHz)
