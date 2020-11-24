@@ -310,6 +310,8 @@ class TestFastMontbrio(BaseTestCase):
         return sim
 
     def _numba_loop(self, dt, T, sim):
+        import os
+        os.environ['NUMBA_ENABLE_CUDASIM'] = '1'
         from tvb.simulator.models.fast_montbrio import run_loop
         y0, _ = run_loop(
             weights=sim.connectivity.weights,
