@@ -92,8 +92,8 @@ class ProjectionMatrixImporterModel(UploaderViewModel):
 
 class ProjectionMatrixImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ProjectionMatrixImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ProjectionMatrixImporterForm, self).__init__(project_id)
         self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, ('.mat', '.npy'),
                                                 self.project_id, 'projection_file', self.temporary_files)
         self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self.project_id, name='dataset_name')

@@ -80,8 +80,8 @@ class EquationForm(Form):
     def get_traited_equation(self):
         return Equation
 
-    def __init__(self, prefix=''):
-        super(EquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(EquationForm, self).__init__()
         self.equation = StrField(self.get_traited_equation().equation, self.project_id)
         for param_key, param in self.get_traited_equation().parameters.default().items():
             setattr(self, param_key, FloatField(Float(label=param_key, default=param), self.project_id, name=param_key))
@@ -104,8 +104,8 @@ class LinearEquationForm(EquationForm):
     def get_traited_equation(self):
         return Linear
 
-    def __init__(self, prefix=''):
-        super(LinearEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(LinearEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['a'] = self.a.value
@@ -121,8 +121,8 @@ class GaussianEquationForm(EquationForm):
     def get_traited_equation(self):
         return Gaussian
 
-    def __init__(self, prefix=''):
-        super(GaussianEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(GaussianEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['amp'] = self.amp.value
@@ -142,8 +142,8 @@ class DoubleGaussianEquationForm(EquationForm):
     def get_traited_equation(self):
         return DoubleGaussian
 
-    def __init__(self, prefix=''):
-        super(DoubleGaussianEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(DoubleGaussianEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['amp_1'] = self.amp_1.value
@@ -167,8 +167,8 @@ class SigmoidEquationForm(EquationForm):
     def get_traited_equation(self):
         return Sigmoid
 
-    def __init__(self, prefix=''):
-        super(SigmoidEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(SigmoidEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['amp'] = self.amp.value
@@ -188,8 +188,8 @@ class GeneralizedSigmoidEquationForm(EquationForm):
     def get_traited_equation(self):
         return GeneralizedSigmoid
 
-    def __init__(self, prefix=''):
-        super(GeneralizedSigmoidEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(GeneralizedSigmoidEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['low'] = self.low.value
@@ -209,8 +209,8 @@ class SinusoidEquationForm(EquationForm):
     def get_traited_equation(self):
         return Sinusoid
 
-    def __init__(self, prefix=''):
-        super(SinusoidEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(SinusoidEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['amp'] = self.amp.value
@@ -226,8 +226,8 @@ class CosineEquationForm(EquationForm):
     def get_traited_equation(self):
         return Cosine
 
-    def __init__(self, prefix=''):
-        super(CosineEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(CosineEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['amp'] = self.amp.value
@@ -243,8 +243,8 @@ class AlphaEquationForm(EquationForm):
     def get_traited_equation(self):
         return Alpha
 
-    def __init__(self, prefix=''):
-        super(AlphaEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(AlphaEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['onset'] = self.onset.value
@@ -262,8 +262,8 @@ class PulseTrainEquationForm(EquationForm):
     def get_traited_equation(self):
         return PulseTrain
 
-    def __init__(self, prefix=''):
-        super(PulseTrainEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(PulseTrainEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['T'] = self.T.value
@@ -283,8 +283,8 @@ class GammaEquationForm(EquationForm):
     def get_traited_equation(self):
         return Gamma
 
-    def __init__(self, prefix=''):
-        super(GammaEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(GammaEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['tau'] = self.tau.value
@@ -304,8 +304,8 @@ class DoubleExponentialEquationForm(EquationForm):
     def get_traited_equation(self):
         return DoubleExponential
 
-    def __init__(self, prefix=''):
-        super(DoubleExponentialEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(DoubleExponentialEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['tau_1'] = self.tau_1.value
@@ -333,8 +333,8 @@ class FirstOrderVolterraEquationForm(EquationForm):
     def get_traited_equation(self):
         return FirstOrderVolterra
 
-    def __init__(self, prefix=''):
-        super(FirstOrderVolterraEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(FirstOrderVolterraEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['tau_s'] = self.tau_s.value
@@ -354,8 +354,8 @@ class MixtureOfGammasEquationForm(EquationForm):
     def get_traited_equation(self):
         return MixtureOfGammas
 
-    def __init__(self, prefix=''):
-        super(MixtureOfGammasEquationForm, self).__init__(prefix)
+    def __init__(self):
+        super(MixtureOfGammasEquationForm, self).__init__()
 
     def fill_trait(self, datatype):
         datatype.parameters['a_1'] = self.a_1.value

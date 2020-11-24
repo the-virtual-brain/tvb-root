@@ -55,8 +55,8 @@ class CrossCorrelationVisualizerModel(ViewModel):
 
 class CrossCorrelationVisualizerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(CrossCorrelationVisualizerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(CrossCorrelationVisualizerForm, self).__init__(project_id)
         self.datatype = TraitDataTypeSelectField(CrossCorrelationVisualizerModel.datatype, self.project_id,
                                                  name='datatype')
 

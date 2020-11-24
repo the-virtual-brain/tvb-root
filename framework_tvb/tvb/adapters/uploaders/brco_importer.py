@@ -59,8 +59,8 @@ class BRCOImporterModel(UploaderViewModel):
 
 class BRCOImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BRCOImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(BRCOImporterForm, self).__init__(project_id)
 
         self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', self.project_id, 'data_file',
                                           self.temporary_files)

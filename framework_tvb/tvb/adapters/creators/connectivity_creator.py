@@ -83,8 +83,8 @@ class ConnectivityCreatorModel(ViewModel):
 
 class ConnectivityCreatorForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityCreatorForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ConnectivityCreatorForm, self).__init__(project_id)
         self.original_connectivity = TraitDataTypeSelectField(ConnectivityCreatorModel.original_connectivity,
                                                               self.project_id, name='original_connectivity',
                                                               conditions=self.get_filters())

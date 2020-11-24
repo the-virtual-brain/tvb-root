@@ -62,8 +62,8 @@ class ZIPConnectivityImporterModel(UploaderViewModel):
 
 class ZIPConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ZIPConnectivityImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ZIPConnectivityImporterForm, self).__init__(project_id)
 
         self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', self.project_id, 'uploaded',
                                          self.temporary_files)

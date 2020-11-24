@@ -86,8 +86,8 @@ def get_form_for_monitor(monitor_class):
 
 class MonitorForm(Form):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(MonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(MonitorForm, self).__init__(project_id)
         self.session_stored_simulator = session_stored_simulator
         self.project_id = project_id
         self.period = FloatField(Monitor.period, self.project_id)
@@ -143,20 +143,20 @@ class MonitorForm(Form):
 
 class RawMonitorForm(Form):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(RawMonitorForm, self).__init__(prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(RawMonitorForm, self).__init__(project_id)
 
 
 class SubSampleMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(SubSampleMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(SubSampleMonitorForm, self).__init__(session_stored_simulator, project_id)
 
 
 class SpatialAverageMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self.project_id)
         self.default_mask = StrField(SpatialAverage.default_mask, self.project_id)
 
@@ -180,20 +180,20 @@ class SpatialAverageMonitorForm(MonitorForm):
 
 class GlobalAverageMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(GlobalAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(GlobalAverageMonitorForm, self).__init__(session_stored_simulator, project_id)
 
 
 class TemporalAverageMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(TemporalAverageMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(TemporalAverageMonitorForm, self).__init__(session_stored_simulator, project_id)
 
 
 class ProjectionMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(ProjectionMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(ProjectionMonitorForm, self).__init__(session_stored_simulator, project_id)
 
         rm_filter = None
         if session_stored_simulator.is_surface_simulation:
@@ -206,8 +206,8 @@ class ProjectionMonitorForm(MonitorForm):
 
 class EEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(EEGMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(EEGMonitorForm, self).__init__(session_stored_simulator, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_EEG.value])
@@ -225,8 +225,8 @@ class EEGMonitorForm(ProjectionMonitorForm):
 
 class MEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(MEGMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(MEGMonitorForm, self).__init__(session_stored_simulator, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_MEG.value])
@@ -242,8 +242,8 @@ class MEGMonitorForm(ProjectionMonitorForm):
 
 class iEEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(iEEGMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(iEEGMonitorForm, self).__init__(session_stored_simulator, project_id)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_INTERNAL.value])
@@ -260,8 +260,8 @@ class iEEGMonitorForm(ProjectionMonitorForm):
 
 class BoldMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(BoldMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(BoldMonitorForm, self).__init__(session_stored_simulator, project_id)
         self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
         default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
 
@@ -282,5 +282,5 @@ class BoldMonitorForm(MonitorForm):
 
 class BoldRegionROIMonitorForm(BoldMonitorForm):
 
-    def __init__(self, session_stored_simulator=None, prefix='', project_id=None):
-        super(BoldRegionROIMonitorForm, self).__init__(session_stored_simulator, prefix, project_id)
+    def __init__(self, session_stored_simulator=None, project_id=None):
+        super(BoldRegionROIMonitorForm, self).__init__(session_stored_simulator, project_id)

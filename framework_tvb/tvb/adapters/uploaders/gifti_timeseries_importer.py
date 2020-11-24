@@ -62,8 +62,8 @@ class GIFTITimeSeriesImporterModel(UploaderViewModel):
 
 class GIFTITimeSeriesImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(GIFTITimeSeriesImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(GIFTITimeSeriesImporterForm, self).__init__(project_id)
 
         self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, '.gii', self.project_id,
                                           'data_file', self.temporary_files)

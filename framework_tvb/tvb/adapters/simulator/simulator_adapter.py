@@ -65,8 +65,8 @@ from tvb.simulator.simulator import Simulator
 
 class SimulatorAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(SimulatorAdapterForm, self).__init__(project_id)
         self.coupling_choices = get_ui_name_to_coupling_dict()
         default_coupling = list(self.coupling_choices.values())[0]
 

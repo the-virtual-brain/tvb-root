@@ -57,8 +57,8 @@ class TractViewerModel(ViewModel):
 
 class TractViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TractViewerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(TractViewerForm, self).__init__(project_id)
         self.tracts = TraitDataTypeSelectField(TractViewerModel.tracts, self.project_id, name='tracts')
         self.shell_surface = TraitDataTypeSelectField(TractViewerModel.shell_surface, self.project_id,
                                                       name='shell_surface')

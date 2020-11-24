@@ -69,8 +69,8 @@ class FFTAdapterModel(ViewModel, fft.FFT):
 
 class FFTAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(FFTAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(FFTAdapterForm, self).__init__(project_id)
         self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self.project_id, name='time_series',
                                                     conditions=self.get_filters(), has_all_option=True)
         self.segment_length = FloatField(FFTAdapterModel.segment_length, self.project_id)

@@ -102,8 +102,8 @@ class RegionMatTimeSeriesImporterModel(UploaderViewModel):
 
 class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(RegionMatTimeSeriesImporterForm, self).__init__(project_id)
         self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', self.project_id,
                                           'data_file', self.temporary_files)
         self.dataset_name = StrField(RegionMatTimeSeriesImporterModel.dataset_name, self.project_id, name='dataset_name')

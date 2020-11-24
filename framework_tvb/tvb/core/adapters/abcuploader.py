@@ -56,8 +56,8 @@ DECRYPTED_DATA_SUFFIX = '_decrypted'
 
 class ABCUploaderForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ABCUploaderForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ABCUploaderForm, self).__init__(project_id)
         self.subject_field = StrField(UploaderViewModel.data_subject, self.project_id, name='Data_Subject')
         # Show Encryption field only when the current TVB installation is capable of decryption
         supports_encrypted_files = (TvbProfile.current.UPLOAD_KEY_PATH is not None

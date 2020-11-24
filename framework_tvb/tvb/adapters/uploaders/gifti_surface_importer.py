@@ -75,8 +75,8 @@ class GIFTISurfaceImporterModel(UploaderViewModel):
 
 class GIFTISurfaceImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(GIFTISurfaceImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(GIFTISurfaceImporterForm, self).__init__(project_id)
 
         self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, self.project_id, name='file_type',
                                      choices=GIFTISurfaceImporterModel.surface_types)

@@ -82,8 +82,8 @@ class CrossCorrelateAdapterModel(ViewModel, CrossCorrelate):
 
 class CrossCorrelateAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(CrossCorrelateAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(CrossCorrelateAdapterForm, self).__init__(project_id)
         self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self.project_id,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)
@@ -286,8 +286,8 @@ class PearsonCorrelationCoefficientAdapterModel(ViewModel, CorrelationCoefficien
 
 class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(PearsonCorrelationCoefficientAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(PearsonCorrelationCoefficientAdapterForm, self).__init__(project_id)
         self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series,
                                                     self.project_id, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)

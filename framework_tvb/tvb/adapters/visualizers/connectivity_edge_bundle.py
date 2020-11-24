@@ -53,8 +53,8 @@ class ConnectivityEdgeBundleModel(ViewModel):
 
 class ConnectivityEdgeBundleForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityEdgeBundleForm, self).__init__(prefix)
+    def __init__(self, project_id=None):
+        super(ConnectivityEdgeBundleForm, self).__init__()
         self.connectivity = TraitDataTypeSelectField(ConnectivityEdgeBundleModel.connectivity, project_id,
                                                      name="connectivity", conditions=self.get_filters(),
                                                      has_all_option=False)

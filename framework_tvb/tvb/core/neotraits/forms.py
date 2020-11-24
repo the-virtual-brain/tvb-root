@@ -51,20 +51,13 @@ from tvb.core.neotraits.view_model import DataTypeGidAttr
 jinja_env = None
 
 
-def prepare_prefixed_name_for_field(prefix, name):
-    if prefix != "":
-        return '{}_{}'.format(prefix, name)
-    else:
-        return name
-
-
 class Field(object):
     template = None
 
-    def __init__(self, project_id, name, disabled=False, required=False, label='', doc='', default=None, prefix=''):
-        # type: (int, str, bool, bool, str, str, object, str) -> None
+    def __init__(self, project_id, name, disabled=False, required=False, label='', doc='', default=None):
+        # type: (int, str, bool, bool, str, str, object) -> None
         self.project_id = project_id
-        self.name = prepare_prefixed_name_for_field(prefix, name)
+        self.name = name
         self.disabled = disabled
         self.required = required
         self.label = label
@@ -500,10 +493,6 @@ class FormField(Field):
     def validate(self):
         return self.form.validate()
 
-    @property
-    def prefix_name(self):
-        return self.form.prefix
-
     def __str__(self):
         return jinja_env.get_template(self.template).render(adapter_form=self.form)
 
@@ -514,10 +503,9 @@ class Form(object):
     range_1 = None
     range_2 = None
 
-    def __init__(self, prefix='', project_id=None):
+    def __init__(self, project_id=None):
         # TODO: makes sense here?
         self.project_id = project_id
-        self.prefix = prefix
         self.errors = []
 
     def get_subform_key(self):

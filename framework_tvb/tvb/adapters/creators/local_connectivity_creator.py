@@ -48,8 +48,8 @@ from tvb.datatypes.surfaces import Surface, CORTICAL
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(LocalConnectivitySelectorForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(LocalConnectivitySelectorForm, self).__init__(project_id)
         traited_attr = Attr(self.get_required_datatype(), label='Load Local Connectivity', required=False)
         self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, self.project_id,
                                                                name='existentEntitiesSelect')
@@ -85,8 +85,8 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
 
-    def __init__(self, equation_choices, prefix='', project_id=None):
-        super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
+    def __init__(self, equation_choices, project_id=None):
+        super(LocalConnectivityCreatorForm, self).__init__(project_id)
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self.project_id,
                                                 name=self.get_input_name(), conditions=self.get_filters())
         self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self.project_id, name='spatial',

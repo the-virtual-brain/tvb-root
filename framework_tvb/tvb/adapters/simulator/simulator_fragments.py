@@ -52,8 +52,8 @@ from tvb.core.neotraits.forms import IntField, StrField
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorSurfaceFragment, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(SimulatorSurfaceFragment, self).__init__(project_id)
         conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                  values=[CORTICAL])
         self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, self.project_id, name='surface',
@@ -70,8 +70,8 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
 
 
 class SimulatorRMFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None, surface_index=None, connectivity_gid=None):
-        super(SimulatorRMFragment, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None, surface_index=None, connectivity_gid=None):
+        super(SimulatorRMFragment, self).__init__(project_id)
         rm_conditions = None
         lc_conditions = None
         if surface_index:
@@ -90,8 +90,8 @@ class SimulatorRMFragment(ABCAdapterForm):
 
 
 class SimulatorStimulusFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
-        super(SimulatorStimulusFragment, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None, is_surface_simulation=False):
+        super(SimulatorStimulusFragment, self).__init__(project_id)
         stimuli_index_class = StimuliRegionIndex
         if is_surface_simulation:
             stimuli_index_class = SpatioTemporalPatternIndex
@@ -108,8 +108,8 @@ class SimulatorStimulusFragment(ABCAdapterForm):
 
 
 class SimulatorModelFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorModelFragment, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(SimulatorModelFragment, self).__init__(project_id)
         self.model_choices = get_ui_name_to_model()
         default_model = list(self.model_choices.values())[0]
 
@@ -129,8 +129,8 @@ class SimulatorModelFragment(ABCAdapterForm):
 
 class SimulatorIntegratorFragment(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorIntegratorFragment, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(SimulatorIntegratorFragment, self).__init__(project_id)
         self.integrator_choices = get_ui_name_to_integrator_dict()
         default_integrator = list(self.integrator_choices.values())[0]
 
@@ -151,8 +151,8 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
 
 class SimulatorMonitorFragment(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
-        super(SimulatorMonitorFragment, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None, is_surface_simulation=False):
+        super(SimulatorMonitorFragment, self).__init__(project_id)
         self.monitor_choices = get_ui_name_to_monitor_dict(is_surface_simulation)
         self.is_surface_simulation = is_surface_simulation
 
@@ -169,8 +169,8 @@ class SimulatorMonitorFragment(ABCAdapterForm):
 
 class SimulatorFinalFragment(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None, default_simulation_name="simulation_1"):
-        super(SimulatorFinalFragment, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None, default_simulation_name="simulation_1"):
+        super(SimulatorFinalFragment, self).__init__(project_id)
         self.simulation_length = FloatField(SimulatorAdapterModel.simulation_length, self.project_id)
         self.simulation_name = StrField(Attr(str, doc='Name for the current simulation configuration',
                                                 default=default_simulation_name, label='Simulation name'),
@@ -202,8 +202,8 @@ class SimulatorFinalFragment(ABCAdapterForm):
 
 class SimulatorPSEConfigurationFragment(ABCAdapterForm):
 
-    def __init__(self, choices, prefix='', project_id=None):
-        super(SimulatorPSEConfigurationFragment, self).__init__(prefix, project_id)
+    def __init__(self, choices, project_id=None):
+        super(SimulatorPSEConfigurationFragment, self).__init__(project_id)
         default_choice = list(choices.values())[0]
         self.pse_param1 = SelectField(Str(default=default_choice, label="PSE param1"), self.project_id, choices=choices,
                                       name='pse_param1')
@@ -220,9 +220,9 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
     STEP_FIELD = 'pse_{}_step'
     GID_FIELD = 'pse_{}_guid'
 
-    def __init__(self, pse_param1, pse_param2, prefix='', project_id=None):
-        # type: (RangeParameter, RangeParameter, str, int) -> None
-        super(SimulatorPSERangeFragment, self).__init__(prefix, project_id)
+    def __init__(self, pse_param1, pse_param2, project_id=None):
+        # type: (RangeParameter, RangeParameter, int) -> None
+        super(SimulatorPSERangeFragment, self).__init__(project_id)
         self._add_pse_field(pse_param1)
         if pse_param2:
             self._add_pse_field(pse_param2, self.KEY_PARAM2)

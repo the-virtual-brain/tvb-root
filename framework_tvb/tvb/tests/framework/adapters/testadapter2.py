@@ -53,8 +53,8 @@ class TestAdapter2Form(abcadapter.ABCAdapterForm):
         This class is used for testing purposes.
     """
 
-    def __init__(self, prefix='', project_id=None):
-        super(TestAdapter2Form, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(TestAdapter2Form, self).__init__(project_id)
         self.test = IntField(TestModel.test, self.project_id, name='test')
 
     @staticmethod
