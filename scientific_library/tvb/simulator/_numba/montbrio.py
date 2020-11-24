@@ -118,7 +118,8 @@ def make_gpu_loop(nh, nto, nn, dt, cfpre, cfpost, blockDim_x):
                 tavg[t0_nto, 1, i, it] += nrV[1, itx] * o_nh
                 # if it==0: print(t1, o_nh, tavg[t0_nto, 0, i, it], tavg[t0_nto, 1, i, it])
                 # TODO probably a faulty memory access inside the fmri kernel
-                # bold_out[i, it] = fmri_gpu(bold_state[i, it], tavg[0, 0, i, it], dt)
+                bold_out[i, it] = fmri_gpu(it, bold_state[i], tavg[0, 0, i, it], dt)
+                # if it==0: print("loop body done")
     return loop
 
 

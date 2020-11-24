@@ -8,7 +8,7 @@ def make_fmri(use_cuda=False):
     else:
         jit = nb.njit(fastmath=True,boundscheck=False,inline='always')
     @jit
-    def fmri(node_bold, x, dt):
+    def fmri_(it, node_bold, x, dt):
         TAU_S = nb.float32(0.65)
         TAU_F = nb.float32(0.41)
         TAU_O = nb.float32(0.98)
@@ -28,10 +28,10 @@ def make_fmri(use_cuda=False):
         k2 = nb.float32((EPSILON * R_0 * E0 * TE))
         k3 = nb.float32((1.0 - EPSILON))
         # end constants, start diff eqns
-        s = node_bold[0]
-        f = node_bold[1]
-        v = node_bold[2]
-        q = node_bold[3]
+        s = node_bold[0, it]
+        f = node_bold[1, it]
+        v = node_bold[2, it]
+        q = node_bold[3, it]
         ds = x - RECIP_TAU_S * s - RECIP_TAU_F * (f - 1.0)
         df = s
         dv = RECIP_TAU_O * (f - pow(v, RECIP_ALPHA))
@@ -41,11 +41,18 @@ def make_fmri(use_cuda=False):
         f += dt * df
         v += dt * dv
         q += dt * dq
-        node_bold[0] = s
-        node_bold[1] = f
-        node_bold[2] = v
-        node_bold[3] = q
+        node_bold[0, it] = s
+        node_bold[1, it] = f
+        node_bold[2, it] = v
+        node_bold[3, it] = q
         return V0 * (k1 * (1.0 - q) + k2 * (1.0 - q / v) + k3 * (1.0 - v))
+    # for plain version, fix it==0 compile time
+    if not use_cuda:
+        @nb.njit
+        def fmri(node_bold, x, dt):
+            return fmri_(nb.uint32(0), node_bold, x, dt)
+    else:
+        fmri = fmri_
     return fmri
 
 
