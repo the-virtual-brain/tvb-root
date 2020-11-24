@@ -52,16 +52,16 @@ class NoiseForm(FormWithRanges):
     def get_subform_key(self):
         return SubformsEnum.NOISE.name
 
-    def __init__(self, prefix=''):
-        super(NoiseForm, self).__init__(prefix)
+    def __init__(self):
+        super(NoiseForm, self).__init__()
         self.ntau = FloatField(NoiseViewModel.ntau, self.project_id)
         self.noise_seed = IntField(NoiseViewModel.noise_seed, self.project_id)
 
 
 class AdditiveNoiseForm(NoiseForm):
 
-    def __init__(self, prefix=''):
-        super(AdditiveNoiseForm, self).__init__(prefix)
+    def __init__(self):
+        super(AdditiveNoiseForm, self).__init__()
         self.nsig = ArrayField(AdditiveNoiseViewModel.nsig, self.project_id)
 
     def get_range_parameters(self):
@@ -74,8 +74,8 @@ class AdditiveNoiseForm(NoiseForm):
 
 class MultiplicativeNoiseForm(NoiseForm):
 
-    def __init__(self, prefix=''):
-        super(MultiplicativeNoiseForm, self).__init__(prefix)
+    def __init__(self):
+        super(MultiplicativeNoiseForm, self).__init__()
         self.equation_choices = get_ui_name_to_equation_dict()
         default_equation = list(self.equation_choices.values())[0]
 

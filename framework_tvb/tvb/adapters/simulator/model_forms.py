@@ -104,14 +104,14 @@ def get_form_for_model(model_class):
 
 class StateVariableRangesForm(Form):
 
-    def __init__(self, prefix=''):
-        super(StateVariableRangesForm, self).__init__(prefix)
+    def __init__(self):
+        super(StateVariableRangesForm, self).__init__()
 
 
 class Generic2dOscillatorModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(Generic2dOscillatorModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(Generic2dOscillatorModelForm, self).__init__()
         self.tau = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().tau, self.project_id)
         self.I = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().I, self.project_id)
         self.a = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().a, self.project_id)
@@ -135,8 +135,8 @@ class Generic2dOscillatorModelForm(FormWithRanges):
 
 class KuramotoModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(KuramotoModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(KuramotoModelForm, self).__init__()
         self.omega = ArrayField(ModelsEnum.KURAMOTO.get_class().omega, self.project_id)
         self.variables_of_interest = MultiSelectField(ModelsEnum.KURAMOTO.get_class().variables_of_interest,
                                                       self.project_id)
@@ -148,8 +148,8 @@ class KuramotoModelForm(FormWithRanges):
 
 class SupHopfModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(SupHopfModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(SupHopfModelForm, self).__init__()
         self.a = ArrayField(ModelsEnum.SUP_HOPF.get_class().a, self.project_id)
         self.omega = ArrayField(ModelsEnum.SUP_HOPF.get_class().omega, self.project_id)
         self.variables_of_interest = MultiSelectField(ModelsEnum.SUP_HOPF.get_class().variables_of_interest,
@@ -162,8 +162,8 @@ class SupHopfModelForm(FormWithRanges):
 
 class HopfieldModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(HopfieldModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(HopfieldModelForm, self).__init__()
         self.taux = ArrayField(ModelsEnum.HOPFIELD.get_class().taux, self.project_id)
         self.tauT = ArrayField(ModelsEnum.HOPFIELD.get_class().tauT, self.project_id)
         self.dynamic = ArrayField(ModelsEnum.HOPFIELD.get_class().dynamic, self.project_id)
@@ -177,8 +177,8 @@ class HopfieldModelForm(FormWithRanges):
 
 class EpileptorModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(EpileptorModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(EpileptorModelForm, self).__init__()
         self.a = ArrayField(ModelsEnum.EPILEPTOR.get_class().a, self.project_id)
         self.b = ArrayField(ModelsEnum.EPILEPTOR.get_class().b, self.project_id)
         self.c = ArrayField(ModelsEnum.EPILEPTOR.get_class().c, self.project_id)
@@ -207,8 +207,8 @@ class EpileptorModelForm(FormWithRanges):
 
 class Epileptor2DModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(Epileptor2DModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(Epileptor2DModelForm, self).__init__()
         self.a = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().a, self.project_id)
         self.b = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().b, self.project_id)
         self.c = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().c, self.project_id)
@@ -231,8 +231,8 @@ class Epileptor2DModelForm(FormWithRanges):
 
 class EpileptorCodim3ModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(EpileptorCodim3ModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(EpileptorCodim3ModelForm, self).__init__()
         self.mu1_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().mu1_start, self.project_id)
         self.mu2_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().mu2_start, self.project_id)
         self.nu_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().nu_start, self.project_id)
@@ -257,8 +257,8 @@ class EpileptorCodim3ModelForm(FormWithRanges):
 
 class EpileptorCodim3SlowModModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(EpileptorCodim3SlowModModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(EpileptorCodim3SlowModModelForm, self).__init__()
         self.mu1_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu1_Ain, self.project_id)
         self.mu2_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu2_Ain, self.project_id)
         self.nu_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().nu_Ain, self.project_id)
@@ -291,8 +291,8 @@ class EpileptorCodim3SlowModModelForm(FormWithRanges):
 
 class EpileptorRestingStateModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(EpileptorRestingStateModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(EpileptorRestingStateModelForm, self).__init__()
         self.a = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().a, self.project_id)
         self.b = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().b, self.project_id)
         self.c = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().c, self.project_id)
@@ -332,8 +332,8 @@ class EpileptorRestingStateModelForm(FormWithRanges):
 
 class JansenRitModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(JansenRitModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(JansenRitModelForm, self).__init__()
         self.A = ArrayField(ModelsEnum.JANSEN_RIT.get_class().A, self.project_id)
         self.B = ArrayField(ModelsEnum.JANSEN_RIT.get_class().B, self.project_id)
         self.a = ArrayField(ModelsEnum.JANSEN_RIT.get_class().a, self.project_id)
@@ -359,8 +359,8 @@ class JansenRitModelForm(FormWithRanges):
 
 class ZetterbergJansenModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(ZetterbergJansenModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(ZetterbergJansenModelForm, self).__init__()
         self.He = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().He, self.project_id)
         self.Hi = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().Hi, self.project_id)
         self.ke = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().ke, self.project_id)
@@ -390,8 +390,8 @@ class ZetterbergJansenModelForm(FormWithRanges):
 
 class ReducedWongWangModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(ReducedWongWangModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(ReducedWongWangModelForm, self).__init__()
         self.a = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().a, self.project_id)
         self.b = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().b, self.project_id)
         self.d = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().d, self.project_id)
@@ -411,8 +411,8 @@ class ReducedWongWangModelForm(FormWithRanges):
 
 class ReducedWongWangExcInhModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(ReducedWongWangExcInhModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(ReducedWongWangExcInhModelForm, self).__init__()
         self.a_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().a_e, self.project_id)
         self.b_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().b_e, self.project_id)
         self.d_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().d_e, self.project_id)
@@ -443,8 +443,8 @@ class ReducedWongWangExcInhModelForm(FormWithRanges):
 
 class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(ReducedSetFitzHughNagumoModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(ReducedSetFitzHughNagumoModelForm, self).__init__()
         self.tau = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().tau, self.project_id)
         self.a = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().a, self.project_id)
         self.b = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().b, self.project_id)
@@ -463,8 +463,8 @@ class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
 
 class ReducedSetHindmarshRoseModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(ReducedSetHindmarshRoseModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(ReducedSetHindmarshRoseModelForm, self).__init__()
         self.r = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().r, self.project_id)
         self.a = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().a, self.project_id)
         self.b = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().b, self.project_id)
@@ -487,8 +487,8 @@ class ReducedSetHindmarshRoseModelForm(FormWithRanges):
 
 class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(ZerlautAdaptationFirstOrderModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(ZerlautAdaptationFirstOrderModelForm, self).__init__()
         self.g_L = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().g_L, self.project_id)
         self.E_L_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().E_L_e, self.project_id)
         self.E_L_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().E_L_i, self.project_id)
@@ -533,8 +533,8 @@ class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
 
 class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm):
 
-    def __init__(self, prefix=''):
-        super(ZerlautAdaptationSecondOrderModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(ZerlautAdaptationSecondOrderModelForm, self).__init__()
         self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_SECOND_ORDER.get_class().variables_of_interest,
                                                       self.project_id)
 
@@ -651,8 +651,8 @@ class DumontGutkinModelForm(FormWithRanges):
 
 class LinearModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(LinearModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(LinearModelForm, self).__init__()
         self.gamma = ArrayField(ModelsEnum.LINEAR.get_class().gamma, self.project_id)
         self.variables_of_interest = MultiSelectField(ModelsEnum.LINEAR.get_class().variables_of_interest,
                                                       self.project_id)
@@ -664,8 +664,8 @@ class LinearModelForm(FormWithRanges):
 
 class WilsonCowanModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(WilsonCowanModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(WilsonCowanModelForm, self).__init__()
         self.c_ee = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ee, self.project_id)
         self.c_ie = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ie, self.project_id)
         self.c_ei = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ei, self.project_id)
@@ -699,8 +699,8 @@ class WilsonCowanModelForm(FormWithRanges):
 
 class LarterBreakspearModelForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(LarterBreakspearModelForm, self).__init__(prefix)
+    def __init__(self):
+        super(LarterBreakspearModelForm, self).__init__()
         self.gCa = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gCa, self.project_id)
         self.gK = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gK, self.project_id)
         self.gL = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gL, self.project_id)

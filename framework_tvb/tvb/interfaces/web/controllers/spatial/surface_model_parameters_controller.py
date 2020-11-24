@@ -66,8 +66,8 @@ class SurfaceModelParametersForm(ABCAdapterForm):
     equation_choices = {GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(GAUSSIAN_EQUATION),
                         SIGMOID_EQUATION: ui_name_to_equation_dict.get(SIGMOID_EQUATION)}
 
-    def __init__(self, model_params, prefix=''):
-        super(SurfaceModelParametersForm, self).__init__(prefix)
+    def __init__(self, model_params):
+        super(SurfaceModelParametersForm, self).__init__()
 
         self.model_param = SelectField(Str(label='Model parameter'), self.project_id, choices=model_params,
                                        name='model_param')

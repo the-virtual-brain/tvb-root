@@ -74,8 +74,8 @@ class RegionMappingImporterModel(UploaderViewModel):
 
 class RegionMappingImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RegionMappingImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(RegionMappingImporterForm, self).__init__(project_id)
 
         self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'),
                                              self.project_id, 'mapping_file', self.temporary_files)

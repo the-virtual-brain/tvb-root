@@ -79,8 +79,8 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
         return {"KuramotoIndex": FilterChain(fields=[FilterChain.datatype + '.data_length_2d'], operations=[">="],
                                              values=[2])}
 
-    def __init__(self, prefix='', project_id=None):
-        super(TimeseriesMetricsAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(TimeseriesMetricsAdapterForm, self).__init__(project_id)
         self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, self.project_id,
                                                     name="time_series")
         self.start_point = FloatField(TimeseriesMetricsAdapterModel.start_point, self.project_id)

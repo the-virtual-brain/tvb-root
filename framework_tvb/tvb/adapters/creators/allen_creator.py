@@ -105,8 +105,8 @@ class AllenConnectModel(ViewModel):
 
 class AllenConnectomeBuilderForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(AllenConnectomeBuilderForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(AllenConnectomeBuilderForm, self).__init__(project_id)
         self.resolution = SelectField(AllenConnectModel.resolution, self.project_id, choices=RESOLUTION_OPTIONS)
         self.weighting = SelectField(AllenConnectModel.weighting, self.project_id, choices=WEIGHTS_OPTIONS)
         self.inj_f_thresh = FloatField(AllenConnectModel.inj_f_thresh, self.project_id)

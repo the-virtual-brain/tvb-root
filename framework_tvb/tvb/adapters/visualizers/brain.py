@@ -70,8 +70,8 @@ class BrainViewerModel(ViewModel):
 
 class BrainViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BrainViewerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(BrainViewerForm, self).__init__(project_id)
         self.time_series = TraitDataTypeSelectField(BrainViewerModel.time_series, self.project_id, name='time_series',
                                                     conditions=self.get_filters())
         self.shell_surface = TraitDataTypeSelectField(BrainViewerModel.shell_surface, self.project_id,
@@ -404,8 +404,8 @@ class DualBrainViewerModel(ViewModel):
 
 class DualBrainViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(DualBrainViewerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(DualBrainViewerForm, self).__init__(project_id)
         self.time_series = TraitDataTypeSelectField(DualBrainViewerModel.time_series, self.project_id,
                                                     name='time_series',
                                                     conditions=self.get_filters())

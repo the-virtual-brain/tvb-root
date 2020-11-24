@@ -142,8 +142,8 @@ class CSVConnectivityImporterModel(UploaderViewModel):
 
 class CSVConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(CSVConnectivityImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(CSVConnectivityImporterForm, self).__init__(project_id)
 
         self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', self.project_id,
                                         'weights', self.temporary_files)

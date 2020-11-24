@@ -159,8 +159,8 @@ class MatrixVisualizerModel(ViewModel):
 
 class MatrixVisualizerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(MatrixVisualizerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(MatrixVisualizerForm, self).__init__(project_id)
         self.datatype = TraitDataTypeSelectField(MatrixVisualizerModel.datatype, self.project_id, name='datatype',
                                                  conditions=self.get_filters())
         self.slice = StrField(MatrixVisualizerModel.slice, self.project_id, name='slice')

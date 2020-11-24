@@ -94,8 +94,8 @@ class NetworkxImporterModel(UploaderViewModel):
 
 class NetworkxConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(NetworkxConnectivityImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(NetworkxConnectivityImporterForm, self).__init__(project_id)
         self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', self.project_id, 'data_file',
                                           self.temporary_files)
         self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, self.project_id, 'key_edge_weight')

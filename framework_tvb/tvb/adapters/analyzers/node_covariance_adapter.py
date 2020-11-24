@@ -74,8 +74,8 @@ class NodeCovarianceAdapterModel(ViewModel, NodeCovariance):
 
 
 class NodeCovarianceAdapterForm(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(NodeCovarianceAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(NodeCovarianceAdapterForm, self).__init__(project_id)
         self.time_series = TraitDataTypeSelectField(NodeCovarianceAdapterModel.time_series, self.project_id,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)

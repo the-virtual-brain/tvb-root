@@ -192,8 +192,8 @@ class TopographicViewerModel(ViewModel):
 
 class TopographicViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TopographicViewerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(TopographicViewerForm, self).__init__(project_id)
         self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, self.project_id, name='data_0',
                                                conditions=self.get_filters())
         self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, self.project_id, name='data_1',

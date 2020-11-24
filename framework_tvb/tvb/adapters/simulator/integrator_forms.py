@@ -65,16 +65,16 @@ class IntegratorForm(Form):
     def get_subform_key(self):
         return SubformsEnum.INTEGRATOR.name
 
-    def __init__(self, prefix=''):
-        super(IntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(IntegratorForm, self).__init__()
         self.dt = FloatField(IntegratorViewModel.dt, self.project_id)
 
 
 class IntegratorStochasticForm(IntegratorForm):
     template = 'form_fields/select_field.html'
 
-    def __init__(self, prefix=''):
-        super(IntegratorStochasticForm, self).__init__(prefix)
+    def __init__(self):
+        super(IntegratorStochasticForm, self).__init__()
         self.noise_choices = get_ui_name_to_noise_dict()
         default_noise = list(self.noise_choices.values())[0]
 
@@ -93,71 +93,71 @@ class IntegratorStochasticForm(IntegratorForm):
 
 class HeunDeterministicIntegratorForm(IntegratorForm):
 
-    def __init__(self, prefix=''):
-        super(HeunDeterministicIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(HeunDeterministicIntegratorForm, self).__init__()
 
 
 class HeunStochasticIntegratorForm(IntegratorStochasticForm):
 
-    def __init__(self, prefix=''):
-        super(HeunStochasticIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(HeunStochasticIntegratorForm, self).__init__()
 
 
 class EulerDeterministicIntegratorForm(IntegratorForm):
 
-    def __init__(self, prefix=''):
-        super(EulerDeterministicIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(EulerDeterministicIntegratorForm, self).__init__()
 
 
 class EulerStochasticIntegratorForm(IntegratorStochasticForm):
 
-    def __init__(self, prefix=''):
-        super(EulerStochasticIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(EulerStochasticIntegratorForm, self).__init__()
 
 
 class RungeKutta4thOrderDeterministicIntegratorForm(IntegratorForm):
 
-    def __init__(self, prefix=''):
-        super(RungeKutta4thOrderDeterministicIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(RungeKutta4thOrderDeterministicIntegratorForm, self).__init__()
 
 
 class IdentityIntegratorForm(IntegratorForm):
 
-    def __init__(self, prefix=''):
-        super(IdentityIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(IdentityIntegratorForm, self).__init__()
 
 
 class VODEIntegratorForm(IntegratorForm):
 
-    def __init__(self, prefix=''):
-        super(VODEIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(VODEIntegratorForm, self).__init__()
 
 
 class VODEStochasticIntegratorForm(IntegratorStochasticForm):
 
-    def __init__(self, prefix=''):
-        super(VODEStochasticIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(VODEStochasticIntegratorForm, self).__init__()
 
 
 class Dopri5IntegratorForm(IntegratorForm):
 
-    def __init__(self, prefix=''):
-        super(Dopri5IntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(Dopri5IntegratorForm, self).__init__()
 
 
 class Dopri5StochasticIntegratorForm(IntegratorStochasticForm):
 
-    def __init__(self, prefix=''):
-        super(Dopri5StochasticIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(Dopri5StochasticIntegratorForm, self).__init__()
 
 
 class Dop853IntegratorForm(IntegratorForm):
 
-    def __init__(self, prefix=''):
-        super(Dop853IntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(Dop853IntegratorForm, self).__init__()
 
 
 class Dop853StochasticIntegratorForm(IntegratorStochasticForm):
 
-    def __init__(self, prefix=''):
-        super(Dop853StochasticIntegratorForm, self).__init__(prefix)
+    def __init__(self):
+        super(Dop853StochasticIntegratorForm, self).__init__()

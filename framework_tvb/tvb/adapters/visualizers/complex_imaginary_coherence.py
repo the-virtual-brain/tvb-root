@@ -54,8 +54,8 @@ class ImaginaryCoherenceDisplayModel(ViewModel):
 
 class ImaginaryCoherenceDisplayForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ImaginaryCoherenceDisplayForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ImaginaryCoherenceDisplayForm, self).__init__(project_id)
         self.input_data = TraitDataTypeSelectField(ImaginaryCoherenceDisplayModel.input_data, self.project_id,
                                                    'input_data', conditions=self.get_filters())
 

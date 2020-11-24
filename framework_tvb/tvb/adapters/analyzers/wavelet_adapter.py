@@ -65,8 +65,8 @@ class WaveletAdapterModel(ViewModel, ContinuousWaveletTransform):
 
 
 class RangeForm(Form):
-    def __init__(self, prefix=''):
-        super(RangeForm, self).__init__(prefix)
+    def __init__(self):
+        super(RangeForm, self).__init__()
         self.lo = FloatField(
             Float(label='Lo', default=ContinuousWaveletTransform.frequencies.default.lo, doc='start of range'),
             self.project_id, name='Lo')
@@ -80,8 +80,8 @@ class RangeForm(Form):
 
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ContinuousWaveletTransformAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ContinuousWaveletTransformAdapterForm, self).__init__(project_id)
         self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, self.project_id,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)

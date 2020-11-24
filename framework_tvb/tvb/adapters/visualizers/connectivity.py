@@ -111,15 +111,8 @@ class ConnectivityViewerModel(ViewModel):
 
 class ConnectivityViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityViewerForm, self).__init__(prefix, project_id)
-
-        # filters_ui = [UIFilter(linked_elem_name="colors",
-        #                        linked_elem_field=FilterChain.datatype + "._connectivity"),
-        #               UIFilter(linked_elem_name="rays",
-        #                        linked_elem_field=FilterChain.datatype + "._connectivity")]
-        # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
-        # KWARG_FILTERS_UI: json_ui_filter
+    def __init__(self, project_id=None):
+        super(ConnectivityViewerForm, self).__init__(project_id)
 
         self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, self.project_id,
                                                      name='input_data', conditions=self.get_filters())
