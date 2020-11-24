@@ -37,7 +37,6 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 """
 
-import json
 import uuid
 import numpy
 from scipy.signal.signaltools import correlate
@@ -165,30 +164,21 @@ class CrossCorrelateAdapter(ABCAdapter):
             small_ts.sample_period = ts_h5.sample_period.load()
             small_ts.sample_period_unit = ts_h5.sample_period_unit.load()
             partial_cross_corr = None
-            labels_ordering = ts_h5.labels_ordering.load()
             for var in range(self.input_shape[1]):
                 node_slice[1] = slice(var, var + 1)
                 small_ts.data = ts_h5.read_data_slice(tuple(node_slice))
                 partial_cross_corr = self._compute_cross_correlation(small_ts, ts_h5)
                 cross_corr_h5.write_data_slice(partial_cross_corr)
-            ts_array_metadata = cross_corr_h5.array_data.get_cached_metadata()
 
-        cross_corr_h5.time.store(partial_cross_corr.time)
-        cross_corr_labels_ordering = list(partial_cross_corr.labels_ordering)
-        cross_corr_labels_ordering[1] = labels_ordering[2]
-        cross_corr_labels_ordering[2] = labels_ordering[2]
-        cross_corr_h5.labels_ordering.store(json.dumps(tuple(cross_corr_labels_ordering)))
-        cross_corr_h5.source.store(uuid.UUID(self.input_time_series_index.gid))
-        cross_corr_h5.gid.store(uuid.UUID(cross_corr_index.gid))
+        partial_cross_corr.source.gid = view_model.time_series
+        partial_cross_corr.gid = uuid.UUID(cross_corr_index.gid)
 
-        cross_corr_index.fk_source_gid = self.input_time_series_index.gid
-        cross_corr_index.labels_ordering = cross_corr_h5.labels_ordering.load()
-        cross_corr_index.type = type(cross_corr_index).__name__
-        cross_corr_index.array_data_min = ts_array_metadata.min
-        cross_corr_index.array_data_max = ts_array_metadata.max
-        cross_corr_index.array_data_mean = ts_array_metadata.mean
+        cross_corr_index.fill_from_has_traits(partial_cross_corr)
+        self.fill_from_h5(cross_corr_index, cross_corr_h5)
 
+        cross_corr_h5.store(partial_cross_corr, scalars_only=True)
         cross_corr_h5.close()
+
         return cross_corr_index
 
     def _compute_cross_correlation(self, small_ts, input_ts_h5):

@@ -193,14 +193,10 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         # type: (FCDAdapterModel) -> int
         return 0
 
-    @staticmethod
-    def _populate_fcd_index(fcd_index, source_gid, fcd_data, metadata):
+    def _populate_fcd_index(self, fcd_index, source_gid, fcd_h5):
         fcd_index.fk_source_gid = source_gid
         fcd_index.labels_ordering = json.dumps(Fcd.labels_ordering.default)
-        fcd_index.ndim = fcd_data.ndim
-        fcd_index.array_data_min = metadata.min
-        fcd_index.array_data_max = metadata.max
-        fcd_index.array_data_mean = metadata.mean
+        self.fill_from_h5(fcd_index, fcd_h5)
 
     @staticmethod
     def _populate_fcd_h5(fcd_h5, fcd_data, gid, source_gid, sw, sp):
@@ -210,7 +206,6 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         fcd_h5.sw.store(sw)
         fcd_h5.sp.store(sp)
         fcd_h5.labels_ordering.store(json.dumps(Fcd.labels_ordering.default))
-        return fcd_h5.array_data.get_cached_metadata()
 
     def launch(self, view_model):
         # type: (FCDAdapterModel) -> [FcdIndex]
@@ -234,21 +229,21 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         fcd_index = FcdIndex()
         fcd_h5_path = h5.path_for(self.storage_path, FcdH5, fcd_index.gid)
         with FcdH5(fcd_h5_path) as fcd_h5:
-            fcd_array_metadata = self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, self.input_time_series_index.gid,
-                                                       view_model.sw, view_model.sp)
-        self._populate_fcd_index(fcd_index, self.input_time_series_index.gid, fcd, fcd_array_metadata)
+            self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, self.input_time_series_index.gid,
+                                  view_model.sw, view_model.sp)
+            self._populate_fcd_index(fcd_index, self.input_time_series_index.gid, fcd_h5)
         result.append(fcd_index)
 
         if np.amax(fcd_segmented) == 1.1:
             result_fcd_segmented_index = FcdIndex()
             result_fcd_segmented_h5_path = h5.path_for(self.storage_path, FcdH5, result_fcd_segmented_index.gid)
             with FcdH5(result_fcd_segmented_h5_path) as result_fcd_segmented_h5:
-                fcd_segmented_metadata = self._populate_fcd_h5(result_fcd_segmented_h5, fcd_segmented,
-                                                               result_fcd_segmented_index.gid,
-                                                               self.input_time_series_index.gid, view_model.sw,
-                                                               view_model.sp)
-            self._populate_fcd_index(result_fcd_segmented_index, self.input_time_series_index.id, fcd_segmented,
-                                     fcd_segmented_metadata)
+                self._populate_fcd_h5(result_fcd_segmented_h5, fcd_segmented,
+                                      result_fcd_segmented_index.gid,
+                                      self.input_time_series_index.gid, view_model.sw,
+                                      view_model.sp)
+                self._populate_fcd_index(result_fcd_segmented_index, self.input_time_series_index.id,
+                                         result_fcd_segmented_h5)
             result.append(result_fcd_segmented_index)
 
         for mode in eigvect_dict.keys():

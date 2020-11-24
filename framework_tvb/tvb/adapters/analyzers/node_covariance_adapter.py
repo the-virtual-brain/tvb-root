@@ -134,39 +134,31 @@ class NodeCovarianceAdapter(ABCAdapter):
         """
         # Create an index for the computed covariance.
         covariance_index = CovarianceIndex()
+
+        ts_h5 = h5.h5_file_for_index(self.input_time_series_index)
         covariance_h5_path = h5.path_for(self.storage_path, CovarianceH5, covariance_index.gid)
         covariance_h5 = CovarianceH5(covariance_h5_path)
 
         # NOTE: Assumes 4D, Simulator timeSeries.
         node_slice = [slice(self.input_shape[0]), None, slice(self.input_shape[2]), None]
 
-        with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
-            for mode in range(self.input_shape[3]):
-                for var in range(self.input_shape[1]):
-                    small_ts = TimeSeries()
-                    node_slice[1] = slice(var, var + 1)
-                    node_slice[3] = slice(mode, mode + 1)
-                    small_ts.data = ts_h5.read_data_slice(tuple(node_slice))
-                    partial_cov = self._compute_node_covariance(small_ts, ts_h5)
-                    covariance_h5.write_data_slice(partial_cov.array_data)
-            array_metadata = covariance_h5.array_data.get_cached_metadata()
+        for mode in range(self.input_shape[3]):
+            for var in range(self.input_shape[1]):
+                small_ts = TimeSeries()
+                node_slice[1] = slice(var, var + 1)
+                node_slice[3] = slice(mode, mode + 1)
+                small_ts.data = ts_h5.read_data_slice(tuple(node_slice))
+                partial_cov = self._compute_node_covariance(small_ts, ts_h5)
+                covariance_h5.write_data_slice(partial_cov.array_data)
 
-        covariance_index.fk_source_gid = self.input_time_series_index.gid
-        covariance_index.subtype = type(covariance_index).__name__
-        covariance_index.array_has_complex = array_metadata.has_complex
+        partial_cov.source.gid = view_model.time_series
+        partial_cov.gid = uuid.UUID(covariance_index.gid)
+        ts_h5.close()
 
-        if not covariance_index.array_has_complex:
-            covariance_index.array_data_min = float(array_metadata.min)
-            covariance_index.array_data_max = float(array_metadata.max)
-            covariance_index.array_data_mean = float(array_metadata.mean)
+        covariance_index.fill_from_has_traits(partial_cov)
+        self.fill_from_h5(covariance_index, covariance_h5)
 
-        covariance_index.array_is_finite = array_metadata.is_finite
-        covariance_index.shape = json.dumps(covariance_h5.array_data.shape)
-        covariance_index.ndim = len(covariance_h5.array_data.shape)
-        # TODO write this part better, by moving into the Model fill_from...
-
-        covariance_h5.gid.store(uuid.UUID(covariance_index.gid))
-        covariance_h5.source.store(view_model.time_series)
+        covariance_h5.store(partial_cov, scalars_only=True)
         covariance_h5.close()
         return covariance_index
 

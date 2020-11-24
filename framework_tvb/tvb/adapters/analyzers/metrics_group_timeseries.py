@@ -183,7 +183,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
         metrics_results = {}
         for algorithm_name in algorithms:
 
-            algorithm = ALGORITHMS[algorithm_name]
+            algorithm_func = ALGORITHMS[algorithm_name]
 
             # Validate that current algorithm's filter is valid.
             algorithm_filter = TimeseriesMetricsAdapterForm.get_extra_algorithm_filters().get(algorithm_name)
@@ -195,8 +195,8 @@ class TimeseriesMetricsAdapter(ABCAdapter):
             else:
                 self.log.debug("Applying measure: " + str(algorithm_name))
 
-            unstored_result = algorithm({'time_series': dt_timeseries, 'start_point': view_model.start_point,
-                                         'segment': view_model.segment})
+            unstored_result = algorithm_func({'time_series': dt_timeseries, 'start_point': view_model.start_point,
+                                              'segment': view_model.segment})
             # ----------------- Prepare a Float object(s) for result ----------------##
             if isinstance(unstored_result, dict):
                 metrics_results.update(unstored_result)

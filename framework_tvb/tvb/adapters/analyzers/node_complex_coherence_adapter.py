@@ -39,6 +39,7 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 import numpy
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.spectral_h5 import ComplexCoherenceSpectrumH5
 from tvb.analyzers.node_complex_coherence import calculate_complex_cross_coherence, complex_coherence_result_shape
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
@@ -225,9 +226,16 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         self.log.debug("ComplexCoherenceSpectrum segment_length is %s" % (str(ht_result.segment_length)))
         self.log.debug("ComplexCoherenceSpectrum epoch_length is %s" % (str(ht_result.epoch_length)))
         self.log.debug("ComplexCoherenceSpectrum windowing_function is %s" % (str(ht_result.windowing_function)))
-        # LOG.debug("ComplexCoherenceSpectrum frequency vector is %s" % (str(ht_result.frequency)))
 
-        return h5.store_complete(ht_result, self.storage_path)
+        complex_coherence_index = h5.store_complete(ht_result, self.storage_path)
+
+        result_path = h5.path_for(self.storage_path, ComplexCoherenceSpectrumH5, complex_coherence_index.gid)
+        ica_h5 = ComplexCoherenceSpectrumH5(path=result_path)
+
+        self.fill_from_h5(complex_coherence_index, ica_h5)
+        ica_h5.close()
+
+        return complex_coherence_index
 
     @staticmethod
     def result_size(input_shape, max_freq, epoch_length, segment_length,

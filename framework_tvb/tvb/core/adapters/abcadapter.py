@@ -556,12 +556,11 @@ class ABCAdapter(object):
     @staticmethod
     def fill_from_h5(analyzer_index, analyzer_h5):
         # Method used by analyzers only
-        array_data = analyzer_h5.array_data.load()
-        metadata = DataSetMetaData.from_array(array_data).to_dict()
-        analyzer_index.array_data_max = metadata['Maximum']
-        analyzer_index.array_data_min = metadata['Minimum']
-        analyzer_index.array_data_mean = metadata['Mean']
-        analyzer_index.aray_has_complex = metadata['HasComplex']
-        analyzer_index.array_is_finite = metadata['IsFinite']
-        analyzer_index.shape = str(array_data.shape)
-        analyzer_index.ndim = len(array_data.shape)
+        metadata = analyzer_h5.array_data.get_cached_metadata()
+        analyzer_index.array_data_max = metadata.max
+        analyzer_index.array_data_min = metadata.min
+        analyzer_index.array_data_mean = metadata.mean
+        analyzer_index.aray_has_complex = metadata.has_complex
+        analyzer_index.array_is_finite = metadata.is_finite
+        analyzer_index.shape = str(analyzer_h5.array_data.shape)
+        analyzer_index.ndim = len(analyzer_h5.array_data.shape)
