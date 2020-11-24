@@ -4,7 +4,7 @@ import numba as nb
 from numpy.random import SFC64
 from numba.cuda.random import create_xoroshiro128p_states
 
-from tvb.simulator._numba.montbrio import make_gpu_loop, make_loop
+from tvb.simulator._numba.montbrio import make_gpu_loop, make_loop, make_gpu_loop_no_delay
 from tvb.simulator._ispc.montbrio import run_ispc_montbrio
 
 
@@ -66,7 +66,7 @@ def run_loop(weights, delays,
         tavg_trace[t] = tavg
         if t % bold_skip == 0:
             bold_trace[t//bold_skip] = bold_out
-    return tavg_trace.reshape((total_wins * nto, 2, nn)), bold_trace
+    return tavg_trace.reshape, bold_trace
 
 
 def run_gpu_loop(weights, delays,
@@ -83,7 +83,13 @@ def run_gpu_loop(weights, delays,
     w = weights.astype(np.float32)
     d = (delays / dt).astype(np.int32)
     assert d.max() < nh
-    assert nto <= nh, 'oversampling <= buffer size'
+    if (d==0).all():
+        nh = 2  # need double buffer for proper DE update
+        make_loop = make_gpu_loop_no_delay
+        print("using no delay variant")
+    else:
+        assert nto <= nh, 'oversampling <= buffer size'
+        make_loop = make_gpu_loop
     block_dim_x = 64
     grid_dim_x = 64
     nt = grid_dim_x * block_dim_x
@@ -92,26 +98,27 @@ def run_gpu_loop(weights, delays,
     nrV = np.zeros((2, nt), 'f')  # no stack arrays in Numba
     icfun(-np.r_[:nh]*dt, rV)
     I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma = [nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)]
-    tavg = np.zeros((nto, 2, nn, nt), 'f')                               # buffer for temporal average
+    tavg = np.zeros((2, nn, nt), 'f')                               # buffer for temporal average
     bold_state = np.zeros((nn, 4, nt), 'f')                         # buffer for bold state
     bold_state[:,1:] = 1.0
     bold_out = np.zeros((nn, nt), 'f')                             # buffer for bold output
     # first call to jit the function
     cfpre, cfpost = make_linear_cfun(coupling_scaling)
-    loop = make_gpu_loop(nh, nto, nn, dt, cfpre, cfpost, block_dim_x)
+    loop = make_loop(nh, nto, nn, dt, cfpre, cfpost, block_dim_x)
     #loop(r, V, wrV, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
     # outer loop setup
-    win_len = nh * dt
+    win_len = nto * dt
     total_wins = int(total_time / win_len)
     bold_skip = int(bold_tr / win_len)
-    rngs = create_xoroshiro128p_states(nt * nn * 2 * nh, 42)
+    rngs = create_xoroshiro128p_states(nt * nn * 2, 42)
     # pinned memory for speeding up kernel invocations
     from numba.cuda import to_device, pinned_array, device_array_like
     g_nrV, g_r, g_V, g_rngs, g_w, g_d, g_tavg, g_bold_state, g_bold_out = [
         to_device(_) for _ in (nrV, r, V, rngs, w, d, tavg, bold_state, bold_out)]
     p_tavg = pinned_array(tavg.shape, dtype=np.float32)
     p_bold_out = pinned_array(bold_out.shape, dtype=np.float32)
-    tavg_trace = np.zeros((total_wins, ) + tavg.shape, 'f')
+    # TODO mem map this, since it will get too big
+    # tavg_trace = np.zeros((total_wins, ) + tavg.shape, 'f')
     bold_trace = np.zeros((total_wins//bold_skip + 1, ) + bold_out.shape, 'f')
     # start time stepping
     for t in (tqdm.trange if progress else range)(total_wins):
@@ -119,11 +126,11 @@ def run_gpu_loop(weights, delays,
                      I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)
         g_tavg.copy_to_host(p_tavg)
         # print(p_tavg)
-        tavg_trace[t] = p_tavg
+        # tavg_trace[t] = p_tavg
         if t % bold_skip == 0:
             g_bold_out.copy_to_host(p_bold_out)
             bold_trace[t//bold_skip] = p_bold_out
-    return tavg_trace.reshape((total_wins * nto, 2, nn, nt)), bold_trace
+    # return tavg_trace, bold_trace
 
 
 
@@ -143,12 +150,14 @@ def grid_search(loop, **params):
 if __name__ == '__main__':
     nn = 96
     w = np.random.randn(nn, nn)**2
-    d = np.random.rand(nn, nn)**2 * 25
+    d = np.random.rand(nn, nn)**2 * 0
     ns = 60
-    params = dict(dt=0.1, total_time=60e3, I=1.0, r_sigma=3e-3, V_sigma=1e-3, tau=10.0, progress=True)
-
-    tavg, bold = run_gpu_loop(w, d, **params)
+    params = dict(dt=0.05, total_time=60e3, I=1.0, r_sigma=3e-3, V_sigma=1e-3, tau=10.0, progress=True)
+    params['nto'] = int(5.0 / params['dt'])  # 200 Hz sampling
+    import numba.cuda
+    with numba.cuda.profiling():
+        tavg, bold = run_gpu_loop(w, d, **params)
     print(tavg.shape)
-
+    import time; time.sleep(3600)
     # GPU 64x64 grid ~32min for 1min sim, ~0.5s per sim
     # CPU     1 grid ~15sec for 1min sim (w/ single core boost @ 5GHz)

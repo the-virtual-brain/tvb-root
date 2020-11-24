@@ -117,9 +117,119 @@ def make_gpu_loop(nh, nto, nn, dt, cfpre, cfpost, blockDim_x):
                 tavg[t0_nto, 0, i, it] += nrV[0, itx] * o_nh
                 tavg[t0_nto, 1, i, it] += nrV[1, itx] * o_nh
                 # if it==0: print(t1, o_nh, tavg[t0_nto, 0, i, it], tavg[t0_nto, 1, i, it])
-                # TODO probably a faulty memory access inside the fmri kernel
-                bold_out[i, it] = fmri_gpu(it, bold_state[i], tavg[0, 0, i, it], dt)
+                bold_out[i, it] = fmri_gpu(it, bold_state[i], nrV[0, itx], dt)
                 # if it==0: print("loop body done")
+    return loop
+
+
+# nto is num samples to average over
+def make_gpu_loop_no_delay(nh, nto, nn, dt, cfpre, cfpost, blockDim_x):
+    nh, nn, dt, pi, sqrt_dt, o_nh, o_6 = setup_const(nh, nto, nn, dt)
+    rk4_rV = make_rk4_rV(dt, sqrt_dt, o_6, use_cuda=True)
+    @cuda.jit(fastmath=True)
+    def loop(_, r, V, rngs, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
+        it = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+        nt = cuda.blockDim.x * cuda.gridDim.x
+        itx = cuda.threadIdx.x
+        # if it==0: print('hello from ', cuda.blockIdx.x, cuda.threadIdx.x)
+        # if it==0: print("NT =", NT)
+        o_tau = nb.float32(1 / tau)
+        # if it==0: print("o_tau = ", o_tau)
+        assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
+        assert r.shape[1] == V.shape[1] == nn
+        # if it==0: print("creating nrV shared..")
+        nrV = cuda.shared.array((2, blockDim_x), nb.float32)
+        # if it==0: print("zeroing tavg..")
+        for i in range(nn):
+            tavg[0, i, it] = nb.float32(0.0)
+            tavg[1, i, it] = nb.float32(0.0)
+        # if it==0: print('tavg zero\'d', -1, nh - 1)
+        for t0 in range(nto):
+            for i in range(nn):
+                rc = nb.float32(0) # using array here costs 50%+
+                Vc = nb.float32(0)
+                for j in range(nn):
+                    rc += w[i, j] * cfpre(r[0, j, it], r[0, i, it])
+                    Vc += w[i, j] * cfpre(V[0, j, it], V[0, i, it])
+                rc = cfpost(rc)
+                Vc = cfpost(Vc)
+                # RNG + Box Muller
+                pi_2 = nb.float32(np.pi * 2)
+                u1 = xoroshiro128p_uniform_float32(rngs, i*nt*2 + it)
+                u2 = xoroshiro128p_uniform_float32(rngs, i*nt*2 + it + nt)
+                z0 = math.sqrt(-nb.float32(2.0) * math.log(u1)) * math.cos(pi_2 * u2)
+                z1 = math.sqrt(-nb.float32(2.0) * math.log(u1)) * math.sin(pi_2 * u2)
+                # RK4
+                rk4_rV(it, nrV, r[0, i, it], V[0, i, it],
+                       o_tau, pi, tau, Delta, eta, J, I, cr, rc, cv, Vc,
+                       r_sigma, V_sigma, z0, z1)
+                r[1, i, it] = nrV[0, itx]
+                V[1, i, it] = nrV[1, itx]
+                # if it==0: print(nrV[0, it], nrV[1, it], o_nh)
+                tavg[0, i, it] += nrV[0, itx] * o_nh
+                tavg[1, i, it] += nrV[1, itx] * o_nh
+                # if it==0: print(t1, o_nh, tavg[t0_nto, 0, i, it], tavg[t0_nto, 1, i, it])
+                bold_out[i, it] = fmri_gpu(it, bold_state[i], nrV[0, itx], dt)
+                # if it==0: print("loop body done")
+            for i in range(nn):
+                r[0, i, it] = r[1, i, it]
+                V[0, i, it] = V[1, i, it]
+    return loop
+
+
+# launch (n_subject, n_noise, n_coupling) (n_node,)
+def make_gpu_loop_no_delay2(nh, nto, nn, dt, cfpre, cfpost, blockDim_x):
+    nh, nn, dt, pi, sqrt_dt, o_nh, o_6 = setup_const(nh, nto, nn, dt)
+    pi_2 = nb.float32(np.pi * 2)
+    rk4_rV = make_rk4_rV(dt, sqrt_dt, o_6, use_cuda=True)
+    @cuda.jit(fastmath=True)
+    def loop(_, r, V, rngs, w, d, tavg, bold_state, bold_out, I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma):
+        assert r.shape[0] == V.shape[0] == nh  # shape asserts help numba optimizer
+        assert r.shape[1] == V.shape[1] == nn
+        assert cuda.blockDim.x == nn and cuda.blockDim.y == 1
+        i = cuda.threadIdx.x  # node
+        # sim index and num sim
+        n_subj, i_subj = cuda.gridDim.x, cuda.blockIdx.x
+        n_nois, i_nois = cuda.gridDim.y, cuda.blockIdx.y
+        n_coup, i_coup = cuda.gridDim.z, cuda.blockIdx.z
+        it = i_subj * n_nois * n_coup + i_nois * n_coup + i_coup
+        nt = n_subj * n_nois * n_coup
+        o_tau = nb.float32(1 / tau)
+        nrV = cuda.shared.array((2, nn), nb.float32)
+        jrV = cuda.shared.array((2, nn), nb.float32)
+        tavg[it, 0, i] = nb.float32(0.0)
+        tavg[it, 1, i] = nb.float32(0.0)
+        for t0 in range(nto):
+            rc = nb.float32(0) # using array here costs 50%+
+            Vc = nb.float32(0)
+            # preload state for j loop
+            jrV[0, i] = r[it, 0, i]
+            jrV[1, i] = V[it, 0, i]
+            cuda.syncthreads()
+            for j in range(nn):
+                rc += w[j, i] * cfpre(jrV[0, j], jrV[0, i])
+                Vc += w[j, i] * cfpre(jrV[1, j], jrV[1, i])
+            rc = cfpost(rc)
+            Vc = cfpost(Vc)
+            # RNG Box Muller (~50% time)
+            u1 = xoroshiro128p_uniform_float32(rngs, it*nn + i)
+            u2 = xoroshiro128p_uniform_float32(rngs, it*nn + i + nn)
+            # Box-Muller
+            R = math.sqrt(-nb.float32(2.0) * math.log(u1))
+            z0 = R * math.cos(pi_2 * u2)
+            z1 = R * math.sin(pi_2 * u2)
+            # RK4
+            rk4_rV(i, nrV, r[it, 0, i], V[it, 0, i],
+                   o_tau, pi, tau, Delta, eta, J, I, cr, rc, cv, Vc,
+                   r_sigma, V_sigma, z0, z1)
+            r[it, 1, i] = nrV[0, i]
+            V[it, 1, i] = nrV[1, i]
+            tavg[it, 0, i] += nrV[0, i] * o_nh
+            tavg[it, 1, i] += nrV[1, i] * o_nh
+            bold_out[i] = fmri_gpu(it, bold_state[i], nrV[0], dt)
+            cuda.syncthreads()
+            r[it, 0, i] = r[it, 1, i]
+            V[it, 0, i] = V[it, 1, i]
     return loop
 
 
