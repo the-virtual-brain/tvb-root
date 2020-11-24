@@ -52,6 +52,12 @@ def get_model_to_form_dict():
         ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(): ReducedSetHindmarshRoseModelForm,
         ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(): ZerlautAdaptationFirstOrderModelForm,
         ModelsEnum.ZERLAUT_SECOND_ORDER.get_class(): ZerlautAdaptationSecondOrderModelForm,
+        ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class(): MontbrioPazoRoxinModelForm,
+        ModelsEnum.COOMBES_BYRNE.get_class(): CoombesByrneModelForm,
+        ModelsEnum.COOMBES_BYRNE_2D.get_class(): CoombesByrne2DModelForm,
+        ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class(): GastSchmidtKnoscheSDModelForm,
+        ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class(): GastSchmidtKnoscheSFModelForm,
+        ModelsEnum.DUMONT_GUTKIN.get_class(): DumontGutkinModelForm,
         ModelsEnum.LINEAR.get_class(): LinearModelForm,
         ModelsEnum.WILSON_COWAN.get_class(): WilsonCowanModelForm,
         ModelsEnum.LARTER_BREAKSPEAR.get_class(): LarterBreakspearModelForm
@@ -79,6 +85,12 @@ def get_ui_name_to_model():
         'Stefanescu-Jirsa 3D': ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(),
         'Zerlaut adaptation first order': ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(),
         'Zerlaut adaptation second order': ModelsEnum.ZERLAUT_SECOND_ORDER.get_class(),
+        'Montbrio Pazo Roxin': ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class(),
+        'Coombes Byrne': ModelsEnum.COOMBES_BYRNE.get_class(),
+        'Coombes Byrne 2D': ModelsEnum.COOMBES_BYRNE_2D.get_class(),
+        'Gast Schmidt Knosche_SD': ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class(),
+        'Gast Schmidt Knosche_SF': ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class(),
+        'Dumont Gutkin': ModelsEnum.DUMONT_GUTKIN.get_class(),
         'Linear model': ModelsEnum.LINEAR.get_class(),
         'Wilson-Cowan': ModelsEnum.WILSON_COWAN.get_class(),
         'Larter-Breakspear': ModelsEnum.LARTER_BREAKSPEAR.get_class()
@@ -516,6 +528,116 @@ class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm
         super(ZerlautAdaptationSecondOrderModelForm, self).__init__(prefix)
         self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_SECOND_ORDER.get_class().variables_of_interest,
                                                       self)
+
+class MontbrioPazoRoxinModelForm(FormWithRanges):
+
+    def __init__(self, prefix=''):
+        super(MontbrioPazoRoxinModelForm, self).__init__(prefix)
+        self.tau = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().tau, self)
+        self.I = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().I, self)
+        self.Delta = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().Delta, self)
+        self.J = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().J, self)
+        self.eta = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().eta, self)
+        self.Gamma = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().Gamma, self)
+        self.cr = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().cr, self)
+        self.cv = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().cv, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['tau', 'I', 'Delta', 'J', 'eta', 'Gamma', 'cr', 'cv']
+
+class CoombesByrneModelForm(FormWithRanges):
+
+    def __init__(self, prefix=''):
+        super(CoombesByrneModelForm, self).__init__(prefix)
+        self.Delta = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().Delta, self)
+        self.alpha = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().alpha, self)
+        self.v_syn = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().v_syn, self)
+        self.k = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().k, self)
+        self.eta = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().eta, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.COOMBES_BYRNE.get_class().variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['Delta', 'alpha', 'v_syn', 'k', 'eta']
+
+class CoombesByrne2DModelForm(FormWithRanges):
+
+    def __init__(self, prefix=''):
+        super(CoombesByrne2DModelForm, self).__init__(prefix)
+        self.Delta = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().Delta, self)
+        self.v_syn = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().v_syn, self)
+        self.k = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().k, self)
+        self.eta = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().eta, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.COOMBES_BYRNE_2D.get_class().variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['Delta', 'v_syn', 'k', 'eta']
+
+class GastSchmidtKnoscheSDModelForm(FormWithRanges):
+
+    def __init__(self, prefix=''):
+        super(GastSchmidtKnoscheSDModelForm, self).__init__(prefix)
+        self.tau = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().tau, self)
+        self.tau_A = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().tau_A, self)
+        self.alpha = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().alpha, self)
+        self.I = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().I, self)
+        self.Delta = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().Delta, self)
+        self.J = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().J, self)
+        self.eta = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().eta, self)
+        self.cr = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().cr, self)
+        self.cv = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().cv, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv']
+
+class GastSchmidtKnoscheSFModelForm(FormWithRanges):
+
+    def __init__(self, prefix=''):
+        super(GastSchmidtKnoscheSFModelForm, self).__init__(prefix)
+        self.tau = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().tau, self)
+        self.tau_A = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().tau_A, self)
+        self.alpha = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().alpha, self)
+        self.I = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().I, self)
+        self.Delta = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().Delta, self)
+        self.J = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().J, self)
+        self.eta = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().eta, self)
+        self.cr = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().cr, self)
+        self.cv = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().cv, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv']
+
+class DumontGutkinModelForm(FormWithRanges):
+
+    def __init__(self, prefix=''):
+        super(DumontGutkinModelForm, self).__init__(prefix)
+        self.I_e = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().I_e, self)
+        self.Delta_e = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().Delta_e, self)
+        self.eta_e = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().eta_e, self)
+        self.tau_e = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().tau_e, self)
+        self.I_i = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().I_i, self)
+        self.Delta_i = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().Delta_i, self)
+        self.eta_i = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().eta_i, self)
+        self.tau_i = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().tau_i, self)
+        self.tau_s = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().tau_s, self)
+        self.J_ee = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().J_ee, self)
+        self.J_ei = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().J_ei, self)
+        self.J_ie = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().J_ie, self)
+        self.J_ii = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().J_ii, self)
+        self.Gamma = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().Gamma, self)
+        self.variables_of_interest = MultiSelectField(ModelsEnum.DUMONT_GUTKIN.get_class().variables_of_interest, self)
+
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        return ['I_e', 'Delta_e', 'eta_e', 'tau_e', 'I_i', 'Delta_i', 'eta_i', 'tau_i', 'tau_s',
+                'J_ee', 'J_ei', 'J_ie', 'J_ii', 'Gamma']
 
 
 class LinearModelForm(FormWithRanges):
