@@ -245,7 +245,8 @@ class TestDcfun(CudaBaseCase):
     @skip_if_no_numba
     @pytest.mark.skipif(CUDA_SIM, reason="https://github.com/numba/numba/issues/1837")
     def test_dcfun_horizons(self):
-        self.assertRaises(ValueError, self._do_for_params, 13)
+        import pytest
+        pytest.raises(ValueError, self._do_for_params, 13)
         # with pytest.raises(ValueError):
         #     self._do_for_params(13)
         for horizon in (16, 32, 64):
@@ -325,7 +326,7 @@ class TestSim(CudaBaseCase):
             conn = connectivity.Connectivity()
             conn.weights = weights
             conn.tract_lengths = idelays * dt
-            conn.speed = 1.0
+            conn.speed = np.r_[1.0]
             sim = simulator.Simulator(
                 coupling=py_coupling.Kuramoto(a=a),
                 connectivity=conn,
