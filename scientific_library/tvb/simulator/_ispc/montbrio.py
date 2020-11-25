@@ -29,10 +29,17 @@ targets = {
     'avx512': 'avx512skx-i32x16',
 }
 
-def buildmod(isa='avx512'):  # prolly refactor to generic ISPC builder
+def find_ispc():
+    import sys, subprocess
+    which_cmd = 'where' if sys.platform == 'win32' else 'which'
+    b_path = subprocess.check_output([which_cmd, 'ispc'])
+    return b_path.decode('ascii').strip()
+
+
+def buildmod(isa='avx2'):  # prolly refactor to generic ISPC builder
     import os.path
     here = os.path.dirname(os.path.abspath(__file__))
-    ispc = '/usr/local/bin/ispc'
+    ispc = find_ispc()
     cxx = 'g++'
     target = targets[isa]
     model = 'montbrio'
