@@ -31,7 +31,6 @@
 import json
 import os
 from datetime import datetime
-
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
@@ -142,8 +141,6 @@ class BurstService(object):
         Return all the burst for the current project.
         """
         bursts = dao.get_bursts_for_project(project_id, page_size=MAX_BURSTS_DISPLAYED) or []
-        # for burst in bursts:
-        #     burst.prepare_after_load()
         return bursts
 
     @staticmethod
@@ -158,12 +155,12 @@ class BurstService(object):
 
     def update_history_status(self, id_list):
         """
-        For each burst_id received in the id_list read new status from DB and return a list [id, new_status] pair.
+        For each burst_id received in the id_list read new status from DB and return a list
+        [id, new_status, is_group, message, running_time] tuple.
         """
         result = []
         for b_id in id_list:
             burst = dao.get_burst_by_id(b_id)
-            # burst.prepare_after_load()
             if burst is not None:
                 if burst.status == burst.BURST_RUNNING:
                     running_time = datetime.now() - burst.start_time
@@ -181,8 +178,7 @@ class BurstService(object):
         return result
 
     @staticmethod
-    def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):
-        burst = dao.get_burst_by_id(burst_id)
+    def update_simulation_fields(burst, op_simulation_id, simulation_gid):
         burst.fk_simulation = op_simulation_id
         burst.simulator_gid = simulation_gid.hex
         burst = dao.store_entity(burst)
@@ -194,12 +190,14 @@ class BurstService(object):
         storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
         self.store_burst_configuration(burst_configuration, storage_path)
 
-    def load_burst_configuration(self, burst_config_id):
+    @staticmethod
+    def load_burst_configuration(burst_config_id):
         # type: (int) -> BurstConfiguration
         burst_config = dao.get_burst_by_id(burst_config_id)
         return burst_config
 
-    def prepare_burst_for_pse(self, burst_config):
+    @staticmethod
+    def prepare_burst_for_pse(burst_config):
         # type: (BurstConfiguration) -> (BurstConfiguration)
         operation_group = OperationGroup(burst_config.fk_project, ranges=burst_config.ranges)
         operation_group = dao.store_entity(operation_group)
@@ -213,12 +211,14 @@ class BurstService(object):
         burst_config.fk_metric_operation_group = metric_operation_group.id
         return dao.store_entity(burst_config)
 
-    def store_burst_configuration(self, burst_config, storage_path):
+    @staticmethod
+    def store_burst_configuration(burst_config, storage_path):
         bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
         with BurstConfigurationH5(bc_path) as bc_h5:
             bc_h5.store(burst_config)
 
-    def load_burst_configuration_from_folder(self, simulator_folder, project):
+    @staticmethod
+    def load_burst_configuration_from_folder(simulator_folder, project):
         bc_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(BurstConfiguration)
         burst_config = BurstConfiguration(project.id)
         with BurstConfigurationH5(os.path.join(simulator_folder, bc_h5_filename)) as bc_h5:

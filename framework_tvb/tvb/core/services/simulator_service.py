@@ -60,7 +60,8 @@ class SimulatorService(object):
         self.operation_service = OperationService()
         self.files_helper = FilesHelper()
 
-    def _reset_model(self, session_stored_simulator):
+    @staticmethod
+    def _reset_model(session_stored_simulator):
         session_stored_simulator.model = type(session_stored_simulator.model)()
         vi_indexes = MonitorForm.determine_indexes_for_chosen_vars_of_interest(session_stored_simulator)
         vi_indexes = numpy.array(list(vi_indexes.values()))
@@ -83,7 +84,8 @@ class SimulatorService(object):
         parameters because they might not fit to the new Surface's nr of vertices.
         """
         if is_simulator_copy and (session_stored_simulator.surface is None and form.surface.value
-                                  or session_stored_simulator.surface and form.surface.value != session_stored_simulator.surface.surface_gid):
+                                  or session_stored_simulator.surface and
+                                  form.surface.value != session_stored_simulator.surface.surface_gid):
             self._reset_model(session_stored_simulator)
 
     @staticmethod
@@ -99,11 +101,11 @@ class SimulatorService(object):
         try:
             operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
                                                                  session_stored_simulator.gid)
-            ga = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
-                                                          None, burst_config.gid)
+            ga = self.operation_service.prepare_metadata(simulator_algo.algorithm_category, {},
+                                                         None, burst_config.gid)
             session_stored_simulator.generic_attributes = ga
             self.operation_service.store_view_model(operation, project, session_stored_simulator)
-            burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id,
+            burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id,
                                                                        session_stored_simulator.gid)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
@@ -167,8 +169,8 @@ class SimulatorService(object):
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
 
-            ga = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
-                                                          operation_group, burst_config.gid)
+            ga = self.operation_service.prepare_metadata(simulator_algo.algorithm_category, {},
+                                                         operation_group, burst_config.gid)
             session_stored_simulator.generic_attributes = ga
 
             for param1_value in range_param1.get_range_values():
@@ -197,7 +199,7 @@ class SimulatorService(object):
 
             first_operation = operations[0]
             storage_path = self.files_helper.get_project_folder(project, str(first_operation.id))
-            burst_config = self.burst_service.update_simulation_fields(burst_config.id, first_operation.id,
+            burst_config = self.burst_service.update_simulation_fields(burst_config, first_operation.id,
                                                                        first_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)
             datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
