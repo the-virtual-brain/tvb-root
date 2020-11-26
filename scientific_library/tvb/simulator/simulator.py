@@ -163,7 +163,7 @@ class Simulator(HasTraits):
         required=True,
         doc="""The length of a simulation (default in milliseconds).""")
 
-    backend = Attr(
+    backend: ReferenceBackend = Attr(
         label="Numerical backend.",
         default=ReferenceBackend(),
         field_type=BaseBackend,
@@ -227,12 +227,10 @@ class Simulator(HasTraits):
             self.number_of_nodes = self.connectivity.number_of_regions
             self.log.info('Region simulation with %d ROI nodes', self.number_of_nodes)
         else:
-            rm = self.surface.region_mapping
-            unmapped = self.connectivity.unmapped_indices(rm)
-            self._regmap = numpy.r_[rm, unmapped]
-            self.number_of_nodes = self._regmap.shape[0]
+            self._regmap, nc, nsc = self.backend.full_region_map(self.surface, self.connectivity)
+            self.number_of_nodes = nc + nsc
             self.log.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
-                          rm.size, unmapped.size, self.number_of_nodes)
+                          nc, nsc, self.number_of_nodes)
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
@@ -293,29 +291,10 @@ class Simulator(HasTraits):
                 new_parameters = region_parameters.reshape(spatial_reshape)
                 setattr(self.model, param, new_parameters)
 
-    def _handle_random_state(self, random_state):
-        if random_state is not None:
-            if isinstance(self.integrator, integrators.IntegratorStochastic):
-                self.integrator.noise.random_stream.set_state(random_state)
-                msg = "random_state supplied with seed %s"
-                self.log.info(msg, self.integrator.noise.random_stream.get_state()[1][0])
-            else:
-                self.log.warn("random_state supplied for non-stochastic integration")
-
     def _prepare_local_coupling(self):
         if self.surface is None:
             return 0.0
         return self.surface.prepare_local_coupling(self.number_of_nodes)
-
-    def _prepare_stimulus(self):
-        if self.stimulus is None:
-            stimulus = 0.0
-        else:
-            time = numpy.r_[0.0: self.simulation_length: self.integrator.dt]
-            self.stimulus.configure_time(time.reshape((1, -1)))
-            stimulus = numpy.zeros((self.model.nvar, self.number_of_nodes, 1))
-            self.log.debug("stimulus shape is: %s", stimulus.shape)
-        return stimulus
 
     def _loop_compute_node_coupling(self, step):
         """Compute delayed node coupling values."""
@@ -324,6 +303,17 @@ class Simulator(HasTraits):
             coupling = coupling[:, self._regmap]
         return coupling
 
+    def _prepare_stimulus(self):
+        if self.stimulus is None:
+            stimulus = 0.0
+        else:
+            # TODO time grid wrong for continuations
+            time = numpy.r_[0.0 : self.simulation_length : self.integrator.dt]
+            self.stimulus.configure_time(time.reshape((1, -1)))
+            stimulus = numpy.zeros((self.model.nvar, self.number_of_nodes, 1))
+            self.log.debug("stimulus shape is: %s", stimulus.shape)
+        return stimulus
+
     def _loop_update_stimulus(self, step, stimulus):
         """Update stimulus values for current time step."""
         if self.stimulus is not None:
@@ -331,9 +321,10 @@ class Simulator(HasTraits):
             stim_step = step - (self.current_step + 1)
             stimulus[self.model.stvar, :, :] = self.stimulus(stim_step).reshape((1, -1, 1))
 
-    def _loop_update_history(self, step, n_reg, state):
+    def _loop_update_history(self, step, state):
         """Update history."""
-        if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
+        n_reg = self.connectivity.number_of_regions
+        if self.surface is not None and state.shape[1] > n_reg:
             state = self.backend.surface_state_to_rois(self._regmap, n_reg, state)
         self.history.update(step, state)
 
@@ -372,8 +363,8 @@ class Simulator(HasTraits):
         # initialization
         self._guesstimate_runtime()
         self._calculate_storage_requirement()
-        self._handle_random_state(random_state)
-        n_reg = self.connectivity.number_of_regions
+        # TODO a provided random_state should be used for history init
+        self.integrator.set_random_state(random_state)
         local_coupling = self._prepare_local_coupling()
         stimulus = self._prepare_stimulus()
         state = self.current_state
@@ -386,11 +377,11 @@ class Simulator(HasTraits):
                 raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
 
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-            # needs implementing by hsitory + coupling?
+            # TODO HO methods compute coupling inside scheme
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
             state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, n_reg, state)
+            self._loop_update_history(step, state)
             output = self._loop_monitor_output(step, state)
             if output is not None:
                 yield output

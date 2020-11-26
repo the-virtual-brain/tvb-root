@@ -43,6 +43,8 @@ import re
 import six
 import logging
 from tvb.basic.logger.builder import GLOBAL_LOGGER_BUILDER, get_logger
+from .backend.ref import ReferenceBackend
+
 
 def log_debug(debug=False, timestamp=False, prefix=''):
     level_name = 'DEBUG' if debug else 'INFO'
@@ -149,97 +151,9 @@ class Struct(dict):
     __delattr__ = dict.__delitem__
 
 
-def linear_interp1d(start_time, end_time, start_value, end_value, interp_point):
-    """
-    performs a one dimensional linear interpolation using two 
-    timepoints (start_time, end_time) for two floating point (possibly
-    NumPy arrays) states (start_value, end_value) to return state at timepoint
-    start_time < interp_point < end_time.
-
-    """
-
-    mean = (end_value - start_value) / (end_time - start_time)
-    return start_value + (interp_point - start_time) * mean
-
-
-def heaviside(array):
-    """
-    heaviside() returns 1 if argument > 0, 0 otherwise.
-
-    The copy operation here is necessary to ensure that the
-    array passed in is not modified.
-
-    """
-
-    if type(array) == numpy.float64:
-        return 0.0 if array < 0.0 else 1.0
-    else:
-        ret = array.copy()
-        ret[array < 0.0] = 0.0
-        ret[array > 0.0] = 1.0
-        return ret
-
-
-# FIXME: this may not work yet: write a numpy array subclass that takes care of this
-#         using indexing magic. makes our life easier.
-def unravel_history(history, horizon, step, arange=numpy.arange):
-    """
-    in our simulator, history is a 3D numpy array where the time 
-    dimension is periodic. This means sometimes, the layout is like
-
-        [ ... , t(horizon-1), t(horizon), t(1), t(2), ... ]
-
-    but we may need the correctly ordered version 
-
-        [ t(1), t(2), ... , t(horizon-1), t(horizon) ]
-
-    given some step. This function does that. 
-    """
-    allt, allv, allr = list(map(arange, history.shape))
-    # ISomething like(?):
-    # return numpy.roll(history, step, axis=0) 
-    return history[(allt + step) % horizon, allv, allr]
-
-
-def iround(x):
-    """
-    iround(number) -> integer
-    Trying to get a stable and portable result when rounding a number to the 
-    nearest integer.
-
-    NOTE: I'm introducing this because of the unstability we found when
-    using int(round()). Should use always the same rounding strategy.
-
-    Try :    
-    >>> int(4.999999999999999)
-    4
-    >>> int(4.99999999999999999999)
-    5
-
-    """
-    y = round(x) - .5
-    return int(y) + (y > 0)
-
-
-class Buffer(object):
-    """
-    Draft of a history object that allows us to track the current
-    state and access the history array in different but consistent 
-    ways
-    """
-    step = 0
-    raw = None
-    horizon = None
-
-    def __init__(self):
-        raise NotImplementedError
-
-    def __getindex__(self, idx):
-        return self.raw[(idx + self.step) % self.horizon, :, :]
-
-    def __setindex__(self, idx, rawin):
-        self.raw[(idx + self.step) % self.horizon, :, :] = rawin
-
+linear_interp1d = ReferenceBackend.linear_interp1d
+heaviside = ReferenceBackend.heaviside
+iround = ReferenceBackend.iround
 
 def zip_directory(path, zip_file):
     """

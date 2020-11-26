@@ -4,10 +4,7 @@ This module provides a reference backend implemented with NumPy.
 """
 import numpy
 import numpy as np
-from Cython.Includes import numpy
-
 from tvb.simulator.common import numpy_add_at
-
 from .base import BaseBackend
 
 
@@ -23,7 +20,65 @@ class SurfaceRefBackend:
         state = region_state.transpose((1, 0, 2))  # (cvar, node, mode)
         return state
 
+    @staticmethod
+    def full_region_map(surf, conn):
+        rm = surf.region_mapping
+        unmapped = conn.unmapped_indices(rm)
+        regmap = numpy.r_[rm, unmapped]
+        return regmap, rm.size, unmapped.size
+
 
 class ReferenceBackend(BaseBackend, SurfaceRefBackend):
     "Base reference backend, implemented in readable NumPy."
-    pass
+
+    # from tvb.sim.common
+    @staticmethod
+    def linear_interp1d(start_time, end_time, start_value, end_value, interp_point):
+        """
+        performs a one dimensional linear interpolation using two
+        timepoints (start_time, end_time) for two floating point (possibly
+        NumPy arrays) states (start_value, end_value) to return state at timepoint
+        start_time < interp_point < end_time.
+
+        """
+
+        mean = (end_value - start_value) / (end_time - start_time)
+        return start_value + (interp_point - start_time) * mean
+
+    @staticmethod
+    def heaviside(array):
+        """
+        heaviside() returns 1 if argument > 0, 0 otherwise.
+
+        The copy operation here is necessary to ensure that the
+        array passed in is not modified.
+
+        """
+
+        if type(array) == numpy.float64:
+            return 0.0 if array < 0.0 else 1.0
+        else:
+            ret = array.copy()
+            ret[array < 0.0] = 0.0
+            ret[array > 0.0] = 1.0
+            return ret
+
+    @staticmethod
+    def iround(x):
+        """
+        iround(number) -> integer
+        Trying to get a stable and portable result when rounding a number to the
+        nearest integer.
+
+        NOTE: I'm introducing this because of the unstability we found when
+        using int(round()). Should use always the same rounding strategy.
+
+        Try :
+        >>> int(4.999999999999999)
+        4
+        >>> int(4.99999999999999999999)
+        5
+
+        """
+        y = round(x) - .5
+        return int(y) + (y > 0)

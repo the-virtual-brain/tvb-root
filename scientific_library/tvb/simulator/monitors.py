@@ -63,7 +63,8 @@ import tvb.datatypes.sensors as sensors_module
 import tvb.datatypes.projections as projections_module
 from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
-from tvb.simulator.common import iround, numpy_add_at
+from tvb.simulator.common import numpy_add_at
+from tvb.simulator.backend.ref import iround
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
 
 

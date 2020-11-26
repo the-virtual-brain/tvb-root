@@ -141,6 +141,9 @@ class Integrator(HasTraits):
             self.bounded_state_variable_indices = None
             self.state_variable_boundaries = None
 
+    def set_random_state(self, random_state):
+        self.log.warn("random_state supplied for non-stochastic integration")
+
     def __str__(self):
         return simple_gen_astr(self, 'dt')
 
@@ -178,6 +181,12 @@ class IntegratorStochastic(Integrator):
         required = True,
         doc = """The stochastic integrator's noise source. It incorporates its
         own instance of Numpy's RandomState.""")  # type: noise.Noise
+
+    def set_random_state(self, random_state):
+        if random_state is not None:
+            self.noise.random_stream.set_state(random_state)
+            msg = "random_state supplied with seed %s"
+            self.log.info(msg, self.noise.random_stream.get_state()[1][0])
 
     def __str__(self):
         return simple_gen_astr(self, 'dt noise')
