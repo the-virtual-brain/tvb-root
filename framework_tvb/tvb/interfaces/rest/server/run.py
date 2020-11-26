@@ -60,14 +60,14 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 FLASK_PORT = 9090
 
 
-def initialize_tvb(arguments):
+def initialize_tvb_flask():
     if not os.path.exists(TvbProfile.current.TVB_STORAGE):
         try:
             os.makedirs(TvbProfile.current.TVB_STORAGE)
         except Exception:
             sys.exit("You do not have enough rights to use TVB storage folder:" + str(TvbProfile.current.TVB_STORAGE))
     try:
-        initialize(arguments)
+        initialize(skip_updates=True)
     except InvalidSettingsException as excep:
         LOGGER.exception(excep)
         sys.exit()
@@ -150,5 +150,5 @@ def initialize_flask():
 if __name__ == '__main__':
     # Prepare parameters and fire Flask
     # Remove not-relevant parameter, 0 should point towards this "run.py" file, 1 to the profile
-    initialize_tvb(sys.argv[2:])
+    initialize_tvb_flask()
     initialize_flask()

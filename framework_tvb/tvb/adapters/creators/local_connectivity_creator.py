@@ -40,7 +40,7 @@ from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, FormField, SelectField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import FormField, SelectField, TraitDataTypeSelectField, FloatField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.surfaces import Surface, CORTICAL
@@ -48,10 +48,11 @@ from tvb.datatypes.surfaces import Surface, CORTICAL
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(LocalConnectivitySelectorForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(LocalConnectivitySelectorForm, self).__init__(project_id)
         traited_attr = Attr(self.get_required_datatype(), label='Load Local Connectivity', required=False)
-        self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, self, name='existentEntitiesSelect')
+        self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, self.project_id,
+                                                               name='existentEntitiesSelect')
 
     @staticmethod
     def get_required_datatype():
@@ -84,14 +85,15 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
 
-    def __init__(self, equation_choices, prefix='', project_id=None):
-        super(LocalConnectivityCreatorForm, self).__init__(prefix, project_id)
-        self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self, name=self.get_input_name(),
-                                                conditions=self.get_filters())
-        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self, name='spatial',
+    def __init__(self, equation_choices, project_id=None):
+        super(LocalConnectivityCreatorForm, self).__init__(project_id)
+        self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self.project_id,
+                                                name=self.get_input_name(), conditions=self.get_filters())
+        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self.project_id, name='spatial',
                                    choices=equation_choices, display_none_choice=False, subform=GaussianEquationForm)
-        self.cutoff = ScalarField(LocalConnectivityCreatorModel.cutoff, self)
-        self.display_name = ScalarField(LocalConnectivityCreatorModel.display_name, self, name='display_name')
+        self.cutoff = FloatField(LocalConnectivityCreatorModel.cutoff, self.project_id)
+        self.display_name = StrField(LocalConnectivityCreatorModel.display_name, self.project_id,
+                                        name='display_name')
 
     @staticmethod
     def get_view_model():

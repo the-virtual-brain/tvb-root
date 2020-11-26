@@ -44,13 +44,15 @@ from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import Form, SimpleFloatField
+from tvb.core.neotraits.forms import Form, FloatField
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
+from tvb.basic.neotraits.api import Float
+
 
 LOAD_EXISTING_URL = '/spatial/stimulus/surface/load_surface_stimulus'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/surface/reload_default'
@@ -63,12 +65,12 @@ KEY_TMP_FORM = "temporal-form"
 class EquationTemporalPlotForm(Form):
     def __init__(self):
         super(EquationTemporalPlotForm, self).__init__()
-        self.min_tmp_x = SimpleFloatField(self, name='min_tmp_x', label='Temporal Start Time(ms)', default=0,
-                                          doc="The minimum value of the x-axis for temporal equation plot. "
-                                              "Not persisted, used only for visualization.")
-        self.max_tmp_x = SimpleFloatField(self, name='max_tmp_x', label='Temporal End Time(ms)', default=100,
-                                          doc="The maximum value of the x-axis for temporal equation plot. "
-                                              "Not persisted, used only for visualization.")
+        self.min_tmp_x = FloatField(Float(label='Temporal Start Time(ms)', default=0, doc="The minimum value of the "
+                                                "x-axis for temporal equation plot. Not persisted, used only for "
+                                                "visualization."), self.project_id, name='min_tmp_x')
+        self.max_tmp_x = FloatField(Float(label='Temporal End Time(ms)', default=100, doc="The maximum value of the"
+                                                " x-axis for temporal equation plot. Not persisted, used only for"
+                                                " visualization."), self.project_id, name='max_tmp_x')
 
     def fill_from_post(self, form_data):
         if self.min_tmp_x.name in form_data:
@@ -80,10 +82,10 @@ class EquationTemporalPlotForm(Form):
 class EquationSpatialPlotForm(Form):
     def __init__(self):
         super(EquationSpatialPlotForm, self).__init__()
-        self.min_space_x = SimpleFloatField(self, name='min_space_x', label='Spatial Start Distance(mm)', default=0,
-                                            doc="The minimum value of the x-axis for spatial equation plot.")
-        self.max_space_x = SimpleFloatField(self, name='max_space_x', label='Spatial End Distance(mm)', default=100,
-                                            doc="The maximum value of the x-axis for spatial equation plot.")
+        self.min_space_x = FloatField(Float(label='Spatial Start Distance(mm)', default=0, doc="The minimum value of"
+                                            " the x-axis for spatial equation plot."), self.project_id, name='min_space_x')
+        self.max_space_x = FloatField(Float(label='Spatial End Distance(mm)', default=100, doc="The maximum value of "
+                                            "the x-axis for spatial equation plot."), self.project_id, name='max_space_x')
 
     def fill_from_post(self, form_data):
         if self.min_space_x.name in form_data:

@@ -59,11 +59,10 @@ class NodeComplexCoherenceModel(ViewModel, NodeComplexCoherence):
 
 class NodeComplexCoherenceForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(NodeComplexCoherenceForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(NodeComplexCoherenceModel.time_series, self,
-                                                    name=self.get_input_name(),
-                                                    conditions=self.get_filters())
+    def __init__(self, project_id=None):
+        super(NodeComplexCoherenceForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(NodeComplexCoherenceModel.time_series, self.project_id,
+                                                    name=self.get_input_name(), conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():

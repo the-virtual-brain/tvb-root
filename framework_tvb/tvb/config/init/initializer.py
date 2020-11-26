@@ -37,7 +37,6 @@ import os
 import shutil
 import threading
 from types import ModuleType
-
 from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -86,8 +85,7 @@ def command_initializer(persist_settings=True, skip_import=False):
     # Initialize application
     initialize(skip_import)
 
-
-def initialize(skip_import=False):
+def initialize(skip_import=False, skip_updates=False):
     """
     Initialize when Application is starting.
     Check for new algorithms or new DataTypes.
@@ -114,7 +112,7 @@ def initialize(skip_import=False):
     for entity in to_remove:
         dao.remove_entity(entity.__class__, entity.id)
 
-    if not TvbProfile.is_first_run():
+    if not TvbProfile.is_first_run() and not skip_updates:
         # Create default users.
         if is_db_empty:
             dao.store_entity(

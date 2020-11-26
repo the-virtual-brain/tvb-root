@@ -74,16 +74,17 @@ class RegionMappingImporterModel(UploaderViewModel):
 
 class RegionMappingImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RegionMappingImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(RegionMappingImporterForm, self).__init__(project_id)
 
-        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'), self,
-                                             name='mapping_file')
+        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'),
+                                             self.project_id, 'mapping_file', self.temporary_files)
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=[CORTICAL])
-        self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, self, name='surface',
+        self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, self.project_id, name='surface',
                                                 conditions=surface_conditions)
-        self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, self, name='connectivity')
+        self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, self.project_id,
+                                                     name='connectivity')
 
     @staticmethod
     def get_view_model():

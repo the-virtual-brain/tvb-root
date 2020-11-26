@@ -89,13 +89,17 @@ class NIFTIImporterModel(UploaderViewModel):
 
 class NIFTIImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(NIFTIImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(NIFTIImporterForm, self).__init__(project_id)
 
-        self.data_file = TraitUploadField(NIFTIImporterModel.data_file, ('.nii', '.gz', '.zip'), self, name='data_file')
-        self.apply_corrections = BoolField(NIFTIImporterModel.apply_corrections, self, name='apply_corrections')
-        self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', self, name='mappings_file')
-        self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, self, name='connectivity')
+        self.data_file = TraitUploadField(NIFTIImporterModel.data_file, ('.nii', '.gz', '.zip'), self.project_id,
+                                          'data_file', self.temporary_files)
+        self.apply_corrections = BoolField(NIFTIImporterModel.apply_corrections, self.project_id,
+                                           name='apply_corrections')
+        self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', self.project_id,
+                                              'mappings_file', self.temporary_files)
+        self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, self.project_id,
+                                                     name='connectivity')
 
     @staticmethod
     def get_view_model():

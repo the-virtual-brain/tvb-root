@@ -49,5 +49,3 @@ def update(project_path):
     for root, _, files in os.walk(project_path):
         for file_name in files:
             LOGGER.info("Translating from version 2 to 3 File %s" % (file_name))
-
-    raise TVBException("Not yet implemented project update logic!")

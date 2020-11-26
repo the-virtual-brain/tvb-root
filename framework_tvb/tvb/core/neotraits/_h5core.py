@@ -90,7 +90,7 @@ class H5File(object):
         self.metadata_cache = None
 
         if not self.storage_manager.is_valid_hdf5_file():
-            self.written_by.store(self.__class__.__module__ + '.' + self.__class__.__name__)
+            self.written_by.store(self.get_class_path())
             self.is_new_file = True
 
     @classmethod
@@ -99,6 +99,9 @@ class H5File(object):
 
     def read_subtype_attr(self):
         return None
+
+    def get_class_path(self):
+        return self.__class__.__module__ + '.' + self.__class__.__name__
 
     def iter_accessors(self):
         # type: () -> typing.Generator[Accessor]

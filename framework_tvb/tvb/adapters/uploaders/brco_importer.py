@@ -59,11 +59,12 @@ class BRCOImporterModel(UploaderViewModel):
 
 class BRCOImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BRCOImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(BRCOImporterForm, self).__init__(project_id)
 
-        self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', self, name='data_file')
-        self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, self, name='connectivity')
+        self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', self.project_id, 'data_file',
+                                          self.temporary_files)
+        self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, self.project_id, 'connectivity')
 
     @staticmethod
     def get_view_model():
