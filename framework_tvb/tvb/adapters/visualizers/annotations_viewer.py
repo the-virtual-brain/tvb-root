@@ -71,15 +71,16 @@ class ConnectivityAnnotationsViewModel(ViewModel):
 
 class ConnectivityAnnotationsViewForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityAnnotationsViewForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ConnectivityAnnotationsViewForm, self).__init__(project_id)
         # Used for filtering
-        self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index, self,
-                                                           'connectivity_index')
-        self.annotations_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.annotations_index, self,
-                                                          'annotations_index', conditions=self.get_filters())
+        self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index,
+                                                           self.project_id, 'connectivity_index')
+        self.annotations_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.annotations_index,
+                                                          self.project_id, 'annotations_index',
+                                                          conditions=self.get_filters())
         self.region_mapping_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.region_mapping_index,
-                                                             self, 'region_mapping_index')
+                                                             self.project_id, 'region_mapping_index')
 
     @staticmethod
     def get_view_model():

@@ -29,7 +29,7 @@
 #
 from tvb.simulator.coupling import *
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.core.neotraits.forms import ArrayField, ScalarField
+from tvb.core.neotraits.forms import ArrayField, BoolField
 
 
 def get_coupling_to_form_dict():
@@ -60,73 +60,73 @@ def get_form_for_coupling(coupling_class):
 
 class LinearCouplingForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(LinearCouplingForm, self).__init__(prefix)
-        self.a = ArrayField(Linear.a, self)
-        self.b = ArrayField(Linear.b, self)
+    def __init__(self):
+        super(LinearCouplingForm, self).__init__()
+        self.a = ArrayField(Linear.a, self.project_id)
+        self.b = ArrayField(Linear.b, self.project_id)
 
 
 class ScalingCouplingForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(ScalingCouplingForm, self).__init__(prefix)
-        self.a = ArrayField(Scaling.a, self)
+    def __init__(self):
+        super(ScalingCouplingForm, self).__init__()
+        self.a = ArrayField(Scaling.a, self.project_id)
 
 
 class HyperbolicTangentCouplingForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(HyperbolicTangentCouplingForm, self).__init__(prefix)
-        self.a = ArrayField(HyperbolicTangent.a, self)
-        self.b = ArrayField(HyperbolicTangent.b, self)
-        self.midpoint = ArrayField(HyperbolicTangent.midpoint, self)
-        self.sigma = ArrayField(HyperbolicTangent.sigma, self)
+    def __init__(self):
+        super(HyperbolicTangentCouplingForm, self).__init__()
+        self.a = ArrayField(HyperbolicTangent.a, self.project_id)
+        self.b = ArrayField(HyperbolicTangent.b, self.project_id)
+        self.midpoint = ArrayField(HyperbolicTangent.midpoint, self.project_id)
+        self.sigma = ArrayField(HyperbolicTangent.sigma, self.project_id)
 
 
 class SigmoidalCouplingForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(SigmoidalCouplingForm, self).__init__(prefix)
-        self.cmin = ArrayField(Sigmoidal.cmin, self)
-        self.cmax = ArrayField(Sigmoidal.cmax, self)
-        self.midpoint = ArrayField(Sigmoidal.midpoint, self)
-        self.a = ArrayField(Sigmoidal.a, self)
-        self.sigma = ArrayField(Sigmoidal.sigma, self)
+    def __init__(self):
+        super(SigmoidalCouplingForm, self).__init__()
+        self.cmin = ArrayField(Sigmoidal.cmin, self.project_id)
+        self.cmax = ArrayField(Sigmoidal.cmax, self.project_id)
+        self.midpoint = ArrayField(Sigmoidal.midpoint, self.project_id)
+        self.a = ArrayField(Sigmoidal.a, self.project_id)
+        self.sigma = ArrayField(Sigmoidal.sigma, self.project_id)
 
 
 class SigmoidalJansenRitForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(SigmoidalJansenRitForm, self).__init__(prefix)
-        self.cmin = ArrayField(SigmoidalJansenRit.cmin, self)
-        self.cmax = ArrayField(SigmoidalJansenRit.cmax, self)
-        self.midpoint = ArrayField(SigmoidalJansenRit.midpoint, self)
-        self.r = ArrayField(SigmoidalJansenRit.r, self)
-        self.a = ArrayField(SigmoidalJansenRit.a, self)
+    def __init__(self):
+        super(SigmoidalJansenRitForm, self).__init__()
+        self.cmin = ArrayField(SigmoidalJansenRit.cmin, self.project_id)
+        self.cmax = ArrayField(SigmoidalJansenRit.cmax, self.project_id)
+        self.midpoint = ArrayField(SigmoidalJansenRit.midpoint, self.project_id)
+        self.r = ArrayField(SigmoidalJansenRit.r, self.project_id)
+        self.a = ArrayField(SigmoidalJansenRit.a, self.project_id)
 
 
 class PreSigmoidalCouplingForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(PreSigmoidalCouplingForm, self).__init__(prefix)
-        self.H = ArrayField(PreSigmoidal.H, self)
-        self.Q = ArrayField(PreSigmoidal.Q, self)
-        self.G = ArrayField(PreSigmoidal.G, self)
-        self.P = ArrayField(PreSigmoidal.P, self)
-        self.theta = ArrayField(PreSigmoidal.theta, self)
-        self.dynamic = ScalarField(PreSigmoidal.dynamic, self)
-        self.globalT= ScalarField(PreSigmoidal.globalT, self)
+    def __init__(self):
+        super(PreSigmoidalCouplingForm, self).__init__()
+        self.H = ArrayField(PreSigmoidal.H, self.project_id)
+        self.Q = ArrayField(PreSigmoidal.Q, self.project_id)
+        self.G = ArrayField(PreSigmoidal.G, self.project_id)
+        self.P = ArrayField(PreSigmoidal.P, self.project_id)
+        self.theta = ArrayField(PreSigmoidal.theta, self.project_id)
+        self.dynamic = BoolField(PreSigmoidal.dynamic, self.project_id)
+        self.globalT= BoolField(PreSigmoidal.globalT, self.project_id)
 
 
 class DifferenceCouplingForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(DifferenceCouplingForm, self).__init__(prefix)
-        self.a = ArrayField(Difference.a, self)
+    def __init__(self):
+        super(DifferenceCouplingForm, self).__init__()
+        self.a = ArrayField(Difference.a, self.project_id)
 
 
 class KuramotoCouplingForm(FormWithRanges):
 
-    def __init__(self, prefix=''):
-        super(KuramotoCouplingForm, self).__init__(prefix)
-        self.a = ArrayField(Kuramoto.a, self)
+    def __init__(self):
+        super(KuramotoCouplingForm, self).__init__()
+        self.a = ArrayField(Kuramoto.a, self.project_id)

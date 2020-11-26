@@ -71,29 +71,6 @@ class NetworkxParser(object):
         NetworkxParser._append_key(view_model.key_node_region, self.KEY_NODE_REGION)
         NetworkxParser._append_key(view_model.key_node_hemisphere, self.KEY_NODE_HEMISPHERE)
 
-    @staticmethod
-    def prepare_input_params_tree(prefix=None):
-        """
-        :param prefix: An optional string, to be used in front of the GUI displayed labels
-        :return: Adapter Input tree, with possible user-given keys for reading from NetworkX object
-        """
-        result = []
-        configurable_keys = {'key_edge_weight': NetworkxParser.KEY_EDGE_WEIGHT,
-                             'key_edge_tract': NetworkxParser.KEY_EDGE_TRACT,
-                             'key_node_coordinates': NetworkxParser.KEY_NODE_COORDINATES,
-                             'key_node_label': NetworkxParser.KEY_NODE_LABEL,
-                             'key_node_region': NetworkxParser.KEY_NODE_REGION,
-                             'key_node_hemisphere': NetworkxParser.KEY_NODE_HEMISPHERE}
-
-        for init_param in sorted(configurable_keys.keys()):
-            label = init_param.replace('_', ' ').capitalize()
-            if prefix:
-                label = prefix + label
-            result.append({'name': init_param, 'label': label, 'default': configurable_keys[init_param][0],
-                           'type': 'str', 'required': False})
-
-        return result
-
     def parse(self, network):
         """
         Populate Connectivity DataType from NetworkX object.

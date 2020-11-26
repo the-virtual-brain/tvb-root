@@ -46,12 +46,12 @@ class EEGMatTimeSeriesImporterModel(UploaderViewModel):
 
 class EEGRegionMatTimeSeriesImporterForm(RegionMatTimeSeriesImporterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(EEGRegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(EEGRegionMatTimeSeriesImporterForm, self).__init__(project_id)
         eeg_conditions = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=['=='],
                                      values=[SensorTypes.TYPE_EEG.value])
-        self.datatype = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.datatype, self, name='tstype_parameters',
-                                                 conditions=eeg_conditions)
+        self.datatype = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.datatype, self.project_id,
+                                                 name='tstype_parameters', conditions=eeg_conditions)
 
     @staticmethod
     def get_view_model():

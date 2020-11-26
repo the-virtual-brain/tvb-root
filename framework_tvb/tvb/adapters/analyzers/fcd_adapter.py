@@ -53,7 +53,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
@@ -99,12 +99,13 @@ class FCDAdapterModel(ViewModel, FcdCalculator):
 
 
 class FCDAdapterForm(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(FCDAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, self, name=self.get_input_name(),
-                                                    conditions=self.get_filters(), has_all_option=True)
-        self.sw = ScalarField(FCDAdapterModel.sw, self)
-        self.sp = ScalarField(FCDAdapterModel.sp, self)
+    def __init__(self, project_id=None):
+        super(FCDAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, self.project_id,
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
+        self.sw = FloatField(FCDAdapterModel.sw, self.project_id)
+        self.sp = FloatField(FCDAdapterModel.sp, self.project_id)
 
     @staticmethod
     def get_view_model():

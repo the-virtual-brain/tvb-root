@@ -44,7 +44,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, 
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import FormField, SimpleStrField, TraitDataTypeSelectField, SelectField
+from tvb.core.neotraits.forms import FormField, TraitDataTypeSelectField, SelectField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.equations import Sigmoid, PulseTrain, TemporalApplicableEquation, FiniteSupportEquation
@@ -57,8 +57,8 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
     def __init__(self, project_id=None):
         super(StimulusSurfaceSelectorForm, self).__init__(project_id=project_id)
         traited_attr = Attr(StimuliSurfaceIndex, label='Load Surface Stimulus', required=False)
-        self.surface_stimulus = TraitDataTypeSelectField(traited_attr, self, name='existentEntitiesSelect')
-        self.display_name = SimpleStrField(self, name='display_name', label='Display name')
+        self.surface_stimulus = TraitDataTypeSelectField(traited_attr, self.project_id, name='existentEntitiesSelect')
+        self.display_name = StrField(SurfaceStimulusCreatorModel.display_name, self.project_id, name='display_name')
 
     def get_rendering_dict(self):
         return {'adapter_form': self, 'legend': 'Loaded stimulus'}
@@ -92,12 +92,12 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
     def __init__(self, project_id=None):
         super(SurfaceStimulusCreatorForm, self).__init__(project_id=project_id)
 
-        self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, self, name='surface',
+        self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, self.project_id, name='surface',
                                                 conditions=self.get_filters())
-        self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, self, name='spatial',
+        self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, self.project_id, name='spatial',
                                    choices=self.choices_spatial,
                                    subform=get_form_for_equation(self.default_spatial))
-        self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, self, name='temporal',
+        self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, self.project_id, name='temporal',
                                     choices=self.choices_temporal,
                                     subform=get_form_for_equation(self.default_temporal))
 
@@ -122,10 +122,10 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         self.surface.data = trait.surface.hex
         self.spatial.data = type(trait.spatial)
         self.temporal.data = type(trait.temporal)
-        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self,
+        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self.project_id,
                                                 self.NAME_TEMPORAL_PARAMS_DIV)
         self.temporal.subform_field.form.fill_from_trait(trait.temporal)
-        self.spatial.subform_field = FormField(get_form_for_equation(type(trait.spatial)), self,
+        self.spatial.subform_field = FormField(get_form_for_equation(type(trait.spatial)), self.project_id,
                                                self.NAME_SPATIAL_PARAMS_DIV)
         self.spatial.subform_field.form.fill_from_trait(trait.spatial)
 
@@ -206,8 +206,8 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
     def __init__(self, project_id=None):
         super(StimulusRegionSelectorForm, self).__init__(project_id=project_id)
         traited_attr = Attr(StimuliRegionIndex, label='Load Region Stimulus', required=False)
-        self.region_stimulus = TraitDataTypeSelectField(traited_attr, self, name='existentEntitiesSelect')
-        self.display_name = SimpleStrField(self, name='display_name', label='Display name')
+        self.region_stimulus = TraitDataTypeSelectField(traited_attr, self.project_id, name='existentEntitiesSelect')
+        self.display_name = StrField(RegionStimulusCreatorModel.display_name, self.project_id, name='display_name')
 
     def get_rendering_dict(self):
         return {'adapter_form': self, 'legend': 'Loaded stimulus'}
@@ -235,8 +235,9 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
 
     def __init__(self, project_id=None):
         super(RegionStimulusCreatorForm, self).__init__(project_id=project_id)
-        self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, self, name='connectivity')
-        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self, name='temporal',
+        self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, self.project_id,
+                                                     name='connectivity')
+        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, self.project_id, name='temporal',
                                     choices=self.choices, subform=get_form_for_equation(self.default_temporal))
 
     @staticmethod
@@ -259,7 +260,7 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         # type: (RegionStimulusCreatorModel) -> None
         self.connectivity.data = trait.connectivity.hex
         self.temporal.data = type(trait.temporal)
-        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self,
+        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)), self.project_id,
                                                 self.NAME_TEMPORAL_PARAMS_DIV)
         self.temporal.subform_field.form.fill_from_trait(trait.temporal)
 
