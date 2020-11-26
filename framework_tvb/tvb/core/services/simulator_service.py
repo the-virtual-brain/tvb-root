@@ -39,10 +39,10 @@ import shutil
 import uuid
 
 import numpy
-from tvb.adapters.simulator.monitor_forms import MonitorForm
+from tvb.adapters.simulator.monitor_forms import MonitorForm, get_monitor_to_ui_name_dict, get_ui_name_to_monitor_dict
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, RawViewModel
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -238,3 +238,55 @@ class SimulatorService(object):
 
         burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
         return simulator, burst_config
+
+    @staticmethod
+    def build_list_of_monitors(monitor_names, session_simulator):
+        monitor_dict = get_ui_name_to_monitor_dict(session_simulator.is_surface_simulation)
+        monitor_classes = []
+
+        session_monitor_types = [type(monitor) for monitor in session_simulator.monitors]
+        for monitor_name in monitor_names:
+
+            monitor = monitor_dict[monitor_name]
+            if monitor in session_monitor_types:
+                idx = session_monitor_types.index(monitor)
+                monitor_classes.append(session_simulator.monitors[idx])
+            else:
+                monitor_classes.append(monitor())
+
+        return monitor_classes
+
+    def skip_raw_monitor(self, monitors, pse_url, monitors_url):
+        # if the first monitor is Raw, it must be skipped because it does not have parameters
+        # also if the only monitor is Raw, the parameters setting phase must be skipped entirely
+        first_monitor_index = 0
+        if len(monitors) == 1 and isinstance(monitors[0], RawViewModel):
+            return first_monitor_index, pse_url
+
+        if isinstance(monitors[0], RawViewModel):
+            first_monitor_index = 1
+        last_loaded_fragment_url = self.build_monitor_url(monitors_url,
+                                                          type(monitors[first_monitor_index]).__name__)
+        return first_monitor_index, last_loaded_fragment_url
+
+    @staticmethod
+    def get_current_index_and_next_monitor(monitors, current_monitor_name):
+        for monitor in monitors:
+            if type(monitor).__name__ == current_monitor_name:
+                index = monitors.index(monitor)
+                if index < len(monitors) - 1:
+                    return monitors[index + 1], index
+
+        # Currently at the last monitor
+        return None, len(monitors) - 1
+
+    @staticmethod
+    def build_monitor_url(fragment_url, monitor):
+        url_regex = '{}/{}'
+        url = url_regex.format(fragment_url, monitor)
+        return url
+
+    @staticmethod
+    def prepare_monitor_legend(is_surface_simulation, monitor):
+        return get_monitor_to_ui_name_dict(
+            is_surface_simulation)[type(monitor)] + ' monitor'

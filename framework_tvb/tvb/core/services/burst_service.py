@@ -44,6 +44,7 @@ from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, STATUS_FINISHED, STATUS_PENDING, STATUS_CANCELED
 from tvb.core.entities.model.model_operation import OperationGroup, STATUS_ERROR, STATUS_STARTED, has_finished
 from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.utils import format_bytes_human, format_timedelta
@@ -323,3 +324,28 @@ class BurstService(object):
         metric_operation = dao.store_entity(metric_operation)
         op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
         return op_dir, metric_operation
+
+    def cancel_or_remove_burst(self, burst_id):
+        burst_configuration = self.load_burst_configuration(burst_id)
+        remove_after_stop = burst_configuration.status != burst_configuration.BURST_RUNNING
+
+        if burst_configuration.fk_operation_group is None:
+            op_id = burst_configuration.fk_simulation
+            is_group = 0
+        else:
+            op_id = burst_configuration.fk_operation_group
+            is_group = 1
+
+        return op_id, is_group, remove_after_stop
+
+    @staticmethod
+    def handle_range_params_at_loading(burst_config, all_range_parameters):
+        param1, param2 = None, None
+        if burst_config.range1:
+            param1 = RangeParameter.from_json(burst_config.range1)
+            param1.fill_from_default(all_range_parameters[param1.name])
+            if burst_config.range2 is not None:
+                param2 = RangeParameter.from_json(burst_config.range2)
+                param2.fill_from_default(all_range_parameters[param2.name])
+
+        return param1, param2
