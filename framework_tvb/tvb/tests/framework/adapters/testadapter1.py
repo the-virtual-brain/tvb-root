@@ -51,10 +51,10 @@ class TestAdapter1Form(abcadapter.ABCAdapterForm):
         This class is used for testing purposes.
     """
 
-    def __init__(self, prefix='', project_id=None):
-        super(TestAdapter1Form, self).__init__(prefix, project_id)
-        self.test1_val1 = IntField(TestModel.test1_val1, self, name='test1_val1')
-        self.test1_val2 = IntField(TestModel.test1_val2, self, name='test1_val2')
+    def __init__(self, project_id=None):
+        super(TestAdapter1Form, self).__init__(project_id)
+        self.test1_val1 = IntField(TestModel.test1_val1, self.project_id, name='test1_val1')
+        self.test1_val2 = IntField(TestModel.test1_val2, self.project_id, name='test1_val2')
 
     @staticmethod
     def get_view_model():
