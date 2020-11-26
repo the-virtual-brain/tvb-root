@@ -53,9 +53,9 @@ class PCAModel(ViewModel):
 
 class PCAForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(PCAForm, self).__init__(prefix, project_id)
-        self.pca = TraitDataTypeSelectField(PCAModel.pca, self, name='pca', conditions=self.get_filters())
+    def __init__(self, project_id=None):
+        super(PCAForm, self).__init__(project_id)
+        self.pca = TraitDataTypeSelectField(PCAModel.pca, self.project_id, name='pca', conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():

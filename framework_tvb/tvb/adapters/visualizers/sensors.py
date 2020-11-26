@@ -140,13 +140,14 @@ class SensorsViewerModel(ViewModel):
 
 class SensorsViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SensorsViewerForm, self).__init__(prefix, project_id)
-        self.sensors = TraitDataTypeSelectField(SensorsViewerModel.sensors, self, name='sensors',
+    def __init__(self, project_id=None):
+        super(SensorsViewerForm, self).__init__(project_id)
+        self.sensors = TraitDataTypeSelectField(SensorsViewerModel.sensors, self.project_id, name='sensors',
                                                 conditions=self.get_filters())
-        self.projection_surface = TraitDataTypeSelectField(SensorsViewerModel.projection_surface, self,
+        self.projection_surface = TraitDataTypeSelectField(SensorsViewerModel.projection_surface, self.project_id,
                                                            name='projection_surface')
-        self.shell_surface = TraitDataTypeSelectField(SensorsViewerModel.shell_surface, self, name='shell_surface')
+        self.shell_surface = TraitDataTypeSelectField(SensorsViewerModel.shell_surface, self.project_id,
+                                                      name='shell_surface')
 
     @staticmethod
     def get_view_model():

@@ -272,11 +272,11 @@ class FlowController(BaseController):
         filter = FilterChain(fields=fields, operations=operations, values=values)
         project = common.get_current_project()
 
-        form = Form(project_id=project.id, draw_ranges=True)
+        form = Form(project_id=project.id)
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
         data_type_gid_attr.required = not string2bool(has_none_option)
 
-        select_field = TraitDataTypeSelectField(data_type_gid_attr, form, conditions=filter,
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, form.project_id, conditions=filter,
                                                 has_all_option=string2bool(has_all_option))
 
         return {'options': select_field.options()}

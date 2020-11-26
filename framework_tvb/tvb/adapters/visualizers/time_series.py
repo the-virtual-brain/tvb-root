@@ -59,10 +59,10 @@ class TimeSeriesModel(ViewModel):
 
 class TimeSeriesForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TimeSeriesForm, self).__init__(prefix, project_id, False)
+    def __init__(self, project_id=None):
+        super(TimeSeriesForm, self).__init__(project_id)
 
-        self.time_series = TraitDataTypeSelectField(TimeSeriesModel.time_series, self, name='time_series',
+        self.time_series = TraitDataTypeSelectField(TimeSeriesModel.time_series, self.project_id, name='time_series',
                                                     conditions=self.get_filters())
 
     @staticmethod

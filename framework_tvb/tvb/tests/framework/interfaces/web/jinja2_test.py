@@ -56,7 +56,7 @@ class TraitAdapterForm(ABCAdapterForm):
 
     def __init__(self):
         super(TraitAdapterForm, self).__init__()
-        self.test_array = ArrayField(TestTrait.test_array, self, name='test_array')
+        self.test_array = ArrayField(TestTrait.test_array, self.project_id, name='test_array')
 
 
 class TraitAdapter(ABCAdapter):
@@ -210,7 +210,7 @@ class TestJinja2Simulator(Jinja2Test):
         soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         all_buttons = soup.find_all('button')
-        assert len(all_buttons) == 4
+        assert len(all_buttons) == 3
         hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
         assert len(hidden_buttons) == 0
 
