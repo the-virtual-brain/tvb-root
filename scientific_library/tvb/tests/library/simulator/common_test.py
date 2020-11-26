@@ -63,20 +63,6 @@ class TestCommon(BaseTestCase):
         val = common.linear_interp1d(t_start, t_end, y_start, y_end, t_mid)
         assert val == 6.0
 
-    def test_unravel_history(self):
-        """
-        This class does not work and it's not used ... maybe should tag it as
-        deprecated
-        """
-        pass
-
-    def test_Buffer(self):
-        """
-        It seems to be unused as well ... maybe should tag it as
-        deprecated
-        """
-        pass
-
     @pytest.mark.skipif(not hasattr(numpy.add, 'at'),
                         reason='Cannot test fallback numpy.add.at implementation without '
                                'a version of NumPy which provides this ufunc method (>=1.8).')
