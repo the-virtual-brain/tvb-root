@@ -40,18 +40,18 @@ from tvb.core.neotraits.forms import Form, SelectField, FloatField
 
 def get_integrator_to_form_dict():
     integrator_class_to_form = {
-        HeunDeterministicViewModel: HeunDeterministicIntegratorForm,
-        HeunStochasticViewModel: HeunStochasticIntegratorForm,
-        EulerDeterministicViewModel: EulerDeterministicIntegratorForm,
-        EulerStochasticViewModel: EulerStochasticIntegratorForm,
-        RungeKutta4thOrderDeterministicViewModel: RungeKutta4thOrderDeterministicIntegratorForm,
-        IdentityViewModel: IdentityIntegratorForm,
-        VODEViewModel: VODEIntegratorForm,
-        VODEStochasticViewModel: VODEStochasticIntegratorForm,
-        Dopri5ViewModel: Dopri5IntegratorForm,
-        Dopri5StochasticViewModel: Dopri5StochasticIntegratorForm,
-        Dop853ViewModel: Dop853IntegratorForm,
-        Dop853StochasticViewModel: Dop853StochasticIntegratorForm
+        HeunDeterministicViewModel: IntegratorForm,
+        HeunStochasticViewModel: IntegratorStochasticForm,
+        EulerDeterministicViewModel: IntegratorForm,
+        EulerStochasticViewModel: IntegratorStochasticForm,
+        RungeKutta4thOrderDeterministicViewModel: IntegratorForm,
+        IdentityViewModel: IntegratorForm,
+        VODEViewModel: IntegratorForm,
+        VODEStochasticViewModel: IntegratorStochasticForm,
+        Dopri5ViewModel: IntegratorForm,
+        Dopri5StochasticViewModel: IntegratorStochasticForm,
+        Dop853ViewModel: IntegratorForm,
+        Dop853StochasticViewModel: IntegratorStochasticForm
     }
     return integrator_class_to_form
 
@@ -89,75 +89,3 @@ class IntegratorStochasticForm(IntegratorForm):
     def fill_from_trait(self, trait):
         # type: (IntegratorStochasticViewModel) -> None
         self.noise.data = trait.noise.__class__
-
-
-class HeunDeterministicIntegratorForm(IntegratorForm):
-
-    def __init__(self):
-        super(HeunDeterministicIntegratorForm, self).__init__()
-
-
-class HeunStochasticIntegratorForm(IntegratorStochasticForm):
-
-    def __init__(self):
-        super(HeunStochasticIntegratorForm, self).__init__()
-
-
-class EulerDeterministicIntegratorForm(IntegratorForm):
-
-    def __init__(self):
-        super(EulerDeterministicIntegratorForm, self).__init__()
-
-
-class EulerStochasticIntegratorForm(IntegratorStochasticForm):
-
-    def __init__(self):
-        super(EulerStochasticIntegratorForm, self).__init__()
-
-
-class RungeKutta4thOrderDeterministicIntegratorForm(IntegratorForm):
-
-    def __init__(self):
-        super(RungeKutta4thOrderDeterministicIntegratorForm, self).__init__()
-
-
-class IdentityIntegratorForm(IntegratorForm):
-
-    def __init__(self):
-        super(IdentityIntegratorForm, self).__init__()
-
-
-class VODEIntegratorForm(IntegratorForm):
-
-    def __init__(self):
-        super(VODEIntegratorForm, self).__init__()
-
-
-class VODEStochasticIntegratorForm(IntegratorStochasticForm):
-
-    def __init__(self):
-        super(VODEStochasticIntegratorForm, self).__init__()
-
-
-class Dopri5IntegratorForm(IntegratorForm):
-
-    def __init__(self):
-        super(Dopri5IntegratorForm, self).__init__()
-
-
-class Dopri5StochasticIntegratorForm(IntegratorStochasticForm):
-
-    def __init__(self):
-        super(Dopri5StochasticIntegratorForm, self).__init__()
-
-
-class Dop853IntegratorForm(IntegratorForm):
-
-    def __init__(self):
-        super(Dop853IntegratorForm, self).__init__()
-
-
-class Dop853StochasticIntegratorForm(IntegratorStochasticForm):
-
-    def __init__(self):
-        super(Dop853StochasticIntegratorForm, self).__init__()
