@@ -29,7 +29,6 @@
 #
 
 import uuid
-
 import formencode
 from formencode import validators
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
@@ -44,11 +43,10 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ArrayField, SelectField, MultiSelectField, \
-    TraitDataTypeSelectField, HiddenField, FloatField
+    TraitDataTypeSelectField, HiddenField, FloatField, StrField
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.models.base import Model
-from tvb.core.neotraits.forms import IntField, StrField
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):

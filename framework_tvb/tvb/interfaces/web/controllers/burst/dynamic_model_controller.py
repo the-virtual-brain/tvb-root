@@ -110,7 +110,9 @@ class SessionCache(object):
 class _InputTreeFragment(ABCAdapterForm):
     def __init__(self):
         super(_InputTreeFragment, self).__init__()
-        self.dynamic_name = StrField(Str(label='Dynamic name'), self.project_id, name='dynamic_name')
+        self.dynamic_name = StrField(Str(label='Parameter configuration name',
+                                         doc="""The name of this parameter configuration"""),
+                                     self.project_id, name='dynamic_name')
 
 
 @traced

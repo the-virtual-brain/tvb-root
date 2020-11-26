@@ -43,7 +43,6 @@ import sys
 import uuid
 import zipfile
 from copy import copy
-
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
