@@ -230,7 +230,11 @@ class Simulator(HasTraits):
             self._regmap, nc, nsc = self.backend.full_region_map(self.surface, self.connectivity)
             self.number_of_nodes = nc + nsc
             self.log.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
+<<<<<<< HEAD
                           nc, nsc, self.number_of_nodes)
+=======
+                          rm.size, unmapped.size, self.number_of_nodes)
+>>>>>>> simulator refactoring, init backend
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
@@ -290,22 +294,6 @@ class Simulator(HasTraits):
             if region_parameters.size == self.number_of_nodes:
                 new_parameters = region_parameters.reshape(spatial_reshape)
                 setattr(self.model, param, new_parameters)
-        # Configure spatial component of any stimuli
-        self._configure_stimuli()
-        # Set delays, provided in physical units, in integration steps.
-        self.connectivity.set_idelays(self.integrator.dt)
-        self.horizon = self.connectivity.idelays.max() + 1
-        # Reshape integrator.noise.nsig, if necessary.
-        if isinstance(self.integrator, integrators.IntegratorStochastic):
-            self._configure_integrator_noise()
-        # Setup history
-        self._configure_history(self.initial_conditions)
-        # Configure Monitors to work with selected Model, etc...
-        self._configure_monitors()
-        # Estimate of memory usage.
-        self._census_memory_requirement()
-        # Allow user to chain configure to another call or assignment.
-        return self
 
     def _handle_random_state(self, random_state):
         if random_state is not None:
@@ -320,6 +308,7 @@ class Simulator(HasTraits):
         if self.surface is None:
             return 0.0
         return self.surface.prepare_local_coupling(self.number_of_nodes)
+<<<<<<< HEAD
 
     def _loop_compute_node_coupling(self, step):
         """Compute delayed node coupling values."""
@@ -327,6 +316,8 @@ class Simulator(HasTraits):
         if self.surface is not None:
             coupling = coupling[:, self._regmap]
         return coupling
+=======
+>>>>>>> simulator refactoring, init backend
 
     def _prepare_stimulus(self):
         if self.stimulus is None:
@@ -348,8 +339,12 @@ class Simulator(HasTraits):
 
     def _loop_update_history(self, step, state):
         """Update history."""
+<<<<<<< HEAD
         n_reg = self.connectivity.number_of_regions
         if self.surface is not None and state.shape[1] > n_reg:
+=======
+        if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
+>>>>>>> simulator refactoring, init backend
             state = self.backend.surface_state_to_rois(self._regmap, n_reg, state)
         self.history.update(step, state)
 

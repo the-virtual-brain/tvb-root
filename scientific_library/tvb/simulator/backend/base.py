@@ -13,6 +13,10 @@ allowing for different implementations or strategies.
 - Components can then be associated with a component, e.g.
   - nest component uses nest backend
   - field componetn uses shtns backend
+- Isolates array creation, tracing, assist switching in float32
+- 'Service' layer receives closures or generator
+- Backend specifies preferred types and array creation routines
+- Components can then be associated with a component
 - Multibackend-multicomponents need conversions done
 
 """
