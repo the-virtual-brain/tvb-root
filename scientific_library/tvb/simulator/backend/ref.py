@@ -94,6 +94,7 @@ class RefBase:
         y = round(x) - .5
         return int(y) + (y > 0)
 
+
 class RefSurface(RefBase):
     "Surface/field-related methods."
 
@@ -114,7 +115,3 @@ class RefSurface(RefBase):
         unmapped = conn.unmapped_indices(rm)
         regmap = numpy.r_[rm, unmapped]
         return regmap, rm.size, unmapped.size
-
-
-class ReferenceBackend(BaseBackend, RefSurface):
-    "Base reference backend, implemented in readable NumPy."
