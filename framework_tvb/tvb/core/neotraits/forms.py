@@ -498,10 +498,6 @@ class FormField(Field):
 
 
 class Form(object):
-    RANGE_1_NAME = 'range_1'
-    RANGE_2_NAME = 'range_2'
-    range_1 = None
-    range_2 = None
 
     def __init__(self, project_id=None):
         # TODO: makes sense here?
@@ -592,8 +588,6 @@ class Form(object):
     def fill_from_post(self, form_data):
         for field in self.fields:
             field.fill_from_post(form_data)
-        self.range_1 = form_data.get(self.RANGE_1_NAME)
-        self.range_2 = form_data.get(self.RANGE_2_NAME)
 
     def fill_from_single_post_param(self, **param):
         param_key = list(param)[0]
