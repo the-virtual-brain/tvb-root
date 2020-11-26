@@ -35,7 +35,7 @@ from jinja2 import PackageLoader, Environment
 import tvb.interfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Dim, List
 import tvb.core.neotraits.forms
-from tvb.core.neotraits.forms import ScalarField, Form, FormField, ArrayField
+from tvb.core.neotraits.forms import StrField, IntField, BoolField, Form, FormField, ArrayField
 
 # inject jinja config
 # to ensure sanity do this once at a top level in the app
@@ -81,35 +81,35 @@ class Foo(HasTraits):
 
 
 class BaBazeForm(Form):
-    def __init__(self, prefix=''):
-        super(BaBazeForm, self).__init__(prefix)
+    def __init__(self):
+        super(BaBazeForm, self).__init__()
         # these beg for metaprogramming
-        self.s = ScalarField(BaBaze.s, self)
-        self.sign = ScalarField(BaBaze.sign, self)
+        self.s = StrField(BaBaze.s, self.project_id)
+        self.sign = IntField(BaBaze.sign, self.project_id)
 
 
 class BarForm(BaBazeForm):
-    def __init__(self, prefix=''):
-        super(BarForm, self).__init__(prefix)
-        self.airplane_meal = ScalarField(Bar.airplane_meal, self)
-        self.portions = ScalarField(Bar.portions, self)
-        self.is_fancy = ScalarField(Bar.is_fancy, self)
+    def __init__(self):
+        super(BarForm, self).__init__()
+        self.airplane_meal = StrField(Bar.airplane_meal, self.project_id)
+        self.portions = IntField(Bar.portions, self.project_id)
+        self.is_fancy = BoolField(Bar.is_fancy, self.project_id)
 
 
 class BazForm(BaBazeForm):
-    def __init__(self, prefix=''):
-        super(BazForm, self).__init__(prefix)
-        self.airplane_sweets = ScalarField(Baz.airplane_sweets, self)
+    def __init__(self):
+        super(BazForm, self).__init__()
+        self.airplane_sweets = ArrayField(Baz.airplane_sweets, self.project_id)
 
 
 class BarAndBazForm(Form):
-    def __init__(self, prefix=''):
-        super(BarAndBazForm, self).__init__(prefix)
-        self.bar = FormField(BarForm, self, 'bar', label='bar')  # BarAndBaz.bar
-        self.baz = FormField(BazForm, self, 'baz', label='baaz')
+    def __init__(self):
+        super(BarAndBazForm, self).__init__()
+        self.bar = FormField(BarForm, self.project_id, 'bar', label='bar')  # BarAndBaz.bar
+        self.baz = FormField(BazForm, self.project_id, 'baz', label='baaz')
         # not from trait
-        self.happy = ScalarField(Attr(bool, label='clap'), self, 'clasp')
-        self.array = ArrayField(BarAndBaz.array, self)
+        self.happy = BoolField(Attr(bool, label='clap'), self.project_id, 'clasp')
+        self.array = ArrayField(BarAndBaz.array, self.project_id)
 
     def fill_from_trait(self, trait):
         super(BarAndBazForm, self).fill_from_trait(trait)

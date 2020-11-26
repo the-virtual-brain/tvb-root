@@ -32,6 +32,7 @@
 Upgrade script from H5 version 3 to version 4 (for tvb release 1.4.1)
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. creationdate:: August of 2015
 """
 
 import os
@@ -51,7 +52,7 @@ FIELD_SURFACE_MAPPING = "Has_surface_mapping"
 FIELD_VOLUME_MAPPING = "Has_volume_mapping"
 
 
-def update(input_file):
+def update(input_file, burst_match_dict=None):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
@@ -69,6 +70,7 @@ def update(input_file):
                                                "metadata: %s" % (input_file, DataTypeMetaData.KEY_CLASS_NAME))
     class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]
 
+    class_name = str(class_name, 'utf-8')
     if "ProjectionSurface" in class_name and FIELD_PROJECTION_TYPE not in root_metadata:
         LOGGER.info("Updating ProjectionSurface %s from %s" % (file_name, folder))
 
@@ -85,9 +87,12 @@ def update(input_file):
         LOGGER.info("Updating TS %s from %s" % (file_name, folder))
 
         service = ImportService()
-        operation_id = int(os.path.split(folder)[1])
-        dt = service.load_datatype_from_file(os.path.join(folder, file_name), operation_id)
-        dt_db = dao.get_datatype_by_gid(dt.gid)
+        try:
+            operation_id = int(os.path.split(folder)[1])
+            dt = service.load_datatype_from_file(os.path.join(folder, file_name), operation_id)
+            dt_db = dao.get_datatype_by_gid(dt.gid)
+        except ValueError:
+            dt_db = None
 
         if dt_db is not None:
             # DT already in DB (update of own storage, by making sure all fields are being correctly populated)

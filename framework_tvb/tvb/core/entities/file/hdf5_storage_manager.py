@@ -301,6 +301,10 @@ class HDF5StorageManager(object):
         finally:
             self.close_file()
 
+    @staticmethod
+    def serialize_bool(value):
+        return HDF5StorageManager.BOOL_VALUE_PREFIX + str(value)
+
     def _serialize_value(self, value):
         """
         This method takes a value which will be stored as metadata and 
@@ -314,7 +318,7 @@ class HDF5StorageManager(object):
             return ''
         # Transform boolean to string and prefix it
         if isinstance(value, bool):
-            return self.BOOL_VALUE_PREFIX + str(value)
+            return self.serialize_bool(value)
         # Transform date to string and append prefix
         elif isinstance(value, datetime):
             return self.DATETIME_VALUE_PREFIX + utils.date2string(value, date_format=self.DATE_TIME_FORMAT)

@@ -142,16 +142,19 @@ class CSVConnectivityImporterModel(UploaderViewModel):
 
 class CSVConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(CSVConnectivityImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(CSVConnectivityImporterForm, self).__init__(project_id)
 
-        self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', self, name='weights')
-        self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, self,
+        self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', self.project_id,
+                                        'weights', self.temporary_files)
+        self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, self.project_id,
                                              name='weights_delimiter', choices=DELIMITER_OPTIONS)
-        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, ['.csv'], self, name='tracts')
-        self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, self,
+        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, ['.csv'], self.project_id,
+                                       'tracts', self.temporary_files)
+        self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, self.project_id,
                                             name='tracts_delimiter', choices=DELIMITER_OPTIONS)
-        self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, self, name='input_data')
+        self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, self.project_id,
+                                                   'input_data')
 
     @staticmethod
     def get_view_model():
