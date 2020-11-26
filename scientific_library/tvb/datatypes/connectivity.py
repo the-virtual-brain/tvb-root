@@ -725,3 +725,8 @@ class Connectivity(HasTraits):
             result.tract_lengths = reader.read_array_from_file("tract_lengths")
 
         return result
+
+    @property
+    def horizon(self):
+        "The horizon is the maximum number of steps required in memory for simulation."
+        return self.idelays.max() + 1
