@@ -56,7 +56,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, TemporalApplicableEquation, Linear
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers.common import *
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, common
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController, common
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.models import ModelsEnum
 from tvb.tests.framework.core.factory import TestFactory

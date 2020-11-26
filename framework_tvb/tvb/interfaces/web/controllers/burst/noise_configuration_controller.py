@@ -42,7 +42,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorWizzardURLs
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorWizzardURLs
 
 
 @traced

@@ -37,7 +37,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestModel
 from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest

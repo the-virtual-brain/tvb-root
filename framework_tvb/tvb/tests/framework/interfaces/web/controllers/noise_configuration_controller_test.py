@@ -35,7 +35,7 @@
 import json
 import cherrypy
 from tvb.core.entities.file.simulator.view_model import HeunStochasticViewModel
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController

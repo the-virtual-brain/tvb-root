@@ -35,7 +35,7 @@
 import json
 import pytest
 import cherrypy
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.model.model_burst import Dynamic
 from tvb.core.entities.storage import dao
