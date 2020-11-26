@@ -41,16 +41,16 @@ from tvb.datatypes.sensors import SensorTypes
 
 def get_monitor_to_form_dict():
     monitor_class_to_form = {
-        RawViewModel: RawMonitorForm,
-        SubSampleViewModel: SubSampleMonitorForm,
+        RawViewModel: MonitorForm,
+        SubSampleViewModel: MonitorForm,
         SpatialAverageViewModel: SpatialAverageMonitorForm,
-        GlobalAverageViewModel: GlobalAverageMonitorForm,
-        TemporalAverageViewModel: TemporalAverageMonitorForm,
+        GlobalAverageViewModel: MonitorForm,
+        TemporalAverageViewModel: MonitorForm,
         EEGViewModel: EEGMonitorForm,
         MEGViewModel: MEGMonitorForm,
         iEEGViewModel: iEEGMonitorForm,
         BoldViewModel: BoldMonitorForm,
-        BoldRegionROIViewModel: BoldRegionROIMonitorForm
+        BoldRegionROIViewModel: BoldMonitorForm
     }
 
     return monitor_class_to_form
@@ -138,27 +138,13 @@ class MonitorForm(Form):
             variables_of_interest_indexes[variable] = all_variables.index(variable)
         return variables_of_interest_indexes
 
-    # TODO: We should review the code here, we could probably reduce the number of  classes that are used here
-
-
-class RawMonitorForm(Form):
-
-    def __init__(self, session_stored_simulator=None, project_id=None):
-        super(RawMonitorForm, self).__init__(project_id)
-
-
-class SubSampleMonitorForm(MonitorForm):
-
-    def __init__(self, session_stored_simulator=None, project_id=None):
-        super(SubSampleMonitorForm, self).__init__(session_stored_simulator, project_id)
-
 
 class SpatialAverageMonitorForm(MonitorForm):
 
     def __init__(self, session_stored_simulator=None, project_id=None):
         super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, project_id)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask, self.project_id)
-        self.default_mask = StrField(SpatialAverage.default_mask, self.project_id)
+        self.default_mask = SelectField(SpatialAverage.default_mask, self.project_id)
 
     def fill_from_trait(self, trait):
         super(SpatialAverageMonitorForm, self).fill_from_trait(trait)
@@ -176,18 +162,6 @@ class SpatialAverageMonitorForm(MonitorForm):
         else:
             self.default_mask.data = SpatialAverage.REGION_MAPPING
             self.default_mask.disabled = True
-
-
-class GlobalAverageMonitorForm(MonitorForm):
-
-    def __init__(self, session_stored_simulator=None, project_id=None):
-        super(GlobalAverageMonitorForm, self).__init__(session_stored_simulator, project_id)
-
-
-class TemporalAverageMonitorForm(MonitorForm):
-
-    def __init__(self, session_stored_simulator=None, project_id=None):
-        super(TemporalAverageMonitorForm, self).__init__(session_stored_simulator, project_id)
 
 
 class ProjectionMonitorForm(MonitorForm):
@@ -278,9 +252,3 @@ class BoldMonitorForm(MonitorForm):
     def fill_from_trait(self, trait):
         super(BoldMonitorForm, self).fill_from_trait(trait)
         self.hrf_kernel.data = trait.hrf_kernel.__class__
-
-
-class BoldRegionROIMonitorForm(BoldMonitorForm):
-
-    def __init__(self, session_stored_simulator=None, project_id=None):
-        super(BoldRegionROIMonitorForm, self).__init__(session_stored_simulator, project_id)
