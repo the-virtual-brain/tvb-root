@@ -8,7 +8,7 @@ jobs:
       - name: debug missing docker file?
         run: pwd; ls; find . -name 'Dockerfile-test' -type f; 
       - name: Build image
-        run: docker build -f tvb_build/Dockerfile-test -t tvb/test .
+        run: cd tvb_build/docker && docker build -f Dockerfile-test -t tvb/test .
 
       - name: Run tests
         run: >
