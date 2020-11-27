@@ -5,7 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-
+      - name: debug missing docker file?
+        run: pwd; ls; find . -name 'Dockerfile-test' -type f; 
       - name: Build image
         run: docker build -f tvb_build/Dockerfile-test -t tvb/test .
 
