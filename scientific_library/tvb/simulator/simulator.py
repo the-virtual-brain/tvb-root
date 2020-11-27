@@ -246,6 +246,15 @@ class Simulator(HasTraits):
             self.log.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
                           nc, nsc, self.number_of_nodes)
 
+    def model_param_names(self):
+        # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
+        excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
+                           "noise", "psi_table", "nerf_table", "gid")
+        for param in type(self.model).declarative_attrs:
+            if param in excluded_params:
+                continue
+            yield param
+
     def configure(self, full_configure=True):
         """Configure simulator and its components.
 
@@ -268,7 +277,12 @@ class Simulator(HasTraits):
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
             self.preconfigure()
+
+        self._configure_pseudospectral_simulation()
+
+        # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
         self.model._spatialize_model_parameters(sim=self)
+
         # Configure spatial component of any stimuli
         self._configure_stimuli()
         # Set delays, provided in physical units, in integration steps.
@@ -285,6 +299,9 @@ class Simulator(HasTraits):
         self._census_memory_requirement()
         # Allow user to chain configure to another call or assignment.
         return self
+
+    def _configure_pseudospectral_simulation(self):
+        pass
 
     def _prepare_local_coupling(self):
         if self.surface is None:
