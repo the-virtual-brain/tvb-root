@@ -1,0 +1,15 @@
+name: docker-based library testing
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Build image
+        run: docker build -f tvb_build/Dockerfile-test -t tvb/test .
+
+      - name: Run tests
+        run: >
+          docker run --rm -v $PWD:/home/tvb_user/tvb-root tvb/test 
+          bash -c "source activate tvb-run && cd tvb_build && bash install_full_tvb.sh && cd ../tvb_bin && service postgresql start && bash run_tests.sh postgres"
