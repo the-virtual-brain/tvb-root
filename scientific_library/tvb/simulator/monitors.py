@@ -64,7 +64,7 @@ import tvb.datatypes.projections as projections_module
 from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
 from tvb.simulator.common import numpy_add_at
-from tvb.simulator.backend.ref import iround
+from tvb.simulator.backend.ref import ReferenceBackend
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
 
 
@@ -110,7 +110,7 @@ class Monitor(HasTraits):
 
         """
         self.dt = simulator.integrator.dt
-        self.istep = iround(self.period / self.dt)
+        self.istep = ReferenceBackend.iround(self.period / self.dt)
         self.voi = self.variables_of_interest
         if self.voi is None or self.voi.size == 0:
             self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
