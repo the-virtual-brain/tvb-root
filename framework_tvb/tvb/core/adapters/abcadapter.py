@@ -562,5 +562,5 @@ class ABCAdapter(object):
         analyzer_index.array_data_mean = metadata.mean
         analyzer_index.aray_has_complex = metadata.has_complex
         analyzer_index.array_is_finite = metadata.is_finite
-        analyzer_index.shape = str(analyzer_h5.array_data.shape)
+        analyzer_index.shape = json.dumps(analyzer_h5.array_data.shape)
         analyzer_index.ndim = len(analyzer_h5.array_data.shape)
