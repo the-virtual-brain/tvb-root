@@ -238,6 +238,15 @@ class Simulator(HasTraits):
 
         self._guesstimate_memory_requirement()
 
+    def model_param_names(self):
+        # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
+        excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
+                           "noise", "psi_table", "nerf_table", "gid")
+        for param in type(self.model).declarative_attrs:
+            if param in excluded_params:
+                continue
+            yield param
+
     def configure(self, full_configure=True):
         """Configure simulator and its components.
 
@@ -260,24 +269,13 @@ class Simulator(HasTraits):
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
             self.preconfigure()
+
+        self._configure_pseudospectral_simulation()
+
         # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
-        # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
-        excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
-                           "noise", "psi_table", "nerf_table", "gid")
-        spatial_reshape = self.model.spatial_param_reshape
-        for param in type(self.model).declarative_attrs:
-            if param in excluded_params:
-                continue
-            # If it's a surface sim and model parameters were provided at the region level
-            region_parameters = getattr(self.model, param)
-            if self.surface is not None:
-                if region_parameters.size == self.connectivity.number_of_regions:
-                    new_parameters = region_parameters[self.surface.region_mapping].reshape(spatial_reshape)
-                    setattr(self.model, param, new_parameters)
-            region_parameters = getattr(self.model, param)
-            if region_parameters.size == self.number_of_nodes:
-                new_parameters = region_parameters.reshape(spatial_reshape)
-                setattr(self.model, param, new_parameters)
+        for param in self.model_param_names():
+            self._configure_model_parameter_spatial_distribution(param)
+
         # Configure spatial component of any stimuli
         self._configure_stimuli()
         # Set delays, provided in physical units, in integration steps.
@@ -294,6 +292,22 @@ class Simulator(HasTraits):
         self._census_memory_requirement()
         # Allow user to chain configure to another call or assignment.
         return self
+
+    def _configure_model_parameter_spatial_distribution(self, param):
+        spatial_reshape = self.model.spatial_param_reshape
+        # If it's a surface sim and model parameters were provided at the region level
+        region_parameters = getattr(self.model, param)
+        if self.surface is not None:
+            if region_parameters.size == self.connectivity.number_of_regions:
+                new_parameters = region_parameters[self.surface.region_mapping].reshape(spatial_reshape)
+                setattr(self.model, param, new_parameters)
+        region_parameters = getattr(self.model, param)
+        if region_parameters.size == self.number_of_nodes:
+            new_parameters = region_parameters.reshape(spatial_reshape)
+            setattr(self.model, param, new_parameters)
+
+    def _configure_pseudospectral_simulation(self):
+        pass
 
     def _handle_random_state(self, random_state):
         if random_state is not None:
