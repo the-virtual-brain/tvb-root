@@ -331,7 +331,18 @@ class Simulator(HasTraits):
         if self.stimulus is not None:
             # TODO stim_step != current step
             stim_step = step - (self.current_step + 1)
-            stimulus[self.model.stvar, :, :] = self.stimulus(stim_step).reshape((1, -1, 1))
+
+            tmp = self.stimulus(stim_step).reshape((1, -1, 1))
+
+            if self.surface is not None:
+                if self.number_of_nodes != tmp.shape[1]:
+                    # we have_subcorticals and the stimulus class is not generating signals for them
+                    # here we pad the stimulus with a zero signal for all subcortical points
+                    subcortical_padding = numpy.zeros((1, self.number_of_nodes - self.surface.number_of_vertices, 1))
+                    tmp = numpy.concatenate((tmp, subcortical_padding), axis=1)
+
+            stimulus[self.model.stvar, :, :] = tmp
+
 
     def _loop_update_history(self, step, state):
         """Update history."""
