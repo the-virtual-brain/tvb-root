@@ -226,6 +226,13 @@ class StimuliSurface(SpatioTemporalPattern):
             k += 1
             foci = numpy.array([focal_point], dtype=numpy.int32)
             distance[:, k] = self.surface.geodesic_distance(foci)
+        # alternative to the simulator loop update stimulus
+        # special casing for subcortical surfaces.
+        # distance = numpy.concatenate((
+        #     distance,
+        #     numpy.ones((region_mapping.shape[0] - self.surface.number_of_vertices, self.focal_points_surface.size)) * numpy.inf
+        # ), axis=0)
+
         super(StimuliSurface, self).configure_space(distance)
 
 
