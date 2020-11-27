@@ -103,17 +103,7 @@ def simple_gen_astr(self, names):
     return '%s(%s)' % (clsname, ', '.join(strs))
 
 
-# workaround lack of ufunc at method for older NumPy versions
-def _add_at(dest, map, src):
-    for i in numpy.unique(map):
-        dest[i] += src[i == map].sum(axis=0)
-    return dest
-
-
-try:
-    numpy_add_at = numpy.add.at
-except AttributeError:
-    numpy_add_at = _add_at
+numpy_add_at = ReferenceBackend.add_at
 
 # loose couple psutil so it's an optional dependency
 try:

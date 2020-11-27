@@ -204,7 +204,7 @@ class TestSimulator(BaseTestCase):
         test_simulator.model = TestBoundsModel()
         test_simulator.model.configure()
         test_simulator.integrator.configure()
-        test_simulator._configure_integrator_boundaries()
+        test_simulator.integrator.configure_boundaries(test_simulator.model)
         assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
         min_float = numpy.finfo("double").min
         max_float = numpy.finfo("double").max
