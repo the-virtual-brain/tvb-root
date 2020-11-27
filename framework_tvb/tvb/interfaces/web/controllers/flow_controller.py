@@ -172,7 +172,8 @@ class FlowController(BaseController):
             algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
             adapter_instance = self.algorithm_service.prepare_adapter(algorithm)
-            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, False, project.id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
+                                                                       skip_filling_form=False, project_id=project.id)
             algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
@@ -354,7 +355,8 @@ class FlowController(BaseController):
 
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
-            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, False, project_id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
+                                                                       skip_filling_form=False, project_id=project_id)
             vm = self.context.get_view_model_from_session()
             if vm and type(vm) == adapter_form.get_view_model():
                 adapter_form.fill_from_trait(vm)
