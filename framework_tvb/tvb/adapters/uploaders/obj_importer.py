@@ -66,13 +66,14 @@ class ObjSurfaceImporterModel(UploaderViewModel):
 
 class ObjSurfaceImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ObjSurfaceImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ObjSurfaceImporterForm, self).__init__(project_id)
 
-        self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, self, name='surface_type',
+        self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, self.project_id, name='surface_type',
                                         choices=ALL_SURFACES_SELECTION)
-        self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', self, name='data_file')
-        self.should_center = BoolField(ObjSurfaceImporterModel.should_center, self, name='should_center')
+        self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', self.project_id,
+                                          'data_file', self.temporary_files)
+        self.should_center = BoolField(ObjSurfaceImporterModel.should_center, self.project_id, name='should_center')
 
     @staticmethod
     def get_view_model():

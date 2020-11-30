@@ -68,12 +68,12 @@ class ICAModel(ViewModel):
 
 class ICAForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ICAForm, self).__init__(prefix, project_id)
-        self.datatype = TraitDataTypeSelectField(ICAModel.datatype, self, name='datatype',
+    def __init__(self, project_id=None):
+        super(ICAForm, self).__init__(project_id)
+        self.datatype = TraitDataTypeSelectField(ICAModel.datatype, self.project_id, name='datatype',
                                                  conditions=self.get_filters())
-        self.i_svar = IntField(ICAModel.i_svar, self, name='i_svar')
-        self.i_mode = IntField(ICAModel.i_mode, self, name='i_mode')
+        self.i_svar = IntField(ICAModel.i_svar, self.project_id, name='i_svar')
+        self.i_mode = IntField(ICAModel.i_mode, self.project_id, name='i_mode')
 
     @staticmethod
     def get_view_model():

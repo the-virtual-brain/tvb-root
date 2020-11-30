@@ -43,7 +43,6 @@ import sys
 import uuid
 import zipfile
 from copy import copy
-
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -119,7 +118,8 @@ class OperationService:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
     @staticmethod
-    def _prepare_metadata(algo_category, submit_data, operation_group=None, burst=None):
+    def _prepare_metadata(algo_category, submit_data, operation_group=None, burst=None,
+                          current_ga=GenericAttributes()):
         """
         Gather generic_metadata from submitted fields and current to be execute algorithm.
         Will populate STATE, GROUP, etc in generic_metadata
@@ -133,6 +133,7 @@ class OperationService:
             generic_metadata.user_tag_1 = submit_data[DataTypeMetaData.KEY_TAG_1]
         if operation_group is not None:
             generic_metadata.user_tag_3 = operation_group.name
+        generic_metadata.fill_from(current_ga)
         return generic_metadata
 
     @staticmethod
@@ -232,7 +233,7 @@ class OperationService:
         group_id = None
         if group is not None:
             group_id = group.id
-        ga = self._prepare_metadata(category, kwargs, group)
+        ga = self._prepare_metadata(category, kwargs, group, current_ga=view_model.generic_attributes)
         ga.visible = visible
         view_model.generic_attributes = ga
 

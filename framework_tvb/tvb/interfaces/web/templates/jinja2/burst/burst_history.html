@@ -26,6 +26,10 @@
                             {% endif %}
                             <p><button class="action action-copy" onclick="copyBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a copy of the current simulation configuration.">
                                 Copy</button></p>
+                            {% if burst.range1 == None %}
+                                <p><button class="action action-copy" onclick="branchBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a branch of the current simulation configuration.">
+                                    Branch</button></p>
+                            {% endif %}
                             <p><button class="action action-export" onclick="window.location='/burst/export/{{ burst.id }}'; return false;"
                                         title="Export simulation as ZIP, for later import or use in command line">
                                 Export ZIP</button></p>

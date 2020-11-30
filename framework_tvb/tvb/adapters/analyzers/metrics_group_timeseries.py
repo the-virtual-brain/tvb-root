@@ -51,7 +51,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, MultiSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, MultiSelectField, FloatField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
@@ -79,12 +79,13 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
         return {"KuramotoIndex": FilterChain(fields=[FilterChain.datatype + '.data_length_2d'], operations=[">="],
                                              values=[2])}
 
-    def __init__(self, prefix='', project_id=None):
-        super(TimeseriesMetricsAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, self, name="time_series")
-        self.start_point = ScalarField(TimeseriesMetricsAdapterModel.start_point, self)
-        self.segment = ScalarField(TimeseriesMetricsAdapterModel.segment, self)
-        self.algorithms = MultiSelectField(TimeseriesMetricsAdapterModel.algorithms, self, name="algorithms")
+    def __init__(self, project_id=None):
+        super(TimeseriesMetricsAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, self.project_id,
+                                                    name="time_series")
+        self.start_point = FloatField(TimeseriesMetricsAdapterModel.start_point, self.project_id)
+        self.segment = IntField(TimeseriesMetricsAdapterModel.segment, self.project_id)
+        self.algorithms = MultiSelectField(TimeseriesMetricsAdapterModel.algorithms, self.project_id, name="algorithms")
 
     @staticmethod
     def get_view_model():
