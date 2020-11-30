@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from tvb.simulator.descriptors import StaticAttr, Dim, NDArray
-
+import numpy
 
 class CosimHistory(StaticAttr):
 
@@ -11,20 +11,20 @@ class CosimHistory(StaticAttr):
        (it usually is equal to the minimum delay of coupling between the co-simulators).
        It is a DenseHistory since the whole state has to be stored for all delays."""
 
-    n_time, n_node, n_var, n_cvar, n_mode = Dim(), Dim(), Dim(), Dim(), Dim()
+    n_time, n_node, n_var, n_mode = Dim(), Dim(), Dim(), Dim()
 
-    state_buffer = NDArray(('n_time', 'n_var', 'n_node', 'n_mode'), 'f', read_only=False)
+    state_buffer = NDArray(('n_time', 'n_var', 'n_node', 'n_mode'), float, read_only=False)
 
     def __init__(self,  n_time, n_var, n_node, n_mode):
-        self.n_time = n_time + 1  # state buffer has n past steps and the current one
-        self.n_ctime = 2*self.n_time  # coupling buffer has n-1 past steps, the current one, and n future steps
+        self.n_time = n_time  # state buffer has n past steps and the current one
         self.n_var = n_var
         self.n_node = n_node
         self.n_mode = n_mode
+        self.state_buffer[:]=numpy.NAN
 
     def initialize(self, init_state):
         """Initialize CosimHistory from the initial condition."""
-        self.state_buffer = init_state[:self.n_time]
+        self.state_buffer[:] = init_state[:self.n_time]
 
     def update_state(self, step, new_state):
         """This method will update the CosimHistory state buffer
@@ -36,10 +36,20 @@ class CosimHistory(StaticAttr):
            - the state variables with indices vois,
            - the region nodes with indices proxy_inds,
            - and for the specified time steps."""
-        for step, new_state in zip(steps, new_states):
-            self.state_buffer[step % self.n_time, vois, proxy_inds] = new_state
+        index = [[] for i in range(4)]
+        for i in steps %self.n_time:
+            for j in vois:
+                for k in proxy_inds:
+                    for l in range(self.state_buffer.shape[3]):
+                        index[0].append(i)
+                        index[1].append(j)
+                        index[2].append(k)
+                        index[3].append(l)
+        shape = self.state_buffer[tuple(index)].shape
+        self.state_buffer[tuple(index)] = new_states.reshape(shape)
+
 
     def query_state(self, step):
         """This method returns the whole TVB current_state
            by querying the CosimHistory state buffer for a time step."""
-        return self.state_buffer[(step - 1) % self.n_time]
+        return self.state_buffer[step % self.n_time]
