@@ -148,7 +148,7 @@ class Integrator(HasTraits):
         return X
 
     def integrate(self, X, model, coupling, local_coupling, stimulus):
-        X[model.state_variables_mask] = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
+        X[model.state_variables_mask] = self.scheme(X[model.state_variables_mask], model.dfun, coupling, local_coupling, stimulus)
         self.bound_and_clamp(X)
         return X
 
