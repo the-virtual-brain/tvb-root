@@ -545,7 +545,8 @@ class Simulator(HasTraits):
         """ Configure the defined Stimuli for this Simulator """
         if self.stimulus is not None:
             if self.surface:
-                self.stimulus.configure_space(self.surface.region_mapping)
+                # NOTE the region mapping of the stimuli should also include the subcortical areas
+                self.stimulus.configure_space(region_mapping=numpy.r_[self.surface.region_mapping, self.connectivity.unmapped_indices(self.surface.region_mapping)])
             else:
                 self.stimulus.configure_space()
 
