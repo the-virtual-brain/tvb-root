@@ -135,9 +135,17 @@ class BaseHistory(StaticAttr):
             sim.integrator.bound_and_clamp(history[it])
         sim.log.info('Final initial history shape is %r', history.shape)
 
-        # create initial state from history
-        sim.current_state = history[sim.current_step % sim.connectivity.horizon].copy()
-        sim.log.debug('initial state has shape %r' % (sim.current_state.shape, ))
+        # create initial state
+        if sim.surface:
+            # ensure 4D
+            # TODO refactor to backend
+            initial_conditions = initial_conditions.reshape((-1, ) + initial_conditions.shape[-3:])
+            sim.current_state = initial_conditions[-1].copy()
+        else:
+            sim.current_state = history[sim.current_step % sim.horizon].copy()
+        sim.log.info('initial state has shape %r' % (sim.current_state.shape, ))
+
+        # create history buffer
         if sim.surface is not None and history.shape[2] > sim.connectivity.number_of_regions:
             n_reg = sim.connectivity.number_of_regions
             (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
@@ -146,6 +154,7 @@ class BaseHistory(StaticAttr):
             region_history /= numpy.bincount(sim.surface.region_mapping).reshape((-1, 1))
             history = region_history
 
+        # init history instance
         inst = cls(sim.connectivity.weights, sim.connectivity.idelays,
                    sim.model.cvar, sim.model.number_of_modes)
         inst.initialize(history)
