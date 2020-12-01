@@ -206,3 +206,22 @@ class TestSurfaces(BaseTestCase):
         assert dt.vertices.shape == (16384, 3)
         assert dt.vertex_normals.shape == (16384, 3)
         assert dt.triangles.shape == (32760, 3)
+
+    @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
+    def test_init_conds(self):
+        import numpy as np
+        from tvb.simulator.lab import cortex, local_connectivity, connectivity, simulator
+        surf = cortex.Cortex.from_file()
+        loc_conn = local_connectivity.LocalConnectivity()
+        loc_conn.surface = surfaces.CorticalSurface.from_file()
+        conn = connectivity.Connectivity.from_file()
+        surf.configure()
+        init_cond = np.random.rand(1,2,surf.vertices.shape[0],1)
+        print(init_cond.shape)
+        sim = simulator.Simulator(connectivity=conn,
+                                  initial_conditions=init_cond,               
+                                  surface=surf,                        
+                                  simulation_length=10)
+        sim.configure()
+        res = sim.run()
+        print(res)
