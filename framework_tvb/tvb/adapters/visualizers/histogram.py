@@ -55,9 +55,9 @@ class HistogramViewerModel(ViewModel):
 
 class HistogramViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(HistogramViewerForm, self).__init__(prefix, project_id)
-        self.input_data = TraitDataTypeSelectField(HistogramViewerModel.input_data, self, name='input_data',
+    def __init__(self, project_id=None):
+        super(HistogramViewerForm, self).__init__(project_id)
+        self.input_data = TraitDataTypeSelectField(HistogramViewerModel.input_data, self.project_id, name='input_data',
                                                    conditions=self.get_filters())
 
     @staticmethod

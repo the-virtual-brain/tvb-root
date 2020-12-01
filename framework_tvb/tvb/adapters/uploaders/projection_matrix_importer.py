@@ -92,16 +92,16 @@ class ProjectionMatrixImporterModel(UploaderViewModel):
 
 class ProjectionMatrixImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ProjectionMatrixImporterForm, self).__init__(prefix, project_id)
-        self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, ('.mat', '.npy'), self,
-                                                name='projection_file')
-        self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self, name='dataset_name')
+    def __init__(self, project_id=None):
+        super(ProjectionMatrixImporterForm, self).__init__(project_id)
+        self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, ('.mat', '.npy'),
+                                                self.project_id, 'projection_file', self.temporary_files)
+        self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self.project_id, name='dataset_name')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=['Cortical Surface'])
-        self.surface = TraitDataTypeSelectField(ProjectionMatrixImporterModel.surface, self, name='surface',
+        self.surface = TraitDataTypeSelectField(ProjectionMatrixImporterModel.surface, self.project_id, name='surface',
                                                 conditions=surface_conditions)
-        self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self, name='sensors')
+        self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self.project_id, name='sensors')
 
     @staticmethod
     def get_view_model():

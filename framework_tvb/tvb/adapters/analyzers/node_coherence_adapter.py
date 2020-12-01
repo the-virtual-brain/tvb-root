@@ -47,7 +47,7 @@ from tvb.analyzers.node_coherence import NodeCoherence
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.spectral import CoherenceSpectrum
 from tvb.datatypes.time_series import TimeSeries
@@ -64,11 +64,12 @@ class NodeCoherenceModel(ViewModel, NodeCoherence):
 
 class NodeCoherenceForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(NodeCoherenceForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(NodeCoherenceModel.time_series, self, name=self.get_input_name(),
-                                                    conditions=self.get_filters(), has_all_option=True)
-        self.nfft = ScalarField(NodeCoherenceModel.nfft, self)
+    def __init__(self, project_id=None):
+        super(NodeCoherenceForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(NodeCoherenceModel.time_series, self.project_id,
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
+        self.nfft = IntField(NodeCoherenceModel.nfft, self.project_id)
 
     @staticmethod
     def get_view_model():
