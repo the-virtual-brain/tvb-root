@@ -17,13 +17,17 @@ class Co_sim_Monitor(monitors.Monitor):
         required=False)
 
     dt = None
-    voi = None
 
     def __str__(self):
         clsname = self.__class__.__name__
         return '%s(voi=%s)' % (clsname, self.variables_of_interest.tolist())
 
     def _config_vois(self, simulator):
+        """
+        configure the variable of interest for the cosimulator (no yet use)
+        :param simulator:
+        :return:
+        """
         self.voi = self.variables_of_interest
         if self.voi is None or self.voi.size == 0:
             self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
@@ -34,8 +38,7 @@ class Co_sim_Monitor(monitors.Monitor):
         Grab the Simulator's integration step size. Set the monitor's variables
         of interest based on the Monitor's 'variables_of_interest' attribute, if
         it was specified, otherwise use the 'variables_of_interest' specified
-        for the Model. Calculate the number of integration steps (isteps)
-        between returns by the record method. This method is called from within
+        for the Model. This method is called from within
         the the Simulator's configure() method.
 
         """
@@ -45,13 +48,13 @@ class Co_sim_Monitor(monitors.Monitor):
     @abc.abstractmethod
     def sample(self, start_step, n_steps,history_incomplete,history_delayed):
         """
-        This method provides monitor output, and should be overridden by subclasses.
+        This method provides monitor output, and should be overridden by subclasses. Change with the initial signature
 
         """
 
 class Raw_delayed(Co_sim_Monitor):
     """
-    A monitor that records the output raw data from a tvb simulation:
+    A monitor that records the output raw data from the full history a tvb simulation:
     It collects:
 
         - all state variables and modes from class :Model:
@@ -60,7 +63,7 @@ class Raw_delayed(Co_sim_Monitor):
 
     """
 
-    _ui_name = "Raw recording co_sim"
+    _ui_name = "Co sim Raw delayed recording co_sim"
 
     variables_of_interest = NArray(
         dtype=int,
@@ -71,6 +74,7 @@ class Raw_delayed(Co_sim_Monitor):
         self.voi = numpy.arange(len(simulator.model.variables_of_interest))
 
     def sample(self, start_step, n_steps,history_incomplete,history_delayed):
+        " return the value in the delayed history "
         times = []
         values = []
         for step in range(start_step, start_step + n_steps):
@@ -80,7 +84,7 @@ class Raw_delayed(Co_sim_Monitor):
 
 class Raw_incomplete(Co_sim_Monitor):
     """
-    A monitor that records the output raw data from a tvb simulation:
+    A monitor that records the output raw data from the incomplete history of tvb simulation:
     It collects:
 
         - all state variables and modes from class :Model:
@@ -89,7 +93,7 @@ class Raw_incomplete(Co_sim_Monitor):
 
     """
 
-    _ui_name = "Raw recording co_sim"
+    _ui_name = "Co sim Raw Incomplete recording co_sim"
 
     variables_of_interest = NArray(
         dtype=int,
@@ -100,6 +104,7 @@ class Raw_incomplete(Co_sim_Monitor):
         self.voi = numpy.arange(len(simulator.model.variables_of_interest))
 
     def sample(self, start_step, n_steps,history_incomplete,history_delayed):
+        " return the value in the incomplete history "
         times = []
         values = []
         for step in range(start_step, start_step + n_steps):
@@ -107,9 +112,10 @@ class Raw_incomplete(Co_sim_Monitor):
             values.append(history_incomplete.query_state(step))
         return [numpy.array(times),numpy.array(values)]
 
-class Coupling(Co_sim_Monitor):
+class Coupling_co_sim(Co_sim_Monitor):
     """
-    A monitor that records the output raw data from a tvb simulation:
+    WARNING don't use this monitor for a time smaller han the synchronization variable
+    A monitor that records the future coupling of the variable:
     It collects:
 
         - all state variables and modes from class :Model:
@@ -118,7 +124,7 @@ class Coupling(Co_sim_Monitor):
 
     """
 
-    _ui_name = "Raw recording co_sim"
+    _ui_name = "Co sim Coupling recording co_sim"
 
     variables_of_interest = NArray(
         dtype=int,
@@ -139,6 +145,7 @@ class Coupling(Co_sim_Monitor):
         self.voi = simulator.model.cvar
 
     def sample(self, start_step, n_steps,history_incomplete,history_delayed):
+        " return the coupling values of the nodes  "
         times = []
         couplings = []
         for step in range(start_step, start_step + n_steps):

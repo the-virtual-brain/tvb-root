@@ -18,15 +18,15 @@ class TVBtoCosimInterface(HasTraits):
         required=True,
     )
 
-    number_of_proxy_nodes = Attr(field_type=int,
-                                 required=True,
-                                 default=0,
-                                 label="Number of TVB proxy nodes")
+    voi = NArray(
+        dtype=int,
+        label="Cosimulation model state variables' indices",
+        doc=("Indices of model's variables of interest (VOI) that"
+             "should be updated (i.e., overwriten) during cosimulation."),
+        required=True)
 
-    monitor = Attr(field_type=monitor.Raw,
-                   required=True,
-                   default=0,
-                   label="TVB monitor")
+    _number_of_proxy_nodes = 0
+
 
     path = Attr(field_type=os.PathLike, required=False, default="")
 
@@ -36,7 +36,7 @@ class TVBtoCosimInterface(HasTraits):
 
     def record_to_memory(self, data):
         """Record input data to memory"""
-        return data
+        raise NotImplementedError
 
     def record_to_file(self, data):
         """Record input data to a file.
@@ -57,36 +57,20 @@ class TVBtoCosimInterface(HasTraits):
         else:
             self._record = self.record_to_memory
 
-    @property
-    def voi(self):
-        return self.monitor.voi
-
-    def _sample(self, step, state):
-        """Record from the TVB Monitor of the interface and return the data only of proxy_inds"""
-        # Get the output by using the original sample method of the TVB monitor:
-        output = self.monitor.__class__.sample(self.monitor, step, state)
-        if output is not None:
-            # Get only proxy data by assuming that the last two dimensions are (region nodes, modes):
-            output[1] = output[1][..., self.proxy_inds, :]
-            return output
-
-    def configure(self, simulator):
+    def configure(self):
         """Method to configure the CosimMonitor of the interface
            and compute the number_of_proxy_nodes, from user defined proxy_inds"""
         self._config_recording_target()
-        self.monitor.config_for_sim(simulator)
-        # Overwrite the sample method of the TVB Monitor class:
-        self.monitor.sample = self._sample
         self.number_of_proxy_nodes = len(self.proxy_inds)
         super(TVBtoCosimInterfaces).configure()
 
-    def record(self, step, state):
+    def record(self, data):
         """Record a sample of the observed state at the given step to the target destination.
            Use the TVB Monitor record method to get the data, and pass them to one of the
            record_to_memory, record_to_file and record_to_mpi methods,
            depending on the user input of record_to.
         """
-        return self._record(self.monitor.record(step, state))
+        return self._record(data)
 
 
 class TVBtoCosimInterfaces(HasTraits):
@@ -99,14 +83,14 @@ class TVBtoCosimInterfaces(HasTraits):
 
     @property
     def voi(self):
-        return [interfaces.voi for interfaces in self.interfaces]
+        return [interfaces.voi for interfaces in self.interfaces] # Todo need to be unique
 
     @property
     def proxy_inds(self):
-        return [interfaces.proxy_inds for interfaces in self.interfaces]
+        return [interfaces.proxy_inds for interfaces in self.interfaces] # Todo need to be unique
 
-    def configure(self, simulator):
+    def configure(self):
         for interface in self.interfaces:
-            interface.configure(simulator)
+            interface.configure()
         self.number_of_interfaces = len(self.interfaces)
         super(TVBtoCosimInterfaces, self).configure()

@@ -37,6 +37,7 @@ class CosimHistory(StaticAttr):
            - the region nodes with indices proxy_inds,
            - and for the specified time steps."""
         index = [[] for i in range(4)]
+        # get the index to update #TODO need to be optimize
         for i in steps %self.n_time:
             for j in vois:
                 for k in proxy_inds:
