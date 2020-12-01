@@ -290,7 +290,7 @@ class Simulator(HasTraits):
                         region_parameters[self.surface.region_mapping].reshape(self._spatial_param_reshape)
                     setattr(self.model, param, new_parameters)
             region_parameters = getattr(self.model, param)
-            if region_parameters.shape[0] == self.number_of_nodes:
+            if region_parameters.size == self.number_of_nodes:
                 new_parameters = region_parameters.reshape(self._spatial_param_reshape)
                 setattr(self.model, param, new_parameters)
         # Configure spatial component of any stimuli
