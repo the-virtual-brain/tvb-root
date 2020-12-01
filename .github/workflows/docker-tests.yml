@@ -11,5 +11,4 @@ jobs:
 
       - name: Run tests
         run: >
-          docker run --rm -v $PWD/scientific_library:/tvb/lib -w /tvb/lib tvb/lib
-          pytest -n 4
+          docker run --rm -v $PWD:/work -w /work tvb/lib pytest -n4
