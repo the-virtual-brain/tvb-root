@@ -127,6 +127,12 @@ class Model(HasTraits):
             ic[:, i] = rng.uniform(low=lo, high=hi, size=block)
         return ic
 
+    def initial_for_simulator(self, integrator, shape):
+        "Generate initial conditions with integrator and shape."
+        rng = integrator.noise.random_stream if hasattr(integrator, 'noise') else numpy.random
+        dt = integrator.dt
+        return self.initial(dt, shape, rng)
+
     @abc.abstractmethod
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
@@ -187,6 +193,30 @@ class Model(HasTraits):
         "Returns reshape argument for a spatialized parameter."
         return -1, 1
 
+    def _spatialize_model_parameters(self, sim):
+        # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
+        # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
+        excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
+                           "noise", "psi_table", "nerf_table", "gid")
+        spatial_reshape = self.spatial_param_reshape
+        for param in type(self).declarative_attrs:
+            if param in excluded_params:
+                continue
+            region_parameters = getattr(self, param)
+            self._map_roi_param_to_surface(sim, param, region_parameters, spatial_reshape)
+            self._reshape_model_param_for_modes(sim, param, spatial_reshape)
+
+    def _reshape_model_param_for_modes(self, sim, param, spatial_reshape):
+        region_parameters = getattr(self, param)
+        if region_parameters.size == sim.number_of_nodes:
+            new_parameters = region_parameters.reshape(spatial_reshape)
+            setattr(self, param, new_parameters)
+
+    def _map_roi_param_to_surface(self, sim, param, region_parameters, spatial_reshape):
+        if sim.surface is not None:
+            if region_parameters.size == sim.connectivity.number_of_regions:
+                new_parameters = region_parameters[sim.surface.region_mapping].reshape(spatial_reshape)
+                setattr(self, param, new_parameters)
 
 class ModelNumbaDfun(Model):
     "Base model for Numba-implemented dfuns."
