@@ -37,6 +37,7 @@
 import json
 import os
 import shutil
+import uuid
 from cgi import FieldStorage
 from datetime import datetime
 
@@ -44,6 +45,7 @@ from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm.attributes import manager_of_class
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.ex import TraitTypeError
 from tvb.basic.profile import TvbProfile
 from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
@@ -277,7 +279,7 @@ class ImportService(object):
             if OPERATION_XML in files:
                 # Previous Operation format for uploading previous versions of projects
                 operation_file_path = os.path.join(root, OPERATION_XML)
-                operation, operation_xml_parameters = self.__build_operation_from_file(project, operation_file_path)
+                operation, operation_xml_parameters, _ = self.build_operation_from_file(project, operation_file_path)
                 operation.import_file = operation_file_path
                 self.logger.debug("Found operation in old XML format: " + str(operation))
                 retrieved_operations.append(
@@ -345,6 +347,30 @@ class ImportService(object):
 
         return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
 
+    def create_view_model(self, operation_entity, operation_data, new_op_folder, generic_attributes=None, add_params=None):
+        view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
+        if add_params is not None:
+            for element in add_params:
+                key_attr = getattr(view_model, element[0])
+                setattr(key_attr, element[1], element[2])
+
+        view_model.range_values = operation_entity.range_values
+        if operation_entity.operation_group:
+            view_model.operation_group_gid = uuid.UUID(operation_entity.operation_group.gid)
+            view_model.ranges = json.dumps(operation_entity.operation_group.range_references)
+            view_model.is_metric_operation = 'DatatypeMeasure' in operation_entity.operation_group.name
+
+        if generic_attributes is not None:
+            view_model.generic_attributes = generic_attributes
+        view_model.generic_attributes.operation_tag = operation_entity.user_group
+
+        h5.store_view_model(view_model, new_op_folder)
+        view_model_disk_size = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
+        operation_entity.view_model_disk_size = view_model_disk_size
+        operation_entity.view_model_gid = view_model.gid.hex
+        dao.store_entity(operation_entity)
+        return view_model
+
     def import_project_operations(self, project, import_path):
         """
         This method scans provided folder and identify all operations that needs to be imported
@@ -355,20 +381,14 @@ class ImportService(object):
         for operation_data in ordered_operations:
 
             if operation_data.is_old_form:
-                operation_entity, datatype_group = self.__import_operation(operation_data.operation)
+                operation_entity, datatype_group = self.import_operation(operation_data.operation)
                 new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
 
                 try:
                     operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
                                                                                      operation_entity, datatype_group)
                     # Create and store view_model from operation
-                    view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
-                    view_model.generic_attributes.operation_tag = operation_entity.user_group
-                    h5.store_view_model(view_model, new_op_folder)
-                    view_model_disk_size = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
-                    operation_entity.view_model_disk_size = view_model_disk_size
-                    operation_entity.view_model_gid = view_model.gid.hex
-                    dao.store_entity(operation_entity)
+                    self.create_view_model(operation_entity, operation_data, new_op_folder)
 
                     self._store_imported_datatypes_in_db(project, operation_datatypes)
                     imported_operations.append(operation_entity)
@@ -439,16 +459,20 @@ class ImportService(object):
         view_model = ad.get_view_model_class()()
 
         if xml_parameters:
-            params = json.loads(xml_parameters)
             declarative_attrs = type(view_model).declarative_attrs
 
-            for param in params:
+            if isinstance(xml_parameters, str):
+                xml_parameters = json.loads(xml_parameters)
+            for param in xml_parameters:
                 new_param_name = param
                 if param[0] == "_":
                     new_param_name = param[1:]
                 new_param_name = new_param_name.lower()
                 if new_param_name in declarative_attrs:
-                    setattr(view_model, new_param_name, params[param])
+                    try:
+                        setattr(view_model, new_param_name, xml_parameters[param])
+                    except TraitTypeError:
+                        pass
         return view_model
 
     def _import_image(self, src_folder, metadata_file, project_id, target_images_path):
@@ -500,6 +524,9 @@ class ImportService(object):
             # Add all the required attributes
             if datatype_group:
                 datatype_index.fk_datatype_group = datatype_group.id
+                if len(datatype_group.subject) == 0:
+                    datatype_group.subject = datatype_index.subject
+                    dao.store_entity(datatype_group)
             datatype_index.fk_from_operation = op_id
 
             associated_file = h5.path_for_stored_index(datatype_index)
@@ -549,7 +576,7 @@ class ImportService(object):
                          "project with the same name or gid.") % (project_entity.name, project_entity.gid)
             raise ImportException(error_msg)
 
-    def __build_operation_from_file(self, project, operation_file):
+    def build_operation_from_file(self, project, operation_file):
         """
         Create Operation entity from metadata file.
         """
@@ -558,7 +585,7 @@ class ImportService(object):
         return operation_entity.from_dict(operation_dict, dao, self.user_id, project.gid)
 
     @staticmethod
-    def __import_operation(operation_entity):
+    def import_operation(operation_entity, migration=False):
         """
         Store a Operation entity.
         """
@@ -571,10 +598,11 @@ class ImportService(object):
                 datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
             except SQLAlchemyError:
                 # If no dataType group present for current op. group, create it.
-                operation_group = dao.get_operationgroup_by_id(operation_group_id)
-                datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
-                datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
-                datatype_group = dao.store_entity(datatype_group)
+                if migration is False:
+                    operation_group = dao.get_operationgroup_by_id(operation_group_id)
+                    datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
+                    datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
+                    datatype_group = dao.store_entity(datatype_group)
 
         return operation_entity, datatype_group
 

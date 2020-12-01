@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -18,7 +18,7 @@
 # program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# CITATION:
+#   CITATION:
 # When using The Virtual Brain for scientific publications, please cite it as follows:
 #
 #   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
@@ -26,26 +26,26 @@
 #       The Virtual Brain: a simulator of primate brain network dynamics.
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
+#
 
 """
+Change for TVB version 2.0.9.
 
-for release 2.0
-
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-
-import os
-from tvb.basic.exceptions import TVBException
-from tvb.basic.logger.builder import get_logger
-
-LOGGER = get_logger(__name__)
+from tvb.basic.config.stored import KEY_ADMIN_DISPLAY_NAME, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIGURATION, \
+    KEY_KC_CONFIGURATION
+from tvb.basic.profile import TvbProfile
 
 
-def update(project_path):
+def update():
+    """
+    Add new parameters to the tvb.configuration file and delete 'URL_WEB'
     """
 
-    """
+    new_stored_settings = {KEY_ADMIN_DISPLAY_NAME: 'Administrator', KEY_ENABLE_KC_LOGIN: False,
+                           KEY_KC_WEB_CONFIGURATION: '', KEY_KC_CONFIGURATION: 'add_keycloak_path_here'}
+    manager = TvbProfile.current.manager
+    manager.add_entries_to_config_file(new_stored_settings)
+    manager.delete_entries_from_config_file(['URL_WEB'])
 
-    for root, _, files in os.walk(project_path):
-        for file_name in files:
-            LOGGER.info("Translating from version 2 to 3 File %s" % (file_name))

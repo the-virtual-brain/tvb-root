@@ -382,7 +382,8 @@ function _computeRangeNumberForParamPrefix(prefix){
         return _getRangeValueForGuidParameter(pse_param_guid);
     }
 
-    return 1;
+    // We don't have a value chosen for this range param
+    return 0;
 }
 
 function _displayPseSimulationMessage() {
@@ -393,6 +394,19 @@ function _displayPseSimulationMessage() {
     pse_param2_number = _computeRangeNumberForParamPrefix('pse_param2');
 
     let nrOps = pse_param1_number * pse_param2_number;
+
+    // Only the first range been chosen
+    if(nrOps == 0){
+        nrOps = pse_param1_number;
+    }else{
+        if(pse_param1_number == 1 || pse_param2_number == 1){
+            message = "Can't launch PSE when one of the parameters has only one value," +
+                " instead of a range of values!";
+            displayMessage(message, "errorMessage");
+            throw message;
+        }
+    }
+
     let className = "infoMessage";
 
     if (nrOps > THREASHOLD_WARNING) {
@@ -404,6 +418,10 @@ function _displayPseSimulationMessage() {
     if (nrOps > 1) {
         // Unless greater than 1, it is not a range, so do not display a possible confusing message.
         displayMessage("Range configuration: " + nrOps + " operations.", className);
+    }else{
+        message = "Can't launch PSE with only one  operation!"
+        displayMessage(message, "errorMessage");
+        throw message;
     }
 }
 
