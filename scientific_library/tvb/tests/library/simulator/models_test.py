@@ -309,11 +309,12 @@ class TestFastMontbrio(BaseTestCase):
         sim.current_state[:] = sim.history.buffer[0]
         return sim
 
-    def _numba_loop(self, dt, T, sim):
+    def _numba_loop(self, dt, T, sim, use_cuda=False):
         import os
-        os.environ['NUMBA_ENABLE_CUDASIM'] = '1'
-        from tvb.simulator.models.fast_montbrio import run_loop
-        y0, _ = run_loop(
+        # os.environ['NUMBA_ENABLE_CUDASIM'] = '1'
+        from tvb.simulator.models.fast_montbrio import run_loop, run_gpu_loop
+        loop = run_gpu_loop if use_cuda else run_loop
+        y0, _ = loop(
             weights=sim.connectivity.weights,
             delays=sim.connectivity.delays,
             total_time=T,
@@ -331,8 +332,24 @@ class TestFastMontbrio(BaseTestCase):
             nto=512,
         )
         return y0
+    
+    import numba.cuda, pytest
+    @pytest.mark.skipif(not numba.cuda.is_available(), 
+                        reason='CUDA required but not available.')
+    def test_warmup_gpu(self):
+        import numpy as np
+        dt = 0.1
+        T = dt * 512
+        sim = self._tvb_sim(dt=dt)
+        y0 = self._numba_loop(dt, T, sim, use_cuda=True)
+        (_, y1), = sim.run(simulation_length=T)
+        y1 = y1[..., 0]
+        assert y0.shape == y1.shape
+        from numpy.testing import assert_allclose
+        # TVB includes initial conditions as first time step
+        assert_allclose(y0[:100], y1[1:101], 1e-4, 1e-6)
 
-    def test_warmup(self):
+    def test_warmup_cpu(self):
         import numpy as np
         dt = 0.1
         T = dt * 512

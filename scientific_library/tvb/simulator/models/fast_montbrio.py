@@ -4,8 +4,7 @@ import numba as nb
 from numpy.random import SFC64
 from numba.cuda.random import create_xoroshiro128p_states
 
-from tvb.simulator._numba.montbrio import (
-    make_gpu_loop, make_loop, make_gpu_loop_no_delay, make_gpu_loop_no_delay2)
+from tvb.simulator._numba.montbrio import make_gpu_loop, make_loop
 
 from tvb.simulator._ispc.montbrio import run_ispc_montbrio
 
@@ -68,7 +67,7 @@ def run_loop(weights, delays,
         tavg_trace[t] = tavg
         if t % bold_skip == 0:
             bold_trace[t//bold_skip] = bold_out
-    return tavg_trace.reshape, bold_trace
+    return tavg_trace.reshape((-1,) + tavg.shape[1:]), bold_trace
 
 
 def run_gpu_loop(weights, delays,
@@ -80,49 +79,31 @@ def run_gpu_loop(weights, delays,
              nto=16,   # num parts of nh for tavg, e.g. nh=256, nto=4: tavg over 64 steps
              progress=False,
              icfun=default_icfun,
-             node_threads=True,
              rng_seed=42):
     assert weights.shape == delays.shape and weights.shape[0] == weights.shape[1]
     nn = weights.shape[0]
     w = weights.astype(np.float32)
     d = (delays / dt).astype(np.int32)
     assert d.max() < nh
-    if (d==0).all():
-        nh = 2  # need double buffer for proper DE update
-        make_loop = make_gpu_loop_no_delay
-        if node_threads:
-            make_loop = make_gpu_loop_no_delay2
-        print("using no delay variant", make_loop)
-    else:
-        assert nto <= nh, 'oversampling <= buffer size'
-        make_loop = make_gpu_loop
+    assert nto <= nh, 'oversampling <= buffer size'
+    make_loop = make_gpu_loop
     # TODO
     block_dim_x = 96         # nodes
     grid_dim_x = 64, 16, 16  # subjects, noise, coupling
     nt = np.prod(grid_dim_x)
     # allocate workspace stuff
     print('allocating memory..')
-    if make_loop is not make_gpu_loop_no_delay2:
+    if True: # TODO no dedent in lab editor..
         r, V = rV = np.zeros((2, nh, nn, nt), 'f')
         nrV = np.zeros((2, nt), 'f')  # no stack arrays in Numba
         print('creating rngs..', end='')
         rngs = create_xoroshiro128p_states(int(nt * nn * 2), rng_seed)
         print('done')
-        tavg = np.zeros((2, nn, nt), 'f')                               # buffer for temporal average
+        tavg = np.zeros((nto, 2, nn, nt), 'f')                               # buffer for temporal average
         bold_state = np.zeros((nn, 4, nt), 'f')                         # buffer for bold state
         bold_state[:,1:] = 1.0
         bold_out = np.zeros((nn, nt), 'f')                             # buffer for bold output
         icfun(-np.r_[:nh]*dt, rV)
-    else:
-        r = np.zeros((nt, nn), 'f')
-        V = np.zeros((nt, nn), 'f')
-        V -= 2.0
-        nrV = np.zeros((nt, 2), 'f')  # no stack arrays in Numba
-        rngs = create_xoroshiro128p_states(int(nt * nn * 2), rng_seed)
-        tavg = np.zeros((nt, 2, nn), 'f')                               # buffer for temporal average
-        bold_state = np.zeros((nt, 4, nn), 'f')                         # buffer for bold state
-        bold_state[:,1:] = 1.0
-        bold_out = np.zeros((nt, nn), 'f')                             # buffer for bold output
     I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma = [
         nb.float32(_) for _ in (I, Delta, eta, tau, J, cr, cv, r_sigma, V_sigma)]
     print('workspace allocations done')
@@ -173,12 +154,7 @@ def grid_search(loop, **params):
 if __name__ == '__main__':
     nn = 96
     w = np.random.randn(nn, nn)**2
-    d = np.random.rand(nn, nn)**2 * 0
+    d = np.random.rand(nn, nn)**2 * 15
     ns = 60
     params = dict(dt=0.05, total_time=60e3, I=1.0, r_sigma=3e-3, V_sigma=1e-3, tau=10.0, progress=True)
-    params['nto'] = int(5.0 / params['dt'])  # 200 Hz sampling
-    import numba.cuda
-    with numba.cuda.profiling():
-        run_gpu_loop(w, d, **params)
-    # GPU 64x64 grid ~32min for 1min sim, ~0.5s per sim
-    # CPU     1 grid ~15sec for 1min sim (w/ single core boost @ 5GHz)
+    run_gpu_loop(w, d, **params)
