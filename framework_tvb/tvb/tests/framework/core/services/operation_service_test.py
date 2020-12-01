@@ -38,12 +38,11 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.model import model_burst, model_operation
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import initialize_storage, ProjectService
 from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
-from tvb.tests.framework.adapters.testadapter3 import TestAdapter3, TestAdapterHDDRequired, TestAdapterHDDRequiredForm
+from tvb.tests.framework.adapters.testadapter3 import *
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
@@ -88,15 +87,16 @@ class TestOperationService(BaseTestCase):
         """
         Tests if the dataType group is set correct on the dataTypes resulted from the same operation group.
         """
-        # TODO: re-write this to use groups correctly
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 0, "There should be no operation"
 
         algo = test_adapter_factory(TestAdapter3)
         adapter_instance = ABCAdapter.build_adapter(algo)
+        view_model = TestModel()
         data = {model_burst.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
-        ## Create Group of operations
-        OperationService().fire_operation(adapter_instance, self.test_user, self.test_project.id)
+        # Create Group of operations
+        OperationService().fire_operation(adapter_instance, self.test_user, self.test_project.id,
+                                          view_model=view_model, **data)
 
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 1, "Expected one operation group"
@@ -107,7 +107,7 @@ class TestOperationService(BaseTestCase):
 
         self.operation_service.stop_operation(all_operations[0][0])
         self.operation_service.stop_operation(all_operations[0][1])
-        ## Make sure operations are executed
+        # Make sure operations are executed
         self.operation_service.launch_operation(all_operations[0][0], False)
         self.operation_service.launch_operation(all_operations[0][1], False)
 
@@ -122,29 +122,22 @@ class TestOperationService(BaseTestCase):
         """
         Test the actual operation flow by executing a test adapter.
         """
-        module = "tvb.tests.framework.adapters.testadapter1"
-        class_name = "TestAdapter1"
         test_adapter_factory()
-        adapter = TestFactory.create_adapter(module, class_name)
-        output = adapter.get_output()
-        output_type = output[0].__name__
-        tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-
-        view_model = adapter.get_view_model()()
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
+        view_model = TestModel()
         view_model.test1_val1 = 5
         view_model.test1_val2 = 5
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
-                                                  tmp_folder, model_view=view_model)
+        adapter.generic_attributes.subject = "Test4242"
 
-        group = dao.get_algorithm_by_module(module, class_name)
-        assert group.module == 'tvb.tests.framework.adapters.testadapter1', "Wrong data stored."
-        assert group.classname == 'TestAdapter1', "Wrong data stored."
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
+                                                  model_view=view_model)
+
         dts, count = dao.get_values_of_datatype(self.test_project.id, DummyDataTypeIndex)
         assert count == 1
         assert len(dts) == 1
         datatype = dao.get_datatype_by_id(dts[0][0])
-        assert datatype.subject == DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored."
-        assert datatype.type == output_type, "Wrong data stored."
+        assert datatype.subject == "Test4242", "Wrong data stored."
+        assert datatype.type == adapter.get_output()[0].__name__, "Wrong data stored."
 
     def test_delete_dt_free_hdd_space(self, test_adapter_factory, operation_factory):
         """
@@ -154,17 +147,16 @@ class TestOperationService(BaseTestCase):
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         view_model = adapter.get_view_model()()
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model))
-        tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
         self._assert_no_ddti()
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                   model_view=view_model)
         datatype = self._assert_stored_ddti()
 
         # Now free some space and relaunch
         ProjectService().remove_datatype(self.test_project.id, datatype.gid)
         self._assert_no_ddti()
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                   model_view=view_model)
         self._assert_stored_ddti()
 
@@ -176,9 +168,8 @@ class TestOperationService(BaseTestCase):
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         view_model = adapter.get_view_model()()
         TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(view_model))
-        tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
 
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                   model_view=view_model)
         datatype = self._assert_stored_ddti()
 
@@ -187,7 +178,7 @@ class TestOperationService(BaseTestCase):
         TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size) + float(
             adapter.get_required_disk_size(view_model))
 
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                   model_view=view_model)
         self._assert_stored_ddti(2)
 
@@ -200,18 +191,17 @@ class TestOperationService(BaseTestCase):
         view_model = adapter.get_view_model()()
 
         TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(view_model)))
-        tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                   model_view=view_model)
 
         datatype = self._assert_stored_ddti()
-        # Now update the maximum disk size to be less than size of the previously resulted datatypes (transform kB to MB)
+        # Now update the maximum disk size to be less than size of the previously resulted dts (transform kB to MB)
         # plus what is estimated to be required from the next one (transform from B to MB)
         TvbProfile.current.MAX_DISK_SPACE = float(datatype.disk_size - 1) + \
                                             float(adapter.get_required_disk_size(view_model) - 1)
 
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                       model_view=view_model)
         self._assert_stored_ddti()
 
@@ -223,8 +213,7 @@ class TestOperationService(BaseTestCase):
         view_model = adapter.get_view_model()()
 
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model))
-        tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                   model_view=view_model)
         self._assert_stored_ddti()
 
@@ -233,21 +222,19 @@ class TestOperationService(BaseTestCase):
         Test the actual operation flow by executing a test adapter.
         """
         test_adapter_factory(adapter_class=TestAdapterHDDRequired)
-
         space_taken_by_started = 100
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         form = TestAdapterHDDRequiredForm()
         adapter.submit_form(form)
-        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id,
-                                                      adapter.stored_adapter.id, "",
+        started_operation = model_operation.Operation(None, self.test_user.id, self.test_project.id,
+                                                      adapter.stored_adapter.id,
                                                       status=model_operation.STATUS_STARTED,
                                                       estimated_disk_size=space_taken_by_started)
         view_model = adapter.get_view_model()()
-
         dao.store_entity(started_operation)
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model) + space_taken_by_started)
-        tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
-        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+
+        self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                   model_view=view_model)
         self._assert_stored_ddti()
 
@@ -256,16 +243,14 @@ class TestOperationService(BaseTestCase):
         Test the actual operation flow by executing a test adapter.
         """
         test_adapter_factory(adapter_class=TestAdapterHDDRequired)
-
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         form = TestAdapterHDDRequiredForm()
         adapter.submit_form(form)
         view_model = adapter.get_view_model()()
-
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model) - 1)
-        tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
+
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                       model_view=view_model)
         self._assert_no_ddti()
 
@@ -274,23 +259,21 @@ class TestOperationService(BaseTestCase):
         Test the actual operation flow by executing a test adapter.
         """
         test_adapter_factory(adapter_class=TestAdapterHDDRequired)
-
         space_taken_by_started = 100
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
         form = TestAdapterHDDRequiredForm()
         adapter.submit_form(form)
-        started_operation = model_operation.Operation(self.test_user.id, self.test_project.id,
-                                                      adapter.stored_adapter.id, "",
+        started_operation = model_operation.Operation(None, self.test_user.id, self.test_project.id,
+                                                      adapter.stored_adapter.id,
                                                       status=model_operation.STATUS_STARTED,
                                                       estimated_disk_size=space_taken_by_started)
         view_model = adapter.get_view_model()()
-
         dao.store_entity(started_operation)
-        TvbProfile.current.MAX_DISK_SPACE = float(
-            adapter.get_required_disk_size(view_model) + space_taken_by_started - 1)
-        tmp_folder = FilesHelper().get_project_folder(self.test_project, "TEMP")
+        TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model) +
+                                                  space_taken_by_started - 1)
+
         with pytest.raises(NoMemoryAvailableException):
-            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter, tmp_folder,
+            self.operation_service.initiate_operation(self.test_user, self.test_project, adapter,
                                                       model_view=view_model)
         self._assert_no_ddti()
 
@@ -305,10 +288,11 @@ class TestOperationService(BaseTestCase):
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, {},
-                                                                  view_model=view_model)
+                                                                  algo_category, view_model=view_model)
+
         self.operation_service._send_to_cluster(operations, adapter)
         self.operation_service.stop_operation(operations[0].id)
+
         operation = dao.get_operation_by_id(operations[0].id)
         assert operation.status, model_operation.STATUS_CANCELED == "Operation should have been canceled!"
 
@@ -324,7 +308,7 @@ class TestOperationService(BaseTestCase):
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
         operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, {}, view_model=view_model)
+                                                                  algo_category, view_model=view_model)
         self.operation_service._send_to_cluster(operations, adapter)
         operation = dao.get_operation_by_id(operations[0].id)
         operation.status = model_operation.STATUS_FINISHED

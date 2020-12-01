@@ -39,7 +39,7 @@ from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.utils import get_matlab_executable
+from tvb.core.utils import no_matlab
 from tvb.core.entities.storage import dao
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -50,7 +50,7 @@ class TestBCT(TransactionalTestCase):
     We do not verify that the algorithms are correct, because that is outside the purpose of TVB framework.
     """
 
-    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def transactional_setup_method(self):
         """
         Sets up the environment for running the tests;
@@ -77,7 +77,7 @@ class TestBCT(TransactionalTestCase):
         """
         self.clean_database(True)
 
-    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_bct_all(self):
         """
         Iterate all BCT algorithms and execute them.
@@ -92,7 +92,7 @@ class TestBCT(TransactionalTestCase):
                                                        view_model, algo_category)
             assert len(results) > 0
 
-    @pytest.mark.skipif(get_matlab_executable() is None, reason="Matlab or Octave not installed!")
+    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
     def test_bct_descriptions(self):
         """
         Iterate all BCT algorithms and check that description has been extracted from *.m files.

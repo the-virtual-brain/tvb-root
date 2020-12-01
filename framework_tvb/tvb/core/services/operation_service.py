@@ -40,26 +40,28 @@ Module in charge with Launching an operation (creating the Operation entity as w
 import json
 import os
 import sys
+import uuid
 import zipfile
 from copy import copy
-
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
 from tvb.config import choices, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS
 from tvb.core.adapters import constants
-from tvb.core.adapters.abcadapter import ABCAdapter, ABCSynchronous
+from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
     BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
-from tvb.core.entities.storage import dao
+from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.backend_client_factory import BackendClientFactory
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
@@ -91,8 +93,8 @@ class OperationService:
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
         
-        Invoke custom method on an Adapter Instance. Make sure when the  
-        operation has finished that the correct results are stored into DB. 
+        Invoke custom method on an Adapter Instance. Make sure when the
+        operation has finished that the correct results are stored into DB.
         """
         if not isinstance(adapter_instance, ABCAdapter):
             self.logger.warning("Inconsistent Adapter Class:" + str(adapter_instance.__class__))
@@ -103,9 +105,9 @@ class OperationService:
         algo_category = dao.get_category_by_id(algo.fk_category)
 
         operations = self.prepare_operations(current_user.id, project, algo, algo_category,
-                                             {}, visible, view_model=model_view, **kwargs)[0]
+                                             visible, view_model=model_view, **kwargs)[0]
 
-        if isinstance(adapter_instance, ABCSynchronous):
+        if adapter_instance.launch_mode == AdapterLaunchModeEnum.SYNC_SAME_MEM:
             if len(operations) > 1:
                 raise LaunchException("Synchronous operations are not supporting ranges!")
             if len(operations) < 1:
@@ -116,26 +118,23 @@ class OperationService:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
     @staticmethod
-    def _prepare_metadata(initial_metadata, algo_category, operation_group, submit_data):
+    def _prepare_metadata(algo_category, submit_data, operation_group=None, burst=None,
+                          current_ga=GenericAttributes()):
         """
-        Gather metadata from submitted fields and current to be execute algorithm.
-        Will populate STATE, GROUP in metadata
+        Gather generic_metadata from submitted fields and current to be execute algorithm.
+        Will populate STATE, GROUP, etc in generic_metadata
         """
-        metadata = copy(initial_metadata)
-
-        user_group = None
+        generic_metadata = GenericAttributes()
+        generic_metadata.state = algo_category.defaultdatastate
+        generic_metadata.parent_burst = burst
         if DataTypeMetaData.KEY_OPERATION_TAG in submit_data:
-            user_group = submit_data[DataTypeMetaData.KEY_OPERATION_TAG]
-
-        if operation_group is not None:
-            metadata[DataTypeMetaData.KEY_OPERATION_TAG] = operation_group.name
-
+            generic_metadata.operation_tag = submit_data[DataTypeMetaData.KEY_OPERATION_TAG]
         if DataTypeMetaData.KEY_TAG_1 in submit_data:
-            metadata[DataTypeMetaData.KEY_TAG_1] = submit_data[DataTypeMetaData.KEY_TAG_1]
-
-        metadata[DataTypeMetaData.KEY_STATE] = algo_category.defaultdatastate
-
-        return metadata, user_group
+            generic_metadata.user_tag_1 = submit_data[DataTypeMetaData.KEY_TAG_1]
+        if operation_group is not None:
+            generic_metadata.user_tag_3 = operation_group.name
+        generic_metadata.fill_from(current_ga)
+        return generic_metadata
 
     @staticmethod
     def _read_set(values):
@@ -156,75 +155,73 @@ class OperationService:
         """
         category = dao.get_category_by_id(category_id)
         algorithm = dao.get_algorithm_by_id(algorithm_id)
-        ops, _ = self.prepare_operations(user_id, project, algorithm, category, {},
+        ops, _ = self.prepare_operations(user_id, project, algorithm, category,
                                          existing_dt_group=existing_dt_group, **kwargs)
         for operation in ops:
             self.launch_operation(operation.id, True)
 
     def _prepare_metric_operation(self, sim_operation):
         # type: (Operation) -> Operation
-        metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE,
-                                                  MEASURE_METRICS_CLASS)
+        metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
         datatype_index = h5.REGISTRY.get_index_for_datatype(TimeSeries)
         time_series_index = dao.get_generic_entity(datatype_index, sim_operation.id, 'fk_from_operation')[0]
+        ga = self._prepare_metadata(metric_algo.algorithm_category, {}, None, time_series_index.fk_parent_burst)
+        ga.visible = False
 
         view_model = get_class_by_name("{}.{}".format(MEASURE_METRICS_MODULE, MEASURE_METRICS_MODEL_CLASS))()
         view_model.time_series = time_series_index.gid
         view_model.algorithms = tuple(choices.values())
+        view_model.generic_attributes = ga
 
-        range_values = sim_operation.range_values
-        metadata = {DataTypeMetaData.KEY_BURST: time_series_index.fk_parent_burst}
-        metadata, user_group = self._prepare_metadata(metadata, metric_algo.algorithm_category, None, {})
-        meta_str = json.dumps(metadata)
-
-        parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'id')[0]
+        parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'gid')[0]
+        metric_op_group = dao.get_operationgroup_by_id(parent_burst.fk_metric_operation_group)
         metric_operation_group_id = parent_burst.fk_metric_operation_group
-        metric_operation = Operation(sim_operation.fk_launched_by, sim_operation.fk_launched_in, metric_algo.id,
-                                     json.dumps({'gid': view_model.gid.hex}),
-                                     meta_str, op_group_id=metric_operation_group_id, range_values=range_values)
+        range_values = sim_operation.range_values
+        view_model.operation_group_gid = uuid.UUID(metric_op_group.gid)
+        view_model.ranges = json.dumps(parent_burst.ranges)
+        view_model.range_values = range_values
+        view_model.is_metric_operation = True
+        metric_operation = Operation(view_model.gid.hex, sim_operation.fk_launched_by, sim_operation.fk_launched_in,
+                                     metric_algo.id, user_group=ga.operation_tag, op_group_id=metric_operation_group_id,
+                                     range_values=range_values)
         metric_operation.visible = False
-        stored_metric_operation = dao.store_entity(metric_operation)
+        metric_operation = dao.store_entity(metric_operation)
 
-        metrics_datatype_group = dao.get_generic_entity(DataTypeGroup, metric_operation_group_id, 'fk_operation_group')[
-            0]
+        metrics_datatype_group = dao.get_generic_entity(DataTypeGroup, metric_operation_group_id,
+                                                        'fk_operation_group')[0]
         if metrics_datatype_group.fk_from_operation is None:
             metrics_datatype_group.fk_from_operation = metric_operation.id
+            dao.store_entity(metrics_datatype_group)
 
-        self._store_view_model(stored_metric_operation, sim_operation.project, view_model)
-        return stored_metric_operation
+        self.store_view_model(metric_operation, sim_operation.project, view_model)
+        return metric_operation
 
-    def prepare_operation(self, user_id, project_id, algorithm_id, category, view_model_gid, op_group, metadata,
-                          ranges=None, visible=True):
-        operation_parameters = json.dumps({'gid': view_model_gid})
-        metadata, user_group = self._prepare_metadata(metadata, category, op_group, {})
-        meta_str = json.dumps(metadata)
+    @transactional
+    def prepare_operation(self, user_id, project_id, algorithm, view_model_gid,
+                          op_group=None, ranges=None, visible=True):
 
         op_group_id = None
         if op_group:
             op_group_id = op_group.id
+        if isinstance(view_model_gid, uuid.UUID):
+            view_model_gid = view_model_gid.hex
 
-        operation = Operation(user_id, project_id, algorithm_id, operation_parameters, op_group_id=op_group_id,
-                              meta=meta_str, range_values=ranges)
+        operation = Operation(view_model_gid, user_id, project_id, algorithm.id,
+                              op_group_id=op_group_id, range_values=ranges)
+        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) +
+                          ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(op_group_id) + ")")
 
-        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) + "," +
-                          str(metadata) + ",algorithmId=" + str(algorithm_id) + ", ops_group= " + str(
-            op_group_id) + ")")
-
-        visible_operation = visible and category.display is False
+        operation.visible = visible
         operation = dao.store_entity(operation)
-        operation.visible = visible_operation
-
         return operation
 
-    def prepare_operations(self, user_id, project, algorithm, category, metadata,
+    def prepare_operations(self, user_id, project, algorithm, category,
                            visible=True, existing_dt_group=None, view_model=None, **kwargs):
         """
-        Do all the necessary preparations for storing an operation. If it's the case of a 
+        Do all the necessary preparations for storing an operation. If it's the case of a
         range of values create an operation group and multiple operations for each possible
         instance from the range.
-        :param metadata: Initial MetaData with potential Burst identification inside.
         """
-        # TODO: fix group operations
         operations = []
 
         available_args, group = self._prepare_group(project.id, existing_dt_group, kwargs)
@@ -236,29 +233,24 @@ class OperationService:
         group_id = None
         if group is not None:
             group_id = group.id
-        metadata, user_group = self._prepare_metadata(metadata, category, group, kwargs)
+        ga = self._prepare_metadata(category, kwargs, group, current_ga=view_model.generic_attributes)
+        ga.visible = visible
+        view_model.generic_attributes = ga
 
-        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project.id) + "," +
-                          str(metadata) + ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(group_id) + ")")
+        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project.id) +
+                          ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(group_id) + ")")
 
-        visible_operation = visible and category.display is False
-        meta_str = json.dumps(metadata)
         for (one_set_of_args, range_vals) in available_args:
             range_values = json.dumps(range_vals) if range_vals else None
-            operation = Operation(user_id, project.id, algorithm.id,
-                                  json.dumps({'gid': view_model.gid.hex}), meta_str,
-                                  op_group_id=group_id, user_group=user_group, range_values=range_values)
-            operation.visible = visible_operation
+            operation = Operation(view_model.gid.hex, user_id, project.id, algorithm.id,
+                                  op_group_id=group_id, user_group=ga.operation_tag, range_values=range_values)
+            operation.visible = visible
             operations.append(operation)
         operations = dao.store_entities(operations)
 
         if group is not None:
-            burst_id = None
-            if DataTypeMetaData.KEY_BURST in metadata:
-                burst_id = metadata[DataTypeMetaData.KEY_BURST]
             if existing_dt_group is None:
-                datatype_group = DataTypeGroup(group, operation_id=operations[0].id, fk_parent_burst=burst_id,
-                                               state=metadata[DataTypeMetaData.KEY_STATE])
+                datatype_group = DataTypeGroup(group, operation_id=operations[0].id, state=category.defaultdatastate)
                 dao.store_entity(datatype_group)
             else:
                 # Reset count
@@ -266,14 +258,16 @@ class OperationService:
                 dao.store_entity(existing_dt_group)
 
         for operation in operations:
-            self._store_view_model(operation, project, view_model)
+            self.store_view_model(operation, project, view_model)
 
         return operations, group
 
-    @staticmethod
-    def _store_view_model(operation, project, view_model):
+    def store_view_model(self, operation, project, view_model):
         storage_path = FilesHelper().get_project_folder(project, str(operation.id))
         h5.store_view_model(view_model, storage_path)
+        view_model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)
+        operation.view_model_disk_size = view_model_size_on_disk
+        dao.store_entity(operation)
 
     def initiate_prelaunch(self, operation, adapter_instance, **kwargs):
         """
@@ -295,12 +289,14 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = adapter_instance.load_view_model(operation)
-            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, unique_id, available_space,
-                                                                   view_model=view_model)
+            result_msg, nr_datatypes = adapter_instance._prelaunch(operation, view_model, unique_id, available_space)
             operation = dao.get_operation_by_id(operation.id)
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
             operation.mark_complete(STATUS_FINISHED)
             dao.store_entity(operation)
+
+            self._update_vm_generic_operation_tag(view_model, operation)
+
             adapter_form = adapter_instance.get_form()
             try:
                 temp_files = adapter_form.temporary_files
@@ -332,10 +328,20 @@ class OperationService:
         for operation in operations:
             try:
                 BackendClientFactory.execute(str(operation.id), current_username, adapter_instance)
+            except TVBException as ex:
+                self._handle_exception(ex, {}, ex.message, operation)
             except Exception as excep:
                 self._handle_exception(excep, {}, "Could not start operation!", operation)
 
         return operations
+
+    @staticmethod
+    def _update_vm_generic_operation_tag(view_model, operation):
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        storage_path = FilesHelper().get_project_folder(project, str(operation.id))
+        h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid, type(view_model).__name__)
+        with ViewModelH5(h5_path, view_model) as vm_h5:
+            vm_h5.operation_tag.store(operation.user_group)
 
     def launch_operation(self, operation_id, send_to_cluster=False, adapter_instance=None):
         """
@@ -532,7 +538,7 @@ class OperationService:
         else:
             result = BackendClientFactory.stop_operation(operation_id)
             if remove_after_stop:
-                burst_config = dao.get_burst_for_operation_id(operation_id)
+                burst_config = dao.get_burst_for_direct_operation_id(operation_id)
                 ProjectService().remove_operation(operation_id)
                 if burst_config is not None:
                     result = dao.remove_entity(BurstConfiguration, burst_config.id) or result

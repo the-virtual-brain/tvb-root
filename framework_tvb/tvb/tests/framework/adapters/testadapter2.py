@@ -35,24 +35,27 @@ Created on Jul 21, 2011
 """
 
 from time import sleep
+
 import tvb.core.adapters.abcadapter as abcadapter
 from tvb.basic.neotraits.api import Int
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
 from tvb.core.neotraits.forms import IntField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
-class TestModel(ViewModel):
 
+class TestModel(ViewModel):
     test = Int(default=0)
+
 
 class TestAdapter2Form(abcadapter.ABCAdapterForm):
     """
         This class is used for testing purposes.
     """
 
-    def __init__(self, prefix='', project_id=None):
-        super(TestAdapter2Form, self).__init__(prefix, project_id)
-        self.test = IntField(TestModel.test, self, name='test')
+    def __init__(self, project_id=None):
+        super(TestAdapter2Form, self).__init__(project_id)
+        self.test = IntField(TestModel.test, self.project_id, name='test')
 
     @staticmethod
     def get_view_model():
@@ -71,36 +74,38 @@ class TestAdapter2Form(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapter2(abcadapter.ABCAsynchronous):
+class TestAdapter2(abcadapter.ABCAdapter):
     """
         This class is used for testing purposes.
-    """    
+    """
+    launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
+
     def __init__(self):
         super(TestAdapter2, self).__init__()
 
     @staticmethod
     def get_view_model():
         return TestModel
-        
+
     def get_form_class(self):
         return TestAdapter2Form
-                
+
     def get_output(self):
         return [DummyDataTypeIndex]
-    
+
     def get_required_memory_size(self, view_model):
         """
         Return the required memory to run this algorithm.
         """
         # Don't know how much memory is needed.
-        return -1   
-    
+        return -1
+
     def get_required_disk_size(self, view_model):
         """
         Returns the required disk size to be able to run the adapter.
         """
-        return 0 
-    
+        return 0
+
     def launch(self, view_model):
         """
         Mimics launching with a long delay

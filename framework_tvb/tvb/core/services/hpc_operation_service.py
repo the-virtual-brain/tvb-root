@@ -32,16 +32,20 @@
 .. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
-import json
+
 import os
 from functools import partial
-
-from pyunicore.client import Job, Transport
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED, STATUS_STARTED, \
-    STATUS_PENDING
+from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
+from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient, HPCJobStatus
+
+try:
+    from pyunicore.client import Job, Transport
+except ImportError:
+    from tvb.basic.config.settings import HPCSettings
+    HPCSettings.CAN_RUN_HPC = False
 
 
 class HPCOperationService(object):
@@ -110,7 +114,7 @@ class HPCOperationService(object):
                     HPCOperationService.LOGGER.info(
                         "Job for operation {} has status {}".format(operation.id, job_status))
                     if job_status == HPCJobStatus.SUCCESSFUL.value:
-                        simulator_gid = json.loads(operation.parameters)['gid']
+                        simulator_gid = operation.view_model_gid
                         HPCOperationService._operation_finished(operation, simulator_gid)
                     else:
                         HPCOperationService._operation_error(operation)

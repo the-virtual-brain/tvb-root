@@ -42,6 +42,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import case as case_, desc
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage.root_dao import RootDAO, DEFAULT_PAGE_SIZE
 
 
@@ -166,6 +167,19 @@ class OperationDAO(RootDAO):
         return result
 
 
+    def get_operations_with_error_in_project(self, project_id):
+        """
+        Retrieve OPERATION with errors entities for a given project.
+        """
+        result = None
+        try:
+            query = self.session.query(Operation).filter_by(fk_launched_in=project_id).filter(
+                Operation.status == STATUS_ERROR)
+            result = query.all()
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+        return result
+
     def get_operations_in_group(self, operation_group_id, is_count=False,
                                 only_first_operation=False, only_gids=False):
         """
@@ -268,64 +282,6 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return None
-
-
-    def get_operations_for_datatype(self, datatype_gid, only_relevant=True, only_in_groups=False):
-        """
-        Returns all the operations which uses as an input parameter
-        the dataType with the specified GID.
-        If the flag only_relevant is True than only the relevant operations will be returned.
-    
-        If only_in_groups is True than this method will return only the operations that are part
-        from an operation group, otherwise it will return only the operations that are NOT part of an operation group.
-        """
-        try:
-            query = self.session.query(Operation).filter(
-                                Operation.parameters.like('%' + datatype_gid + '%')).join(
-                                Algorithm).join(AlgorithmCategory).filter(
-                                AlgorithmCategory.display == False)
-            query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
-            result = query.all()
-            return result
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-            return None
-
-
-    def get_operations_for_datatype_group(self, datatype_group_id, only_relevant=True, only_in_groups=False):
-        """
-        Returns all the operations which uses as an input parameter a datatype from the given DataTypeGroup.
-        If the flag only_relevant is True than only the relevant operations will be returned.
-    
-        If only_in_groups is True than this method will return only the operations that are
-        part from an operation group, otherwise it will return only the operations that
-        are NOT part of an operation group.
-        """
-        try:
-            query = self.session.query(Operation).filter(
-                DataType.fk_datatype_group == datatype_group_id).filter(
-                Operation.parameters.like('%' + DataType.gid + '%')).join(
-                Algorithm).join(AlgorithmCategory).filter(
-                AlgorithmCategory.display == False)
-            query = self._apply_visibility_and_group_filters(query, only_relevant, only_in_groups)
-            result = query.all()
-            return result
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-            return None
-
-    @staticmethod
-    def _apply_visibility_and_group_filters(query, only_relevant, only_in_groups):
-        """
-        Used for applying filters on the given query.
-        """
-        if only_relevant:
-            query = query.filter(Operation.visible == True)
-        if only_in_groups:
-            query = query.filter(Operation.fk_operation_group != None)
-        else:
-            query = query.filter(Operation.fk_operation_group == None)
-        return query
 
 
     def set_operation_and_group_visibility(self, entity_gid, is_visible, is_operation_group=False):
@@ -527,12 +483,10 @@ class OperationDAO(RootDAO):
         try:
             figure = self.session.query(ResultFigure).filter_by(id=figure_id).one()
             figure.project
-            figure.operation
             return figure
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return None
-
 
     def get_previews(self, project_id, user_id=None, selected_session_name='all_sessions'):
         """
@@ -567,13 +521,11 @@ class OperationDAO(RootDAO):
                 # Force loading of project and operation - needed to compute image path
                 for figure in figures_list:
                     figure.project
-                    figure.operation
                 result[session_name] = figures_list
             return result, previews_info
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return {}, {}
-
 
     def _get_previews_info(self, project_id, user_id):
         """
@@ -598,7 +550,6 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return {}
 
-
     def get_figure_count(self, project_id, user_id):
         """
         Used to generate sequential image names.
@@ -612,16 +563,3 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return {}
-
-
-    def get_figures_for_operation(self, operation_id):
-        """Retrieve Figure entities, resulted after executing an operation."""
-        try:
-            result = self.session.query(ResultFigure).filter_by(fk_from_operation=operation_id).all()
-            for figure in result:
-                figure.project
-                figure.operation
-            return result
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-            return None

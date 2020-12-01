@@ -62,13 +62,14 @@ class GIFTITimeSeriesImporterModel(UploaderViewModel):
 
 class GIFTITimeSeriesImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(GIFTITimeSeriesImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(GIFTITimeSeriesImporterForm, self).__init__(project_id)
 
-        self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, '.gii', self, name='data_file')
+        self.data_file = TraitUploadField(GIFTITimeSeriesImporterModel.data_file, '.gii', self.project_id,
+                                          'data_file', self.temporary_files)
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
-        self.surface = TraitDataTypeSelectField(GIFTITimeSeriesImporterModel.surface, self, name='surface',
+        self.surface = TraitDataTypeSelectField(GIFTITimeSeriesImporterModel.surface, self.project_id, name='surface',
                                                 conditions=surface_conditions)
 
     @staticmethod
@@ -121,7 +122,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
             ts_h5.gid.store(uuid.UUID(ts_idx.gid))
 
             ts_data_shape = ts_h5.read_data_shape()
-            surface = self.load_entity_by_gid(view_model.surface.hex)
+            surface = self.load_entity_by_gid(view_model.surface)
             if surface.number_of_vertices != ts_data_shape[1]:
                 msg = "Imported time series doesn't have values for all surface vertices. Surface has %d vertices " \
                       "while time series has %d values." % (surface.number_of_vertices, ts_data_shape[1])

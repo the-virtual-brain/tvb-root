@@ -31,13 +31,13 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+
 import os
 import shutil
 import pytest
 import tvb_data
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
@@ -46,9 +46,9 @@ from tvb.core.neocom import h5
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
+from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
-from tvb.tests.framework.datatypes.datatype1 import Datatype1
 
 NR_USERS = 20
 MAX_PROJ_PER_USER = 8
@@ -296,11 +296,11 @@ class TestProjectService(TransactionalTestCase):
             assert '0.0 KiB' != project.disk_size_human
 
             prj_folder = self.structure_helper.get_project_folder(project)
-            actual_disk_size = self.compute_recursive_h5_disk_usage(prj_folder)[0]
+            actual_disk_size = FilesHelper.compute_recursive_h5_disk_usage(prj_folder)
 
             ratio = float(actual_disk_size) / project.disk_size
             msg = "Real disk usage: %s The one recorded in the db : %s" % (actual_disk_size, project.disk_size)
-            assert ratio < 1.4, msg
+            assert ratio < 1.1, msg
 
     def test_get_linkable_projects(self):
         """
@@ -312,16 +312,12 @@ class TestProjectService(TransactionalTestCase):
         user1 = TestFactory.create_user("another_user")
         for i in range(4):
             test_proj.append(TestFactory.create_project(self.test_user if i < 3 else user1, 'test_proj' + str(i)))
-
-        project_storage = self.structure_helper.get_project_folder(test_proj[0])
-
         operation = TestFactory.create_operation(test_user=self.test_user, test_project=test_proj[0])
-
-        project_storage = os.path.join(project_storage, str(operation.id))
-        os.makedirs(project_storage)
         datatype = dao.store_entity(model_datatype.DataType(module="test_data", subject="subj1",
                                                             state="test_state", operation_id=operation.id))
+
         linkable = self.project_service.get_linkable_projects_for_user(self.test_user.id, str(datatype.id))[0]
+
         assert len(linkable) == 2, "Wrong count of link-able projects!"
         proj_names = [project.name for project in linkable]
         assert test_proj[1].name in proj_names
@@ -390,7 +386,7 @@ class TestProjectService(TransactionalTestCase):
 
         assert not os.path.exists(vw_h5_path)
         exact_data = dao.get_datatype_by_gid(gid)
-        assert exact_data  is not None, "Data should still be in DB, because of links"
+        assert exact_data is not None, "Data should still be in DB, because of links"
         vw_h5_path_new = h5.path_for_stored_index(exact_data)
         assert os.path.exists(vw_h5_path_new)
         assert vw_h5_path_new != vw_h5_path
@@ -415,31 +411,25 @@ class TestProjectService(TransactionalTestCase):
         new_datatype_h5 = h5.h5_file_for_index(new_datatype)
         assert new_datatype_h5.subject.load() == 'new subject', 'UserGroup not updated!'
 
-    def test_update_meta_data_group(self, datatype_group_factory):
+    def test_update_meta_data_group(self, test_adapter_factory):
         """
         Test the new update metaData for a group of dataTypes.
         """
-        group = datatype_group_factory()
+        test_adapter_factory(adapter_class=TestAdapter3)
+        op_group_id = TestFactory.create_group(test_user=self.test_user)[1]
 
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
                          DataTypeOverlayDetails.DATA_STATE: "updated_state",
-                         DataTypeOverlayDetails.CODE_OPERATION_GROUP_ID: group.id,
+                         DataTypeOverlayDetails.CODE_OPERATION_GROUP_ID: op_group_id,
                          DataTypeOverlayDetails.CODE_OPERATION_TAG: 'newGroupName'}
         self.project_service.update_metadata(new_meta_data)
-        datatypes = dao.get_datatype_in_group(group.id)
+        datatypes = dao.get_datatype_in_group(op_group_id)
         for datatype in datatypes:
             new_datatype = dao.get_datatype_by_id(datatype.id)
-            assert group.id == new_datatype.parent_operation.fk_operation_group
-            new_group = dao.get_generic_entity(model_operation.OperationGroup, group.id)[0]
+            assert op_group_id == new_datatype.parent_operation.fk_operation_group
+            new_group = dao.get_generic_entity(model_operation.OperationGroup, op_group_id)[0]
             assert new_group.name == "newGroupName"
             self.__check_meta_data(new_meta_data, new_datatype)
-
-    def _create_datatypes(self, dt_factory, nr_of_dts):
-        for idx in range(nr_of_dts):
-            dt = Datatype1()
-            dt.row1 = "value%i" % (idx,)
-            dt.row2 = "value%i" % (idx + 1,)
-            dt_factory._store_datatype(dt)
 
     def test_retrieve_project_full(self, dummy_datatype_index_factory):
         """
@@ -459,52 +449,48 @@ class TestProjectService(TransactionalTestCase):
         resulted_dts = operations[0]['results']
         assert len(resulted_dts) == 3, "3 datatypes should be created."
 
-    def test_get_project_structure(self, datatype_group_factory, dummy_datatype_index_factory, project_factory,
-                                   user_factory):
+    def test_get_project_structure(self, datatype_group_factory, dummy_datatype_index_factory,
+                                   project_factory, user_factory):
         """
-        Tests project structure is as expected and contains all datatypes
+        Tests project structure is as expected and contains all datatypes and created links
         """
-        SELF_DTS_NUMBER = 3
-
         user = user_factory()
-        project = project_factory(user)
-        dt_group = datatype_group_factory(project=project)
+        project1 = project_factory(user, name="TestPS1")
+        project2 = project_factory(user, name="TestPS2")
 
+        dt_group = datatype_group_factory(project=project1)
+        dt_simple = dummy_datatype_index_factory(state="RAW_DATA", project=project1)
+        # Create 3 DTs directly in Project 2
+        dummy_datatype_index_factory(state="RAW_DATA", project=project2)
+        dummy_datatype_index_factory(state="RAW_DATA", project=project2)
+        dummy_datatype_index_factory(state="RAW_DATA", project=project2)
+
+        # Create Links from Project 1 into Project 2
         link_ids, expected_links = [], []
-        # Prepare link towards a simple DT
-        dt_to_link = dummy_datatype_index_factory(state="RAW_DATA")
-        link_ids.append(dt_to_link.id)
-        expected_links.append(dt_to_link.gid)
+        link_ids.append(dt_simple.id)
+        expected_links.append(dt_simple.gid)
 
         # Prepare links towards a full DT Group, but expecting only the DT_Group in the final tree
-        link_gr = dt_group
-        dts = dao.get_datatype_in_group(datatype_group_id=link_gr.id)
+        dts = dao.get_datatype_in_group(datatype_group_id=dt_group.id)
         link_ids.extend([dt_to_link.id for dt_to_link in dts])
-        link_ids.append(link_gr.id)
-        expected_links.append(link_gr.gid)
+        link_ids.append(dt_group.id)
+        expected_links.append(dt_group.gid)
 
-        # Prepare link towards a single DT inside a group, and expecting to find the DT in the final tree
-        link_gr = dt_group
-        dt_to_link = dao.get_datatype_in_group(datatype_group_id=link_gr.id)[0]
-        link_ids.append(dt_to_link.id)
-        expected_links.append(dt_to_link.gid)
-
-        # Actually create the links from Prj2 into Prj1
-        AlgorithmService().create_link(link_ids, project.id)
+        # Actually create the links from Prj1 into Prj2
+        AlgorithmService().create_link(link_ids, project2.id)
 
         # Retrieve the raw data used to compose the tree (for easy parsing)
-        dts_in_tree = dao.get_data_in_project(project.id)
+        dts_in_tree = dao.get_data_in_project(project2.id)
         dts_in_tree = [dt.gid for dt in dts_in_tree]
         # Retrieve the tree json (for trivial validations only, as we can not decode)
-        node_json = self.project_service.get_project_structure(project, None, DataTypeMetaData.KEY_STATE,
+        node_json = self.project_service.get_project_structure(project2, None, DataTypeMetaData.KEY_STATE,
                                                                DataTypeMetaData.KEY_SUBJECT, None)
 
-        assert len(expected_links) + SELF_DTS_NUMBER + 2 == len(dts_in_tree), "invalid number of nodes in tree"
-        assert not link_gr.gid in dts_in_tree, "DT_group where a single DT is linked is not expected."
+        assert len(expected_links) + 3 == len(dts_in_tree), "invalid number of nodes in tree"
         assert dt_group.gid in dts_in_tree, "DT_Group should be in the Project Tree!"
         assert dt_group.gid in node_json, "DT_Group should be in the Project Tree JSON!"
 
-        project_dts = dao.get_datatypes_in_project(project.id)
+        project_dts = dao.get_datatypes_in_project(project2.id)
         for dt in project_dts:
             if dt.fk_datatype_group is not None:
                 assert not dt.gid in node_json, "DTs part of a group should not be"

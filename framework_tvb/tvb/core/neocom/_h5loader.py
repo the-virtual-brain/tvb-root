@@ -105,7 +105,7 @@ class DirLoader(object):
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
         fname = self._locate(gid)
-        self.log.warning("Computed path for H5 is: {}".format(fname))
+        self.log.debug("Computed path for H5 is: {}".format(fname))
         return fname
 
     def load(self, gid=None, fname=None):
@@ -232,7 +232,7 @@ class TVBLoader(object):
             datatype = datatype_cls()
             f.load_into(datatype)
             ga = f.load_generic_attributes()
-            sub_dt_refs = f.gather_references()
+            sub_dt_refs = f.gather_references(datatype_cls)
 
         for traited_attr, sub_gid in sub_dt_refs:
             if sub_gid is None:

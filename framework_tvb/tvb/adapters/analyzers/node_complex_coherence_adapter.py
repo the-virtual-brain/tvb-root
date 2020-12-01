@@ -40,11 +40,11 @@ import numpy
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.analyzers.node_complex_coherence import NodeComplexCoherence
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
 
@@ -59,11 +59,10 @@ class NodeComplexCoherenceModel(ViewModel, NodeComplexCoherence):
 
 class NodeComplexCoherenceForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(NodeComplexCoherenceForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(NodeComplexCoherenceModel.time_series, self,
-                                                    name=self.get_input_name(),
-                                                    conditions=self.get_filters())
+    def __init__(self, project_id=None):
+        super(NodeComplexCoherenceForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(NodeComplexCoherenceModel.time_series, self.project_id,
+                                                    name=self.get_input_name(), conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():
@@ -85,7 +84,7 @@ class NodeComplexCoherenceForm(ABCAdapterForm):
         return NodeComplexCoherence()
 
 
-class NodeComplexCoherenceAdapter(ABCAsynchronous):
+class NodeComplexCoherenceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeComplexCoherence algorithm. """
 
     _ui_name = "Complex Coherence of Nodes"
@@ -133,7 +132,7 @@ class NodeComplexCoherenceAdapter(ABCAsynchronous):
         """
         Do any configuration needed before launching and create an instance of the algorithm.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

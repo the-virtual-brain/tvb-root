@@ -35,18 +35,19 @@ Adapter that uses the traits module to generate interfaces for ICA Analyzer.
 
 """
 
-import uuid
-import numpy
 import json
-from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
+import uuid
+
+import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
 from tvb.analyzers.ica import FastICA
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
 
@@ -61,11 +62,11 @@ class ICAAdapterModel(ViewModel, FastICA):
 
 class ICAAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ICAAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(ICAAdapterModel.time_series, self, name='time_series',
+    def __init__(self, project_id=None):
+        super(ICAAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(ICAAdapterModel.time_series, self.project_id, name='time_series',
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.n_components = ScalarField(ICAAdapterModel.n_components, self)
+        self.n_components = IntField(ICAAdapterModel.n_components, self.project_id)
         self.project_id = project_id
 
     @staticmethod
@@ -88,7 +89,7 @@ class ICAAdapterForm(ABCAdapterForm):
         return FastICA()
 
 
-class ICAAdapter(ABCAsynchronous):
+class ICAAdapter(ABCAdapter):
     """ TVB adapter for calling the ICA algorithm. """
 
     _ui_name = "Independent Component Analysis"
@@ -107,7 +108,7 @@ class ICAAdapter(ABCAsynchronous):
         Store the input shape to be later used to estimate memory usage. Also
         create the algorithm instance.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

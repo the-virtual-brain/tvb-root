@@ -61,8 +61,8 @@ class ReducedWongWang(ModelNumbaDfun):
     Equations taken from [DPA_2013]_ , page 11242
 
     .. math::
-                 x_k       &=   w\,J_N \, S_k + I_o + J_N \mathbf\Gamma(S_k, S_j, u_{kj}),\\
-                 H(x_k)    &=  \dfrac{ax_k - b}{1 - \exp(-d(ax_k -b))},\\
+                 x_k       &=   w\,J_N \, S_k + I_o + J_N \mathbf\Gamma(S_k, S_j, u_{kj})\\
+                 H(x_k)    &=  \dfrac{ax_k - b}{1 - \exp(-d(ax_k -b))}\\
                  \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
 
     """
@@ -151,16 +151,7 @@ class ReducedWongWang(ModelNumbaDfun):
         self.update_derived_parameters()
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
-        r"""
-        Equations taken from [DPA_2013]_ , page 11242
-
-        .. math::
-                 x_k       &=   w\,J_N \, S_k + I_o + J_N \mathbf\Gamma(S_k, S_j, u_{kj}),\\
-                 H(x_k)    &=  \dfrac{ax_k - b}{1 - \exp(-d(ax_k -b))},\\
-                 \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
-
-        """
-        S   = state_variables[0, :]
+        S = state_variables[0, :]
 
         c_0 = coupling[0, :]
 
@@ -176,6 +167,15 @@ class ReducedWongWang(ModelNumbaDfun):
         return derivative
 
     def dfun(self, x, c, local_coupling=0.0):
+        r"""
+        Equations taken from [DPA_2013]_ , page 11242
+
+        .. math::
+                 x_k       &=   w\,J_N \, S_k + I_o + J_N \mathbf\Gamma(S_k, S_j, u_{kj})\\
+                 H(x_k)    &=  \dfrac{ax_k - b}{1 - \exp(-d(ax_k -b))}\\
+                 \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
+
+        """
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
         deriv = _numba_dfun(x_, c_, self.a, self.b, self.d, self.gamma,

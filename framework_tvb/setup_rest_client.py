@@ -40,13 +40,13 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_rest_client.in'
 
-VERSION = "2.0.9"
+VERSION = "2.0.10"
 
 TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "h5py", "networkx", "nibabel", "numpy", "Pillow", "psutil", "requests", "scipy",
-                            "simplejson", "sqlalchemy", "sqlalchemy-migrate", "tvb-data", "tvb-gdist", "tvb-library",
-                            "werkzeug"]
+TVB_INSTALL_REQUIREMENTS = ["allensdk", "h5py", "nibabel", "numpy", "Pillow", "psutil", "pyAesCrypt",
+                            "requests", "scipy", "simplejson", "sqlalchemy", "sqlalchemy-migrate",
+                            "tvb-data", "tvb-gdist", "tvb-library", "werkzeug"]
 
 # Packaging tvb-rest-client
 with open(os.path.join(os.path.dirname(__file__), 'README_rest_client.rst')) as fd:
@@ -63,7 +63,7 @@ setuptools.setup(name="tvb-rest-client",
                                  'test': ["pytest", "pytest-benchmark"]},
                  description='A helper package for preparing and sending requests towards the TVB REST API',
                  long_description=DESCRIPTION,
-                 license="GPL v3",
+                 license="GPL-3.0-or-later",
                  author=TVB_TEAM,
                  author_email='tvb.admin@thevirtualbrain.org',
                  url='http://www.thevirtualbrain.org',

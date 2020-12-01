@@ -116,6 +116,8 @@ def parse_json_parameters(parameters):
 
 def string2date(string_input, complex_format=True, date_format=None):
     """Read date from string, after internal format"""
+    if string_input is 'None':
+        return None
     if date_format is not None:
         return datetime.datetime.strptime(string_input, date_format)
     if complex_format:
@@ -191,6 +193,13 @@ class TVBJSONEncoder(json.JSONEncoder):
 
 
 ################## MATLAB related method start here ###############
+
+def no_matlab():
+    """
+    :return: True when Matlab/Octave path hasn't been set or not existent installation.
+    """
+    return (not TvbProfile.current.MATLAB_EXECUTABLE) or get_matlab_executable() is None
+
 
 def get_matlab_executable():
     """

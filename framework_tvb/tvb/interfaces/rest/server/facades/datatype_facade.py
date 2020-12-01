@@ -27,11 +27,12 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.core.adapters.abcadapter import ABCAdapter
+
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.interfaces.rest.commons.dtos import AlgorithmDto
+from tvb.interfaces.rest.commons.dtos import AlgorithmDto, DataTypeDto
 
 
 class DatatypeFacade:
@@ -40,7 +41,7 @@ class DatatypeFacade:
 
     @staticmethod
     def get_dt_h5_path(datatype_gid):
-        index = ABCAdapter.load_entity_by_gid(datatype_gid)
+        index = load_entity_by_gid(datatype_gid)
         return h5_file_for_index(index).path
 
     def get_datatype_operations(self, datatype_gid):
@@ -48,3 +49,11 @@ class DatatypeFacade:
         datatype = dao.get_datatype_by_gid(datatype_gid)
         _, filtered_adapters, _ = self.algorithm_service.get_launchable_algorithms_for_datatype(datatype, categories)
         return [AlgorithmDto(algorithm) for algorithm in filtered_adapters]
+
+    @staticmethod
+    def get_extra_info(datatype_gid):
+        extra_info = dao.get_datatype_extra_info(datatype_gid)
+        if extra_info is None:
+            return None
+
+        return extra_info

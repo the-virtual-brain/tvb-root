@@ -31,7 +31,7 @@
 import uuid
 from tvb.basic.neotraits.api import Attr
 from tvb.core.entities.file.exceptions import MissingDataSetException
-from tvb.core.neotraits.h5 import H5File, Scalar, Reference, Json
+from tvb.core.neotraits.h5 import H5File, Scalar, Reference
 from tvb.core.utils import date2string, string2date
 
 
@@ -48,6 +48,8 @@ class BurstConfigurationH5(H5File):
         self.range2 = Scalar(Attr(str, required=False), self, name='range2')
 
     def store(self, burst_config, scalars_only=False, store_references=True):
+        # type (BurstConfiguration, bool, bool) -> None
+        self.gid.store(uuid.UUID(burst_config.gid))
         self.name.store(burst_config.name)
         self.status.store(burst_config.status)
         self.error_message.store(burst_config.error_message or 'None')
@@ -58,6 +60,8 @@ class BurstConfigurationH5(H5File):
         self.range2.store(burst_config.range2)
 
     def load_into(self, burst_config):
+        # type (BurstConfiguration) -> None
+        burst_config.gid = self.gid.load().hex
         burst_config.name = self.name.load()
         burst_config.status = self.status.load()
         burst_config.error_message = self.error_message.load()

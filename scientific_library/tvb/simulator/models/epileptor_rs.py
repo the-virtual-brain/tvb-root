@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 
 """
-   JC_Epileptor model: modeling resting-state in epilepsy.
+   EpileptorRestingState model: modeling resting-state in epilepsy.
    
    .. moduleauthor:: courtiol.julie@gmail.com
 """
@@ -40,12 +40,13 @@ from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 class EpileptorRestingState(ModelNumbaDfun):
     r"""
-        JC_Epileptor is a combination of Epileptor [Jirsaetal_2014], reproducing realistically 
-        temporal seizure dynamics, and Generic 2-dimensional Oscillator (close to a Hopf Bifurcation)
-        [SanzLeonetal_2013], retrieving resting-state networks activity.
+        EpileptorRestingState is an extension of the phenomenological neural mass model of partial seizures 
+        Epileptor [Jirsaetal_2014], tuned to express regionally specific physiological oscillations in addition
+        to the epileptiform discharges. This extension was made using the Generic 2-dimensional Oscillator model
+        (parametrized close to a supercritical Hopf Bifurcation) [SanzLeonetal_2013] to reproduce the spontaneous
+        local field potential-like signal.
         
-        This model, its motivation and derivation are currently in preparation
-        for publication [Courtioletal_2018].
+        This model, its motivation and derivation can be found in the published article [Courtioletal_2020].
         
         .. Tutorial: Modeling_Resting-State_in_Epilepsy.ipynb
         
@@ -55,7 +56,9 @@ class EpileptorRestingState(ModelNumbaDfun):
             [SanzLeonetal_2013] Sanz Leon, P.; Knock, S. A.; Woodman, M. M.; Domide, L.; Mersmann, 
             J.; McIntosh, A. R.; Jirsa, V. K. *The Virtual Brain: a simulator of primate brain 
             network dynamics.* Front.Neuroinf., 2013.
-            [Courtioletal_2018] in submission.
+            [Courtioletal_2020] Courtiol, J.; Guye, M.; Bartolomei, F.; Petkoski, S.; Jirsa, V. K.
+            *Dynamical Mechanisms of Interictal Resting-State Functional Connectivity in Epilepsy.*
+            J.Neurosci., 2020.
         
         Variables of interest to be used by monitors: p * (-x_{1} + x_{2}) + (1 - p) * x_{rs}
         
@@ -69,8 +72,9 @@ class EpileptorRestingState(ModelNumbaDfun):
                     \end{cases} \\
                 \dot{x_{2}} &=& -y_{2} + x_{2} - x_{2}^{3} + I_{ext2} + b_{2} g(x_{1}) - 0.3 (z-3.5) \\
                 \dot{y_{2}} &=& 1 / \tau (-y_{2} + f_{2}(x_{2}))\\
-                \dot{g} &=& -0.01 (g - 0.1 x_{1})
-                \dot{x_{rs}} &=& d_{rs} \tau_{rs} (-f_{rs} x_{rs}^3 + e_{rs} x_{rs}^2 + \alpha_{rs} y_{rs} + \gamma_{rs} I_{rs}) \\
+                \dot{g} &=& -0.01 (g - 0.1 x_{1})\\
+                \dot{x_{rs}} &=& d_{rs} \tau_{rs} (-f_{rs} x_{rs}^3 + e_{rs} x_{rs}^2 + \alpha_{rs} y_{rs} +
+                \gamma_{rs} I_{rs}) \\
                 \dot{y_{rs}} &=& d_{rs} (b_{rs}  x_{rs} - \beta_{rs} y_{rs} + a_{rs}) / \tau_{rs}
         
         where:
@@ -93,163 +97,163 @@ class EpileptorRestingState(ModelNumbaDfun):
     """
 
     a = NArray(
-        label="a",
+        label=":math:`a`",
         default=numpy.array([1.0]),
         doc="Coefficient of the cubic term in the first state-variable x1.")
 
     b = NArray(
-        label="b",
+        label=":math:`b`",
         default=numpy.array([3.0]),
         doc="Coefficient of the squared term in the first state-variable x1.")
 
     c = NArray(
-        label="c",
+        label=":math:`c`",
         default=numpy.array([1.0]),
         doc="Additive coefficient for the second state-variable y1, \
         called :math:'y_{0}' in Jirsa et al. (2014).")
 
     d = NArray(
-        label="d",
+        label=":math:`d`",
         default=numpy.array([5.0]),
         doc="Coefficient of the squared term in the second state-variable y1.")
 
     r = NArray(
-        label="r",
+        label=":math:`r`",
         domain=Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
         doc="Temporal scaling in the third state-variable z, \
         called :math:'1/\tau_{0}' in Jirsa et al. (2014).")
 
     s = NArray(
-        label="s",
+        label=":math:`s`",
         default=numpy.array([4.0]),
         doc="Linear coefficient in the third state-variable z.")
 
     x0 = NArray(
-        label="x0",
+        label=":math:`x_0`",
         domain=Range(lo=-3.0, hi=-1.0, step=0.1),
         default=numpy.array([-1.6]),
         doc="Epileptogenicity parameter.")
 
     Iext = NArray(
-        label="Iext",
+        label=":math:`I_{ext}`",
         domain=Range(lo=1.5, hi=5.0, step=0.1),
         default=numpy.array([3.1]),
         doc="External input current to the first population (x1, y1).")
 
     slope = NArray(
-        label="slope",
+        label=":math:`slope`",
         domain=Range(lo=-16.0, hi=6.0, step=0.1),
         default=numpy.array([0.]),
         doc="Linear coefficient in the first state-variable x1.")
 
     Iext2 = NArray(
-        label="Iext2",
+        label=":math:`I_{ext2}`",
         domain=Range(lo=0.0, hi=1.0, step=0.05),
         default=numpy.array([0.45]),
         doc="External input current to the second population (x2, y2).")
 
     tau = NArray(
-        label="tau",
+        label=":math:`/tau`",
         default=numpy.array([10.0]),
         doc="Temporal scaling coefficient in the fifth state-variable y2.")
 
     aa = NArray(
-        label="aa",
+        label=":math:`aa`",
         default=numpy.array([6.0]),
         doc="Linear coefficient in the fifth state-variable y2.")
         
     bb = NArray(
-        label="bb",
+        label=":math:`bb`",
         default=numpy.array([2.0]),
         doc="Linear coefficient of lowpass excitatory coupling in the fourth \
         state-variable x2.")
 
     Kvf = NArray(
-        label="K_vf",
+        label=":math:`K_{vf}`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a very fast time scale.")
 
     Kf = NArray(
-        label="K_f",
+        label=":math:`K_f`",
         default=numpy.array([0.0]),
         domain=Range(lo=0.0, hi=4.0, step=0.5),
         doc="Coupling scaling on a fast time scale.")
 
     Ks = NArray(
-        label="K_s",
+        label=":math:`K_s`",
         default=numpy.array([0.0]),
         domain=Range(lo=-4.0, hi=4.0, step=0.1),
         doc="Permittivity coupling, that is from the very fast time scale \
         toward the slow time scale.")
 
     tt = NArray(
-        label="tt",
+        label=":math:`tt`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.001, hi=10.0, step=0.001),
         doc="Time scaling of the Epileptor.")
         
     # Generic-2D's parameters
     tau_rs = NArray(
-        label=r":math:'\tau_rs'",
+        label=r":math:`\tau_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=1.0, hi=5.0, step=0.01),
         doc="Temporal scaling coefficient in the third population (x_rs, y_rs).")
         
     I_rs = NArray(
-        label=":math:'I_rs'",
+        label=":math:`I_{rs}`",
         default=numpy.array([0.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.01),
         doc="External input current to the third population (x_rs, y_rs).")
         
     a_rs = NArray(
-        label=":math:'a_rs'",
+        label=":math:`a_{rs}`",
         default=numpy.array([-2.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.01),
         doc="Vertical shift of the configurable nullcline \
         in the state-variable y_rs.")
         
     b_rs = NArray(
-        label=":math:'b_rs'",
+        label=":math:`b_{rs}`",
         default=numpy.array([-10.0]),
         domain=Range(lo=-20.0, hi=15.0, step=0.01),
         doc="Linear coefficient of the state-variable y_rs.")
         
     d_rs = NArray(
-        label=":math:'d_rs'",
+        label=":math:`d_{rs}`",
         default=numpy.array([0.02]),
         domain=Range(lo=0.0001, hi=1.0, step=0.0001),
         doc="Temporal scaling of the whole third system (x_rs, y_rs).")
         
     e_rs = NArray(
-        label=":math:'e_rs'",
+        label=":math:`e_{rs}`",
         default=numpy.array([3.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Coefficient of the squared term in the sixth state-variable x_rs.")
     
     f_rs = NArray(
-        label=":math:'f_rs'",
+        label=":math:`f_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Coefficient of the cubic term in the sixth state-variable x_rs.")
 
     alpha_rs = NArray(
-        label=r":math:'\alpha_rs'",
+        label=r":math:`\alpha_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Constant parameter to scale the rate of feedback from the \
         slow variable y_rs to the fast variable x_rs.")
         
     beta_rs = NArray(
-        label=r":math:'\beta_rs'",
+        label=r":math:`\beta_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=-5.0, hi=5.0, step=0.0001),
         doc="Constant parameter to scale the rate of feedback from the \
         slow variable y_rs to itself.")
         
     gamma_rs = NArray(
-        label=r":math:'\gamma_rs'",
+        label=r":math:`\gamma_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=-1.0, hi=1.0, step=0.1),
         doc="Constant parameter to reproduce FHN dynamics where \
@@ -257,7 +261,7 @@ class EpileptorRestingState(ModelNumbaDfun):
         Note: It scales both I_rs and the long-range coupling term.")
         
     K_rs = NArray(
-        label=r":math:'K_rs'",
+        label=r":math:`K_{rs}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=10.0, step=0.001),
         doc="Coupling scaling on a fast time scale.")
@@ -265,13 +269,13 @@ class EpileptorRestingState(ModelNumbaDfun):
 
     # Combination 2 models
     p = NArray(
-        label=r":math:'p'",
+        label=r":math:`p`",
         default=numpy.array([0.]),
         domain=Range(lo=-1.0, hi=1.0, step=0.1),
         doc="Linear coefficient.")
 
     # Initialization.
-    # Epileptor model is set in fixed point by default.
+    # Epileptor model is set in a fixed point by default.
     state_variable_range = Final(
         label="State variable ranges [lo, hi]",
         default={
@@ -283,14 +287,14 @@ class EpileptorRestingState(ModelNumbaDfun):
             "g": numpy.array([-1., 1.]),
             "x_rs": numpy.array([-2.0, 4.0]),
             "y_rs": numpy.array([-6.0, 6.0])},
-        doc="Typical bounds on state-variables in JC_Epileptor model.")
+        doc="Typical bounds on state-variables in EpileptorRestingState model.")
 
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
         choices=("x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs", "x2 - x1"),
         default=("x2 - x1", "z", "x_rs"),
-        doc="Quantities of JC_Epileptor available to monitor.")
+        doc="Quantities of EpileptorRestingState available to monitor.")
 
     state_variables = ("x1", "y1", "z", "x2", "y2", "g", "x_rs", "y_rs")
 
@@ -298,11 +302,7 @@ class EpileptorRestingState(ModelNumbaDfun):
     cvar = numpy.array([0, 3, 6], dtype=numpy.int32)    # coupling variables
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
-             array=numpy.array, where=numpy.where, concat=numpy.concatenate):
-        r"""
-            Computes the derivatives of the state-variables of JC_Epileptor
-            with respect to time.
-        """
+                    array=numpy.array, where=numpy.where, concat=numpy.concatenate):
 
         y = state_variables
         ydot = numpy.empty_like(state_variables)
@@ -311,43 +311,50 @@ class EpileptorRestingState(ModelNumbaDfun):
         c_pop1 = coupling[0]
         c_pop2 = coupling[1]
         c_pop3 = coupling[2]
-        
+
         # short-range (local) coupling
         Iext = self.Iext + local_coupling * y[0]
         lc_1 = local_coupling * y[6]
 
         # Epileptor's equations:
-        #population 1
+        # population 1
         if_ydot0 = - self.a * y[0] ** 2 + self.b * y[0]
         else_ydot0 = self.slope - y[3] + 0.6 * (y[2] - 4.0) ** 2
         ydot[0] = self.tt * (y[1] - y[2] + Iext + self.Kvf * c_pop1 + where(y[0] < 0., if_ydot0, else_ydot0) * y[0])
         ydot[1] = self.tt * (self.c - self.d * y[0] ** 2 - y[1])
-        
-        #energy
+
+        # energy
         if_ydot2 = - 0.1 * y[2] ** 7
         else_ydot2 = 0
-        ydot[2] = self.tt * (self.r * (4 * (y[0] - self.x0) - y[2] + where(y[2] < 0., if_ydot2, else_ydot2) + self.Ks * c_pop1))
-        
-        #population 2
-        ydot[3] = self.tt * (-y[4] + y[3] - y[3] ** 3 + self.Iext2 + self.bb * y[5] - 0.3 * (y[2] - 3.5)+ self.Kf * c_pop2)
+        ydot[2] = self.tt * (
+                    self.r * (4 * (y[0] - self.x0) - y[2] + where(y[2] < 0., if_ydot2, else_ydot2) + self.Ks * c_pop1))
+
+        # population 2
+        ydot[3] = self.tt * (
+                    -y[4] + y[3] - y[3] ** 3 + self.Iext2 + self.bb * y[5] - 0.3 * (y[2] - 3.5) + self.Kf * c_pop2)
         if_ydot4 = 0
         else_ydot4 = self.aa * (y[3] + 0.25)
         ydot[4] = self.tt * ((-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4)) / self.tau)
 
-        #filter
-        ydot[5] = self.tt * (-0.01 * (y[5] - 0.1 * y[0]))   #0.01 = \gamma
-                                      
+        # filter
+        ydot[5] = self.tt * (-0.01 * (y[5] - 0.1 * y[0]))  # 0.01 = \gamma
+
         # G2D's equations:
-        ydot[6] = self.d_rs * self.tau_rs * (self.alpha_rs * y[7] - self.f_rs * y[6] ** 3 + self.e_rs * y[6] ** 2 + self.gamma_rs * self.I_rs + self.gamma_rs * self.K_rs * c_pop3 + lc_1)
+        ydot[6] = self.d_rs * self.tau_rs * (self.alpha_rs * y[7] - self.f_rs * y[6] ** 3 + self.e_rs * y[
+            6] ** 2 + self.gamma_rs * self.I_rs + self.gamma_rs * self.K_rs * c_pop3 + lc_1)
         ydot[7] = self.d_rs * (self.a_rs + self.b_rs * y[6] - self.beta_rs * y[7]) / self.tau_rs
-        
+
         # output: LFP
         self.output = self.p * (- y[0] + y[3]) + (1 - self.p) * y[6]
-        
+
         return ydot
 
-
     def dfun(self, x, c, local_coupling=0.0):
+        r"""
+            Computes the derivatives of the state-variables of EpileptorRestingState
+            with respect to time.
+        """
+
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         Iext = self.Iext + local_coupling * x[0, :, 0]
@@ -365,7 +372,7 @@ def _numba_dfun(y, c_pop,
                 x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf, aa, bb, tau,
                 tau_rs, I_rs, a_rs, b_rs, d_rs, e_rs, f_rs, beta_rs, alpha_rs, gamma_rs, K_rs, lc_1,
                 ydot):
-    "Gufunc for JC_Epileptor model equations."
+    "Gufunc for EpileptorRestingState model equations."
 
     #long-range coupling
     c_pop1 = c_pop[0]

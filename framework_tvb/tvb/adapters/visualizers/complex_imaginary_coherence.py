@@ -54,10 +54,10 @@ class ImaginaryCoherenceDisplayModel(ViewModel):
 
 class ImaginaryCoherenceDisplayForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ImaginaryCoherenceDisplayForm, self).__init__(prefix, project_id)
-        self.input_data = TraitDataTypeSelectField(ImaginaryCoherenceDisplayModel.input_data, self, 'input_data',
-                                                   conditions=self.get_filters())
+    def __init__(self, project_id=None):
+        super(ImaginaryCoherenceDisplayForm, self).__init__(project_id)
+        self.input_data = TraitDataTypeSelectField(ImaginaryCoherenceDisplayModel.input_data, self.project_id,
+                                                   'input_data', conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():
@@ -113,7 +113,7 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         with input_data_h5_class(input_data_h5_path) as input_data_h5:
             source_gid = input_data_h5.source.load()
 
-        source_index = self.load_entity_by_gid(source_gid.hex)
+        source_index = self.load_entity_by_gid(source_gid)
 
         params = dict(plotName=source_index.type,
                       xAxisName="Frequency [kHz]",

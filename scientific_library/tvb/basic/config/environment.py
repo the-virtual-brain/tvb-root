@@ -42,7 +42,6 @@ from tvb.basic.config.settings import VersionSettings
 
 
 class Environment(object):
-
     PYTHON_FOLDER = "python%s.%s" % sys.version_info[:2]
 
     def is_framework_present(self):
@@ -60,36 +59,39 @@ class Environment(object):
     @staticmethod
     def is_distribution():
         """
-        Return True when TVB is used with Python installed natively (with GitHub clone, SVN, pip or conda)
+        Return True when TVB_Distribution package, False when used from a GitHub clone, Pypi, Conda or Docker
         """
-        svn_variable = 'SVN_REVISION'
-        if svn_variable in os.environ:
-            # Usage in Hudson build
-            return False
 
         try:
             import tvb_bin
         except ImportError:
-            # No tvb_bin, it means usage from pip or conda
+            # No tvb_bin, it means usage from Pypi or Conda Forge
             return False
 
         try:
             _proc = Popen(["git", "status"], stdout=PIPE, stderr=PIPE)
             if "On branch " in str(_proc.communicate()):
-                # usage from git
+                # usage from GitHub clone directly
                 return False
         except Exception:
             pass
+
+        if os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb_bin.__file__)))),
+                        "externals"):
+            # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
+            return False
 
         try:
             _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
             version = VersionSettings.parse_svn_version(_proc.communicate()[0])
             if version:
-                # usage from SVN
+                # usage from SVN (deprecated)
                 return False
         except Exception:
-            # Usage from tvb_distribution
-            return True
+            pass
+
+        # We default as usage from TVB_Distribution
+        return True
 
     def is_linux_deployment(self):
         """

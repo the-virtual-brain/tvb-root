@@ -1,21 +1,28 @@
 {% extends "!layout.html" %}
 
+{% set css_files = css_files + ['_static/tvb_design/base.css'] %}
+
 {% block rootrellink %}
-    <li><a href="{{ pathto('index') }}">Home</a>|&nbsp;</li>
-    <li><a href="{{ pathto('manuals/UserGuide/UserGuide-Installation') }}">Install</a>|&nbsp;</li>
-    <li><a href="{{ pathto('tutorials/Tutorials') }}">Tutorials</a>|&nbsp;</li>
-    <li><a href="{{ pathto('demos/Demos') }}">Demos</a>|&nbsp;</li>
-    <li><a href="{{ pathto('manuals/UserGuide/UserGuide-UI') }}">Gui Guide</a>|&nbsp;</li>
-    <li><a href="{{ pathto('manuals/UserGuide/UserGuide-Shell') }}">Console Guide</a>|&nbsp;</li>
-    <li><a href="{{ pathto('doc_site/top_developers') }}">Developers</a>|&nbsp;</li>
-    <li><a href="{{ pathto('gdpr/imprint') }}">Imprint</a>|&nbsp;</li>
+    <li class="nav-main main-home"><a href="{{ pathto('index') }}">Home</a>|&nbsp;</li>
+    <li class="nav-main main-install"><a href="{{ pathto('manuals/UserGuide/UserGuide-Installation') }}">Install</a>|&nbsp;</li>
+    <li class="nav-main main-tutorial"><a href="{{ pathto('tutorials/Tutorials') }}">Tutorials</a>|&nbsp;</li>
+    <li class="nav-main main-demo"><a href="{{ pathto('demos/Demos') }}">Demos</a>|&nbsp;</li>
+    <li class="nav-main main-gui"><a href="{{ pathto('manuals/UserGuide/UserGuide-UI') }}">Gui Guide</a>|&nbsp;</li>
+    <li class="nav-main main-console"><a href="{{ pathto('manuals/UserGuide/UserGuide-Shell') }}">Console Guide</a>|&nbsp;</li>
+    <li class="nav-main main-developer"><a href="{{ pathto('doc_site/top_developers') }}">Developers</a>|&nbsp;</li>
+    <li class="nav-main main-imprint"><a href="{{ pathto('gdpr/imprint') }}">Imprint</a>|&nbsp;</li>
 {% endblock %}
 
 {% block relbar1 %}
 
-<div style="background-color: white; text-align: left;  padding: 10px 10px 15px 15px">
-    <a href="http://www.thevirtualbrain.org/">
-        <img src="{{ pathto('_static/TVB_logo.svg', 1) }}" height="148" border="0" alt="The Virtual Brain Project"/>
+<div id="tvb_header">
+    <a class="header-logo" href="http://www.thevirtualbrain.org/" title="Visit The Virtual Brain main website…" target="_blank">
+        <img src="{{ pathto('_static/tvb_design/logo_tvb_main.svg', 1) }}" alt="The Virtual Brain logo"/>
+    </a>
+    
+    <a class="header-title" href="{{ pathto('index') }}" title="Back to documentation homepage…">
+        <p class="title-tvb">The<span>Virtual</span>Brain:</p>
+        <p class="title-site"><span>The</span>Documentation<span>website</span>.</p>
     </a>
 </div>
 {{ super() }}

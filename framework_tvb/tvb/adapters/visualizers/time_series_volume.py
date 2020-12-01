@@ -71,11 +71,12 @@ class TimeSeriesVolumeVisualiserModel(ViewModel):
 
 class TimeSeriesVolumeVisualiserForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TimeSeriesVolumeVisualiserForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.time_series, self,
+    def __init__(self, project_id=None):
+        super(TimeSeriesVolumeVisualiserForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.time_series, self.project_id,
                                                     name='time_series', conditions=self.get_filters())
-        self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, self, name='background')
+        self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, self.project_id,
+                                                    name='background')
 
     @staticmethod
     def get_view_model():
@@ -127,7 +128,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
             rmv_index = self.load_entity_by_gid(ts_h5.region_mapping_volume.load())
             rmv_h5_class, rmv_h5_path = self._load_h5_of_gid(rmv_index.gid)
             rmv_h5 = rmv_h5_class(rmv_h5_path)
-            volume_index = self.load_entity_by_gid(rmv_h5.volume.load().hex)
+            volume_index = self.load_entity_by_gid(rmv_h5.volume.load())
             volume_h5_class, volume_h5_path = self._load_h5_of_gid(volume_index.gid)
             volume_h5 = volume_h5_class(volume_h5_path)
             volume_shape = [ts_h5.data.shape[0]]
@@ -136,7 +137,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
 
         background_index = None
         if view_model.background:
-            background_index = self.load_entity_by_gid(view_model.background.hex)
+            background_index = self.load_entity_by_gid(view_model.background)
 
         params = dict(title="Volumetric Time Series",
                       ts_title=ts_h5.title.load(),

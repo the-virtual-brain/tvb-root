@@ -27,15 +27,16 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import datetime
+
+import copy
 import json
 import os
 import os.path
 import uuid
-from time import sleep
-
 import numpy
 import pytest
+from datetime import datetime
+from time import sleep
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
@@ -46,16 +47,21 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesReg
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesRegionH5
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterModel
 from tvb.basic.profile import TvbProfile
-from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.basic.neotraits.api import Range
+from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
+from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
+from tvb.core.entities.transient.range_parameter import RangeParameter
+from tvb.core.services.burst_service import BurstService
+from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
@@ -159,27 +165,45 @@ def project_factory():
 
 
 @pytest.fixture()
-def operation_factory(user_factory, project_factory):
-    def build(algorithm=None, test_user=None, test_project=None,
-              operation_status=STATUS_FINISHED, parameters="test params", meta=None, range_values=None):
+def operation_factory(user_factory, project_factory, connectivity_factory):
+    def build(test_user=None, test_project=None, is_simulation=False, store_vm=False,
+              operation_status=STATUS_FINISHED, range_values=None):
         """
-        Create persisted operation.
-        :param algorithm: When not None, Simulator.
+        Create persisted operation with a ViewModel stored
         :return: Operation entity after persistence.
         """
-        if algorithm is None:
-            algorithm = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
         if test_user is None:
             test_user = user_factory()
         if test_project is None:
             test_project = project_factory(test_user)
 
-        if meta is None:
-            meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
-                    DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
+        vm_gid = uuid.uuid4()
+        view_model = None
+
+        if is_simulation:
+            algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
+            if store_vm:
+                adapter = ABCAdapter.build_adapter(algorithm)
+                view_model = adapter.get_view_model_class()()
+                view_model.connectivity = connectivity_factory(4).gid
+                vm_gid = view_model.gid
+
+        else:
+            algorithm = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
+            if store_vm:
+                adapter = ABCAdapter.build_adapter(algorithm)
+                view_model = adapter.get_view_model_class()()
+                view_model.data_file = "."
+                vm_gid = view_model.gid
+
+        operation = Operation(vm_gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status, range_values=range_values)
         dao.store_entity(operation)
+
+        if store_vm:
+            op_folder = FilesHelper().get_project_folder(test_project, str(operation.id))
+            h5.store_view_model(view_model, op_folder)
+
         # Make sure lazy attributes are correctly loaded.
         return dao.get_operation_by_id(operation.id)
 
@@ -209,8 +233,9 @@ def connectivity_factory():
 
 @pytest.fixture()
 def connectivity_index_factory(connectivity_factory, operation_factory):
-    def build(data=4, op=None):
-        conn = connectivity_factory(data)
+    def build(data=4, op=None, conn=None):
+        if conn is None:
+            conn = connectivity_factory(data)
         if op is None:
             op = operation_factory()
 
@@ -404,6 +429,8 @@ def time_series_index_factory(time_series_factory, operation_factory):
             f.store(ts)
             f.sample_rate.store(ts.sample_rate)
             f.nr_dimensions.store(ts.data.ndim)
+            f.store_generic_attributes(GenericAttributes())
+            f.store_references(ts)
 
         ts_db = dao.store_entity(ts_db)
         return ts_db
@@ -478,7 +505,7 @@ def value_wrapper_factory():
         tries = 5
         while not op.has_finished and tries > 0:
             sleep(5)
-            tries = -1
+            tries = tries - 1
             op = dao.get_operation_by_id(op.id)
 
         value_wrapper = try_get_last_datatype(test_project.id, ValueWrapperIndex)
@@ -505,67 +532,88 @@ def datatype_measure_factory():
 
 
 @pytest.fixture()
-def datatype_group_factory(time_series_index_factory, datatype_measure_factory, project_factory, user_factory,
-                           operation_factory):
-    def build(subject="Datatype Factory User", state="RAW_DATA", project=None):
-        # TODO This is not real, we miss a ViewModel stored
+def datatype_group_factory(connectivity_factory, time_series_index_factory, datatype_measure_factory,
+                           project_factory, user_factory, operation_factory):
+    def build(project=None, store_vm=False):
         # there store the name and the (hi, lo, step) value of the range parameters
-        range_1 = ["row1", [1, 2, 10]]
+        range_1 = ["row1", [1, 2, 6]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
         # there are the actual numbers in the interval
-        range_values_1 = [1, 3, 5, 7, 9]
+        range_values_1 = [1, 3, 5]
         range_values_2 = [0.1, 0.4]
 
         user = user_factory()
         if project is None:
             project = project_factory(user)
 
-        algorithm = dao.get_algorithm_by_module(IntrospectionRegistry.SIMULATOR_MODULE,
-                                                IntrospectionRegistry.SIMULATOR_CLASS)
+        algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
+        if store_vm:
+            view_model = adapter.get_view_model_class()()
+            view_model.connectivity = connectivity_factory(4).gid
+        else:
+            view_model = None
 
-        # Create operation
-        meta = {DataTypeMetaData.KEY_SUBJECT: "Datatype Factory User",
-                DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = operation_factory(algorithm=algorithm, test_user=user, test_project=project, meta=meta)
+        algorithm_ms = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm_ms)
+        view_model_ms = adapter.get_view_model_class()()
 
-        group = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
-        group = dao.store_entity(group)
-        group_ms = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
-        group_ms = dao.store_entity(group_ms)
+        op_group = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
+        op_group = dao.store_entity(op_group)
+        op_group_ms = OperationGroup(project.id, ranges=[json.dumps(range_1), json.dumps(range_2)])
+        op_group_ms = dao.store_entity(op_group_ms)
 
-        datatype_group = DataTypeGroup(group, subject=subject, state=state, operation_id=operation.id)
+        datatype_group = DataTypeGroup(op_group, state="RAW_DATA")
         datatype_group.no_of_ranges = 2
-        datatype_group.count_results = 10
+        datatype_group.count_results = 6
         datatype_group = dao.store_entity(datatype_group)
 
-        dt_group_ms = DataTypeGroup(group_ms, subject=subject, state=state, operation_id=operation.id)
-        datatype_group.no_of_ranges = 2
-        datatype_group.count_results = 10
+        dt_group_ms = DataTypeGroup(op_group_ms, state="RAW_DATA")
+        dt_group_ms.no_of_ranges = 2
+        dt_group_ms.count_results = 6
         dao.store_entity(dt_group_ms)
 
         # Now create some data types and add them to group
         for range_val1 in range_values_1:
             for range_val2 in range_values_2:
-                op = Operation(user.id, project.id, algorithm.id, 'test parameters',
-                               meta=json.dumps(meta), status=STATUS_FINISHED,
+
+                view_model_gid = uuid.uuid4()
+                view_model_ms_gid = uuid.uuid4()
+
+                op = Operation(view_model_gid.hex, user.id, project.id, algorithm.id,
+                               status=STATUS_FINISHED, op_group_id=op_group.id,
                                range_values=json.dumps({range_1[0]: range_val1,
                                                         range_2[0]: range_val2}))
-                op.fk_operation_group = group.id
                 op = dao.store_entity(op)
-                datatype = time_series_index_factory(op=op)
-                datatype.number1 = range_val1
-                datatype.number2 = range_val2
-                datatype.fk_datatype_group = datatype_group.id
-                datatype.operation_id = op.id
-                dao.store_entity(datatype)
+                ts_index = time_series_index_factory(op=op)
+                ts_index.fk_datatype_group = datatype_group.id
+                dao.store_entity(ts_index)
 
-                op_ms = Operation(user.id, project.id, algorithm.id, 'test parameters',
-                                  meta=json.dumps(meta), status=STATUS_FINISHED,
+                op_ms = Operation(view_model_ms_gid.hex, user.id, project.id, algorithm.id,
+                                  status=STATUS_FINISHED, op_group_id=op_group_ms.id,
                                   range_values=json.dumps({range_1[0]: range_val1,
                                                            range_2[0]: range_val2}))
-                op_ms.fk_operation_group = group_ms.id
                 op_ms = dao.store_entity(op_ms)
-                datatype_measure_factory(datatype, op_ms, dt_group_ms)
+                datatype_measure_factory(ts_index, op_ms, dt_group_ms)
+
+                if store_vm:
+                    view_model = copy.deepcopy(view_model)
+                    view_model.gid = view_model_gid
+                    op_path = FilesHelper().get_project_folder(project, str(op.id))
+                    h5.store_view_model(view_model, op_path)
+
+                    view_model_ms = copy.deepcopy(view_model_ms)
+                    view_model_ms.gid = view_model_ms_gid
+                    view_model_ms.time_series = ts_index.gid
+                    op_ms_path = FilesHelper().get_project_folder(project, str(op_ms.id))
+                    h5.store_view_model(view_model_ms, op_ms_path)
+
+                if not datatype_group.fk_from_operation:
+                    # Mark first operation ID
+                    datatype_group.fk_from_operation = op.id
+                    dt_group_ms.fk_from_operation = op_ms.id
+                    datatype_group = dao.store_entity(datatype_group)
+                    dt_group_ms = dao.store_entity(dt_group_ms)
 
         return datatype_group
 
@@ -582,7 +630,7 @@ def test_adapter_factory():
         stored_adapter = Algorithm(adapter_class.__module__, adapter_class.__name__, algo_category_id,
                                    adapter_class.get_group_name(), adapter_class.get_group_description(),
                                    adapter_class.get_ui_name(), adapter_class.get_ui_description(),
-                                   adapter_class.get_ui_subsection(), datetime.datetime.now())
+                                   adapter_class.get_ui_subsection(), datetime.now())
         adapter_inst = adapter_class()
 
         adapter_form = adapter_inst.get_form()
@@ -640,12 +688,14 @@ def simulator_factory(connectivity_index_factory, operation_factory, region_mapp
             model.connectivity = conn_gid
         if not with_surface and not conn_gid:
             model.connectivity = connectivity_index_factory(nr_regions, op).gid
+        model.simulation_length = 100
         if with_surface:
             rm_idx = region_mapping_index_factory()
             model.connectivity = rm_idx.fk_connectivity_gid
             model.surface = CortexViewModel()
             model.surface.surface_gid = rm_idx.fk_surface_gid
             model.surface.region_mapping_data = rm_idx.gid
+            model.simulation_length = 10
         storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
         h5.store_view_model(model, storage_path)
 
@@ -679,5 +729,29 @@ def pse_burst_configuration_factory():
         burst.fk_metric_operation_group = group_ms.id
         burst = dao.store_entity(burst)
         return burst
+
+    return build
+
+
+@pytest.fixture()
+def simulation_launch(connectivity_index_factory):
+    def build(test_user, test_project, simulation_length=10, is_group=False):
+        model = SimulatorAdapterModel()
+        model.connectivity = connectivity_index_factory().gid
+        model.simulation_length = simulation_length
+        burst = BurstConfiguration(test_project.id, name="Sim " + str(datetime.now()))
+        burst.start_time = datetime.now()
+        algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
+        service = SimulatorService()
+        if is_group:
+            range_param = RangeParameter("conduction_speed", float, Range(lo=50.0, hi=100.0, step=20.0))
+            burst.range1 = range_param.to_json()
+            burst = BurstService().prepare_burst_for_pse(burst)
+            op = service.async_launch_and_prepare_pse(burst, test_user, test_project, algorithm,
+                                                      range_param, None, model)
+        else:
+            dao.store_entity(burst)
+            op = service.async_launch_and_prepare_simulation(burst, test_user, test_project, algorithm, model)
+        return op
 
     return build

@@ -42,41 +42,41 @@ Few supplementary steps are done here:
 """
 
 import json
+
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
 from tvb.adapters.simulator.simulator_fragments import *
-from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
-from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.basic.neotraits.api import Attr
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.adapters.exceptions import LaunchException, InvalidParameterException
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
-from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.storage import dao
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.simulator.coupling import Coupling
-from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.simulator import Simulator
 
 
 class SimulatorAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(SimulatorAdapterForm, self).__init__(project_id)
         self.coupling_choices = get_ui_name_to_coupling_dict()
         default_coupling = list(self.coupling_choices.values())[0]
 
-        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self,
-                                                     name=self.get_input_name(), conditions=self.get_filters())
+        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self.project_id,
+                                                     name=self.get_input_name(),
+                                                     conditions=self.get_filters())
         self.coupling = SelectField(
-            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self,
+            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self.project_id,
             name='coupling', choices=self.coupling_choices)
-        self.conduction_speed = FloatField(Simulator.conduction_speed, self)
+        self.conduction_speed = FloatField(Simulator.conduction_speed, self.project_id)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
 
@@ -117,7 +117,7 @@ class SimulatorAdapterForm(ABCAdapterForm):
         pass
 
 
-class SimulatorAdapter(ABCAsynchronous):
+class SimulatorAdapter(ABCAdapter):
     """
     Interface between the Simulator and the Framework.
     """
@@ -275,8 +275,12 @@ class SimulatorAdapter(ABCAsynchronous):
             history.fill_into(self.algorithm)
 
         region_map, region_volume_map = self._try_load_region_mapping()
-
         for monitor in self.algorithm.monitors:
+
+            if monitor.period > view_model.simulation_length:
+                raise InvalidParameterException("Sampling period for monitors can not be bigger "
+                                                "than the simulation length!")
+
             m_name = type(monitor).__name__
             ts = monitor.create_time_series(self.algorithm.connectivity, self.algorithm.surface, region_map,
                                             region_volume_map)
@@ -300,10 +304,10 @@ class SimulatorAdapter(ABCAsynchronous):
             self.log.info("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
-            ts_h5.store_generic_attributes(GenericAttributes())
             ts_h5.sample_rate.store(ts.sample_rate)
             ts_h5.nr_dimensions.store(ts_index.data_ndim)
-
+            # Storing GA also here redundant, except for HPC
+            ts_h5.store_generic_attributes(self.generic_attributes)
             ts_h5.store_references(ts)
 
             result_indexes[m_name] = ts_index
@@ -325,7 +329,10 @@ class SimulatorAdapter(ABCAsynchronous):
         if not self._is_group_launch():
             simulation_history = SimulationHistory()
             simulation_history.populate_from(self.algorithm)
-            history_index = h5.store_complete(simulation_history, self._get_output_path())
+            self.generic_attributes.visible = False
+            history_index = h5.store_complete(simulation_history, self._get_output_path(), self.generic_attributes)
+            self.generic_attributes.visible = True
+            history_index.fixed_generic_attributes = True
             results.append(history_index)
 
         self.log.debug("Simulation state persisted, returning results ")

@@ -42,6 +42,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_CANCELED
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import parse_json_parameters
@@ -65,9 +66,9 @@ class ClusterSchedulerClient(BackendClient):
         """
         # Load operation so we can estimate the execution time
         operation = dao.get_operation_by_id(operation_identifier)
-        kwargs = parse_json_parameters(operation.parameters)
+        view_model = h5.load_view_model(operation)
         # kwargs = adapter_instance.prepare_ui_inputs(kwargs)
-        time_estimate = int(adapter_instance.get_execution_time_approximation(**kwargs))
+        time_estimate = int(adapter_instance.get_execution_time_approximation(view_model))
         hours = int(time_estimate / 3600)
         minutes = (int(time_estimate) % 3600) / 60
         seconds = int(time_estimate) % 60

@@ -37,13 +37,13 @@ import numpy
 import shutil
 import zipfile
 import tempfile
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
@@ -74,16 +74,17 @@ class RegionMappingImporterModel(UploaderViewModel):
 
 class RegionMappingImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RegionMappingImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(RegionMappingImporterForm, self).__init__(project_id)
 
-        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'), self,
-                                             name='mapping_file')
+        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'),
+                                             self.project_id, 'mapping_file', self.temporary_files)
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=[CORTICAL])
-        self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, self, name='surface',
+        self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, self.project_id, name='surface',
                                                 conditions=surface_conditions)
-        self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, self, name='connectivity')
+        self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, self.project_id,
+                                                     name='connectivity')
 
     @staticmethod
     def get_view_model():
@@ -151,18 +152,18 @@ class RegionMappingImporter(ABCUploader):
             raise LaunchException("Uploaded file does not contains any data. Please initiate upload with another file.")
 
         # Check if we have a mapping for each surface vertex.
-        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface)
         if len(array_data) != surface_index.number_of_vertices:
             msg = "Imported file contains a different number of values than the number of surface vertices. " \
                   "Imported: %d values while surface has: %d vertices." % (
-                  len(array_data), surface_index.number_of_vertices)
+                      len(array_data), surface_index.number_of_vertices)
             raise LaunchException(msg)
 
         # Now check if the values from imported file correspond to connectivity regions
         if array_data.min() < 0:
             raise LaunchException("Imported file contains negative values. Please fix problem and re-import file")
 
-        connectivity_index = self.load_entity_by_gid(view_model.connectivity.hex)
+        connectivity_index = self.load_entity_by_gid(view_model.connectivity)
         if array_data.max() >= connectivity_index.number_of_regions:
             msg = "Imported file contains invalid regions. Found region: %d while selected connectivity has: %d " \
                   "regions defined (0 based)." % (array_data.max(), connectivity_index.number_of_regions)

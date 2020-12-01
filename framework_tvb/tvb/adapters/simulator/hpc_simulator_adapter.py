@@ -53,9 +53,9 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         self.storage_path = storage_path
         self.is_group_launch = is_group_launch
 
-    def _prelaunch(self, operation, uid=None, available_disk_space=0, view_model=None, **kwargs):
+    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
         self.available_disk_space = available_disk_space
-        super(HPCSimulatorAdapter, self)._prelaunch(operation, uid, available_disk_space, view_model, **kwargs)
+        super(HPCSimulatorAdapter, self)._prelaunch(operation, view_model, uid, available_disk_space)
 
     def get_output(self):
         return [TimeSeriesIndex, SimulationHistoryIndex, DatatypeMeasureIndex]
@@ -88,7 +88,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
             os.mkdir(output_path)
         return output_path
 
-    def _extract_operation_data(self, operation=None):
+    def extract_operation_data(self, operation=None):
         """
         Do nothing for HPC run.
         :param operation: None
@@ -124,8 +124,9 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         metric_vm = TimeseriesMetricsAdapterModel()
         metric_vm.time_series = time_series_index.gid
         metric_vm.algorithms = tuple(choices.values())
+        h5.store_view_model(metric_vm, self._get_output_path())
         metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
-        metric_adapter._prelaunch(None, None, self.available_disk_space, metric_vm)
+        metric_adapter._prelaunch(None, metric_vm, None, self.available_disk_space)
 
 
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
@@ -156,7 +157,7 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
     def _get_output_path(self):
         return self.storage_path
 
-    def _extract_operation_data(self, operation=None):
+    def extract_operation_data(self, operation=None):
         """
         Do nothing for HPC run.
         :param operation: None

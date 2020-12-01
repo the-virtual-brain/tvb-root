@@ -75,6 +75,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         time_series_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
         ts_metric_adapter = TimeseriesMetricsAdapter()
+        ts_metric_adapter.storage_path = FilesHelper().get_project_folder(self.test_project, "42")
         view_model = TimeseriesMetricsAdapterModel()
         view_model.time_series = time_series_index.gid
 

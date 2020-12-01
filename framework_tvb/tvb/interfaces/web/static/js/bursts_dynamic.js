@@ -527,11 +527,31 @@ function plotEquation(subformDiv = null) {
 }
 
 function setEventsOnFormFields(param, div_id) {
-    $('#' + div_id + ' input').change(function () {
-        setIntegratorParamAndRedrawChart('integrator_parameters_changed', this.name, this.value, param)
+    $('#' + div_id + ' input:not([type=radio])').each(function () {
+        let events = $._data(document.getElementById($(this).attr('id')),'events')
+        if (!events || !("change" in events)){
+            $(this).change(function () {
+                setIntegratorParamAndRedrawChart('integrator_parameters_changed', this.name, this.value, param)
+            })
+        }
     });
 }
 
 function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
     return 'refresh_subform/' + dynamicPage.dynamic_gid + '/' + currentElem.value + '/' + elementType;
+}
+
+function displayDocForModel(model){
+    model_id = model.find(":selected").val();
+    $("#data_model_" + model_id.replace(/ /g,"_")).css("display", "block");
+}
+
+function fillDoc(){
+    var model = $('#model');
+    model.on("change", function(event){
+        $('div[id^="data_model_"]').css("display", "none");
+        displayDocForModel(model);
+    });
+
+    displayDocForModel(model);
 }

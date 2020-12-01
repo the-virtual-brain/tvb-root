@@ -28,11 +28,8 @@
 #
 #
 
-from tvb.core.adapters.arguments_serialisation import preprocess_space_parameters
 from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
 from tvb.adapters.datatypes.h5.structural_h5 import VolumetricDataMixin
-from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, DataSet, Reference
 from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 
@@ -57,7 +54,6 @@ class RegionMappingH5(H5File):
         return self.array_data.load()[int(start_idx): int(end_idx)].T
 
 
-
 class RegionVolumeMappingH5(VolumetricDataMixin, DataTypeMatrixH5):
 
     def __init__(self, path):
@@ -65,18 +61,3 @@ class RegionVolumeMappingH5(VolumetricDataMixin, DataTypeMatrixH5):
         self.array_data = DataSet(RegionVolumeMapping.array_data, self)
         self.connectivity = Reference(RegionVolumeMapping.connectivity, self)
         self.volume = Reference(RegionVolumeMapping.volume, self)
-
-    def get_voxel_region(self, x_plane, y_plane, z_plane):
-
-        data_shape = self.array_data.shape
-        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
-                                                                data_shape[1], data_shape[2])
-        slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
-        voxel = self.array_data[slices][0, 0, 0]
-        if voxel != -1:
-            conn_index = load_entity_by_gid(self.connectivity.load().hex)
-            with h5.h5_file_for_index(conn_index) as conn_h5:
-                labels = conn_h5.region_labels.load()
-                return labels[int(voxel)]
-        else:
-            return 'background'

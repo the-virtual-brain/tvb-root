@@ -34,16 +34,15 @@
 
 import os
 import shutil
-import tempfile
 from threading import Lock
 from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
 from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData, GenericMetaData
-from werkzeug.utils import secure_filename
+from tvb.core.entities.transient.structure_entities import GenericMetaData
 
 LOCK_CREATE_FOLDER = Lock()
 
@@ -85,6 +84,9 @@ class FilesHelper(object):
             self.logger.exception("COULD NOT CREATE FOLDER! CHECK ACCESS ON IT!")
             raise FileStructureException("Could not create Folder" + str(path))
 
+    def get_projects_folder(self):
+        return os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER)
+
     def get_project_folder(self, project, *sub_folders):
         """
         Retrieve the root path for the given project. 
@@ -92,7 +94,7 @@ class FilesHelper(object):
         """
         if hasattr(project, 'name'):
             project = project.name
-        complete_path = os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER, project)
+        complete_path = os.path.join(self.get_projects_folder(), project)
         if sub_folders is not None:
             complete_path = os.path.join(complete_path, *sub_folders)
         if not os.path.exists(complete_path):
@@ -183,7 +185,6 @@ class FilesHelper(object):
         except Exception:
             self.logger.exception("Could not remove files")
             raise FileStructureException("Could not remove files for OP" + str(operation_id))
-
 
     ####################### DATA-TYPES METHODS Start Here #####################
     def remove_datatype_file(self, h5_file):
@@ -421,21 +422,21 @@ class FilesHelper(object):
         return 0
 
     @staticmethod
-    def save_temporary_file(file, destination_folder=None):
-        filename = secure_filename(file.filename)
-        if destination_folder is None:
-            destination_folder = FilesHelper.create_temp_folder()
-        full_path = os.path.join(destination_folder, filename)
-        file.save(full_path)
-
-        return full_path
-
-    @staticmethod
-    def create_temp_folder():
-        temp_name = tempfile.mkdtemp(dir=TvbProfile.current.TVB_TEMP_FOLDER)
-        folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, temp_name)
-
-        return folder
+    def compute_recursive_h5_disk_usage(start_path='.'):
+        """
+        Computes the disk usage of all h5 files under the given directory.
+        :param start_path:
+        :return: A tuple of size in kiB
+        """
+        total_size = 0
+        n_files = 0
+        for dir_path, _, file_names in os.walk(start_path):
+            for f in file_names:
+                if f.endswith('.h5'):
+                    fp = os.path.join(dir_path, f)
+                    total_size += os.path.getsize(fp)
+                    n_files += 1
+        return int(round(total_size / 1024.))
 
 
 class TvbZip(ZipFile):
@@ -459,6 +460,7 @@ class TvbZip(ZipFile):
 
         for root, dirs, files in os.walk(folder):
             for ex in exclude:
+                ex = str(ex)
                 if ex in dirs:
                     dirs.remove(ex)
                 if ex in files:

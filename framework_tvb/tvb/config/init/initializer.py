@@ -31,18 +31,22 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import datetime
 import importlib
 import os
 import shutil
-import datetime
 import threading
 from types import ModuleType
 from tvb.adapters.datatypes.db import DATATYPE_REMOVERS
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.config import VIEW_MODEL2ADAPTER
+from tvb.config.init.datatypes_registry import populate_datatypes_registry
+from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.config.init.model_manager import initialize_startup, reset_database
 from tvb.core import removers_factory
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.adapters.constants import ELEM_INPUTS
+from tvb.core.adapters.constants import ELEM_INPUTS, ATT_TYPE, ATT_NAME
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.core.code_versions.code_update_manager import CodeUpdateManager
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
@@ -50,14 +54,12 @@ from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
 from tvb.core.entities.model.model_workflow import Portlet
 from tvb.core.entities.storage import dao, SA_SESSIONMAKER
+from tvb.core.entities.storage.session_maker import build_db_engine
 from tvb.core.neotraits.db import Base
 from tvb.core.portlets.xml_reader import XMLPortletReader, ATT_OVERWRITE
 from tvb.core.services.project_service import initialize_storage
-from tvb.core.services.user_service import UserService
 from tvb.core.services.settings_service import SettingsService
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.config.init.datatypes_registry import populate_datatypes_registry
-from tvb.config.init.model_manager import initialize_startup, reset_database
+from tvb.core.services.user_service import UserService
 
 
 def reset():
@@ -67,7 +69,23 @@ def reset():
     reset_database()
 
 
-def initialize(skip_import=False):
+def command_initializer(persist_settings=True, skip_import=False):
+    if persist_settings and TvbProfile.is_first_run():
+        settings_service = SettingsService()
+        settings = {}
+        # Save default settings
+        for key, setting in settings_service.configurable_keys.items():
+            settings[key] = setting['value']
+        settings_service.save_settings(**settings)
+    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+    # Build new db engine in case DB URL value changed
+    new_db_engine = build_db_engine()
+    SA_SESSIONMAKER.configure(bind=new_db_engine)
+
+    # Initialize application
+    initialize(skip_import)
+
+def initialize(skip_import=False, skip_updates=False):
     """
     Initialize when Application is starting.
     Check for new algorithms or new DataTypes.
@@ -94,7 +112,7 @@ def initialize(skip_import=False):
     for entity in to_remove:
         dao.remove_entity(entity.__class__, entity.id)
 
-    if not TvbProfile.is_first_run():
+    if not TvbProfile.is_first_run() and not skip_updates:
         # Create default users.
         if is_db_empty:
             dao.store_entity(
@@ -188,6 +206,10 @@ class Introspector(object):
                     stored_adapter.id = inst_from_db.id
 
                 stored_adapter = dao.store_entity(stored_adapter, inst_from_db is not None)
+
+                view_model_class = adapter_form.get_view_model()
+                VIEW_MODEL2ADAPTER[view_model_class] = stored_adapter
+
                 adapter_class.stored_adapter = stored_adapter
 
             except Exception:
@@ -212,7 +234,7 @@ class Introspector(object):
         """
         Build and adapter from the declaration in the portlets xml.
         """
-        adapter_import_path = adapter_declaration[ABCAdapter.KEY_TYPE]
+        adapter_import_path = adapter_declaration[ATT_TYPE]
         class_name = adapter_import_path.split('.')[-1]
         module_name = adapter_import_path.replace('.' + class_name, '')
         algo = dao.get_algorithm_by_module(module_name, class_name)
@@ -233,8 +255,8 @@ class Introspector(object):
                         adapters_chain = portlet_reader.get_adapters_chain(algo_identifier)
                         is_valid = True
                         for adapter in adapters_chain:
-                            class_name = adapter[ABCAdapter.KEY_TYPE].split('.')[-1]
-                            module_name = adapter[ABCAdapter.KEY_TYPE].replace('.' + class_name, '')
+                            class_name = adapter[ATT_TYPE].split('.')[-1]
+                            module_name = adapter[ATT_TYPE].replace('.' + class_name, '')
                             try:
                                 # Check that module is properly declared
                                 module = importlib.import_module(module_name)
@@ -261,15 +283,15 @@ class Introspector(object):
                                 # TODO: implement this for neoforms
                                 adapter_form_field_names = {}  # adapter_instance.flaten_input_interface()
                                 for input_entry in portlet_inputs.values():
-                                    if input_entry[ATT_OVERWRITE] == adapter[ABCAdapter.KEY_NAME]:
-                                        if input_entry[ABCAdapter.KEY_NAME] not in adapter_form_field_names:
+                                    if input_entry[ATT_OVERWRITE] == adapter[ATT_NAME]:
+                                        if input_entry[ATT_NAME] not in adapter_form_field_names:
                                             self.logger.error("Invalid input %s for adapter %s"
-                                                              % (input_entry[ABCAdapter.KEY_NAME], adapter_instance))
+                                                              % (input_entry[ATT_NAME], adapter_instance))
                                             is_valid = False
                             except ImportError:
                                 is_valid = False
                                 self.logger.error("Invalid adapter declaration %s in portlet %s"
-                                                  % (adapter[ABCAdapter.KEY_TYPE], algo_identifier))
+                                                  % (adapter[ATT_TYPE], algo_identifier))
 
                         if is_valid:
                             portlets_list.append(

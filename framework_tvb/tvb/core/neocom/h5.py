@@ -31,6 +31,7 @@
 import os
 import typing
 import uuid
+from datetime import datetime
 
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
@@ -40,6 +41,7 @@ from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.neotraits.view_model import ViewModel
+from tvb.core.utils import date2string, string2date
 
 REGISTRY = Registry()
 
@@ -107,21 +109,22 @@ def load_with_links(source_path):
     return loader.load_with_links(source_path)
 
 
-def store_complete(datatype, base_dir):
-    # type: (HasTraits, str) -> DataType
+def store_complete(datatype, base_dir, generic_attributes=GenericAttributes()):
+    # type: (HasTraits, str, GenericAttributes) -> DataType
     """
     Stores the given HasTraits instance in a h5 file, and fill the Index entity for later storage in DB
     """
     index_class = REGISTRY.get_index_for_datatype(datatype.__class__)
     index_inst = index_class()
     index_inst.fill_from_has_traits(datatype)
+    index_inst.fill_from_generic_attributes(generic_attributes)
 
     h5_class = REGISTRY.get_h5file_for_datatype(datatype.__class__)
     storage_path = path_for(base_dir, h5_class, datatype.gid)
     with h5_class(storage_path) as f:
         f.store(datatype)
         # Store empty Generic Attributes, in case the file is saved no through ABCAdapter it can still be used
-        f.store_generic_attributes(GenericAttributes())
+        f.store_generic_attributes(generic_attributes)
 
     return index_inst
 
@@ -195,7 +198,7 @@ def get_full_class_name(class_entity):
 
 
 def store_view_model(view_model, base_dir):
-    # type: (ViewModel, str) -> None
+    # type: (ViewModel, str) -> str
     """
     Completely store any ViewModel object to the directory specified by base_dir.
     It works recursively because there are view models that are serialized in multiple files (eg. SimulatorAdapterModel)
@@ -204,6 +207,12 @@ def store_view_model(view_model, base_dir):
     with ViewModelH5(h5_path, view_model) as h5_file:
         h5_file.store(view_model)
         h5_file.type.store(get_full_class_name(type(view_model)))
+        h5_file.create_date.store(date2string(datetime.now()))
+        if hasattr(view_model, "generic_attributes"):
+            h5_file.store_generic_attributes(view_model.generic_attributes)
+        else:
+            # For HasTraits not inheriting from ViewModel (e.g. Linear)
+            h5_file.store_generic_attributes(GenericAttributes())
 
         references = h5_file.gather_references()
         for trait_attr, gid in references:
@@ -216,6 +225,7 @@ def store_view_model(view_model, base_dir):
             else:
                 store_view_model(model_attr, base_dir)
 
+    return h5_path
 
 def determine_filepath(gid, base_dir):
     dir_loader = DirLoader(base_dir, REGISTRY, False)
@@ -225,7 +235,7 @@ def determine_filepath(gid, base_dir):
 
 
 def load_view_model(gid, base_dir):
-    # type: (uuid.UUID, str) -> ViewModel
+    # type: (typing.Union[uuid.UUID, str], str) -> ViewModel
     """
     Load a ViewModel object by reading the H5 file with the given GID, from the directory specified by base_dir.
     """
@@ -245,6 +255,8 @@ def load_view_model_from_file(filepath):
     with ViewModelH5(filepath, view_model) as h5_file:
         h5_file.load_into(view_model)
         references = h5_file.gather_references()
+        view_model.create_date = string2date(h5_file.create_date.load())
+        view_model.generic_attributes = h5_file.load_generic_attributes()
         for trait_attr, gid in references:
             if not gid:
                 continue

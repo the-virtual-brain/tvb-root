@@ -140,7 +140,7 @@ class MetaType(abc.ABCMeta):
 
 
     def get_known_subclasses(cls, include_abstract=False, include_itself=False):
-        # type: (bool) -> typing.Dict[str, typing.Type[MetaType]]
+        # type: (bool, bool) -> typing.Dict[str, typing.Type[MetaType]]
         """
         Returns all subclasses that exist *now*.
         New subclasses can be created after this call,

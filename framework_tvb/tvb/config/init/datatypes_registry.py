@@ -27,7 +27,8 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure, CorrelationCoefficients, Covariance
@@ -52,7 +53,7 @@ from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
 from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5, CorrelationCoefficientsH5, CovarianceH5
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5, ValueWrapper
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5, DatatypeMeasure
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5, IndependentComponentsH5
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5, StimuliSurfaceH5
 from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
@@ -99,6 +100,7 @@ from tvb.core.neocom.h5 import REGISTRY
 # then in a metaclass hook each class creation and populate a map
 def populate_datatypes_registry():
     REGISTRY.register_datatype(Connectivity, ConnectivityH5, ConnectivityIndex)
+    REGISTRY.register_datatype(None, BurstConfigurationH5, BurstConfiguration)
     REGISTRY.register_datatype(LocalConnectivity, LocalConnectivityH5, LocalConnectivityIndex)
     REGISTRY.register_datatype(ProjectionMatrix, ProjectionMatrixH5, ProjectionMatrixIndex, make_proj_matrix)
     REGISTRY.register_datatype(RegionVolumeMapping, RegionVolumeMappingH5, RegionVolumeMappingIndex)
@@ -130,6 +132,6 @@ def populate_datatypes_registry():
     REGISTRY.register_datatype(SpatioTemporalPattern, None, SpatioTemporalPatternIndex)
     REGISTRY.register_datatype(StimuliRegion, StimuliRegionH5, StimuliRegionIndex)
     REGISTRY.register_datatype(StimuliSurface, StimuliSurfaceH5, StimuliSurfaceIndex)
-    REGISTRY.register_datatype(None, DatatypeMeasureH5, DatatypeMeasureIndex)
+    REGISTRY.register_datatype(DatatypeMeasure, DatatypeMeasureH5, DatatypeMeasureIndex)
     REGISTRY.register_datatype(ConnectivityAnnotations, ConnectivityAnnotationsH5, ConnectivityAnnotationsIndex)
     REGISTRY.register_datatype(ValueWrapper, ValueWrapperH5, ValueWrapperIndex)

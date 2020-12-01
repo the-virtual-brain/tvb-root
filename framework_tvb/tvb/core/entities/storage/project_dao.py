@@ -189,6 +189,13 @@ class CaseDAO(RootDAO):
         prj.administrator
         return prj
 
+    def get_project_by_name(self, project_name):
+        """Retrieve PROJECT entity for a given name.
+        THROW SQLException when not found."""
+        prj = self.session.query(Project).filter_by(name=project_name).one()
+        prj.administrator
+        return prj
+
     def get_project_lazy_by_gid(self, project_gid):
         """Retrieve PROJECT entity for a given identifier.
            THROW SqlException when not found."""
@@ -210,10 +217,13 @@ class CaseDAO(RootDAO):
         :returns 0 when no DT are found, or SUM from DB.
         """
         try:
-            total_size = self.session.query(func.sum(DataType.disk_size)).join(Operation
+            total_size_for_dt = self.session.query(func.sum(DataType.disk_size)).join(Operation
                                                                                ).filter(
-                Operation.fk_launched_in == project_id).scalar()
-            return total_size or 0
+                Operation.fk_launched_in == project_id).scalar() or 0
+            total_size = self.session.query(func.sum(Operation.view_model_disk_size)).filter(
+                Operation.fk_launched_in == project_id).scalar() or 0
+            total_size = total_size + total_size_for_dt
+            return total_size
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return -1

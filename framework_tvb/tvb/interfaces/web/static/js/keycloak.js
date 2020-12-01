@@ -611,7 +611,8 @@
                         var req = new XMLHttpRequest();
                         req.open('POST', url, true);
                         req.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-                        req.withCredentials = true;
+                        // See HBP-121
+                        req.withCredentials = false;
 
                         params += '&client_id=' + encodeURIComponent(kc.clientId);
 
@@ -731,7 +732,8 @@
                     params += '&code_verifier=' + oauth.pkceCodeVerifier;
                 }
 
-                req.withCredentials = true;
+                // See HBP-121
+                req.withCredentials = false;
 
                 req.onreadystatechange = function() {
                     if (req.readyState == 4) {

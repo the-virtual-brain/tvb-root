@@ -308,7 +308,7 @@ def prepare_py2app_dist():
                      version=VERSION,
                      packages=setuptools.find_packages(fw_name),
                      package_dir={'': fw_name},
-                     license="GPL v3",
+                     license="GPL-3.0-or-later",
                      options={'py2app': PY2APP_OPTIONS},
                      include_package_data=True,
                      extras_require={'postgres': ["psycopg2"]},

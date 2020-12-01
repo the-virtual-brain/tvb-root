@@ -39,24 +39,25 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 import json
 import uuid
+
 import numpy
 from scipy.signal.signaltools import correlate
-from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
     TimeSeriesSEEGIndex
+from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.basic.neotraits.api import HasTraits, Attr, Float
 from tvb.basic.neotraits.info import narray_describe
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import FloatField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.datatypes.graph import CorrelationCoefficients
+from tvb.datatypes.temporal_correlations import CrossCorrelation
+from tvb.datatypes.time_series import TimeSeries
 
 
 class CrossCorrelate(HasTraits):
@@ -81,11 +82,11 @@ class CrossCorrelateAdapterModel(ViewModel, CrossCorrelate):
 
 class CrossCorrelateAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(CrossCorrelateAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self,
-                                                    name=self.get_input_name(),
-                                                    conditions=self.get_filters(), has_all_option=True)
+    def __init__(self, project_id=None):
+        super(CrossCorrelateAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self.project_id,
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
 
     @staticmethod
     def get_view_model():
@@ -104,7 +105,7 @@ class CrossCorrelateAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class CrossCorrelateAdapter(ABCAsynchronous):
+class CrossCorrelateAdapter(ABCAdapter):
     """ TVB adapter for calling the CrossCorrelate algorithm. """
     _ui_name = "Cross-correlation of nodes"
     _ui_description = "Cross-correlate two one-dimensional arrays."
@@ -123,7 +124,7 @@ class CrossCorrelateAdapter(ABCAsynchronous):
 
         :param time_series: the input time-series index for which cross correlation should be computed
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -285,13 +286,13 @@ class PearsonCorrelationCoefficientAdapterModel(ViewModel, CorrelationCoefficien
 
 class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(PearsonCorrelationCoefficientAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series, self,
-                                                    name=self.get_input_name(), conditions=self.get_filters(),
-                                                    has_all_option=True)
-        self.t_start = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_start, self)
-        self.t_end = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_end, self)
+    def __init__(self, project_id=None):
+        super(PearsonCorrelationCoefficientAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series,
+                                                    self.project_id, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.t_start = FloatField(PearsonCorrelationCoefficientAdapterModel.t_start, self.project_id)
+        self.t_end = FloatField(PearsonCorrelationCoefficientAdapterModel.t_end, self.project_id)
 
     @staticmethod
     def get_view_model():
@@ -313,7 +314,7 @@ class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
         return CorrelationCoefficient()
 
 
-class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
+class PearsonCorrelationCoefficientAdapter(ABCAdapter):
     """ TVB adapter for calling the Pearson correlation coefficients algorithm. """
 
     _ui_name = "Pearson correlation coefficients"
@@ -338,7 +339,7 @@ class PearsonCorrelationCoefficientAdapter(ABCAsynchronous):
         if view_model.t_start >= view_model.t_end or view_model.t_start < 0:
             raise LaunchException("Can not launch operation without monitors selected !!!")
 
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (int((view_model.t_end - view_model.t_start) / self.input_time_series_index.sample_period),
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

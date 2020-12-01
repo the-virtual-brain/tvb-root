@@ -36,11 +36,11 @@ from tvb.basic.neotraits.api import HasTraits
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY, TVBLoader
 from tvb.interfaces.rest.client.client_decorators import handle_response
-from tvb.interfaces.rest.client.helpers.file_helper import save_file
 from tvb.interfaces.rest.client.main_api import MainApi
-from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto
 from tvb.interfaces.rest.commons.exceptions import ClientException
+from tvb.interfaces.rest.commons.files_helper import save_file
+from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 
 
 class DataTypeApi(MainApi):
@@ -66,6 +66,14 @@ class DataTypeApi(MainApi):
                 LinkPlaceholder.DATATYPE_GID.value: datatype_gid
             })))
         return response, AlgorithmDto
+
+    @handle_response
+    def get_extra_info(self, datatype_gid):
+        response = self.secured_request().get(
+            self.build_request_url(RestLink.DATATYPE_EXTRA_INFO.compute_url(True, {
+                LinkPlaceholder.DATATYPE_GID.value: datatype_gid
+            })))
+        return response, dict
 
     def load_datatype_from_file(self, datatype_path):
         datatype, _ = h5.load_with_links(datatype_path)

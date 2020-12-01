@@ -66,6 +66,7 @@ class BaseSettingsProfile(object):
         self.KEYCLOAK_LOGIN_ENABLED = self.manager.get_attribute(stored.KEY_ENABLE_KC_LOGIN, False, eval)
         self.KEYCLOAK_WEB_CONFIG = self.manager.get_attribute(stored.KEY_KC_WEB_CONFIGURATION, '')
         self.TVB_STORAGE = self.manager.get_attribute(stored.KEY_STORAGE, self.FIRST_RUN_STORAGE, str)
+        self.UPLOAD_KEY_PATH = self.manager.get_attribute(stored.KEY_UPLOAD_PRIVATE_KEY_PATH, None, str)
         self.TRACE_USER_ACTIONS = self.manager.get_attribute(stored.KEY_TRACE_USER_ACTIONS, False, eval)
         self.TVB_LOG_FOLDER = os.path.join(self.TVB_STORAGE, "logs")
         self.TVB_TEMP_FOLDER = os.path.join(self.TVB_STORAGE, "TEMP")

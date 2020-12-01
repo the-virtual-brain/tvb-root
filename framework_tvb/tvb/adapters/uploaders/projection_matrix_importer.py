@@ -33,12 +33,12 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
+from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
@@ -92,16 +92,16 @@ class ProjectionMatrixImporterModel(UploaderViewModel):
 
 class ProjectionMatrixImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ProjectionMatrixImporterForm, self).__init__(prefix, project_id)
-        self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, ('.mat', '.npy'), self,
-                                                name='projection_file')
-        self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self, name='dataset_name')
+    def __init__(self, project_id=None):
+        super(ProjectionMatrixImporterForm, self).__init__(project_id)
+        self.projection_file = TraitUploadField(ProjectionMatrixImporterModel.projection_file, ('.mat', '.npy'),
+                                                self.project_id, 'projection_file', self.temporary_files)
+        self.dataset_name = StrField(ProjectionMatrixImporterModel.dataset_name, self.project_id, name='dataset_name')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=['Cortical Surface'])
-        self.surface = TraitDataTypeSelectField(ProjectionMatrixImporterModel.surface, self, name='surface',
+        self.surface = TraitDataTypeSelectField(ProjectionMatrixImporterModel.surface, self.project_id, name='surface',
                                                 conditions=surface_conditions)
-        self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self, name='sensors')
+        self.sensors = TraitDataTypeSelectField(ProjectionMatrixImporterModel.sensors, self.project_id, name='sensors')
 
     @staticmethod
     def get_view_model():
@@ -148,10 +148,10 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         if view_model.surface is None:
             raise LaunchException("No source selected. Please initiate upload again and select a source.")
 
-        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface)
         expected_surface_shape = surface_index.number_of_vertices
 
-        sensors_index = self.load_entity_by_gid(view_model.sensors.hex)
+        sensors_index = self.load_entity_by_gid(view_model.sensors)
         expected_sensors_shape = sensors_index.number_of_sensors
 
         self.logger.debug("Reading projection matrix from uploaded file...")

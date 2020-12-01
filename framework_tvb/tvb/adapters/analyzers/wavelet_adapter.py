@@ -38,20 +38,21 @@ ContinuousWaveletTransform Analyzer.
 """
 
 import uuid
+
 import numpy
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.basic.neotraits.api import Float
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.analyzers.wavelet import ContinuousWaveletTransform
-from tvb.datatypes.time_series import TimeSeries
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import ScalarField, FormField, Form, TraitDataTypeSelectField, FloatField
-from tvb.core.neotraits.db import from_ndarray
+from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
+from tvb.analyzers.wavelet import ContinuousWaveletTransform
+from tvb.basic.neotraits.api import Float
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.db import from_ndarray
+from tvb.core.neotraits.forms import FormField, Form, TraitDataTypeSelectField, StrField, FloatField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
 
 
 class WaveletAdapterModel(ViewModel, ContinuousWaveletTransform):
@@ -62,26 +63,33 @@ class WaveletAdapterModel(ViewModel, ContinuousWaveletTransform):
         doc="""The timeseries to which the wavelet is to be applied."""
     )
 
+
 class RangeForm(Form):
-    def __init__(self, prefix=''):
-        super(RangeForm, self).__init__(prefix)
-        self.lo = FloatField(Float(label='Lo', default=ContinuousWaveletTransform.frequencies.default.lo, doc='start of range'), self, name='Lo')
-        self.hi = FloatField(Float(label='Hi', default=ContinuousWaveletTransform.frequencies.default.hi, doc='end of range'), self, name='Hi')
-        self.step = FloatField(Float(label='Step', default=ContinuousWaveletTransform.frequencies.default.step, doc='step of range'), self, name='Step')
+    def __init__(self):
+        super(RangeForm, self).__init__()
+        self.lo = FloatField(
+            Float(label='Lo', default=ContinuousWaveletTransform.frequencies.default.lo, doc='start of range'),
+            self.project_id, name='Lo')
+        self.hi = FloatField(
+            Float(label='Hi', default=ContinuousWaveletTransform.frequencies.default.hi, doc='end of range'),
+            self.project_id, name='Hi')
+        self.step = FloatField(
+            Float(label='Step', default=ContinuousWaveletTransform.frequencies.default.step, doc='step of range'),
+            self.project_id, name='Step')
 
 
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ContinuousWaveletTransformAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, self,
+    def __init__(self, project_id=None):
+        super(ContinuousWaveletTransformAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, self.project_id,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)
-        self.mother = ScalarField(ContinuousWaveletTransform.mother, self)
-        self.sample_period = ScalarField(ContinuousWaveletTransform.sample_period, self)
-        self.normalisation = ScalarField(ContinuousWaveletTransform.normalisation, self)
-        self.q_ratio = ScalarField(ContinuousWaveletTransform.q_ratio, self)
-        self.frequencies = FormField(RangeForm, self, name='frequencies',
+        self.mother = StrField(ContinuousWaveletTransform.mother, self.project_id)
+        self.sample_period = FloatField(ContinuousWaveletTransform.sample_period, self.project_id)
+        self.normalisation = StrField(ContinuousWaveletTransform.normalisation, self.project_id)
+        self.q_ratio = FloatField(ContinuousWaveletTransform.q_ratio, self.project_id)
+        self.frequencies = FormField(RangeForm, self.project_id, name='frequencies',
                                      label=ContinuousWaveletTransform.frequencies.label,
                                      doc=ContinuousWaveletTransform.frequencies.doc)
 
@@ -111,7 +119,7 @@ class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class ContinuousWaveletTransformAdapter(ABCAsynchronous):
+class ContinuousWaveletTransformAdapter(ABCAdapter):
     """
     TVB adapter for calling the ContinuousWaveletTransform algorithm.
     """
@@ -130,7 +138,7 @@ class ContinuousWaveletTransformAdapter(ABCAsynchronous):
         """
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
 
         input_shape = []
         for length in [self.input_time_series_index.data_length_1d,

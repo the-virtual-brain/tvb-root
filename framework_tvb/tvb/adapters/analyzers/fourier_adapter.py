@@ -35,20 +35,21 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 
 """
-import uuid
-import psutil
-import numpy
 import math
+import uuid
+
+import numpy
+import psutil
 import tvb.analyzers.fft as fft
-import tvb.core.adapters.abcadapter as abcadapter
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, SelectField
+from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField, FloatField, BoolField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.time_series import TimeSeries
 
 
 class FFTAdapterModel(ViewModel, fft.FFT):
@@ -66,15 +67,15 @@ class FFTAdapterModel(ViewModel, fft.FFT):
     )
 
 
-class FFTAdapterForm(abcadapter.ABCAdapterForm):
+class FFTAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(FFTAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self, name='time_series',
+    def __init__(self, project_id=None):
+        super(FFTAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(FFTAdapterModel.time_series, self.project_id, name='time_series',
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.segment_length = ScalarField(FFTAdapterModel.segment_length, self)
-        self.window_function = SelectField(FFTAdapterModel.window_function, self)
-        self.detrend = ScalarField(FFTAdapterModel.detrend, self)
+        self.segment_length = FloatField(FFTAdapterModel.segment_length, self.project_id)
+        self.window_function = SelectField(FFTAdapterModel.window_function, self.project_id)
+        self.detrend = BoolField(FFTAdapterModel.detrend, self.project_id)
 
     @staticmethod
     def get_view_model():
@@ -96,7 +97,7 @@ class FFTAdapterForm(abcadapter.ABCAdapterForm):
         return fft.FFT()
 
 
-class FourierAdapter(abcadapter.ABCAsynchronous):
+class FourierAdapter(ABCAdapter):
     """ TVB adapter for calling the FFT algorithm. """
 
     _ui_name = "Fourier Spectral Analysis"
@@ -119,7 +120,7 @@ class FourierAdapter(abcadapter.ABCAsynchronous):
         """
         Do any configuration needed before launching.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,

@@ -33,17 +33,14 @@
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 
-import json
 import os
 import typing
 import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
-
-import pyunicore.client as unicore_client
-from pyunicore.client import Job, Storage, Client
 from requests import HTTPError
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
@@ -57,6 +54,12 @@ from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler
+
+try:
+    import pyunicore.client as unicore_client
+    from pyunicore.client import Job, Storage, Client
+except ImportError:
+    HPCSettings.CAN_RUN_HPC = False
 
 LOGGER = get_logger(__name__)
 
@@ -126,11 +129,10 @@ class HPCSchedulerClient(BackendClient):
         inputs_in_container = os.path.join('/root/.data', EncryptionHandler(simulator_gid).current_enc_dirname)
 
         # Build job configuration JSON
-        my_job = {}
-        my_job[HPCSettings.UNICORE_EXE_KEY] = os.path.basename(bash_entrypoint)
-        my_job[HPCSettings.UNICORE_ARGS_KEY] = [simulator_gid, available_space, is_group_launch, base_url,
-                                                inputs_in_container, HPCSchedulerClient.HOME_FOLDER_MOUNT, operation_id]
-        my_job[HPCSettings.UNICORE_RESOURCER_KEY] = {"CPUs": "1"}
+        my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
+                  HPCSettings.UNICORE_ARGS_KEY: [simulator_gid, available_space, is_group_launch, base_url,
+                                                 inputs_in_container, HPCSchedulerClient.HOME_FOLDER_MOUNT,
+                                                 operation_id], HPCSettings.UNICORE_RESOURCER_KEY: {"CPUs": "1"}}
 
         return my_job, bash_entrypoint
 
@@ -178,7 +180,9 @@ class HPCSchedulerClient(BackendClient):
             index_list.append(index)
 
         sim_adapter = SimulatorAdapter()
-        mesage, _ = sim_adapter.fill_existing_indexes(operation, index_list)
+        sim_adapter.extract_operation_data(operation)
+        sim_adapter.generic_attributes.parent_burst = burst_config.gid
+        mesage, _ = sim_adapter._capture_operation_results(index_list)
 
         burst_service.update_burst_status(burst_config)
         # self.update_datatype_groups()
@@ -299,22 +303,39 @@ class HPCSchedulerClient(BackendClient):
         return encrypted_files
 
     @staticmethod
+    def _handle_metric_results(metric_encrypted_file, metric_vm_encrypted_file, operation, encryption_handler):
+        if not metric_encrypted_file:
+            return None, None
+
+        metric_op_dir, metric_op = BurstService.prepare_metrics_operation(operation)
+        metric_files = encryption_handler.decrypt_files_to_dir([metric_encrypted_file, metric_vm_encrypted_file],
+                                                               metric_op_dir)
+        metric_file = metric_files[0]
+        metric_vm = h5.load_view_model_from_file(metric_files[1])
+        metric_op.view_model_gid = metric_vm.gid.hex
+        dao.store_entity(metric_op)
+        return metric_op, metric_file
+
+    @staticmethod
     def stage_out_to_operation_folder(working_dir, operation, simulator_gid):
         # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> (list, Operation, str)
         encrypted_files = HPCSchedulerClient._stage_out_results(working_dir, simulator_gid)
         encryption_handler = EncryptionHandler(simulator_gid)
 
         simulation_results = list()
-        metric_op = None
-        metric_file = None
+        metric_encrypted_file = None
+        metric_vm_encrypted_file = None
         for encrypted_file in encrypted_files:
             if os.path.basename(encrypted_file).startswith(DatatypeMeasureH5.file_name_base()):
-                metric_op_dir, metric_op = BurstService.prepare_metrics_operation(operation)
-                metric_files = encryption_handler.decrypt_files_to_dir([encrypted_file], metric_op_dir)
-                metric_file = metric_files[0]
+                metric_encrypted_file = encrypted_file
+            elif os.path.basename(encrypted_file).startswith(TimeseriesMetricsAdapterModel.__name__):
+                metric_vm_encrypted_file = encrypted_file
             else:
                 simulation_results.append(encrypted_file)
 
+        metric_op, metric_file = HPCSchedulerClient._handle_metric_results(metric_encrypted_file,
+                                                                           metric_vm_encrypted_file, operation,
+                                                                           encryption_handler)
         project = dao.get_project_by_id(operation.fk_launched_in)
         operation_dir = HPCSchedulerClient.file_handler.get_project_folder(project, str(operation.id))
         h5_filenames = EncryptionHandler(simulator_gid).decrypt_files_to_dir(simulation_results, operation_dir)
@@ -325,7 +346,7 @@ class HPCSchedulerClient(BackendClient):
         # type: (int) -> None
         operation = dao.get_operation_by_id(operation_identifier)
         is_group_launch = operation.fk_operation_group is not None
-        simulator_gid = json.loads(operation.parameters)['gid']
+        simulator_gid = operation.view_model_gid
         try:
             HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
         except Exception as exception:

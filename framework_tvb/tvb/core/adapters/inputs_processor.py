@@ -28,8 +28,13 @@
 #
 #
 
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+"""
+.. moduleauthor:: Adrian Dordea <adrian.dordea@codemart.ro>
+"""
+
+import os
+from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField
 
 
 def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_model):
@@ -37,27 +42,30 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
     inputs_datatypes = []
 
     for field in form_fields:
+
         if not hasattr(view_model, field.name):
             continue
+        attr_vm = getattr(view_model, field.name)
+        if type(field) == TraitUploadField:
+            attr_vm = os.path.basename(attr_vm)
 
         if isinstance(field, TraitDataTypeSelectField):
-
-            attr_vm = getattr(view_model, field.name)
-            data_type = ABCAdapter.load_entity_by_gid(attr_vm)
+            data_type = None
             if attr_vm:
-                changed_attr[field.label] = data_type.display_name
+                data_type = load_entity_by_gid(attr_vm)
+                changed_attr[field.label] = data_type.display_name if data_type else "None"
             inputs_datatypes.append(data_type)
-
         else:
-            attr_default = getattr(form_model, field.name)
-            attr_vm = getattr(view_model, field.name)
+            attr_default = None
+            if hasattr(form_model, field.name):
+                attr_default = getattr(form_model, field.name)
             if attr_vm != attr_default:
                 if isinstance(attr_vm, float) or isinstance(attr_vm, int) or isinstance(attr_vm, str):
                     changed_attr[field.label] = attr_vm
                 elif isinstance(attr_vm, tuple) or isinstance(attr_vm, list):
                     changed_attr[field.label] = ', '.join([str(sub_attr) for sub_attr in attr_vm])
                 else:
-                    # All HasTraits instances will show as being different than default, even if the same,
+                    # All HasTraits instances will show as being different than default, even if the same!! Is this ok?
                     changed_attr[field.label] = str(attr_vm)
 
     return inputs_datatypes, changed_attr
@@ -88,7 +96,8 @@ def review_operation_inputs_from_adapter(adapter, operation):
             fragment_fields = fragment().fields
 
             part_dts, part_changed = _review_operation_inputs_for_adapter_model(fragment_fields,
-                                                                                fragment_defaults, fragment_model)
+                                                                                fragment_defaults,
+                                                                                fragment_model)
             inputs_datatypes.extend(part_dts)
             changed_attr.update(part_changed)
 

@@ -45,7 +45,7 @@ class VersionSettings(object):
     """
 
     # Current release number
-    BASE_VERSION = "2.0.9"
+    BASE_VERSION = "2.0.10"
 
     # Current DB version. Increment this and create a new xxx_update_db.py migrate script
     DB_STRUCTURE_VERSION = 18
@@ -202,6 +202,8 @@ class HPCSettings(object):
 
     # Specify if the current process is executing an operation (via hpcLauncher)
     IN_OPERATION_EXECUTION_PROCESS = False
+
+    CAN_RUN_HPC = True
 
     def __init__(self, manager):
         self.IS_HPC_RUN = manager.get_attribute(stored.KEY_HPC, False, eval)

@@ -43,35 +43,39 @@ import random
 import uuid
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
+from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporter, GIFTISurfaceImporterModel
+from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter, ObjSurfaceImporterModel
 from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixImporterModel
 from tvb.adapters.uploaders.projection_matrix_importer import ProjectionMatrixSurfaceEEGImporter
 from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporterModel, RegionMappingImporter
-from tvb.adapters.uploaders.gifti_surface_importer import GIFTISurfaceImporter, GIFTISurfaceImporterModel
-from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter, ObjSurfaceImporterModel
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel, SensorsImporter
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.core.adapters import constants
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neocom import h5
-from tvb.core.services.burst_service import BurstService
-from tvb.core.neotraits.view_model import ViewModel
-from tvb.core.utils import hash_password
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.services.project_service import ProjectService
+from tvb.core.neocom import h5
+from tvb.core.neotraits.view_model import ViewModel
+from tvb.core.services.burst_service import BurstService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
-from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.services.project_service import ProjectService
+from tvb.core.utils import hash_password
+from tvb.datatypes.local_connectivity import LocalConnectivity
+from tvb.datatypes.surfaces import CorticalSurface
 
 
 class TestFactory(object):
@@ -129,39 +133,33 @@ class TestFactory(object):
         return ProjectService().store_project(admin, True, None, **data)
 
     @staticmethod
-    def create_figure(operation_id, user_id, project_id, session_name=None,
-                      name=None, path=None, file_format='PNG'):
+    def create_figure(user_id, project_id, session_name=None, name=None, path=None, file_format='PNG'):
         """
         :returns: the `ResultFigure` for a result with the given specifications
         """
-        figure = ResultFigure(operation_id, user_id, project_id,
-                              session_name, name, path, file_format)
+        figure = ResultFigure(user_id, project_id, session_name, name, path, file_format)
         return dao.store_entity(figure)
 
     @staticmethod
-    def create_operation(algorithm=None, test_user=None, test_project=None,
-                         operation_status=STATUS_FINISHED, parameters="test params"):
+    def create_operation(test_user=None, test_project=None, operation_status=STATUS_FINISHED):
         """
         Create persisted operation.
-
-        :param algorithm: When not None, introspect TVB and TVB_TEST for adapters.
         :return: Operation entity after persistence.
         """
-        if algorithm is None:
-            algorithm = dao.get_algorithm_by_module('tvb.adapters.simulator.simulator_adapter', 'SimulatorAdapter')
-
         if test_user is None:
             test_user = TestFactory.create_user()
-
         if test_project is None:
             test_project = TestFactory.create_project(test_user)
 
-        meta = {DataTypeMetaData.KEY_SUBJECT: "John Doe",
-                DataTypeMetaData.KEY_STATE: "RAW_DATA"}
-        operation = Operation(test_user.id, test_project.id, algorithm.id, parameters, meta=json.dumps(meta),
+        algorithm = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
+        adapter = ABCAdapter.build_adapter(algorithm)
+        view_model = adapter.get_view_model_class()()
+        view_model.data_file = "."
+        operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status)
         dao.store_entity(operation)
-        # Make sure lazy attributes are correctly loaded.
+        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
+        h5.store_view_model(view_model, op_dir)
         return dao.get_operation_by_id(operation.id)
 
     @staticmethod
@@ -175,14 +173,19 @@ class TestFactory(object):
             test_project = TestFactory.create_project(test_user)
 
         adapter_inst = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        adapter_inst.meta_data = {DataTypeMetaData.KEY_SUBJECT: subject}
-        args = {RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
+        adapter_inst.generic_attributes.subject = subject
+
+        view_model = adapter_inst.get_view_model()()
+        args = {RANGE_PARAMETER_1: 'param_5', 'param_5': json.dumps({constants.ATT_MINVALUE: 1,
+                                                                     constants.ATT_MAXVALUE: 2.1,
+                                                                     constants.ATT_STEP: 1})}
         algo = adapter_inst.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category, {}, **args)[0]
+        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category,
+                                                view_model=view_model, **args)[0]
         service.launch_operation(operations[0].id, False, adapter_inst)
         service.launch_operation(operations[1].id, False, adapter_inst)
 
@@ -206,6 +209,23 @@ class TestFactory(object):
         return test_project, vw_idx.gid, operation
 
     @staticmethod
+    def create_local_connectivity(user, project, surface_gid):
+
+        op = TestFactory.create_operation(test_user=user, test_project=project)
+        op_folder = FilesHelper().get_project_folder(project, str(op.id))
+
+        wrapper_surf = CorticalSurface()
+        wrapper_surf.gid = uuid.UUID(surface_gid)
+        lc_ht = LocalConnectivity.from_file()
+        lc_ht.surface = wrapper_surf
+        lc_idx = h5.store_complete(lc_ht, op_folder)
+        lc_idx.fk_surface_gid = surface_gid
+        lc_idx.fk_from_operation = op.id
+        dao.store_entity(lc_idx)
+
+        return TestFactory._assert_one_more_datatype(project, LocalConnectivityIndex)
+
+    @staticmethod
     def create_adapter(module='tvb.tests.framework.adapters.ndimensionarrayadapter',
                        class_name='NDimensionArrayAdapter'):
         """
@@ -223,7 +243,7 @@ class TestFactory(object):
         if operation is not None:
             burst.name = 'dummy_burst'
             burst.status = BurstConfiguration.BURST_FINISHED
-            burst.start_time = datetime.datetime.now()
+            burst.start_time = datetime.now()
             burst.range1 = '["conduction_speed", {"lo": 50, "step": 1.0, "hi": 100.0}]'
             burst.range2 = '["connectivity", null]'
             burst.fk_simulation = operation.id
@@ -243,34 +263,44 @@ class TestFactory(object):
         return import_service.created_projects[0]
 
     @staticmethod
-    def launch_importer(importer_class, view_model, user, project_id):
-        # type: (type, ViewModel, User, int) -> None
+    def launch_importer(importer_class, view_model, user, project, same_process=True):
+        # type: (type, ViewModel, User, Project, bool) -> None
+        """
+        same_process = False will do the normal flow, with Uploaders running synchronously but in a different process.
+        This branch won't be compatible with usage in subclasses of TransactionalTestCase because the upload results
+        won't be available for the unit-test running.
+        same_process = True for usage in subclasses of TransactionalTestCase, as data preparation, for example. Won't
+        test the "real" upload flow, but it is very close to that.
+        """
         importer = ABCAdapter.build_adapter_from_class(importer_class)
-        OperationService().fire_operation(importer, user, project_id, view_model=view_model)
+        if same_process:
+            TestFactory.launch_synchronously(user, project, importer, view_model)
+        else:
+            OperationService().fire_operation(importer, user, project.id, view_model=view_model)
 
     @staticmethod
-    def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid):
+    def import_region_mapping(user, project, import_file_path, surface_gid, connectivity_gid, same_process=True):
 
         view_model = RegionMappingImporterModel()
         view_model.mapping_file = import_file_path
         view_model.surface = surface_gid
         view_model.connectivity = connectivity_gid
-        TestFactory.launch_importer(RegionMappingImporter, view_model, user, project.id)
+        TestFactory.launch_importer(RegionMappingImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, RegionMappingIndex)
 
     @staticmethod
-    def import_surface_gifti(user, project, path):
+    def import_surface_gifti(user, project, path, same_process=False):
 
         view_model = GIFTISurfaceImporterModel()
         view_model.data_file = path
         view_model.should_center = False
-        TestFactory.launch_importer(GIFTISurfaceImporter, view_model, user, project.id)
+        TestFactory.launch_importer(GIFTISurfaceImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
     @staticmethod
-    def import_surface_zip(user, project, zip_path, surface_type, zero_based=True):
+    def import_surface_zip(user, project, zip_path, surface_type, zero_based=True, same_process=True):
 
         count = dao.count_datatypes(project.id, SurfaceIndex)
 
@@ -279,43 +309,44 @@ class TestFactory(object):
         view_model.should_center = True
         view_model.zero_based_triangles = zero_based
         view_model.surface_type = surface_type
-        TestFactory.launch_importer(ZIPSurfaceImporter, view_model, user, project.id)
+        TestFactory.launch_importer(ZIPSurfaceImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex, count)
 
     @staticmethod
-    def import_surface_obj(user, project, obj_path, surface_type):
+    def import_surface_obj(user, project, obj_path, surface_type, same_process=True):
 
         view_model = ObjSurfaceImporterModel()
         view_model.data_file = obj_path
         view_model.surface_type = surface_type
-        TestFactory.launch_importer(ObjSurfaceImporter, view_model, user, project.id)
+        TestFactory.launch_importer(ObjSurfaceImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, SurfaceIndex)
 
     @staticmethod
-    def import_sensors(user, project, zip_path, sensors_type):
+    def import_sensors(user, project, zip_path, sensors_type, same_process=True):
 
         view_model = SensorsImporterModel()
         view_model.sensors_file = zip_path
         view_model.sensors_type = sensors_type
-        TestFactory.launch_importer(SensorsImporter, view_model, user, project.id)
+        TestFactory.launch_importer(SensorsImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, SensorsIndex)
 
     @staticmethod
-    def import_projection_matrix(user, project, file_path, sensors_gid, surface_gid):
+    def import_projection_matrix(user, project, file_path, sensors_gid, surface_gid, same_process=True):
 
         view_model = ProjectionMatrixImporterModel()
         view_model.projection_file = file_path
         view_model.sensors = sensors_gid
         view_model.surface = surface_gid
-        TestFactory.launch_importer(ProjectionMatrixSurfaceEEGImporter, view_model, user, project.id)
+        TestFactory.launch_importer(ProjectionMatrixSurfaceEEGImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, ProjectionMatrixIndex)
 
     @staticmethod
-    def import_zip_connectivity(user, project, zip_path=None, subject=DataTypeMetaData.DEFAULT_SUBJECT):
+    def import_zip_connectivity(user, project, zip_path=None, subject=DataTypeMetaData.DEFAULT_SUBJECT,
+                                same_process=True):
 
         if zip_path is None:
             zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
@@ -324,7 +355,7 @@ class TestFactory(object):
         view_model = ZIPConnectivityImporterModel()
         view_model.uploaded = zip_path
         view_model.data_subject = subject
-        TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project.id)
+        TestFactory.launch_importer(ZIPConnectivityImporter, view_model, user, project, same_process)
 
         return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
 
@@ -336,7 +367,7 @@ class TestFactory(object):
         if algo_category is None:
             algo_category = dao.get_category_by_id(algorithm.fk_category)
         operation = service.prepare_operations(test_user.id, test_project, algorithm, algo_category,
-                                               {}, True, view_model=view_model)[0][0]
+                                               True, view_model=view_model)[0][0]
         service.initiate_prelaunch(operation, adapter_instance)
 
         operation = dao.get_operation_by_id(operation.id)

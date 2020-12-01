@@ -38,6 +38,7 @@ from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.backend_clients.cluster_scheduler_client import ClusterSchedulerClient
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.backend_clients.standalone_client import StandAloneClient
+from tvb.core.services.exceptions import InvalidSettingsException
 
 LOGGER = get_logger(__name__)
 
@@ -48,6 +49,8 @@ class BackendClientFactory(object):
     def _get_backend_client():
         # type: () -> BackendClient
         if TvbProfile.current.hpc.IS_HPC_RUN:
+            if not TvbProfile.current.hpc.CAN_RUN_HPC:
+                raise InvalidSettingsException("We can not enable HPC run. Most probably pyunicore is not installed!")
             # Return an entity capable to submit jobs to HPC.
             return HPCSchedulerClient()
         if TvbProfile.current.cluster.IS_DEPLOY:
@@ -64,4 +67,4 @@ class BackendClientFactory(object):
     @staticmethod
     def stop_operation(operation_id):
         backend_client = BackendClientFactory._get_backend_client()
-        backend_client.stop_operation(operation_id)
+        return backend_client.stop_operation(operation_id)

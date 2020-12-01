@@ -40,7 +40,7 @@ We are grateful to
  - our sponsors (check their names on the |our_sponsors_page|
  - all |third_party| tools that we used (licenses are also included in TVB_Distribution)
  - JetBrains for |pycharm_ide|
- - |hudson| team for their continuous integration tool
+ - |jenkins| team for their continuous integration tool
  - Atlassian company for |jira| software
  - and to you for reading these :-)
 
@@ -51,12 +51,9 @@ We are grateful to
         :height: 64px
     .. image:: _static/logo_pycharm.png
         :height: 64px
-
-    .. image:: _static/logo_svn.png
-        :height: 64px
     .. image:: _static/logo_github.png
         :height: 64px
-    .. image:: _static/logo_hudson.png
+    .. image:: _static/logo_jenkins.png
         :height: 64px
 
 
@@ -95,9 +92,9 @@ We are grateful to
     <a href="https://www.jetbrains.com/pycharm/" target="_blank"> PyCharm IDE </a>
 
 
-.. |hudson| raw:: html
+.. |jenkins| raw:: html
 
-    <a href="http://hudson-ci.org/" target="_blank"> Hudson </a>
+    <a href="https://www.jenkins.io/" target="_blank"> Jenkins </a>
 
 
 .. |jira| raw:: html

@@ -29,18 +29,20 @@
 #
 import os
 import shutil
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neotraits.h5 import ViewModelH5
-from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.rest.commons.dtos import DataTypeDto
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
+from tvb.interfaces.rest.commons.files_helper import create_temp_folder, save_temporary_file
 
 
 class OperationFacade:
@@ -49,7 +51,6 @@ class OperationFacade:
         self.operation_service = OperationService()
         self.project_service = ProjectService()
         self.user_service = UserService()
-        self.files_helper = FilesHelper()
 
     @staticmethod
     def get_operation_status(operation_gid):
@@ -75,8 +76,8 @@ class OperationFacade:
 
     def launch_operation(self, current_user_id, model_file, project_gid, algorithm_module, algorithm_classname,
                          fetch_file):
-        temp_folder = FilesHelper.create_temp_folder()
-        model_h5_path = FilesHelper.save_temporary_file(model_file, temp_folder)
+        temp_folder = create_temp_folder()
+        model_h5_path = save_temporary_file(model_file, temp_folder)
 
         try:
             project = self.project_service.find_project_lazy_by_gid(project_gid)
@@ -94,15 +95,14 @@ class OperationFacade:
             view_model_h5 = ViewModelH5(model_h5_path, view_model)
             view_model_gid = view_model_h5.gid.load()
 
-            operation = self.operation_service.prepare_operation(current_user_id, project.id, algorithm.id,
-                                                                 algorithm.algorithm_category, view_model_gid.hex, None,
-                                                                 {})
-            storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+            operation = self.operation_service.prepare_operation(current_user_id, project.id, algorithm,
+                                                                 view_model_gid.hex)
+            storage_path = FilesHelper().get_project_folder(project, str(operation.id))
 
             if isinstance(adapter_instance, ABCUploader):
                 for key, value in adapter_instance.get_form_class().get_upload_information().items():
                     data_file = fetch_file(request_file_key=key, file_extension=value)
-                    data_file_path = FilesHelper.save_temporary_file(data_file, temp_folder)
+                    data_file_path = save_temporary_file(data_file, temp_folder)
                     file_name = os.path.basename(data_file_path)
                     upload_field = getattr(view_model_h5, key)
                     upload_field.store(os.path.join(storage_path, file_name))

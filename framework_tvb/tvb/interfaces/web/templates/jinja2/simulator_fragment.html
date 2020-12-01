@@ -1,5 +1,7 @@
+{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
+
 <form method="post" action="{{ renderer.form_action_url }}" id="{{ renderer.form_action_url }}" enctype="multipart/form-data">
-    <fieldset {% if renderer.disable_fields %} disabled {% endif %}>
+    <fieldset {% if renderer.is_branch %} class="enable_branch" {% endif %} {% if renderer.disable_fields %} disabled {% endif %}>
         <dl>
             {% if renderer.monitor_name %}
             <legend>{{ renderer.monitor_name }}</legend>
@@ -12,6 +14,7 @@
             {% for field in form_fields %}
                 <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
                     <label for="{{ field.name }}">{{ field.label }}</label>
+                    {{ ght.generate_help_tooltip(field) }}
                 </dt>
                 <dd>
                     {{ field | safe }}
@@ -55,29 +58,30 @@
         </button>
     {% endif %}
 
-    {% if renderer.include_launch_button %}
-        <button id="launch_simulation" name="launch_simulation" type="button" class="btn btn-primary" tabindex="1"
-                onclick="launchNewBurst(this.parentElement, 'new')"
-                {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Launch
-        </button>
-    {% endif %}
-
-    {% if renderer.include_setup_pse %}
-        <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary" tabindex="1"
-                onclick="wizzard_submit(this.parentElement)"
-                {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Setup PSE
-        </button>
-    {% endif %}
-
     {% if renderer.include_branch_button %}
         <button id="branch_simulation" name="branch_simulation" type="button" class="btn btn-primary" tabindex="1"
                 onclick="launchNewBurst(this.parentElement, 'branch')"
-                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Branch
+                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Launch Branch
         </button>
-    {% endif %}
+    {% else %}
 
-    {% if renderer.include_launch_pse_button %}
-        <button id="launch_pse" name="launch_pse" type="button" class="btn btn-primary" tabindex="1"
-                onclick="launchNewPSEBurst(this.parentElement)">Launch PSE</button>
+        {% if renderer.include_launch_button %}
+            <button id="launch_simulation" name="launch_simulation" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="launchNewBurst(this.parentElement, 'new')"
+                    {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Launch
+            </button>
+        {% endif %}
+
+        {% if renderer.include_setup_pse %}
+            <button id="setup_pse" name="setup_pse" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="wizzard_submit(this.parentElement)"
+                    {% if renderer.hide_launch_and_setup_pse_button %} style="visibility: hidden" {% endif %}>Setup PSE
+            </button>
+        {% endif %}
+
+        {% if renderer.include_launch_pse_button %}
+            <button id="launch_pse" name="launch_pse" type="button" class="btn btn-primary" tabindex="1"
+                    onclick="launchNewPSEBurst(this.parentElement)">Launch PSE</button>
+        {% endif %}
     {% endif %}
 </form>

@@ -192,13 +192,13 @@ class TopographicViewerModel(ViewModel):
 
 class TopographicViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TopographicViewerForm, self).__init__(prefix, project_id)
-        self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, self, name='data_0',
+    def __init__(self, project_id=None):
+        super(TopographicViewerForm, self).__init__(project_id)
+        self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, self.project_id, name='data_0',
                                                conditions=self.get_filters())
-        self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, self, name='data_1',
+        self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, self.project_id, name='data_1',
                                                conditions=self.get_filters())
-        self.data_2 = TraitDataTypeSelectField(TopographicViewerModel.data_2, self, name='data_2',
+        self.data_2 = TraitDataTypeSelectField(TopographicViewerModel.data_2, self.project_id, name='data_2',
                                                conditions=self.get_filters())
 
     @staticmethod
@@ -247,7 +247,7 @@ class TopographicViewer(ABCDisplayer):
         measures_ht = []
         for measure in [view_model.data_0, view_model.data_1, view_model.data_2]:
             if measure is not None:
-                measure_index = self.load_entity_by_gid(measure.hex)
+                measure_index = self.load_entity_by_gid(measure)
                 measures_ht.append(h5.load_from_index(measure_index))
                 conn_index = self.load_entity_by_gid(measure_index.fk_connectivity_gid)
                 connectivities_idx.append(conn_index)
@@ -277,6 +277,13 @@ class TopographicViewer(ABCDisplayer):
         for i, array_data in enumerate(arrays):
             try:
                 data_array = TopographyCalculations.compute_topography_data(array_data, sensor_locations)
+
+                # We always access the first element because only one connectivity can be used at one time
+                first_label = h5.load_from_index(connectivities_idx[0]).hemispheres[0]
+                if first_label:
+                    data_array = numpy.rot90(data_array, k=1, axes=(0, 1))
+                else:
+                    data_array = numpy.rot90(data_array, k=-1, axes=(0, 1))
                 if numpy.any(numpy.isnan(array_data)):
                     titles[i] = titles[i] + " - Topography contains nan"
                 if not numpy.any(array_data):

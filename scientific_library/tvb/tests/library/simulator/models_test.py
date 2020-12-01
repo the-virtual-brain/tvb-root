@@ -39,9 +39,7 @@ from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.basic.neotraits.api import Final, List
 from tvb.simulator import models
 from tvb.simulator.models.base import Model
-from tvb.dsl.LEMS2python import (
-    load_model as load_lems_model,
-    render_model)
+from tvb.dsl.LEMS2python import load_model as load_lems_model, render_model
 import numpy
 
 
@@ -246,6 +244,24 @@ class TestModels(BaseTestCase):
         model = models.ReducedWongWangExcInh()
         self._validate_initialization(model, 2)
 
+    def test_infinite_theta(self):
+        model = models.MontbrioPazoRoxin()
+        self._validate_initialization(model, 2)
+
+        model = models.CoombesByrne()
+        self._validate_initialization(model, 4)
+        
+        model = models.CoombesByrne2D()
+        self._validate_initialization(model, 2)
+        
+        model = models.GastSchmidtKnosche_SD()
+        self._validate_initialization(model, 4)
+
+        model = models.GastSchmidtKnosche_SF()
+        self._validate_initialization(model, 4)
+
+        model = models.DumontGutkin()
+        self._validate_initialization(model, 8)
 
 
 class TestDSLModels(BaseTestCase):

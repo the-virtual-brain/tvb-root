@@ -168,7 +168,7 @@ class OperationOverlayDetails(CommonDetails):
                 self.job_id = op_pid.job_id
                 self.metadata['job_id'] = {"name": "Cluster job Id", "disabled": "True"}
 
-        ### Now set/update generic fields
+        # Now set/update generic fields
         self.gid = operation.gid
         self.author = user_display_name
         self.count = no_of_op_in_group
@@ -280,7 +280,7 @@ class DataTypeOverlayDetails(CommonDetails):
         else:
             self.burst_name = ''
 
-        ### Populate Group attributes
+        # Populate Group attributes
         if isinstance(datatype_result, DataTypeGroup):
             self.count = datatype_result.count_results
             self.operation_group_name = datatype_result.parent_operation.operation_group.name
@@ -289,5 +289,5 @@ class DataTypeOverlayDetails(CommonDetails):
         else:
             self.operation_label = datatype_result.parent_operation.user_group
 
-        ### Populate Scientific attributes
+        # Populate Scientific attributes
         self.add_scientific_fields(datatype_result.summary_info)

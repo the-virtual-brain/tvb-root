@@ -50,10 +50,10 @@ class LocalConnectivityViewerModel(ViewModel):
 
 
 class LocalConnectivityViewerForm(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(LocalConnectivityViewerForm, self).__init__(prefix, project_id)
-        self.local_conn = TraitDataTypeSelectField(LocalConnectivityViewerModel.local_conn, self, name='local_conn',
-                                                   conditions=self.get_filters())
+    def __init__(self, project_id=None):
+        super(LocalConnectivityViewerForm, self).__init__(project_id)
+        self.local_conn = TraitDataTypeSelectField(LocalConnectivityViewerModel.local_conn, self.project_id,
+                                                   name='local_conn', conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():

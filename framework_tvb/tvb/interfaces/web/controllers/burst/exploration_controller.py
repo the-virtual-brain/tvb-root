@@ -36,6 +36,7 @@
 import urllib.request, urllib.parse, urllib.error
 import cherrypy
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.services.project_service import ProjectService
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
@@ -88,7 +89,7 @@ class ParameterExplorationController(BaseController):
         :param datatype_group_gid: Current DataTypeGroup to validate against.
         :returns: True when DataTypeGroup can be displayed with current algorithm, False when incompatible.
         """
-        datatype_group = ABCAdapter.load_entity_by_gid(datatype_group_gid)
+        datatype_group = load_entity_by_gid(datatype_group_gid)
         filter_chain = FilterChain.from_json(algorithm.datatype_filter)
         if datatype_group and (not filter_chain or filter_chain.get_python_filter_equivalent(datatype_group)):
             return True

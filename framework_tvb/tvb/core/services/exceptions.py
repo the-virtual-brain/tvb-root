@@ -36,19 +36,16 @@ Exceptions for services layer of the application.
 from tvb.basic.exceptions import TVBException
 
 
-
 class ServicesBaseException(TVBException):
     """
     Base Exception class for Services layer in the application.
     """
 
 
-
 class StructureException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem related to Structure Storage.
     """
-
 
 
 class OperationException(ServicesBaseException):
@@ -58,30 +55,11 @@ class OperationException(ServicesBaseException):
     """
 
 
-
 class UsernameException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem related to creating
     or managing a user.
     """
-
-
-
-class WorkflowException(ServicesBaseException):
-    """
-    Exception to be thrown in case of a problem related to creating
-    or managing a workflow.
-    """
-
-
-
-class WorkflowInterStepsException(WorkflowException):
-    """
-    Exception to be thrown in case of a problem happened between steps of a workflow.
-    Status ERROR needs to be reported at a top level (e.g. Burst) as workflow 
-    steps individually can not be made responsible.
-    """
-
 
 
 class ProjectServiceException(ServicesBaseException):
@@ -91,12 +69,16 @@ class ProjectServiceException(ServicesBaseException):
     """
 
 
-
-class ProjectImportException(ServicesBaseException):
+class ImportException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.
     """
 
+
+class MissingReferenceException(ImportException):
+    """
+    Exception to be thrown in case there are missing references when importing a H5 file.
+    """
 
 
 class BurstServiceException(ServicesBaseException):
@@ -105,12 +87,10 @@ class BurstServiceException(ServicesBaseException):
     """
 
 
-
 class InvalidPortletConfiguration(ServicesBaseException):
     """
     Exception thrown in cases related to wrong portlet configurations.
     """
-
 
 
 class InvalidSettingsException(ServicesBaseException):
@@ -119,11 +99,8 @@ class InvalidSettingsException(ServicesBaseException):
     """
 
 
-
 class RemoveDataTypeException(ServicesBaseException):
     """
     Exception to be thrown in case some one tries to remove an
     entity that is used by other entities.
     """
-
-

@@ -70,11 +70,11 @@ class EegMonitorModel(ViewModel):
 
 class EegMonitorForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(EegMonitorForm, self).__init__(prefix, project_id)
-        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, self, name='input_data')
-        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, self, name='data_2')
-        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, self, name='data_3')
+    def __init__(self, project_id=None):
+        super(EegMonitorForm, self).__init__(project_id)
+        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, self.project_id, name='input_data')
+        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, self.project_id, name='data_2')
+        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, self.project_id, name='data_3')
 
     @staticmethod
     def get_view_model():
@@ -236,14 +236,14 @@ class EegMonitor(ABCSpaceDisplayer):
         return parameters
 
     def _load_input_indexes(self, view_model):
-        main_time_series_index = self.load_entity_by_gid(view_model.input_data.hex)
+        main_time_series_index = self.load_entity_by_gid(view_model.input_data)
         time_series_index2 = None
         time_series_index3 = None
 
         if view_model.data_2:
-            time_series_index2 = self.load_entity_by_gid(view_model.data_2.hex)
+            time_series_index2 = self.load_entity_by_gid(view_model.data_2)
         if view_model.data_3:
-            time_series_index3 = self.load_entity_by_gid(view_model.data_3.hex)
+            time_series_index3 = self.load_entity_by_gid(view_model.data_3)
         return main_time_series_index, time_series_index2, time_series_index3
 
     def generate_preview(self, view_model, figure_size=None):

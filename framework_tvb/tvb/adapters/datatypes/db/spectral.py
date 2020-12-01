@@ -51,9 +51,15 @@ class FourierSpectrumIndex(DataTypeMatrix):
         super(FourierSpectrumIndex, self).fill_from_has_traits(datatype)
         self.segment_length = datatype.segment_length
         self.windowing_function = datatype.windowing_function
-        self.frequency_step = datatype.frequency_step
-        self.max_frequency = datatype.max_frequency
+        self.frequency_step = datatype.freq_step
+        self.max_frequency = datatype.max_freq
         self.fk_source_gid = datatype.source.gid.hex
+
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
 
 
 class WaveletCoefficientsIndex(DataTypeMatrix):
@@ -80,8 +86,14 @@ class WaveletCoefficientsIndex(DataTypeMatrix):
         self.q_ratio = datatype.q_ratio
         self.sample_period = datatype.sample_period
         self.number_of_scales = datatype.frequencies.shape[0]
-        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
+        self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequencies)
         self.fk_source_gid = datatype.source.gid.hex
+
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
 
 
 class CoherenceSpectrumIndex(DataTypeMatrix):
@@ -100,6 +112,12 @@ class CoherenceSpectrumIndex(DataTypeMatrix):
         self.nfft = datatype.nfft
         self.frequencies_min, self.frequencies_max, _ = from_ndarray(datatype.frequency)
         self.fk_source_gid = datatype.source.gid.hex
+
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
 
 
 class ComplexCoherenceSpectrumIndex(DataTypeMatrix):
@@ -124,3 +142,9 @@ class ComplexCoherenceSpectrumIndex(DataTypeMatrix):
         self.frequency_step = datatype.freq_step
         self.max_frequency = datatype.max_freq
         self.fk_source_gid = datatype.source.gid.hex
+
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict

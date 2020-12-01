@@ -44,7 +44,7 @@ from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.encryption_handler import EncryptionHandler
 
-log = get_logger('tvb.core.operation_hpc_launcher')
+log = get_logger(__name__)
 
 UPDATE_STATUS_KEY = "NEW_STATUS"
 
@@ -72,7 +72,7 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         view_model = h5.load_view_model(simulator_gid, plain_dir)
         adapter_instance = HPCSimulatorAdapter(plain_dir, is_group_launch)
         _update_operation_status(STATUS_STARTED, simulator_gid, operation_id, base_url)
-        adapter_instance._prelaunch(None, None, available_disk_space, view_model)
+        adapter_instance._prelaunch(None, view_model, None, available_disk_space)
         _encrypt_results(adapter_instance, encyrption_handler)
         _update_operation_status(STATUS_FINISHED, simulator_gid, operation_id, base_url)
 

@@ -37,19 +37,20 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 import json
 import uuid
+
 import numpy
-from tvb.basic.neotraits.api import HasTraits, Attr
-from tvb.basic.neotraits.info import narray_describe
-from tvb.core.adapters.abcadapter import ABCAsynchronous, ABCAdapterForm
-from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.time_series import TimeSeries
-from tvb.datatypes.graph import Covariance
-from tvb.core.entities.filters.chain import FilterChain
-from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
+from tvb.basic.neotraits.api import HasTraits, Attr
+from tvb.basic.neotraits.info import narray_describe
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.graph import Covariance
+from tvb.datatypes.time_series import TimeSeries
 
 
 class NodeCovariance(HasTraits):
@@ -73,11 +74,11 @@ class NodeCovarianceAdapterModel(ViewModel, NodeCovariance):
 
 
 class NodeCovarianceAdapterForm(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(NodeCovarianceAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(NodeCovarianceAdapterModel.time_series, self,
-                                                    name=self.get_input_name(),
-                                                    conditions=self.get_filters(), has_all_option=True)
+    def __init__(self, project_id=None):
+        super(NodeCovarianceAdapterForm, self).__init__(project_id)
+        self.time_series = TraitDataTypeSelectField(NodeCovarianceAdapterModel.time_series, self.project_id,
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
 
     @staticmethod
     def get_view_model():
@@ -96,7 +97,7 @@ class NodeCovarianceAdapterForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
 
 
-class NodeCovarianceAdapter(ABCAsynchronous):
+class NodeCovarianceAdapter(ABCAdapter):
     """ TVB adapter for calling the NodeCovariance algorithm. """
     _ui_name = "Temporal covariance of nodes"
     _ui_description = "Compute Temporal Node Covariance for a TimeSeries input DataType."
@@ -113,7 +114,7 @@ class NodeCovarianceAdapter(ABCAsynchronous):
         """
         Store the input shape to be later used to estimate memory usage.
         """
-        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series.hex)
+        self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
                             self.input_time_series_index.data_length_3d,
@@ -165,11 +166,14 @@ class NodeCovarianceAdapter(ABCAsynchronous):
 
         covariance_index.fk_source_gid = self.input_time_series_index.gid
         covariance_index.subtype = type(covariance_index).__name__
-        covariance_index.array_data_min = array_metadata.min
-        covariance_index.array_data_max = array_metadata.max
-        covariance_index.array_data_mean = array_metadata.mean
-        covariance_index.array_is_finite = array_metadata.is_finite
         covariance_index.array_has_complex = array_metadata.has_complex
+
+        if not covariance_index.array_has_complex:
+            covariance_index.array_data_min = float(array_metadata.min)
+            covariance_index.array_data_max = float(array_metadata.max)
+            covariance_index.array_data_mean = float(array_metadata.mean)
+
+        covariance_index.array_is_finite = array_metadata.is_finite
         covariance_index.shape = json.dumps(covariance_h5.array_data.shape)
         covariance_index.ndim = len(covariance_h5.array_data.shape)
         # TODO write this part better, by moving into the Model fill_from...

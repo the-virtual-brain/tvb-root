@@ -44,6 +44,12 @@ class CrossCorrelationIndex(DataTypeMatrix):
 
     labels_ordering = Column(String, nullable=False)
 
+    def get_extra_info(self):
+        labels_dict = {}
+        labels_dict["labels_ordering"] = self.source.labels_ordering
+        labels_dict["labels_dimensions"] = self.source.labels_dimensions
+        return labels_dict
+
     def fill_from_has_traits(self, datatype):
         # type: (CrossCorrelation)  -> None
         super(CrossCorrelationIndex, self).fill_from_has_traits(datatype)

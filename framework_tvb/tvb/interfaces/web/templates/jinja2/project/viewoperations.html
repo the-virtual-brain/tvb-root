@@ -4,9 +4,8 @@
 
     {% macro displayOperationResults(operation_row) -%}
         <!--! Function for displaying a given Operation's result column:
-              - list of icons for results,
-              - expand button in case of a group, or
-              - figures in case of Visualizers with saved images.
+              - list of icons for results, or
+              - expand button in case of a group.
         -->
         {% if operation_row['datatype_group_gid'] is not none %}
             <nav class="inline-menu">
@@ -52,16 +51,6 @@
             </div>
         {% endif %}
 
-        {% if operation_row['figures'] is not none %}
-            {% for figure in operation_row['figures'] %}
-                <div class="image-container">
-                    <a href="/project/figure/displayresultfigures/" title="View this figure in your figure list"
-                       class="action action-crosslink crosslink-s-project crosslink-ss-figures">
-                        <div><img src="/flow/readserverstaticfile/{{ figure.figure_path }}"/></div>
-                    </a>
-                </div>
-            {% endfor %}
-        {% endif %}
     {%- endmacro %}
 
     <form id="operationsForm" method="post" action="/project/viewoperations/{{ selectedProject.id }}">
@@ -194,11 +183,11 @@
 
                                 <td class="control">
                                     <div class="action-block block-player">
-                                        {% if not operation['burst_name'] == '-' %}
-                                            <!--! Part of a burst. Redirect to burst page with this one as selected -->
+                                        {% if operation['algorithm'].algorithm_category.displayname == 'Simulate' %}
+                                            <!--! If simulation. Redirect to burst page with this one as a copy -->
                                             <button tabindex='3' type="submit" class="action action-run"
-                                                    onclick="reloadBurstOperation('{{ op_id }}',
-                                                            {{ is_group }}, 'operationsForm')">Reload
+                                                    onclick="reloadBurstOperation('{{ op_id }}', {{ is_group }}, 'operationsForm')">
+                                                Reload
                                             </button>
                                         {% else %}
                                             {% if (not operation['group']) and (not operation['algorithm'].algorithm_category.displayname == 'Create') and (not operation['algorithm'].algorithm_category.rawinput) %}

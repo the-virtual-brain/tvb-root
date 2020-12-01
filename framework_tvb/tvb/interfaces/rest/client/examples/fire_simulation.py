@@ -103,6 +103,18 @@ def fire_simulation_example(tvb_client_instance):
         operation_gid = tvb_client_instance.launch_operation(project_gid, FourierAdapter, fourier_model)
         logger.info("Fourier Analyzer operation has launched with gid {}".format(operation_gid))
 
+        data_in_project = tvb_client_instance.get_data_in_project(project_gid)
+        logger.info("We have {} datatypes".format(len(data_in_project)))
+
+        for datatype in data_in_project:
+            if datatype.type == 'FourierSpectrum':
+                ggid = datatype.gid
+
+                extra_info = tvb_client_instance.get_extra_info(ggid)
+                logger.info("The extra information for Fourier {}".format(extra_info))
+
+                break
+
         logger.info("Download the connectivity file...")
         connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid, tvb_client_instance.temp_folder)
         logger.info("The connectivity file location is: {}".format(connectivity_path))

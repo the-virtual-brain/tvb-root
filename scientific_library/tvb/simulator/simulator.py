@@ -376,7 +376,7 @@ class Simulator(HasTraits):
             # ...use the integrator's clamp_state
             self.integrator.clamp_state(state)
 
-    def __call__(self, simulation_length=None, random_state=None):
+    def __call__(self, simulation_length=None, random_state=None, n_steps=None):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
 
@@ -384,6 +384,7 @@ class Simulator(HasTraits):
 
         :param simulation_length: Length of the simulation to perform in ms.
         :param random_state:  State of NumPy RNG to use for stochastic integration.
+        :param n_steps: Length of the simulation to perform in integration steps. Overrides simulation_length.
         :return: Iterator over monitor outputs.
         """
 
@@ -401,7 +402,12 @@ class Simulator(HasTraits):
         state = self.current_state
 
         # integration loop
-        n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        if n_steps is None:
+            n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
+        else:
+            if not numpy.issubdtype(type(n_steps), numpy.integer):
+                raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
+
         for step in range(self.current_step + 1, self.current_step + n_steps + 1):
             # needs implementing by hsitory + coupling?
             node_coupling = self._loop_compute_node_coupling(step)
@@ -447,7 +453,7 @@ class Simulator(HasTraits):
             if self.surface is not None and n_node == nr:
                 initial_conditions = initial_conditions[:, :, self._regmap]
                 return self._configure_history(initial_conditions)
-            elif ic_shape[1:] != self.good_history_shape[1:]:
+            elif self.surface is None and ic_shape[1:] != self.good_history_shape[1:]:
                 raise ValueError("Incorrect history sample shape %s, expected %s"
                                  % (ic_shape[1:], self.good_history_shape[1:]))
             else:
@@ -459,7 +465,15 @@ class Simulator(HasTraits):
                     history = self.model.initial(self.integrator.dt, self.good_history_shape, rng)
                     shift = self.current_step % self.horizon
                     history = numpy.roll(history, -shift, axis=0)
-                    history[:ic_shape[0], :, :, :] = initial_conditions
+                    if self.surface is not None:
+                        n_reg = self.connectivity.number_of_regions
+                        (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
+                        region_initial_conditions = numpy.zeros((nt, ns, n_reg, nm))
+                        numpy_add_at(region_initial_conditions.transpose(ax), self._regmap, initial_conditions.transpose(ax))
+                        region_initial_conditions /= numpy.bincount(self._regmap).reshape((-1, 1))
+                        history[:region_initial_conditions.shape[0], :, :, :] = region_initial_conditions
+                    else:
+                        history[:ic_shape[0], :, :, :] = initial_conditions
                     history = numpy.roll(history, shift, axis=0)
                 self.current_step += ic_shape[0] - 1
 
@@ -548,7 +562,8 @@ class Simulator(HasTraits):
         """ Configure the defined Stimuli for this Simulator """
         if self.stimulus is not None:
             if self.surface:
-                self.stimulus.configure_space(self.surface.region_mapping)
+                # NOTE the region mapping of the stimuli should also include the subcortical areas
+                self.stimulus.configure_space(region_mapping=numpy.r_[self.surface.region_mapping, self.connectivity.unmapped_indices(self.surface.region_mapping)])
             else:
                 self.stimulus.configure_space()
 

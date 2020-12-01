@@ -51,10 +51,10 @@ class TestAdapter1Form(abcadapter.ABCAdapterForm):
         This class is used for testing purposes.
     """
 
-    def __init__(self, prefix='', project_id=None):
-        super(TestAdapter1Form, self).__init__(prefix, project_id)
-        self.test1_val1 = IntField(TestModel.test1_val1, self, name='test1_val1')
-        self.test1_val2 = IntField(TestModel.test1_val2, self, name='test1_val2')
+    def __init__(self, project_id=None):
+        super(TestAdapter1Form, self).__init__(project_id)
+        self.test1_val1 = IntField(TestModel.test1_val1, self.project_id, name='test1_val1')
+        self.test1_val2 = IntField(TestModel.test1_val2, self.project_id, name='test1_val2')
 
     @staticmethod
     def get_view_model():
@@ -73,10 +73,11 @@ class TestAdapter1Form(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapter1(abcadapter.ABCSynchronous):
+class TestAdapter1(abcadapter.ABCAdapter):
     """
         This class is used for testing purposes.
     """
+    launch_mode = abcadapter.AdapterLaunchModeEnum.SYNC_SAME_MEM
 
     def __init__(self):
         super(TestAdapter1, self).__init__()
@@ -106,7 +107,7 @@ class TestAdapter1(abcadapter.ABCSynchronous):
 
     def launch(self, view_model):
         """
-        Tests successful launch of an ABCSynchronous adapter
+        Tests successful launch of a synchronous adapter
 
         :param test1_val1: a dummy integer value
         :param test1_val2: a dummy integer value

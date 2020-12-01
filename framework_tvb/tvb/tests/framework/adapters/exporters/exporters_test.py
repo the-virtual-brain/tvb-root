@@ -39,11 +39,9 @@ from contextlib import closing
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -116,7 +114,7 @@ class TestExporters(TransactionalTestCase):
         """
         This method checks export of a data type group
         """
-        datatype_group = datatype_group_factory(project=self.test_project)
+        datatype_group = datatype_group_factory(project=self.test_project, store_vm=True)
         file_name, file_path, _ = self.export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.test_project)
 
         assert file_name is not None, "Export process should return a file name"
@@ -129,10 +127,17 @@ class TestExporters(TransactionalTestCase):
         with closing(zipfile.ZipFile(file_path)) as zip_file:
             list_of_files = zip_file.namelist()
 
+            list_of_folders = []
+            for file in list_of_files:
+                dir_name = os.path.dirname(file)
+                if dir_name not in list_of_folders:
+                    list_of_folders.append(dir_name)
+
             count_datatypes = dao.count_datatypes_in_group(datatype_group.id)
 
-            # Check if ZIP files contains files for data types
-            assert count_datatypes == len(list_of_files)
+            # Check if ZIP files contains files for data types and view models (multiple H5 files in case of a Sim)
+            assert count_datatypes == len(list_of_folders)
+            assert count_datatypes * 6 == len(list_of_files)
 
     def test_export_with_invalid_data(self, dummy_datatype_index_factory):
         """
@@ -174,21 +179,16 @@ class TestExporters(TransactionalTestCase):
         # Now check if the generated file is a correct ZIP file
         assert zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file"
 
-    def test_export_simulator_configuration(self, operation_factory, connectivity_factory):
+    def test_export_simulator_configuration(self, operation_factory):
         """
         Test export of a simulator configuration
         """
-        operation = operation_factory()
-        simulator = SimulatorAdapterModel()
-        simulator.connectivity = connectivity_factory(4).gid
+        operation = operation_factory(is_simulation=True, store_vm=True)
 
         burst_configuration = BurstConfiguration(self.test_project.id)
         burst_configuration.fk_simulation = operation.id
-        burst_configuration.simulator_gid = simulator.gid.hex
+        burst_configuration.simulator_gid = operation.view_model_gid
         burst_configuration = dao.store_entity(burst_configuration)
-
-        storage_path = FilesHelper().get_project_folder(self.test_project, str(operation.id))
-        h5.store_view_model(simulator, storage_path)
 
         export_file = self.export_manager.export_simulator_configuration(burst_configuration.id)
 

@@ -32,10 +32,10 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neotraits.h5 import MEMORY_STRING
@@ -63,12 +63,12 @@ class SensorsImporterModel(UploaderViewModel):
 
 class SensorsImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SensorsImporterForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(SensorsImporterForm, self).__init__(project_id)
 
-        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, ('.txt', '.bz2'), self,
-                                             name='sensors_file')
-        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self, name='sensors_type',
+        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, ('.txt', '.bz2'), self.project_id,
+                                             'sensors_file', self.temporary_files)
+        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self.project_id, name='sensors_type',
                                         choices=SensorsImporterModel.OPTIONS)
 
     @staticmethod

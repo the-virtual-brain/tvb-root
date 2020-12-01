@@ -111,31 +111,24 @@ class ConnectivityViewerModel(ViewModel):
 
 class ConnectivityViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityViewerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ConnectivityViewerForm, self).__init__(project_id)
 
-        # filters_ui = [UIFilter(linked_elem_name="colors",
-        #                        linked_elem_field=FilterChain.datatype + "._connectivity"),
-        #               UIFilter(linked_elem_name="rays",
-        #                        linked_elem_field=FilterChain.datatype + "._connectivity")]
-        # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
-        # KWARG_FILTERS_UI: json_ui_filter
-
-        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, self, name='input_data',
-                                                     conditions=self.get_filters())
+        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, self.project_id,
+                                                     name='input_data', conditions=self.get_filters())
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
-        self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, self, name='surface_data',
-                                                     conditions=surface_conditions)
+        self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, self.project_id,
+                                                     name='surface_data', conditions=surface_conditions)
 
-        self.step = FloatField(ConnectivityViewerModel.step, self, name='step')
+        self.step = FloatField(ConnectivityViewerModel.step, self.project_id, name='step')
 
         colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, self, name='colors',
+        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, self.project_id, name='colors',
                                                conditions=colors_conditions)
 
         rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, self, name='rays',
+        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, self.project_id, name='rays',
                                              conditions=rays_conditions)
 
     @staticmethod
@@ -171,7 +164,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         """
         Return the required memory to run this algorithm.
         """
-        surface_index = self.load_entity_by_gid(view_model.surface_data.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface_data)
         if surface_index is not None:
             # Nr of triangles * sizeOf(uint16) + (nr of vertices + nr of normals) * sizeOf(float)
             return surface_index.number_of_vertices * 6 * 4 + surface_index.number_of_vertices * 6 * 8
@@ -284,7 +277,9 @@ class ConnectivityViewer(ABCSpaceDisplayer):
                              pointsLabels=connectivity.ordered_labels, conductionSpeed=1,
                              connectivity_entity=connectivity,
                              base_selection=connectivity.saved_selection_labels,
-                             hemisphereOrderUrl=path_hemisphere_order_indices)
+                             hemisphereOrderUrl=path_hemisphere_order_indices,
+                             leftHemisphereCount=(connectivity.hemispheres == 0).sum()
+                             )
         global_params.update(self.build_params_for_selectable_connectivity(connectivity))
         return global_params, global_pages
 
@@ -371,18 +366,27 @@ class Connectivity2DViewer(object):
         if input_data.number_of_regions <= 3:
             raise LaunchException('The connectivity matrix you selected has fewer nodes than acceptable for display!')
 
-        half = input_data.number_of_regions // 2
         normalized_weights = self._normalize_weights(input_data.ordered_weights)
-        weights = Connectivity2DViewer._get_weights(normalized_weights)
+        weights = Connectivity2DViewer._get_weights(normalized_weights, input_data.hemispheres)
 
         # Compute shapes and colors ad adjacent data
         norm_rays, min_ray, max_ray = self._normalize_rays(rays, input_data.number_of_regions)
         colors, step = self._prepare_colors(colors, input_data.number_of_regions, step)
 
-        right_json = self._get_json(input_data.ordered_labels[half:], input_data.ordered_centres[half:], weights[1],
-                                    math.pi, 1, 2, norm_rays[half:], colors[half:], X_CANVAS_SMALL, Y_CANVAS_SMALL)
-        left_json = self._get_json(input_data.ordered_labels[:half], input_data.ordered_centres[:half], weights[0],
-                                   math.pi, 1, 2, norm_rays[:half], colors[:half], X_CANVAS_SMALL, Y_CANVAS_SMALL)
+        if numpy.all((input_data.hemispheres == False)):
+            right_json = ""
+        else:
+            right_json = self._get_json(input_data.ordered_labels[input_data.hemispheres],
+                                        input_data.ordered_centres[input_data.hemispheres], weights[1],
+                                        math.pi, 1, 2, numpy.asarray(norm_rays)[input_data.hemispheres],
+                                        numpy.asarray(colors)[input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
+        if numpy.all((input_data.hemispheres == True)):
+            left_json = ""
+        else:
+            left_json = self._get_json(input_data.ordered_labels[~input_data.hemispheres],
+                                       input_data.ordered_centres[~input_data.hemispheres], weights[0],
+                                       math.pi, 1, 2, numpy.asarray(norm_rays)[~input_data.hemispheres],
+                                       numpy.asarray(colors)[~input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
         full_json = self._get_json(input_data.ordered_labels, input_data.ordered_centres, normalized_weights,
                                    math.pi, 0, 1, norm_rays, colors, X_CANVAS_FULL, Y_CANVAS_FULL)
 
@@ -438,20 +442,19 @@ class Connectivity2DViewer(object):
         return json.dumps(result_json)
 
     @staticmethod
-    def _get_weights(weights):
+    def _get_weights(weights, hemispheres):
         """
         Method used for calculating the weights for the right and for the 
         left hemispheres. Those matrixes are obtained from
         a weights matrix which contains data related to both hemispheres.
         """
-        half = len(weights) // 2
-        l_aux, r_aux = weights[:half], weights[half:]
+        l_aux, r_aux = weights[~hemispheres], weights[hemispheres]
         r_weights = []
         l_weights = []
-        for i in range(half):
-            l_weights.append(l_aux[i][:half])
-        for i in range(half, len(weights)):
-            r_weights.append(r_aux[i - half][half:])
+        for i in range(len(l_aux)):
+            l_weights.append(l_aux[i][~hemispheres])
+        for i in range(len(l_aux), len(weights)):
+            r_weights.append(r_aux[i - len(l_aux)][hemispheres])
         return l_weights, r_weights
 
     def point2json(self, node_lbl, x_coord, y_coord, adjacencies, angle, shape_dimension, shape_color):

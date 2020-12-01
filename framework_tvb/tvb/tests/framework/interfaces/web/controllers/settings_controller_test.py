@@ -142,8 +142,14 @@ class TestSettingsController(BaseTransactionalControllerTest):
             assert key in response[common.KEY_ERRORS], "Not found in errors %s" % key
 
     def test_with_valid_settings(self):
-
+        # Ensure we submit acceptable values, depending on the current profile (set-up after fixtures execution)
         submit_data = copy.copy(self.VALID_SETTINGS)
+        accepted_db_url = ('sqlite:///TestFolder' + os.path.sep + 'tvb-database.db'
+                           if TvbProfile.current.db.SELECTED_DB == 'sqlite'
+                           else TvbProfile.current.db.DB_URL)
+        submit_data['SELECTED_DB'] = TvbProfile.current.db.SELECTED_DB
+        submit_data['URL_VALUE'] = accepted_db_url
+
         self.settings_c._restart_services = self._fake_restart_services
 
         with pytest.raises(cherrypy.HTTPRedirect):

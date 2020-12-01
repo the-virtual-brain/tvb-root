@@ -50,32 +50,37 @@ from tvb.core.entities.storage.exceptions import NestedTransactionUnsupported, I
 
 LOGGER = get_logger(__name__)
 
-if TvbProfile.current.db.SELECTED_DB == 'postgres':
-    ### Control the pool size for PostgreSQL, otherwise we might end with multiple 
-    ### concurrent Python processes failing because of too many opened connections.
-    DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, max_overflow=1,
-                              pool_size=TvbProfile.current.db.MAX_CONNECTIONS)
-else:
-    ### SqlLite does not support pool-size
-    DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5)
 
-    def __have_journal_in_memory(con, con_record):
-        con.execute("PRAGMA journal_mode = MEMORY")
-        con.execute("PRAGMA synchronous = OFF")
-        con.execute("PRAGMA temp_store = MEMORY")
-        con.execute("PRAGMA cache_size = 500000")
-
-    def __have_journal_WAL(con, con_record):
-        con.execute("PRAGMA journal_mode=WAL")
-
-    if getattr(TvbProfile.current, "TRADE_CRASH_SAFETY_FOR_SPEED", False):
-        # use for speed, but without crash safety; use only in development
-        LOGGER.warning("TRADE_CRASH_SAFETY_FOR_SPEED is on")
-        event.listen(DB_ENGINE, 'connect', __have_journal_in_memory)
+def build_db_engine():
+    if TvbProfile.current.db.SELECTED_DB == 'postgres':
+        ### Control the pool size for PostgreSQL, otherwise we might end with multiple
+        ### concurrent Python processes failing because of too many opened connections.
+        DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, max_overflow=1,
+                                  pool_size=TvbProfile.current.db.MAX_CONNECTIONS)
     else:
-        event.listen(DB_ENGINE, 'connect', __have_journal_WAL)
+        ### SqlLite does not support pool-size
+        DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5)
 
-SA_SESSIONMAKER = sessionmaker(bind=DB_ENGINE, expire_on_commit=False)
+        def __have_journal_in_memory(con, con_record):
+            con.execute("PRAGMA journal_mode = MEMORY")
+            con.execute("PRAGMA synchronous = OFF")
+            con.execute("PRAGMA temp_store = MEMORY")
+            con.execute("PRAGMA cache_size = 500000")
+
+        def __have_journal_WAL(con, con_record):
+            con.execute("PRAGMA journal_mode=WAL")
+
+        if getattr(TvbProfile.current, "TRADE_CRASH_SAFETY_FOR_SPEED", False):
+            # use for speed, but without crash safety; use only in development
+            LOGGER.warning("TRADE_CRASH_SAFETY_FOR_SPEED is on")
+            event.listen(DB_ENGINE, 'connect', __have_journal_in_memory)
+        else:
+            event.listen(DB_ENGINE, 'connect', __have_journal_WAL)
+
+    return DB_ENGINE
+
+
+SA_SESSIONMAKER = sessionmaker(bind=build_db_engine(), expire_on_commit=False)
 
 # expire_on_commit – Defaults to True. When True, all instances will be fully expired after each commit(),
 #           so that all attribute/object access subsequent to a completed transaction will need to load

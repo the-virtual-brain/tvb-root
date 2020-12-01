@@ -36,9 +36,8 @@ Here we define entities for Operations and Algorithms.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
-import datetime
 import json
-
+from datetime import datetime
 from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
 from sqlalchemy.orm import relationship, backref
 from tvb.basic.logger.builder import get_logger
@@ -172,7 +171,7 @@ class OperationGroup(Base, Exportable):
     fk_launched_in = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
     project = relationship(Project, backref=backref('OPERATION_GROUPS', order_by=id, cascade="all,delete"))
 
-    def __init__(self, project_id, name='incomplete', ranges=None):
+    def __init__(self, project_id, name='incomplete', ranges=None, gid=None):
         self.name = name
         if ranges:
             if len(ranges) > 0:
@@ -181,7 +180,7 @@ class OperationGroup(Base, Exportable):
                 self.range2 = ranges[1]
             if len(ranges) > 2:
                 self.range3 = ranges[2]
-        self.gid = generate_guid()
+        self.gid = gid or generate_guid()
         self.fk_launched_in = project_id
 
     def __repr__(self):
@@ -212,7 +211,7 @@ class OperationGroup(Base, Exportable):
             range_param3 = RangeParameter.from_json(self.range3)
             new_name += " x " + range_param3.name
 
-        new_name += " - " + date2string(datetime.datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
+        new_name += " - " + date2string(datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
         self.name = new_name
 
 
@@ -243,8 +242,7 @@ class Operation(Base, Exportable):
     fk_from_algo = Column(Integer, ForeignKey('ALGORITHMS.id'))
     fk_operation_group = Column(Integer, ForeignKey('OPERATION_GROUPS.id', ondelete="CASCADE"), default=None)
     gid = Column(String)
-    parameters = Column(String)
-    meta_data = Column(String)
+    view_model_gid = Column(String)
     create_date = Column(DateTime)  # Date at which the user generated this entity
     start_date = Column(DateTime)  # Actual time when the operation executions is started (without queue time)
     completion_date = Column(DateTime)  # Time when the operation got status FINISHED/ ERROR or CANCEL set.
@@ -254,21 +252,21 @@ class Operation(Base, Exportable):
     user_group = Column(String, default=None)
     range_values = Column(String, default=None)
     estimated_disk_size = Column(Integer)
+    view_model_disk_size = Column(Integer, default=0)
 
     algorithm = relationship(Algorithm)
     project = relationship(Project, backref=backref('OPERATIONS', order_by=id, cascade="all,delete"))
     operation_group = relationship(OperationGroup)
     user = relationship(User)
 
-    def __init__(self, fk_launched_by, fk_launched_in, fk_from_algo, parameters, meta='',
+    def __init__(self, view_model_gid, fk_launched_by, fk_launched_in, fk_from_algo,
                  status=STATUS_PENDING, start_date=None, completion_date=None, op_group_id=None, additional_info='',
                  user_group=None, range_values=None, estimated_disk_size=0):
         self.fk_launched_by = fk_launched_by
         self.fk_launched_in = fk_launched_in
         self.fk_from_algo = fk_from_algo
-        self.parameters = parameters
-        self.meta_data = meta
-        self.create_date = datetime.datetime.now()
+        self.view_model_gid = view_model_gid
+        self.create_date = datetime.now()
         self.start_date = start_date
         self.completion_date = completion_date
         self.status = status
@@ -281,19 +279,19 @@ class Operation(Base, Exportable):
         self.estimated_disk_size = estimated_disk_size
 
     def __repr__(self):
-        return "<Operation(%s, %s,'%s','%s','%s','%s', '%s','%s',%s, '%s')>" \
-               % (self.fk_launched_by, self.fk_launched_in, self.fk_from_algo, self.parameters,
-                  self.meta_data, self.status, self.start_date, self.completion_date,
-                  self.fk_operation_group, self.user_group)
+        return "<Operation('%s', %s, %s,'%s','%s','%s','%s', '%s','%s',%s, '%s', '%s', '%s', %s)>" \
+               % (self.view_model_gid, self.gid, self.fk_launched_by, self.fk_launched_in, self.fk_from_algo,
+                  self.create_date, self.start_date, self.completion_date, self.status, self.visible,
+                  self.fk_operation_group, self.user_group, self.additional_info, self.estimated_disk_size)
 
     def start_now(self):
         """ Update Operation fields at startup: Status and Date"""
-        self.start_date = datetime.datetime.now()
+        self.start_date = datetime.now()
         self.status = STATUS_STARTED
 
     def mark_complete(self, status, additional_info=None):
         """ Update Operation fields on completion: Status and Date"""
-        self.completion_date = datetime.datetime.now()
+        self.completion_date = datetime.now()
         if additional_info is not None:
             self.additional_info = additional_info
         self.status = status
@@ -375,7 +373,6 @@ class Operation(Base, Exportable):
             self.operation_group = None
             self.fk_operation_group = None
 
-        self.parameters = dictionary['parameters']
         self.meta_data = dictionary['meta_data']
         self.create_date = string2date(dictionary['create_date'])
         if dictionary['start_date'] != "None":
@@ -389,7 +386,7 @@ class Operation(Base, Exportable):
         self.additional_info = dictionary['additional_info']
         self.gid = dictionary['gid']
 
-        return self
+        return self, dictionary['parameters'], dictionary['fk_from_algo']
 
     def _parse_status(self, status):
         """
@@ -436,18 +433,15 @@ class ResultFigure(Base, Exportable):
     __tablename__ = 'RESULT_FIGURES'
 
     id = Column(Integer, primary_key=True)
-    fk_from_operation = Column(Integer, ForeignKey('OPERATIONS.id', ondelete="CASCADE"))
     fk_for_user = Column(Integer, ForeignKey('USERS.id', ondelete="CASCADE"))
     fk_in_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
     project = relationship(Project, backref=backref('RESULT_FIGURES', order_by=id, cascade="delete"))
-    operation = relationship(Operation, backref=backref('RESULT_FIGURES', order_by=id, cascade="delete"))
     session_name = Column(String)
     name = Column(String)
     file_path = Column(String)
     file_format = Column(String)
 
-    def __init__(self, operation_id, user_id, project_id, session_name, name, path, file_format="PNG"):
-        self.fk_from_operation = operation_id
+    def __init__(self, user_id, project_id, session_name, name, path, file_format="PNG"):
         self.fk_for_user = user_id
         self.fk_in_project = project_id
         self.session_name = session_name
@@ -456,17 +450,14 @@ class ResultFigure(Base, Exportable):
         self.file_format = file_format.lower()  # some platforms have difficulties if it's not lower case
 
     def __repr__(self):
-        return "<ResultFigure(%s, %s, %s, %s, %s, %s, %s)>" % (self.fk_from_operation, self.fk_for_user,
-                                                               self.fk_in_project, self.session_name, self.name,
-                                                               self.file_path, self.file_format)
+        return "<ResultFigure(%s, %s, %s, %s, %s, %s)>" % (self.fk_for_user, self.fk_in_project, self.session_name,
+                                                           self.name, self.file_path, self.file_format)
 
     def to_dict(self):
         """
         Overwrite superclass method with required additional data.
         """
-        _, base_dict = super(ResultFigure, self).to_dict(excludes=['id', 'fk_from_operation', 'fk_for_user',
-                                                                   'fk_in_project', 'operation', 'project'])
-        base_dict['fk_from_operation'] = self.operation.gid if self.operation is not None else None
+        _, base_dict = super(ResultFigure, self).to_dict(excludes=['id', 'fk_for_user', 'fk_in_project', 'project'])
         base_dict['fk_in_project'] = self.project.gid
         return self.__class__.__name__, base_dict
 
@@ -474,7 +465,6 @@ class ResultFigure(Base, Exportable):
         """
         Add specific attributes from a input dictionary.
         """
-        self.fk_from_operation = dictionary['fk_op_id']
         self.fk_for_user = dictionary['fk_user_id']
         self.fk_in_project = dictionary['fk_project_id']
         self.session_name = dictionary['session_name']

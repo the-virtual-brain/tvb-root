@@ -37,18 +37,17 @@
 import os
 import shutil
 import pytest
-from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.load import get_filtered_datatypes, load_entity_by_gid
 from tvb.core.services.exceptions import OperationException
-from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
-class TestTVBImporter(TransactionalTestCase):
+class TestTVBImporter(BaseTestCase):
     """
     Unit-tests for TVB importer.
     """
@@ -89,17 +88,18 @@ class TestTVBImporter(TransactionalTestCase):
         self.test_user = user_factory()
         self.test_project = project_factory(self.test_user)
 
-    def transactional_teardown_method(self):
+    def teardown_method(self):
         """
         Clean-up tests data
         """
+        self.clean_database()
         FilesHelper().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_path=None):
 
         view_model = TVBImporterModel()
         view_model.data_file = import_file_path
-        TestFactory.launch_importer(TVBImporter, view_model, self.test_user, self.test_project.id)
+        TestFactory.launch_importer(TVBImporter, view_model, self.test_user, self.test_project, False)
 
     def test_zip_import(self, prepare_importer_data):
         """
@@ -121,7 +121,7 @@ class TestTVBImporter(TransactionalTestCase):
         assert 1, len(data_types) == "Project should contain only one data type."
         assert 1, count == "Project should contain only one data type."
 
-        data_type_entity = ABCAdapter.load_entity_by_gid(data_types[0][2])
+        data_type_entity = load_entity_by_gid(data_types[0][2])
         assert data_type_entity is not None, "Datatype should not be none"
         assert self.datatype.gid, data_type_entity.gid == "Imported datatype should have the same gid"
 

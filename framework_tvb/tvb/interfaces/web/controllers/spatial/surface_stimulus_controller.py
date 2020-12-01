@@ -42,34 +42,35 @@ from tvb.adapters.datatypes.h5.patterns_h5 import StimuliSurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
-from tvb.core.entities.load import try_get_last_datatype
+from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import Form, SimpleFloatField
+from tvb.core.neotraits.forms import Form, FloatField
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
+from tvb.basic.neotraits.api import Float
+
 
 LOAD_EXISTING_URL = '/spatial/stimulus/surface/load_surface_stimulus'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/surface/reload_default'
 CHUNK_SIZE = 20
 
 KEY_SURFACE_STIMULI = "stim-surface"
-KEY_SURFACE_STIMULI_NAME = "stim-surface-name"
 KEY_TMP_FORM = "temporal-form"
 
 
 class EquationTemporalPlotForm(Form):
     def __init__(self):
         super(EquationTemporalPlotForm, self).__init__()
-        self.min_tmp_x = SimpleFloatField(self, name='min_tmp_x', label='Temporal Start Time(ms)', default=0,
-                                          doc="The minimum value of the x-axis for temporal equation plot. "
-                                              "Not persisted, used only for visualization.")
-        self.max_tmp_x = SimpleFloatField(self, name='max_tmp_x', label='Temporal End Time(ms)', default=100,
-                                          doc="The maximum value of the x-axis for temporal equation plot. "
-                                              "Not persisted, used only for visualization.")
+        self.min_tmp_x = FloatField(Float(label='Temporal Start Time(ms)', default=0, doc="The minimum value of the "
+                                                "x-axis for temporal equation plot. Not persisted, used only for "
+                                                "visualization."), self.project_id, name='min_tmp_x')
+        self.max_tmp_x = FloatField(Float(label='Temporal End Time(ms)', default=100, doc="The maximum value of the"
+                                                " x-axis for temporal equation plot. Not persisted, used only for"
+                                                " visualization."), self.project_id, name='max_tmp_x')
 
     def fill_from_post(self, form_data):
         if self.min_tmp_x.name in form_data:
@@ -81,10 +82,10 @@ class EquationTemporalPlotForm(Form):
 class EquationSpatialPlotForm(Form):
     def __init__(self):
         super(EquationSpatialPlotForm, self).__init__()
-        self.min_space_x = SimpleFloatField(self, name='min_space_x', label='Spatial Start Distance(mm)', default=0,
-                                            doc="The minimum value of the x-axis for spatial equation plot.")
-        self.max_space_x = SimpleFloatField(self, name='max_space_x', label='Spatial End Distance(mm)', default=100,
-                                            doc="The maximum value of the x-axis for spatial equation plot.")
+        self.min_space_x = FloatField(Float(label='Spatial Start Distance(mm)', default=0, doc="The minimum value of"
+                                            " the x-axis for spatial equation plot."), self.project_id, name='min_space_x')
+        self.max_space_x = FloatField(Float(label='Spatial End Distance(mm)', default=100, doc="The maximum value of "
+                                            "the x-axis for spatial equation plot."), self.project_id, name='max_space_x')
 
     def fill_from_post(self, form_data):
         if self.min_space_x.name in form_data:
@@ -154,7 +155,8 @@ class SurfaceStimulusController(SpatioTemporalController):
         display_name_form_field = StimulusSurfaceSelectorForm(common.get_current_project().id).display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
-            common.add2session(KEY_SURFACE_STIMULI_NAME, display_name_form_field.value)
+            current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
+            current_surface_stim.display_name = display_name_form_field.value
 
     def step_1(self):
         """
@@ -174,7 +176,7 @@ class SurfaceStimulusController(SpatioTemporalController):
             else:
                 current_surface_stim.surface = uuid.UUID(default_surface_index.gid)
         surface_stim_creator_form.fill_from_trait(current_surface_stim)
-        surface_stim_selector_form.display_name.data = common.get_from_session(KEY_SURFACE_STIMULI_NAME)
+        surface_stim_selector_form.display_name.data = current_surface_stim.display_name
 
         template_specification = dict(title="Spatio temporal - Surface stimulus")
         template_specification['surfaceStimulusSelectForm'] = self.render_spatial_form(surface_stim_selector_form)
@@ -198,7 +200,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         template_specification = dict(title="Spatio temporal - Surface stimulus")
         surface_stim_selector_form = StimulusSurfaceSelectorForm(common.get_current_project().id)
-        surface_stim_selector_form.display_name.data = common.get_from_session(KEY_SURFACE_STIMULI_NAME)
+        surface_stim_selector_form.display_name.data = current_surface_stim.display_name
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
         template_specification['surfaceStimulusSelectForm'] = self.render_adapter_form(surface_stim_selector_form)
         template_specification['mainContent'] = 'spatial/stimulus_surface_step2_main'
@@ -242,7 +244,6 @@ class SurfaceStimulusController(SpatioTemporalController):
         new_surface_stim.spatial = SurfaceStimulusCreatorForm.default_spatial()
         self._reset_focal_points(new_surface_stim)
         common.add2session(KEY_SURFACE_STIMULI, new_surface_stim)
-        common.add2session(KEY_SURFACE_STIMULI_NAME, None)
         common.add2session(KEY_TMP_FORM, EquationTemporalPlotForm())
 
     @expose_page
@@ -290,16 +291,16 @@ class SurfaceStimulusController(SpatioTemporalController):
         """
         Loads the interface for the selected surface stimulus.
         """
-        surface_stim_index = ABCAdapter.load_entity_by_gid(surface_stimulus_gid)
+        surface_stim_index = load_entity_by_gid(surface_stimulus_gid)
         surface_stim_h5_path = h5.path_for_stored_index(surface_stim_index)
         existent_surface_stim = SurfaceStimulusCreatorModel()
         with StimuliSurfaceH5(surface_stim_h5_path) as surface_stim_h5:
             surface_stim_h5.load_into(existent_surface_stim)
 
         existent_surface_stim.surface = uuid.UUID(surface_stim_index.fk_surface_gid)
+        existent_surface_stim.display_name = surface_stim_index.user_tag_1
 
         common.add2session(KEY_SURFACE_STIMULI, existent_surface_stim)
-        common.add2session(KEY_SURFACE_STIMULI_NAME, surface_stim_index.user_tag_1)
         return self.do_step(from_step)
 
     @expose_page

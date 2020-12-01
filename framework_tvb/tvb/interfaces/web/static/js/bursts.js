@@ -62,9 +62,43 @@ function resetToNewBurst() {
             displayMessage("Completely new configuration loaded!");
             changeBurstHistory(null, true);
             $("button.btn-next").first().focus();
+            setupMenuEvents();
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
+        }
+    });
+}
+
+/*
+ * When clicking the branch button on a burst-history entry, a clone of that burst is prepared.
+ */
+function branchBurst(burstID, first_wizzard_form_url) {
+    doAjaxCall({
+        type: "POST",
+        url: '/burst/get_last_fragment_url/' + burstID,
+        showBlockerOverlay: true,
+        success: function (response) {
+            stop_at_url = response;
+            doAjaxCall({
+                type: "POST",
+                url: '/burst/branch_simulator_configuration/' + burstID,
+                showBlockerOverlay: true,
+                success: function (response) {
+                    let simParamElem = $("#div-simulator-parameters");
+                    simParamElem.html(response);
+                    renderAllSimulatorForms(first_wizzard_form_url, stop_at_url, function() {
+                        const newName = $("#input_simulation_name_id").val();
+                        fill_burst_name(newName, false);
+                    });
+                    changeBurstHistory(null, true);
+                    displayBurstTree(undefined);
+                    displayMessage("A copy of previous simulation was prepared for you!");
+                },
+                error: function () {
+                    displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
+                }
+            });
         }
     });
 }
@@ -125,6 +159,7 @@ function renderAllSimulatorForms(url, stop_at_url = '', onFinishFunction = null)
             onFinishFunction();
         }
     }
+    setupMenuEvents();
 }
 
 /*
@@ -380,7 +415,8 @@ function _computeRangeNumberForParamPrefix(prefix){
         return _getRangeValueForGuidParameter(pse_param_guid);
     }
 
-    return 1;
+    // We don't have a value chosen for this range param
+    return 0;
 }
 
 function _displayPseSimulationMessage() {
@@ -391,6 +427,19 @@ function _displayPseSimulationMessage() {
     pse_param2_number = _computeRangeNumberForParamPrefix('pse_param2');
 
     let nrOps = pse_param1_number * pse_param2_number;
+
+    // Only the first range been chosen
+    if(nrOps == 0){
+        nrOps = pse_param1_number;
+    }else{
+        if(pse_param1_number == 1 || pse_param2_number == 1){
+            message = "Can't launch PSE when one of the parameters has only one value," +
+                " instead of a range of values!";
+            displayMessage(message, "errorMessage");
+            throw message;
+        }
+    }
+
     let className = "infoMessage";
 
     if (nrOps > THREASHOLD_WARNING) {
@@ -402,6 +451,10 @@ function _displayPseSimulationMessage() {
     if (nrOps > 1) {
         // Unless greater than 1, it is not a range, so do not display a possible confusing message.
         displayMessage("Range configuration: " + nrOps + " operations.", className);
+    }else{
+        message = "Can't launch PSE with only one  operation!"
+        displayMessage(message, "errorMessage");
+        throw message;
     }
 }
 
@@ -624,7 +677,9 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     if (config_branch_button != null){
         config_branch_button.style.visibility = 'visible';
     }
-    fieldset.disabled = false;
+    if (fieldset.className == "") {
+        fieldset.disabled = false;
+    }
     setInitialFocusOnButton(simulator_params);
 }
 
@@ -632,7 +687,16 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
+    var fieldset = currentForm.elements[0];
+    var disabledFieldset = false
+    if (fieldset.hasAttribute('disabled')) {
+        disabledFieldset = true
+        $(fieldset).removeAttr('disabled')
+    }
     var form_data = $(currentForm).serialize(); //Encode form elements for submission
+    if (disabledFieldset){
+        $(fieldset).attr('disabled', 'disabled')
+    }
     var next_button = currentForm.elements.namedItem('next');
     var previous_button = currentForm.elements.namedItem('previous');
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
@@ -685,6 +749,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 simulator_params.appendChild(t);
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
                 setInitialFocusOnButton(simulator_params);
+                setupMenuEvents();
             }
         }
     })

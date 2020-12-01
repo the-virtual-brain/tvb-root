@@ -36,7 +36,7 @@ setup(
     name='tvb_build',
     packages=find_packages(),
     version="2.0",
-    license="GPL v3",
+    license="GPL-3.0-or-later",
     author="TVB Team",
     install_requires=['tvb-library', 'tvb-framework', 'tvb-data']
 )

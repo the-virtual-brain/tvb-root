@@ -33,9 +33,10 @@
 """
 import os
 import shutil
-
 import numpy
+import pytest
 from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
+from tvb.basic.config.settings import HPCSettings
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
 from tvb.core.entities.storage import dao
@@ -56,6 +57,7 @@ def _request_passfile_dummy(simulator_gid, op_id, base_url, passfile_folder):
     pass
 
 
+@pytest.mark.skipif(not HPCSettings.CAN_RUN_HPC, reason="pyunicore not installed")
 class TestHPCSchedulerClient(BaseTestCase):
 
     def setup_method(self):
@@ -112,23 +114,10 @@ class TestHPCSchedulerClient(BaseTestCase):
         # Prepare encrypted dir
         op = operation_factory(test_user=self.test_user, test_project=self.test_project)
         sim_folder, sim_gid = simulator_factory(op=op)
-        self.encryption_handler = EncryptionHandler(sim_gid)
-        job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
-        self.encryption_handler.encrypt_inputs(job_encrypted_inputs)
-        encrypted_dir = self.encryption_handler.get_encrypted_dir()
 
-        mocker.patch('tvb.core.operation_hpc_launcher._request_passfile', _request_passfile_dummy)
-        mocker.patch('tvb.core.operation_hpc_launcher._update_operation_status', _update_operation_status)
+        self._do_operation_launch(op, sim_gid, mocker)
 
-        # Call do_operation_launch similarly to CSCS env
-        plain_dir = self.files_helper.get_project_folder(self.test_project, 'plain')
-        do_operation_launch(sim_gid.hex, 1000, False, '', op.id, plain_dir)
-        assert len(os.listdir(encrypted_dir)) == 7
-        output_path = os.path.join(encrypted_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
-        assert os.path.exists(output_path)
-        assert len(os.listdir(output_path)) == 2
-
-    def _do_operation_launch_pse(self, op, sim_gid, mocker):
+    def _do_operation_launch(self, op, sim_gid, mocker, is_pse=False):
         # Prepare encrypted dir
         self.encryption_handler = EncryptionHandler(sim_gid)
         job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
@@ -140,17 +129,20 @@ class TestHPCSchedulerClient(BaseTestCase):
 
         # Call do_operation_launch similarly to CSCS env
         plain_dir = self.files_helper.get_project_folder(self.test_project, 'plain')
-        do_operation_launch(sim_gid.hex, 1000, True, '', op.id, plain_dir)
+        do_operation_launch(sim_gid.hex, 1000, is_pse, '', op.id, plain_dir)
         assert len(os.listdir(encrypted_dir)) == 7
         output_path = os.path.join(encrypted_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
         assert os.path.exists(output_path)
-        assert len(os.listdir(output_path)) == 2
+        expected_files = 2
+        if is_pse:
+            expected_files = 3
+        assert len(os.listdir(output_path)) == expected_files
         return output_path
 
     def test_do_operation_launch_pse(self, simulator_factory, operation_factory, mocker):
         op = operation_factory(test_user=self.test_user, test_project=self.test_project)
         sim_folder, sim_gid = simulator_factory(op=op)
-        self._do_operation_launch_pse(op, sim_gid, mocker)
+        self._do_operation_launch(op, sim_gid, mocker, is_pse=True)
 
     def test_prepare_inputs(self, operation_factory, simulator_factory):
         op = operation_factory(test_user=self.test_user, test_project=self.test_project)
@@ -201,7 +193,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         burst.simulator_gid = sim_gid.hex
         dao.store_entity(burst)
 
-        output_path = self._do_operation_launch_pse(op, sim_gid, mocker)
+        output_path = self._do_operation_launch(op, sim_gid, mocker, is_pse=True)
 
         def _stage_out_dummy(dir, sim_gid):
             return [os.path.join(output_path, enc_file) for enc_file in os.listdir(output_path)]

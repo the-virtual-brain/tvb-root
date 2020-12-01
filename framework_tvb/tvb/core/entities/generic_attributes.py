@@ -28,22 +28,28 @@
 #
 #
 
+"""
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+"""
+
 
 class GenericAttributes(object):
     """
     Model class to hold generic attributes that we want to keep on all H5 file that correspond to a datatype.
-    It is used by the H5File in order to populate the corresponding H5 attributes (meta-data).
+    It is used by the H5 File in order to populate the corresponding H5 attributes (meta-data).
     """
     invalid = False
     is_nan = False
     subject = ''
     state = ''
-    type = ''
     user_tag_1 = ''
     user_tag_2 = ''
     user_tag_3 = ''
     user_tag_4 = ''
     user_tag_5 = ''
+    operation_tag = ''
+    parent_burst = None
     visible = True
     create_date = None
 
@@ -53,10 +59,11 @@ class GenericAttributes(object):
         self.is_nan = extra_attributes.is_nan
         self.subject = extra_attributes.subject or self.subject
         self.state = extra_attributes.state or self.state
-        self.type = extra_attributes.type or self.type
         self.user_tag_1 = extra_attributes.user_tag_1 or self.user_tag_1
         self.user_tag_2 = extra_attributes.user_tag_2 or self.user_tag_2
         self.user_tag_3 = extra_attributes.user_tag_3 or self.user_tag_3
         self.user_tag_4 = extra_attributes.user_tag_4 or self.user_tag_4
         self.user_tag_5 = extra_attributes.user_tag_5 or self.user_tag_5
+        self.operation_tag = extra_attributes.operation_tag or self.operation_tag
+        self.parent_burst = extra_attributes.parent_burst or self.parent_burst
         self.visible = extra_attributes.visible

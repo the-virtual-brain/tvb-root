@@ -156,15 +156,18 @@ class BaseSurfaceViewerModel(ViewModel):
 @add_metaclass(ABCMeta)
 class BaseSurfaceViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
-        self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
+    def __init__(self, project_id=None):
+        super(BaseSurfaceViewerForm, self).__init__(project_id)
+        self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self.project_id,
+                                                   name='region_map')
         conn_filter = FilterChain(
             fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_surface_mapping'],
             operations=["==", "=="], values=[1, True])
-        self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
-                                                             name='connectivity_measure', conditions=conn_filter)
-        self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
+        self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure,
+                                                             self.project_id, name='connectivity_measure',
+                                                             conditions=conn_filter)
+        self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self.project_id,
+                                                      name='shell_surface')
 
     @staticmethod
     def get_filters():
@@ -181,15 +184,9 @@ class SurfaceViewerModel(BaseSurfaceViewerModel):
 
 
 class SurfaceViewerForm(BaseSurfaceViewerForm):
-    def __init__(self, prefix='', project_id=None):
-        # filters_ui = [UIFilter(linked_elem_name="region_map",
-        #                        linked_elem_field=FilterChain.datatype + "._surface"),
-        #               UIFilter(linked_elem_name="connectivity_measure",
-        #                        linked_elem_field=FilterChain.datatype + "._surface")]
-        # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
-
-        super(SurfaceViewerForm, self).__init__(prefix, project_id)
-        self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, self, name='surface')
+    def __init__(self, project_id=None):
+        super(SurfaceViewerForm, self).__init__(project_id)
+        self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, self.project_id, name='surface')
 
     @staticmethod
     def get_view_model():
@@ -411,14 +408,14 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
     def launch(self, view_model):
         # type: (SurfaceViewerModel) -> dict
-        surface_index = self.load_entity_by_gid(view_model.surface.hex)
+        surface_index = self.load_entity_by_gid(view_model.surface)
         connectivity_measure_index = None
         region_map_index = None
 
         if view_model.connectivity_measure:
-            connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure.hex)
+            connectivity_measure_index = self.load_entity_by_gid(view_model.connectivity_measure)
         if view_model.region_map:
-            region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
+            region_map_index = self.load_entity_by_gid(view_model.region_map)
 
         surface_h5 = h5.h5_file_for_index(surface_index)
         region_map_gid = region_map_index.gid if region_map_index is not None else None
@@ -438,7 +435,7 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
         shell_surface_index = None
         if view_model.shell_surface:
-            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface.hex)
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface_index)
 
@@ -458,8 +455,8 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
 class RegionMappingViewerForm(BaseSurfaceViewerForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RegionMappingViewerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(RegionMappingViewerForm, self).__init__(project_id)
         self.region_map.required = True
 
     @staticmethod
@@ -488,7 +485,7 @@ class RegionMappingViewer(SurfaceViewer):
 
     def launch(self, view_model):
         # type: (BaseSurfaceViewerModel) -> dict
-        region_map_index = self.load_entity_by_gid(view_model.region_map.hex)
+        region_map_index = self.load_entity_by_gid(view_model.region_map)
         surface_gid = region_map_index.fk_surface_gid
 
         surface_viewer_model = SurfaceViewerModel(surface=uuid.UUID(surface_gid),
@@ -502,8 +499,8 @@ class RegionMappingViewer(SurfaceViewer):
 
 class ConnectivityMeasureOnSurfaceViewerForm(BaseSurfaceViewerForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityMeasureOnSurfaceViewerForm, self).__init__(prefix, project_id)
+    def __init__(self, project_id=None):
+        super(ConnectivityMeasureOnSurfaceViewerForm, self).__init__(project_id)
         self.connectivity_measure.required = True
 
     @staticmethod

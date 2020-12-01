@@ -30,17 +30,22 @@
 
 import uuid
 import numpy
+from datetime import datetime
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.neotraits.ex import TraitAttributeError
+from tvb.core.entities.generic_attributes import GenericAttributes
 
 
 class ViewModel(HasTraits):
-    """
-    TODO: just inherit HT and override attrs or support automated way to generate VM from existent HT. Needed changes:
-        - HT objects that are going to DTSF should be kept as GID on VM
-        - Equations can be kept the same
-        - support UI names for attrs with choices
-    """
+    operation_group_gid = Attr(field_type=uuid.UUID, required=False)
+    ranges = Attr(str, required=False)
+    range_values = Attr(str, required=False)
+    is_metric_operation = Attr(bool, default=False)
+
+    def __init__(self, **kwargs):
+        super(ViewModel, self).__init__(**kwargs)
+        self.create_date = datetime.now()
+        self.generic_attributes = GenericAttributes()
 
     def linked_has_traits(self):
         return HasTraits
