@@ -39,6 +39,7 @@ import shutil
 import uuid
 
 import numpy
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.simulator.monitor_forms import MonitorForm, get_monitor_to_ui_name_dict, get_ui_name_to_monitor_dict
 from tvb.adapters.simulator.simulator_fragments import SimulatorRMFragment, SimulatorStimulusFragment
 from tvb.basic.logger.builder import get_logger
@@ -241,6 +242,11 @@ class SimulatorService(object):
 
         burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
         return simulator, burst_config
+
+    @staticmethod
+    def check_if_connectivity_exists(project_id):
+        count = dao.count_datatypes(project_id, ConnectivityIndex)
+        return count > 0
 
     @staticmethod
     def filter_connectivity(form, gid):
