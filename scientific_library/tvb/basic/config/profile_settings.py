@@ -104,7 +104,6 @@ class BaseSettingsProfile(object):
         """
         try:
             import tvb_bin
-            # return os.path.dirname('/home/michiel/Documents/Repos/tvb-root/github/tvb-root/tvb_bin/tvb_bin')
             return os.path.dirname(os.path.abspath(tvb_bin.__file__))
         except ImportError:
             return "."
