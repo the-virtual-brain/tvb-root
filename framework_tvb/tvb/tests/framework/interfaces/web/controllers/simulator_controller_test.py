@@ -69,6 +69,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.simulator_controller = SimulatorController()
         self.test_user = TestFactory.create_user('SimulationController_User')
         self.test_project = TestFactory.create_project(self.test_user, "SimulationController_Project")
+        self.simulator_controller.context.project = self.test_project
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project)
 
         self.session_stored_simulator = SimulatorAdapterModel()
@@ -396,7 +397,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
 
     def test_multiple_monitors(self):
@@ -409,7 +410,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
 
         assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverageViewModel), \
@@ -426,7 +427,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             rendering_rules = self.simulator_controller.set_monitor_params('SubSample', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.8, "Period was not set correctly."
@@ -478,7 +479,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_params('EEG', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
@@ -522,7 +523,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_params('MEG', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
@@ -566,7 +567,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_params('iEEG', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
@@ -617,7 +618,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_params('SpatialAverageViewModel', **self.sess_mock._data)
             self.simulator_controller.set_monitor_params('TemporalAverageViewModel', **self.sess_mock._data)
             self.simulator_controller.set_monitor_params('EEGViewModel', **self.sess_mock._data)
@@ -646,7 +647,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitor_equation('Bold', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].equation.parameters[
@@ -668,7 +669,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         dao.store_entity(burst_config3)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_BURST_CONFIG, burst_config1)
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             burst_parameters = self.simulator_controller.load_burst_history()
 
         assert len(burst_parameters['burst_list']) == 3, "The burst configurations where not stored."
@@ -809,8 +810,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         dao.store_entity(burst_config)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
-            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.init_session_stored_simulator()
             self.simulator_controller.launch_simulation(launch_mode, **self.sess_mock._data)
 
         assert burst_config.status == 'running', 'Simulation launching has failed!'
@@ -863,8 +864,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst_config = BurstConfiguration(self.test_project.id)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
-            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.add_burst_config_to_session(burst_config)
+            self.simulator_controller.context.init_session_stored_simulator()
             self.simulator_controller.setup_pse(**self.sess_mock._data)
 
         assert burst_config.name == 'simulation_1', "Incorrect simulation name!"
@@ -882,7 +883,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst_config = BurstConfiguration(self.test_project.id)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            self.simulator_controller.context.add_burst_config_to_session(burst_config)
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             rendering_rules = self.simulator_controller.set_pse_params(**self.sess_mock._data)
 
@@ -909,8 +910,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst_config = BurstConfiguration(self.test_project.id)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
-            common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.init_session_stored_simulator()
             self.simulator_controller.launch_pse(**self.sess_mock._data)
 
         assert burst_config.status == 'running', 'PSE launching has failed!'
@@ -925,7 +926,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst_config.name = "Test_Burst"
         burst_config.start_time = datetime.now()
         burst_config = dao.store_entity(burst_config)
-        burst_config = burst_service.update_simulation_fields(burst_config.id, op.id,
+        burst_config = burst_service.update_simulation_fields(burst_config, op.id,
                                                               self.session_stored_simulator.gid)
         burst_service.store_burst_configuration(burst_config, storage_path)
         return burst_config
@@ -935,7 +936,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst = dao.get_bursts_for_project(self.test_project.id)
         self.sess_mock['burst_id'] = str(burst[0].id)
         with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            self.simulator_controller.context.add_burst_config_to_session(burst_config)
             result = self.simulator_controller.export(str(burst[0].id))
 
         assert path.exists(result.input.name), "Simulation was not exported!"
@@ -957,7 +958,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst = dao.get_bursts_for_project(self.test_project.id)
         self.sess_mock['burst_id'] = str(burst[0].id)
         with patch('cherrypy.session', self.sess_mock, create=True):
-            common.add2session(common.KEY_BURST_CONFIG, burst_config)
+            self.simulator_controller.context.add_burst_config_to_session(burst_config)
             result = self.simulator_controller.export(str(burst[0].id))
 
         data = {'uploadedfile': result.input.name}
