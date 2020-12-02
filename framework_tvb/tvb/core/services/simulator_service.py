@@ -40,9 +40,12 @@ import uuid
 
 import numpy
 from tvb.adapters.simulator.monitor_forms import MonitorForm, get_monitor_to_ui_name_dict, get_ui_name_to_monitor_dict
+from tvb.adapters.simulator.simulator_fragments import SimulatorRMFragment, SimulatorStimulusFragment
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, RawViewModel
+from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -238,6 +241,34 @@ class SimulatorService(object):
 
         burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
         return simulator, burst_config
+
+    @staticmethod
+    def filter_connectivity(form, gid):
+        conn = dao.get_datatype_by_gid(gid)
+
+        if conn.number_of_regions:
+            form.connectivity.conditions = FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
+                                                       operations=["=="], values=[conn.number_of_regions])
+
+    @staticmethod
+    def prepare_cortex_fragment(simulator, rendering_rules, project_id, form_action_url):
+        surface_index = load_entity_by_gid(simulator.surface.surface_gid)
+        rm_fragment = SimulatorRMFragment(project_id, surface_index,
+                                          simulator.connectivity)
+        rm_fragment.fill_from_trait(simulator.surface)
+
+        rendering_rules.form = rm_fragment
+        rendering_rules.form_action_url = form_action_url
+        return rendering_rules.to_dict()
+
+    @staticmethod
+    def prepare_stimulus_fragment(simulator, rendering_rules, is_surface_simulation, project_id, form_action_url):
+        stimuli_fragment = SimulatorStimulusFragment(project_id, is_surface_simulation)
+        stimuli_fragment.fill_from_trait(simulator)
+
+        rendering_rules.form = stimuli_fragment
+        rendering_rules.form_action_url = form_action_url
+        return rendering_rules.to_dict()
 
     @staticmethod
     def build_list_of_monitors(monitor_names, session_simulator):

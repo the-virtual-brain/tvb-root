@@ -282,8 +282,11 @@ class SimulatorController(BurstBaseController):
 
         rendering_rules.is_simulation_copy = is_simulator_copy
         if session_stored_simulator.surface:
-            return self._prepare_cortex_fragment(session_stored_simulator, rendering_rules)
-        return self._prepare_stimulus_fragment(session_stored_simulator, rendering_rules, False)
+            return self.simulator_service.prepare_cortex_fragment(session_stored_simulator, rendering_rules,
+                                                                  common.get_current_project().id,
+                                                                  SimulatorWizzardURLs.SET_CORTEX_URL)
+        return self._prepare_stimulus_fragment(session_stored_simulator, rendering_rules, False,
+                                               common.get_current_project().id, SimulatorWizzardURLs.SET_STIMULUS_URL)
 
     @expose_fragment('simulator_fragment')
     def set_cortex(self, **data):
@@ -300,7 +303,8 @@ class SimulatorController(BurstBaseController):
         rendering_rules = SimulatorFragmentRenderingRules(None, None, SimulatorWizzardURLs.SET_CORTEX_URL,
                                                           is_simulator_copy, is_simulator_load,
                                                           self.last_loaded_form_url, cherrypy.request.method)
-        return self._prepare_stimulus_fragment(session_stored_simulator, rendering_rules, True)
+        return self.prepare_stimulus_fragment(session_stored_simulator, rendering_rules, True,
+                                              common.get_current_project(), SimulatorWizzardURLs.SET_STIMULUS_URL)
 
     @expose_fragment('simulator_fragment')
     def set_stimulus(self, **data):
