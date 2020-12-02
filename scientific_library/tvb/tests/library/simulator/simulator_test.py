@@ -261,6 +261,18 @@ class TestSimulator(BaseTestCase):
         test_simulator._configure_history(None)
         assert numpy.array_equal(test_simulator.current_state[1:3, :, :], value_for_clamp)
 
+    def test_integrator_update_variables_config(self):
+        from .models_test import TestUpdateVariablesModel
+        test_simulator = simulator.Simulator()
+        test_simulator.model = TestUpdateVariablesModel()
+        test_simulator.model.configure()
+        test_simulator.integrator.configure()
+        test_simulator._configure_integrator_next_step()
+        assert test_simulator.integrate_next_step == test_simulator.integrator.integrate_with_update
+        assert test_simulator.model.state_variables_mask == \
+               [var in test_simulator.model.integration_variables for var in test_simulator.model.state_variables]
+        assert test_simulator.model.state_variables_mask == [True, True, True, False, False]
+
     @pytest.mark.parametrize('default_connectivity', [True, False])
     def test_simulator_regional_stimulus(self, default_connectivity):
         test_simulator = Simulator()

@@ -79,6 +79,43 @@ class TestBoundsModel(Model):
         return 0.0 * state
 
 
+class TestUpdateVariablesModel(Model):
+    variables_of_interest = List(
+        of=str,
+        label="Variables watched by Monitors",
+        choices=('x1', 'x2', 'x3', 'x4', 'x5'),
+        default=('x1', 'x2', 'x3', 'x4', 'x5'),
+        doc="""default state variables to be monitored""")
+
+    state_variables = ['x1', 'x2', 'x3', 'x4', 'x5']
+
+    integration_variables = ["x1", "x2", "x3"]
+
+    state_variable_range = Final(
+        default={
+            "x1": numpy.array([-1.0, 2.0]),
+            "x2": numpy.array([-1.0, 2.0]),
+            "x3": numpy.array([-1.0, 2.0]),
+            "x4": numpy.array([-1.0, 2.0]),
+            "x5": numpy.array([-1.0, 2.0])
+        })
+    _nvar = 5
+    cvar = numpy.array([0], dtype=numpy.int32)
+
+    def dfun(self, state_variables, node_coupling, local_coupling=0.0):
+        return 0.0 * state_variables
+
+    def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
+        state[3] += state[0]
+        state[4] += state[1] + state[2]
+        return state
+
+    def update_state_variables_after_integration(self, state):
+        state[3] -= state[0]
+        state[4] -= state[1] + state[2]
+        return state
+
+
 class TestModels(BaseTestCase):
     """
     Define test cases for models:
