@@ -4,6 +4,7 @@ import logging
 import itertools
 import argparse
 import os, sys
+import pickle
 
 import numpy as np
 from numpy import corrcoef
@@ -21,7 +22,7 @@ class TVB_test:
 		self.dt = 0.1
 		self.period = 10.0
 		self.omega = 60.0 * 2.0 * math.pi / 1e3
-		(self.connectivity, self.coupling) = self.tvb_connectivity(self.s, self.g, self.dt)
+		(self.connectivity, self.coupling) = self.tvb_connectivity(self.s, self.g, self.args.tvbn)
 		self.integrator = integrators.EulerDeterministic(dt=self.dt)
 		self.weights = self.SC = self.connectivity.weights
 		self.lengths = self.connectivity.tract_lengths
@@ -37,10 +38,10 @@ class TVB_test:
 		self.min_speed = self.speeds.min()
 		self.buf_len_ = ((self.lengths / self.min_speed / self.dt).astype('i').max() + 1)
 		self.buf_len = 2 ** np.argwhere(2 ** np.r_[:30] > self.buf_len_)[0][0]  # use next power of 2
-		self.states = 1
+		self.states = self.args.stts
 
-	def tvb_connectivity(self, speed, global_coupling, dt=0.1):
-		white_matter = connectivity.Connectivity.from_file(source_file="connectivity_68.zip")
+	def tvb_connectivity(self, speed, global_coupling, tvbnodes):
+		white_matter = connectivity.Connectivity.from_file(source_file="connectivity_"+tvbnodes+".zip")
 		white_matter.configure()
 		white_matter.speed = np.array([speed])
 		white_matter_coupling = coupling.Linear(a=global_coupling)
@@ -77,6 +78,9 @@ class TVB_test:
 		parser.add_argument('-by', '--blockszy', default="32", type=int, help="Enter block size y")
 
 		parser.add_argument('-val', '--validate', default=False, help="Enable validation to refmodels")
+
+		parser.add_argument('--stts', default="1", type=int, help="Number of states of model")
+		parser.add_argument('--tvbn', default="68", type=str, help="Number of tvb nodes")
 
 		args = parser.parse_args()
 		return args
@@ -189,7 +193,7 @@ class TVB_test:
 
 		self.set_CUDAmodel_dir()
 
-		self.set_states()
+		# self.set_states()
 
 		# logger.info('number of states %d', self.states)
 		# logger.info('filename %s', self.args.filename)
@@ -206,8 +210,13 @@ class TVB_test:
 
 		toc = time.time()
 		elapsed = toc - tic
-		print('Finished python simulation successfully in: {0:.3f}'.format(elapsed))
-		print('{0:.3f} M step/s'.format(1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed))
+
+		# write output to file
+		tavg_file = open('tavg_data', 'wb')
+		pickle.dump(tavg0, tavg_file)
+		tavg_file.close()
+		print('Finished CUDA simulation successfully in: {0:.3f}'.format(elapsed))
+		print('in {0:.3f} M step/s'.format(1e-6 * self.nstep * self.n_inner_steps * self.n_work_items / elapsed))
 		# logger.info('finished')
 
 
