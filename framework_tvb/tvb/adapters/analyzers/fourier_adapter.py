@@ -37,19 +37,20 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 import math
 import uuid
+
 import numpy
 import psutil
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
 from tvb.analyzers.fft import compute_fast_fourier_transform, SUPPORTED_WINDOWING_FUNCTIONS
+from tvb.basic.neotraits.api import Attr, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField, FloatField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
-from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_describe
 
 
 class FFTAdapterModel(ViewModel):
@@ -153,10 +154,6 @@ class FourierAdapter(ABCAdapter):
         self.log.debug("Provided window_function is %s" % view_model.window_function)
         self.log.debug("Detrend is %s" % view_model.detrend)
 
-        self.log.debug("Using segment_length is %s" % view_model.segment_length)
-        self.log.debug("Using window_function  is %s" % view_model.window_function)
-        self.log.debug("Using detrend  is %s" % view_model.detrend)
-
     def get_required_memory_size(self, view_model):
         # type: (FFTAdapterModel) -> int
         """
@@ -184,24 +181,16 @@ class FourierAdapter(ABCAdapter):
         # type: (FFTAdapterModel) -> [FourierSpectrumIndex]
         """
         Launch algorithm and build results.
-
-        :param time_series: the input time series to which the fft is to be applied
-        :param segment_length: the block size which determines the frequency resolution \
-                               of the resulting power spectra
-        :param window_function: windowing functions can be applied before the FFT is performed
-        :type  window_function: None; ‘hamming’; ‘bartlett’; ‘blackman’; ‘hanning’
-        :returns: the fourier spectrum for the specified time series
-        :rtype: `FourierSpectrumIndex`
-
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the fourier spectrum for the specified time series
         """
-        fft_index = FourierSpectrumIndex()
-        fft_index.fk_source_gid = view_model.time_series.hex
-
         block_size = int(math.floor(self.input_shape[2] / self.memory_factor))
         blocks = int(math.ceil(self.input_shape[2] / block_size))
 
         input_time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
+        # --------------------- Prepare result entities ----------------------
+        fft_index = FourierSpectrumIndex()
         dest_path = h5.path_for(self.storage_path, FourierSpectrumH5, fft_index.gid)
         spectra_file = FourierSpectrumH5(dest_path)
 
@@ -226,13 +215,14 @@ class FourierAdapter(ABCAdapter):
                 return None
             spectra_file.write_data_slice(partial_result)
 
-        partial_result.source.gid = view_model.time_series
-        partial_result.gid = uuid.UUID(fft_index.gid)
-        fft_index.ndim = len(spectra_file.array_data.shape)
         input_time_series_h5.close()
 
+        # ---------------------------- Fill results ----------------------------
+        partial_result.source.gid = view_model.time_series
+        partial_result.gid = uuid.UUID(fft_index.gid)
+
         fft_index.fill_from_has_traits(partial_result)
-        self.fill_from_h5(fft_index, spectra_file)
+        self.fill_index_from_h5(fft_index, spectra_file)
 
         spectra_file.store(partial_result, scalars_only=True)
         spectra_file.windowing_function.store(str(view_model.window_function))

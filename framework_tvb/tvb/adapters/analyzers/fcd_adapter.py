@@ -196,7 +196,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
     def _populate_fcd_index(self, fcd_index, source_gid, fcd_h5):
         fcd_index.fk_source_gid = source_gid
         fcd_index.labels_ordering = json.dumps(Fcd.labels_ordering.default)
-        self.fill_from_h5(fcd_index, fcd_h5)
+        self.fill_index_from_h5(fcd_index, fcd_h5)
 
     @staticmethod
     def _populate_fcd_h5(fcd_h5, fcd_data, gid, source_gid, sw, sp):

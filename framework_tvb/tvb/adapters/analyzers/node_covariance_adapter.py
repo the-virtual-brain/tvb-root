@@ -156,7 +156,7 @@ class NodeCovarianceAdapter(ABCAdapter):
         ts_h5.close()
 
         covariance_index.fill_from_has_traits(partial_cov)
-        self.fill_from_h5(covariance_index, covariance_h5)
+        self.fill_index_from_h5(covariance_index, covariance_h5)
 
         covariance_h5.store(partial_cov, scalars_only=True)
         covariance_h5.close()

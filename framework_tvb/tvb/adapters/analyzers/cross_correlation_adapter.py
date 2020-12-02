@@ -174,7 +174,7 @@ class CrossCorrelateAdapter(ABCAdapter):
         partial_cross_corr.gid = uuid.UUID(cross_corr_index.gid)
 
         cross_corr_index.fill_from_has_traits(partial_cross_corr)
-        self.fill_from_h5(cross_corr_index, cross_corr_h5)
+        self.fill_index_from_h5(cross_corr_index, cross_corr_h5)
 
         cross_corr_h5.store(partial_cross_corr, scalars_only=True)
         cross_corr_h5.close()

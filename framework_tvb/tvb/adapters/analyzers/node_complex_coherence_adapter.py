@@ -232,7 +232,7 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         result_path = h5.path_for(self.storage_path, ComplexCoherenceSpectrumH5, complex_coherence_index.gid)
         ica_h5 = ComplexCoherenceSpectrumH5(path=result_path)
 
-        self.fill_from_h5(complex_coherence_index, ica_h5)
+        self.fill_index_from_h5(complex_coherence_index, ica_h5)
         ica_h5.close()
 
         return complex_coherence_index

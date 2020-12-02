@@ -554,8 +554,12 @@ class ABCAdapter(object):
         return size * TvbProfile.current.MAGIC_NUMBER / 8 / 2 ** 10
 
     @staticmethod
-    def fill_from_h5(analyzer_index, analyzer_h5):
-        # Method used by analyzers only
+    def fill_index_from_h5(analyzer_index, analyzer_h5):
+        """
+        Method used only by analyzers that write slices of data.
+        As they never have the whole array_data in memory, the metadata related to array_data (min, max, etc.) they
+        store on the index is not correct, so we need to update them.
+        """
         metadata = analyzer_h5.array_data.get_cached_metadata()
         analyzer_index.array_data_max = metadata.max
         analyzer_index.array_data_min = metadata.min
