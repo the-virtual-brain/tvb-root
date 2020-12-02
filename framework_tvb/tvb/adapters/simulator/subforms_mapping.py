@@ -77,7 +77,7 @@ def get_ui_name_to_integrator_dict():
         'Euler': EulerDeterministicViewModel,
         'Euler-Maruyama': EulerStochasticViewModel,
         'Runge-Kutta 4th order': RungeKutta4thOrderDeterministicViewModel,
-        '"Difference equation': IdentityViewModel,
+        'Difference equation': IdentityViewModel,
         'Variable-order Adams / BDF': VODEViewModel,
         'Stochastic variable-order Adams / BDF': VODEStochasticViewModel,
         'Dormand-Prince, order (4, 5)': Dopri5ViewModel,

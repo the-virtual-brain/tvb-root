@@ -78,7 +78,7 @@ KEY_IS_RESTART = "tvbRestarted"
 KEY_INCLUDE_TOOLTIP = "includeTooltip"
 KEY_WRAP_CONTENT_IN_MAIN_DIV = "wrapContentInMainDiv"
 KEY_CURRENT_TAB = "currentTab"
-# TODO TVB-2670 See SelectedAdapterContext and other *Context classes, and try to put all Simulator related together
+
 KEY_BURST_CONFIG = 'burst_configuration'
 KEY_SIMULATOR_CONFIG = 'simulator_configuration'
 KEY_IS_SIMULATOR_COPY = 'is_simulator_copy'
