@@ -40,9 +40,11 @@ import uuid
 
 import numpy
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.simulator.monitor_forms import MonitorForm, get_monitor_to_ui_name_dict, get_ui_name_to_monitor_dict
 from tvb.adapters.simulator.simulator_fragments import SimulatorRMFragment, SimulatorStimulusFragment
 from tvb.basic.logger.builder import get_logger
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, RawViewModel
 from tvb.core.entities.filters.chain import FilterChain
@@ -52,6 +54,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.exceptions import BurstServiceException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.simulator.integrators import IntegratorStochastic
@@ -243,6 +246,15 @@ class SimulatorService(object):
         burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
         return simulator, burst_config
 
+    def prepare_first_simulation_fragment(self, cached_simulator_algorithm, project_id):
+        adapter_instance = ABCAdapter.build_adapter(cached_simulator_algorithm)
+        form = adapter_instance.get_form()(project_id)
+
+        if self.check_if_connectivity_exists(project_id) is False:
+            form.connectivity.errors.append("No connectivity in the project! Simulation can't be started without "
+                                            "a connectivity!")
+        return form
+
     @staticmethod
     def check_if_connectivity_exists(project_id):
         count = dao.count_datatypes(project_id, ConnectivityIndex)
@@ -327,3 +339,15 @@ class SimulatorService(object):
     def prepare_monitor_legend(is_surface_simulation, monitor):
         return get_monitor_to_ui_name_dict(
             is_surface_simulation)[type(monitor)] + ' monitor'
+
+    def get_simulation_state_index(self, burst_config):
+        parent_burst = burst_config.parent_burst_object
+        simulation_state_index = dao.get_generic_entity(SimulationHistoryIndex, parent_burst, "fk_parent_burst")
+
+        if simulation_state_index is None or len(simulation_state_index) < 1:
+            exc = BurstServiceException("Simulation State not found for %s, thus we are unable to branch from "
+                                        "it!" % burst_config.name)
+            self.logger.error(exc)
+            raise exc
+
+        return simulation_state_index

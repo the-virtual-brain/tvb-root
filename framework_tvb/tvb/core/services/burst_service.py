@@ -65,7 +65,7 @@ class BurstService(object):
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.file_helper = FilesHelper()
+        self.files_helper = FilesHelper()
 
     def mark_burst_finished(self, burst_entity, burst_status=None, error_message=None):
         """
@@ -188,7 +188,7 @@ class BurstService(object):
     def update_burst_configuration_h5(self, burst_configuration):
         # type: (BurstConfiguration) -> None
         project = dao.get_project_by_id(burst_configuration.fk_project)
-        storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
+        storage_path = self.files_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
         self.store_burst_configuration(burst_configuration, storage_path)
 
     @staticmethod
@@ -349,3 +349,16 @@ class BurstService(object):
                 param2.fill_from_default(all_range_parameters[param2.name])
 
         return param1, param2
+
+    def prepare_first_fragment_for_burst_copy(self, burst_config_id, burst_name_format, project):
+        burst_config = self.load_burst_configuration(burst_config_id)
+        burst_config_copy = burst_config.clone()
+        count = dao.count_bursts_with_name(burst_config.name, burst_config.fk_project)
+        burst_config_copy.name = burst_name_format.format(burst_config.name, count + 1)
+
+        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
+        return h5.load_view_model(burst_config.simulator_gid, storage_path), burst_config_copy
+
+    @staticmethod
+    def store_burst(burst_config):
+        return dao.store_entity(burst_config)
