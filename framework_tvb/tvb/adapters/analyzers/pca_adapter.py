@@ -36,7 +36,6 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 
 """
 import uuid
-
 import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
@@ -136,8 +135,8 @@ class PCAAdapter(ABCAdapter):
         # type: (PCAAdapterModel) -> [PrincipalComponentsIndex]
         """ 
         Launch algorithm and build results.
-
-        :returns: the `PrincipalComponents` object built with the given timeseries as source
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the `PrincipalComponents` object built with the given timeseries as source
         """
         # --------- Prepare a PrincipalComponents object for result ----------##
         principal_components_index = PrincipalComponentsIndex()

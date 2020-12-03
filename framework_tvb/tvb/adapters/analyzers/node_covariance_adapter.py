@@ -35,7 +35,6 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-import json
 import uuid
 import numpy
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
@@ -129,8 +128,8 @@ class NodeCovarianceAdapter(ABCAdapter):
         # type: (NodeCovarianceAdapterModel) -> [CovarianceIndex]
         """ 
         Launch algorithm and build results.
-
-        :returns: the `CovarianceIndex` built with the given time_series index as source
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the `CovarianceIndex` built with the given time_series index as source
         """
         # Create an index for the computed covariance.
         covariance_index = CovarianceIndex()

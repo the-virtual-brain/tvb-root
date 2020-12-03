@@ -108,8 +108,6 @@ class CrossCorrelateAdapter(ABCAdapter):
         # type: (CrossCorrelateAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
-
-        :param time_series: the input time-series index for which cross correlation should be computed
         """
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
@@ -147,8 +145,8 @@ class CrossCorrelateAdapter(ABCAdapter):
 
         See: http://www.scipy.org/doc/api_docs/SciPy.signal.signaltools.html#correlate
 
-        :param time_series: the input time series index for which the correlation should be computed
-        :returns: the cross correlation index for the given time series
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the cross correlation index for the given time series
         :rtype: `CrossCorrelationIndex`
         """
         # --------- Prepare CrossCorrelationIndex and CrossCorrelationH5 objects for result ------------##

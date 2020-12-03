@@ -40,7 +40,6 @@ Analyzer used to calculate a single measure for TimeSeries.
 """
 import json
 import uuid
-
 import numpy
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
@@ -166,11 +165,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
         # type: (TimeseriesMetricsAdapterModel) -> [DatatypeMeasureIndex]
         """ 
         Launch algorithm and build results.
-
-        :param time_series: the time series on which the algorithms are run
-        :param algorithms:  the algorithms to be run for computing measures on the time series
-        :type  algorithms:  any subclass of BaseTimeseriesMetricAlgorithm
-                            (KuramotoIndex, GlobalVariance, VarianceNodeVariance)
+        :param view_model: the ViewModel keeping the algorithm inputs
         :rtype: `DatatypeMeasureIndex`
         """
         algorithms = view_model.algorithms

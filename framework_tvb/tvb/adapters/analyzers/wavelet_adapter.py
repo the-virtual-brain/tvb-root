@@ -38,7 +38,6 @@ ContinuousWaveletTransform Analyzer.
 """
 
 import uuid
-
 import numpy
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
@@ -48,7 +47,6 @@ from tvb.analyzers.wavelet import compute_continuous_wavelet_transform
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.db import from_ndarray
 from tvb.core.neotraits.forms import FormField, Form, TraitDataTypeSelectField, StrField, FloatField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
@@ -207,7 +205,9 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
 
     def launch(self, view_model):
         """ 
-        Launch algorithm and build results. 
+        Launch algorithm and build results.
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the wavelet coefficients for the specified time series
         """
         # --------- Prepare a WaveletCoefficients object for result ----------##
         frequencies_array = numpy.array([])

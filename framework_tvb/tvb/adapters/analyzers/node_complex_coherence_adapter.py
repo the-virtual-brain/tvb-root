@@ -177,9 +177,9 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         """
         input_size = numpy.prod(self.input_shape) * 8.0
         output_size = self.result_size(self.input_shape,
-                                  view_model.max_freq, view_model.epoch_length, view_model.segment_length,
-                                  view_model.segment_shift, self.input_time_series_index.sample_period,
-                                  view_model.zeropad, view_model.average_segments)
+                                       view_model.max_freq, view_model.epoch_length, view_model.segment_length,
+                                       view_model.segment_shift, self.input_time_series_index.sample_period,
+                                       view_model.zeropad, view_model.average_segments)
 
         return input_size + output_size
 
@@ -189,8 +189,9 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         Returns the required disk size to be able to run the adapter (in kB).
         """
         result = self.result_size(self.input_shape, view_model.max_freq, view_model.epoch_length,
-                                            view_model.segment_length, view_model.segment_shift,
-                                            self.input_time_series_index.sample_period, view_model.zeropad, view_model.average_segments)
+                                  view_model.segment_length, view_model.segment_shift,
+                                  self.input_time_series_index.sample_period, view_model.zeropad,
+                                  view_model.average_segments)
         return self.array_size2kb(result)
 
     def configure(self, view_model):
@@ -210,18 +211,20 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
     def launch(self, view_model):
         # type: (NodeComplexCoherenceModel) -> [ComplexCoherenceSpectrumIndex]
         """
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the complex coherence for the specified time series
         Launch algorithm and build results.
         """
         # TODO ---------- Iterate over slices and compose final result ------------##
         time_series = h5.load_from_index(self.input_time_series_index)
         ht_result = calculate_complex_cross_coherence(time_series, view_model.epoch_length,
-                                                             view_model.segment_length,
-                                                             view_model.segment_shift,
-                                                             view_model.window_function,
-                                                             view_model.average_segments,
-                                                             view_model.subtract_epoch_average,
-                                                             view_model.zeropad, view_model.detrend_ts,
-                                                             view_model.max_freq, view_model.npat)
+                                                      view_model.segment_length,
+                                                      view_model.segment_shift,
+                                                      view_model.window_function,
+                                                      view_model.average_segments,
+                                                      view_model.subtract_epoch_average,
+                                                      view_model.zeropad, view_model.detrend_ts,
+                                                      view_model.max_freq, view_model.npat)
         self.log.debug("got ComplexCoherenceSpectrum result")
         self.log.debug("ComplexCoherenceSpectrum segment_length is %s" % (str(ht_result.segment_length)))
         self.log.debug("ComplexCoherenceSpectrum epoch_length is %s" % (str(ht_result.epoch_length)))
@@ -245,7 +248,7 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         the ComplexCoherence
         """
         result_size = numpy.prod(complex_coherence_result_shape(input_shape, max_freq,
-                                              epoch_length, segment_length,
-                                              segment_shift, sample_period,
-                                              zeropad, average_segments)[0]) * 2.0 * 8.0
+                                                                epoch_length, segment_length,
+                                                                segment_shift, sample_period,
+                                                                zeropad, average_segments)[0]) * 2.0 * 8.0
         return result_size

@@ -35,7 +35,6 @@ Adapter that uses the traits model to generate interfaces for FCD Analyzer.
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
-
 import json
 import uuid
 import numpy as np
@@ -160,14 +159,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         # type: (FCDAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
+        """
 
-        :param time_series: the input time-series for which fcd matrix should be computed
-        :param sw: length of the sliding window
-        :param sp: spanning time: distance between two consecutive sliding window
-        """
-        """
-        Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
-        """
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
@@ -211,11 +204,8 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         # type: (FCDAdapterModel) -> [FcdIndex]
         """
         Launch algorithm and build results.
-
-        :param time_series: the input time-series index for which fcd matrix should be computed
-        :param sw: length of the sliding window
-        :param sp: spanning time: distance between two consecutive sliding window
-        :returns: the fcd index for the computed fcd matrix on the given time-series, with that sw and that sp
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the fcd index for the computed fcd matrix on the given time-series, with that sw and that sp
         :rtype: `FcdIndex`,`ConnectivityMeasureIndex`
         """
         with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
@@ -242,7 +232,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
                                       result_fcd_segmented_index.gid,
                                       self.input_time_series_index.gid, view_model.sw,
                                       view_model.sp)
-                self._populate_fcd_index(result_fcd_segmented_index, self.input_time_series_index.id,
+                self._populate_fcd_index(result_fcd_segmented_index, self.input_time_series_index.gid,
                                          result_fcd_segmented_h5)
             result.append(result_fcd_segmented_index)
 

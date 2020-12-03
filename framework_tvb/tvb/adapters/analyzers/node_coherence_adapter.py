@@ -36,7 +36,6 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 
 """
 
-import json
 import uuid
 import numpy
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
@@ -146,7 +145,9 @@ class NodeCoherenceAdapter(ABCAdapter):
     def launch(self, view_model):
         # type: (NodeCoherenceModel) -> [CoherenceSpectrumIndex]
         """
-        Launch algorithm and build results. 
+        Launch algorithm and build results.
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the node coherence for the specified time series
         """
         # --------- Prepare a CoherenceSpectrum object for result ------------##
         coherence_spectrum_index = CoherenceSpectrumIndex()
@@ -192,7 +193,8 @@ class NodeCoherenceAdapter(ABCAdapter):
 
         return result_size
 
-    def result_shape(self, input_shape, nfft):
+    @staticmethod
+    def result_shape(input_shape, nfft):
         """Returns the shape of the main result of NodeCoherence."""
         freq_len = nfft / 2 + 1
         freq_shape = (freq_len,)

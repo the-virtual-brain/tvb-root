@@ -36,7 +36,6 @@ Adapter that uses the traits module to generate interfaces for BalloonModel Anal
 """
 
 import uuid
-
 import numpy
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
@@ -123,7 +122,7 @@ class BalloonModelAdapterForm(ABCAdapterForm):
         self.tau_s = FloatField(BalloonModelAdapterModel.tau_s, self.project_id)
         self.tau_f = FloatField(BalloonModelAdapterModel.tau_f, self.project_id)
         self.neural_input_transformation = StrField(BalloonModelAdapterModel.neural_input_transformation,
-                                                       self.project_id)
+                                                    self.project_id)
         self.bold_model = StrField(BalloonModelAdapterModel.bold_model, self.project_id)
         self.RBM = BoolField(BalloonModelAdapterModel.RBM, self.project_id)
 
@@ -142,9 +141,6 @@ class BalloonModelAdapterForm(ABCAdapterForm):
     @staticmethod
     def get_input_name():
         return 'time_series'
-
-    def get_traited_datatype(self):
-        return BalloonModel()
 
 
 class BalloonModelAdapter(ABCAdapter):
@@ -218,9 +214,8 @@ class BalloonModelAdapter(ABCAdapter):
         # type: (BalloonModelAdapterModel) -> [TimeSeriesRegionIndex]
         """
         Launch algorithm and build results.
-
-        :param time_series: the input time-series used as neural activation in the Balloon Model
-        :returns: the simulated BOLD signal
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the simulated BOLD signal
         :rtype: `TimeSeries`
         """
         input_time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)

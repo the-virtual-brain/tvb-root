@@ -35,7 +35,6 @@ Adapter that uses the traits module to generate interfaces for ICA Analyzer.
 
 """
 
-import json
 import uuid
 import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
@@ -142,13 +141,13 @@ class ICAAdapter(ABCAdapter):
 
     def launch(self, view_model):
         # type: (ICAAdapterModel) -> [IndependentComponentsIndex]
-        """ 
+        """
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the ica index for the specified time series
         Launch algorithm and build results. 
         """
         # --------- Prepare a IndependentComponents object for result ----------##
         ica_index = IndependentComponentsIndex()
-        ica_index.fk_source_gid = view_model.time_series.hex
-
         time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         result_path = h5.path_for(self.storage_path, IndependentComponentsH5, ica_index.gid)

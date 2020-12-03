@@ -37,7 +37,6 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 import math
 import uuid
-
 import numpy
 import psutil
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
