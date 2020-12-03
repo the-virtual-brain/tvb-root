@@ -61,9 +61,18 @@ class TestMonitors(BaseTestCase):
     def test_monitor_raw(self):
         monitors.Raw()
 
+    def test_monitor_rawvoi(self):
+        monitors.RawVoi()
+
     def test_monitor_tavg(self):
         monitor = monitors.TemporalAverage()
         assert monitor.period == self.default_period
+
+    def test_monitor_afferentcoupling(self):
+        monitors.AfferentCoupling()
+
+    def test_monitor_afferentcouplingtavg(self):
+        monitors.AfferentCouplingTemporalAverage()
 
     def test_monitor_gavg(self):
         monitor = monitors.GlobalAverage()
