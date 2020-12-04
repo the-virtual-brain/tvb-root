@@ -108,6 +108,7 @@ class SimulatorController(BurstBaseController):
         template_specification = dict(mainContent="burst/main_burst", title="Simulation Cockpit",
                                       includedResources='project/included_resources')
         self.context.get_current_project()
+        self.context.get_session_params()
 
         if not self.context.last_loaded_form_url:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_CONNECTIVITY_URL)
@@ -143,8 +144,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_connectivity(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_COUPLING_PARAMS_URL)
             form = SimulatorAdapterForm()
@@ -165,8 +164,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_coupling_params(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_SURFACE_URL)
             form = get_form_for_coupling(type(self.context.session_stored_simulator.coupling))()
@@ -184,8 +181,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_surface(self, **data):
-        self.context.get_session_params()
-
         rendering_rules = SimulatorFragmentRenderingRules(self.context,
                                                           previous_form_action_url=SimulatorWizzardURLs.SET_SURFACE_URL,
                                                           last_request_type=cherrypy.request.method)
@@ -206,8 +201,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_cortex(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_STIMULUS_URL)
             rm_fragment = SimulatorRMFragment()
@@ -222,8 +215,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_stimulus(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_MODEL_URL)
             stimuli_fragment = SimulatorStimulusFragment(self.context.session_stored_simulator.is_surface_simulation)
@@ -242,8 +233,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_model(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_MODEL_PARAMS_URL)
             form = SimulatorModelFragment()
@@ -262,8 +251,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_model_params(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
             form = get_form_for_model(type(self.context.session_stored_simulator.model))()
@@ -273,8 +260,6 @@ class SimulatorController(BurstBaseController):
         integrator_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorIntegratorFragment())
         integrator_fragment.integrator.display_subform = False
         integrator_fragment.fill_from_trait(self.context.session_stored_simulator)
-        is_branch = common.get_from_session(common.KEY_IS_SIMULATOR_BRANCH)
-
         rendering_rules = SimulatorFragmentRenderingRules(
             self.context, integrator_fragment, SimulatorWizzardURLs.SET_INTEGRATOR_URL,
             SimulatorWizzardURLs.SET_MODEL_PARAMS_URL, cherrypy.request.method)
@@ -282,8 +267,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_integrator(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_PARAMS_URL)
             fragment = SimulatorIntegratorFragment()
@@ -300,8 +283,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_integrator_params(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             form = get_form_for_integrator(type(self.context.session_stored_simulator.integrator))()
             form.fill_from_post(data)
@@ -331,8 +312,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_noise_params(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             form = get_form_for_noise(type(self.context.session_stored_simulator.integrator.noise))()
             form.fill_from_post(data)
@@ -349,8 +328,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_noise_equation_params(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_MONITORS_URL)
             form = get_form_for_equation(type(self.context.session_stored_simulator.integrator.noise.b))()
@@ -388,8 +365,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_monitors(self, **data):
-        self.context.get_session_params()
-
         if cherrypy.request.method == POST_REQUEST:
             fragment = SimulatorMonitorFragment(is_surface_simulation=
                                                 self.context.session_stored_simulator.is_surface_simulation)
@@ -430,10 +405,8 @@ class SimulatorController(BurstBaseController):
             return self._prepare_final_fragment(context.session_stored_simulator, rendering_rules)
         return self.simulator_service.handle_next_fragment_for_monitors(context, rendering_rules, next_monitor)
 
-
     @expose_fragment('simulator_fragment')
     def set_monitor_params(self, current_monitor, **data):
-        self.context.get_session_params()
         next_monitor, current_monitor_index = self.simulator_service.get_current_index_and_next_monitor(
             self.context.session_stored_simulator.monitors, current_monitor)
         monitor = self.context.session_stored_simulator.monitors[current_monitor_index]
@@ -458,7 +431,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_monitor_equation(self, current_monitor, **data):
-        self.context.get_session_params()
         next_monitor, current_monitor_index = self.simulator_service.get_current_index_and_next_monitor(
             self.context.session_stored_simulator.monitors, current_monitor)
         monitor = self.context.session_stored_simulator.monitors[current_monitor_index]
@@ -484,7 +456,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def setup_pse(self, **data):
-        self.context.get_session_params()
         next_form = self.algorithm_service.prepare_adapter_form(
             form_instance=SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters()))
 
@@ -515,7 +486,6 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_pse_params(self, **data):
-        self.context.get_session_params()
         form = SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters())
 
         if cherrypy.request.method == POST_REQUEST:
