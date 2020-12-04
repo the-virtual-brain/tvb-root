@@ -35,13 +35,14 @@
 import os
 import uuid
 import typing
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel, choices, \
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel, \
     TimeseriesMetricsAdapter
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, SimulatorAdapterModel
 from tvb.basic.neotraits.api import HasTraits
+from tvb.config import ALGORITHMS
 from tvb.core.neocom import h5
 
 
@@ -123,7 +124,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         # type: (TimeSeriesIndex) -> [DatatypeMeasureIndex]
         metric_vm = TimeseriesMetricsAdapterModel()
         metric_vm.time_series = time_series_index.gid
-        metric_vm.algorithms = tuple(choices.values())
+        metric_vm.algorithms = tuple(ALGORITHMS.keys())
         h5.store_view_model(metric_vm, self._get_output_path())
         metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
         metric_adapter._prelaunch(None, metric_vm, None, self.available_disk_space)
