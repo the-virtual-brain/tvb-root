@@ -65,7 +65,6 @@ class Field(object):
         # keeps the deserialized data
         self.data = None
         # keeps user input, even if wrong, we have to redisplay it
-        # todo
         self.unvalidated_data = default
         self.errors = []
 
@@ -82,7 +81,7 @@ class Field(object):
         return not self.errors
 
     def _from_post(self):
-        if self.required and self.unvalidated_data is None:
+        if self.required and (self.unvalidated_data is None or len(self.unvalidated_data.strip()) == 0):
             raise ValueError('Field required')
         self.data = self.unvalidated_data
 
@@ -100,8 +99,6 @@ class Field(object):
 
 
 class TraitField(Field):
-    # mhtodo: while this is consistent with the h5 api, it has the same problem
-    #         it couples the system to traited attr declarations
     def __init__(self, trait_attribute, name=None, disabled=False):
         # type: (Attr, str, bool) -> None
         self.trait_attribute = trait_attribute  # type: Attr
@@ -230,11 +227,6 @@ class TraitDataTypeSelectField(TraitField):
 class StrField(TraitField):
     template = 'form_fields/str_field.html'
 
-    def _from_post(self):
-        if self.required and (self.unvalidated_data is None or self.unvalidated_data.strip() == ''):
-            raise ValueError('Field required')
-        self.data = self.unvalidated_data
-
 
 class BoolField(TraitField):
     template = 'form_fields/bool_field.html'
@@ -250,7 +242,7 @@ class IntField(TraitField):
 
     def _from_post(self):
         super(IntField, self)._from_post()
-        if len(self.unvalidated_data) == 0:
+        if len(self.unvalidated_data.strip()) == 0:
             self.data = None
         else:
             self.data = int(self.unvalidated_data)
@@ -258,14 +250,13 @@ class IntField(TraitField):
 
 class FloatField(TraitField):
     template = 'form_fields/number_field.html'
-    input_type = "number"
     min = None
     max = None
     step = 'any'
 
     def _from_post(self):
         super(FloatField, self)._from_post()
-        if len(self.unvalidated_data) == 0:
+        if len(self.unvalidated_data.strip()) == 0:
             self.data = None
         else:
             self.data = float(self.unvalidated_data)
@@ -277,8 +268,8 @@ class ArrayField(TraitField):
     def _from_post(self):
         super(ArrayField, self)._from_post()
         self.data = None
-        if len(self.unvalidated_data) == 0:
-            self.unvalidated_data = None
+        if len(self.unvalidated_data.strip()) == 0:
+            self.data = None
         else:
             data = json.loads(self.unvalidated_data)
             self.data = numpy.array(data, dtype=self.trait_attribute.dtype)
