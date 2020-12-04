@@ -38,6 +38,7 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 """
 
 import uuid
+
 import numpy
 from scipy.signal.signaltools import correlate
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
@@ -45,7 +46,7 @@ from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationInde
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
     TimeSeriesSEEGIndex
 from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.api import Float
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
@@ -230,8 +231,7 @@ class PearsonCorrelationCoefficientAdapterModel(ViewModel):
         linked_datatype=TimeSeries,
         label="Time Series",
         required=True,
-        doc="""The time-series for which the cross correlation matrices are
-            calculated."""
+        doc="""The time-series for which the cross correlation matrices are calculated."""
     )
 
     t_start = Float(
@@ -292,10 +292,6 @@ class PearsonCorrelationCoefficientAdapter(ABCAdapter):
         # type: (PearsonCorrelationCoefficientAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
-
-        :param time_series: the input time-series index for which correlation coefficient should be computed
-        :param t_start: the physical time interval start for the analysis
-        :param t_end: physical time, interval end
         """
         if view_model.t_start >= view_model.t_end or view_model.t_start < 0:
             raise LaunchException("Can not launch operation without monitors selected !!!")
@@ -332,11 +328,8 @@ class PearsonCorrelationCoefficientAdapter(ABCAdapter):
 
         The result will contain values between -1 and 1, inclusive.
 
-        :param time_series: the input time-series for which correlation coefficient should be computed
-        :param t_start: the physical time interval start for the analysis
-        :param t_end: physical time, interval end
+        :param view_model: the ViewModel keeping the algorithm inputs
         :returns: the correlation coefficient for the given time series
-        :rtype: `CorrelationCoefficients`
         """
         with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             ts_labels_ordering = ts_h5.labels_ordering.load()

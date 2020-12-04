@@ -36,6 +36,7 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 
 """
 import uuid
+
 import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
@@ -102,8 +103,7 @@ class PCAAdapter(ABCAdapter):
     def configure(self, view_model):
         # type: (PCAAdapterModel) -> None
         """
-        Store the input shape to be later used to estimate memory usage. Also
-        create the algorithm instance.
+        Store the input shape to be later used to estimate memory usage
         """
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
@@ -111,7 +111,6 @@ class PCAAdapter(ABCAdapter):
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
         self.log.debug("Time series shape is %s" % str(self.input_shape))
-        # -------------------- Fill Algorithm for Analysis -------------------##
 
     def get_required_memory_size(self, view_model):
         # type: (PCAAdapterModel) -> int
@@ -136,18 +135,15 @@ class PCAAdapter(ABCAdapter):
         """ 
         Launch algorithm and build results.
         :param view_model: the ViewModel keeping the algorithm inputs
-        :return: the `PrincipalComponents` object built with the given timeseries as source
+        :return: the `PrincipalComponentsIndex` object built with the given timeseries as source
         """
-        # --------- Prepare a PrincipalComponents object for result ----------##
+        # --------------------- Prepare result entities ----------------------##
         principal_components_index = PrincipalComponentsIndex()
-        principal_components_index.fk_source_gid = view_model.time_series.hex
-
-        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
-
         dest_path = h5.path_for(self.storage_path, PrincipalComponentsH5, principal_components_index.gid)
         pca_h5 = PrincipalComponentsH5(path=dest_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
+        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
         input_shape = time_series_h5.data.shape
         node_slice = [slice(input_shape[0]), None, slice(input_shape[2]), slice(input_shape[3])]
 
@@ -160,12 +156,14 @@ class PCAAdapter(ABCAdapter):
             partial_pca = compute_pca(small_ts)
             pca_h5.write_data_slice(partial_pca)
 
+        time_series_h5.close()
+
         partial_pca.source.gid = view_model.time_series
         partial_pca.gid = uuid.UUID(principal_components_index.gid)
+        principal_components_index.fill_from_has_traits(partial_pca)
 
         pca_h5.store(partial_pca, scalars_only=True)
         pca_h5.close()
-        time_series_h5.close()
 
         return principal_components_index
 

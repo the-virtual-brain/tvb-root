@@ -36,6 +36,7 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 
 """
 import uuid
+
 import numpy
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
@@ -131,15 +132,14 @@ class NodeCovarianceAdapter(ABCAdapter):
         :param view_model: the ViewModel keeping the algorithm inputs
         :return: the `CovarianceIndex` built with the given time_series index as source
         """
-        # Create an index for the computed covariance.
+        # -------------------- Prepare result entities ---------------------##
         covariance_index = CovarianceIndex()
-
-        ts_h5 = h5.h5_file_for_index(self.input_time_series_index)
         covariance_h5_path = h5.path_for(self.storage_path, CovarianceH5, covariance_index.gid)
         covariance_h5 = CovarianceH5(covariance_h5_path)
 
-        # NOTE: Assumes 4D, Simulator timeSeries.
+        # ------------ NOTE: Assumes 4D, Simulator timeSeries -------------##
         node_slice = [slice(self.input_shape[0]), None, slice(self.input_shape[2]), None]
+        ts_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
         for mode in range(self.input_shape[3]):
             for var in range(self.input_shape[1]):
@@ -150,9 +150,10 @@ class NodeCovarianceAdapter(ABCAdapter):
                 partial_cov = self._compute_node_covariance(small_ts, ts_h5)
                 covariance_h5.write_data_slice(partial_cov.array_data)
 
+        ts_h5.close()
+
         partial_cov.source.gid = view_model.time_series
         partial_cov.gid = uuid.UUID(covariance_index.gid)
-        ts_h5.close()
 
         covariance_index.fill_from_has_traits(partial_cov)
         self.fill_index_from_h5(covariance_index, covariance_h5)

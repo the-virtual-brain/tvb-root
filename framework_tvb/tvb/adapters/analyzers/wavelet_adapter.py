@@ -38,19 +38,20 @@ ContinuousWaveletTransform Analyzer.
 """
 
 import uuid
+
 import numpy
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.analyzers.wavelet import compute_continuous_wavelet_transform
+from tvb.basic.neotraits.api import Attr, Range, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, Form, TraitDataTypeSelectField, StrField, FloatField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
-from tvb.basic.neotraits.api import HasTraits, Attr, Range, Float, narray_describe
 
 
 class WaveletAdapterModel(ViewModel):
@@ -99,14 +100,14 @@ class RangeForm(Form):
     def __init__(self):
         super(RangeForm, self).__init__()
         self.lo = FloatField(
-            Float(label='Lo', default=WaveletAdapterModel.frequencies.default.lo, doc='start of range'), self.project_id,
-            name='Lo')
+            Float(label='Lo', default=WaveletAdapterModel.frequencies.default.lo, doc='start of range'),
+            self.project_id, name='Lo')
         self.hi = FloatField(
             Float(label='Hi', default=WaveletAdapterModel.frequencies.default.hi, doc='end of range'), self.project_id,
             name='Hi')
         self.step = FloatField(
-            Float(label='Step', default=WaveletAdapterModel.frequencies.default.step, doc='step of range'), self.project_id,
-            name='Step')
+            Float(label='Step', default=WaveletAdapterModel.frequencies.default.step, doc='step of range'),
+            self.project_id, name='Step')
 
 
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
@@ -164,7 +165,7 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
 
     def configure(self, view_model):
         """
-        Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
+        Store the input shape to be later used to estimate memory usage
         """
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
 
@@ -204,12 +205,12 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
                                                    used_shape, self.input_time_series_index.sample_period))
 
     def launch(self, view_model):
+        # type: (WaveletAdapterModel) -> (WaveletCoefficientsIndex)
         """ 
         Launch algorithm and build results.
         :param view_model: the ViewModel keeping the algorithm inputs
         :return: the wavelet coefficients for the specified time series
         """
-        # --------- Prepare a WaveletCoefficients object for result ----------##
         frequencies_array = numpy.array([])
         if view_model.frequencies is not None:
             frequencies_array = view_model.frequencies.to_array()
@@ -217,9 +218,9 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
         time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
         assert isinstance(time_series_h5, TimeSeriesH5)
 
+        # --------------------- Prepare result entities ----------------------##
         wavelet_index = WaveletCoefficientsIndex()
         dest_path = h5.path_for(self.storage_path, WaveletCoefficientsH5, wavelet_index.gid)
-
         wavelet_h5 = WaveletCoefficientsH5(path=dest_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
@@ -238,9 +239,10 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
                                                                    view_model.mother)
             wavelet_h5.write_data_slice(partial_wavelet)
 
+        time_series_h5.close()
+
         partial_wavelet.source.gid = view_model.time_series
         partial_wavelet.gid = uuid.UUID(wavelet_index.gid)
-        time_series_h5.close()
 
         wavelet_index.fill_from_has_traits(partial_wavelet)
         self.fill_index_from_h5(wavelet_index, wavelet_h5)

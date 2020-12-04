@@ -216,7 +216,6 @@ class BalloonModelAdapter(ABCAdapter):
         Launch algorithm and build results.
         :param view_model: the ViewModel keeping the algorithm inputs
         :return: the simulated BOLD signal
-        :rtype: `TimeSeries`
         """
         input_time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
         time_line = input_time_series_h5.read_time_page(0, self.input_shape[0])
@@ -242,11 +241,12 @@ class BalloonModelAdapter(ABCAdapter):
             partial_bold = self.algorithm.evaluate()
             bold_signal_h5.write_data_slice_on_grow_dimension(partial_bold.data, grow_dimension=2)
 
+        input_time_series_h5.close()
+
         bold_signal_h5.write_time_slice(time_line)
         bold_signal_shape = bold_signal_h5.data.shape
         bold_signal_h5.nr_dimensions.store(len(bold_signal_shape))
         bold_signal_h5.close()
-        input_time_series_h5.close()
 
         self._fill_result_index(bold_signal_index, bold_signal_shape)
         return bold_signal_index

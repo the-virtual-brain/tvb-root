@@ -36,18 +36,19 @@ Adapter that uses the traits module to generate interfaces for ICA Analyzer.
 """
 
 import uuid
+
 import numpy
 from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
 from tvb.analyzers.ica import compute_ica_decomposition
+from tvb.basic.neotraits.api import Int
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
-from tvb.basic.neotraits.api import HasTraits, Attr, Int
 
 
 class ICAAdapterModel(ViewModel):
@@ -117,7 +118,7 @@ class ICAAdapter(ABCAdapter):
                             self.input_time_series_index.data_length_4d)
         self.log.debug("Time series shape is %s" % str(self.input_shape))
         self.log.debug("Provided number of components is %s" % view_model.n_components)
-        # -------------------- Fill Algorithm for Analysis -------------------##
+
         if view_model.n_components is None:
             view_model.n_components = self.input_time_series_index.data_length_3d
 
@@ -142,18 +143,17 @@ class ICAAdapter(ABCAdapter):
     def launch(self, view_model):
         # type: (ICAAdapterModel) -> [IndependentComponentsIndex]
         """
+        Launch algorithm and build results.
         :param view_model: the ViewModel keeping the algorithm inputs
         :return: the ica index for the specified time series
-        Launch algorithm and build results. 
         """
-        # --------- Prepare a IndependentComponents object for result ----------##
+        # --------------------- Prepare result entities ---------------------##
         ica_index = IndependentComponentsIndex()
-        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
-
         result_path = h5.path_for(self.storage_path, IndependentComponentsH5, ica_index.gid)
         ica_h5 = IndependentComponentsH5(path=result_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
+        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
         input_shape = time_series_h5.data.shape
         node_slice = [slice(input_shape[0]), None, slice(input_shape[2]), slice(input_shape[3])]
 
@@ -165,12 +165,15 @@ class ICAAdapter(ABCAdapter):
             partial_ica = compute_ica_decomposition(small_ts, view_model.n_components)
             ica_h5.write_data_slice(partial_ica)
 
+        time_series_h5.close()
+
         partial_ica.source.gid = view_model.time_series
         partial_ica.gid = uuid.UUID(ica_index.gid)
 
-        ica_index.fill_from_has_traits(partial_ica)
+        ica_h5.store(partial_ica, scalars_only=True)
         ica_h5.close()
-        time_series_h5.close()
+
+        ica_index.fill_from_has_traits(partial_ica)
 
         return ica_index
 

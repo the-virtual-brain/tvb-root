@@ -158,7 +158,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
     def configure(self, view_model):
         # type: (FCDAdapterModel) -> None
         """
-        Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
+        Store the input shape to be later used to estimate memory usage
         """
 
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
@@ -201,12 +201,11 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         fcd_h5.labels_ordering.store(json.dumps(Fcd.labels_ordering.default))
 
     def launch(self, view_model):
-        # type: (FCDAdapterModel) -> [FcdIndex]
+        # type: (FCDAdapterModel) -> [FcdIndex, ConnectivityMeasureIndex]
         """
         Launch algorithm and build results.
         :param view_model: the ViewModel keeping the algorithm inputs
         :return: the fcd index for the computed fcd matrix on the given time-series, with that sw and that sp
-        :rtype: `FcdIndex`,`ConnectivityMeasureIndex`
         """
         with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             [fcd, fcd_segmented, eigvect_dict, eigval_dict] = self._compute_fcd_matrix(ts_h5)

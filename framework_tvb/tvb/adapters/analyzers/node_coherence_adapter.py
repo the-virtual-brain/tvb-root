@@ -37,18 +37,18 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 """
 
 import uuid
+
 import numpy
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
 from tvb.analyzers.node_coherence import calculate_cross_coherence
+from tvb.basic.neotraits.api import Int
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.basic.neotraits.api import HasTraits, Attr, Int
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.spectral import CoherenceSpectrum
 from tvb.datatypes.time_series import TimeSeries
 
 
@@ -109,7 +109,6 @@ class NodeCoherenceAdapter(ABCAdapter):
         # type: (NodeCoherenceModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
-        Also create the algorithm instance.
         """
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
@@ -149,14 +148,13 @@ class NodeCoherenceAdapter(ABCAdapter):
         :param view_model: the ViewModel keeping the algorithm inputs
         :return: the node coherence for the specified time series
         """
-        # --------- Prepare a CoherenceSpectrum object for result ------------##
+        # -------------------- Prepare result entities -----------------------##
         coherence_spectrum_index = CoherenceSpectrumIndex()
-        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
-
         dest_path = h5.path_for(self.storage_path, CoherenceSpectrumH5, coherence_spectrum_index.gid)
         coherence_h5 = CoherenceSpectrumH5(dest_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##
+        time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
         input_shape = time_series_h5.data.shape
         node_slice = [slice(input_shape[0]), None, slice(input_shape[2]), slice(input_shape[3])]
 
@@ -171,9 +169,10 @@ class NodeCoherenceAdapter(ABCAdapter):
             partial_coh = calculate_cross_coherence(small_ts, view_model.nfft)
             coherence_h5.write_data_slice(partial_coh)
 
+        time_series_h5.close()
+
         partial_coh.source.gid = view_model.time_series
         partial_coh.gid = uuid.UUID(coherence_spectrum_index.gid)
-        time_series_h5.close()
 
         coherence_spectrum_index.fill_from_has_traits(partial_coh)
         self.fill_index_from_h5(coherence_spectrum_index, coherence_h5)
@@ -189,7 +188,7 @@ class NodeCoherenceAdapter(ABCAdapter):
         Returns the storage size in Bytes of the main result of NodeCoherence.
         """
         # TODO This depends on input array dtype!
-        result_size = numpy.sum(list(map(numpy.prod, self.result_shape(input_shape, nfft)))) * 8.0 #Bytes
+        result_size = numpy.sum(list(map(numpy.prod, self.result_shape(input_shape, nfft)))) * 8.0  # Bytes
 
         return result_size
 

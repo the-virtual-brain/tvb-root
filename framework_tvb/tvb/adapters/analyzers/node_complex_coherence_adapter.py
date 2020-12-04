@@ -41,13 +41,13 @@ from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import ComplexCoherenceSpectrumH5
 from tvb.analyzers.node_complex_coherence import calculate_complex_cross_coherence, complex_coherence_result_shape
+from tvb.basic.neotraits.api import Attr, Int, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
-from tvb.basic.neotraits.api import HasTraits, Attr, Int, Float, narray_describe
 
 
 class NodeComplexCoherenceModel(ViewModel):
@@ -197,7 +197,7 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
     def configure(self, view_model):
         # type: (NodeComplexCoherenceModel) -> None
         """
-        Do any configuration needed before launching and create an instance of the algorithm.
+        Do any configuration needed before launching
         """
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
@@ -205,15 +205,13 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
                             self.input_time_series_index.data_length_3d,
                             self.input_time_series_index.data_length_4d)
         self.log.debug("Time series shape is %s" % (str(self.input_shape)))
-        # -------------------- Fill Algorithm for Analysis -------------------##
-        self.memory_factor = 1
 
     def launch(self, view_model):
         # type: (NodeComplexCoherenceModel) -> [ComplexCoherenceSpectrumIndex]
         """
+        Launch algorithm and build results.
         :param view_model: the ViewModel keeping the algorithm inputs
         :return: the complex coherence for the specified time series
-        Launch algorithm and build results.
         """
         # TODO ---------- Iterate over slices and compose final result ------------##
         time_series = h5.load_from_index(self.input_time_series_index)

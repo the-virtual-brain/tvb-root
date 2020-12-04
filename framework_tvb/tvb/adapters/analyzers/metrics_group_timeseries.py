@@ -38,21 +38,19 @@ Analyzer used to calculate a single measure for TimeSeries.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-import json
-import uuid
 import numpy
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.basic.neotraits.api import Int, Float
 from tvb.basic.neotraits.api import List
 from tvb.config import ALGORITHMS
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, MultiSelectField, FloatField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
-from tvb.basic.neotraits.api import Int, Float
 
 
 class TimeseriesMetricsAdapterModel(ViewModel):
@@ -166,7 +164,6 @@ class TimeseriesMetricsAdapter(ABCAdapter):
         """ 
         Launch algorithm and build results.
         :param view_model: the ViewModel keeping the algorithm inputs
-        :rtype: `DatatypeMeasureIndex`
         """
         algorithms = view_model.algorithms
         if algorithms is None or len(algorithms) == 0:
@@ -198,14 +195,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
             else:
                 metrics_results[algorithm_name] = unstored_result
 
-        result = DatatypeMeasureIndex()
-        result.fk_source_gid = self.input_time_series_index.gid
-        result.metrics = json.dumps(metrics_results)
-
-        result_path = h5.path_for(self._get_output_path(), DatatypeMeasureH5, result.gid)
-        with DatatypeMeasureH5(result_path) as result_h5:
-            result_h5.metrics.store(metrics_results)
-            result_h5.analyzed_datatype.store(dt_timeseries)
-            result_h5.gid.store(uuid.UUID(result.gid))
+        dt_metric = DatatypeMeasure(analyzed_datatype=dt_timeseries, metrics=metrics_results)
+        result = h5.store_complete(dt_metric, self._get_output_path())
 
         return result
