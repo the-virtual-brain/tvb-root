@@ -89,7 +89,7 @@ class Equation(HasTraits):
         ?scipy.sparse_matrix? TODO: think this last one is true, need to check
         as we need it for LocalConnectivity...
         """
-        return RefBase.evaluate(self.equation, self.parameteres)
+        return RefBase.evaluate(self.equation, self.parameters)
 
     def get_series_data(self, min_range=0, max_range=100, step=None):
         """
