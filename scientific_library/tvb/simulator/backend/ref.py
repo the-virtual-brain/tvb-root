@@ -20,7 +20,6 @@ class RefBase:
             frame = inspect.getcurrentframe()
             global_dict = frame.f_back.f_locals
         ns.update(global_dict)
-        ns.update(
         val = eval(expr, ns)
         if out is not None:
             out[:] = val
