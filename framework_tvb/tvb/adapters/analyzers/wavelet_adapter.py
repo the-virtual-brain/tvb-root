@@ -101,28 +101,26 @@ class RangeForm(Form):
         super(RangeForm, self).__init__()
         self.lo = FloatField(
             Float(label='Lo', default=WaveletAdapterModel.frequencies.default.lo, doc='start of range'),
-            self.project_id, name='Lo')
+            name='Lo')
         self.hi = FloatField(
-            Float(label='Hi', default=WaveletAdapterModel.frequencies.default.hi, doc='end of range'), self.project_id,
+            Float(label='Hi', default=WaveletAdapterModel.frequencies.default.hi, doc='end of range'),
             name='Hi')
         self.step = FloatField(
             Float(label='Step', default=WaveletAdapterModel.frequencies.default.step, doc='step of range'),
-            self.project_id, name='Step')
+            name='Step')
 
 
 class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(ContinuousWaveletTransformAdapterForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, self.project_id,
-                                                    name=self.get_input_name(), conditions=self.get_filters(),
-                                                    has_all_option=True)
-        self.mother = StrField(WaveletAdapterModel.mother, self.project_id)
-        self.sample_period = FloatField(WaveletAdapterModel.sample_period, self.project_id)
-        self.normalisation = StrField(WaveletAdapterModel.normalisation, self.project_id)
-        self.q_ratio = FloatField(WaveletAdapterModel.q_ratio, self.project_id)
-        self.frequencies = FormField(RangeForm, self.project_id, name='frequencies',
-                                     label=WaveletAdapterModel.frequencies.label,
+    def __init__(self):
+        super(ContinuousWaveletTransformAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.mother = StrField(WaveletAdapterModel.mother)
+        self.sample_period = FloatField(WaveletAdapterModel.sample_period)
+        self.normalisation = StrField(WaveletAdapterModel.normalisation)
+        self.q_ratio = FloatField(WaveletAdapterModel.q_ratio)
+        self.frequencies = FormField(RangeForm, name='frequencies', label=WaveletAdapterModel.frequencies.label,
                                      doc=WaveletAdapterModel.frequencies.doc)
 
     @staticmethod

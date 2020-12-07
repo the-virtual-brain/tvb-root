@@ -64,12 +64,10 @@ class PCAAdapterModel(ViewModel):
 
 class PCAAdapterForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(PCAAdapterForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(PCAAdapterModel.time_series, self.project_id,
-                                                    name=self.get_input_name(), conditions=self.get_filters(),
-                                                    has_all_option=True)
-
+    def __init__(self):
+        super(PCAAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(PCAAdapterModel.time_series, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
     @staticmethod
     def get_view_model():
         return PCAAdapterModel

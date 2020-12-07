@@ -67,10 +67,10 @@ class EquationTemporalPlotForm(Form):
         super(EquationTemporalPlotForm, self).__init__()
         self.min_tmp_x = FloatField(Float(label='Temporal Start Time(ms)', default=0, doc="The minimum value of the "
                                                 "x-axis for temporal equation plot. Not persisted, used only for "
-                                                "visualization."), self.project_id, name='min_tmp_x')
+                                                "visualization."), name='min_tmp_x')
         self.max_tmp_x = FloatField(Float(label='Temporal End Time(ms)', default=100, doc="The maximum value of the"
                                                 " x-axis for temporal equation plot. Not persisted, used only for"
-                                                " visualization."), self.project_id, name='max_tmp_x')
+                                                " visualization."), name='max_tmp_x')
 
     def fill_from_post(self, form_data):
         if self.min_tmp_x.name in form_data:
@@ -83,9 +83,9 @@ class EquationSpatialPlotForm(Form):
     def __init__(self):
         super(EquationSpatialPlotForm, self).__init__()
         self.min_space_x = FloatField(Float(label='Spatial Start Distance(mm)', default=0, doc="The minimum value of"
-                                            " the x-axis for spatial equation plot."), self.project_id, name='min_space_x')
+                                            " the x-axis for spatial equation plot."), name='min_space_x')
         self.max_space_x = FloatField(Float(label='Spatial End Distance(mm)', default=100, doc="The maximum value of "
-                                            "the x-axis for spatial equation plot."), self.project_id, name='max_space_x')
+                                            "the x-axis for spatial equation plot."), name='max_space_x')
 
     def fill_from_post(self, form_data):
         if self.min_space_x.name in form_data:
@@ -127,7 +127,7 @@ class SurfaceStimulusController(SpatioTemporalController):
     @cherrypy.expose
     def set_surface(self, **param):
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
-        surface_form_field = SurfaceStimulusCreatorForm(common.get_current_project().id).surface
+        surface_form_field = SurfaceStimulusCreatorForm().surface
         surface_form_field.fill_from_post(param)
         current_surface_stim.surface = surface_form_field.value
         self._reset_focal_points(current_surface_stim)
@@ -152,7 +152,7 @@ class SurfaceStimulusController(SpatioTemporalController):
 
     @cherrypy.expose
     def set_display_name(self, **param):
-        display_name_form_field = StimulusSurfaceSelectorForm(common.get_current_project().id).display_name
+        display_name_form_field = StimulusSurfaceSelectorForm().display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
             current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
@@ -164,9 +164,9 @@ class SurfaceStimulusController(SpatioTemporalController):
         """
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         project_id = common.get_current_project().id
-        surface_stim_selector_form = StimulusSurfaceSelectorForm(project_id)
+        surface_stim_selector_form = StimulusSurfaceSelectorForm()
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
-        surface_stim_creator_form = SurfaceStimulusCreatorForm(project_id)
+        surface_stim_creator_form = SurfaceStimulusCreatorForm()
         if not hasattr(current_surface_stim, 'surface') or not current_surface_stim.surface:
             default_surface_index = try_get_last_datatype(project_id, SurfaceIndex,
                                                           SurfaceStimulusCreatorForm.get_filters())
@@ -199,7 +199,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         """
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         template_specification = dict(title="Spatio temporal - Surface stimulus")
-        surface_stim_selector_form = StimulusSurfaceSelectorForm(common.get_current_project().id)
+        surface_stim_selector_form = StimulusSurfaceSelectorForm()
         surface_stim_selector_form.display_name.data = current_surface_stim.display_name
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
         template_specification['surfaceStimulusSelectForm'] = self.render_adapter_form(surface_stim_selector_form)

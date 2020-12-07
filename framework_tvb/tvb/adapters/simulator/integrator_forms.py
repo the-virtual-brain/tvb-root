@@ -67,7 +67,7 @@ class IntegratorForm(Form):
 
     def __init__(self):
         super(IntegratorForm, self).__init__()
-        self.dt = FloatField(IntegratorViewModel.dt, self.project_id)
+        self.dt = FloatField(IntegratorViewModel.dt)
 
 
 class IntegratorStochasticForm(IntegratorForm):
@@ -78,7 +78,7 @@ class IntegratorStochasticForm(IntegratorForm):
         self.noise_choices = get_ui_name_to_noise_dict()
         default_noise = list(self.noise_choices.values())[0]
 
-        self.noise = SelectField(Attr(NoiseViewModel, label='Noise', default=default_noise), self.project_id, name='noise',
+        self.noise = SelectField(Attr(NoiseViewModel, label='Noise', default=default_noise), name='noise',
                                  choices=self.noise_choices, subform=get_form_for_noise(default_noise))
 
     def fill_trait(self, datatype):

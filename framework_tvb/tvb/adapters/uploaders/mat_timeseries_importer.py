@@ -102,18 +102,17 @@ class RegionMatTimeSeriesImporterModel(UploaderViewModel):
 
 class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
 
-    def __init__(self, project_id=None):
-        super(RegionMatTimeSeriesImporterForm, self).__init__(project_id)
-        self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', self.project_id,
-                                          'data_file', self.temporary_files)
-        self.dataset_name = StrField(RegionMatTimeSeriesImporterModel.dataset_name, self.project_id, name='dataset_name')
-        self.structure_path = StrField(RegionMatTimeSeriesImporterModel.structure_path, self.project_id, name='structure_path')
-        self.transpose = BoolField(RegionMatTimeSeriesImporterModel.transpose, self.project_id, name='transpose')
-        self.slice = StrField(RegionMatTimeSeriesImporterModel.slice, self.project_id, name='slice')
-        self.sampling_rate = IntField(RegionMatTimeSeriesImporterModel.sampling_rate, self.project_id, name='sampling_rate')
-        self.start_time = IntField(RegionMatTimeSeriesImporterModel.start_time, self.project_id, name='start_time')
-        self.datatype = TraitDataTypeSelectField(RegionMatTimeSeriesImporterModel.datatype, self.project_id,
-                                                 name='tstype_parameters')
+    def __init__(self):
+        super(RegionMatTimeSeriesImporterForm, self).__init__()
+        self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', 'data_file',
+                                          self.temporary_files)
+        self.dataset_name = StrField(RegionMatTimeSeriesImporterModel.dataset_name, name='dataset_name')
+        self.structure_path = StrField(RegionMatTimeSeriesImporterModel.structure_path, name='structure_path')
+        self.transpose = BoolField(RegionMatTimeSeriesImporterModel.transpose, name='transpose')
+        self.slice = StrField(RegionMatTimeSeriesImporterModel.slice, name='slice')
+        self.sampling_rate = IntField(RegionMatTimeSeriesImporterModel.sampling_rate, name='sampling_rate')
+        self.start_time = IntField(RegionMatTimeSeriesImporterModel.start_time, name='start_time')
+        self.datatype = TraitDataTypeSelectField(RegionMatTimeSeriesImporterModel.datatype, name='tstype_parameters')
 
     @staticmethod
     def get_view_model():

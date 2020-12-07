@@ -108,9 +108,9 @@ class LocalConnectivityController(SpatioTemporalController):
             common.add2session(KEY_LCONN, new_lconn)
 
         current_lconn = common.get_from_session(KEY_LCONN)
-        existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
+        existent_lcon_form = LocalConnectivitySelectorForm()
         existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
-        configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id)
+        configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations)
         configure_lcon_form.fill_from_trait(current_lconn)
         current_lconn.equation = configure_lcon_form.spatial.value()
 
@@ -186,7 +186,7 @@ class LocalConnectivityController(SpatioTemporalController):
                use the same js function for this.
         """
         current_lconn = common.get_from_session(KEY_LCONN)
-        left_side_form = LocalConnectivitySelectorForm(project_id=common.get_current_project().id)
+        left_side_form = LocalConnectivitySelectorForm()
         left_side_form.existentEntitiesSelect.data = current_lconn.gid.hex
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step2_main'

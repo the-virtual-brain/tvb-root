@@ -74,13 +74,11 @@ class TrackImporterModel(UploaderViewModel):
 
 class TrackImporterForm(ABCUploaderForm):
 
-    def __init__(self, project_id=None):
-        super(TrackImporterForm, self).__init__(project_id)
+    def __init__(self):
+        super(TrackImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', self.project_id, 'data_file',
-                                          self.temporary_files)
-        self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, self.project_id,
-                                                      name='region_volume')
+        self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', 'data_file', self.temporary_files)
+        self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, name='region_volume')
 
     @staticmethod
     def get_view_model():
@@ -95,8 +93,8 @@ class TrackImporterForm(ABCUploaderForm):
 
 class TrackZipImporterForm(TrackImporterForm):
 
-    def __init__(self, project_id=None):
-        super(TrackZipImporterForm, self).__init__(project_id)
+    def __init__(self):
+        super(TrackZipImporterForm, self).__init__()
 
         self.data_file.required_type = '.zip'
 

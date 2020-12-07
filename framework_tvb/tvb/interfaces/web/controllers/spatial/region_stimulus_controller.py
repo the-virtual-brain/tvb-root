@@ -95,7 +95,7 @@ class RegionStimulusController(SpatioTemporalController):
     @cherrypy.expose
     def set_connectivity(self, **param):
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
-        connectivity_form_field = RegionStimulusCreatorForm(common.get_current_project().id).connectivity
+        connectivity_form_field = RegionStimulusCreatorForm().connectivity
         connectivity_form_field.fill_from_post(param)
         current_region_stim.connectivity = connectivity_form_field.value
         conn_index = load_entity_by_gid(connectivity_form_field.value)
@@ -103,7 +103,7 @@ class RegionStimulusController(SpatioTemporalController):
 
     @cherrypy.expose
     def set_display_name(self, **param):
-        display_name_form_field = StimulusRegionSelectorForm(common.get_current_project().id).display_name
+        display_name_form_field = StimulusRegionSelectorForm().display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
             current_stimulus_region = common.get_from_session(KEY_REGION_STIMULUS)
@@ -138,11 +138,11 @@ class RegionStimulusController(SpatioTemporalController):
         current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
         selected_stimulus_gid = current_stimuli_region.gid.hex
         project_id = common.get_current_project().id
-        region_stim_selector_form = StimulusRegionSelectorForm(project_id)
+        region_stim_selector_form = StimulusRegionSelectorForm()
         region_stim_selector_form.region_stimulus.data = selected_stimulus_gid
         region_stim_selector_form.display_name.data = current_stimuli_region.display_name
 
-        region_stim_creator_form = RegionStimulusCreatorForm(project_id)
+        region_stim_creator_form = RegionStimulusCreatorForm()
         if not hasattr(current_stimuli_region, 'connectivity') or not current_stimuli_region.connectivity:
             conn = try_get_last_datatype(project_id, ConnectivityIndex)
             if conn is None:
@@ -173,7 +173,7 @@ class RegionStimulusController(SpatioTemporalController):
         Generate the required template dictionary for the second step.
         """
         current_region_stimulus = common.get_from_session(KEY_REGION_STIMULUS)
-        region_stim_selector_form = StimulusRegionSelectorForm(common.get_current_project().id)
+        region_stim_selector_form = StimulusRegionSelectorForm()
         region_stim_selector_form.region_stimulus.data = current_region_stimulus.gid.hex
         region_stim_selector_form.display_name.data = current_region_stimulus.display_name
 

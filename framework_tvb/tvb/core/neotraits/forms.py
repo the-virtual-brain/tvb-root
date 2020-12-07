@@ -35,9 +35,9 @@ from collections import namedtuple
 import numpy
 from tvb.basic.neotraits.api import List, Attr
 from tvb.basic.neotraits.ex import TraitError
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
+#TODO: remove dependency
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 
@@ -51,9 +51,8 @@ jinja_env = None
 class Field(object):
     template = None
 
-    def __init__(self, project_id, name, disabled=False, required=False, label='', doc='', default=None):
-        # type: (int, str, bool, bool, str, str, object) -> None
-        self.project_id = project_id
+    def __init__(self, name, disabled=False, required=False, label='', doc='', default=None):
+        # type: (str, bool, bool, str, str, object) -> None
         self.name = name
         self.disabled = disabled
         self.required = required
@@ -103,14 +102,13 @@ class Field(object):
 class TraitField(Field):
     # mhtodo: while this is consistent with the h5 api, it has the same problem
     #         it couples the system to traited attr declarations
-    def __init__(self, trait_attribute, project_id, name=None, disabled=False):
-        # type: (Attr, int, str, bool) -> None
+    def __init__(self, trait_attribute, name=None, disabled=False):
+        # type: (Attr, str, bool) -> None
         self.trait_attribute = trait_attribute  # type: Attr
         name = name or trait_attribute.field_name
         label = trait_attribute.label or name
 
         super(TraitField, self).__init__(
-            project_id,
             name,
             disabled,
             trait_attribute.required,
@@ -129,11 +127,10 @@ TEMPORARY_PREFIX = ".tmp"
 class TraitUploadField(TraitField):
     template = 'form_fields/upload_field.html'
 
-    def __init__(self, traited_attribute, required_type, project_id, name, temporary_files, disabled=False):
-        super(TraitUploadField, self).__init__(traited_attribute, project_id, name, disabled)
+    def __init__(self, traited_attribute, required_type, name, temporary_files, disabled=False):
+        super(TraitUploadField, self).__init__(traited_attribute, name, disabled)
         self.required_type = required_type
         self.temporary_files = temporary_files
-        self.files_helper = FilesHelper()
 
     def fill_from_post(self, post_data):
         super(TraitUploadField, self).fill_from_post(post_data)
@@ -146,10 +143,10 @@ class TraitDataTypeSelectField(TraitField):
     template = 'form_fields/datatype_select_field.html'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, project_id, name=None, conditions=None,
+    def __init__(self, trait_attribute, name=None, conditions=None,
                  draw_dynamic_conditions_buttons=True, has_all_option=False,
                  show_only_all_option=False):
-        super(TraitDataTypeSelectField, self).__init__(trait_attribute, project_id, name)
+        super(TraitDataTypeSelectField, self).__init__(trait_attribute, name)
 
         if issubclass(type(trait_attribute), DataTypeGidAttr):
             type_to_query = trait_attribute.linked_datatype
@@ -181,9 +178,6 @@ class TraitDataTypeSelectField(TraitField):
         return self.conditions
 
     def options(self):
-        if not self.project_id:
-            raise ValueError('A project_id is required in order to query the DB')
-
         if not self.required:
             choice = None
             yield Option(
@@ -316,9 +310,9 @@ class SelectField(TraitField):
         if len(choices) > 4:
             self.template = 'form_fields/select_field.html'
 
-    def __init__(self, trait_attribute, project_id, name=None, disabled=False, choices=None, display_none_choice=True,
+    def __init__(self, trait_attribute, name=None, disabled=False, choices=None, display_none_choice=True,
                  subform=None, display_subform=True):
-        super(SelectField, self).__init__(trait_attribute, project_id, name, disabled)
+        super(SelectField, self).__init__(trait_attribute, name, disabled)
         if choices:
             self.choices = choices
         else:
@@ -328,7 +322,7 @@ class SelectField(TraitField):
         self.display_none_choice = display_none_choice
         self.subform_field = None
         if subform:
-            self.subform_field = FormField(subform, project_id, self.subform_prefix + self.name)
+            self.subform_field = FormField(subform, self.subform_prefix + self.name)
             self.display_subform = display_subform
         self._prepare_template(self.choices)
 
@@ -370,8 +364,8 @@ class SelectField(TraitField):
 class MultiSelectField(TraitField):
     template = 'form_fields/checkbox_field.html'
 
-    def __init__(self, trait_attribute, project_id, name=None, disabled=False):
-        super(MultiSelectField, self).__init__(trait_attribute, project_id, name, disabled)
+    def __init__(self, trait_attribute, name=None, disabled=False):
+        super(MultiSelectField, self).__init__(trait_attribute, name, disabled)
         if not isinstance(trait_attribute, List):
             raise NotImplementedError('only List in multi select for now')
 
@@ -411,16 +405,16 @@ class MultiSelectField(TraitField):
 class HiddenField(TraitField):
     template = 'form_fields/hidden_field.html'
 
-    def __init__(self, trait_attribute, project_id, name=None, disabled=False):
-        super(HiddenField, self).__init__(trait_attribute, project_id, name, disabled)
+    def __init__(self, trait_attribute, name=None, disabled=False):
+        super(HiddenField, self).__init__(trait_attribute, name, disabled)
         self.trait_attribute.label = ''
 
 
 class FormField(Field):
     template = 'form_fields/form_field.html'
 
-    def __init__(self, form_class, project_id, name, label='', doc=''):
-        super(FormField, self).__init__(project_id, name, False, False, label, doc)
+    def __init__(self, form_class, name, label='', doc=''):
+        super(FormField, self).__init__(name, False, False, label, doc)
         self.form = form_class()
 
     def fill_from_post(self, post_data):
@@ -436,9 +430,7 @@ class FormField(Field):
 
 class Form(object):
 
-    def __init__(self, project_id=None):
-        # TODO: makes sense here?
-        self.project_id = project_id
+    def __init__(self):
         self.errors = []
 
     def get_subform_key(self):
