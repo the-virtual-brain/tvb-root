@@ -39,6 +39,7 @@ from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, STATUS_FINISHED, STATUS_PENDING, STATUS_CANCELED
@@ -47,6 +48,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
+from tvb.core.services.import_service import ImportService
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
@@ -362,3 +364,14 @@ class BurstService(object):
     @staticmethod
     def store_burst(burst_config):
         return dao.store_entity(burst_config)
+
+    def load_simulation_from_zip(self, zip_file, project):
+        import_service = ImportService()
+        simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
+
+        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
+        simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
+        simulator = h5.load_view_model_from_file(simulator_h5_filepath)
+
+        burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
+        return simulator, burst_config

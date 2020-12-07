@@ -56,10 +56,8 @@ from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException
-from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 from tvb.simulator.integrators import IntegratorStochastic
@@ -240,17 +238,6 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
             self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
-
-    def load_from_zip(self, zip_file, project):
-        import_service = ImportService()
-        simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
-
-        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
-        simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
-        simulator = h5.load_view_model_from_file(simulator_h5_filepath)
-
-        burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
-        return simulator, burst_config
 
     @staticmethod
     def prepare_first_simulation_fragment(cached_simulator_algorithm, project_id):

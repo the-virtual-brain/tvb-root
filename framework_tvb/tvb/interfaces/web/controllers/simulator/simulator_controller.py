@@ -656,7 +656,8 @@ class SimulatorController(BurstBaseController):
         try:
             upload_param = "uploadedfile"
             if upload_param in data and data[upload_param]:
-                simulator, burst_config = self.simulator_service.load_from_zip(data[upload_param], self.context.project)
+                simulator, burst_config = self.burst_service.load_simulation_from_zip(data[upload_param],
+                                                                                      self.context.project)
 
                 self.context.init_session_at_sim_config_from_zip(simulator, burst_config)
                 if burst_config.is_pse_burst():
