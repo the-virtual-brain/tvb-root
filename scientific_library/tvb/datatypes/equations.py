@@ -36,9 +36,9 @@ The Equation datatypes.
 
 """
 import numpy
-import numexpr
 from scipy.special import gamma as sp_gamma
 from tvb.basic.neotraits.api import HasTraits, Attr, Final
+from tvb.simulator.backend.ref import RefBase
 
 
 # In how many points should the equation be evaluated for the plot. Increasing this will
@@ -89,7 +89,7 @@ class Equation(HasTraits):
         ?scipy.sparse_matrix? TODO: think this last one is true, need to check
         as we need it for LocalConnectivity...
         """
-        return numexpr.evaluate(self.equation, global_dict=self.parameters)
+        return RefBase.evaluate(self.equation, self.parameteres)
 
     def get_series_data(self, min_range=0, max_range=100, step=None):
         """
@@ -339,7 +339,7 @@ class PulseTrain(TemporalApplicableEquation):
         off = var < onset
         var = numpy.roll(var, off.sum() + 1)
         var[..., off] = 0.0
-        _pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
+        _pattern = RefBase.evaluate(self.equation, global_dict=self.parameters)
         _pattern[..., off] = 0.0
         return _pattern
 
@@ -406,7 +406,7 @@ class Gamma(HRFKernelEquation):
             product *= i + 1
 
         self.parameters["factorial"] = product
-        _pattern = numexpr.evaluate(self.equation,
+        _pattern = RefBase.evaluate(self.equation,
                                          global_dict=self.parameters)
         _pattern /= max(_pattern)
         _pattern *= self.parameters["a"]
@@ -458,7 +458,7 @@ class DoubleExponential(HRFKernelEquation):
         Generate a discrete representation of the equation for the space
         represented by ``var``.
         """
-        _pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
+        _pattern = RefBase.evaluate(self.equation, global_dict=self.parameters)
         _pattern /= max(_pattern)
 
         _pattern *= self.parameters["a"]
@@ -578,5 +578,5 @@ class MixtureOfGammas(HRFKernelEquation):
         self.parameters["gamma_a_1"] = sp_gamma(self.parameters["a_1"])
         self.parameters["gamma_a_2"] = sp_gamma(self.parameters["a_2"])
 
-        return numexpr.evaluate(self.equation, global_dict=self.parameters)
+        return RefBase.evaluate(self.equation, global_dict=self.parameters)
 

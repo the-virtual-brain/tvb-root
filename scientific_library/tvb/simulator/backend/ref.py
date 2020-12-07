@@ -10,6 +10,28 @@ from .base import BaseBackend
 class RefBase:
     "Base methods for reference NumPy backend"
 
+    @staticmethod
+    def evaluate(expr, global_dict=None, out=None):
+        "Evaluate expression as in numexpr.evaluate."
+        ns = {}
+        ns.update(np.__dict__)
+        if global_dict is None:
+            import inspect
+            frame = inspect.getcurrentframe()
+            global_dict = frame.f_back.f_locals
+        ns.update(global_dict)
+        ns.update(
+        val = eval(expr, ns)
+        if out is not None:
+            out[:] = val
+        return val
+
+    try:
+        import numexpr
+        evaluate = staticmethod(numexpr.evaluate)
+    except ImportError:
+        pass
+
     # from tvb.sim.common
     def _add_at(dest, map, src):
         "workaround lack of ufunc at method for older NumPy versions"
