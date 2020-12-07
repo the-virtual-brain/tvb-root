@@ -101,6 +101,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             rendering_rules = self.simulator_controller.set_connectivity(**self.sess_mock._data)
 
         assert self.session_stored_simulator.connectivity.hex == connectivity.gid, "Connectivity was not set correctly."
@@ -111,7 +112,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert rendering_rules['renderer'].last_form_url == '/burst/set_coupling_params', "Last form url was not" \
                                                                                           "set correctly"
         assert rendering_rules['renderer'].previous_form_action_url == '/burst/set_connectivity', "Previous form url" \
-                                                                                                  "was not set correctly"
+                                                                                                  "was not set " \
+                                                                                                  "correctly "
         assert rendering_rules['renderer'].include_next_button
         assert rendering_rules['renderer'].include_previous_button
 
@@ -121,6 +123,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_coupling_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.coupling.a[0] == [0.00390625], "a value was not set correctly."
@@ -135,6 +138,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_surface(**self.sess_mock._data)
 
         assert self.session_stored_simulator.surface is not None, "Surface was not set."
@@ -142,6 +146,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
     def test_set_surface_none(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_surface(**self.sess_mock._data)
 
         assert self.session_stored_simulator.surface is None, "Surface should not be set."
@@ -165,6 +170,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_cortex(**self.sess_mock._data)
 
         assert self.session_stored_simulator.surface.region_mapping_data.hex == region_mapping.gid, \
@@ -195,6 +201,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_cortex(**self.sess_mock._data)
 
         assert self.session_stored_simulator.surface.region_mapping_data.hex == region_mapping.gid, \
@@ -207,6 +214,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
     def test_set_stimulus_none(self):
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
         assert self.session_stored_simulator.stimulus is None, "Stimulus should not be set."
@@ -232,6 +240,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             rendering_rules = self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
         assert rendering_rules['renderer'].is_model_fragment, 'Next fragment should be the model fragment!'
@@ -244,6 +253,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_model(**self.sess_mock._data)
 
         assert isinstance(self.session_stored_simulator.model,
@@ -266,6 +276,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_model_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.model.tau == [1.0], "Tau has incorrect value."
@@ -288,6 +299,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_integrator(**self.sess_mock._data)
 
         assert isinstance(self.session_stored_simulator.integrator,
@@ -298,6 +310,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_integrator_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.integrator.dt == 0.01220703125, 'dt value was not set correctly.'
@@ -310,12 +323,14 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             rendering_rules = self.simulator_controller.set_integrator_params(**self.sess_mock._data)
 
         assert isinstance(self.session_stored_simulator.integrator, IntegratorStochasticViewModel), \
             "Coupling should be Stochastic Dormand-Prince."
         assert self.session_stored_simulator.integrator.dt == 0.01220703125, 'dt value was not set correctly.'
-        assert isinstance(self.session_stored_simulator.integrator.noise, MultiplicativeNoiseViewModel), 'Noise class is incorrect.'
+        assert isinstance(self.session_stored_simulator.integrator.noise,
+                          MultiplicativeNoiseViewModel), 'Noise class is incorrect.'
         assert rendering_rules['renderer'].is_noise_fragment, 'Noise fragment should be next!'
 
     def test_set_noise_params(self):
@@ -327,6 +342,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_noise_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.integrator.noise.ntau == 0.0, "ntau value was not set correctly."
@@ -345,6 +361,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_noise_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.integrator.noise.ntau == 0.0, "ntau value was not set correctly."
@@ -366,6 +383,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_noise_equation_params(**self.sess_mock._data)
 
         assert self.session_stored_simulator.integrator.noise.b.parameters['low'] == 0.1, \
@@ -385,6 +403,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             common.add2session(common.KEY_BURST_CONFIG, BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_monitors(**self.sess_mock._data)
 
         assert isinstance(self.session_stored_simulator.monitors[0],
@@ -398,6 +417,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_monitors(**self.sess_mock._data)
 
     def test_multiple_monitors(self):
@@ -411,6 +431,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_monitors(**self.sess_mock._data)
 
         assert isinstance(self.session_stored_simulator.monitors[0], TemporalAverageViewModel), \
@@ -423,12 +444,15 @@ class TestSimulationController(BaseTransactionalControllerTest):
         variable_of_interest_indexes = {'W': 1, 'V - W': 2}
         self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '0.8'
+        self.sess_mock['monitors'] = ['Temporally sub-sample']
         self.session_stored_simulator.monitors = [SubSampleViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
-            rendering_rules = self.simulator_controller.set_monitor_params('SubSample', **self.sess_mock._data)
+            self.simulator_controller.set_monitors(**self.sess_mock._data)
+            rendering_rules = self.simulator_controller.set_monitor_params('SubSampleViewModel', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.8, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -460,7 +484,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         eeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                         'projection_eeg_62_surface_16k.mat')
         eeg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, eeg_projection_file,
-                                                               eeg_sensors.gid, surface.gid)
+                                                              eeg_sensors.gid, surface.gid)
         return eeg_sensors, eeg_projection
 
     def test_set_eeg_monitor_params(self):
@@ -474,13 +498,16 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['projection'] = eeg_projection.gid
         self.sess_mock['sigma'] = "1.0"
         self.sess_mock['sensors'] = eeg_sensors.gid
+        self.sess_mock['monitors'] = ['EEG']
 
         self.session_stored_simulator.monitors = [EEGViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
-            self.simulator_controller.set_monitor_params('EEG', **self.sess_mock._data)
+            self.simulator_controller.context.get_session_params()
+            self.simulator_controller.set_monitors(**self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('EEGViewModel', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -503,7 +530,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         meg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                         'projection_meg_276_surface_16k.npy')
         meg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, meg_projection_file,
-                                                               meg_sensors.gid, surface.gid)
+                                                              meg_sensors.gid, surface.gid)
         return meg_sensors, meg_projection
 
     def test_set_meg_monitor_params(self):
@@ -518,13 +545,16 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['projection'] = meg_projection.gid
         self.sess_mock['sigma'] = 1.0
         self.sess_mock['sensors'] = meg_sensors.gid
+        self.sess_mock['monitors'] = ['MEG']
 
         self.session_stored_simulator.monitors = [MEGViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
-            self.simulator_controller.set_monitor_params('MEG', **self.sess_mock._data)
+            self.simulator_controller.set_monitors(**self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('MEGViewModel', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -547,7 +577,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         seeg_projection_file = path.join(path.dirname(tvb_data.projectionMatrix.__file__),
                                          'projection_seeg_588_surface_16k.npy')
         seeg_projection = TestFactory.import_projection_matrix(self.test_user, self.test_project, seeg_projection_file,
-                                                                seeg_sensors.gid, surface.gid)
+                                                               seeg_sensors.gid, surface.gid)
         return seeg_sensors, seeg_projection
 
     def test_set_seeg_monitor_params(self):
@@ -562,13 +592,16 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['projection'] = seeg_projection.gid
         self.sess_mock['sigma'] = "1.0"
         self.sess_mock['sensors'] = seeg_sensors.gid
+        self.sess_mock['monitors'] = ['Intracerebral / Stereo EEG']
 
         self.session_stored_simulator.monitors = [iEEGViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
-            self.simulator_controller.set_monitor_params('iEEG', **self.sess_mock._data)
+            self.simulator_controller.context.get_session_params()
+            self.simulator_controller.set_monitors(**self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('iEEGViewModel', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -587,12 +620,15 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['variables_of_interest'] = list(variable_of_interest_indexes.keys())
         self.sess_mock['period'] = '2000.0'
         self.sess_mock['hrf_kernel'] = 'HRF kernel: Volterra Kernel'
+        self.sess_mock['monitors'] = ['BOLD']
 
         self.session_stored_simulator.monitors = [BoldViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
-            self.simulator_controller.set_monitor_params('Bold', **self.sess_mock._data)
+            self.simulator_controller.context.get_session_params()
+            self.simulator_controller.set_monitors(**self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('BoldViewModel', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 2000.0, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -613,12 +649,15 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['region_mapping'] = region_mapping.gid
         self.sess_mock['sensors'] = eeg_sensors.gid
         self.sess_mock['projection'] = eeg_projection.gid
+        self.sess_mock['monitors'] = ['Spatial average with temporal sub-sample', 'Temporal average', 'EEG']
 
         self.session_stored_simulator.monitors = [SpatialAverageViewModel(), TemporalAverageViewModel(), EEGViewModel()]
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
+            self.simulator_controller.context.get_session_params()
+            self.simulator_controller.set_monitors(**self.sess_mock._data)
             self.simulator_controller.set_monitor_params('SpatialAverageViewModel', **self.sess_mock._data)
             self.simulator_controller.set_monitor_params('TemporalAverageViewModel', **self.sess_mock._data)
             self.simulator_controller.set_monitor_params('EEGViewModel', **self.sess_mock._data)
@@ -627,7 +666,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
                list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
         assert self.session_stored_simulator.monitors[0].default_mask == 'hemispheres', \
             'Default mask was not set correctly on Spatial Average Monitor.'
-        assert self.session_stored_simulator.monitors[1].period == 0.75,\
+        assert self.session_stored_simulator.monitors[1].period == 0.75, \
             "Period was not set correctly on Temporal Average Monitor."
         assert self.session_stored_simulator.monitors[2].region_mapping.hex == region_mapping.gid, \
             "Region Mapping wasn't set and stored correctly on EEG Monitor."
@@ -641,6 +680,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['tau_f'] = '0.4'
         self.sess_mock['k_1'] = '5.6'
         self.sess_mock['V_0'] = '0.02'
+        self.sess_mock['monitors'] = ['BOLD']
 
         self.session_stored_simulator.monitors = [BoldViewModel()]
         self.session_stored_simulator.monitors[0].equation = FirstOrderVolterra()
@@ -648,15 +688,17 @@ class TestSimulationController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
-            self.simulator_controller.set_monitor_equation('Bold', **self.sess_mock._data)
+            self.simulator_controller.context.get_session_params()
+            self.simulator_controller.set_monitors(**self.sess_mock._data)
+            self.simulator_controller.set_monitor_equation('BoldViewModel', **self.sess_mock._data)
 
-        assert self.session_stored_simulator.monitors[0].equation.parameters[
+        assert self.session_stored_simulator.monitors[0].hrf_kernel.parameters[
                    'tau_s'] == 0.8, "tau_s value was not set correctly."
-        assert self.session_stored_simulator.monitors[0].equation.parameters[
+        assert self.session_stored_simulator.monitors[0].hrf_kernel.parameters[
                    'tau_f'] == 0.4, "tau_f value was not set correctly."
-        assert self.session_stored_simulator.monitors[0].equation.parameters[
+        assert self.session_stored_simulator.monitors[0].hrf_kernel.parameters[
                    'k_1'] == 5.6, "k_1 value was not set correctly."
-        assert self.session_stored_simulator.monitors[0].equation.parameters[
+        assert self.session_stored_simulator.monitors[0].hrf_kernel.parameters[
                    'V_0'] == 0.02, "V_0 value was not set correctly."
 
     def test_load_burst_history(self):
@@ -684,6 +726,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             rendering_rules = self.simulator_controller.set_connectivity(**self.sess_mock._data)
 
         assert rendering_rules['renderer'].is_first_fragment is False, \
@@ -748,6 +791,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
@@ -756,6 +800,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             rendering_rules = self.simulator_controller.copy_simulator_configuration(str(burst_config.id))
+            self.simulator_controller.context.get_session_params()
             is_simulator_load = common.get_from_session(KEY_IS_SIMULATOR_LOAD)
             is_simulator_copy = common.get_from_session(KEY_IS_SIMULATOR_COPY)
 
@@ -783,6 +828,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
@@ -838,6 +884,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
 
         storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
@@ -846,6 +893,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_BURST_CONFIG, burst_config)
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
+            self.simulator_controller.context.get_session_params()
             self.simulator_controller.copy_simulator_configuration(str(burst_config.id))
             copied_burst = common.get_from_session(KEY_BURST_CONFIG)
 
