@@ -261,7 +261,9 @@ class SpatialAverage(Monitor):
         # setup given spatial mask or default to region mapping
         if self.spatial_mask is None:
             self.is_default_special_mask = True
-            if not (simulator.surface is None):
+            if simulator.surface is not None and simulator.connectivity is not None:
+                self.spatial_mask = RegionMapping.full_region_mapping(simulator.surface, simulator.connectivity)
+            elif not (simulator.surface is None):
                 self.spatial_mask = simulator.surface.region_mapping
             else:
                 conn = simulator.connectivity
@@ -738,7 +740,7 @@ class iEEG(Projection):
         return Projection.from_file.__func__(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
-        """Compute the projection matrix -- simple distance weight for now.
+        r"""Compute the projection matrix -- simple distance weight for now.
         Equation 12 from sarvas1987basic (point dipole in homogeneous space):
           V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
         """

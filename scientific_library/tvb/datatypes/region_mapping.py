@@ -65,6 +65,20 @@ class RegionMapping(HasTraits):
         result = RegionMapping()
         result.array_data = reader.read_array(dtype=numpy.int32)
         return result
+    
+    @staticmethod
+    def full_region_mapping(surf, conn):
+        """
+        Get the region mapping for both the cortical and subcortical areas.
+
+        NOTE: We presume subcortical regions do not have explicit mapping, they get a default value.
+        TODO: test this
+        """
+        region_mapping_cortex = surf.region_mapping
+        region_mapping_subcortical = conn.unmapped_indices(region_mapping_cortex)
+
+        result = numpy.r_[region_mapping_cortex, region_mapping_subcortical]
+        return result
 
 
 class RegionVolumeMapping(HasTraits):
