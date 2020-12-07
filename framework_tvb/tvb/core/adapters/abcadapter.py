@@ -392,8 +392,6 @@ class ABCAdapter(object):
             if res is None:
                 continue
             if not res.fixed_generic_attributes:
-                #set tag_3 to emtpy before saving the result that is done
-                self.generic_attributes.user_tag_3 = ''
                 res.fill_from_generic_attributes(self.generic_attributes)
             res.fk_from_operation = self.operation_id
             res.fk_datatype_group = data_type_group_id
