@@ -92,22 +92,6 @@ class AlgorithmService(object):
         """ Count total number of operations started for current project. """
         return dao.get_operation_numbers(proj_id)
 
-    def _set_form_datatypes(self, form, project_id, extra_conditions=None):
-        for form_field in form.trait_fields:
-            if isinstance(form_field, TraitDataTypeSelectField):
-                filtering_conditions = FilterChain()
-                filtering_conditions += form_field.conditions
-                filtering_conditions += extra_conditions
-                datatypes, _ = dao.get_values_of_datatype(project_id,
-                                                          form_field.datatype_index,
-                                                          filtering_conditions)
-                datatype_options = []
-                for datatype in datatypes:
-                    display_name = self._prepare_dt_display_name(form_field.datatype_index, datatype)
-                    datatype_options.append((datatype, display_name))
-                form_field.datatype_options = datatype_options
-        return form
-
     def _prepare_dt_display_name(self, dt_index, dt):
         # dt is a result of the get_values_of_datatype function
         db_dt = dao.get_generic_entity(dt_index, dt[2], "gid")
@@ -123,16 +107,41 @@ class AlgorithmService(object):
 
         return display_name
 
-    def prepare_upload_form(self, form, post_data):
-        if not isinstance(form, ABCUploaderForm):
-            return
+    def _fill_form_with_datatypes(self, form, project_id, extra_conditions=None):
+        for form_field in form.trait_fields:
+            if isinstance(form_field, TraitDataTypeSelectField):
+                filtering_conditions = FilterChain()
+                filtering_conditions += form_field.conditions
+                filtering_conditions += extra_conditions
+                datatypes, _ = dao.get_values_of_datatype(project_id, form_field.datatype_index, filtering_conditions)
+                datatype_options = []
+                for datatype in datatypes:
+                    display_name = self._prepare_dt_display_name(form_field.datatype_index, datatype)
+                    datatype_options.append((datatype, display_name))
+                form_field.datatype_options = datatype_options
+        return form
 
+    def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None, extra_conditions=None):
+        # type: (ABCAdapter, ABCAdapterForm, int, []) -> ABCAdapterForm
+        form = None
+        if form_instance is not None:
+            form = form_instance
+        elif adapter_instance is not None:
+            form = adapter_instance.get_form()()
+
+        if form is None:
+            raise OperationException("Cannot prepare None form")
+
+        form = self._fill_form_with_datatypes(form, project_id, extra_conditions)
+        return form
+
+    def _prepare_upload_form(self, form, post_data, project_id):
         for form_field in form.trait_fields:
             if isinstance(form_field, TraitUploadField) and form_field.name in post_data:
                 field = post_data[form_field.name]
                 file_name = None
                 if hasattr(field, 'file') and field.file is not None:
-                    project = dao.get_project_by_id(form_field.project_id)
+                    project = dao.get_project_by_id(project_id)
                     temporary_storage = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
                     try:
                         uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
@@ -146,20 +155,18 @@ class AlgorithmService(object):
                         self.file_helper.remove_files([file_name])
                         excep.message = 'Could not continue: Invalid input files'
                         raise excep
-                post_data[form_field.name] = file_name
 
-    def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None, extra_conditions=None):
-        # type: (ABCAdapter, ABCAdapterForm, int, []) -> ABCAdapterForm
-        form = None
-        if form_instance is not None:
-            form = form_instance
-        elif adapter_instance is not None:
-            form = adapter_instance.get_form()()
+    def fill_adapter_form(self, adapter_instance, post_data, project_id):
+        # type: (ABCAdapter, dict, int) -> ABCAdapterForm
+        form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id)
+        if isinstance(form, ABCUploaderForm):
+            self._prepare_upload_form(form, post_data, project_id)
 
-        if form is None:
-            raise OperationException("Cannot prepare None form")
+        if 'fill_defaults' in post_data:
+            form.fill_from_post_plus_defaults(post_data)
+        else:
+            form.fill_from_post(post_data)
 
-        form = self._set_form_datatypes(form, project_id, extra_conditions)
         return form
 
     def prepare_adapter(self, stored_adapter):

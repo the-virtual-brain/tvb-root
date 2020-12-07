@@ -288,12 +288,7 @@ class FlowController(BaseController):
         adapter_instance = ABCAdapter.build_adapter(algorithm)
 
         try:
-            form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id)
-            self.algorithm_service.prepare_upload_form(form, data)
-            if 'fill_defaults' in data:
-                form.fill_from_post_plus_defaults(data)
-            else:
-                form.fill_from_post(data)
+            form = self.algorithm_service.fill_adapter_form(adapter_instance, data, project_id)
             view_model = None
             if form.validate():
                 try:
