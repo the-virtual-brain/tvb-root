@@ -44,7 +44,7 @@ import math
 import numpy
 import scipy.sparse
 from tvb.basic.profile import TvbProfile
-from tvb.datatypes import cortex, connectivity, patterns
+from tvb.datatypes import cortex, connectivity, patterns, region_mapping
 from tvb.simulator import models, integrators, monitors, coupling
 from .common import psutil, numpy_add_at
 from .history import SparseHistory
@@ -226,12 +226,9 @@ class Simulator(HasTraits):
             self.number_of_nodes = self.connectivity.number_of_regions
             self.log.info('Region simulation with %d ROI nodes', self.number_of_nodes)
         else:
-            rm = self.surface.region_mapping
-            unmapped = self.connectivity.unmapped_indices(rm)
-            self._regmap = numpy.r_[rm, unmapped]
+            self._regmap = region_mapping.RegionMapping.full_region_mapping(self.surface, self.connectivity)
             self.number_of_nodes = self._regmap.shape[0]
-            self.log.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
-                     rm.size, unmapped.size, self.number_of_nodes)
+            self.log.info('Surface simulation with %d total nodes', self.number_of_nodes)
         self._guesstimate_memory_requirement()
 
     def configure(self, full_configure=True):
@@ -546,7 +543,7 @@ class Simulator(HasTraits):
         if self.stimulus is not None:
             if self.surface:
                 # NOTE the region mapping of the stimuli should also include the subcortical areas
-                self.stimulus.configure_space(region_mapping=numpy.r_[self.surface.region_mapping, self.connectivity.unmapped_indices(self.surface.region_mapping)])
+                self.stimulus.configure_space(region_mapping=region_mapping.RegionMapping.full_region_mapping(self.surface, self.connectivity))
             else:
                 self.stimulus.configure_space()
 
