@@ -123,9 +123,9 @@ class TestJinja2Simulator(Jinja2Test):
         return template_dict
 
     def prepare_simulator_form_for_search(self, mocker, rendering_rules, form=None):
-        # type: (SimulatorFragmentRenderingRules, ABCAdapterForm) -> BeautifulSoup
+        # type: (MockerFixture, SimulatorFragmentRenderingRules, ABCAdapterForm) -> BeautifulSoup
         if form is None:
-            form = SimulatorAdapterForm(project_id=1)
+            form = SimulatorAdapterForm()
             form.fill_from_trait(Simulator())
         rendering_rules.form = form
 

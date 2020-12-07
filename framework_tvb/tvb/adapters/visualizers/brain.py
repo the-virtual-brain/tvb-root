@@ -403,8 +403,8 @@ class DualBrainViewerModel(ViewModel):
 
 class DualBrainViewerForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(DualBrainViewerForm, self).__init__(project_id)
+    def __init__(self):
+        super(DualBrainViewerForm, self).__init__()
         self.time_series = TraitDataTypeSelectField(DualBrainViewerModel.time_series,
                                                     name='time_series',
                                                     conditions=self.get_filters())
