@@ -131,8 +131,6 @@ class OperationService:
             generic_metadata.operation_tag = submit_data[DataTypeMetaData.KEY_OPERATION_TAG]
         if DataTypeMetaData.KEY_TAG_1 in submit_data:
             generic_metadata.user_tag_1 = submit_data[DataTypeMetaData.KEY_TAG_1]
-        if operation_group is not None:
-            generic_metadata.user_tag_3 = operation_group.name
         generic_metadata.fill_from(current_ga)
         return generic_metadata
 
