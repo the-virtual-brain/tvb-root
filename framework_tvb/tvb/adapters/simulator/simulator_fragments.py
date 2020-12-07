@@ -166,14 +166,14 @@ class SimulatorFinalFragment(ABCAdapterForm):
         super(SimulatorFinalFragment, self).__init__()
         self.simulation_length = FloatField(SimulatorAdapterModel.simulation_length)
         self.simulation_name = StrField(Attr(str, doc='Name for the current simulation configuration',
-                                                default=default_simulation_name, label='Simulation name'),
-                                        name='input_simulation_name_id')
+                                             default=default_simulation_name, label='Simulation name'),
+                                             name='input_simulation_name_id')
 
     def fill_from_post(self, form_data):
         super(SimulatorFinalFragment, self).fill_from_post(form_data)
-        valiadation_result = SimulatorFinalFragment.is_burst_name_ok(self.simulation_name.value)
-        if valiadation_result is not True:
-            raise ValueError(valiadation_result)
+        validation_result = SimulatorFinalFragment.is_burst_name_ok(self.simulation_name.value)
+        if validation_result is not True:
+            raise ValueError(validation_result)
 
     @staticmethod
     def is_burst_name_ok(burst_name):

@@ -227,15 +227,15 @@ class BurstService(object):
         return burst_config
 
     @staticmethod
-    def prepare_name(burst, project_id):
+    def prepare_simulation_name(burst, project_id):
         simulation_number = dao.get_number_of_bursts(project_id) + 1
 
         if burst.name is None:
-            default_simulation_name = 'simulation_' + str(simulation_number)
+            simulation_name = 'simulation_' + str(simulation_number)
         else:
-            default_simulation_name = burst.name
+            simulation_name = burst.name
 
-        return default_simulation_name, simulation_number
+        return simulation_name, simulation_number
 
     def prepare_indexes_for_simulation_results(self, operation, result_filenames, burst):
         indexes = list()
