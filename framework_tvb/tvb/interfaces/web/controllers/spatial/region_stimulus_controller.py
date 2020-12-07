@@ -34,6 +34,7 @@
 """
 
 import json
+
 import cherrypy
 import numpy
 from tvb.adapters.creators.stimulus_creator import *
@@ -138,11 +139,13 @@ class RegionStimulusController(SpatioTemporalController):
         current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
         selected_stimulus_gid = current_stimuli_region.gid.hex
         project_id = common.get_current_project().id
-        region_stim_selector_form = StimulusRegionSelectorForm()
+        region_stim_selector_form = self.algorithm_service.prepare_adapter_form(
+            form_instance=StimulusRegionSelectorForm(), project_id=common.get_current_project().id)
         region_stim_selector_form.region_stimulus.data = selected_stimulus_gid
         region_stim_selector_form.display_name.data = current_stimuli_region.display_name
 
-        region_stim_creator_form = RegionStimulusCreatorForm()
+        region_stim_creator_form = self.algorithm_service.prepare_adapter_form(
+            form_instance=RegionStimulusCreatorForm(), project_id=common.get_current_project().id)
         if not hasattr(current_stimuli_region, 'connectivity') or not current_stimuli_region.connectivity:
             conn = try_get_last_datatype(project_id, ConnectivityIndex)
             if conn is None:
@@ -173,7 +176,8 @@ class RegionStimulusController(SpatioTemporalController):
         Generate the required template dictionary for the second step.
         """
         current_region_stimulus = common.get_from_session(KEY_REGION_STIMULUS)
-        region_stim_selector_form = StimulusRegionSelectorForm()
+        region_stim_selector_form = self.algorithm_service.prepare_adapter_form(
+            form_instance=StimulusRegionSelectorForm(), project_id=common.get_current_project().id)
         region_stim_selector_form.region_stimulus.data = current_region_stimulus.gid.hex
         region_stim_selector_form.display_name.data = current_region_stimulus.display_name
 

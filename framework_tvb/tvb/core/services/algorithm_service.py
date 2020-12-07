@@ -148,8 +148,7 @@ class AlgorithmService(object):
                         raise excep
                 post_data[form_field.name] = file_name
 
-    def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None,
-                             extra_conditions=None):
+    def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None, extra_conditions=None):
         # type: (ABCAdapter, ABCAdapterForm, int, []) -> ABCAdapterForm
         form = None
         if form_instance is not None:

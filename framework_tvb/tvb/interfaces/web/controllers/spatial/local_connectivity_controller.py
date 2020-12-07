@@ -36,6 +36,7 @@
 
 import json
 import uuid
+
 import cherrypy
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
@@ -44,9 +45,9 @@ from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
     DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -108,9 +109,12 @@ class LocalConnectivityController(SpatioTemporalController):
             common.add2session(KEY_LCONN, new_lconn)
 
         current_lconn = common.get_from_session(KEY_LCONN)
-        existent_lcon_form = LocalConnectivitySelectorForm()
+        existent_lcon_form = self.algorithm_service.prepare_adapter_form(form_instance=LocalConnectivitySelectorForm(),
+                                                                         project_id=common.get_current_project().id)
         existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
-        configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations)
+        configure_lcon_form = self.algorithm_service.prepare_adapter_form(
+            form_instance=LocalConnectivityCreatorForm(self.possible_equations),
+            project_id=common.get_current_project().id)
         configure_lcon_form.fill_from_trait(current_lconn)
         current_lconn.equation = configure_lcon_form.spatial.value()
 
@@ -186,7 +190,8 @@ class LocalConnectivityController(SpatioTemporalController):
                use the same js function for this.
         """
         current_lconn = common.get_from_session(KEY_LCONN)
-        left_side_form = LocalConnectivitySelectorForm()
+        left_side_form = self.algorithm_service.prepare_adapter_form(form_instance=LocalConnectivitySelectorForm(),
+                                                                     project_id=common.get_current_project().id)
         left_side_form.existentEntitiesSelect.data = current_lconn.gid.hex
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step2_main'
