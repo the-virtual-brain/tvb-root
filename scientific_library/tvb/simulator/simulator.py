@@ -46,7 +46,7 @@ import numpy
 import scipy.sparse
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 from tvb.basic.profile import TvbProfile
-from tvb.datatypes import cortex, connectivity, patterns
+from tvb.datatypes import cortex, connectivity, patterns, region_mapping
 from tvb.simulator import models, integrators, monitors, coupling
 from tvb.simulator.models.base import Model
 from .backend import BaseBackend, ReferenceBackend
@@ -468,7 +468,7 @@ class Simulator(HasTraits):
         if self.stimulus is not None:
             if self.surface:
                 # NOTE the region mapping of the stimuli should also include the subcortical areas
-                self.stimulus.configure_space(region_mapping=numpy.r_[self.surface.region_mapping, self.connectivity.unmapped_indices(self.surface.region_mapping)])
+                self.stimulus.configure_space(region_mapping=self._regmap)
             else:
                 self.stimulus.configure_space()
 

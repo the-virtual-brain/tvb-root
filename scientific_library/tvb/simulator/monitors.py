@@ -291,10 +291,8 @@ class SpatialAverage(Monitor):
         # setup given spatial mask or default to region mapping
         if self.spatial_mask is None:
             self.is_default_special_mask = True
-            if simulator.surface is not None and simulator.connectivity is not None:
+            if simulator.surface is not None:
                 self.spatial_mask = RegionMapping.full_region_mapping(simulator.surface, simulator.connectivity)
-            elif not (simulator.surface is None):
-                self.spatial_mask = simulator.surface.region_mapping
             else:
                 conn = simulator.connectivity
                 if self.default_mask == self.CORTICAL:
