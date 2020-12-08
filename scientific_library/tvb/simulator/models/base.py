@@ -102,6 +102,9 @@ class Model(HasTraits):
             Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
         if self.integration_variables is None:
             self.integration_variables = self.state_variables
+        else:
+            for var in self.integration_variables:
+                assert var in self.state_variables
         self._nintvar = len(self.integration_variables)
 
     @property
