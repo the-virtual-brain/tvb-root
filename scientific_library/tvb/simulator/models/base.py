@@ -48,11 +48,11 @@ class Model(HasTraits):
     integration_variables = None  # type: typing.Tuple[str]
     variables_of_interest = ()
     _nvar = None   # todo make this a prop len(state_variables)
+    _nintvar = None
     number_of_modes = 1
     cvar = None
     stvar = None
     state_variable_boundaries = None
-    state_variables_mask = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -102,12 +102,17 @@ class Model(HasTraits):
             Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
         if self.integration_variables is None:
             self.integration_variables = self.state_variables
-        self.state_variables_mask = [var in self.integration_variables for var in self.state_variables]
+        self._nintvar = len(self.integration_variables)
 
     @property
     def nvar(self):
         """ The number of state variables in this model. """
         return self._nvar
+
+    @property
+    def nintvar(self):
+        """ The number of integrated state variables in this model. """
+        return self._nintvar
 
     def update_derived_parameters(self):
         """
