@@ -5,12 +5,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: debug missing docker file?
-        run: pwd; ls; find . -name 'Dockerfile-test' -type f; 
+
       - name: Build image
-        run: cd tvb_build/docker && docker build -f Dockerfile-test -t tvb/test .
+        run: cd scientific_library && docker build -t tvb/lib .
 
       - name: Run tests
         run: >
-          docker run --rm -v $PWD:/home/tvb_user/tvb-root tvb/test 
-          bash -c "source activate tvb-run && cd tvb_build && bash install_full_tvb.sh && cd ../tvb_bin && bash run_tests.sh"
+          docker run --rm -v $PWD/scientific_library:/tvb/lib -w /tvb/lib tvb/lib
+          pytest -n 4

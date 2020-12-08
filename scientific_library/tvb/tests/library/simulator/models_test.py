@@ -202,12 +202,16 @@ class TestModels(BaseTestCase):
         """
         model = models.JansenRit()
         self._validate_initialization(model, 6)
+        self._test_fixed_point(model,
+                numpy.r_[0.1229, 19.7016, 6.5506, 0.002459,0.334877,0.301279])
 
     def test_sj2d(self):
         """
         """
         model = models.ReducedSetFitzHughNagumo()
         self._validate_initialization(model, 4, 3)
+        self._test_fixed_point(model,
+                numpy.zeros((4, 3)))
 
     def test_sj3d(self):
         """
