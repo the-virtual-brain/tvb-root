@@ -132,7 +132,23 @@ class TestModels(BaseTestCase):
         model.configure()
         numpy.testing.assert_array_equal(model.stvar, numpy.r_[1,3])
 
-        
+    def _test_fixed_point(self, model, fp):
+        "test that model produces a given fixed point"
+        if fp.ndim == 1:
+            fp = fp.reshape((-1, 1))
+        init = numpy.zeros(fp.shape)
+        for i, (lo, hi) in enumerate(model.state_variable_range.values()):
+            init[i, :] = (hi + lo) / 2.0
+        t, y = model.stationary_trajectory(initial_conditions=init)
+        assert y.shape == (101, fp.shape[0], 1, fp.shape[1])
+        y = y[:, :, 0]
+        # test we're converging to fixed point
+        rfp = numpy.sqrt(numpy.sum(numpy.sum((y[-1] - y)**2,axis=1),axis=1))
+        dr = rfp[-10:] / (rfp[-11:-1] + 1e-9)
+        assert (dr < 1.0).all()
+        # and it should be close to what we expect / fix
+        for i in range(len(fp)):
+            numpy.testing.assert_allclose(y[-1,i], fp[i], 1e-6, 1e-3)
 
     def test_wilson_cowan(self):
         """
@@ -140,6 +156,7 @@ class TestModels(BaseTestCase):
         """
         model = models.WilsonCowan()
         self._validate_initialization(model, 2)
+        self._test_fixed_point(model, numpy.r_[0.474, 0.256])
 
     def test_g2d(self):
         """
@@ -170,6 +187,7 @@ class TestModels(BaseTestCase):
         model = models.Generic2dOscillator()
         state, obser = self._validate_initialization(model, 2)
         numpy.testing.assert_allclose(obser[0], state[0])
+        self._test_fixed_point(model, numpy.r_[-0.670474, -0.732986])
 
     def test_g2d_voi(self):
         model = models.Generic2dOscillator(
