@@ -353,7 +353,7 @@ class Simulator(HasTraits):
     def _loop_update_history(self, step, state):
         """Update history."""
         if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
-            state = self.backend.surface_state_to_rois(self._regmap, n_reg, state)
+            state = self.backend.surface_state_to_rois(self._regmap, self.connectivity.number_of_regions, state)
         self.history.update(step, state)
 
     def _loop_monitor_output(self, step, state, node_coupling):
@@ -413,7 +413,7 @@ class Simulator(HasTraits):
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, n_reg, state)
+            self._loop_update_history(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
             output = self._loop_monitor_output(step, state, node_coupling)
             if output is not None:
