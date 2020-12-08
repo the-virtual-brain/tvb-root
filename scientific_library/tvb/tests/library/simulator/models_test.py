@@ -106,13 +106,15 @@ class TestUpdateVariablesModel(Model):
         return 0.0 * state_variables
 
     def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
-        state[3] += state[0]
-        state[4] += state[1] + state[2]
+        new_state = numpy.copy(state)
+        new_state[3] = state[3] + state[0]
+        new_state[4] = state[4] + state[1] + state[2]
         return state
 
     def update_state_variables_after_integration(self, state):
-        state[3] -= state[0]
-        state[4] -= state[1] + state[2]
+        new_state = numpy.copy(state)
+        new_state[3] = state[3] - state[0]
+        new_state[4] = state[4] - state[1] - state[2]
         return state
 
 
