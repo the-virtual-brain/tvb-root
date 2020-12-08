@@ -182,6 +182,8 @@ class Simulator(HasTraits):
     _storage_requirement = None
     _runtime = None
 
+    integrate_next_step = None
+
     # methods consist of
     # 1) generic configure
     # 2) component specific configure
@@ -194,6 +196,12 @@ class Simulator(HasTraits):
         if self.surface:
             return True
         return False
+
+    def _configure_integrator_next_step(self):
+        if numpy.all(self.model.state_variables_mask):
+            self.integrate_next_step = self.integrator.integrate
+        else:
+            self.integrate_next_step = self.integrator.integrate_with_update
 
     def _configure_integrator_boundaries(self):
         if self.model.state_variable_boundaries is not None:
@@ -219,6 +227,7 @@ class Simulator(HasTraits):
         self.coupling.configure()
         self.model.configure()
         self.integrator.configure()
+        self._configure_integrator_next_step()
         self._configure_integrator_boundaries()
         # monitors needs to be a list or tuple, even if there is only one...
         if not isinstance(self.monitors, (list, tuple)):
@@ -369,9 +378,11 @@ class Simulator(HasTraits):
             state = region_state.transpose((1, 0, 2))  # (cvar, node, mode)
         self.history.update(step, state)
 
-    def _loop_monitor_output(self, step, state):
+    def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)
-        output = [monitor.record(step, observed) for monitor in self.monitors]
+        output = [monitor.record(step,
+                                 node_coupling if isinstance(monitor, monitors.AfferentCoupling) else observed)
+                  for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
 
@@ -409,6 +420,8 @@ class Simulator(HasTraits):
         local_coupling = self._prepare_local_coupling()
         stimulus = self._prepare_stimulus()
         state = self.current_state
+        start_step = self.current_step + 1
+        node_coupling = self._loop_compute_node_coupling(start_step)
 
         # integration loop
         if n_steps is None:
@@ -421,9 +434,10 @@ class Simulator(HasTraits):
             # needs implementing by hsitory + coupling?
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
-            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
+            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, n_reg, state)
-            output = self._loop_monitor_output(step, state)
+            node_coupling = self._loop_compute_node_coupling(step + 1)
+            output = self._loop_monitor_output(step, state, node_coupling)
             if output is not None:
                 yield output
 

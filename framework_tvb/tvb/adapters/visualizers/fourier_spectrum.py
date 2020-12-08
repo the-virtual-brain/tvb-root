@@ -77,9 +77,6 @@ class FourierSpectrumForm(ABCAdapterForm):
     def get_filters():
         return None
 
-    def get_traited_datatype(self):
-        return None
-
 
 class FourierSpectrumDisplay(ABCDisplayer):
     """

@@ -45,12 +45,14 @@ class Model(HasTraits):
     """
 
     state_variables = ()  # type: typing.Tuple[str]
+    integration_variables = None  # type: typing.Tuple[str]
     variables_of_interest = ()
     _nvar = None   # todo make this a prop len(state_variables)
     number_of_modes = 1
     cvar = None
     stvar = None
     state_variable_boundaries = None
+    state_variables_mask = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -98,6 +100,9 @@ class Model(HasTraits):
         elif self.state_variable_boundaries is not None:
             self.state_variable_boundaries = None
             Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
+        if self.integration_variables is None:
+            self.integration_variables = self.state_variables
+        self.state_variables_mask = [var in self.integration_variables for var in self.state_variables]
 
     @property
     def nvar(self):
@@ -185,8 +190,11 @@ class Model(HasTraits):
         "Returns reshape argument for a spatialized parameter."
         return -1, 1
 
-    def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=True):
-        return None
+    def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0):
+        return state_variables
+
+    def update_state_variables_after_integration(self, state_variables):
+        return state_variables
 
 
 class ModelNumbaDfun(Model):
