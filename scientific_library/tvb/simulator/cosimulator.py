@@ -204,15 +204,6 @@ class CoSimulator(Simulator):
         for target_parameter in self.spike_stimulus.keys():
             setattr(self.model, target_parameter, self._spike_stimulus_fun(target_parameter, step - 1))
 
-    def update_non_state_variables(self, state, node_coupling, local_coupling):
-        temp_state = self.model.update_non_state_variables(state, node_coupling, local_coupling,
-                                                           use_numba=self.use_numba)
-        if temp_state is not None:
-            state = temp_state
-            self.bound_and_clamp(temp_state)
-
-        return state
-
     def __call__(self, simulation_length=None, random_state=None, configure_spiking_simulator=True):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
@@ -242,9 +233,6 @@ class CoSimulator(Simulator):
         self._loop_update_stimulus(init_step, stimulus)
         if self._spike_stimulus_fun:
             self._apply_spike_stimulus(init_step)
-
-        # Update any non-state variables and apply any boundaries again to the modified initial condition:
-        state = self.update_non_state_variables(state, node_coupling, local_coupling)
 
         if self.tvb_spikeNet_interface is not None:
             # NOTE!!!: we don't update TVB from spikeNet initial condition,
@@ -282,7 +270,7 @@ class CoSimulator(Simulator):
                 self.run_spiking_simulator(self.integrator.dt)
 
             # 3. Integrate TVB to get the new TVB state t_step
-            state = self.integrator.scheme(state, self._dfun, node_coupling, local_coupling, stimulus)
+            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
 
             if numpy.any(numpy.isnan(state)) or numpy.any(numpy.isinf(state)):
                 raise ValueError("NaN or Inf values detected in simulator state!:\n%s" % str(state))
@@ -295,9 +283,6 @@ class CoSimulator(Simulator):
             self._loop_update_stimulus(step + 1, stimulus)
             if self._spike_stimulus_fun:
                 self._apply_spike_stimulus(step + 1)
-
-            # Update any non-state variables and apply any boundaries again to the new state t_step:
-            state = self.update_non_state_variables(state, node_coupling, local_coupling)
 
             # 5. Update the new TVB state t_step with the new spikeNet state t_step
             if self.tvb_spikeNet_interface is not None and updateTVBstateFromSpikeNet:
@@ -312,13 +297,14 @@ class CoSimulator(Simulator):
                 # including any necessary conversions in a model specific manner
                 # !!! Deprecate it since we have introduced dynamic non-state variables !!!
                 # self.model = self.tvb_spikeNet_interface.spikeNet_state_to_tvb_parameter(self.model)
-                self.bound_and_clamp(state)
+                self.integrator.bound_and_clamp(state)
                 # Update any non-state variables and apply any boundaries again to the modified new state t_step:
-                state = self.update_non_state_variables(state, node_coupling, local_coupling)
+                state = self.model.update_state_variables_before_integration(state)
+                self.integrator.bound_and_clamp(state)
 
             # Now direct the new state t_step to history buffer and monitors
             self._loop_update_history(step, n_reg, state)
-            output = self._loop_monitor_output(step, state)
+            output = self._loop_monitor_output(step, state, node_coupling)
             if output is not None:
                 yield output
             if self.PRINT_PROGRESSION_MESSAGE:
