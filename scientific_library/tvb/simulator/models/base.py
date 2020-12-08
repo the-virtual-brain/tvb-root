@@ -173,6 +173,8 @@ class Model(HasTraits):
         state = state[:, numpy.newaxis]
 
         out = [state.copy()]
+        if self.number_of_modes == 3:
+            coupling = numpy.tile(coupling, (1,1,3))
         for i in range(n_step):
             state += dt * self.dfun(state, coupling)
             if i % n_skip == 0:
