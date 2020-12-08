@@ -36,46 +36,65 @@ Filler analyzer: Takes a TimeSeries object and returns a Float.
 
 """
 
-import tvb.analyzers.metrics_base as metrics_base
+from tvb.basic.logger.builder import get_logger
+
+"""
+Zero-centres all the time-series and then calculates the variance over all 
+data points.
+    
+Input:
+TimeSeries DataType
+    
+Output: 
+Float
+    
+This is a crude indicator of "excitability" or oscillation amplitude of the
+models over the entire network.
+"""
+
+log = get_logger(__name__)
 
 
-
-class GlobalVariance(metrics_base.BaseTimeseriesMetricAlgorithm):
+def compute_variance_global_metric(params):
     """
-    Zero-centres all the time-series and then calculates the variance over all 
-    data points.
-    
-    Input:
-    TimeSeries DataType
-    
-    Output: 
-    Float
-    
-    This is a crude indicator of "excitability" or oscillation amplitude of the
-    models over the entire network.
+    # type: dict(TimeSeries, float, int) -> float
+    Compute the zero centered global variance of the time_series.
+
+    Parameters
+    ----------
+    params : a dictionary containing
+        time_series : TimeSeries
+        Input time series for which the metric will be computed.
+
+        start_point : float
+        Determines how many points of the TimeSeries will be discarded before computing the metric
+
+        segment : int
+        Divides the input time-series into discrete equally sized sequences and use the last segment to compute
+        the metric. Only used when the start point is larger than the time-series length
     """
 
-    def evaluate(self):
-        """
-        Compute the zero centered global variance of the time_series. 
-        """
+    time_series = params['time_series']
+    start_point = params['start_point']
+    segment = params['segment']
 
-        shape = self.time_series.data.shape
-        tpts = shape[0]
+    shape = time_series.data.shape
+    tpts = shape[0]
 
-        if self.start_point != 0.0:
-            start_tpt = self.start_point / self.time_series.sample_period
-            self.log.debug("Will discard: %s time points" % start_tpt)
-        else:
-            start_tpt = 0
+    if start_point != 0.0:
+        start_tpt = start_point / time_series.sample_period
+        log.debug("Will discard: %s time points" % start_tpt)
+    else:
+        start_tpt = 0
 
-        if start_tpt > tpts:
-            self.log.warning("The time-series is shorter than the starting point")
-            self.log.debug("Will divide the time-series into %d segments." % self.segment)
-            # Lazy strategy
-            start_tpt = int((self.segment - 1) * (tpts // self.segment))
+    if start_tpt > tpts:
+        log.warning("The time-series is shorter than the starting point")
+        log.debug("Will divide the time-series into %d segments." % segment)
+        # Lazy strategy
+        start_tpt = int((segment - 1) * (tpts // segment))
 
-        start_tpt = int(start_tpt)
-        zero_mean_data = (self.time_series.data[start_tpt:, :] - self.time_series.data[start_tpt:, :].mean(axis=0))
-        global_variance = zero_mean_data.var()
-        return global_variance
+    start_tpt = int(start_tpt)
+    zero_mean_data = (time_series.data[start_tpt:, :] - time_series.data[start_tpt:, :].mean(axis=0))
+    global_variance = zero_mean_data.var()
+
+    return global_variance

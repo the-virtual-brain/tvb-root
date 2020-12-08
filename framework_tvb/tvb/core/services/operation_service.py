@@ -47,7 +47,7 @@ from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
-from tvb.config import choices, MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS
+from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS, ALGORITHMS
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
@@ -131,8 +131,6 @@ class OperationService:
             generic_metadata.operation_tag = submit_data[DataTypeMetaData.KEY_OPERATION_TAG]
         if DataTypeMetaData.KEY_TAG_1 in submit_data:
             generic_metadata.user_tag_1 = submit_data[DataTypeMetaData.KEY_TAG_1]
-        if operation_group is not None:
-            generic_metadata.user_tag_3 = operation_group.name
         generic_metadata.fill_from(current_ga)
         return generic_metadata
 
@@ -170,7 +168,7 @@ class OperationService:
 
         view_model = get_class_by_name("{}.{}".format(MEASURE_METRICS_MODULE, MEASURE_METRICS_MODEL_CLASS))()
         view_model.time_series = time_series_index.gid
-        view_model.algorithms = tuple(choices.values())
+        view_model.algorithms = tuple(ALGORITHMS.keys())
         view_model.generic_attributes = ga
 
         parent_burst = dao.get_generic_entity(BurstConfiguration, time_series_index.fk_parent_burst, 'gid')[0]

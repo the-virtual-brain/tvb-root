@@ -188,6 +188,8 @@ class Simulator(HasTraits):
     _storage_requirement = None
     _runtime = None
 
+    integrate_next_step = None
+
     # methods consist of
     # 1) generic configure
     # 2) component specific configure
@@ -201,6 +203,26 @@ class Simulator(HasTraits):
             return True
         return False
 
+    def _configure_integrator_next_step(self):
+        if numpy.all(self.model.state_variables_mask):
+            self.integrate_next_step = self.integrator.integrate
+        else:
+            self.integrate_next_step = self.integrator.integrate_with_update
+
+    def _configure_integrator_boundaries(self):
+        if self.model.state_variable_boundaries is not None:
+            indices = []
+            boundaries = []
+            for sv, sv_bounds in self.model.state_variable_boundaries.items():
+                indices.append(self.model.state_variables.index(sv))
+                boundaries.append(sv_bounds)
+            sort_inds = numpy.argsort(indices)
+            self.integrator.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
+            self.integrator.state_variable_boundaries = numpy.array(boundaries).astype("float64")[sort_inds]
+        else:
+            self.integrator.bounded_state_variable_indices = None
+            self.integrator.state_variable_boundaries = None
+
     def preconfigure(self):
         """Configure just the basic fields, so that memory can be estimated."""
         self.connectivity.configure()
@@ -212,6 +234,7 @@ class Simulator(HasTraits):
         self.model.configure()
         self.integrator.configure()
         self.integrator.configure_boundaries(self.model)
+        self._configure_integrator_next_step()
         # monitors needs to be a list or tuple, even if there is only one...
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]
@@ -333,9 +356,11 @@ class Simulator(HasTraits):
             state = self.backend.surface_state_to_rois(self._regmap, n_reg, state)
         self.history.update(step, state)
 
-    def _loop_monitor_output(self, step, state):
+    def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)
-        output = [monitor.record(step, observed) for monitor in self.monitors]
+        output = [monitor.record(step,
+                                 node_coupling if isinstance(monitor, monitors.AfferentCoupling) else observed)
+                  for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
 
@@ -373,6 +398,8 @@ class Simulator(HasTraits):
         local_coupling = self._prepare_local_coupling()
         stimulus = self._prepare_stimulus()
         state = self.current_state
+        start_step = self.current_step + 1
+        node_coupling = self._loop_compute_node_coupling(start_step)
 
         # integration loop
         if n_steps is None:
@@ -385,9 +412,10 @@ class Simulator(HasTraits):
             # TODO HO methods compute coupling inside scheme
             node_coupling = self._loop_compute_node_coupling(step)
             self._loop_update_stimulus(step, stimulus)
-            state = self.integrator.scheme(state, self.model.dfun, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, state)
-            output = self._loop_monitor_output(step, state)
+            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
+            self._loop_update_history(step, n_reg, state)
+            node_coupling = self._loop_compute_node_coupling(step + 1)
+            output = self._loop_monitor_output(step, state, node_coupling)
             if output is not None:
                 yield output
 

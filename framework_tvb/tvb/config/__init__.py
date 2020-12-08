@@ -39,19 +39,16 @@ E.g. A list with all the modules where adapters are implemented.
 
 from collections import OrderedDict
 # Import metrics here, so that Traits will find them and return them as known subclasses
-import tvb.analyzers.metric_kuramoto_index
-import tvb.analyzers.metric_proxy_metastability
-import tvb.analyzers.metric_variance_global
-import tvb.analyzers.metric_variance_of_node_variance
-from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
+from tvb.analyzers.metric_kuramoto_index import compute_kuramoto_index_metric
+from tvb.analyzers.metric_proxy_metastability import compute_proxy_metastability_metric
+from tvb.analyzers.metric_variance_global import compute_variance_global_metric
+from tvb.analyzers.metric_variance_of_node_variance import compute_variance_of_node_variance_metric
 
-ALGORITHMS = BaseTimeseriesMetricAlgorithm.get_known_subclasses(include_itself=False)
+ALGORITHMS = {'GlobalVariance': compute_variance_global_metric,
+              'KuramotoIndex': compute_kuramoto_index_metric,
+              'ProxyMetastabilitySynchrony': compute_proxy_metastability_metric,
+              'VarianceNodeVariance': compute_variance_of_node_variance_metric}
 
-algo_names = list(ALGORITHMS)
-algo_names.sort()
-choices = OrderedDict()
-for name in algo_names:
-    choices[name] = name
 
 SIMULATION_DATATYPE_CLASS = "SimulationState"
 

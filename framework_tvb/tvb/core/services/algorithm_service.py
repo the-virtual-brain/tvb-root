@@ -87,16 +87,9 @@ class AlgorithmService(object):
         """ Count total number of operations started for current project. """
         return dao.get_operation_numbers(proj_id)
 
-    def prepare_adapter_form(self, adapter_instance, project_id):
-        form = adapter_instance.get_form()(project_id=project_id)
-        try:
-            dt = form.get_traited_datatype()
-            if dt is not None:
-                form.fill_from_trait(dt)
-        except NotImplementedError:
-            self.logger.info('This form does not take defaults from a HasTraits entity')
-
-        return form
+    @staticmethod
+    def prepare_adapter_form(adapter_instance, project_id):
+        return adapter_instance.get_form()(project_id=project_id)
 
     def prepare_adapter(self, stored_adapter):
 
