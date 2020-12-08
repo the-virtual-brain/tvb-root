@@ -342,6 +342,7 @@ class SpikingWongWangExcIOInhI(Model):
 
     state_variables = ["s_AMPA", "x_NMDA", "s_NMDA", "s_GABA", "s_AMPA_ext",  "V_m", "t_ref",     # state variables
                        "spikes_ext", "spikes", "I_L", "I_AMPA", "I_NMDA", "I_GABA", "I_AMPA_ext"]  # non-state variables
+    integration_variables = ["s_AMPA", "x_NMDA", "s_NMDA", "s_GABA", "s_AMPA_ext",  "V_m", "t_ref"]
     _nvar = 14
     cvar = numpy.array([0], dtype=numpy.int32)
     number_of_modes = 200  # assuming that 0...N_E-1 are excitatory and N_E ... number_of_modes-1 are inhibitory
@@ -494,7 +495,8 @@ class SpikingWongWangExcIOInhI(Model):
         # 4. s_GABA
         state_variables[3, ii, _E] = 0.0
 
-    def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=False):
+    def update_non_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0,
+                                                      use_numba=False):
         if self._n_regions == 0:
             self._n_regions = state_variables.shape[1]
             self._prepare_indices()
@@ -638,7 +640,7 @@ class SpikingWongWangExcIOInhI(Model):
 
         return state_variables
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, update_non_state_variables=False):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 
@@ -652,10 +654,6 @@ class SpikingWongWangExcIOInhI(Model):
                  \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \,
 
         """
-
-        if update_non_state_variables:
-            state_variables = \
-                self.update_non_state_variables(state_variables, coupling, local_coupling, use_numba=False)
 
         derivative = 0.0 * state_variables
 
@@ -746,5 +744,5 @@ class SpikingWongWangExcIOInhI(Model):
 
         return derivative
 
-    def dfun(self, x, c, local_coupling=0.0, update_non_state_variables=True):
-        return self._numpy_dfun(x, c, local_coupling, update_non_state_variables)
+    def dfun(self, x, c, local_coupling=0.0):
+        return self._numpy_dfun(x, c, local_coupling)

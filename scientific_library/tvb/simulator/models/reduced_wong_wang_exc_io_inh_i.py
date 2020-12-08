@@ -40,7 +40,8 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
 @guvectorize([(float64[:],)*20], '(n),(m)' + ',()'*17 + '->(n)', nopython=True)
-def _numba_update_non_state_variables(S, c, ae, be, de, wp, we, jn, re, ai, bi, di, wi, ji, ri, g, l, io, ie, newS):
+def _numba_update_non_state_variables_before_integration(S, c, ae, be, de, wp, we, jn, re,
+                                                         ai, bi, di, wi, ji, ri, g, l, io, ie, newS):
     "Gufunc for reduced Wong-Wang model equations."
 
     newS[0] = S[0]  # S_e
@@ -179,6 +180,7 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
         doc="""default state variables to be monitored""")
 
     state_variables = ['S_e', 'S_i', 'R_e', 'R_i', 'Rin_e', 'Rin_i', 'I_e', 'I_i']
+    integration_variables = ['S_e', 'S_i', 'R_e', 'R_i']
     _nvar = 8
     cvar = numpy.array([0], dtype=numpy.int32)
 
@@ -197,17 +199,19 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
                 setattr(self, var, numpy.array([0.0, ]))
                 setattr(self, "_" + var, numpy.array([False, ]))
 
-    def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=True):
+    def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0,
+                                                  use_numba=True):
         if use_numba:
             state_variables = \
-                _numba_update_non_state_variables(state_variables.reshape(state_variables.shape[:-1]).T,
-                                                  coupling.reshape(coupling.shape[:-1]).T +
-                                                  local_coupling * state_variables[0],
-                                                  self.a_e, self.b_e, self.d_e,
-                                                  self.w_p, self.W_e, self.J_N, self.Rin_e,
-                                                  self.a_i, self.b_i, self.d_i,
-                                                  self.W_i, self.J_i, self.Rin_i,
-                                                  self.G, self.lamda, self.I_o, self.I_ext)
+                _numba_update_non_state_variables_before_integration(
+                    state_variables.reshape(state_variables.shape[:-1]).T,
+                    coupling.reshape(coupling.shape[:-1]).T +
+                    local_coupling * state_variables[0],
+                    self.a_e, self.b_e, self.d_e,
+                    self.w_p, self.W_e, self.J_N, self.Rin_e,
+                    self.a_i, self.b_i, self.d_i,
+                    self.W_i, self.J_i, self.Rin_i,
+                    self.G, self.lamda, self.I_o, self.I_ext)
             return state_variables.T[..., numpy.newaxis]
 
         # In this case, rates (H_e, H_i) are non-state variables,
@@ -257,7 +261,7 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
 
         return state_variables
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, update_non_state_variables=False):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 
@@ -271,10 +275,6 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
                  \dot{S}_{ik} &= -\dfrac{S_{ik}}{\tau_i} + \gamma_iH(x_{ik}) \,
 
         """
-
-        if update_non_state_variables:
-            state_variables = \
-                self.update_non_state_variables(state_variables, coupling, local_coupling, use_numba=False)
 
         S = state_variables[:2, :]     # Synaptic gating dynamics
         R = state_variables[2:4, :]    # Rates
@@ -297,9 +297,7 @@ class ReducedWongWangExcIOInhI(TVBReducedWongWangExcInh):
 
         return derivative
 
-    def dfun(self, x, c, local_coupling=0.0, update_non_state_variables=False):
-        if update_non_state_variables:
-            self.update_non_state_variables(x, c, local_coupling, use_numba=True)
+    def dfun(self, x, c, local_coupling=0.0):
         deriv = _numba_dfun(x.reshape(x.shape[:-1]).T,
                             self.gamma_e, self.tau_e, self.Rin_e, self.tau_rin_e,
                             self.gamma_i, self.tau_i, self.Rin_i, self.tau_rin_i)

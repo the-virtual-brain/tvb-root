@@ -40,7 +40,7 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 
 @guvectorize([(float64[:],)*11], '(n),(m)' + ',()'*8 + '->(n)', nopython=True)
-def _numba_update_non_state_variables(S, c, a, b, d, w, jn, r, g, io, newS):
+def _numba_update_non_state_variables_before_integration(S, c, a, b, d, w, jn, r, g, io, newS):
     "Gufunc for reduced Wong-Wang model equations."
 
     newS[0] = S[0]  # S
@@ -85,7 +85,10 @@ class LinearReducedWongWangExcIO(ReducedWongWangExcIO):
         domain=Range(lo=0.0, hi=0.200, step=0.001),
         doc="""[s]. Parameter chosen to fit numerical solutions.""")
 
-    def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=True):
+    integration_variables = ["S", "Rint"]
+
+    def update_non_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0,
+                                                      use_numba=True):
         if use_numba:
             state_variables = \
                 _numba_update_non_state_variables(state_variables.reshape(state_variables.shape[:-1]).T,
@@ -132,7 +135,7 @@ class LinearReducedWongWangExcIO(ReducedWongWangExcIO):
 
         return state_variables
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, update_non_state_variables=False):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 
@@ -142,10 +145,6 @@ class LinearReducedWongWangExcIO(ReducedWongWangExcIO):
                  \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
 
         """
-
-        if update_non_state_variables:
-            state_variables = \
-                self.update_non_state_variables(state_variables, coupling, local_coupling, use_numba=False)
 
         S = state_variables[0, :]    # Synaptic gating dynamics
         Rint = state_variables[1, :]  # Rates from Spiking Network, integrated
@@ -167,9 +166,7 @@ class LinearReducedWongWangExcIO(ReducedWongWangExcIO):
 
         return derivative
 
-    def dfun(self, x, c, local_coupling=0.0, update_non_state_variables=False):
-        if update_non_state_variables:
-            self.update_non_state_variables(x, c, local_coupling, use_numba=True)
+    def dfun(self, x, c, local_coupling=0.0):
         deriv = _numba_dfun(x.reshape(x.shape[:-1]).T,
                             self.gamma, self.tau_s, self.Rin, self.tau_rin)
         return deriv.T[..., numpy.newaxis]
