@@ -32,7 +32,14 @@
 
 from itertools import cycle
 import numpy as np
-from matplotlib.mlab import demean
+try:
+    from matplotlib.mlab import demean
+except Exception as e1:
+    try:
+        from matplotlib.mlab import detrend_mean as demean
+    except Exception as e2:
+        print(e1)
+        raise e2
 from scipy.interpolate import interp1d, griddata
 from scipy.signal import butter, filtfilt, welch, periodogram, spectrogram, decimate
 from scipy.stats import zscore
