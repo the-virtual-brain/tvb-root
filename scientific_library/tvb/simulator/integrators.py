@@ -131,7 +131,7 @@ class Integrator(HasTraits):
         if self.state_variable_boundaries is not None:
             # ...use the integrator's bound_state
             self.bound_state(state)
-        # If there is a state clamping...
+        # If there is a stte clamping...
         if self.clamped_state_variable_values is not None:
             # ...use the integrator's clamp_state
             self.clamp_state(state)
@@ -149,7 +149,7 @@ class Integrator(HasTraits):
         return X
 
     def integrate(self, X, model, coupling, local_coupling, stimulus):
-        X[model.state_variables_mask] = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
+        X = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
         self.bound_and_clamp(X)
         return X
 
