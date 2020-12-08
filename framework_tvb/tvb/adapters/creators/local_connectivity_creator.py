@@ -112,9 +112,6 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                            values=[CORTICAL])
 
-    def get_traited_datatype(self):
-        return LocalConnectivityCreatorModel()
-
     def fill_from_trait(self, trait):
         # type: (LocalConnectivityCreatorModel) -> None
         self.surface.data = trait.surface.hex

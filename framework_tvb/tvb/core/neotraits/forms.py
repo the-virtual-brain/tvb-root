@@ -424,7 +424,7 @@ class SelectField(TraitField):
     def _from_post(self):
         super(SelectField, self)._from_post()
 
-        if self.data is not None and self.choices.get(self.data) is None:
+        if self.data != self.missing_value and self.choices.get(self.data) is None:
             raise ValueError("the entered value is not among the choices for this field!")
 
         self.data = self.choices.get(self.data)

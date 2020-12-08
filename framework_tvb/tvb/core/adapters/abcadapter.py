@@ -54,6 +54,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
@@ -61,6 +62,7 @@ from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
+from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits.forms import Form
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
@@ -153,13 +155,6 @@ class ABCAdapterForm(Form):
         :return: ViewModel class
         """
         raise NotImplementedError
-
-    def get_traited_datatype(self):
-        """
-        This is used to fill in defaults for GET requests.
-        Makes sense for analyzers, because for each form, we have an algorithm to relate to.
-        """
-        return None
 
     def fill_from_post_plus_defaults(self, form_data):
         self.fill_from_trait(self.get_view_model()())
@@ -557,3 +552,19 @@ class ABCAdapter(object):
         :return: size in kB
         """
         return size * TvbProfile.current.MAGIC_NUMBER / 8 / 2 ** 10
+
+    @staticmethod
+    def fill_index_from_h5(analyzer_index, analyzer_h5):
+        """
+        Method used only by analyzers that write slices of data.
+        As they never have the whole array_data in memory, the metadata related to array_data (min, max, etc.) they
+        store on the index is not correct, so we need to update them.
+        """
+        metadata = analyzer_h5.array_data.get_cached_metadata()
+        analyzer_index.array_data_max = metadata.max
+        analyzer_index.array_data_min = metadata.min
+        analyzer_index.array_data_mean = metadata.mean
+        analyzer_index.aray_has_complex = metadata.has_complex
+        analyzer_index.array_is_finite = metadata.is_finite
+        analyzer_index.shape = json.dumps(analyzer_h5.array_data.shape)
+        analyzer_index.ndim = len(analyzer_h5.array_data.shape)
