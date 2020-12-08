@@ -198,10 +198,10 @@ class Simulator(HasTraits):
         return False
 
     def _configure_integrator_next_step(self):
-        if numpy.all(self.model.state_variables_mask):
-            self.integrate_next_step = self.integrator.integrate
-        else:
+        if self.model.nintvar < self.model.nvar:
             self.integrate_next_step = self.integrator.integrate_with_update
+        else:
+            self.integrate_next_step = self.integrator.integrate
 
     def _configure_integrator_boundaries(self):
         if self.model.state_variable_boundaries is not None:
