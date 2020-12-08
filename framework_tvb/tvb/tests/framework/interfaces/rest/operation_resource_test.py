@@ -35,8 +35,7 @@ from uuid import UUID
 import flask
 import pytest
 import tvb_data
-from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
-from tvb.analyzers.fft import SUPPORTED_WINDOWING_FUNCTIONS
+from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, SUPPORTED_WINDOWING_FUNCTIONS
 from tvb.basic.exceptions import TVBException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
