@@ -409,6 +409,8 @@ class Simulator(HasTraits):
         local_coupling = self._prepare_local_coupling()
         stimulus = self._prepare_stimulus()
         state = self.current_state
+        start_step = self.current_step + 1
+        node_coupling = self._loop_compute_node_coupling(start_step)
 
         # integration loop
         if n_steps is None:
@@ -417,13 +419,13 @@ class Simulator(HasTraits):
             if not numpy.issubdtype(type(n_steps), numpy.integer):
                 raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
 
-        for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-            # needs implementing by hsitory + coupling?
-            node_coupling = self._loop_compute_node_coupling(step)
+        for step in range(start_step, start_step + n_steps):
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, n_reg, state)
+            # needs implementing by history + coupling?
             output = self._loop_monitor_output(step, state)
+            node_coupling = self._loop_compute_node_coupling(step + 1)
             if output is not None:
                 yield output
 
