@@ -3,7 +3,7 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    stategy:
+    strategy:
       matrix:
         python-version: [3.6]
     steps:
