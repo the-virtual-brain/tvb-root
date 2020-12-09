@@ -1,11 +1,14 @@
 name: pytest
 on: [push]
 jobs:
-  build:
+  pytest:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.7]
+    env:
+      pip-install-list: numba scipy numpy networkx scikit-learn cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib psycopg2 h5py>=2.10 tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk sphinx==1.2.3 docutils==0.12 werkzeug==0.16.1 flask gevent jupyter
+
     steps:
       - uses: actions/checkout@v1
 
@@ -17,9 +20,19 @@ jobs:
       - name: upgrade pip
         run: python -m pip install --upgrade pip
 
-      - name: pip install dependencies (from Dockerfile-build)
-        run: pip install --user numba scipy numpy networkx scikit-learn cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib psycopg2 h5py>=2.10 tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk sphinx==1.2.3 docutils==0.12 werkzeug==0.16.1 flask gevent jupyter
+      - name: put ~/.local/bin on $PATH
+        run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
+      - name: cache ~/.local for pip deps
+        id: cache-local
+        uses: actions/cache@v2
+        with:
+          path: ~/.local
+          key: ${{ runner.os }}-local-${{ pip-install-list }}
+
+      - name: pip install dependencies (from Dockerfile-build)
+        if: steps.cache-local.outputs.cache-hit != 'true'
+        run: pip install --user ${{ pip-install-list }}
       - name: setup tvb
         run: cd tvb_build && bash install_full_tvb.sh
 
@@ -31,6 +44,15 @@ jobs:
           rm tvb_data.zip
           cd tvb_data
           python3 setup.py develop
+
+      - name: debug Python and package locations
+        run: |
+          which python
+          echo $PYTHONPATH
+          python -V
+          python -c 'import sys; print(sys.executable); print(sys.path)'
+          python -c 'import sqlalchemy; print(sqlalchemy)'
+          python -c 'import tvb; print(tvb)'
 
       - name: run library tests
         run: cd scientific_library && pytest
