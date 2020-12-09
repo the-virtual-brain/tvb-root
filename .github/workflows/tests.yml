@@ -1,11 +1,11 @@
-name: library tests
+name: pytest
 on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6]
+        python-version: [3.7]
     steps:
       - uses: actions/checkout@v1
 
@@ -16,6 +16,9 @@ jobs:
       
       - name: upgrade pip
         run: python -m pip install --upgrade pip
+
+      - name: pip install dependencies (from Dockerfile-build)
+        run: pip install --user numba scipy numpy networkx scikit-learn cython numexpr psutil pytest pytest-cov pytest-xdist pytest-benchmark pytest-mock matplotlib psycopg2 h5py>=2.10 tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk sphinx==1.2.3 docutils==0.12 werkzeug==0.16.1 flask gevent jupyter
 
       - name: setup tvb
         run: cd tvb_build && bash install_full_tvb.sh
