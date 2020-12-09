@@ -38,26 +38,28 @@ jobs:
       - name: setup tvb
         run: cd tvb_build && bash install_full_tvb.sh
 
-      - name: get full TVB data set
+      - name: cache data
+        id: cache-data
+        uses: actions/cache@v2
+        with:
+          path: tvb_data
+          key: tvb-data
+
+      - name: download data
+        if: steps.cache-data.outputs.cache-hit != 'true'
         run: |
           wget -q https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_data.zip
           mkdir tvb_data
           unzip tvb_data.zip -d tvb_data
           rm tvb_data.zip
+
+      - name: setup data
+        run: |
           cd tvb_data
           python3 setup.py develop
 
-      - name: debug Python and package locations
-        run: |
-          which python
-          echo $PYTHONPATH
-          python -V
-          python -c 'import sys; print(sys.executable); print(sys.path)'
-          python -c 'import sqlalchemy; print(sqlalchemy)'
-          python -c 'import tvb; print(tvb)'
-
       - name: run library tests
-        run: cd scientific_library && pytest
+        run: cd scientific_library && pytest -n4
 
       - name: run framework tests
         run: cd framework_tvb && pytest
