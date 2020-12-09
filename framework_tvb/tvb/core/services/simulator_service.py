@@ -49,8 +49,7 @@ from tvb.adapters.simulator.simulator_fragments import SimulatorRMFragment, Simu
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, BoldViewModel, \
-    AdditiveNoiseViewModel
+from tvb.core.entities.file.simulator.view_model import BoldViewModel, AdditiveNoiseViewModel
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
@@ -258,12 +257,12 @@ class SimulatorService(object):
             form.connectivity.conditions = FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
                                                        operations=["=="], values=[conn.number_of_regions])
 
-    def prepare_next_fragment_after_surface(self, context, rendering_rules):
-        if context.session_stored_simulator.surface:
-            return self.prepare_cortex_fragment(context.session_stored_simulator, rendering_rules, context.project.id,
+    def prepare_next_fragment_after_surface(self, session_stored_simulator, project_id, rendering_rules):
+        if session_stored_simulator.surface:
+            return self.prepare_cortex_fragment(session_stored_simulator, rendering_rules, project_id,
                                                 SimulatorWizzardURLs.SET_CORTEX_URL)
-        return self.prepare_stimulus_fragment(context.session_stored_simulator, rendering_rules, False,
-                                              context.project.id, SimulatorWizzardURLs.SET_STIMULUS_URL)
+        return self.prepare_stimulus_fragment(session_stored_simulator, rendering_rules, False,
+                                              project_id, SimulatorWizzardURLs.SET_STIMULUS_URL)
 
     @staticmethod
     def prepare_cortex_fragment(simulator, rendering_rules, project_id, form_action_url):
@@ -285,27 +284,27 @@ class SimulatorService(object):
         rendering_rules.form_action_url = form_action_url
         return rendering_rules.to_dict()
 
-    def prepare_next_fragment_after_noise(self, context, rendering_rules):
-        if isinstance(context.session_stored_simulator.integrator.noise, AdditiveNoiseViewModel):
-            return self.prepare_monitor_fragment(context, rendering_rules, SimulatorWizzardURLs.SET_MONITORS_URL)
+    def prepare_next_fragment_after_noise(self, session_stored_simulator, project_id, is_branch, rendering_rules):
+        if isinstance(session_stored_simulator.integrator.noise, AdditiveNoiseViewModel):
+            rendering_rules.is_branch = is_branch,
+            return self.prepare_monitor_fragment(session_stored_simulator, project_id, rendering_rules,
+                                                 SimulatorWizzardURLs.SET_MONITORS_URL)
 
-        equation_form = get_form_for_equation(type(context.session_stored_simulator.integrator.noise.b))()
-        equation_form.equation.data = context.session_stored_simulator.integrator.noise.b.equation
-        equation_form.fill_from_trait(context.session_stored_simulator.integrator.noise.b)
+        equation_form = get_form_for_equation(type(session_stored_simulator.integrator.noise.b))()
+        equation_form.equation.data = session_stored_simulator.integrator.noise.b.equation
+        equation_form.fill_from_trait(session_stored_simulator.integrator.noise.b)
 
         rendering_rules.form = equation_form
         rendering_rules.form_action_url = SimulatorWizzardURLs.SET_NOISE_EQUATION_PARAMS_URL
         return rendering_rules.to_dict()
 
     @staticmethod
-    def prepare_monitor_fragment(context, rendering_rules, form_action_url):
-        monitor_fragment = SimulatorMonitorFragment(context.project.id,
-                                                    context.session_stored_simulator.is_surface_simulation)
-        monitor_fragment.fill_from_trait(context.session_stored_simulator.monitors)
+    def prepare_monitor_fragment(session_stored_simulator, project_id, rendering_rules, form_action_url):
+        monitor_fragment = SimulatorMonitorFragment(project_id, session_stored_simulator.is_surface_simulation)
+        monitor_fragment.fill_from_trait(session_stored_simulator.monitors)
 
         rendering_rules.form = monitor_fragment
         rendering_rules.form_action_url = form_action_url
-        rendering_rules.is_branch = context.is_branch
         return rendering_rules.to_dict()
 
     def build_list_of_monitors_from_names(self, monitor_names, session_simulator):
@@ -340,20 +339,21 @@ class SimulatorService(object):
         else:
             return SimulatorWizzardURLs.SETUP_PSE_URL
 
-    def get_fragment_after_monitors(self, context, rendering_rules):
-        first_monitor = context.session_stored_simulator.first_monitor
+    def get_fragment_after_monitors(self, session_stored_simulator, burst_config, project_id, is_branch,
+                                    rendering_rules):
+        first_monitor = session_stored_simulator.first_monitor
         if first_monitor is not None:
-            form = get_form_for_monitor(type(first_monitor))(context.session_stored_simulator, context.project.id)
+            form = get_form_for_monitor(type(first_monitor))(session_stored_simulator, project_id)
             form.fill_from_trait(first_monitor)
 
-            monitor_name = self.prepare_monitor_legend(context.session_stored_simulator.is_surface_simulation,
-                                                       first_monitor)
+            monitor_name = self.prepare_monitor_legend(session_stored_simulator.is_surface_simulation, first_monitor)
             rendering_rules.monitor_name = monitor_name
             rendering_rules.form = form
 
             return rendering_rules.to_dict()
         else:
-            return self.prepare_final_fragment(context, rendering_rules)
+            rendering_rules.is_branch = is_branch
+            return self.prepare_final_fragment(session_stored_simulator, burst_config, project_id, rendering_rules)
 
     def prepare_next_fragment_if_bold(self, monitor, rendering_rules):
         next_form = get_form_for_equation(type(monitor.hrf_kernel))()
@@ -363,19 +363,20 @@ class SimulatorService(object):
             SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL, type(monitor).__name__)
         return rendering_rules.to_dict()
 
-    def handle_next_fragment_for_monitors(self, context, rendering_rules, current_monitor, next_monitor, is_noise_form):
+    def handle_next_fragment_for_monitors(self, session_stored_simulator, burst_config, project_id, is_branch,
+                                          rendering_rules, current_monitor, next_monitor, is_noise_form):
         if isinstance(current_monitor, BoldViewModel) and is_noise_form is False:
             return self.prepare_next_fragment_if_bold(current_monitor, rendering_rules)
         elif not next_monitor:
-            return self.prepare_final_fragment(context, rendering_rules)
+            rendering_rules.is_branch = is_branch
+            return self.prepare_final_fragment(session_stored_simulator, burst_config, project_id, rendering_rules)
         else:
-            next_form = get_form_for_monitor(type(next_monitor))(context.session_stored_simulator, context.project.id)
+            next_form = get_form_for_monitor(type(next_monitor))(session_stored_simulator, project_id)
             next_form.fill_from_trait(next_monitor)
 
             form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                      type(next_monitor).__name__)
-            monitor_name = self.prepare_monitor_legend(context.session_stored_simulator.is_surface_simulation,
-                                                       next_monitor)
+            monitor_name = self.prepare_monitor_legend(session_stored_simulator.is_surface_simulation, next_monitor)
             rendering_rules.form = next_form
             rendering_rules.form_action_url = form_action_url
             rendering_rules.monitor_name = monitor_name
@@ -391,18 +392,15 @@ class SimulatorService(object):
             return SimulatorWizzardURLs.SETUP_PSE_URL
 
     @staticmethod
-    def prepare_final_fragment(context, rendering_rules):
-        session_stored_burst = context.burst_config
-        simulation_name, simulation_number = BurstService.prepare_simulation_name(session_stored_burst,
-                                                                                  context.project.id)
+    def prepare_final_fragment(session_stored_simulator, burst_config, project_id, rendering_rules):
+        simulation_name, simulation_number = BurstService.prepare_simulation_name(burst_config, project_id)
         form = SimulatorFinalFragment(default_simulation_name=simulation_name)
-        form.fill_from_trait(context.session_stored_simulator)
+        form.fill_from_trait(session_stored_simulator)
 
         rendering_rules.form = form
         rendering_rules.form_action_url = SimulatorWizzardURLs.SETUP_PSE_URL
         rendering_rules.is_launch_fragment = True
-        rendering_rules.is_branch = context.is_branch
-        rendering_rules.is_pse_launch = session_stored_burst.is_pse_burst()
+        rendering_rules.is_pse_launch = burst_config.is_pse_burst()
         return rendering_rules.to_dict()
 
     def get_current_and_next_monitor_form(self, current_monitor_name, simulator):

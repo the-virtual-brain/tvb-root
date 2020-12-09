@@ -79,15 +79,9 @@ KEY_INCLUDE_TOOLTIP = "includeTooltip"
 KEY_WRAP_CONTENT_IN_MAIN_DIV = "wrapContentInMainDiv"
 KEY_CURRENT_TAB = "currentTab"
 
-KEY_BURST_CONFIG = 'burst_configuration'
-KEY_SIMULATOR_CONFIG = 'simulator_configuration'
-KEY_IS_SIMULATOR_COPY = 'is_simulator_copy'
-KEY_IS_SIMULATOR_LOAD = 'is_simulator_load'
-KEY_LAST_LOADED_FORM_URL = 'last_loaded_form_url'
 KEY_BACK_PAGE = "back_page_link"
 KEY_SECTION_TITLES = "section_titles"
 KEY_SUBSECTION_TITLES = "sub_section_titles"
-KEY_IS_SIMULATOR_BRANCH = "is_branch"
 
 # Overlay specific keys
 KEY_OVERLAY_TITLE = "overlay_title"

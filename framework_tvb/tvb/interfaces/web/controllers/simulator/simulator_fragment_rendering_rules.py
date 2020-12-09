@@ -62,10 +62,11 @@ class SimulatorFragmentRenderingRules(object):
 
     FIRST_FORM_URL = SimulatorWizzardURLs.SET_CONNECTIVITY_URL
 
-    def __init__(self, context, form=None, form_action_url=None, previous_form_action_url=None,
+    def __init__(self, form=None, form_action_url=None, previous_form_action_url=None, is_simulation_copy=False,
+                 is_simulation_readonly_load=False, last_form_url=SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                  last_request_type=GET_REQUEST, is_first_fragment=False, is_launch_fragment=False,
                  is_model_fragment=False, is_surface_simulation=False, is_noise_fragment=False,
-                 is_launch_pse_fragment=False, is_pse_launch=False, monitor_name=None):
+                 is_launch_pse_fragment=False, is_pse_launch=False, monitor_name=None, is_branch=False):
         """
         :param is_first_fragment: True only for the first form in the wizzard, to hide Previous button
         :param is_launch_fragment: True only for the last form in the wizzard to diplay Launch/SetupPSE/Branch, hide Next
@@ -80,9 +81,9 @@ class SimulatorFragmentRenderingRules(object):
         self.form = form
         self.form_action_url = form_action_url
         self.previous_form_action_url = previous_form_action_url
-        self.is_simulation_copy = context.is_simulator_copy
-        self._is_simulation_readonly_load = context.is_simulator_load
-        self.last_form_url = context.last_loaded_form_url
+        self.is_simulation_copy = is_simulation_copy
+        self._is_simulation_readonly_load = is_simulation_readonly_load
+        self.last_form_url = last_form_url
         self.last_request_type = last_request_type
         self.is_first_fragment = is_first_fragment
         self.is_launch_fragment = is_launch_fragment
@@ -92,7 +93,7 @@ class SimulatorFragmentRenderingRules(object):
         self.is_launch_pse_fragment = is_launch_pse_fragment
         self.is_pse_launch = is_pse_launch
         self.monitor_name = monitor_name
-        self.is_branch = context.is_branch
+        self.is_branch = is_branch
     @property
     def load_readonly(self):
         if self.last_request_type == GET_REQUEST and self.form_action_url != self.last_form_url:
