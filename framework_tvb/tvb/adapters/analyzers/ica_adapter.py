@@ -68,12 +68,11 @@ class ICAAdapterModel(ViewModel):
 
 class ICAAdapterForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(ICAAdapterForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(ICAAdapterModel.time_series, self.project_id, name='time_series',
+    def __init__(self):
+        super(ICAAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(ICAAdapterModel.time_series, name='time_series',
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.n_components = IntField(ICAAdapterModel.n_components, self.project_id)
-        self.project_id = project_id
+        self.n_components = IntField(ICAAdapterModel.n_components)
 
     @staticmethod
     def get_view_model():

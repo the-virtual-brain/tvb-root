@@ -67,14 +67,13 @@ class ConnectivityMeasureImporterModel(UploaderViewModel):
 
 class ConnectivityMeasureImporterForm(ABCUploaderForm):
 
-    def __init__(self, project_id=None):
-        super(ConnectivityMeasureImporterForm, self).__init__(project_id)
+    def __init__(self):
+        super(ConnectivityMeasureImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', self.project_id,
-                                          'data_file', self.temporary_files)
-        self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, self.project_id, 'dataset_name')
-        self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, self.project_id,
-                                                     name='connectivity')
+        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', 'data_file',
+                                          self.temporary_files)
+        self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, 'dataset_name')
+        self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, name='connectivity')
 
     @staticmethod
     def get_view_model():

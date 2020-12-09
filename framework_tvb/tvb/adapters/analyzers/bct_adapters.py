@@ -71,9 +71,9 @@ class BaseBCTModel(ViewModel):
 
 
 class BaseBCTForm(ABCAdapterForm):
-    def __init__(self, project_id=None):
-        super(BaseBCTForm, self).__init__(project_id)
-        self.connectivity = TraitDataTypeSelectField(BaseBCTModel.connectivity, self.project_id, name="connectivity",
+    def __init__(self):
+        super(BaseBCTForm, self).__init__()
+        self.connectivity = TraitDataTypeSelectField(BaseBCTModel.connectivity, name="connectivity",
                                                      conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod

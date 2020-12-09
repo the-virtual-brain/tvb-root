@@ -48,11 +48,10 @@ from tvb.datatypes.surfaces import Surface, CORTICAL
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(LocalConnectivitySelectorForm, self).__init__(project_id)
+    def __init__(self):
+        super(LocalConnectivitySelectorForm, self).__init__()
         traited_attr = Attr(self.get_required_datatype(), label='Load Local Connectivity', required=False)
-        self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, self.project_id,
-                                                               name='existentEntitiesSelect')
+        self.existentEntitiesSelect = TraitDataTypeSelectField(traited_attr, name='existentEntitiesSelect')
 
     @staticmethod
     def get_required_datatype():
@@ -85,15 +84,14 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
 
-    def __init__(self, equation_choices, project_id=None):
-        super(LocalConnectivityCreatorForm, self).__init__(project_id)
-        self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, self.project_id,
-                                                name=self.get_input_name(), conditions=self.get_filters())
-        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, self.project_id, name='spatial',
-                                   choices=equation_choices, display_none_choice=False, subform=GaussianEquationForm)
-        self.cutoff = FloatField(LocalConnectivityCreatorModel.cutoff, self.project_id)
-        self.display_name = StrField(LocalConnectivityCreatorModel.display_name, self.project_id,
-                                        name='display_name')
+    def __init__(self, equation_choices):
+        super(LocalConnectivityCreatorForm, self).__init__()
+        self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, name=self.get_input_name(),
+                                                conditions=self.get_filters())
+        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, name='spatial', choices=equation_choices,
+                                   display_none_choice=False, subform=GaussianEquationForm)
+        self.cutoff = FloatField(LocalConnectivityCreatorModel.cutoff)
+        self.display_name = StrField(LocalConnectivityCreatorModel.display_name, name='display_name')
 
     @staticmethod
     def get_view_model():
@@ -122,8 +120,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         else:
             lc_equation = LocalConnectivity.equation.default
         self.spatial.data = type(lc_equation)
-        self.spatial.subform_field = FormField(get_form_for_equation(type(lc_equation)), self,
-                                               self.NAME_EQUATION_PARAMS_DIV)
+        self.spatial.subform_field = FormField(get_form_for_equation(type(lc_equation)), self.NAME_EQUATION_PARAMS_DIV)
         self.spatial.subform_field.form.fill_from_trait(lc_equation)
 
     def get_rendering_dict(self):

@@ -70,12 +70,11 @@ class BrainViewerModel(ViewModel):
 
 class BrainViewerForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(BrainViewerForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(BrainViewerModel.time_series, self.project_id, name='time_series',
+    def __init__(self):
+        super(BrainViewerForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(BrainViewerModel.time_series, name='time_series',
                                                     conditions=self.get_filters())
-        self.shell_surface = TraitDataTypeSelectField(BrainViewerModel.shell_surface, self.project_id,
-                                                      name='shell_surface')
+        self.shell_surface = TraitDataTypeSelectField(BrainViewerModel.shell_surface, name='shell_surface')
 
     @staticmethod
     def get_view_model():
@@ -404,14 +403,14 @@ class DualBrainViewerModel(ViewModel):
 
 class DualBrainViewerForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(DualBrainViewerForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(DualBrainViewerModel.time_series, self.project_id,
+    def __init__(self):
+        super(DualBrainViewerForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(DualBrainViewerModel.time_series,
                                                     name='time_series',
                                                     conditions=self.get_filters())
-        self.projection_surface = TraitDataTypeSelectField(DualBrainViewerModel.projection_surface, self.project_id,
+        self.projection_surface = TraitDataTypeSelectField(DualBrainViewerModel.projection_surface,
                                                            name='projection_surface')
-        self.shell_surface = TraitDataTypeSelectField(DualBrainViewerModel.shell_surface, self.project_id,
+        self.shell_surface = TraitDataTypeSelectField(DualBrainViewerModel.shell_surface,
                                                       name='shell_surface')
 
     @staticmethod

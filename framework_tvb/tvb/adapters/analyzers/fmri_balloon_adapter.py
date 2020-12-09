@@ -113,18 +113,16 @@ class BalloonModelAdapterModel(ViewModel):
 
 class BalloonModelAdapterForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(BalloonModelAdapterForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self.project_id,
-                                                    name=self.get_input_name(), conditions=self.get_filters(),
-                                                    has_all_option=True)
-        self.dt = FloatField(BalloonModelAdapterModel.dt, self.project_id)
-        self.tau_s = FloatField(BalloonModelAdapterModel.tau_s, self.project_id)
-        self.tau_f = FloatField(BalloonModelAdapterModel.tau_f, self.project_id)
-        self.neural_input_transformation = StrField(BalloonModelAdapterModel.neural_input_transformation,
-                                                    self.project_id)
-        self.bold_model = StrField(BalloonModelAdapterModel.bold_model, self.project_id)
-        self.RBM = BoolField(BalloonModelAdapterModel.RBM, self.project_id)
+    def __init__(self):
+        super(BalloonModelAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.dt = FloatField(BalloonModelAdapterModel.dt)
+        self.tau_s = FloatField(BalloonModelAdapterModel.tau_s)
+        self.tau_f = FloatField(BalloonModelAdapterModel.tau_f)
+        self.neural_input_transformation = StrField(BalloonModelAdapterModel.neural_input_transformation)
+        self.bold_model = StrField(BalloonModelAdapterModel.bold_model)
+        self.RBM = BoolField(BalloonModelAdapterModel.RBM)
 
     @staticmethod
     def get_view_model():

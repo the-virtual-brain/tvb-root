@@ -111,25 +111,24 @@ class ConnectivityViewerModel(ViewModel):
 
 class ConnectivityViewerForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(ConnectivityViewerForm, self).__init__(project_id)
+    def __init__(self):
+        super(ConnectivityViewerForm, self).__init__()
 
-        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, self.project_id,
-                                                     name='input_data', conditions=self.get_filters())
+        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, name='input_data',
+                                                     conditions=self.get_filters())
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
-        self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, self.project_id,
-                                                     name='surface_data', conditions=surface_conditions)
+        self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, name='surface_data',
+                                                     conditions=surface_conditions)
 
-        self.step = FloatField(ConnectivityViewerModel.step, self.project_id, name='step')
+        self.step = FloatField(ConnectivityViewerModel.step, name='step')
 
         colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, self.project_id, name='colors',
+        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
                                                conditions=colors_conditions)
 
         rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, self.project_id, name='rays',
-                                             conditions=rays_conditions)
+        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions)
 
     @staticmethod
     def get_view_model():
