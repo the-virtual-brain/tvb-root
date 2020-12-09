@@ -40,6 +40,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitUploadField, StrField, FloatField, IntField, TraitDataTypeSelectField, \
     BoolField, ArrayField, SelectField, HiddenField, MultiSelectField, FormField
 from tvb.core.neotraits.view_model import Str
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -63,7 +64,7 @@ class TestForms(BaseTestCase):
         data_file = Str('Test Upload Field')
         required_type = '.zip'
         temporary_files = []
-        upload_field = TraitUploadField(data_file, required_type, self.test_project.id, self.name, temporary_files)
+        upload_field = TraitUploadField(data_file, required_type, self.name, temporary_files)
 
         post_data = {'Data_Subject': 'John Doe', self.name: connectivity_file, 'normalization': 'explicit-None-value'}
         upload_field.fill_from_post(post_data)
@@ -73,14 +74,9 @@ class TestForms(BaseTestCase):
     def test_datatype_select_field(self, connectivity_index_factory):
         trait_attribute = SimulatorAdapterModel.connectivity
 
-        datatype_select_field = TraitDataTypeSelectField(trait_attribute, self.test_project.id, self.name, None,
-                                                         has_all_option=True)
         connectivity_1 = connectivity_index_factory(2)
         connectivity_2 = connectivity_index_factory(2)
         connectivity_3 = connectivity_index_factory(2)
-
-        post_data = {self.name: connectivity_1.gid}
-        datatype_select_field.fill_from_post(post_data)
 
         op_1 = dao.get_operation_by_id(connectivity_1.fk_from_operation)
         op_1.fk_launched_in = self.test_project.id
@@ -91,6 +87,12 @@ class TestForms(BaseTestCase):
         op_3 = dao.get_operation_by_id(connectivity_3.fk_from_operation)
         op_3.fk_launched_in = self.test_project.id
         dao.store_entity(op_3)
+
+        datatype_select_field = TraitDataTypeSelectField(trait_attribute, self.name, None, has_all_option=True)
+        AlgorithmService().fill_selectfield_with_datatypes(datatype_select_field, self.test_project.id)
+
+        post_data = {self.name: connectivity_1.gid}
+        datatype_select_field.fill_from_post(post_data)
 
         options = datatype_select_field.options()
         conn_1 = next(options)
@@ -109,7 +111,7 @@ class TestForms(BaseTestCase):
 
     def test_bool_field(self):
         bool_attr = Attr(field_type=bool, default=True, label='Dummy Bool')
-        bool_field = BoolField(bool_attr, self.test_project.id, self.name)
+        bool_field = BoolField(bool_attr, self.name)
 
         post_data = {'dummy_name': 'on'}
         bool_field.fill_from_post(post_data)
@@ -121,7 +123,7 @@ class TestForms(BaseTestCase):
 
     def test_str_field_required(self):
         str_attr = Str(label='Dummy Str', default='')
-        str_field = StrField(str_attr, self.test_project.id, self.name)
+        str_field = StrField(str_attr, self.name)
 
         post_data = {'dummy_name': 'dummy_str'}
         str_field.fill_from_post(post_data)
@@ -133,7 +135,7 @@ class TestForms(BaseTestCase):
 
     def test_str_field_optional(self):
         str_attr = Str(label='Dummy Str', default='', required=False)
-        str_field = StrField(str_attr, self.test_project.id, self.name)
+        str_field = StrField(str_attr, self.name)
 
         post_data = {'dummy_name': ''}
         str_field.fill_from_post(post_data)
@@ -142,7 +144,7 @@ class TestForms(BaseTestCase):
 
     def test_int_field_required(self):
         int_attr = Int(label='Dummy Int', default=0)
-        int_field = IntField(int_attr, self.test_project.id, self.name)
+        int_field = IntField(int_attr, self.name)
 
         post_data = {'dummy_name': '10'}
         int_field.fill_from_post(post_data)
@@ -151,7 +153,7 @@ class TestForms(BaseTestCase):
 
     def test_int_field_required_empty(self):
         int_attr = Int(label='Dummy Int', default=0)
-        int_field = IntField(int_attr, self.test_project.id, self.name)
+        int_field = IntField(int_attr, self.name)
 
         post_data = {'dummy_name': ''}
         int_field.fill_from_post(post_data)
@@ -160,7 +162,7 @@ class TestForms(BaseTestCase):
 
     def test_int_field_optinal(self):
         int_attr = Int(label='Dummy Int', default=0, required=False)
-        int_field = IntField(int_attr, self.test_project.id, self.name)
+        int_field = IntField(int_attr, self.name)
 
         post_data = {'dummy_name': ''}
         int_field.fill_from_post(post_data)
@@ -169,7 +171,7 @@ class TestForms(BaseTestCase):
 
     def test_float_field_required(self):
         float_attr = Float(label='Dummy Float', default=0.)
-        float_field = FloatField(float_attr, self.test_project.id, self.name)
+        float_field = FloatField(float_attr, self.name)
 
         post_data = {'dummy_name': '10.5'}
         float_field.fill_from_post(post_data)
@@ -178,7 +180,7 @@ class TestForms(BaseTestCase):
 
     def test_float_field_required_empty(self):
         float_attr = Float(label='Dummy Float', default=0.)
-        float_field = FloatField(float_attr, self.test_project.id, self.name)
+        float_field = FloatField(float_attr, self.name)
 
         post_data = {'dummy_name': ''}
         float_field.fill_from_post(post_data)
@@ -187,7 +189,7 @@ class TestForms(BaseTestCase):
 
     def test_float_field_optional(self):
         float_attr = Float(label='Dummy Float', default=0., required=False)
-        float_field = FloatField(float_attr, self.test_project.id, self.name)
+        float_field = FloatField(float_attr, self.name)
 
         post_data = {'dummy_name': ''}
         float_field.fill_from_post(post_data)
@@ -196,7 +198,7 @@ class TestForms(BaseTestCase):
 
     def test_array_field_required(self):
         int_attr = NArray(label='Dummy Int', default=0)
-        array_field = ArrayField(int_attr, self.test_project.id, self.name)
+        array_field = ArrayField(int_attr, self.name)
 
         post_data = {'dummy_name': '[1, 2, 3]'}
         array_field.fill_from_post(post_data)
@@ -210,7 +212,7 @@ class TestForms(BaseTestCase):
 
     def test_array_field_required_empty(self):
         int_attr = NArray(label='Dummy Int', default=0)
-        array_field = ArrayField(int_attr, self.test_project.id, self.name)
+        array_field = ArrayField(int_attr, self.name)
 
         post_data = {'dummy_name': ''}
         array_field.fill_from_post(post_data)
@@ -219,7 +221,7 @@ class TestForms(BaseTestCase):
 
     def test_array_field_optional(self):
         int_attr = NArray(label='Dummy Int', default=0, required=False)
-        array_field = ArrayField(int_attr, self.test_project.id, self.name)
+        array_field = ArrayField(int_attr, self.name)
 
         array_str = ''
         post_data = {'dummy_name': array_str}
@@ -229,7 +231,7 @@ class TestForms(BaseTestCase):
 
     def test_select_field_required(self):
         str_attr = Attr(field_type=str, default='2', label='Dummy Bool', choices=('1', '2', '3'))
-        select_field = SelectField(str_attr, self.test_project.id, self.name)
+        select_field = SelectField(str_attr, self.name)
 
         post_data = {'dummy_name': '1'}
         select_field.fill_from_post(post_data)
@@ -238,7 +240,7 @@ class TestForms(BaseTestCase):
 
     def test_select_field_optional_none(self):
         str_attr = Attr(field_type=str, default='2', label='Dummy Bool', choices=('1', '2', '3'), required=False)
-        select_field = SelectField(str_attr, self.test_project.id, self.name)
+        select_field = SelectField(str_attr, self.name)
 
         post_data = {'dummy_name': 'explicit-None-value'}
         select_field.fill_from_post(post_data)
@@ -247,7 +249,7 @@ class TestForms(BaseTestCase):
 
     def test_select_field_invalid(self):
         str_attr = Attr(field_type=str, default='2', label='Dummy Bool', choices=('1', '2', '3'))
-        select_field = SelectField(str_attr, self.test_project.id, self.name)
+        select_field = SelectField(str_attr, self.name)
 
         post_data = {'dummy_name': '4'}
         select_field.fill_from_post(post_data)
@@ -255,7 +257,7 @@ class TestForms(BaseTestCase):
 
     def test_multi_select_field(self):
         list_attr = List(of=str, label='Dummy List', choices=('1', '2', '3', '4', '5'))
-        multi_select_field = MultiSelectField(list_attr, self.test_project.id, self.name)
+        multi_select_field = MultiSelectField(list_attr, self.name)
 
         post_data = {'dummy_name': ['2', '3', '4']}
         multi_select_field.fill_from_post(post_data)
@@ -263,7 +265,7 @@ class TestForms(BaseTestCase):
 
     def test_multi_select_field_invalid_data(self):
         list_attr = List(of=str, label='Dummy List', choices=('1', '2', '3', '4', '5'))
-        multi_select_field = MultiSelectField(list_attr, self.test_project.id, self.name)
+        multi_select_field = MultiSelectField(list_attr, self.name)
 
         post_data = {'dummy_name': ['2', '3', '6']}
         multi_select_field.fill_from_post(post_data)
@@ -271,7 +273,7 @@ class TestForms(BaseTestCase):
 
     def test_multi_select_field_no_data(self):
         list_attr = List(of=str, label='Dummy List', choices=('1', '2', '3', '4', '5'))
-        multi_select_field = MultiSelectField(list_attr, self.test_project.id, self.name)
+        multi_select_field = MultiSelectField(list_attr, self.name)
 
         post_data = {}
         multi_select_field.fill_from_post(post_data)
@@ -279,7 +281,7 @@ class TestForms(BaseTestCase):
 
     def test_hidden_field(self):
         hidden_str_attr = Str(label='Dummy Str', default='')
-        hidden_field = HiddenField(hidden_str_attr, self.test_project.id, self.name)
+        hidden_field = HiddenField(hidden_str_attr, self.name)
 
         post_data = {'dummy_name': 'Dummy Hidden Str'}
         hidden_field.fill_from_post(post_data)
@@ -287,7 +289,7 @@ class TestForms(BaseTestCase):
         assert hidden_field.trait_attribute.label == '', "Hidden field's trait attributes should have empty labels!"
 
     def test_form_field(self):
-        form_field = FormField(TestAdapter1Form, self.test_project.id, self.name)
+        form_field = FormField(TestAdapter1Form, self.name)
 
         test_val1 = 'test1_val1'
         test_val2 = 'test1_val2'
