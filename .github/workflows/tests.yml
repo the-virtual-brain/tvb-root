@@ -1,0 +1,36 @@
+name: library tests
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    stategy:
+      matrix:
+        python-version: [3.6]
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: setup tvb
+        run: bash tvb_build/install_full_tvb.sh
+
+      - name: get full TVB data set
+        run: |
+          wget -q https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_data.zip
+          mkdir tvb_data
+          unzip tvb_data.zip -d tvb_data
+          rm tvb_data.zip
+          cd tvb_data
+          python3 setup.py develop
+
+      - name: run library tests
+        run: cd scientific_library && pytest
+
+      - name: run framework tests
+        run: cd framework_tvb && pytest

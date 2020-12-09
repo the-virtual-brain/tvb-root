@@ -163,13 +163,7 @@ class Simulator(HasTraits):
         required=True,
         doc="""The length of a simulation (default in milliseconds).""")
 
-    backend: ReferenceBackend = Attr(
-        label="Numerical backend.",
-        default=ReferenceBackend(),
-        field_type=BaseBackend,
-        required=True,
-        doc="Numercial backend for running computations."
-    )
+    backend = ReferenceBackend()
 
     history = None  # type: SparseHistory
 

@@ -101,15 +101,6 @@ class RangeForm(Form):
     def __init__(self):
         super(RangeForm, self).__init__()
         self.lo = FloatField(
-<<<<<<< HEAD
-            Float(label='Lo', default=ContinuousWaveletTransform.frequencies.default.lo, doc='start of range'),
-            self.project_id, name='Lo')
-        self.hi = FloatField(
-            Float(label='Hi', default=ContinuousWaveletTransform.frequencies.default.hi, doc='end of range'),
-            self.project_id, name='Hi')
-        self.step = FloatField(
-            Float(label='Step', default=ContinuousWaveletTransform.frequencies.default.step, doc='step of range'),
-=======
             Float(label='Lo', default=WaveletAdapterModel.frequencies.default.lo, doc='start of range'),
             self.project_id, name='Lo')
         self.hi = FloatField(
@@ -117,7 +108,6 @@ class RangeForm(Form):
             name='Hi')
         self.step = FloatField(
             Float(label='Step', default=WaveletAdapterModel.frequencies.default.step, doc='step of range'),
->>>>>>> master
             self.project_id, name='Step')
 
 
@@ -128,15 +118,6 @@ class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
         self.time_series = TraitDataTypeSelectField(WaveletAdapterModel.time_series, self.project_id,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)
-<<<<<<< HEAD
-        self.mother = StrField(ContinuousWaveletTransform.mother, self.project_id)
-        self.sample_period = FloatField(ContinuousWaveletTransform.sample_period, self.project_id)
-        self.normalisation = StrField(ContinuousWaveletTransform.normalisation, self.project_id)
-        self.q_ratio = FloatField(ContinuousWaveletTransform.q_ratio, self.project_id)
-        self.frequencies = FormField(RangeForm, self.project_id, name='frequencies',
-                                     label=ContinuousWaveletTransform.frequencies.label,
-                                     doc=ContinuousWaveletTransform.frequencies.doc)
-=======
         self.mother = StrField(WaveletAdapterModel.mother, self.project_id)
         self.sample_period = FloatField(WaveletAdapterModel.sample_period, self.project_id)
         self.normalisation = StrField(WaveletAdapterModel.normalisation, self.project_id)
@@ -144,7 +125,6 @@ class ContinuousWaveletTransformAdapterForm(ABCAdapterForm):
         self.frequencies = FormField(RangeForm, self.project_id, name='frequencies',
                                      label=WaveletAdapterModel.frequencies.label,
                                      doc=WaveletAdapterModel.frequencies.doc)
->>>>>>> master
 
     @staticmethod
     def get_view_model():
