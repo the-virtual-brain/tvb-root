@@ -107,18 +107,22 @@ class AlgorithmService(object):
 
         return display_name
 
+    def fill_selectfield_with_datatypes(self, field, project_id, extra_conditions=None):
+        # type: (TraitDataTypeSelectField, int, list) -> None
+        filtering_conditions = FilterChain()
+        filtering_conditions += field.conditions
+        filtering_conditions += extra_conditions
+        datatypes, _ = dao.get_values_of_datatype(project_id, field.datatype_index, filtering_conditions)
+        datatype_options = []
+        for datatype in datatypes:
+            display_name = self._prepare_dt_display_name(field.datatype_index, datatype)
+            datatype_options.append((datatype, display_name))
+        field.datatype_options = datatype_options
+
     def _fill_form_with_datatypes(self, form, project_id, extra_conditions=None):
         for form_field in form.trait_fields:
             if isinstance(form_field, TraitDataTypeSelectField):
-                filtering_conditions = FilterChain()
-                filtering_conditions += form_field.conditions
-                filtering_conditions += extra_conditions
-                datatypes, _ = dao.get_values_of_datatype(project_id, form_field.datatype_index, filtering_conditions)
-                datatype_options = []
-                for datatype in datatypes:
-                    display_name = self._prepare_dt_display_name(form_field.datatype_index, datatype)
-                    datatype_options.append((datatype, display_name))
-                form_field.datatype_options = datatype_options
+                self.fill_selectfield_with_datatypes(form_field, project_id, extra_conditions)
         return form
 
     def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None, extra_conditions=None):
@@ -135,7 +139,7 @@ class AlgorithmService(object):
         form = self._fill_form_with_datatypes(form, project_id, extra_conditions)
         return form
 
-    def _prepare_upload_form(self, form, post_data, project_id):
+    def _prepare_upload_post_data(self, form, post_data, project_id):
         for form_field in form.trait_fields:
             if isinstance(form_field, TraitUploadField) and form_field.name in post_data:
                 field = post_data[form_field.name]
@@ -155,12 +159,13 @@ class AlgorithmService(object):
                         self.file_helper.remove_files([file_name])
                         excep.message = 'Could not continue: Invalid input files'
                         raise excep
+                post_data[form_field.name] = file_name
 
     def fill_adapter_form(self, adapter_instance, post_data, project_id):
         # type: (ABCAdapter, dict, int) -> ABCAdapterForm
         form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id)
         if isinstance(form, ABCUploaderForm):
-            self._prepare_upload_form(form, post_data, project_id)
+            self._prepare_upload_post_data(form, post_data, project_id)
 
         if 'fill_defaults' in post_data:
             form.fill_from_post_plus_defaults(post_data)

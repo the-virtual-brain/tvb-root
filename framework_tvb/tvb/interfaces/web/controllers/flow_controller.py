@@ -52,7 +52,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
-from tvb.core.neotraits.forms import Form, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
@@ -273,12 +273,12 @@ class FlowController(BaseController):
         filter = FilterChain(fields=fields, operations=operations, values=values)
         project = common.get_current_project()
 
-        form = Form()
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
         data_type_gid_attr.required = not string2bool(has_none_option)
 
-        select_field = TraitDataTypeSelectField(data_type_gid_attr, form.project_id, conditions=filter,
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, conditions=filter,
                                                 has_all_option=string2bool(has_all_option))
+        self.algorithm_service.fill_selectfield_with_datatypes(select_field, project.id)
 
         return {'options': select_field.options()}
 
