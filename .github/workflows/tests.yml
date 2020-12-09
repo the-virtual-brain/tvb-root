@@ -18,7 +18,7 @@ jobs:
         run: python -m pip install --upgrade pip
 
       - name: setup tvb
-        run: bash tvb_build/install_full_tvb.sh
+        run: cd tvb_build && bash install_full_tvb.sh
 
       - name: get full TVB data set
         run: |
