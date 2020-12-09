@@ -660,6 +660,9 @@ class ProjectService:
             if len(dependent_dt) > 0:
                 # Do not remove Operation in case DataType still exist referring it.
                 continue
+            op_burst = dao.get_burst_for_operation_id(operation_id)
+            if op_burst:
+                correct = correct and dao.remove_entity(BurstConfiguration, op_burst.id)
             correct = correct and dao.remove_entity(Operation, operation_id)
             # Make sure Operation folder is removed
             self.structure_helper.remove_operation_data(project.name, datatype.fk_from_operation)
