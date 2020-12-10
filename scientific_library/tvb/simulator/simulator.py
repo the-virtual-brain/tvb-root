@@ -195,7 +195,7 @@ class Simulator(HasTraits):
         return False
 
     def _configure_integrator_next_step(self):
-        if self.model.nintvar < self.model.nvar:
+        if self.model.n_nonintvar:
             self.integrate_next_step = self.integrator.integrate_with_update
         else:
             self.integrate_next_step = self.integrator.integrate
