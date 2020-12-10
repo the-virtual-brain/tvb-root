@@ -72,12 +72,9 @@ class Simulator(object):
 
         # Initialise some Monitors with period in physical time
         raw = monitors.Raw()
-        rawvoi = monitors.RawVoi()
         gavg = monitors.GlobalAverage(period=2 ** -2)
         subsamp = monitors.SubSample(period=2 ** -2)
         tavg = monitors.TemporalAverage(period=2 ** -2)
-        coupl = monitors.AfferentCoupling()
-        coupltavg = monitors.AfferentCouplingTemporalAverage(period=2 ** -2)
         eeg = monitors.EEG.from_file()
         eeg.period = 2 ** -2
         eeg2 = monitors.EEG.from_file()
@@ -86,7 +83,7 @@ class Simulator(object):
         meg = monitors.MEG.from_file()
         meg.period = 2 ** -2
 
-        self.monitors = (raw, rawvoi, gavg, subsamp, tavg, coupl, coupltavg, eeg, eeg2, meg)
+        self.monitors = (raw, gavg, subsamp, tavg, eeg, eeg2, meg)
 
         self.method = None
         self.sim = None
@@ -272,6 +269,9 @@ class TestSimulator(BaseTestCase):
         test_simulator.integrator.configure()
         test_simulator._configure_integrator_next_step()
         assert test_simulator.integrate_next_step == test_simulator.integrator.integrate_with_update
+        assert test_simulator.model.state_variables_mask == \
+               [var in test_simulator.model.integration_variables for var in test_simulator.model.state_variables]
+        assert test_simulator.model.state_variables_mask == [True, True, True, False, False]
         assert test_simulator.model.nintvar == len(test_simulator.model.integration_variables)
 
     @pytest.mark.parametrize('default_connectivity', [True, False])

@@ -56,9 +56,6 @@ from .history import SparseHistory
 # TODO with refactor, this becomes more of a builder, since iterator will account for
 # most of the runtime associated with a simulation.
 class Simulator(HasTraits):
-    _spatial_param_reshape = None
-    _dfun = None
-
     """A Simulator assembles components required to perform simulations."""
 
     connectivity = Attr(
@@ -267,12 +264,6 @@ class Simulator(HasTraits):
             The configured Simulator instance.
 
         """
-        if self._dfun is None:
-            self._dfun = self.model.dfun
-
-        if self._spatial_param_reshape is None:
-            self._spatial_param_reshape = self.model.spatial_param_reshape
-
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
             self.preconfigure()
@@ -281,19 +272,19 @@ class Simulator(HasTraits):
         # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
         excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
                            "noise", "psi_table", "nerf_table", "gid")
+        spatial_reshape = self.model.spatial_param_reshape
         for param in type(self.model).declarative_attrs:
             if param in excluded_params:
                 continue
             # If it's a surface sim and model parameters were provided at the region level
             region_parameters = getattr(self.model, param)
             if self.surface is not None:
-                if region_parameters.shape[0] == self.connectivity.number_of_regions:
-                    new_parameters = \
-                        region_parameters[self.surface.region_mapping].reshape(self._spatial_param_reshape)
+                if region_parameters.size == self.connectivity.number_of_regions:
+                    new_parameters = region_parameters[self.surface.region_mapping].reshape(spatial_reshape)
                     setattr(self.model, param, new_parameters)
             region_parameters = getattr(self.model, param)
-            if region_parameters.shape[0] == self.number_of_nodes:
-                new_parameters = region_parameters.reshape(self._spatial_param_reshape)
+            if region_parameters.size == self.number_of_nodes:
+                new_parameters = region_parameters.reshape(spatial_reshape)
                 setattr(self.model, param, new_parameters)
         # Configure spatial component of any stimuli
         self._configure_stimuli()
@@ -378,11 +369,9 @@ class Simulator(HasTraits):
             state = region_state.transpose((1, 0, 2))  # (cvar, node, mode)
         self.history.update(step, state)
 
-    def _loop_monitor_output(self, step, state, node_coupling):
+    def _loop_monitor_output(self, step, state):
         observed = self.model.observe(state)
-        output = [monitor.record(step,
-                                 node_coupling if isinstance(monitor, monitors.AfferentCoupling) else observed)
-                  for monitor in self.monitors]
+        output = [monitor.record(step, observed) for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
 
@@ -430,14 +419,13 @@ class Simulator(HasTraits):
             if not numpy.issubdtype(type(n_steps), numpy.integer):
                 raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
 
-        for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-            # needs implementing by hsitory + coupling?
-            node_coupling = self._loop_compute_node_coupling(step)
+        for step in range(start_step, start_step + n_steps):
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, n_reg, state)
+            # needs implementing by history + coupling?
+            output = self._loop_monitor_output(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
-            output = self._loop_monitor_output(step, state, node_coupling)
             if output is not None:
                 yield output
 
@@ -589,8 +577,6 @@ class Simulator(HasTraits):
                 self.stimulus.configure_space(region_mapping=numpy.r_[self.surface.region_mapping, self.connectivity.unmapped_indices(self.surface.region_mapping)])
             else:
                 self.stimulus.configure_space()
-
-    # TODO: update all those functions below to compute the fine scale requirements as well, ...if you can! :)
 
     # used by simulator adaptor
     def memory_requirement(self):

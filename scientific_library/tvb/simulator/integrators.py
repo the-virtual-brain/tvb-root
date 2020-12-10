@@ -42,7 +42,6 @@ will be consistent with Monitor periods corresponding to any of [4096, 2048, 102
 .. moduleauthor:: Stuart A. Knock <Stuart@tvb.invalid>
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 .. moduleauthor:: Noelia Montejo <Noelia@tvb.invalid>
-.. moduleauthor:: Dionysios Perdikis <dionysios.perdikis@charite.de>
 
 """
 import abc
@@ -149,7 +148,7 @@ class Integrator(HasTraits):
         return X
 
     def integrate(self, X, model, coupling, local_coupling, stimulus):
-        X = self.scheme(X, model.dfun, coupling, local_coupling, stimulus)
+        X[model.state_variables_mask] = self.scheme(X[model.state_variables_mask], model.dfun, coupling, local_coupling, stimulus)
         self.bound_and_clamp(X)
         return X
 

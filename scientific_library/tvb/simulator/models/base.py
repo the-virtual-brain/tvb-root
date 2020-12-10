@@ -53,6 +53,7 @@ class Model(HasTraits):
     cvar = None
     stvar = None
     state_variable_boundaries = None
+    state_variables_mask = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -103,8 +104,9 @@ class Model(HasTraits):
         if self.integration_variables is None:
             self.integration_variables = self.state_variables
         else:
+            self.state_variables_mask = [False] * self.nvar
             for var in self.integration_variables:
-                assert var in self.state_variables
+                self.state_variables_mask[self.state_variables.index(var)] = True
         self._nintvar = len(self.integration_variables)
 
     @property
