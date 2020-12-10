@@ -335,6 +335,8 @@ class SimulatorController(BurstBaseController):
                                                                    SimulatorWizzardURLs.SET_MONITORS_URL)
 
         integrator_noise_fragment = get_form_for_noise(type(session_stored_simulator.integrator.noise))()
+        if hasattr(integrator_noise_fragment, 'equation'):
+            integrator_noise_fragment.equation.display_subform = False
 
         self.range_parameters.integrator_noise_parameters = integrator_noise_fragment.get_range_parameters()
         integrator_noise_fragment.fill_from_trait(session_stored_simulator.integrator.noise)
