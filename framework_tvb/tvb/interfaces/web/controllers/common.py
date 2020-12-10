@@ -202,13 +202,8 @@ def get_current_project():
     return get_from_session(KEY_PROJECT)
 
 
-def clean_project_data_from_session():
+def remove_project_from_session():
     remove_from_session(KEY_PROJECT)
-    remove_from_session(KEY_SIMULATOR_CONFIG)
-    remove_from_session(KEY_LAST_LOADED_FORM_URL)
-    remove_from_session(KEY_BURST_CONFIG)
-    remove_from_session(KEY_IS_SIMULATOR_BRANCH)
-    add2session(KEY_IS_SIMULATOR_LOAD, False)
 
 
 class NotAllowed(TVBException):

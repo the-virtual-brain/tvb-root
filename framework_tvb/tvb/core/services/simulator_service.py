@@ -55,6 +55,7 @@ from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException
 from tvb.core.services.operation_service import OperationService
@@ -67,6 +68,7 @@ class SimulatorService(object):
         self.logger = get_logger(self.__class__.__module__)
         self.burst_service = BurstService()
         self.operation_service = OperationService()
+        self.algorithm_service = AlgorithmService()
         self.files_helper = FilesHelper()
         self.monitors_dict = dict()
 
@@ -238,10 +240,11 @@ class SimulatorService(object):
             self.logger.error(excep)
             self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
-    @staticmethod
-    def prepare_first_simulation_fragment(cached_simulator_algorithm, project_id):
+    def prepare_first_simulation_fragment(self, cached_simulator_algorithm, project_id, is_branch, simulator):
         adapter_instance = ABCAdapter.build_adapter(cached_simulator_algorithm)
-        form = adapter_instance.get_form()(project_id)
+        form = self.algorithm_service.prepare_adapter_form(
+            adapter_instance=adapter_instance, project_id=project_id,
+            extra_conditions=self._compute_conn_branch_conditions(is_branch, simulator))
 
         conn_count = dao.count_datatypes(project_id, ConnectivityIndex)
         if conn_count == 0:
@@ -250,44 +253,45 @@ class SimulatorService(object):
         return form
 
     @staticmethod
-    def filter_connectivity(form, gid):
-        conn = dao.get_datatype_by_gid(gid)
+    def _compute_conn_branch_conditions(is_branch, simulator):
+        if is_branch:
+            conn = dao.get_datatype_by_gid(simulator.connectivity.hex)
 
-        if conn.number_of_regions:
-            form.connectivity.conditions = FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
-                                                       operations=["=="], values=[conn.number_of_regions])
+            if conn.number_of_regions:
+                return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
+                                   operations=["=="], values=[conn.number_of_regions])
+        return None
 
-    def prepare_next_fragment_after_surface(self, session_stored_simulator, project_id, rendering_rules):
+    def prepare_next_fragment_after_surface(self, session_stored_simulator, rendering_rules, project_id):
         if session_stored_simulator.surface:
-            return self.prepare_cortex_fragment(session_stored_simulator, rendering_rules, project_id,
-                                                SimulatorWizzardURLs.SET_CORTEX_URL)
+            return self.prepare_cortex_fragment(session_stored_simulator, rendering_rules,
+                                                SimulatorWizzardURLs.SET_CORTEX_URL, project_id)
         return self.prepare_stimulus_fragment(session_stored_simulator, rendering_rules, False,
-                                              project_id, SimulatorWizzardURLs.SET_STIMULUS_URL)
+                                              SimulatorWizzardURLs.SET_STIMULUS_URL, project_id)
 
-    @staticmethod
-    def prepare_cortex_fragment(simulator, rendering_rules, project_id, form_action_url):
+    def prepare_cortex_fragment(self, simulator, rendering_rules, form_action_url, project_id):
         surface_index = load_entity_by_gid(simulator.surface.surface_gid)
-        rm_fragment = SimulatorRMFragment(project_id, surface_index,
-                                          simulator.connectivity)
+        rm_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorRMFragment(
+            surface_index, simulator.connectivity), project_id=project_id)
         rm_fragment.fill_from_trait(simulator.surface)
 
         rendering_rules.form = rm_fragment
         rendering_rules.form_action_url = form_action_url
         return rendering_rules.to_dict()
 
-    @staticmethod
-    def prepare_stimulus_fragment(simulator, rendering_rules, is_surface_simulation, project_id, form_action_url):
-        stimuli_fragment = SimulatorStimulusFragment(project_id, is_surface_simulation)
+    def prepare_stimulus_fragment(self, simulator, rendering_rules, is_surface_simulation, form_action_url, project_id):
+        stimuli_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorStimulusFragment(
+            is_surface_simulation), project_id=project_id)
         stimuli_fragment.fill_from_trait(simulator)
 
         rendering_rules.form = stimuli_fragment
         rendering_rules.form_action_url = form_action_url
         return rendering_rules.to_dict()
 
-    def prepare_next_fragment_after_noise(self, session_stored_simulator, project_id, is_branch, rendering_rules):
+    def prepare_next_fragment_after_noise(self, session_stored_simulator, is_branch, rendering_rules):
         if isinstance(session_stored_simulator.integrator.noise, AdditiveNoiseViewModel):
-            rendering_rules.is_branch = is_branch,
-            return self.prepare_monitor_fragment(session_stored_simulator, project_id, rendering_rules,
+            rendering_rules.is_branch = is_branch
+            return self.prepare_monitor_fragment(session_stored_simulator, rendering_rules,
                                                  SimulatorWizzardURLs.SET_MONITORS_URL)
 
         equation_form = get_form_for_equation(type(session_stored_simulator.integrator.noise.b))()
@@ -299,16 +303,17 @@ class SimulatorService(object):
         return rendering_rules.to_dict()
 
     @staticmethod
-    def prepare_monitor_fragment(session_stored_simulator, project_id, rendering_rules, form_action_url):
-        monitor_fragment = SimulatorMonitorFragment(project_id, session_stored_simulator.is_surface_simulation)
+    def prepare_monitor_fragment(session_stored_simulator, rendering_rules, form_action_url):
+        monitor_fragment = SimulatorMonitorFragment(session_stored_simulator.is_surface_simulation)
         monitor_fragment.fill_from_trait(session_stored_simulator.monitors)
 
         rendering_rules.form = monitor_fragment
         rendering_rules.form_action_url = form_action_url
         return rendering_rules.to_dict()
 
-    def build_list_of_monitors_from_names(self, monitor_names, session_simulator):
-        monitor_dict = get_ui_name_to_monitor_dict(session_simulator.is_surface_simulation)
+    def build_list_of_monitors_from_names(self, monitor_names, is_surface_simulation):
+        self.monitors_dict = dict()
+        monitor_dict = get_ui_name_to_monitor_dict(is_surface_simulation)
 
         count = 0
         for monitor_name in monitor_names:
@@ -317,6 +322,13 @@ class SimulatorService(object):
             count = count + 1
 
         return list(monitor[0] for monitor in self.monitors_dict.values())
+
+    def build_list_of_monitors_from_view_models(self, monitor_view_models):
+        self.monitors_dict = dict()
+        count = 0
+        for monitor_model in monitor_view_models:
+            self.monitors_dict[monitor_model.__class__.__name__] = (monitor_model, count + 1)
+            count = count + 1
 
     @staticmethod
     def build_monitor_url(fragment_url, monitor):
@@ -343,7 +355,8 @@ class SimulatorService(object):
                                     rendering_rules):
         first_monitor = session_stored_simulator.first_monitor
         if first_monitor is not None:
-            form = get_form_for_monitor(type(first_monitor))(session_stored_simulator, project_id)
+            form = self.algorithm_service.prepare_adapter_form(
+                form_instance=get_form_for_monitor(type(first_monitor))(session_stored_simulator))
             form.fill_from_trait(first_monitor)
 
             monitor_name = self.prepare_monitor_legend(session_stored_simulator.is_surface_simulation, first_monitor)
@@ -371,7 +384,8 @@ class SimulatorService(object):
             rendering_rules.is_branch = is_branch
             return self.prepare_final_fragment(session_stored_simulator, burst_config, project_id, rendering_rules)
         else:
-            next_form = get_form_for_monitor(type(next_monitor))(session_stored_simulator, project_id)
+            next_form = self.algorithm_service.prepare_adapter_form(
+                form_instance=get_form_for_monitor(type(next_monitor))(session_stored_simulator), project_id=project_id)
             next_form.fill_from_trait(next_monitor)
 
             form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
@@ -388,6 +402,13 @@ class SimulatorService(object):
             last_loaded_fragment_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
                                                               type(next_monitor).__name__)
             return last_loaded_fragment_url
+        else:
+            return SimulatorWizzardURLs.SETUP_PSE_URL
+
+    @staticmethod
+    def get_url_for_final_fragment(burst_config):
+        if burst_config.is_pse_burst():
+            return SimulatorWizzardURLs.LAUNCH_PSE_URL
         else:
             return SimulatorWizzardURLs.SETUP_PSE_URL
 

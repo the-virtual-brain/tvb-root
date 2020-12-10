@@ -59,6 +59,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 
 KEY_SERVER_VERSION = "versionInfo"
 KEY_CURRENT_VERSION_FULL = "currentVersionLongText"
@@ -182,7 +183,8 @@ class UserController(BaseController):
         user = common.remove_from_session(common.KEY_USER)
         if user is not None:
             self.logger.debug("User " + user.username + " is just logging out!")
-        common.clean_project_data_from_session()
+        SimulatorContext().clean_project_data_from_session()
+        common.remove_project_from_session()
         common.set_info_message("Thank you for using The Virtual Brain!")
 
         common.expire_session()

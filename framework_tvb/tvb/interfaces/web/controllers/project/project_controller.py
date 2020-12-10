@@ -59,6 +59,7 @@ from tvb.interfaces.web.controllers.decorators import settings, check_user, hand
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.flow_controller import FlowController
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 
 
 @traced('generate_call_out_control', exclude=True)
@@ -147,7 +148,8 @@ class ProjectController(BaseController):
             common.set_error_message(exc.message)
         prj = common.get_current_project()
         if prj is not None and prj.id == int(project_id):
-            common.clean_project_data_from_session()
+            SimulatorContext().clean_project_data_from_session()
+            common.remove_project_from_session()
 
     @expose_page
     @settings

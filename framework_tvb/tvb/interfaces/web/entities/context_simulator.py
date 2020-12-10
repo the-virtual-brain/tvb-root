@@ -33,7 +33,6 @@
 """
 
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.interfaces.web.controllers import common
 
 
@@ -126,3 +125,10 @@ class SimulatorContext(object):
     @staticmethod
     def set_warning_message(message):
         common.set_warning_message(message)
+
+    def clean_project_data_from_session(self):
+        common.remove_from_session(self.KEY_SIMULATOR_CONFIG)
+        common.remove_from_session(self.KEY_LAST_LOADED_FORM_URL)
+        common.remove_from_session(self.KEY_BURST_CONFIG)
+        common.remove_from_session(self.KEY_IS_SIMULATOR_BRANCH)
+        common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)

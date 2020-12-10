@@ -31,12 +31,11 @@
 import json
 import uuid
 from collections import namedtuple
-
 import numpy
-from tvb.basic.neotraits.api import List, Attr
-from tvb.basic.neotraits.ex import TraitError
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
+from tvb.basic.neotraits.ex import TraitError
+from tvb.basic.neotraits.api import List, Attr
 # TODO: remove dependency
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr

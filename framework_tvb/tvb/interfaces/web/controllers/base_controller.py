@@ -46,6 +46,7 @@ from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import using_template
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.structure import WebStructure
 
 # Constants used be the mechanism that deletes files on disk
@@ -131,7 +132,8 @@ class BaseController(object):
 
         if previous_project is None or previous_project.id != project.id:
             # Clean Burst selection from session in case of a different project.
-            common.clean_project_data_from_session()
+            SimulatorContext().clean_project_data_from_session()
+            common.remove_project_from_session()
             # Store in DB new project selection
             user = common.get_from_session(common.KEY_USER)
             if user is not None:
