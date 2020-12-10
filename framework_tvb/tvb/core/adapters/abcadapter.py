@@ -381,6 +381,9 @@ class ABCAdapter(object):
         if self._is_group_launch():
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id
 
+        if result is None:
+            return "", ""
+
         count_stored = 0
         group_type = None  # In case of a group, the first not-none type is sufficient to memorize here
         for res in result:

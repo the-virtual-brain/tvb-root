@@ -579,8 +579,11 @@ class ImportService(object):
                 final_path = h5.path_for_stored_index(datatype)
                 if final_path != current_file:
                     shutil.move(current_file, final_path)
+            stored_entry = dao.get_datatype_by_gid(datatype.gid)
+            if not stored_entry:
+                stored_entry = dao.store_entity(datatype)
 
-            return dao.store_entity(datatype)
+            return stored_entry
         except MissingDataSetException as e:
             self.logger.exception(e)
             error_msg = "Datatype %s has missing data and could not be imported properly." % (datatype,)

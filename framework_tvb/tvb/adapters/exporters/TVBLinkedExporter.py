@@ -93,3 +93,6 @@ class TVBLinkedExporter(ABCExporter):
             return "zip"
         else:
             return "h5"
+
+    def skip_group_datatypes(self):
+        return True
