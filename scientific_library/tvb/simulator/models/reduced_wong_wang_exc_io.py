@@ -67,20 +67,17 @@ def _numba_update_non_state_variables_before_integration(S, c, a, b, d, w, jn, r
         newS[3] = S[3]  # Rin
 
 
-@guvectorize([(float64[:],)*6], '(n)' + ',()'*4 + '->(n)', nopython=True)
-def _numba_dfun(S, g, t, r, tr, dx):
+@guvectorize([(float64[:],)*8], '(n)' + ',()'*6 + '->(n)', nopython=True)
+def _numba_dfun(S, g, t, rmask, r, rin, tr, dx):
     "Gufunc for reduced Wong-Wang model equations."
-    if r[0] > 0.0:
+    if rmask[0] > 0.0:
         # Integrate rate from Spiking Network
         # Rint
-        dx[1] = (- S[1] + S[3]) / tr[0]
+        dx[1] = (- S[1] + rin[0]) / tr[0]
     else:
         # TVB computation
         dx[1] = 0.0
-    dx[0] = - (S[0] / t[0]) + (1.0 - S[0]) * S[2] * g[0]   # S
-    dx[2] = 0.0  # R
-    dx[3] = 0.0  # Rin
-    dx[4] = 0.0  # I
+    dx[0] = - (S[0] / t[0]) + (1.0 - S[0]) * r[0] * g[0]   # S
 
 
 class ReducedWongWangExcIO(TVBReducedWongWang):
@@ -207,9 +204,12 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
         doc="""default state variables to be monitored""")
 
     state_variables = ['S', 'Rint', 'R', 'Rin', 'I']
-    integration_variables = ['S', 'Rint']
+    non_integrated_variables = ['S', 'Rint']
     _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
+    _R = None
+    _Rin = None
+    _stimulus = 0.0
 
     def update_derived_parameters(self):
         """
@@ -219,14 +219,18 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
         code that updates an arbitrary models parameters -- ie, this can be
         safely called on any model, whether it's used or not.
         """
+        self._R = None
+        self._Rin = None
+        self._stimulus = 0.0
         if hasattr(self, "Rin"):
-            setattr(self, "_Rin", getattr(self, "Rin") > 0)
+            setattr(self, "_Rin_mask", getattr(self, "Rin") > 0)
         else:
             setattr(self, "Rin", numpy.array([0.0, ]))
-            setattr(self, "_Rin", numpy.array([False, ]))
+            setattr(self, "_Rin_mask", numpy.array([False, ]))
 
-    def update_non_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0,
-                                                      use_numba=True):
+    def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0,
+                                                  use_numba=True):
+        self._stimulus = stimulus
         if use_numba:
             state_variables = \
                 _numba_update_non_state_variables_before_integration(
@@ -263,23 +267,30 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
         # Rates
         # Only rates with _Rin <= 0 0 will be updated by TVB.
         # The rest, are updated from the Spiking Network
-        R = numpy.where(self._Rin,
+        R = numpy.where(self._Rin_mask,
                         # Downscale rates coming from the Spiking Network
                         numpy.where(Rint < 40,
                                     numpy.sqrt(Rint),      # Low activity scaling
                                     0.0000050 *self.G * Rint ** 2),  # High activity scaling,
                         x / (1 - numpy.exp(-self.d * x)))
 
-        Rin = numpy.where(self._Rin, Rin, 0.0)  # Reset to 0 the Rin for nodes not updated by Spiking Network
+        Rin = numpy.where(self._Rin_mask, Rin, 0.0)  # Reset to 0 the Rin for nodes not updated by Spiking Network
 
         # We now update the state_variable vector with the new rates and currents:
         state_variables[2, :] = R
         state_variables[3, :] = Rin
         state_variables[4, :] = I
 
+        # Keep them here so that they are not recomputed in the dfun
+        self._R = state_variables[2]
+        self._Rin = state_variables[3]
+
         return state_variables
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+    def _integration_to_state_variables(self, integration_variables):
+        return numpy.array(integration_variables.tolist() + [0.0*integration_variables[0]] * self.n_nonintvar)
+
+    def _numpy_dfun(self, integration_variables, coupling, local_coupling=0.0):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 
@@ -289,11 +300,19 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
                  \dot{S}_k &= -\dfrac{S_k}{\tau_s} + (1 - S_k) \, H(x_k) \, \gamma
 
         """
+        S = integration_variables[0, :]  # Synaptic gating dynamics
+        Rint = integration_variables[1, :]  # Rates from Spiking Network, integrated
 
-        S = state_variables[0, :]    # Synaptic gating dynamics
-        Rint = state_variables[1, :]  # Rates from Spiking Network, integrated
-        R = state_variables[2, :]    # Rates
-        Rin = state_variables[3, :]  # input instant spiking rates
+        if self._R is None or self._Rin is None:
+            state_variables = self._integration_to_state_variables(integration_variables)
+            state_variables = \
+                self.update_state_variables_before_integration(state_variables, coupling, local_coupling,
+                                                               self._stimulus, use_numba=False)
+            R = state_variables[2]    # Rates
+            Rin = state_variables[3]  # input instant spiking rates
+        else:
+            R = self._R
+            Rin = self._Rin
 
         # Synaptic gating dynamics
         dS = - (S / self.tau_s) + (1 - S) * R * self.gamma
@@ -301,17 +320,31 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
         # Rates
         # Low pass filtering, linear dynamics for rates updated from the spiking network
         # No dynamics in the case of TVB rates
-        dRint = numpy.where(self._Rin, (- Rint + Rin) / self.tau_rin, 0.0)
+        dRint = numpy.where(self._Rin_mask, (- Rint + Rin) / self.tau_rin, 0.0)
 
-        # R, Rin and I are always non-state variables:
-        dummy = 0.0*dS
-        #                                     dR     dRin   dI
-        derivative = numpy.array([dS, dRint, dummy, dummy,dummy])
+        #  Set them to None so that they are recomputed on subsequent steps
+        #  for multistep integration schemes such as Runge-Kutta:
+        self._R = None
+        self._Rin = None
 
-        return derivative
+        return numpy.array([dS, dRint])
 
     def dfun(self, x, c, local_coupling=0.0):
+        if self._R is None or self._Rin is None:
+            state_variables = self._integration_to_state_variables(x)
+            state_variables = \
+                self.update_state_variables_before_integration(state_variables, c, local_coupling,
+                                                               self._stimulus, use_numba=True)
+            R = state_variables[2]  # Rates
+            Rin = state_variables[3]  # input instant spiking rates
+        else:
+            R = self._R
+            Rin = self._Rin
         deriv = _numba_dfun(x.reshape(x.shape[:-1]).T,
-                            self.gamma, self.tau_s, self.Rin, self.tau_rin)
+                            self.gamma, self.tau_s, self.Rin, R, Rin, self.tau_rin)
+        #  Set them to None so that they are recomputed on subsequent steps
+        #  for multistep integration schemes such as Runge-Kutta:
+        self._R = None
+        self._Rin = None
         return deriv.T[..., numpy.newaxis]
 

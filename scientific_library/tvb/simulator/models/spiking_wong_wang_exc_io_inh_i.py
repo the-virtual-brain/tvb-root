@@ -342,10 +342,12 @@ class SpikingWongWangExcIOInhI(Model):
 
     state_variables = ["s_AMPA", "x_NMDA", "s_NMDA", "s_GABA", "s_AMPA_ext",  "V_m", "t_ref",     # state variables
                        "spikes_ext", "spikes", "I_L", "I_AMPA", "I_NMDA", "I_GABA", "I_AMPA_ext"]  # non-state variables
-    integration_variables = ["s_AMPA", "x_NMDA", "s_NMDA", "s_GABA", "s_AMPA_ext",  "V_m", "t_ref"]
+    non_integrated_variables = ["spikes_ext", "spikes", "I_L", "I_AMPA", "I_NMDA", "I_GABA", "I_AMPA_ext"]
     _nvar = 14
     cvar = numpy.array([0], dtype=numpy.int32)
     number_of_modes = 200  # assuming that 0...N_E-1 are excitatory and N_E ... number_of_modes-1 are inhibitory
+    _stimulus = 0.0
+    _non_integrated_variables = None
 
     def update_derived_parameters(self):
         """
@@ -355,6 +357,10 @@ class SpikingWongWangExcIOInhI(Model):
         code that updates an arbitrary models parameters -- ie, this can be
         safely called on any model, whether it's used or not.
         """
+        self._stimulus = 0.0
+        self._non_integrated_variables = None
+        self.nintvar = self.nvar - self.n_nonintvar
+        self._non_integrated_variables_inds = list(range(self.nintvar, self.nvar))
         self._N_E_max = int(numpy.max(self.N_E))  # maximum number of excitatory neurons/modes
         self.number_of_modes = int(self._N_E_max + numpy.max(self.N_I))
         # # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
@@ -495,8 +501,7 @@ class SpikingWongWangExcIOInhI(Model):
         # 4. s_GABA
         state_variables[3, ii, _E] = 0.0
 
-    def update_non_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0,
-                                                      use_numba=False):
+    def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0):
         if self._n_regions == 0:
             self._n_regions = state_variables.shape[1]
             self._prepare_indices()
@@ -638,9 +643,11 @@ class SpikingWongWangExcIOInhI(Model):
                                           ( self._x_I(self.G, ii) * self._x_I(self.lamda, ii) * large_scale_coupling
                                             + state_variables[4, ii, _I] )
 
+        self._non_integrated_variables = state_variables[self._non_integrated_variables_inds]
+
         return state_variables
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
+    def _numpy_dfun(self, integration_variables, coupling, local_coupling=0.0):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 
@@ -655,10 +662,16 @@ class SpikingWongWangExcIOInhI(Model):
 
         """
 
-        derivative = 0.0 * state_variables
+        derivative = 0.0 * integration_variables
+
+        if self._non_integrated_variables is None:
+            state_variables = np.array(integration_variables.tolist() +
+                                       [0.0 * integration_variables[0]] * self.nnonintvar)
+            state_variables = self.update_state_variables_before_integration(state_variables, coupling, local_coupling,
+                                                                             self._stimulus)
 
         if self._n_regions == 0:
-            self._n_regions = state_variables.shape[1]
+            self._n_regions = integration_variables.shape[1]
             self._prepare_indices()
         for ii in range(self._n_regions):  # For every region node....
 
@@ -669,21 +682,21 @@ class SpikingWongWangExcIOInhI(Model):
 
             # 0. s_AMPA
             # ds_AMPA/dt = -1/tau_AMPA * s_AMPA
-            derivative[0, ii, _E] =  -state_variables[0, ii, _E] / tau_AMPA_E
+            derivative[0, ii, _E] = -integration_variables[0, ii, _E] / tau_AMPA_E
 
             # 1. x_NMDA
             # dx_NMDA/dt = -x_NMDA/tau_NMDA_rise
-            derivative[1, ii, _E] =  -state_variables[1, ii, _E] / self._x_E(self.tau_NMDA_rise, ii)
+            derivative[1, ii, _E] = -integration_variables[1, ii, _E] / self._x_E(self.tau_NMDA_rise, ii)
 
             # 2. s_NMDA
             # ds_NMDA/dt = -1/tau_NMDA_decay * s_NMDA + alpha*x_NMDA*(1-s_NMDA)
             derivative[2, ii, _E] = \
-                -state_variables[2, ii, _E] / self._x_E(self.tau_NMDA_decay, ii) \
-                + self._x_E(self.alpha, ii) * state_variables[1, ii, _E] * (1 - state_variables[2, ii, _E])
+                -integration_variables[2, ii, _E] / self._x_E(self.tau_NMDA_decay, ii) \
+                + self._x_E(self.alpha, ii) * integration_variables[1, ii, _E] * (1 - integration_variables[2, ii, _E])
 
             # 4. s_AMPA_ext
             # ds_AMPA_ext/dt = -s_AMPA_exc/tau_AMPA
-            derivative[4, ii, _E] = -state_variables[4, ii, _E] / tau_AMPA_E
+            derivative[4, ii, _E] = -integration_variables[4, ii, _E] / tau_AMPA_E
 
             # excitatory refractory neurons:
             ref = self._refractory_neurons_E[ii]
@@ -693,12 +706,12 @@ class SpikingWongWangExcIOInhI(Model):
             # C_m*dV_m/dt = - I_L- I_AMPA - I_NMDA - I_GABA  - I_AMPA_EXT + I_ext
             _E_not_ref = _E[not_ref]
             derivative[5, ii, _E_not_ref] = (
-                                              - state_variables[9, ii, _E_not_ref]      # 9. I_L
-                                              - state_variables[10, ii, _E_not_ref]     # 10. I_AMPA
-                                              - state_variables[11, ii, _E_not_ref]     # 11. I_NMDA
-                                              - state_variables[12, ii, _E_not_ref]     # 12. I_GABA
-                                              - state_variables[13, ii, _E_not_ref]     # 13. I_AMPA_ext
-                                              + self._x_E_ref(self.I_ext, ii, not_ref)  # I_ext
+                                                    - self._non_integrated_variables[2, ii, _E_not_ref]  # 9. I_L
+                                                    - self._non_integrated_variables[3, ii, _E_not_ref]  # 10. I_AMPA
+                                                    - self._non_integrated_variables[4, ii, _E_not_ref]  # 11. I_NMDA
+                                                    - self._non_integrated_variables[5, ii, _E_not_ref]  # 12. I_GABA
+                                                    - self._non_integrated_variables[6, ii, _E_not_ref]  # 13. I_AMPA_ext
+                                                    + self._x_E_ref(self.I_ext, ii, not_ref)  # I_ext
                                             ) \
                                             / self._x_E_ref(self.C_m_E, ii, not_ref)
 
@@ -712,11 +725,11 @@ class SpikingWongWangExcIOInhI(Model):
             _I = self._I(ii)  # inhibitory neurons indices
 
             # 3. s_GABA/dt = - s_GABA/tau_GABA
-            derivative[3, ii, _I] = -state_variables[3, ii, _I]/ self._x_I(self.tau_GABA, ii)
+            derivative[3, ii, _I] = -integration_variables[3, ii, _I] / self._x_I(self.tau_GABA, ii)
 
             # 4. s_AMPA_ext
             # ds_AMPA_ext/dt = -s_AMPA_exc/tau_AMPA
-            derivative[4, ii, _I] = -state_variables[4, ii, _I] / self._x_I(self.tau_AMPA, ii)
+            derivative[4, ii, _I] = -integration_variables[4, ii, _I] / self._x_I(self.tau_AMPA, ii)
 
             # inhibitory refractory neurons:
             ref = self._refractory_neurons_I[ii]
@@ -728,12 +741,12 @@ class SpikingWongWangExcIOInhI(Model):
             # C_m*dV_m/dt = - I_L- I_AMPA - I_NMDA - I_GABA  - I_AMPA_EXT + I_ext
             _I_not_ref = _I[not_ref]
             derivative[5, ii, _I_not_ref] = (
-                                              - state_variables[9, ii,  _I_not_ref]  # 9. I_L
-                                              - state_variables[10, ii, _I_not_ref]  # 10. I_AMPA
-                                              - state_variables[11, ii, _I_not_ref]  # 11. I_NMDA
-                                              - state_variables[12, ii, _I_not_ref]  # 12. I_GABA
-                                              - state_variables[13, ii, _I_not_ref]  # 13. I_AMPA_ext
-                                              + self._x_I_ref(self.I_ext, ii, not_ref)  # I_ext
+                                                    - self._non_integrated_variables[2, ii, _I_not_ref]  # 9. I_L
+                                                    - self._non_integrated_variables[3, ii, _I_not_ref]  # 10. I_AMPA
+                                                    - self._non_integrated_variables[4, ii, _I_not_ref]  # 11. I_NMDA
+                                                    - self._non_integrated_variables[5, ii, _I_not_ref]  # 12. I_GABA
+                                                    - self._non_integrated_variables[6, ii, _I_not_ref]  # 13. I_AMPA_ext
+                                                    + self._x_I_ref(self.I_ext, ii, not_ref)  # I_ext
                                              ) \
                                              / self._x_I_ref(self.C_m_I, ii, not_ref)
 
@@ -741,6 +754,8 @@ class SpikingWongWangExcIOInhI(Model):
             # dt_ref/dt = -1 for t_ref > 0  so that t' = t - dt
             # and 0 otherwise
             derivative[6, ii, _I[ref]] = -1.0
+
+        self._non_integrated_variables = None
 
         return derivative
 
