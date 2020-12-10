@@ -141,7 +141,10 @@ class SimulatorController(BurstBaseController):
         simulator, _, _, is_branch = self.context.get_common_params()
         form = self.simulator_service.prepare_first_simulation_fragment(self.cached_simulator_algorithm,
                                                                         self.context.project.id, is_branch, simulator)
-        session_stored_simulator = self.context.init_session_stored_simulator()
+        session_stored_simulator = self.context.get_session_stored_simulator()
+        if session_stored_simulator is None:
+            session_stored_simulator = SimulatorAdapterModel()
+            self.context.add_session_stored_simulator(session_stored_simulator)
         form.fill_from_trait(session_stored_simulator)
         return form
 

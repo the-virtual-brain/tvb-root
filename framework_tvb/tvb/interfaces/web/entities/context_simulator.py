@@ -48,13 +48,8 @@ class SimulatorContext(object):
         self.project = None
         self.last_loaded_fragment_url = None
 
-    def init_session_stored_simulator(self):
-        session_stored_simulator = common.get_from_session(self.KEY_SIMULATOR_CONFIG)
-        if session_stored_simulator is None:
-            session_stored_simulator = SimulatorAdapterModel()
-            common.add2session(self.KEY_SIMULATOR_CONFIG, session_stored_simulator)
-
-        return session_stored_simulator
+    def add_session_stored_simulator(self, session_stored_simulator):
+        common.add2session(self.KEY_SIMULATOR_CONFIG, session_stored_simulator)
 
     def get_session_stored_simulator(self):
         return common.get_from_session(self.KEY_SIMULATOR_CONFIG)
