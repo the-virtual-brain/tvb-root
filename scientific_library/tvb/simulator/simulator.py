@@ -369,9 +369,11 @@ class Simulator(HasTraits):
             state = region_state.transpose((1, 0, 2))  # (cvar, node, mode)
         self.history.update(step, state)
 
-    def _loop_monitor_output(self, step, state):
+    def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)
-        output = [monitor.record(step, observed) for monitor in self.monitors]
+        output = [monitor.record(step,
+                                 node_coupling if isinstance(monitor, monitors.AfferentCoupling) else observed)
+                  for monitor in self.monitors]
         if any(outputi is not None for outputi in output):
             return output
 
@@ -424,7 +426,7 @@ class Simulator(HasTraits):
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, n_reg, state)
             # needs implementing by history + coupling?
-            output = self._loop_monitor_output(step, state)
+            output = self._loop_monitor_output(step, state, node_coupling)
             node_coupling = self._loop_compute_node_coupling(step + 1)
             if output is not None:
                 yield output
