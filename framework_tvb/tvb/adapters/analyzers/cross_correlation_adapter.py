@@ -70,11 +70,10 @@ class CrossCorrelateAdapterModel(ViewModel):
 
 class CrossCorrelateAdapterForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(CrossCorrelateAdapterForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self.project_id,
-                                                    name=self.get_input_name(), conditions=self.get_filters(),
-                                                    has_all_option=True)
+    def __init__(self):
+        super(CrossCorrelateAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
     def get_view_model():
@@ -250,13 +249,13 @@ class PearsonCorrelationCoefficientAdapterModel(ViewModel):
 
 class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(PearsonCorrelationCoefficientAdapterForm, self).__init__(project_id)
+    def __init__(self):
+        super(PearsonCorrelationCoefficientAdapterForm, self).__init__()
         self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series,
-                                                    self.project_id, name=self.get_input_name(),
-                                                    conditions=self.get_filters(), has_all_option=True)
-        self.t_start = FloatField(PearsonCorrelationCoefficientAdapterModel.t_start, self.project_id)
-        self.t_end = FloatField(PearsonCorrelationCoefficientAdapterModel.t_end, self.project_id)
+                                                    name=self.get_input_name(), conditions=self.get_filters(),
+                                                    has_all_option=True)
+        self.t_start = FloatField(PearsonCorrelationCoefficientAdapterModel.t_start)
+        self.t_end = FloatField(PearsonCorrelationCoefficientAdapterModel.t_end)
 
     @staticmethod
     def get_view_model():

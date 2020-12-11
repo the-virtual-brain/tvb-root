@@ -32,10 +32,10 @@ Oscillator models.
 """
 
 from .base import Model, ModelNumbaDfun
-import numexpr
 import numpy
 from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
+from tvb.simulator.backend.ref import RefBase
 
 
 class Generic2dOscillator(ModelNumbaDfun):
@@ -328,7 +328,7 @@ class Generic2dOscillator(ModelNumbaDfun):
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         V = state_variables[0, :]
         W = state_variables[1, :]
 
@@ -354,6 +354,7 @@ class Generic2dOscillator(ModelNumbaDfun):
         # This avoids an expensive array concatenation
         derivative = numpy.empty_like(state_variables)
 
+        ev = RefBase.evaluate
         ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)', out=derivative[0])
         ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=derivative[1])
 
@@ -457,7 +458,7 @@ class Kuramoto(Model):
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0,
-             ev=numexpr.evaluate, sin=numpy.sin, pi2=numpy.pi * 2):
+             ev=RefBase.evaluate, sin=numpy.sin, pi2=numpy.pi * 2):
         r"""
         The :math:`\theta` variable is the phase angle of the oscillation.
 

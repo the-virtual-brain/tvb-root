@@ -38,6 +38,7 @@ Test for tvb.simulator.common module
 import pytest
 import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.simulator.backend.ref import RefBase
 from tvb.simulator import common
 
 
@@ -60,22 +61,8 @@ class TestCommon(BaseTestCase):
         y_start = 4.0
         y_end = 8.0
         t_mid = 0.5
-        val = common.linear_interp1d(t_start, t_end, y_start, y_end, t_mid)
+        val = RefBase.linear_interp1d(t_start, t_end, y_start, y_end, t_mid)
         assert val == 6.0
-
-    def test_unravel_history(self):
-        """
-        This class does not work and it's not used ... maybe should tag it as
-        deprecated
-        """
-        pass
-
-    def test_Buffer(self):
-        """
-        It seems to be unused as well ... maybe should tag it as
-        deprecated
-        """
-        pass
 
     @pytest.mark.skipif(not hasattr(numpy.add, 'at'),
                         reason='Cannot test fallback numpy.add.at implementation without '
@@ -88,5 +75,5 @@ class TestCommon(BaseTestCase):
             map = ri(0, m, n)
             expected, actual = numpy.zeros((2, m) + rest)
             numpy.add.at(expected, map, source)
-            common._add_at(actual, map, source)
+            RefBase._add_at(actual, map, source)
             assert numpy.allclose(expected, actual)

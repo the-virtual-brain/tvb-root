@@ -142,19 +142,16 @@ class CSVConnectivityImporterModel(UploaderViewModel):
 
 class CSVConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, project_id=None):
-        super(CSVConnectivityImporterForm, self).__init__(project_id)
+    def __init__(self):
+        super(CSVConnectivityImporterForm, self).__init__()
 
-        self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', self.project_id,
-                                        'weights', self.temporary_files)
-        self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, self.project_id,
-                                             name='weights_delimiter', choices=DELIMITER_OPTIONS)
-        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, ['.csv'], self.project_id,
-                                       'tracts', self.temporary_files)
-        self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, self.project_id,
-                                            name='tracts_delimiter', choices=DELIMITER_OPTIONS)
-        self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, self.project_id,
-                                                   'input_data')
+        self.weights = TraitUploadField(CSVConnectivityImporterModel.weights, '.csv', 'weights', self.temporary_files)
+        self.weights_delimiter = SelectField(CSVConnectivityImporterModel.weights_delimiter, name='weights_delimiter',
+                                             choices=DELIMITER_OPTIONS)
+        self.tracts = TraitUploadField(CSVConnectivityImporterModel.tracts, ['.csv'], 'tracts', self.temporary_files)
+        self.tracts_delimiter = SelectField(CSVConnectivityImporterModel.tracts_delimiter, name='tracts_delimiter',
+                                            choices=DELIMITER_OPTIONS)
+        self.input_data = TraitDataTypeSelectField(CSVConnectivityImporterModel.input_data, 'input_data')
 
     @staticmethod
     def get_view_model():
