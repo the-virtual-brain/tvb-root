@@ -56,9 +56,6 @@ from .history import SparseHistory
 # TODO with refactor, this becomes more of a builder, since iterator will account for
 # most of the runtime associated with a simulation.
 class Simulator(HasTraits):
-    _spatial_param_reshape = None
-    _dfun = None
-
     """A Simulator assembles components required to perform simulations."""
 
     connectivity = Attr(
@@ -198,7 +195,7 @@ class Simulator(HasTraits):
         return False
 
     def _configure_integrator_next_step(self):
-        if self.model.nintvar < self.model.nvar:
+        if self.model.n_nonintvar:
             self.integrate_next_step = self.integrator.integrate_with_update
         else:
             self.integrate_next_step = self.integrator.integrate
@@ -267,12 +264,6 @@ class Simulator(HasTraits):
             The configured Simulator instance.
 
         """
-        if self._dfun is None:
-            self._dfun = self.model.dfun
-
-        if self._spatial_param_reshape is None:
-            self._spatial_param_reshape = self.model.spatial_param_reshape
-
         if full_configure:
             # When run from GUI, preconfigure is run separately, and we want to avoid running that part twice
             self.preconfigure()
@@ -293,7 +284,7 @@ class Simulator(HasTraits):
                     setattr(self.model, param, new_parameters)
             region_parameters = getattr(self.model, param)
             if region_parameters.size == self.number_of_nodes:
-                new_parameters = region_parameters.reshape(self._spatial_param_reshape)
+                new_parameters = region_parameters.reshape(spatial_reshape)
                 setattr(self.model, param, new_parameters)
         # Configure spatial component of any stimuli
         self._configure_stimuli()
@@ -430,14 +421,13 @@ class Simulator(HasTraits):
             if not numpy.issubdtype(type(n_steps), numpy.integer):
                 raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
 
-        for step in range(self.current_step + 1, self.current_step + n_steps + 1):
-            # needs implementing by hsitory + coupling?
-            node_coupling = self._loop_compute_node_coupling(step)
+        for step in range(start_step, start_step + n_steps):
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, n_reg, state)
-            node_coupling = self._loop_compute_node_coupling(step + 1)
+            # needs implementing by history + coupling?
             output = self._loop_monitor_output(step, state, node_coupling)
+            node_coupling = self._loop_compute_node_coupling(step + 1)
             if output is not None:
                 yield output
 

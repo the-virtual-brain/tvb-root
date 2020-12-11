@@ -89,7 +89,7 @@ class TestUpdateVariablesModel(Model):
 
     state_variables = ['x1', 'x2', 'x3', 'x4', 'x5']
 
-    integration_variables = ["x1", "x2", "x3"]
+    non_integrated_variables = ['x4', 'x5']
 
     state_variable_range = Final(
         default={
@@ -102,17 +102,19 @@ class TestUpdateVariablesModel(Model):
     _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state_variables, node_coupling, local_coupling=0.0):
-        return 0.0 * state_variables
+    def dfun(self, integrated_variables, node_coupling, local_coupling=0.0):
+        return 0.0 * integrated_variables
 
     def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
-        state[3] += state[0]
-        state[4] += state[1] + state[2]
+        new_state = numpy.copy(state)
+        new_state[3] = state[3] + state[0]
+        new_state[4] = state[4] + state[1] + state[2]
         return state
 
     def update_state_variables_after_integration(self, state):
-        state[3] -= state[0]
-        state[4] -= state[1] + state[2]
+        new_state = numpy.copy(state)
+        new_state[3] = state[3] - state[0]
+        new_state[4] = state[4] - state[1] - state[2]
         return state
 
 

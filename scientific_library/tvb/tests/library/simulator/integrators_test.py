@@ -188,6 +188,7 @@ class TestIntegrators(BaseTestCase):
         x[:, 1, ] = 2 * x[:, 1, ]
         x0 = numpy.array(x)
         model = TestUpdateVariablesModel()
+        model.configure()
         for integrator_class in INTEGRATORStoTEST:
             integrator = integrator_class()
             integrator.dt = dt
@@ -197,6 +198,7 @@ class TestIntegrators(BaseTestCase):
                 integrator.noise.dt = dt
             except:
                 pass
+            integrator.configure()
             # The integration will happen with TestUpdateVariablesModel methods:
             # a dfun that does nothing:
             # def dfun(self, state_variables, node_coupling, local_coupling=0.0):
@@ -204,14 +206,16 @@ class TestIntegrators(BaseTestCase):
             #
             # an update before integration that adds state[0] to state[3], and state[1] and state[2] to state[4]
             # def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
-            #     state[3] += state[0]
-            #     state[4] += state[1] + state[2]
+            #     new_state = numpy.copy(state)
+            #     new_state[3] = state[3] + state[0]
+            #     new_state[4] = state[4] + state[1] + state[2]
             #     return state
             #
             # and an update after integration that reverses the effect of the update before integration
-            # def update_state_variables_after_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
-            #     state[3] -= state[0]
-            #     state[4] -= state[1] + state[2]
+            # def update_state_variables_after_integration(self, state):
+            #     new_state = numpy.copy(state)
+            #     new_state[3] = state[3] - state[0]
+            #     new_state[4] = state[4] - state[1] - state[2]
             #     return state
             x = integrator.integrate_with_update(x0, model, 0.0, 0.0, 0.0)
             # Eventually, the state should be left unchanged:
