@@ -156,6 +156,9 @@ class Integrator(HasTraits):
         return simple_gen_astr(self, 'dt')
 
 
+# TODO: Decide about permanent removal of bounding and clamping for intermediate steps of integration schemes.
+
+
 class IntegratorStochastic(Integrator):
     r"""
     The IntegratorStochastic class is a base class for the stochastic
@@ -219,18 +222,15 @@ class HeunDeterministic(Integrator):
         #import pdb; pdb.set_trace()
         m_dx_tn = dfun(X, coupling, local_coupling)
         inter = X + self.dt * (m_dx_tn + stimulus)
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter)
+        # if self.state_variable_boundaries is not None:
+        #     self.bound_state(inter)
+        # if self.clamped_state_variable_values is not None:
+        #     self.clamp_state(inter)
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
         X_next = X + dX + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+
         return X_next
 
 
@@ -268,18 +268,14 @@ class HeunStochastic(IntegratorStochastic):
         noise *= noise_gfun
 
         inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter)
+        # if self.state_variable_boundaries is not None:
+        #     self.bound_state(inter)
+        # if self.clamped_state_variable_values is not None:
+        #     self.clamp_state(inter)
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
         X_next = X + dX + noise + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
 
         return X_next
 
@@ -308,10 +304,7 @@ class EulerDeterministic(Integrator):
         self.dX = dfun(X, coupling, local_coupling) 
 
         X_next = X + self.dt * (self.dX + stimulus)
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+
         return X_next
 
 
@@ -345,10 +338,7 @@ class EulerStochastic(IntegratorStochastic):
         dX = dfun(X, coupling, local_coupling) * self.dt 
         noise_gfun = self.noise.gfun(X)
         X_next = X + dX + noise_gfun * noise + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+
         return X_next
 
 
@@ -386,31 +376,28 @@ class RungeKutta4thOrderDeterministic(Integrator):
 
         k1 = dfun(X, coupling, local_coupling)
         inter_k1 = X + dt2 * k1
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter_k1)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter_k1)
+        # if self.state_variable_boundaries is not None:
+        #     self.bound_state(inter_k1)
+        # if self.clamped_state_variable_values is not None:
+        #     self.clamp_state(inter_k1)
         k2 = dfun(inter_k1, coupling, local_coupling)
         inter_k2 = X + dt2 * k2
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter_k2)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter_k2)
+        # if self.state_variable_boundaries is not None:
+        #     self.bound_state(inter_k2)
+        # if self.clamped_state_variable_values is not None:
+        #     self.clamp_state(inter_k2)
         k3 = dfun(inter_k2, coupling, local_coupling)
         inter_k3 = X + dt * k3
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter_k3)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter_k3)
+        # if self.state_variable_boundaries is not None:
+        #     self.bound_state(inter_k3)
+        # if self.clamped_state_variable_values is not None:
+        #     self.clamp_state(inter_k3)
         k4 = dfun(inter_k3, coupling, local_coupling)
 
         dX = dt6 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
         X_next = X + dX + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+
         return X_next
 
 
@@ -477,10 +464,6 @@ class SciPyODE(SciPyODEBase):
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
         return X_next
 
 class SciPySDE(SciPyODEBase):
@@ -488,10 +471,6 @@ class SciPySDE(SciPyODEBase):
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
         X_next += self.noise.gfun(X) * self.noise.generate(X.shape)
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
         return X_next
 
 
