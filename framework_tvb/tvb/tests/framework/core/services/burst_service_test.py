@@ -32,14 +32,16 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import os
 from uuid import UUID
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.services.burst_service import BurstService
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.algorithm_service import AlgorithmService, GenericAttributes
 from tvb.core.services.project_service import ProjectService
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -221,3 +223,43 @@ class TestBurstService(BaseTestCase):
         datatype2_stored = self.count_all_entities(Datatype2)
         assert 0 == datatype1_stored, "Specific datatype entries for DataType1 were not deleted."
         assert 0 == datatype2_stored, "Specific datatype entries for DataType2 were not deleted."
+
+    def test_prepare_indexes_for_simulation_results(self, time_series_factory, operation_factory, simulator_factory):
+        ts_1 = time_series_factory()
+        ts_2 = time_series_factory()
+        ts_3 = time_series_factory()
+
+        operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        sim_folder, sim_gid = simulator_factory(op=operation)
+
+        path_1 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_1.gid.hex))
+        path_2 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_2.gid.hex))
+        path_3 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_3.gid.hex))
+
+        with TimeSeriesH5(path_1) as f:
+            f.store(ts_1)
+            f.store_generic_attributes(GenericAttributes())
+
+        with TimeSeriesH5(path_2) as f:
+            f.store(ts_2)
+            f.store_generic_attributes(GenericAttributes())
+
+        with TimeSeriesH5(path_3) as f:
+            f.store(ts_3)
+            f.store_generic_attributes(GenericAttributes())
+
+        burst_configuration = BurstConfiguration(self.test_project.id)
+        burst_configuration.fk_simulation = operation.id
+        burst_configuration.simulator_gid = operation.view_model_gid
+        burst_configuration = dao.store_entity(burst_configuration)
+
+        file_names = [path_1, path_2, path_3]
+        ts_datatypes = [ts_1, ts_2, ts_3]
+        indexes = self.burst_service.prepare_indexes_for_simulation_results(operation, file_names, burst_configuration)
+
+        for i in range(len(indexes)):
+            assert indexes[i].gid == ts_datatypes[i].gid.hex, "Gid was not set correctly on index."
+            assert indexes[i].sample_period == ts_datatypes[i].sample_period
+            assert indexes[i].sample_period_unit == ts_datatypes[i].sample_period_unit
+            assert indexes[i].sample_rate == ts_datatypes[i].sample_rate
+
