@@ -44,7 +44,7 @@ import scipy.signal as signal
 import tvb.datatypes.spectral as spectral
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, Range, Float, narray_describe
-from tvb.simulator.common import iround
+from tvb.simulator.backend.ref import ReferenceBackend
 
 SUPPORTED_WAVELET_FUNCTIONS = ("morlet",)
 
@@ -119,7 +119,7 @@ def compute_continuous_wavelet_transform(time_series, frequencies, sample_period
     # Duke: code below is as given by Andreas Spiegler, I've just wrapped
     # some of the original argument names
     nf = len(freqs)
-    temporal_step = max((1, iround(sample_period / time_series.sample_period)))
+    temporal_step = max((1, ReferenceBackend.iround(sample_period / time_series.sample_period)))
     nt = int(numpy.ceil(ts_shape[0] / temporal_step))
 
     if not isinstance(q_ratio, numpy.ndarray):

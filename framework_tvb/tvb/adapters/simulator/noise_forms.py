@@ -54,15 +54,15 @@ class NoiseForm(FormWithRanges):
 
     def __init__(self):
         super(NoiseForm, self).__init__()
-        self.ntau = FloatField(NoiseViewModel.ntau, self.project_id)
-        self.noise_seed = IntField(NoiseViewModel.noise_seed, self.project_id)
+        self.ntau = FloatField(NoiseViewModel.ntau)
+        self.noise_seed = IntField(NoiseViewModel.noise_seed)
 
 
 class AdditiveNoiseForm(NoiseForm):
 
     def __init__(self):
         super(AdditiveNoiseForm, self).__init__()
-        self.nsig = ArrayField(AdditiveNoiseViewModel.nsig, self.project_id)
+        self.nsig = ArrayField(AdditiveNoiseViewModel.nsig)
 
     def get_range_parameters(self):
         ntau_range_param = RangeParameter(NoiseViewModel.ntau.field_name, float, Range(lo=0.0, hi=20.0, step=1.0))
@@ -79,8 +79,8 @@ class MultiplicativeNoiseForm(NoiseForm):
         self.equation_choices = get_ui_name_to_equation_dict()
         default_equation = list(self.equation_choices.values())[0]
 
-        self.nsig = ArrayField(MultiplicativeNoiseViewModel.nsig, self.project_id)
-        self.equation = SelectField(Attr(Equation, label='Equation', default=default_equation), self.project_id,
+        self.nsig = ArrayField(MultiplicativeNoiseViewModel.nsig)
+        self.equation = SelectField(Attr(Equation, label='Equation', default=default_equation),
                                     name='equation', choices=self.equation_choices,
                                     subform=get_form_for_equation(default_equation))
 

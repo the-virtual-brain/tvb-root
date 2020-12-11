@@ -87,13 +87,12 @@ class FCDAdapterModel(ViewModel):
 
 
 class FCDAdapterForm(ABCAdapterForm):
-    def __init__(self, project_id=None):
-        super(FCDAdapterForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, self.project_id,
-                                                    name=self.get_input_name(), conditions=self.get_filters(),
-                                                    has_all_option=True)
-        self.sw = FloatField(FCDAdapterModel.sw, self.project_id)
-        self.sp = FloatField(FCDAdapterModel.sp, self.project_id)
+    def __init__(self):
+        super(FCDAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, name=self.get_input_name(),
+                                                    conditions=self.get_filters(), has_all_option=True)
+        self.sw = FloatField(FCDAdapterModel.sw)
+        self.sp = FloatField(FCDAdapterModel.sp)
 
     @staticmethod
     def get_view_model():

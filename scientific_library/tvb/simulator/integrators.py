@@ -46,6 +46,7 @@ will be consistent with Monitor periods corresponding to any of [4096, 2048, 102
 """
 import abc
 import functools
+import numpy as np
 import scipy.integrate
 from . import noise
 from .common import get_logger, simple_gen_astr
@@ -125,6 +126,23 @@ class Integrator(HasTraits):
     def clamp_state(self, X):
         X[self.clamped_state_variable_indices] = self.clamped_state_variable_values
 
+    def configure_boundaries(self, model):
+        if model.state_variable_boundaries is not None:
+            indices = []
+            boundaries = []
+            for sv, sv_bounds in model.state_variable_boundaries.items():
+                indices.append(model.state_variables.index(sv))
+                boundaries.append(sv_bounds)
+            sort_inds = np.argsort(indices)
+            self.bounded_state_variable_indices = np.array(indices)[sort_inds]
+            self.state_variable_boundaries = np.array(boundaries).astype("float64")[sort_inds]
+        else:
+            self.bounded_state_variable_indices = None
+            self.state_variable_boundaries = None
+
+    def set_random_state(self, random_state):
+        self.log.warn("random_state supplied for non-stochastic integration")
+
     def bound_and_clamp(self, state):
         # If there is a state boundary...
         if self.state_variable_boundaries is not None:
@@ -192,6 +210,12 @@ class IntegratorStochastic(Integrator):
         required = True,
         doc = """The stochastic integrator's noise source. It incorporates its
         own instance of Numpy's RandomState.""")  # type: noise.Noise
+
+    def set_random_state(self, random_state):
+        if random_state is not None:
+            self.noise.random_stream.set_state(random_state)
+            msg = "random_state supplied with seed %s"
+            self.log.info(msg, self.noise.random_stream.get_state()[1][0])
 
     def __str__(self):
         return simple_gen_astr(self, 'dt noise')

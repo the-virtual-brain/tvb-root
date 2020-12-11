@@ -6,19 +6,19 @@
 cd ..
 
 cd framework_tvb
-python setup.py develop --no-deps
+python setup.py develop --no-deps --user
 cd ..
 
 cd scientific_library
-python setup.py develop
+python setup.py develop --user
 cd ..
 
 cd tvb_contrib
-python setup.py develop --no-deps
+python setup.py develop --no-deps --user
 cd ..
 
 cd tvb_bin
-python setup.py develop
+python setup.py develop --user
 
 cd ../tvb_build
-python setup.py develop --no-deps
+python setup.py develop --no-deps --user

@@ -62,71 +62,71 @@ class LinearCouplingForm(FormWithRanges):
 
     def __init__(self):
         super(LinearCouplingForm, self).__init__()
-        self.a = ArrayField(Linear.a, self.project_id)
-        self.b = ArrayField(Linear.b, self.project_id)
+        self.a = ArrayField(Linear.a)
+        self.b = ArrayField(Linear.b)
 
 
 class ScalingCouplingForm(FormWithRanges):
 
     def __init__(self):
         super(ScalingCouplingForm, self).__init__()
-        self.a = ArrayField(Scaling.a, self.project_id)
+        self.a = ArrayField(Scaling.a)
 
 
 class HyperbolicTangentCouplingForm(FormWithRanges):
 
     def __init__(self):
         super(HyperbolicTangentCouplingForm, self).__init__()
-        self.a = ArrayField(HyperbolicTangent.a, self.project_id)
-        self.b = ArrayField(HyperbolicTangent.b, self.project_id)
-        self.midpoint = ArrayField(HyperbolicTangent.midpoint, self.project_id)
-        self.sigma = ArrayField(HyperbolicTangent.sigma, self.project_id)
+        self.a = ArrayField(HyperbolicTangent.a)
+        self.b = ArrayField(HyperbolicTangent.b)
+        self.midpoint = ArrayField(HyperbolicTangent.midpoint)
+        self.sigma = ArrayField(HyperbolicTangent.sigma)
 
 
 class SigmoidalCouplingForm(FormWithRanges):
 
     def __init__(self):
         super(SigmoidalCouplingForm, self).__init__()
-        self.cmin = ArrayField(Sigmoidal.cmin, self.project_id)
-        self.cmax = ArrayField(Sigmoidal.cmax, self.project_id)
-        self.midpoint = ArrayField(Sigmoidal.midpoint, self.project_id)
-        self.a = ArrayField(Sigmoidal.a, self.project_id)
-        self.sigma = ArrayField(Sigmoidal.sigma, self.project_id)
+        self.cmin = ArrayField(Sigmoidal.cmin)
+        self.cmax = ArrayField(Sigmoidal.cmax)
+        self.midpoint = ArrayField(Sigmoidal.midpoint)
+        self.a = ArrayField(Sigmoidal.a)
+        self.sigma = ArrayField(Sigmoidal.sigma)
 
 
 class SigmoidalJansenRitForm(FormWithRanges):
 
     def __init__(self):
         super(SigmoidalJansenRitForm, self).__init__()
-        self.cmin = ArrayField(SigmoidalJansenRit.cmin, self.project_id)
-        self.cmax = ArrayField(SigmoidalJansenRit.cmax, self.project_id)
-        self.midpoint = ArrayField(SigmoidalJansenRit.midpoint, self.project_id)
-        self.r = ArrayField(SigmoidalJansenRit.r, self.project_id)
-        self.a = ArrayField(SigmoidalJansenRit.a, self.project_id)
+        self.cmin = ArrayField(SigmoidalJansenRit.cmin)
+        self.cmax = ArrayField(SigmoidalJansenRit.cmax)
+        self.midpoint = ArrayField(SigmoidalJansenRit.midpoint)
+        self.r = ArrayField(SigmoidalJansenRit.r)
+        self.a = ArrayField(SigmoidalJansenRit.a)
 
 
 class PreSigmoidalCouplingForm(FormWithRanges):
 
     def __init__(self):
         super(PreSigmoidalCouplingForm, self).__init__()
-        self.H = ArrayField(PreSigmoidal.H, self.project_id)
-        self.Q = ArrayField(PreSigmoidal.Q, self.project_id)
-        self.G = ArrayField(PreSigmoidal.G, self.project_id)
-        self.P = ArrayField(PreSigmoidal.P, self.project_id)
-        self.theta = ArrayField(PreSigmoidal.theta, self.project_id)
-        self.dynamic = BoolField(PreSigmoidal.dynamic, self.project_id)
-        self.globalT= BoolField(PreSigmoidal.globalT, self.project_id)
+        self.H = ArrayField(PreSigmoidal.H)
+        self.Q = ArrayField(PreSigmoidal.Q)
+        self.G = ArrayField(PreSigmoidal.G)
+        self.P = ArrayField(PreSigmoidal.P)
+        self.theta = ArrayField(PreSigmoidal.theta)
+        self.dynamic = BoolField(PreSigmoidal.dynamic)
+        self.globalT= BoolField(PreSigmoidal.globalT)
 
 
 class DifferenceCouplingForm(FormWithRanges):
 
     def __init__(self):
         super(DifferenceCouplingForm, self).__init__()
-        self.a = ArrayField(Difference.a, self.project_id)
+        self.a = ArrayField(Difference.a)
 
 
 class KuramotoCouplingForm(FormWithRanges):
 
     def __init__(self):
         super(KuramotoCouplingForm, self).__init__()
-        self.a = ArrayField(Kuramoto.a, self.project_id)
+        self.a = ArrayField(Kuramoto.a)

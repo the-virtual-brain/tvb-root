@@ -83,15 +83,15 @@ class ConnectivityCreatorModel(ViewModel):
 
 class ConnectivityCreatorForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(ConnectivityCreatorForm, self).__init__(project_id)
+    def __init__(self):
+        super(ConnectivityCreatorForm, self).__init__()
         self.original_connectivity = TraitDataTypeSelectField(ConnectivityCreatorModel.original_connectivity,
-                                                              self.project_id, name='original_connectivity',
+                                                              name='original_connectivity',
                                                               conditions=self.get_filters())
-        self.new_weights = ArrayField(ConnectivityCreatorModel.new_weights, self.project_id)
-        self.new_tracts = ArrayField(ConnectivityCreatorModel.new_tracts, self.project_id)
-        self.interest_area_indexes = ArrayField(ConnectivityCreatorModel.interest_area_indexes, self.project_id)
-        self.is_branch = BoolField(ConnectivityCreatorModel.is_branch, self.project_id)
+        self.new_weights = ArrayField(ConnectivityCreatorModel.new_weights)
+        self.new_tracts = ArrayField(ConnectivityCreatorModel.new_tracts)
+        self.interest_area_indexes = ArrayField(ConnectivityCreatorModel.interest_area_indexes)
+        self.is_branch = BoolField(ConnectivityCreatorModel.is_branch)
 
     @staticmethod
     def get_view_model():

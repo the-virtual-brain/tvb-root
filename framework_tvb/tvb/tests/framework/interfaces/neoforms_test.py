@@ -84,32 +84,32 @@ class BaBazeForm(Form):
     def __init__(self):
         super(BaBazeForm, self).__init__()
         # these beg for metaprogramming
-        self.s = StrField(BaBaze.s, self.project_id)
-        self.sign = IntField(BaBaze.sign, self.project_id)
+        self.s = StrField(BaBaze.s)
+        self.sign = IntField(BaBaze.sign)
 
 
 class BarForm(BaBazeForm):
     def __init__(self):
         super(BarForm, self).__init__()
-        self.airplane_meal = StrField(Bar.airplane_meal, self.project_id)
-        self.portions = IntField(Bar.portions, self.project_id)
-        self.is_fancy = BoolField(Bar.is_fancy, self.project_id)
+        self.airplane_meal = StrField(Bar.airplane_meal)
+        self.portions = IntField(Bar.portions)
+        self.is_fancy = BoolField(Bar.is_fancy)
 
 
 class BazForm(BaBazeForm):
     def __init__(self):
         super(BazForm, self).__init__()
-        self.airplane_sweets = ArrayField(Baz.airplane_sweets, self.project_id)
+        self.airplane_sweets = ArrayField(Baz.airplane_sweets)
 
 
 class BarAndBazForm(Form):
     def __init__(self):
         super(BarAndBazForm, self).__init__()
-        self.bar = FormField(BarForm, self.project_id, 'bar', label='bar')  # BarAndBaz.bar
-        self.baz = FormField(BazForm, self.project_id, 'baz', label='baaz')
+        self.bar = FormField(BarForm, 'bar', label='bar')  # BarAndBaz.bar
+        self.baz = FormField(BazForm, 'baz', label='baaz')
         # not from trait
-        self.happy = BoolField(Attr(bool, label='clap'), self.project_id, 'clasp')
-        self.array = ArrayField(BarAndBaz.array, self.project_id)
+        self.happy = BoolField(Attr(bool, label='clap'), 'clasp')
+        self.array = ArrayField(BarAndBaz.array)
 
     def fill_from_trait(self, trait):
         super(BarAndBazForm, self).fill_from_trait(trait)

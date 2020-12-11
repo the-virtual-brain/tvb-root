@@ -52,7 +52,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
-from tvb.core.neotraits.forms import Form, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
@@ -172,7 +172,8 @@ class FlowController(BaseController):
             algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
             adapter_instance = self.algorithm_service.prepare_adapter(algorithm)
-            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project.id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
+                                                                       project_id=project.id)
             algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
@@ -272,12 +273,12 @@ class FlowController(BaseController):
         filter = FilterChain(fields=fields, operations=operations, values=values)
         project = common.get_current_project()
 
-        form = Form(project_id=project.id)
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
         data_type_gid_attr.required = not string2bool(has_none_option)
 
-        select_field = TraitDataTypeSelectField(data_type_gid_attr, form.project_id, conditions=filter,
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, conditions=filter,
                                                 has_all_option=string2bool(has_all_option))
+        self.algorithm_service.fill_selectfield_with_datatypes(select_field, project.id)
 
         return {'options': select_field.options()}
 
@@ -287,11 +288,7 @@ class FlowController(BaseController):
         adapter_instance = ABCAdapter.build_adapter(algorithm)
 
         try:
-            form = adapter_instance.get_form()(project_id=project_id)
-            if 'fill_defaults' in data:
-                form.fill_from_post_plus_defaults(data)
-            else:
-                form.fill_from_post(data)
+            form = self.algorithm_service.fill_adapter_form(adapter_instance, data, project_id)
             view_model = None
             if form.validate():
                 try:
@@ -353,7 +350,8 @@ class FlowController(BaseController):
 
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
-            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
+                                                                       project_id=project_id)
             vm = self.context.get_view_model_from_session()
             if vm and type(vm) == adapter_form.get_view_model():
                 adapter_form.fill_from_trait(vm)

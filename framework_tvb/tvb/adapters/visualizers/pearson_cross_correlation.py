@@ -55,9 +55,9 @@ class PearsonCorrelationCoefficientVisualizerModel(ViewModel):
 
 class PearsonCorrelationCoefficientVisualizerForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(PearsonCorrelationCoefficientVisualizerForm, self).__init__(project_id)
-        self.datatype = TraitDataTypeSelectField(PearsonCorrelationCoefficientVisualizerModel.datatype, self.project_id,
+    def __init__(self):
+        super(PearsonCorrelationCoefficientVisualizerForm, self).__init__()
+        self.datatype = TraitDataTypeSelectField(PearsonCorrelationCoefficientVisualizerModel.datatype,
                                                  name='datatype', conditions=self.get_filters())
 
     @staticmethod

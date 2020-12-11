@@ -205,7 +205,7 @@ class TestSimulator(BaseTestCase):
         test_simulator.model.configure()
         test_simulator.integrator = HeunDeterministic()
         test_simulator.integrator.configure()
-        test_simulator._configure_integrator_boundaries()
+        test_simulator.integrator.configure_boundaries(test_simulator.model)
         assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
         min_float = numpy.finfo("double").min
         max_float = numpy.finfo("double").max
@@ -239,7 +239,7 @@ class TestSimulator(BaseTestCase):
         test_simulator._configure_history(None)
         assert numpy.all(test_simulator.integrator.bounded_state_variable_indices is None)
 
-        test_simulator._configure_integrator_boundaries()
+        test_simulator.integrator.configure_boundaries(test_simulator.model)
         test_simulator._configure_history(None)
         assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
         self._assert_history_inside_boundaries(test_simulator)
@@ -256,7 +256,7 @@ class TestSimulator(BaseTestCase):
         value_for_clamp = numpy.zeros((2, 76, 1))
         test_simulator.integrator.clamped_state_variable_values = value_for_clamp
         test_simulator.integrator.configure()
-        test_simulator._configure_integrator_boundaries()
+        test_simulator.integrator.configure_boundaries(test_simulator.model)
 
         test_simulator._configure_history(None)
         assert numpy.array_equal(test_simulator.current_state[1:3, :, :], value_for_clamp)

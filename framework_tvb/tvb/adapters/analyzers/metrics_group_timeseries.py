@@ -92,13 +92,12 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
         return {"KuramotoIndex": FilterChain(fields=[FilterChain.datatype + '.data_length_2d'], operations=[">="],
                                              values=[2])}
 
-    def __init__(self, project_id=None):
-        super(TimeseriesMetricsAdapterForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, self.project_id,
-                                                    name="time_series")
-        self.start_point = FloatField(TimeseriesMetricsAdapterModel.start_point, self.project_id)
-        self.segment = IntField(TimeseriesMetricsAdapterModel.segment, self.project_id)
-        self.algorithms = MultiSelectField(TimeseriesMetricsAdapterModel.algorithms, self.project_id, name="algorithms")
+    def __init__(self):
+        super(TimeseriesMetricsAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, name="time_series")
+        self.start_point = FloatField(TimeseriesMetricsAdapterModel.start_point)
+        self.segment = IntField(TimeseriesMetricsAdapterModel.segment)
+        self.algorithms = MultiSelectField(TimeseriesMetricsAdapterModel.algorithms, name="algorithms")
 
     @staticmethod
     def get_view_model():

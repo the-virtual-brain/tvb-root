@@ -63,7 +63,8 @@ import tvb.datatypes.sensors as sensors_module
 import tvb.datatypes.projections as projections_module
 from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
-from tvb.simulator.common import iround, numpy_add_at
+from tvb.simulator.common import numpy_add_at
+from tvb.simulator.backend.ref import ReferenceBackend
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
 
 
@@ -103,7 +104,7 @@ class Monitor(HasTraits):
 
     def _config_time(self, simulator):
         self.dt = simulator.integrator.dt
-        self.istep = iround(self.period / self.dt)
+        self.istep = ReferenceBackend.iround(self.period / self.dt)
 
     def config_for_sim(self, simulator):
         """Configure monitor for given simulator.
