@@ -53,7 +53,7 @@ class CoSimulator(Simulator):
 
     spike_stimulus = None
     _spike_stimulus_fun = None
-    use_numba = True
+    use_numba = False
 
     PRINT_PROGRESSION_MESSAGE = True
 
@@ -171,7 +171,7 @@ class CoSimulator(Simulator):
         if not self.use_numba or self.model.number_of_modes > 1:
             self.use_numba = False
             if hasattr(self.model, "_numpy_dfun"):
-                self._dfun = self.model._numpy_dfun
+                self.model.use_numba = self.use_numba
             self._spatial_param_reshape = (-1, 1)
 
         self.tvb_spikeNet_interface = tvb_spikeNet_interface
