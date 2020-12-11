@@ -83,13 +83,19 @@ class TimeSeriesIndex(DataType):
         # never to be referenced by any other row or table.
         if hasattr(datatype, 'data'):
             self.data_ndim = datatype.data.ndim
-            self.data_length_1d = datatype.data.shape[0]
-            if self.data_ndim > 1:
-                self.data_length_2d = datatype.data.shape[1]
-                if self.data_ndim > 2:
-                    self.data_length_3d = datatype.data.shape[2]
-                    if self.data_ndim > 3:
-                        self.data_length_4d = datatype.data.shape[3]
+            self.fill_shape(datatype.data.shape)
+
+    def fill_from_h5(self, h5_file):
+        self.time_series_type = type(h5_file).__name__.replace('H5', '')
+        self.title = h5_file.title.load()
+        self.start_time = h5_file.start_time.load()
+        self.sample_period_unit = h5_file.sample_period_unit.load()
+        self.sample_period = h5_file.sample_period.load()
+        self.sample_rate = h5_file.sample_rate.load()
+        self.labels_ordering = json.dumps(h5_file.labels_ordering.load())
+        self.labels_dimensions = json.dumps(h5_file.labels_dimensions.load())
+        self.data_ndim = len(h5_file.data.shape)
+        self.fill_shape(h5_file.data.shape)
 
     def fill_shape(self, final_shape):
         self.data_ndim = len(final_shape)

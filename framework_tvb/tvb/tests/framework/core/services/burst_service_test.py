@@ -238,14 +238,17 @@ class TestBurstService(BaseTestCase):
 
         with TimeSeriesH5(path_1) as f:
             f.store(ts_1)
+            f.sample_rate.store(ts_1.sample_rate)
             f.store_generic_attributes(GenericAttributes())
 
         with TimeSeriesH5(path_2) as f:
             f.store(ts_2)
+            f.sample_rate.store(ts_2.sample_rate)
             f.store_generic_attributes(GenericAttributes())
 
         with TimeSeriesH5(path_3) as f:
             f.store(ts_3)
+            f.sample_rate.store(ts_3.sample_rate)
             f.store_generic_attributes(GenericAttributes())
 
         burst_configuration = BurstConfiguration(self.test_project.id)

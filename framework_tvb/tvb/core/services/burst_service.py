@@ -33,6 +33,8 @@ import os
 from datetime import datetime
 
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -238,11 +240,13 @@ class BurstService(object):
         indexes = list()
         self.logger.debug("Preparing indexes for simulation results in operation {}...".format(operation.id))
         for filename in result_filenames:
-            index = h5.index_for_h5_file(filename)()
-            # TODO: don't load full TS in memory and make this read nicer
-            datatype, ga = h5.load_with_references(filename)
-            index.fill_from_has_traits(datatype)
-            index.fill_from_generic_attributes(ga)
+            index = TimeSeriesIndex()
+
+            with TimeSeriesH5(filename) as ts_h5:
+                index.fill_from_h5(ts_h5)
+                index.fill_from_generic_attributes(ts_h5.load_generic_attributes())
+                index.gid = ts_h5.gid.load().hex
+
             index.fk_parent_burst = burst.gid
             index.fk_from_operation = operation.id
             if operation.fk_operation_group:
