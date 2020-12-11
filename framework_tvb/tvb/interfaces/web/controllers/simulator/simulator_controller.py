@@ -108,7 +108,7 @@ class SimulatorController(BurstBaseController):
         """Get on burst main page"""
         template_specification = dict(mainContent="burst/main_burst", title="Simulation Cockpit",
                                       includedResources='project/included_resources')
-        self.context.get_current_project()
+        self.context.set_current_project()
 
         if not self.context.get_last_loaded_form_url_from_session():
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_CONNECTIVITY_URL)

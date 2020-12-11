@@ -174,7 +174,7 @@ class TestBurstService(BaseTestCase):
         simulation = SimulatorAdapterModel()
         simulation.connectivity = UUID(connectivity.gid)
 
-        burst_config = self.burst_service.update_simulation_fields(stored_burst.id, op.id, simulation.gid)
+        burst_config = self.burst_service.update_simulation_fields(stored_burst, op.id, simulation.gid)
         assert burst_config.id == stored_burst.id, "The loaded burst does not have the same ID"
         assert burst_config.fk_simulation == op.id, "The loaded burst does not have the fk simulation that it was given"
         assert burst_config.simulator_gid == simulation.gid.hex, "The loaded burst does not have the simulation gid that it was given"

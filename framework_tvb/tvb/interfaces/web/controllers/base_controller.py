@@ -133,7 +133,6 @@ class BaseController(object):
         if previous_project is None or previous_project.id != project.id:
             # Clean Burst selection from session in case of a different project.
             SimulatorContext().clean_project_data_from_session()
-            common.remove_project_from_session()
             # Store in DB new project selection
             user = common.get_from_session(common.KEY_USER)
             if user is not None:

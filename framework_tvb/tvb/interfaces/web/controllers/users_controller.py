@@ -184,7 +184,6 @@ class UserController(BaseController):
         if user is not None:
             self.logger.debug("User " + user.username + " is just logging out!")
         SimulatorContext().clean_project_data_from_session()
-        common.remove_project_from_session()
         common.set_info_message("Thank you for using The Virtual Brain!")
 
         common.expire_session()

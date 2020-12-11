@@ -149,7 +149,6 @@ class ProjectController(BaseController):
         prj = common.get_current_project()
         if prj is not None and prj.id == int(project_id):
             SimulatorContext().clean_project_data_from_session()
-            common.remove_project_from_session()
 
     @expose_page
     @settings

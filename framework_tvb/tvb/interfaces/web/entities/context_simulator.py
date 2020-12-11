@@ -54,7 +54,7 @@ class SimulatorContext(object):
     def get_session_stored_simulator(self):
         return common.get_from_session(self.KEY_SIMULATOR_CONFIG)
 
-    def get_current_project(self):
+    def set_current_project(self):
         self.project = common.get_current_project()
 
     @staticmethod
@@ -121,9 +121,11 @@ class SimulatorContext(object):
     def set_warning_message(message):
         common.set_warning_message(message)
 
-    def clean_project_data_from_session(self):
+    def clean_project_data_from_session(self, remove_project = True):
         common.remove_from_session(self.KEY_SIMULATOR_CONFIG)
         common.remove_from_session(self.KEY_LAST_LOADED_FORM_URL)
         common.remove_from_session(self.KEY_BURST_CONFIG)
         common.remove_from_session(self.KEY_IS_SIMULATOR_BRANCH)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)
+        if remove_project:
+            common.remove_project_from_session()
