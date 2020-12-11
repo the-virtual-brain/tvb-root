@@ -159,6 +159,7 @@ class TestIntegrators(BaseTestCase):
             except:
                 pass
             x = integrator.scheme(x, dfun, 0.0, 0.0, 0.0)
+            integrator.bound_and_clamp(x)
             for idx, val in zip(integrator.bounded_state_variable_indices, integrator.state_variable_boundaries):
                 if idx == 0:
                     assert numpy.all(x[idx] >= val[0])
@@ -179,6 +180,7 @@ class TestIntegrators(BaseTestCase):
         x = numpy.ones((5, 4, 2))
         for i in range(10):
             x = vode.scheme(x, self._dummy_dfun, 0.0, 0.0, 0.0)
+            vode.bound_and_clamp(x)
         for idx, val in zip(vode.clamped_state_variable_indices, vode.clamped_state_variable_values):
             assert numpy.allclose(x[idx], val)
 
