@@ -92,19 +92,6 @@ class CoSimulator(Simulator):
 
         super(CoSimulator, self)._configure_integrator_noise()
 
-    # def preconfigure(self):
-    #     if self.tvb_spikeNet_interface is not None:
-    #         # TODO: decide if this is really necessary...
-    #         if self.integrator.dt >= 2 * self.tvb_spikeNet_interface.spikeNet_min_delay:
-    #             self.integrator.dt = int(numpy.round(self.integrator.dt /
-    #                                                  self.tvb_spikeNet_interface.spikeNet_min_delay)) * \
-    #                                  self.tvb_spikeNet_interface.spikeNet_min_delay
-    #         else:
-    #             raise ValueError("TVB integration time step dt=%f "
-    #                              "is not equal or greater than twice the Spiking Network minimum delay min_delay=%f!" %
-    #                              (self.integrator.dt, self.tvb_spikeNet_interface.spikeNet_min_delay))
-    #     super(CoSimulator, self).preconfigure()
-
     def _configure_spikeNet_interface(self):
         # TODO: Shall we implement a parallel implentation for multiple modes for SpikeNet as well?!
         if self.current_state.shape[2] > 1:
@@ -221,8 +208,6 @@ class CoSimulator(Simulator):
         # Intialization
         self._guesstimate_runtime()
         self._calculate_storage_requirement()
-        self._handle_random_state(random_state)
-        n_reg = self.connectivity.number_of_regions
         local_coupling = self._prepare_local_coupling()
         stimulus = self._prepare_stimulus()
         state = self.current_state
@@ -294,7 +279,7 @@ class CoSimulator(Simulator):
                 self.integrator.bound_and_clamp(state)
 
             # 5. Now direct the new state t_step to history buffer and monitors
-            self._loop_update_history(step, n_reg, state)
+            self._loop_update_history(step, state)
             output = self._loop_monitor_output(step, state, node_coupling)
 
             # 6. Prepare next TVB time step integration

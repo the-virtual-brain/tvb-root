@@ -405,7 +405,7 @@ class Simulator(HasTraits):
         for step in range(start_step, start_step + n_steps):
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, n_reg, state)
+            self._loop_update_history(step, state)
             # needs implementing by history + coupling?
             output = self._loop_monitor_output(step, state, node_coupling)
             node_coupling = self._loop_compute_node_coupling(step + 1)
