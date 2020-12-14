@@ -94,7 +94,6 @@ class TimeSeriesIndex(DataType):
         self.sample_rate = h5_file.sample_rate.load()
         self.labels_ordering = json.dumps(h5_file.labels_ordering.load())
         self.labels_dimensions = json.dumps(h5_file.labels_dimensions.load())
-        self.data_ndim = len(h5_file.data.shape)
         self.fill_shape(h5_file.data.shape)
 
     def fill_shape(self, final_shape):
