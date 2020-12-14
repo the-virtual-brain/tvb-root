@@ -71,7 +71,7 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
 
         self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, name='surface_type',
                                         choices=ALL_SURFACES_SELECTION)
-        self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', 'data_file', self.temporary_files)
+        self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', 'data_file')
         self.should_center = BoolField(ObjSurfaceImporterModel.should_center, name='should_center')
 
     @staticmethod

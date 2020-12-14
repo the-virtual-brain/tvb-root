@@ -104,8 +104,7 @@ class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
 
     def __init__(self):
         super(RegionMatTimeSeriesImporterForm, self).__init__()
-        self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', 'data_file',
-                                          self.temporary_files)
+        self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', 'data_file')
         self.dataset_name = StrField(RegionMatTimeSeriesImporterModel.dataset_name, name='dataset_name')
         self.structure_path = StrField(RegionMatTimeSeriesImporterModel.structure_path, name='structure_path')
         self.transpose = BoolField(RegionMatTimeSeriesImporterModel.transpose, name='transpose')

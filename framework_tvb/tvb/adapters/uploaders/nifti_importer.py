@@ -92,11 +92,9 @@ class NIFTIImporterForm(ABCUploaderForm):
     def __init__(self):
         super(NIFTIImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(NIFTIImporterModel.data_file, ('.nii', '.gz', '.zip'), 'data_file',
-                                          self.temporary_files)
+        self.data_file = TraitUploadField(NIFTIImporterModel.data_file, ('.nii', '.gz', '.zip'), 'data_file')
         self.apply_corrections = BoolField(NIFTIImporterModel.apply_corrections, name='apply_corrections')
-        self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', 'mappings_file',
-                                              self.temporary_files)
+        self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', 'mappings_file')
         self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, name='connectivity')
 
     @staticmethod

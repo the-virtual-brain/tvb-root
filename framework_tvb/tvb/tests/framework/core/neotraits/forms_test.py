@@ -63,8 +63,7 @@ class TestForms(BaseTestCase):
         connectivity_file = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         data_file = Str('Test Upload Field')
         required_type = '.zip'
-        temporary_files = []
-        upload_field = TraitUploadField(data_file, required_type, self.name, temporary_files)
+        upload_field = TraitUploadField(data_file, required_type, self.name)
 
         post_data = {'Data_Subject': 'John Doe', self.name: connectivity_file, 'normalization': 'explicit-None-value'}
         upload_field.fill_from_post(post_data)

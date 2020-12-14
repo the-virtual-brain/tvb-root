@@ -37,7 +37,7 @@ from tvb.basic.neotraits.api import List, Attr
 from tvb.basic.neotraits.ex import TraitError
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
-#TODO: remove dependency
+# TODO: remove dependency
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 
@@ -124,16 +124,9 @@ TEMPORARY_PREFIX = ".tmp"
 class TraitUploadField(TraitField):
     template = 'form_fields/upload_field.html'
 
-    def __init__(self, traited_attribute, required_type, name, temporary_files, disabled=False):
+    def __init__(self, traited_attribute, required_type, name, disabled=False):
         super(TraitUploadField, self).__init__(traited_attribute, name, disabled)
         self.required_type = required_type
-        self.temporary_files = temporary_files
-
-    def fill_from_post(self, post_data):
-        super(TraitUploadField, self).fill_from_post(post_data)
-
-        if self.data:
-            self.temporary_files.append(self.data)
 
 
 class TraitDataTypeSelectField(TraitField):
