@@ -24,8 +24,8 @@ RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mo
 RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
-# Latest functioning pair compatible tested for sqlalchemy==1.3.20 sqlalchemy-migrate==0.13.0
-RUN /opt/conda/envs/tvb-run/bin/pip install h5py==3.1.0 formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk
+# Latest functioning pair compatible tested for sqlalchemy==1.3.20 sqlalchemy-migrate==0.13.0 h5py==3.1.0
+RUN /opt/conda/envs/tvb-run/bin/pip install h5py formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk
 RUN /opt/conda/envs/tvb-run/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
 
 # Jupyther notebook configurations: set password
