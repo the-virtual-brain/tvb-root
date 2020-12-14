@@ -117,7 +117,8 @@ class TVBImporter(ABCUploader):
                 FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
                 try:
                     operations, all_dts, stored_dts_count = service.import_project_operations(current_op.project,
-                                                                                              tmp_folder, True)
+                                                                                              tmp_folder, True,
+                                                                                              current_op.id)
                     self.nr_of_datatypes += stored_dts_count
                     if stored_dts_count == 0:
                         current_op.additional_info = 'All chosen datatypes already exist!'

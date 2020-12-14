@@ -39,7 +39,6 @@ Module in charge with Launching an operation (creating the Operation entity as w
 
 import json
 import os
-import shutil
 import sys
 import uuid
 import zipfile
@@ -68,7 +67,6 @@ from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.backend_client_factory import BackendClientFactory
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
-from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.time_series import TimeSeries
 
@@ -496,27 +494,6 @@ class OperationService:
                 del kw_new[range_title]
                 result.append((kw_new, range_new))
         return result
-
-    def import_dts(self, view_model, project_id):
-        operations = None
-        if hasattr(view_model,'data_file') and view_model.data_file .endswith('.zip'):
-            data_dir_path = os.path.dirname(view_model.data_file)
-            tmp_folder = os.path.join(data_dir_path, "tmp_import")
-            FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
-
-            for root, dirs, files in os.walk(tmp_folder):
-                if not dirs:
-                    shutil.rmtree(tmp_folder)
-                    return False
-                else:
-                    break
-            project = dao.get_project_by_id(project_id)
-            operations = ImportService().import_project_operations(project, tmp_folder)
-            shutil.rmtree(tmp_folder)
-
-        if operations:
-            return True
-        return False
 
     def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, **data):
         """

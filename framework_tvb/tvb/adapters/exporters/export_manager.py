@@ -43,7 +43,6 @@ from tvb.basic.logger.builder import get_logger
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
-from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
@@ -123,7 +122,7 @@ class ExportManager(object):
             self.logger.debug("Done exporting files, now we will export linked DTs")
             self.logger.debug("Done, closing")
 
-        return None, result_path, False
+        return None, result_path, name
 
     def get_data_with_references_list(self, data, text_dict=None):
         data_path = h5.path_for_stored_index(data)
