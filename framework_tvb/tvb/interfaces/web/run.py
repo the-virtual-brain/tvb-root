@@ -76,7 +76,6 @@ from tvb.interfaces.web.controllers.burst.noise_configuration_controller import 
 from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
 from tvb.interfaces.web.controllers.hpc_controller import HPCController
 
-
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[1])
 
@@ -137,6 +136,14 @@ def init_cherrypy(arguments=None):
 
 
 def expose_rest_api():
+    if not TvbProfile.current.KEYCLOAK_CONFIG:
+        LOGGER.info("REST server will not start because KEYCLOAK CONFIG path is not set.")
+        return
+
+    if not os.path.exists(TvbProfile.current.KEYCLOAK_CONFIG):
+        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(TvbProfile.current.KEYCLOAK_CONFIG))
+        return
+
     if CONFIG_EXISTS:
         LOGGER.info("Starting Flask server with REST API...")
         run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.interfaces.rest.server.run',
