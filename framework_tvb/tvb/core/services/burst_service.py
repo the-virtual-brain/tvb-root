@@ -240,9 +240,10 @@ class BurstService(object):
         indexes = list()
         self.logger.debug("Preparing indexes for simulation results in operation {}...".format(operation.id))
         for filename in result_filenames:
-            index = TimeSeriesIndex()
+            index = h5.index_for_h5_file(filename)()
+            h5_class = h5.REGISTRY.get_h5file_for_index(type(index))
 
-            with TimeSeriesH5(filename) as ts_h5:
+            with h5_class(filename) as ts_h5:
                 index.fill_from_h5(ts_h5)
                 index.fill_from_generic_attributes(ts_h5.load_generic_attributes())
                 index.gid = ts_h5.gid.load().hex
