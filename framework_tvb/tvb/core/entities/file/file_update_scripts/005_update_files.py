@@ -309,9 +309,9 @@ def _migrate_local_connectivity(**kwargs):
 
     storage_manager = kwargs['storage_manager']
     matrix_metadata = storage_manager.get_metadata('matrix')
-    matrix_metadata['Shape'] = _value2str(matrix_metadata['Shape'])
-    matrix_metadata['dtype'] = _value2str(matrix_metadata['dtype'])
-    matrix_metadata['format'] = _value2str(matrix_metadata['format'])
+    matrix_metadata['Shape'] = str(matrix_metadata['Shape'])
+    matrix_metadata['dtype'] = str(matrix_metadata['dtype'])
+    matrix_metadata['format'] = str(matrix_metadata['format'])
     storage_manager.set_metadata(matrix_metadata, 'matrix')
     operation_xml_parameters = kwargs['operation_xml_parameters']
 
@@ -1062,8 +1062,7 @@ def _migrate_general_part(folder, file_name):
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
 
     # UPDATE CREATION DATE
-    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(
-        string2date(root_metadata[DataTypeMetaData.KEY_DATE], date_format=DATE_FORMAT_V4_H5))
+    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(root_metadata[DataTypeMetaData.KEY_DATE])
 
     # OBTAIN THE MODULE (for a few data types the old module doesn't exist anymore, in those cases the attr
     # will be set later

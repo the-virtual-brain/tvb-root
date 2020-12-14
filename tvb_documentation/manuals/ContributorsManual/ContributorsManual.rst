@@ -49,7 +49,7 @@ Using a virtual environment inside Anaconda is a good idea.
    $ conda create -y --name $envname python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug matplotlib-base
    $ source activate $envname
    $ consta install -c conda-forge jupyterlab flask gevent
-   $ pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako
+   $ pip install h5py==3.1.0 formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako
    $ cd [tvb-root]/tvb_build/
    $ sh install_full_tvb.sh
 
