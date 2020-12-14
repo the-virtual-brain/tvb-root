@@ -254,6 +254,6 @@ class FilesUpdateManager(UpdateManager):
 
     @staticmethod
     def _get_create_date_for_sorting(h5_file):
-        create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'), 'utf-8')
-        create_date = string2date(create_date_str, date_format='datetime:%Y-%m-%d %H:%M:%S.%f')
+        create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'))
+        create_date = string2date(create_date_str, date_format='%Y-%m-%d %H:%M:%S.%f')
         return create_date
