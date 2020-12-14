@@ -73,7 +73,6 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
 
         # Simulate receiving POST data
         form = TestAdapterHugeMemoryRequiredForm()
-        adapter.submit_form(form)
 
         view_model = form.get_view_model()()
         view_model.test = 5
