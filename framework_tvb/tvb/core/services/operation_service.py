@@ -287,6 +287,14 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = adapter_instance.load_view_model(operation)
+            try:
+                fields = adapter_instance.get_form()().get_upload_field_names()
+                for upload_field in fields:
+                    if hasattr(view_model, upload_field):
+                        temp_files.append(getattr(view_model, upload_field))
+            except AttributeError:
+                # Skip if we don't have upload fields on current form
+                pass
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, view_model, unique_id, available_space)
             operation = dao.get_operation_by_id(operation.id)
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
@@ -294,13 +302,6 @@ class OperationService:
             dao.store_entity(operation)
 
             self._update_vm_generic_operation_tag(view_model, operation)
-
-            adapter_form = adapter_instance.get_form()
-            try:
-                temp_files = adapter_form.temporary_files
-            except AttributeError:
-                pass
-
             self._remove_files(temp_files)
 
         except zipfile.BadZipfile as excep:
@@ -378,15 +379,16 @@ class OperationService:
         Currently used to delete temporary files created during an operation.
         """
         for pth in file_list:
-            pth = str(pth)
-            try:
-                if os.path.exists(pth) and os.path.isfile(pth):
-                    os.remove(pth)
-                    self.logger.debug("We no longer need file:" + pth + " => deleted")
-                else:
-                    self.logger.warning("Trying to remove not existent file:" + pth)
-            except OSError:
-                self.logger.exception("Could not cleanup file!")
+            if pth is not None:
+                pth = str(pth)
+                try:
+                    if os.path.exists(pth) and os.path.isfile(pth):
+                        os.remove(pth)
+                        self.logger.debug("We no longer need file:" + pth + " => deleted")
+                    else:
+                        self.logger.warning("Trying to remove not existent file:" + pth)
+                except OSError:
+                    self.logger.exception("Could not cleanup file!")
 
     @staticmethod
     def _range_name(range_no):

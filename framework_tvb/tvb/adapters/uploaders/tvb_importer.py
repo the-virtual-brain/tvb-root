@@ -60,8 +60,7 @@ class TVBImporterForm(ABCUploaderForm):
     def __init__(self):
         super(TVBImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(TVBImporterModel.data_file, ('.zip', '.h5'), 'data_file',
-                                          self.temporary_files)
+        self.data_file = TraitUploadField(TVBImporterModel.data_file, ('.zip', '.h5'), 'data_file')
 
     @staticmethod
     def get_view_model():
