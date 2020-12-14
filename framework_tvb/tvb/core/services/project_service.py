@@ -631,6 +631,7 @@ class ProjectService:
         correct = True
 
         if is_datatype_group:
+            operations_set = [datatype_group.fk_from_operation]
             self.logger.debug("Removing datatype group %s" % datatype_group)
             if datatype_group.fk_parent_burst:
                 burst = dao.get_generic_entity(BurstConfiguration, datatype_group.fk_parent_burst, 'gid')[0]
@@ -665,7 +666,7 @@ class ProjectService:
                 correct = correct and dao.remove_entity(BurstConfiguration, op_burst.id)
             correct = correct and dao.remove_entity(Operation, operation_id)
             # Make sure Operation folder is removed
-            self.structure_helper.remove_operation_data(project.name, datatype.fk_from_operation)
+            self.structure_helper.remove_operation_data(project.name, operation_id)
 
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
