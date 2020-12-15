@@ -43,6 +43,8 @@ import sys
 import uuid
 import zipfile
 from copy import copy
+from inspect import isclass
+
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -288,10 +290,16 @@ class OperationService:
 
             view_model = adapter_instance.load_view_model(operation)
             try:
-                fields = adapter_instance.get_form()().get_upload_field_names()
+                form = adapter_instance.get_form()
+                form = form() if isclass(form) else form
+                fields = form.get_upload_field_names()
+                project = dao.get_project_by_id(adapter_instance.current_project_id)
+                tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
                 for upload_field in fields:
                     if hasattr(view_model, upload_field):
-                        temp_files.append(getattr(view_model, upload_field))
+                        file = getattr(view_model, upload_field)
+                        if file.startswith(tmp_folder):
+                            temp_files.append(file)
             except AttributeError:
                 # Skip if we don't have upload fields on current form
                 pass
