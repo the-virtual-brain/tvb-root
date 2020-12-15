@@ -155,6 +155,7 @@ class CoSimulator(Simulator):
 
         """
         # Set TVB - spikeNet interface:
+        self._spatial_param_reshape = self.model.spatial_param_reshape
         if not self.use_numba or self.model.number_of_modes > 1:
             self.use_numba = False
             if hasattr(self.model, "_numpy_dfun"):
