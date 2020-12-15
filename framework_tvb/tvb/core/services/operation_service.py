@@ -293,7 +293,7 @@ class OperationService:
                 form = adapter_instance.get_form()
                 form = form() if isclass(form) else form
                 fields = form.get_upload_field_names()
-                project = dao.get_project_by_id(adapter_instance.current_project_id)
+                project = dao.get_project_by_id(operation.fk_launched_in)
                 tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
                 for upload_field in fields:
                     if hasattr(view_model, upload_field):
