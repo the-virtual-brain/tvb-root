@@ -81,7 +81,7 @@ function addFilter(div_id, filters) {
 }
 
 /** gather all the data from the filters */
-function _FIL_gatherData(divId){
+function _FIL_gatherData(divId, datatypeIndex){
     var children = $('#'+divId).children('div');
     var fields = [];
     var operations = [];
@@ -93,7 +93,14 @@ function _FIL_gatherData(divId){
         if (elem[3].value.trim().length > 0) {
             fields.push(elem[1].value);
             operations.push(elem[2].value);
-            values.push(elem[3].value.trim());
+            let value = elem[3].value.trim();
+
+            if(children[i].classList.length !== 0){
+                datatypeIndex = value.replace(/'/g, '').replace('<class ', '').replace('>', '');
+                value = $("#" + children[i].classList[0].replace('_runtime_trigger', ''))[0].value;
+            }
+
+            values.push(value);
             displayMessage("Filters processed");
         } else {
             displayMessage("Please set a value for all the filters.", "errorMessage");
@@ -104,26 +111,11 @@ function _FIL_gatherData(divId){
         displayMessage("Cleared filters");
     }
 
-    return { fields: fields, operations: operations, values: values};
-}
-
-/** gather all the data from the runtime filters */
-function _FIL_gatherRuntimeData(divId, value, field){
-    var fields = [];
-    var operations = [];
-    var values = [];
-
-    var elem = field.children;
-    fields.push(elem[0].value);
-    operations.push(elem[1].value);
-    values.push(value);
-
-    datatypeIndex = elem[2].value.replace(/'/g, '');
     var dt_class_start_index = datatypeIndex.lastIndexOf('.');
-    var dt_module = datatypeIndex.substring(0, dt_class_start_index).replace('<class ', '');
-    var dt_class = datatypeIndex.substring(dt_class_start_index + 1, datatypeIndex.length).replace('>', '');
+    var dt_module = datatypeIndex.substring(0, dt_class_start_index);
+    var dt_class = datatypeIndex.substring(dt_class_start_index + 1, datatypeIndex.length);
 
-    return {dt_module: dt_module, dt_class: dt_class, filters: {fields: fields, operations: operations, values: values}};
+    return {dt_class: dt_class, dt_module: dt_module, filters: {fields: fields, operations: operations, values: values}};
 }
 
 function computeOptionSettings(select_field){
@@ -170,7 +162,7 @@ function applyUserFilters(datatypeIndex, divId, name, gatheredData) {
     if (!gatheredData) {
         //gather all the data from the filters and make an
         //ajax request to get new data
-        gatheredData = _FIL_gatherData(divId);
+        gatheredData = _FIL_gatherData(divId, datatypeIndex);
         if (gatheredData == null) {
             return;
         }
@@ -182,28 +174,24 @@ function applyUserFilters(datatypeIndex, divId, name, gatheredData) {
         return;
     }
 
-    var dt_class_start_index = datatypeIndex.lastIndexOf('.');
-    var dt_module = datatypeIndex.substring(0, dt_class_start_index);
-    var dt_class = datatypeIndex.substring(dt_class_start_index + 1, datatypeIndex.length);
-
     var select_field = document.getElementById(name);
     var optionSettings = computeOptionSettings(select_field);
 
-    _applyFilters(dt_module, dt_class, gatheredData, optionSettings, select_field, true);
+    _applyFilters(gatheredData.dt_module, gatheredData.dt_class, gatheredData.filters, optionSettings, select_field, true);
 }
 
 function applyRuntimeFilters(value, divId, name){
     var triggered_fields = $('.' + name + '_runtime_trigger');
-    var select_fields = triggered_fields.parent().parent().find('select')
+    var select_fields = triggered_fields.parent().parent().find('select.dataset-selector');
 
     for(i=0; i<triggered_fields.length; i++) {
-
-        var gatheredData = _FIL_gatherRuntimeData(name, value, triggered_fields[i]);
+        var select_field_id = triggered_fields[i].parentElement.id;
+        var gatheredData = _FIL_gatherData(select_field_id);
         if (gatheredData.filters.fields.length === 0) {
             return;
         }
 
-        var select_field = select_fields[3*i];
+        var select_field = select_fields[i];
         var optionSettings = computeOptionSettings(select_field);
 
         _applyFilters(gatheredData.dt_module, gatheredData.dt_class, gatheredData.filters, optionSettings,
