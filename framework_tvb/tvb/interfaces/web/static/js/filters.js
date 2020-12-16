@@ -107,7 +107,66 @@ function _FIL_gatherData(divId){
     return { fields: fields, operations: operations, values: values};
 }
 
-function applyFilters(datatypeIndex, divId, name, gatheredData) {
+/** gather all the data from the runtime filters */
+function _FIL_gatherRuntimeData(divId, value, field){
+    var fields = [];
+    var operations = [];
+    var values = [];
+
+    var elem = field.children;
+    fields.push(elem[0].value);
+    operations.push(elem[1].value);
+    values.push(value);
+
+    datatypeIndex = elem[2].value.replace(/'/g, '');
+    var dt_class_start_index = datatypeIndex.lastIndexOf('.');
+    var dt_module = datatypeIndex.substring(0, dt_class_start_index).replace('<class ', '');
+    var dt_class = datatypeIndex.substring(dt_class_start_index + 1, datatypeIndex.length).replace('>', '');
+
+    return {dt_module: dt_module, dt_class: dt_class, filters: {fields: fields, operations: operations, values: values}};
+}
+
+function computeOptionSettings(select_field){
+    var has_all_option = false;
+    var has_none_option = false;
+
+    if (select_field.options[0] && select_field.options[0].innerHTML === "None") {
+        has_none_option = true;
+    }
+
+    if (select_field.options[select_field.options.length - 1] && select_field.options[select_field.options.length - 1].innerHTML === "All") {
+        has_all_option = true;
+    }
+
+    return {has_all_option: has_all_option, has_none_option: has_none_option}
+}
+
+function _applyFilters(dt_module, dt_class, gatheredData, optionSettings, select_field, is_async){
+    //Make a request to get new data
+    doAjaxCall({
+        type: 'POST',
+        url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' + $.toJSON(gatheredData) + '/' +
+            optionSettings.has_all_option + '/' + optionSettings.has_none_option,
+        async: is_async,
+        success: function (response) {
+            if (!response) {
+                displayMessage(`No results for the ${name} filtering!`, "warningMessage");
+
+            }
+            const t = document.createRange().createContextualFragment(response);
+            let i, length = select_field.options.length - 1;
+            for (i = length; i >= 0; i--) {
+                select_field.remove(i);
+            }
+            select_field.appendChild(t);
+        },
+        error: function (response) {
+            displayMessage("Invalid filter data.", "errorMessage");
+        }
+    });
+}
+
+function applyUserFilters(datatypeIndex, divId, name, gatheredData) {
     if (!gatheredData) {
         //gather all the data from the filters and make an
         //ajax request to get new data
@@ -128,38 +187,28 @@ function applyFilters(datatypeIndex, divId, name, gatheredData) {
     var dt_class = datatypeIndex.substring(dt_class_start_index + 1, datatypeIndex.length);
 
     var select_field = document.getElementById(name);
-    var has_all_option = false;
-    var has_none_option = false;
+    var optionSettings = computeOptionSettings(select_field);
 
-    if (select_field.options[0] && select_field.options[0].innerHTML === "None"){
-        has_none_option = true;
-    }
+    _applyFilters(dt_module, dt_class, gatheredData, optionSettings, select_field, true);
+}
 
-    if (select_field.options[select_field.options.length - 1] && select_field.options[select_field.options.length - 1].innerHTML === "All"){
-        has_all_option = true;
-    }
+function applyRuntimeFilters(value, divId, name){
+    var triggered_fields = $('.' + name + '_runtime_trigger');
+    var select_fields = triggered_fields.parent().parent().find('select')
 
-    //Make a request to get new data
-    doAjaxCall({
-        type: 'POST',
-        url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' + $.toJSON(gatheredData) + '/' +
-            has_all_option + '/' + has_none_option,
-        success: function (response) {
-            if (!response) {
-                displayMessage(`No results for the ${name} filtering!`, "warningMessage");
+    for(i=0; i<triggered_fields.length; i++) {
 
-            }
-            const t = document.createRange().createContextualFragment(response);
-            let i, length = select_field.options.length - 1;
-            for (i = length; i >= 0; i--) {
-                select_field.remove(i);
-            }
-            select_field.appendChild(t);
-        },
-        error: function (response) {
-            displayMessage("Invalid filter data.", "errorMessage");
+        var gatheredData = _FIL_gatherRuntimeData(name, value, triggered_fields[i]);
+        if (gatheredData.filters.fields.length === 0) {
+            return;
         }
-    });
+
+        var select_field = select_fields[3*i];
+        var optionSettings = computeOptionSettings(select_field);
+
+        _applyFilters(gatheredData.dt_module, gatheredData.dt_class, gatheredData.filters, optionSettings,
+            select_field, false);
+    }
 }
 
 
@@ -204,7 +253,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
         };
 
         if (!linkedData.linked_elem_parent_name && !linkedData.linked_elem_parent_option) {
-            applyFilters("", elemName + 'data_select', elemName, treeSessionKey, filterData);
+            applyUserFilters("", elemName + 'data_select', elemName, treeSessionKey, filterData);
         }
 
         var linkedInputName = linkedData.linked_elem_parent_name + "_parameters_option_";
@@ -213,7 +262,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
         if (linkedData.linked_elem_parent_option) {
             linkedInputName = linkedInputName + linkedData.linked_elem_parent_option + "_" + elemName;
             parentDivID += linkedData.linked_elem_parent_option;
-            applyFilters(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
+            applyUserFilters(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
         } else {
             $("select[id^='" + linkedInputName + "']").each(function () {
                 if ($(this)[0].id.indexOf("_" + elemName) < 0) {
@@ -222,7 +271,7 @@ function filterLinked(linkedDataList, currentSelectedGID, treeSessionKey) {
                 var option_name = $(this)[0].id.replace("_" + elemName, '').replace(linkedInputName, '');
                 linkedInputName = $(this)[0].id;
                 parentDivID += option_name; // todo : possible bug. option names will be concatenated many times if this each runs more than once
-                applyFilters(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
+                applyUserFilters(parentDivID, linkedInputName + 'data_select', linkedInputName, treeSessionKey, filterData);
             });
         }
     }

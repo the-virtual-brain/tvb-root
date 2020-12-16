@@ -1,13 +1,16 @@
 <p class="field-data">
-<select name="{{ field.name }}" id="{{ field.name }}" class="dataset-selector" tabindex="1" title="Fully Loaded!">
+<select name="{{ field.name }}" id="{{ field.name }}" class="dataset-selector" tabindex="1" title="Fully Loaded!"
+onchange="applyRuntimeFilters(this.value, '{{ field.name }}' + 'data_select',
+ '{{ field.name }}')">
 {% for option in field.options() %}
     <option value="{{ option.value }}" {{ 'selected' if option.checked }} class="form-control">{{ option.label }}</option>
 {% endfor %}
 </select>
 {% if field.draw_dynamic_conditions_buttons %}
     <div class="field-adapters" id="{{ field.name }}data_select">
-        <input type="button" tabindex='1' value="Add Filter" onclick="addFilter('{{ field.name }}' + 'data_select', {{ field.get_dynamic_filters }})">
-        <input type="button" tabindex='1' value="Apply Filters" onclick="applyFilters('{{ (field.datatype_index | string)[8:-2] }}', '{{ field.name }}' + 'data_select', '{{ field.name }}')">
+        <input type="button" tabindex='1' value="Add Filter" onclick="addFilter('{{ field.name }}' + 'data_select',
+         {{ field.get_dynamic_filters }})">
+        <input type="button" tabindex='1' value="Apply Filters" onclick="applyUserFilters('{{ (field.datatype_index | string)[8:-2] }}', '{{ field.name }}' + 'data_select', '{{ field.name }}')">
 
         {% with %}
             {% set form_filters = field.get_form_filters %}
@@ -21,6 +24,21 @@
                 </div>
 
             {% endfor %}
+
+            {% set runtime_filters = field.get_runtime_filters %}
+
+            {% if runtime_filters %}
+                {% for key, value in runtime_filters.items() %}
+                    <div class='{{ key }}_runtime_trigger'>
+
+                    {% for idx in range(value.fields | length) %}
+                        <input type="hidden" value='{{ value.fields[idx] }}'>
+                        <input type="hidden" value='{{ value.operations[idx] }}'>
+                        <input type="hidden" value='{{ value.values[idx] }}'>
+                    {% endfor %}
+                    </div>
+                {% endfor %}
+            {% endif %}
         {% endwith %}
     </div>
 {% endif %}

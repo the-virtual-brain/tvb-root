@@ -47,6 +47,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -125,10 +126,12 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
         colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
         self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
-                                               conditions=colors_conditions)
+                                               conditions=colors_conditions,
+                                               runtime_conditions=self.get_runtime_filters())
 
         rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions)
+        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions,
+                                             runtime_conditions=self.get_runtime_filters())
 
     @staticmethod
     def get_view_model():
@@ -146,10 +149,16 @@ class ConnectivityViewerForm(ABCAdapterForm):
     def get_input_name():
         return "input_data"
 
+    @staticmethod
+    def get_runtime_filters():
+        return {'input_data': FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'], operations=["=="],
+                                          values=[REGISTRY.get_index_for_datatype(
+                                              ConnectivityViewerModel.colors.linked_datatype)])}
+
 
 class ConnectivityViewer(ABCSpaceDisplayer):
-    """ 
-    Given a Connectivity Matrix and a Surface data the viewer will display the matrix 'inside' the surface data. 
+    """
+    Given a Connectivity Matrix and a Surface data the viewer will display the matrix 'inside' the surface data.
     The surface is only displayed as a shadow.
     """
 
@@ -188,7 +197,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
     def launch(self, view_model):
         # type: (ConnectivityViewerModel) -> dict
         """
-        Given the input connectivity data and the surface data, 
+        Given the input connectivity data and the surface data,
         build the HTML response to be displayed.
         """
         connectivity, colors, rays = self._load_input_data(view_model)
@@ -258,7 +267,8 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         path_labels = SurfaceURLGenerator.paths2url(conn_gid, 'ordered_labels')
         path_hemisphere_order_indices = SurfaceURLGenerator.paths2url(conn_gid, 'hemisphere_order_indices')
 
-        algo = AlgorithmService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS)
+        algo = AlgorithmService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE,
+                                                                    CONNECTIVITY_CREATOR_CLASS)
         submit_url = '/{}/{}/{}'.format(SurfaceURLGenerator.FLOW, algo.fk_category, algo.id)
         global_pages = dict(controlPage="connectivity/top_right_controls")
 

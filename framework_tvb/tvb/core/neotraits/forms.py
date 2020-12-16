@@ -140,7 +140,7 @@ class TraitDataTypeSelectField(TraitField):
     template = 'form_fields/datatype_select_field.html'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, name=None, conditions=None,
+    def __init__(self, trait_attribute, name=None, conditions=None, runtime_conditions=None,
                  draw_dynamic_conditions_buttons=True, has_all_option=False,
                  show_only_all_option=False):
         super(TraitDataTypeSelectField, self).__init__(trait_attribute, name)
@@ -155,6 +155,7 @@ class TraitDataTypeSelectField(TraitField):
         else:
             self.datatype_index = REGISTRY.get_index_for_datatype(type_to_query)
         self.conditions = conditions
+        self.runtime_conditions = runtime_conditions
         self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
         self.has_all_option = has_all_option
         self.show_only_all_option = show_only_all_option
@@ -173,6 +174,10 @@ class TraitDataTypeSelectField(TraitField):
     @property
     def get_form_filters(self):
         return self.conditions
+
+    @property
+    def get_runtime_filters(self):
+        return self.runtime_conditions
 
     def options(self):
         if not self.required:
