@@ -33,33 +33,37 @@
 """
 
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.interfaces.web.controllers import common
 
 
 class SimulatorContext(object):
     KEY_BURST_CONFIG = 'burst_configuration'
     KEY_SIMULATOR_CONFIG = 'simulator_configuration'
+    KEY_LAST_LOADED_FORM_URL = 'last_loaded_form_url'
     KEY_IS_SIMULATOR_COPY = 'is_simulator_copy'
     KEY_IS_SIMULATOR_LOAD = 'is_simulator_load'
-    KEY_LAST_LOADED_FORM_URL = 'last_loaded_form_url'
-    KEY_IS_SIMULATOR_BRANCH = "is_branch"
+    KEY_IS_SIMULATOR_BRANCH = 'is_simulator_branch'
 
-    def __init__(self):
-        self.project = None
-        self.last_loaded_fragment_url = None
+    @property
+    def project(self):
+        return common.get_current_project()
 
-    def add_session_stored_simulator(self, session_stored_simulator):
-        common.add2session(self.KEY_SIMULATOR_CONFIG, session_stored_simulator)
+    @property
+    def logged_user(self):
+        return common.get_logged_user()
 
-    def get_session_stored_simulator(self):
+    @property
+    def last_loaded_fragment_url(self):
+        return common.get_from_session(self.KEY_LAST_LOADED_FORM_URL)
+
+    @property
+    def simulator(self):
         return common.get_from_session(self.KEY_SIMULATOR_CONFIG)
 
-    def set_current_project(self):
-        self.project = common.get_current_project()
-
-    @staticmethod
-    def get_logged_user():
-        return common.get_logged_user()
+    @property
+    def burst_config(self):
+        return common.get_from_session(self.KEY_BURST_CONFIG)
 
     def get_common_params(self):
         session_stored_simulator = common.get_from_session(self.KEY_SIMULATOR_CONFIG)
@@ -69,59 +73,69 @@ class SimulatorContext(object):
 
         return session_stored_simulator, is_simulator_copy, is_simulator_load, is_branch
 
+    def add_session_stored_simulator(self, simulator):
+        # type: (SimulatorAdapterModel) -> None
+        common.add2session(self.KEY_SIMULATOR_CONFIG, simulator)
+
     def add_last_loaded_form_url_to_session(self, last_loaded_form_url):
-        self.last_loaded_fragment_url = last_loaded_form_url
+        # type: (str) -> None
         common.add2session(self.KEY_LAST_LOADED_FORM_URL, last_loaded_form_url)
 
-    def get_last_loaded_form_url_from_session(self):
-        return common.get_from_session(self.KEY_LAST_LOADED_FORM_URL)
-
     def add_burst_config_to_session(self, burst_config):
+        # type: (BurstConfiguration) -> None
         common.add2session(self.KEY_BURST_CONFIG, burst_config)
-
-    def get_burst_config_from_session(self):
-        return common.get_from_session(self.KEY_BURST_CONFIG)
 
     def remove_burst_config_from_session(self):
         common.remove_from_session(self.KEY_BURST_CONFIG)
 
     def add_simulator_load_to_session(self, is_simulator_load):
+        # type: (bool) -> None
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, is_simulator_load)
 
-    def get_branch_from_session(self):
-        return common.get_from_session(self.KEY_IS_SIMULATOR_BRANCH)
-
-    def init_session_at_burst_loading(self, simulator):
-        common.add2session(self.KEY_SIMULATOR_CONFIG, simulator)
+    def init_session_at_burst_loading(self, burst_config, simulator, last_loaded_form_url):
+        # type: (BurstConfiguration, SimulatorAdapterModel, str) -> None
+        self.add_burst_config_to_session(burst_config)
+        self.add_session_stored_simulator(simulator)
+        self.add_last_loaded_form_url_to_session(last_loaded_form_url)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, True)
         common.add2session(self.KEY_IS_SIMULATOR_COPY, False)
+        common.add2session(self.KEY_IS_SIMULATOR_BRANCH, False)
 
-    def add_branch_and_copy_to_session(self, branch, copy):
-        common.add2session(self.KEY_IS_SIMULATOR_BRANCH, branch)
-        common.add2session(self.KEY_IS_SIMULATOR_COPY, copy)
+    def add_branch_and_copy_to_session(self, is_simulator_branch, is_simulator_copy):
+        # type: (bool, bool) -> None
+        common.add2session(self.KEY_IS_SIMULATOR_BRANCH, is_simulator_branch)
+        common.add2session(self.KEY_IS_SIMULATOR_COPY, is_simulator_copy)
 
-    def init_session_at_copy_preparation(self, simulator, burst_config_copy):
-        common.add2session(self.KEY_SIMULATOR_CONFIG, simulator)
+    def init_session_at_copy_preparation(self, burst_config, simulator, last_loaded_form_url):
+        # type: (BurstConfiguration, SimulatorAdapterModel, str) -> None
+        self.add_burst_config_to_session(burst_config)
+        self.add_session_stored_simulator(simulator)
+        self.add_last_loaded_form_url_to_session(last_loaded_form_url)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)
-        common.add2session(self.KEY_BURST_CONFIG, burst_config_copy)
 
-    def init_session_at_sim_reset(self):
-        common.add2session(self.KEY_SIMULATOR_CONFIG, None)
+    def init_session_at_sim_reset(self, burst_config, last_loaded_form_url):
+        # type: (BurstConfiguration, str) -> None
+        self.add_burst_config_to_session(burst_config)
+        self.add_session_stored_simulator(None)
+        self.add_last_loaded_form_url_to_session(last_loaded_form_url)
         common.add2session(self.KEY_IS_SIMULATOR_COPY, False)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)
         common.add2session(self.KEY_IS_SIMULATOR_BRANCH, False)
 
-    def init_session_at_sim_config_from_zip(self, burst_config, simulator):
-        common.add2session(self.KEY_BURST_CONFIG, burst_config)
-        common.add2session(self.KEY_SIMULATOR_CONFIG, simulator)
+    def init_session_at_sim_config_from_zip(self, burst_config, simulator, last_loaded_form_url):
+        # type: (BurstConfiguration, SimulatorAdapterModel, str) -> None
+        self.add_burst_config_to_session(burst_config)
+        self.add_session_stored_simulator(simulator)
+        self.add_last_loaded_form_url_to_session(last_loaded_form_url)
         common.add2session(self.KEY_IS_SIMULATOR_COPY, True)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)
+        common.add2session(self.KEY_IS_SIMULATOR_BRANCH, False)
 
     @staticmethod
     def set_warning_message(message):
         common.set_warning_message(message)
 
-    def clean_project_data_from_session(self, remove_project = True):
+    def clean_project_data_from_session(self, remove_project=True):
         common.remove_from_session(self.KEY_SIMULATOR_CONFIG)
         common.remove_from_session(self.KEY_LAST_LOADED_FORM_URL)
         common.remove_from_session(self.KEY_BURST_CONFIG)

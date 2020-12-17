@@ -807,7 +807,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             rendering_rules = self.simulator_controller.load_burst_read_only(str(burst_config.id))
             _, is_simulator_copy, is_simulator_load, _ = self.simulator_controller.context.get_common_params()
-            last_loaded_form_url = self.simulator_controller.context.get_last_loaded_form_url_from_session()
+            last_loaded_form_url = self.simulator_controller.context.last_loaded_fragment_url
 
         assert is_simulator_load, "Simulator Load Flag should be True!"
         assert not is_simulator_copy, "Simulator Copy Flag should be False!"
@@ -861,7 +861,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(burst_config)
             self.simulator_controller.copy_simulator_configuration(str(burst_config.id))
-            copied_burst = self.simulator_controller.context.get_burst_config_from_session()
+            copied_burst = self.simulator_controller.context.burst_config
         simulation_history_index = SimulationHistoryIndex(fk_parent_burst=burst_config.gid)
         dao.store_entity(simulation_history_index)
 

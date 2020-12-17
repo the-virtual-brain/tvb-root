@@ -94,6 +94,7 @@ class SimulatorFragmentRenderingRules(object):
         self.is_pse_launch = is_pse_launch
         self.monitor_name = monitor_name
         self.is_branch = is_branch
+
     @property
     def load_readonly(self):
         if self.last_request_type == GET_REQUEST and self.form_action_url != self.last_form_url:
@@ -178,4 +179,3 @@ class SimulatorFragmentRenderingRules(object):
         return {"renderer": self,
                 "showOnlineHelp": common.get_logged_user().is_online_help_active(),
                 "isCallout": False}
-
