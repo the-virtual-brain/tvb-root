@@ -29,16 +29,17 @@
 #
 
 """
-.. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
+.. moduleauthor:: Adrian Dordea <adrian.dordea@codemart.ro>
 """
 
 import os
+
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neotraits._h5core import H5File
+from tvb.core.neotraits.h5 import H5File
 
 
 class TVBLinkedExporter(ABCExporter):
@@ -51,7 +52,7 @@ class TVBLinkedExporter(ABCExporter):
         return [DataType]
 
     def get_label(self):
-        return "TVB Linked Format"
+        return "TVB Format with links"
 
     def export(self, data, data_export_folder, project):
         """
@@ -60,12 +61,11 @@ class TVBLinkedExporter(ABCExporter):
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
         self.copy_dt_to_export_folder(data, data_export_folder)
-        export_data_zip_path = self.get_export_data_zip_path(data, data_export_folder, self)
+        export_data_zip_path = self.get_export_data_zip_path(data, data_export_folder)
         return self.export_data_with_references(export_data_zip_path, data_export_folder)
 
-    def get_export_data_zip_path(self, data, data_export_folder, exporter):
-        zip_file_name = exporter.get_export_file_name(data)
-        zip_file_name = zip_file_name.replace('.h5', '.zip')
+    def get_export_data_zip_path(self, data, data_export_folder):
+        zip_file_name = self.get_export_file_name(data)
         return os.path.join(os.path.dirname(data_export_folder), zip_file_name)
 
     def export_data_with_references(self, export_data_zip_path, data_export_folder):
@@ -89,10 +89,7 @@ class TVBLinkedExporter(ABCExporter):
                     self.copy_dt_to_export_folder(dt, data_export_folder)
 
     def get_export_file_extension(self, data):
-        if self.is_data_a_group(data):
-            return "zip"
-        else:
-            return "h5"
+        return "zip"
 
     def skip_group_datatypes(self):
         return True
