@@ -69,7 +69,6 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.simulator_controller = SimulatorController()
         self.test_user = TestFactory.create_user('SimulationController_User')
         self.test_project = TestFactory.create_project(self.test_user, "SimulationController_Project")
-        self.simulator_controller.context.project = self.test_project
         connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project)
 
         self.session_stored_simulator = SimulatorAdapterModel()
