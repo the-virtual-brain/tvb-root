@@ -106,6 +106,7 @@ class ImportService(object):
         self.user_id = None
         self.files_helper = FilesHelper()
         self.created_projects = []
+        self.view_model2adapter = self._populate_view_model2adapter()
 
     def _download_and_unpack_project_zip(self, uploaded, uq_file_name, temp_folder):
 
@@ -271,6 +272,18 @@ class ImportService(object):
                 if metadata_file.endswith(FilesHelper.TVB_FILE_EXTENSION):
                     self._import_image(root, metadata_file, project.id, target_images_path)
 
+    @staticmethod
+    def _populate_view_model2adapter():
+        if len(VIEW_MODEL2ADAPTER) > 0:
+            return VIEW_MODEL2ADAPTER
+        view_model2adapter = {}
+        algos = dao.get_all_algorithms()
+        for algo in algos:
+            adapter = ABCAdapter.build_adapter(algo)
+            view_model_class = adapter.get_view_model_class()
+            view_model2adapter[view_model_class] = algo
+        return view_model2adapter
+
     def _retrieve_operations_in_order(self, project, import_path):
         # type: (Project, str) -> list[Operation2ImportData]
         retrieved_operations = []
@@ -299,7 +312,7 @@ class ImportService(object):
                                 all_view_model_files.append(h5_file)
                                 if not main_view_model:
                                     view_model = h5.load_view_model_from_file(h5_file)
-                                    if type(view_model) in VIEW_MODEL2ADAPTER.keys():
+                                    if type(view_model) in self.view_model2adapter.keys():
                                         main_view_model = view_model
                             else:
                                 file_update_manager = FilesUpdateManager()
@@ -309,7 +322,7 @@ class ImportService(object):
                             self.logger.warning("Unreadable H5 file will be ignored: %s" % h5_file)
 
                 if main_view_model is not None:
-                    alg = VIEW_MODEL2ADAPTER[type(main_view_model)]
+                    alg = self.view_model2adapter[type(main_view_model)]
                     op_group_id = None
                     if main_view_model.operation_group_gid:
                         op_group = dao.get_operationgroup_by_gid(main_view_model.operation_group_gid.hex)
@@ -347,7 +360,8 @@ class ImportService(object):
 
         return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
 
-    def create_view_model(self, operation_entity, operation_data, new_op_folder, generic_attributes=None, add_params=None):
+    def create_view_model(self, operation_entity, operation_data, new_op_folder, generic_attributes=None,
+                          add_params=None):
         view_model = self._get_new_form_view_model(operation_entity, operation_data.info_from_xml)
         if add_params is not None:
             for element in add_params:
