@@ -934,6 +934,8 @@ class SimulatorController(BurstBaseController):
             if form.pse_param2.value:
                 param2 = form.pse_param2.value
                 burst_config.range2 = param2.to_json()
+            else:
+                burst_config.range2 = None
         else:
             param1, param2 = self._handle_range_params_at_loading()
         next_form = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorPSERangeFragment(param1, param2))
