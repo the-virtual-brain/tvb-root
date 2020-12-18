@@ -339,10 +339,12 @@ class SelectField(TraitField):
     def _from_post(self):
         super(SelectField, self)._from_post()
 
-        if self.data != self.missing_value and self.choices.get(self.data) is None:
+        if self.unvalidated_data != self.missing_value and self.choices.get(self.unvalidated_data) is None\
+                and (self.unvalidated_data is not None or self.display_none_choice is False):
+
             raise ValueError("the entered value is not among the choices for this field!")
 
-        self.data = self.choices.get(self.data)
+        self.data = self.choices.get(self.unvalidated_data)
 
 
 class MultiSelectField(TraitField):
@@ -391,7 +393,7 @@ class HiddenField(TraitField):
 
     def __init__(self, trait_attribute, name=None, disabled=False):
         super(HiddenField, self).__init__(trait_attribute, name, disabled)
-        self.trait_attribute.label = ''
+        self.label = ''
 
 
 class FormField(Field):

@@ -285,7 +285,7 @@ class TestForms(BaseTestCase):
         post_data = {'dummy_name': 'Dummy Hidden Str'}
         hidden_field.fill_from_post(post_data)
         assert hidden_field.data == post_data[self.name], "Hidden data was not set correctly on HiddenField!"
-        assert hidden_field.trait_attribute.label == '', "Hidden field's trait attributes should have empty labels!"
+        assert hidden_field.label == '', "Hidden field should have empty label!"
 
     def test_form_field(self):
         form_field = FormField(TestAdapter1Form, self.name)
