@@ -31,6 +31,7 @@
 import threading
 
 from cherrypy.lib.static import serve_file
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
@@ -336,6 +337,11 @@ class SimulatorController(BurstBaseController):
         form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
                                                            project_id=common.get_current_project().id,
                                                            extra_conditions=self._compute_conn_branch_conditions())
+
+        conn_count = dao.count_datatypes(common.get_current_project().id, ConnectivityIndex)
+        if conn_count == 0:
+            form.connectivity.errors.append("No connectivity in the project! Simulation cannot be started without "
+                                            "a connectivity!")
 
         session_stored_simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
         if session_stored_simulator is None:
