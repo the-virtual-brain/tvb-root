@@ -242,23 +242,33 @@ class ImportService(object):
                     'Imported file depends on datatypes that do not exist. Please upload '
                     'those first!')
 
+    def _store_or_link_burst_config(self, burst_config, bc_path, project_id):
+        bc_already_in_tvb = dao.get_generic_entity(BurstConfiguration, burst_config.gid, 'gid')
+        if len(bc_already_in_tvb) == 0:
+            self.store_datatype(burst_config, bc_path)
+            return 1
+        return 0
+
+    def store_or_link_datatype(self, datatype, dt_path, project_id):
+        self.check_import_references(dt_path, datatype)
+        stored_dt_count = 0
+        datatype_already_in_tvb = dao.get_datatype_by_gid(datatype.gid)
+        if not datatype_already_in_tvb:
+            self.store_datatype(datatype, dt_path)
+            stored_dt_count = 1
+        elif datatype_already_in_tvb.parent_operation.project.id != project_id:
+            AlgorithmService.create_link([datatype_already_in_tvb.id], project_id)
+            if datatype_already_in_tvb.fk_datatype_group:
+                AlgorithmService.create_link([datatype_already_in_tvb.fk_datatype_group], project_id)
+        return stored_dt_count
+
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
         # type: (Project, dict) -> int
         sorted_dts = sorted(all_datatypes.items(),
                             key=lambda dt_item: dt_item[1].create_date or datetime.now())
-
         count = 0
         for dt_path, datatype in sorted_dts:
-            datatype_already_in_tvb = dao.get_datatype_by_gid(datatype.gid)
-            if not datatype_already_in_tvb:
-                self.store_datatype(datatype, dt_path)
-                count += 1
-            else:
-                AlgorithmService.create_link([datatype_already_in_tvb.id], project.id)
-
-            file_path = h5.h5_file_for_index(datatype).path
-            self.check_import_references(file_path, datatype)
-
+            count += self.store_or_link_datatype(datatype, dt_path, project.id)
         return count
 
     def _store_imported_images(self, project, temp_project_path, project_name):
@@ -385,10 +395,12 @@ class ImportService(object):
         dao.store_entity(operation_entity)
         return view_model
 
-    def import_project_operations(self, project, import_path):
+    def import_project_operations(self, project, import_path, is_group=False):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
+        all_dts_count = 0
+        all_stored_dts_count = 0
         imported_operations = []
         ordered_operations = self._retrieve_operations_in_order(project, import_path)
 
@@ -423,13 +435,13 @@ class ImportService(object):
                         dt_group = dao.store_entity(dt_group)
                 # Store the DataTypes in db
                 dts = {}
+                all_dts_count += len(operation_data.dt_paths)
                 for dt_path in operation_data.dt_paths:
                     dt = self.load_datatype_from_file(dt_path, operation_entity.id, dt_group, project.id)
                     if isinstance(dt, BurstConfiguration):
                         if op_group:
                             dt.fk_operation_group = op_group.id
-                        dao.store_entity(dt)
-                        self.store_datatype(dt)
+                        all_stored_dts_count += self._store_or_link_burst_config(dt, dt_path, project.id)
                     else:
                         dts[dt_path] = dt
                         if op_group:
@@ -437,11 +449,12 @@ class ImportService(object):
                             dao.store_entity(op_group)
                 try:
                     stored_dts_count = self._store_imported_datatypes_in_db(project, dts)
+                    all_stored_dts_count += stored_dts_count
 
                     if operation_data.main_view_model.is_metric_operation:
                         self._update_burst_metric(operation_entity)
 
-                    if stored_dts_count > 0 or not operation_data.is_self_generated:
+                    if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group):
                         imported_operations.append(operation_entity)
                         new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
                         view_model_disk_size = 0
@@ -454,17 +467,18 @@ class ImportService(object):
                         # In case all Dts under the current operation were Links and the ViewModel is dummy,
                         # don't keep the Operation empty in DB
                         dao.remove_entity(Operation, operation_entity.id)
-                except MissingReferenceException:
-                    operation_entity.status = STATUS_ERROR
-                    dao.store_entity(operation_entity)
-
+                        self.files_helper.remove_operation_data(project.name, operation_entity.id)
+                except MissingReferenceException as excep:
+                    dao.remove_entity(Operation, operation_entity.id)
+                    self.files_helper.remove_operation_data(project.name, operation_entity.id)
+                    raise excep
             else:
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
                                     "operation or DTs inside!" % operation_data.operation_folder)
 
         self._update_dt_groups(project.id)
         self._update_burst_configurations(project.id)
-        return imported_operations
+        return imported_operations, all_dts_count, all_stored_dts_count
 
     @staticmethod
     def _get_new_form_view_model(operation, xml_parameters):
@@ -642,10 +656,10 @@ class ImportService(object):
 
     def _update_burst_metric(self, operation_entity):
         burst_config = dao.get_burst_for_operation_id(operation_entity.id)
-        if burst_config.ranges:
+        if burst_config and burst_config.ranges:
             if burst_config.fk_metric_operation_group is None:
                 burst_config.fk_metric_operation_group = operation_entity.fk_operation_group
-        dao.store_entity(burst_config)
+            dao.store_entity(burst_config)
 
     def _update_dt_groups(self, project_id):
         dt_groups = dao.get_datatypegroup_for_project(project_id)
