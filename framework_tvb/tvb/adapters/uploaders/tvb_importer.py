@@ -115,10 +115,18 @@ class TVBImporter(ABCUploader):
                 # Creates a new TMP folder where to extract data
                 tmp_folder = os.path.join(self.storage_path, "tmp_import")
                 FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
+                is_group = False
+                current_op_id = current_op.id
+                for file in os.listdir(tmp_folder):
+                    # In case we import a DatatypeGroup, we want the default import flow
+                    if os.path.isdir(os.path.join(tmp_folder, file)):
+                        current_op_id = None
+                        is_group = True
+                        break
                 try:
                     operations, all_dts, stored_dts_count = service.import_project_operations(current_op.project,
-                                                                                              tmp_folder, True,
-                                                                                              current_op.id)
+                                                                                              tmp_folder, is_group,
+                                                                                              current_op_id)
                     self.nr_of_datatypes += stored_dts_count
                     if stored_dts_count == 0:
                         current_op.additional_info = 'All chosen datatypes already exist!'

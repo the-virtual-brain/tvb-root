@@ -460,7 +460,8 @@ class ImportService(object):
                     if operation_data.main_view_model.is_metric_operation:
                         self._update_burst_metric(operation_entity)
 
-                    if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group):
+                    #TODO: TVB-2849 to reveiw these flags and simplify condition
+                    if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group) or importer_operation_id is not None:
                         imported_operations.append(operation_entity)
                         new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
                         view_model_disk_size = 0
