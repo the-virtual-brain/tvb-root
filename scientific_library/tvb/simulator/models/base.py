@@ -48,12 +48,13 @@ class Model(HasTraits):
     non_integrated_variables = None  # type: typing.Tuple[str]
     variables_of_interest = ()
     _nvar = None   # todo make this a prop len(state_variables)
+    _n_intvar = _nvar
     _n_nonintvar = 0
     number_of_modes = 1
     cvar = None
     stvar = None
     state_variable_boundaries = None
-    state_variables_mask = None
+    state_variable_mask = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -93,17 +94,19 @@ class Model(HasTraits):
         if self.stvar is None:
             self.stvar = self.cvar.copy()
         super(Model, self).configure()
+        self.update_derived_parameters()
+        self._build_observer()
         # Make sure that if there are any state variable boundaries, ...
         if isinstance(self.state_variable_boundaries, dict):
             self._setup_sv_boundaries()
         elif self.state_variable_boundaries is not None:
             self.state_variable_boundaries = None
             Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
-        self.state_variables_mask = [True] * self.nvar
+        self.state_variable_mask = numpy.array([True] * self.nvar)
         if self.non_integrated_variables is not None:
             for var in self.non_integrated_variables:
-                self.state_variables_mask[self.state_variables.index(var)] = False
-        self._n_nonintvar = self.nvar - numpy.sum(self.state_variables_mask)
+                self.state_variable_mask[self.state_variables.index(var)] = False
+        self._n_intvar = numpy.sum(self.state_variable_mask)
         self.update_derived_parameters()
         self._build_observer()
 
@@ -113,9 +116,9 @@ class Model(HasTraits):
         return self._nvar
 
     @property
-    def n_nonintvar(self):
+    def n_intvar(self):
         """ The number of integrated state variables in this model. """
-        return self._n_nonintvar
+        return self._n_intvar
 
     def update_derived_parameters(self):
         """
