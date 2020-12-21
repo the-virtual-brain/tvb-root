@@ -196,7 +196,7 @@ class Simulator(HasTraits):
 
     def configure_integration_for_model(self):
         self.integrator.configure_boundaries(self.model.state_variables, self.model.state_variable_boundaries)
-        if self.model.n_nonintvar:
+        if self.model.nvar - self.model.n_intvar:
             self.integrate_next_step = self.integrator.integrate_with_update
             self.integrator.\
                 reconfigure_boundaries_and_clamping_for_integration_state_variables(self.model.state_variable_mask)
@@ -506,36 +506,43 @@ class Simulator(HasTraits):
         Support 3 possible shapes:
             1) number_of_nodes;
 
-            2) number_of_state_variables; and
+            2) number_of_state_variables or number_of_integrated_state_variables; and
 
-            3) (number_of_state_variables, number_of_nodes).
+            3) (number_of_state_variables or number_of_integrated_state_variables, number_of_nodes).
 
         """
+        # Noise has to have a shape corresponding to only the integrated state variables!
+        good_history_shape = self.good_history_shape[1:]
+        good_history_shape[0] = self.model.n_intvar
         if self.integrator.noise.ntau > 0.0:
-            self.integrator.noise.configure_coloured(self.integrator.dt,
-                                                     self.good_history_shape[1:])
+            self.integrator.noise.configure_coloured(self.integrator.dt, good_history_shape)
         else:
-            self.integrator.noise.configure_white(self.integrator.dt,
-                                                  self.good_history_shape[1:])
+            self.integrator.noise.configure_white(self.integrator.dt, self.good_history_shape)
 
         if self.surface is not None:
             if self.integrator.noise.nsig.size == self.connectivity.number_of_regions:
                 self.integrator.noise.nsig = self.integrator.noise.nsig[self.surface.region_mapping]
             elif self.integrator.noise.nsig.size == self.model.nvar * self.connectivity.number_of_regions:
+                self.integrator.noise.nsig = \
+                    self.integrator.noise.nsig[self.model.state_variable_mask][:, self.surface.region_mapping]
+            elif self.integrator.noise.nsig.size == self.model.n_intvar * self.connectivity.number_of_regions:
                 self.integrator.noise.nsig = self.integrator.noise.nsig[:, self.surface.region_mapping]
 
-        good_nsig_shape = (self.model.nvar, self.number_of_nodes,
-                           self.model.number_of_modes)
+        good_nsig_shape = (self.model.n_intvar, self.number_of_nodes, self.model.number_of_modes)
         nsig = self.integrator.noise.nsig
         self.log.debug("Given noise shape is %s", nsig.shape)
         if nsig.shape in (good_nsig_shape, (1,)):
             return
         elif nsig.shape == (self.model.nvar,):
-            nsig = nsig.reshape((self.model.nvar, 1, 1))
+            nsig = nsig[self.model.state_variable_mask].reshape((self.model.n_intvar, 1, 1))
+        elif nsig.shape == (self.model.n_intvar,):
+            nsig = nsig.reshape((self.model.n_intvar, 1, 1))
         elif nsig.shape == (self.number_of_nodes,):
             nsig = nsig.reshape((1, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nvar, self.number_of_nodes):
-            nsig = nsig.reshape((self.model.nvar, self.number_of_nodes, 1))
+            nsig = nsig[self.model.state_variable_mask].reshape((self.n_intvar, self.number_of_nodes, 1))
+        elif nsig.shape == (self.model.n_intvar, self.number_of_nodes):
+            nsig = nsig.reshape((self.model.n_intvar, self.number_of_nodes, 1))
         else:
             msg = "Bad Simulator.integrator.noise.nsig shape: %s"
             self.log.error(msg % str(nsig.shape))
