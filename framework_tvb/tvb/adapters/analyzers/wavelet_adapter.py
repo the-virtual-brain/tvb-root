@@ -49,7 +49,6 @@ from tvb.basic.neotraits.api import Attr, Range, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.db import from_ndarray
 from tvb.core.neotraits.forms import FormField, Form, TraitDataTypeSelectField, StrField, FloatField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
