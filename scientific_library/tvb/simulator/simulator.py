@@ -194,25 +194,14 @@ class Simulator(HasTraits):
             return True
         return False
 
-    def _configure_integrator_next_step(self):
+    def configure_integration_for_model(self):
+        self.integrator.configure_boundaries(self.model.state_variables, self.model.state_variable_boundaries)
         if self.model.n_nonintvar:
             self.integrate_next_step = self.integrator.integrate_with_update
+            self.integrator.\
+                reconfigure_boundaries_and_clamping_for_integration_state_variables(self.model.state_variable_mask)
         else:
             self.integrate_next_step = self.integrator.integrate
-
-    def _configure_integrator_boundaries(self):
-        if self.model.state_variable_boundaries is not None:
-            indices = []
-            boundaries = []
-            for sv, sv_bounds in self.model.state_variable_boundaries.items():
-                indices.append(self.model.state_variables.index(sv))
-                boundaries.append(sv_bounds)
-            sort_inds = numpy.argsort(indices)
-            self.integrator.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
-            self.integrator.state_variable_boundaries = numpy.array(boundaries).astype("float64")[sort_inds]
-        else:
-            self.integrator.bounded_state_variable_indices = None
-            self.integrator.state_variable_boundaries = None
 
     def preconfigure(self):
         """Configure just the basic fields, so that memory can be estimated."""
@@ -222,10 +211,14 @@ class Simulator(HasTraits):
         if self.stimulus:
             self.stimulus.configure()
         self.coupling.configure()
-        self.model.configure()
-        self.integrator.configure()
-        self._configure_integrator_next_step()
-        self._configure_integrator_boundaries()
+        # ------- Keep this order of configurations ----
+        self.model.configure()  # 1
+        self.integrator.configure()  # 2
+        # Configure integrators' next step computation
+        # and state variables' boundaries and clamping,
+        # based on model attributes  # 3
+        self.configure_integration_for_model()
+        # ----------------------------------------------
         # monitors needs to be a list or tuple, even if there is only one...
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]
@@ -375,16 +368,6 @@ class Simulator(HasTraits):
         if any(outputi is not None for outputi in output):
             return output
 
-    def bound_and_clamp(self, state):
-        # If there is a state boundary...
-        if self.integrator.state_variable_boundaries is not None:
-            # ...use the integrator's bound_state
-            self.integrator.bound_state(state)
-        # If there is a state clamping...
-        if self.integrator.clamped_state_variable_values is not None:
-            # ...use the integrator's clamp_state
-            self.integrator.clamp_state(state)
-
     def __call__(self, simulation_length=None, random_state=None, n_steps=None):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
@@ -490,7 +473,7 @@ class Simulator(HasTraits):
 
         # Make sure that history values are bounded
         for it in range(history.shape[0]):
-            self.bound_and_clamp(history[it])
+            self.integrator.bound_and_clamp(history[it])
         self.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
