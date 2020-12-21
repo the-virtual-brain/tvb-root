@@ -197,12 +197,12 @@ class TestIntegrators(BaseTestCase):
             try:
                 # Set noise to 0 if this is a stochastic integrator
                 integrator.noise.configure_white(dt, x[model.state_variable_mask].shape)
-                integrator.noise.nsig = numpy.array([0.0] * self.model.n_intvar)
+                integrator.noise.nsig = numpy.array([0.0] * self.model.nintvar)
             except:
                 pass
             integrator.configure()
             integrator.configure_boundaries(model)
-            if model.nvar - model.n_intvar:
+            if model.nvar - model.nintvar:
                 integrator.reconfigure_boundaries_and_clamping_for_integration_state_variables(model)
             # Bound the whole of initial condition:
             x0 = numpy.copy(x)
