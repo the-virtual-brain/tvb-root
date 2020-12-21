@@ -53,7 +53,7 @@ class Model(HasTraits):
     cvar = None
     stvar = None
     state_variable_boundaries = None
-    state_variables_mask = None
+    state_variable_mask = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -99,11 +99,11 @@ class Model(HasTraits):
         elif self.state_variable_boundaries is not None:
             self.state_variable_boundaries = None
             Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
-        self.state_variables_mask = [True] * self.nvar
+        self.state_variable_mask = numpy.array([True] * self.nvar)
         if self.non_integrated_variables is not None:
             for var in self.non_integrated_variables:
-                self.state_variables_mask[self.state_variables.index(var)] = False
-        self._n_nonintvar = self.nvar - numpy.sum(self.state_variables_mask)
+                self.state_variable_mask[self.state_variables.index(var)] = False
+        self._n_nonintvar = self.nvar - numpy.sum(self.state_variable_mask)
         self.update_derived_parameters()
         self._build_observer()
 
