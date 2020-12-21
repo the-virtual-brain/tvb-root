@@ -512,12 +512,12 @@ class Simulator(HasTraits):
 
         """
         # Noise has to have a shape corresponding to only the integrated state variables!
-        good_history_shape = self.good_history_shape[1:]
+        good_history_shape = list(self.good_history_shape[1:])
         good_history_shape[0] = self.model.n_intvar
         if self.integrator.noise.ntau > 0.0:
-            self.integrator.noise.configure_coloured(self.integrator.dt, good_history_shape)
+            self.integrator.noise.configure_coloured(self.integrator.dt, tuple(good_history_shape))
         else:
-            self.integrator.noise.configure_white(self.integrator.dt, self.good_history_shape)
+            self.integrator.noise.configure_white(self.integrator.dt, tuple(good_history_shape))
 
         if self.surface is not None:
             if self.integrator.noise.nsig.size == self.connectivity.number_of_regions:
