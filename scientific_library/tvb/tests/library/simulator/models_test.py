@@ -118,6 +118,10 @@ class TestUpdateVariablesModel(Model):
         return state
 
 
+class TestUpdateVariablesBoundsModel(TestUpdateVariablesModel, TestBoundsModel):
+    pass
+
+
 class TestModels(BaseTestCase):
     """
     Define test cases for models:
