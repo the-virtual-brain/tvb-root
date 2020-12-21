@@ -106,25 +106,10 @@ class Integrator(HasTraits):
         label="The values of the state variables which are clamped ",
         required=False)
 
-    bounded_integration_state_variable_indices = NArray(
-        dtype=int,
-        label="indices of the integrated state variables to be bounded by the integrators "
-              "within the boundaries in the boundaries' values array",
-        required=False)
-
-    integration_state_variable_boundaries = NArray(
-        label="The boundary values of the integrated state variables",
-        required=False)
-
-    clamped_integration_state_variable_indices = NArray(
-        dtype=int,
-        label="indices of the integrated state variables to be clamped by the integrators "
-              "to the values in the clamped_values array",
-        required=False)
-
-    clamped_integration_state_variable_values = NArray(
-        label="The values of the integrated state variables which are clamped ",
-        required=False)
+    _bounded_integration_state_variable_indices = None
+    _integration_state_variable_boundaries = None
+    _clamped_integration_state_variable_indices = None
+    _clamped_integration_state_variable_values = None
 
     @abc.abstractmethod
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
@@ -146,8 +131,8 @@ class Integrator(HasTraits):
         self._bound_state(X, self.bounded_state_variable_indices, self.state_variable_boundaries)
 
     def bound_integration_state(self, X):
-        self._bound_state(X, self.bounded_integration_state_variable_indices,
-                          self.integration_state_variable_boundaries)
+        self._bound_state(X, self._bounded_integration_state_variable_indices,
+                          self._integration_state_variable_boundaries)
 
     def _clamp_state(self, X, indices, values):
         X[indices] = values
@@ -156,8 +141,8 @@ class Integrator(HasTraits):
         self._clamp_state(X, self.clamped_state_variable_indices, self.clamped_state_variable_values)
 
     def clamp_integration_state(self, X):
-        self._clamp_state(X, self.clamped_integration_state_variable_indices,
-                          self.clamped_integration_state_variable_values)
+        self._clamp_state(X, self._clamped_integration_state_variable_indices,
+                          self._clamped_integration_state_variable_values)
 
     def bound_and_clamp(self, state):
         # If there is a state boundary...
@@ -171,26 +156,72 @@ class Integrator(HasTraits):
 
     def integration_bound_and_clamp(self, state):
         # If there is a state boundary...
-        if self.integration_state_variable_boundaries is not None:
+        if self._integration_state_variable_boundaries is not None:
             # ...use the integrator's bound_state
             self.bound_integration_state(state)
         # If there is a state clamping...
-        if self.clamped_integration_state_variable_values is not None:
+        if self._clamped_integration_state_variable_values is not None:
             # ...use the integrator's clamp_state
             self.clamp_integration_state(state)
 
-    def configure(self):
-        # At this point we assume that all state variables are integrated:
-        self.bounded_state_variable_indices = None
-        self.state_variable_boundaries = None
-        self.bounded_integration_state_variable_indices = None
-        self.integration_state_variable_boundaries = None
+    def configure_boundaries(self, state_variables, state_variable_boundaries):
+        if state_variable_boundaries is not None:
+            indices = []
+            boundaries = []
+            for sv, sv_bounds in state_variable_boundaries.items():
+                indices.append(state_variables.index(sv))
+                boundaries.append(sv_bounds)
+            sort_inds = numpy.argsort(indices)
+            self.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
+            self.state_variable_boundaries = numpy.array(boundaries).astype("float64")[sort_inds]
+            self._bounded_integration_state_variable_indices = numpy.copy(self.bounded_state_variable_indices)
+            self._integration_state_variable_boundaries = numpy.copy(self.state_variable_boundaries)
+
+    def reconfigure_boundaries_and_clamping_for_integration_state_variables(self, integration_state_variable_mask):
+        integration_state_variable_indices = numpy.where(integration_state_variable_mask)[0].tolist()
+        if self.state_variable_boundaries is not None:
+            # If there are any state_variable_boundaries...
+            bounded_integration_state_variable_indices = []
+            integration_state_variable_boundaries = []
+            # ...for each one of the bounded state variable indices and boundary values...
+            for bound_sv_ind, bounds in zip(self._bounded_integration_state_variable_indices,
+                                            self.state_variable_boundaries):
+                # ...if the boundary indice corresponds to an integrated state variable...
+                if bound_sv_ind in integration_state_variable_indices:
+                    # ...add its integration state vector indice...
+                    bounded_integration_state_variable_indices.append(
+                        integration_state_variable_indices.index(bound_sv_ind))
+                    # ...and the corresponding boundaries
+                    integration_state_variable_boundaries.append(bounds)
+            self._bounded_integration_state_variable_indices = \
+                numpy.array(bounded_integration_state_variable_indices)
+            self._integration_state_variable_boundaries = \
+                numpy.array(integration_state_variable_boundaries)
         if self.clamped_state_variable_values is not None:
-            self.clamped_integration_state_variable_indices = numpy.copy(self.clamped_state_variable_indices)
-            self.clamped_integration_state_variable_values = numpy.copy(self.clamped_state_variable_values)
-        else:
-            self.clamped_integration_state_variable_indices = None
-            self.clamped_integration_state_variable_values = None
+            # If there are any clamped values...
+            clamped_integration_state_variable_indices = []
+            clamped_integration_state_variable_values = []
+            # ...for each one of the clamped state variable indices and clamped values...
+            for clamp_sv_ind, clampval in zip(self.clamped_state_variable_indices,
+                                              self.clamped_state_variable_values):
+                # ...if the clamped indice corresponds to an integrated state variable...
+                if clamp_sv_ind in integration_state_variable_indices:
+                    # ...add its integration state vector indice...
+                    clamped_integration_state_variable_indices.append(
+                        integration_state_variable_indices.index(clamp_sv_ind))
+                    # ...and the corresponding clamped value
+                    clamped_integration_state_variable_values.append(clampval)
+            self._clamped_integration_state_variable_indices = \
+                numpy.array(clamped_integration_state_variable_indices)
+            self._clamped_integration_state_variable_values = \
+                numpy.array(clamped_integration_state_variable_values)
+
+    def configure(self):
+        # Set default configurations:
+        self._clamped_integration_state_variable_indices = self.clamped_state_variable_indices
+        self._clamped_integration_state_variable_values = self.clamped_state_variable_values
+        self._bounded_integration_state_variable_indices = self.bounded_state_variable_indices
+        self._integration_state_variable_boundaries = self.state_variable_boundaries
         super(Integrator, self).configure()
 
     def integrate_with_update(self, X, model, coupling, local_coupling, stimulus):
