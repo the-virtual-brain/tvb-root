@@ -294,8 +294,8 @@ class ImportService(object):
             view_model2adapter[view_model_class] = algo
         return view_model2adapter
 
-    def _retrieve_operations_in_order(self, project, import_path):
-        # type: (Project, str) -> list[Operation2ImportData]
+    def _retrieve_operations_in_order(self, project, import_path, importer_operation_id=None):
+        # type: (Project, str, int) -> list[Operation2ImportData]
         retrieved_operations = []
 
         for root, _, files in os.walk(import_path):
@@ -365,6 +365,9 @@ class ImportService(object):
                                           start_date=datetime.now(), completion_date=datetime.now())
                     self.logger.debug("Found no ViewModel in folder, so we default to " + str(operation))
 
+                    if importer_operation_id:
+                        operation.id = importer_operation_id
+
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
 
@@ -395,14 +398,14 @@ class ImportService(object):
         dao.store_entity(operation_entity)
         return view_model
 
-    def import_project_operations(self, project, import_path, is_group=False):
+    def import_project_operations(self, project, import_path, is_group=False, importer_operation_id=None):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
         all_dts_count = 0
         all_stored_dts_count = 0
         imported_operations = []
-        ordered_operations = self._retrieve_operations_in_order(project, import_path)
+        ordered_operations = self._retrieve_operations_in_order(project, import_path, importer_operation_id)
 
         for operation_data in ordered_operations:
 
@@ -423,7 +426,10 @@ class ImportService(object):
                     dao.store_entity(operation_entity)
 
             elif operation_data.main_view_model is not None:
-                operation_entity = dao.store_entity(operation_data.operation)
+                do_merge = False
+                if importer_operation_id:
+                    do_merge = True
+                operation_entity = dao.store_entity(operation_data.operation, merge=do_merge)
                 dt_group = None
                 op_group = dao.get_operationgroup_by_id(operation_entity.fk_operation_group)
                 if op_group:
@@ -454,7 +460,8 @@ class ImportService(object):
                     if operation_data.main_view_model.is_metric_operation:
                         self._update_burst_metric(operation_entity)
 
-                    if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group):
+                    #TODO: TVB-2849 to reveiw these flags and simplify condition
+                    if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group) or importer_operation_id is not None:
                         imported_operations.append(operation_entity)
                         new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
                         view_model_disk_size = 0
@@ -573,8 +580,11 @@ class ImportService(object):
                 final_path = h5.path_for_stored_index(datatype)
                 if final_path != current_file:
                     shutil.move(current_file, final_path)
+            stored_entry = dao.get_datatype_by_gid(datatype.gid)
+            if not stored_entry:
+                stored_entry = dao.store_entity(datatype)
 
-            return dao.store_entity(datatype)
+            return stored_entry
         except MissingDataSetException as e:
             self.logger.exception(e)
             error_msg = "Datatype %s has missing data and could not be imported properly." % (datatype,)

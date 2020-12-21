@@ -692,7 +692,7 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def downloaddata(self, data_gid, export_module):
+    def downloaddatatype(self, data_gid, export_module):
         """ Export the data to a default path of TVB_STORAGE/PROJECTS/project_name """
         current_prj = common.get_current_project()
         # Load data by GID

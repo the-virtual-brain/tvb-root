@@ -36,6 +36,7 @@ Class responsible for all TVB exports (datatype or project).
 
 import os
 from datetime import datetime
+from tvb.adapters.exporters.TVBLinkedExporter import TVBLinkedExporter
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
@@ -43,7 +44,6 @@ from tvb.basic.logger.builder import get_logger
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
-from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 
@@ -62,6 +62,7 @@ class ExportManager(object):
         # Here we register all available data type exporters
         # If new exporters supported, they should be added here
         self._register_exporter(TVBExporter())
+        self._register_exporter(TVBLinkedExporter())
         self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
     def _register_exporter(self, exporter):
@@ -129,8 +130,6 @@ class ExportManager(object):
         data_export_folder = None
         try:
             data_export_folder = self._build_data_export_folder(data)
-
-            # Here is the real export                    
             self.logger.debug("Start export of data: %s" % data.type)
             export_data = exporter.export(data, data_export_folder, project)
         finally:
