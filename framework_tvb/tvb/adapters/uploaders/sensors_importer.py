@@ -66,8 +66,7 @@ class SensorsImporterForm(ABCUploaderForm):
     def __init__(self):
         super(SensorsImporterForm, self).__init__()
 
-        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, ('.txt', '.bz2'), 'sensors_file',
-                                             self.temporary_files)
+        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, ('.txt', '.bz2'), 'sensors_file')
         self.sensors_type = SelectField(SensorsImporterModel.sensors_type, name='sensors_type',
                                         choices=SensorsImporterModel.OPTIONS)
 

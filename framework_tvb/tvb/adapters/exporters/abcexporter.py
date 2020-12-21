@@ -101,6 +101,9 @@ class ABCExporter(metaclass=ABCMeta):
         """
         # first check if current data is a DataTypeGroup
         if self.is_data_a_group(data):
+            if self.skip_group_datatypes():
+                return None
+
             data_types = ProjectService.get_datatypes_from_datatype_group(data.id)
 
             if data_types is not None and len(data_types) > 0:
@@ -110,6 +113,9 @@ class ABCExporter(metaclass=ABCMeta):
                 return None
         else:
             return data
+
+    def skip_group_datatypes(self):
+        return False
 
     def _get_all_data_types_arr(self, data):
         """

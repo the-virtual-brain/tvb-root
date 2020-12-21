@@ -43,6 +43,8 @@ import sys
 import uuid
 import zipfile
 from copy import copy
+from inspect import isclass
+
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -287,6 +289,20 @@ class OperationService:
             available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
 
             view_model = adapter_instance.load_view_model(operation)
+            try:
+                form = adapter_instance.get_form()
+                form = form() if isclass(form) else form
+                fields = form.get_upload_field_names()
+                project = dao.get_project_by_id(operation.fk_launched_in)
+                tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
+                for upload_field in fields:
+                    if hasattr(view_model, upload_field):
+                        file = getattr(view_model, upload_field)
+                        if file.startswith(tmp_folder):
+                            temp_files.append(file)
+            except AttributeError:
+                # Skip if we don't have upload fields on current form
+                pass
             result_msg, nr_datatypes = adapter_instance._prelaunch(operation, view_model, unique_id, available_space)
             operation = dao.get_operation_by_id(operation.id)
             # Update DB stored kwargs for search purposes, to contain only valuable params (no unselected options)
@@ -294,13 +310,6 @@ class OperationService:
             dao.store_entity(operation)
 
             self._update_vm_generic_operation_tag(view_model, operation)
-
-            adapter_form = adapter_instance.get_form()
-            try:
-                temp_files = adapter_form.temporary_files
-            except AttributeError:
-                pass
-
             self._remove_files(temp_files)
 
         except zipfile.BadZipfile as excep:
@@ -378,15 +387,16 @@ class OperationService:
         Currently used to delete temporary files created during an operation.
         """
         for pth in file_list:
-            pth = str(pth)
-            try:
-                if os.path.exists(pth) and os.path.isfile(pth):
-                    os.remove(pth)
-                    self.logger.debug("We no longer need file:" + pth + " => deleted")
-                else:
-                    self.logger.warning("Trying to remove not existent file:" + pth)
-            except OSError:
-                self.logger.exception("Could not cleanup file!")
+            if pth is not None:
+                pth = str(pth)
+                try:
+                    if os.path.exists(pth) and os.path.isfile(pth):
+                        os.remove(pth)
+                        self.logger.debug("We no longer need file:" + pth + " => deleted")
+                    else:
+                        self.logger.warning("Trying to remove not existent file:" + pth)
+                except OSError:
+                    self.logger.exception("Could not cleanup file!")
 
     @staticmethod
     def _range_name(range_no):

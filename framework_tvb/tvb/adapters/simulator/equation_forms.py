@@ -82,7 +82,7 @@ class EquationForm(Form):
 
     def __init__(self):
         super(EquationForm, self).__init__()
-        self.equation = StrField(self.get_traited_equation().equation)
+        self.equation = StrField(self.get_traited_equation().equation, disabled=True)
         for param_key, param in self.get_traited_equation().parameters.default().items():
             setattr(self, param_key, FloatField(Float(label=param_key, default=param), name=param_key))
 

@@ -35,18 +35,20 @@
 import os
 import shutil
 import zipfile
+
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.core.entities.model.model_operation import STATUS_ERROR
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.exceptions import ImportException
 from tvb.core.services.import_service import ImportService
-from tvb.core.entities.storage import dao
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 
 
 class TVBImporterModel(UploaderViewModel):
@@ -60,8 +62,7 @@ class TVBImporterForm(ABCUploaderForm):
     def __init__(self):
         super(TVBImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(TVBImporterModel.data_file, ('.zip', '.h5'), 'data_file',
-                                          self.temporary_files)
+        self.data_file = TraitUploadField(TVBImporterModel.data_file, ('.zip', '.h5'), 'data_file')
 
     @staticmethod
     def get_view_model():
@@ -109,16 +110,37 @@ class TVBImporter(ABCUploader):
 
         service = ImportService()
         if os.path.exists(view_model.data_file):
+            current_op = dao.get_operation_by_id(self.operation_id)
             if zipfile.is_zipfile(view_model.data_file):
-                current_op = dao.get_operation_by_id(self.operation_id)
-
                 # Creates a new TMP folder where to extract data
                 tmp_folder = os.path.join(self.storage_path, "tmp_import")
                 FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
-                operations = service.import_project_operations(current_op.project, tmp_folder)
-                shutil.rmtree(tmp_folder)
-                self.nr_of_datatypes += len(operations)
-
+                is_group = False
+                current_op_id = current_op.id
+                for file in os.listdir(tmp_folder):
+                    # In case we import a DatatypeGroup, we want the default import flow
+                    if os.path.isdir(os.path.join(tmp_folder, file)):
+                        current_op_id = None
+                        is_group = True
+                        break
+                try:
+                    operations, all_dts, stored_dts_count = service.import_project_operations(current_op.project,
+                                                                                              tmp_folder, is_group,
+                                                                                              current_op_id)
+                    self.nr_of_datatypes += stored_dts_count
+                    if stored_dts_count == 0:
+                        current_op.additional_info = 'All chosen datatypes already exist!'
+                        dao.store_entity(current_op)
+                    elif stored_dts_count < all_dts:
+                        current_op.additional_info = 'Part of the chosen datatypes already exist!'
+                        dao.store_entity(current_op)
+                except ImportException as excep:
+                    self.log.exception(excep)
+                    current_op.additional_info = excep.message
+                    current_op.status = STATUS_ERROR
+                    raise LaunchException("Invalid file received as input. " + str(excep))
+                finally:
+                    shutil.rmtree(tmp_folder)
             else:
                 # upgrade file if necessary
                 file_update_manager = FilesUpdateManager()
@@ -130,9 +152,12 @@ class TVBImporter(ABCUploader):
                     datatype = None
                     try:
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
-                        service.check_import_references(view_model.data_file, datatype)
-                        service.store_datatype(datatype, view_model.data_file)
-                        self.nr_of_datatypes += 1
+                        stored_new_dt = service.store_or_link_datatype(datatype, view_model.data_file,
+                                                                       current_op.project.id)
+                        if stored_new_dt == 0:
+                            current_op.additional_info = 'The chosen datatype already exists!'
+                            dao.store_entity(current_op)
+                        self.nr_of_datatypes += stored_new_dt
                     except ImportException as excep:
                         self.log.exception(excep)
                         if datatype is not None:

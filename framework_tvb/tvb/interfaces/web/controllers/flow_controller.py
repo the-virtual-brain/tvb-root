@@ -303,6 +303,7 @@ class FlowController(BaseController):
                 raise InvalidFormValues("Invalid form inputs! Could not fill algorithm from the given inputs!",
                                         error_dict=form.get_errors_dict())
 
+
             adapter_instance.submit_form(form)
 
             if issubclass(type(adapter_instance), ABCDisplayer):
@@ -316,7 +317,7 @@ class FlowController(BaseController):
                 return {}
 
             result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
-                                                            project_id, view_model=view_model)
+                                                        project_id, view_model=view_model)
             if isinstance(result, list):
                 result = "Launched %s operations." % len(result)
             common.set_important_message(str(result))

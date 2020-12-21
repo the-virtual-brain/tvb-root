@@ -37,7 +37,7 @@ from tvb.basic.neotraits.api import List, Attr
 from tvb.basic.neotraits.ex import TraitError
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
-#TODO: remove dependency
+# TODO: remove dependency
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 
@@ -124,16 +124,9 @@ TEMPORARY_PREFIX = ".tmp"
 class TraitUploadField(TraitField):
     template = 'form_fields/upload_field.html'
 
-    def __init__(self, traited_attribute, required_type, name, temporary_files, disabled=False):
+    def __init__(self, traited_attribute, required_type, name, disabled=False):
         super(TraitUploadField, self).__init__(traited_attribute, name, disabled)
         self.required_type = required_type
-        self.temporary_files = temporary_files
-
-    def fill_from_post(self, post_data):
-        super(TraitUploadField, self).fill_from_post(post_data)
-
-        if self.data:
-            self.temporary_files.append(self.data)
 
 
 class TraitDataTypeSelectField(TraitField):
@@ -346,10 +339,12 @@ class SelectField(TraitField):
     def _from_post(self):
         super(SelectField, self)._from_post()
 
-        if self.data != self.missing_value and self.choices.get(self.data) is None:
+        if self.unvalidated_data != self.missing_value and self.choices.get(self.unvalidated_data) is None\
+                and (self.unvalidated_data is not None or self.display_none_choice is False):
+
             raise ValueError("the entered value is not among the choices for this field!")
 
-        self.data = self.choices.get(self.data)
+        self.data = self.choices.get(self.unvalidated_data)
 
 
 class MultiSelectField(TraitField):
@@ -398,7 +393,7 @@ class HiddenField(TraitField):
 
     def __init__(self, trait_attribute, name=None, disabled=False):
         super(HiddenField, self).__init__(trait_attribute, name, disabled)
-        self.trait_attribute.label = ''
+        self.label = ''
 
 
 class FormField(Field):

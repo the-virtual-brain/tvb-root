@@ -70,8 +70,7 @@ class ConnectivityMeasureImporterForm(ABCUploaderForm):
     def __init__(self):
         super(ConnectivityMeasureImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', 'data_file',
-                                          self.temporary_files)
+        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', 'data_file')
         self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, 'dataset_name')
         self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, name='connectivity')
 
