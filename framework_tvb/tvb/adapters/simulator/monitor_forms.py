@@ -169,7 +169,7 @@ class ProjectionMonitorForm(MonitorForm):
         super(ProjectionMonitorForm, self).__init__(session_stored_simulator)
 
         rm_filter = None
-        if session_stored_simulator.is_surface_simulation:
+        if session_stored_simulator and session_stored_simulator.is_surface_simulation:
             rm_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=['=='],
                                     values=[session_stored_simulator.surface.region_mapping_data.hex])
 
