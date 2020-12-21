@@ -196,8 +196,8 @@ class TestIntegrators(BaseTestCase):
             integrator.dt = dt
             try:
                 # Set noise to 0 if this is a stochastic integrator
+                integrator.noise.configure_white(dt, x[model.state_variable_mask].shape)
                 integrator.noise.nsig = numpy.array([0.0] * self.model.n_intvar)
-                integrator.noise.dt = dt
             except:
                 pass
             integrator.configure()

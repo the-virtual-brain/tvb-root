@@ -273,7 +273,7 @@ class TestSimulator(BaseTestCase):
                          [var not in test_simulator.model.non_integrated_variables
                           for var in test_simulator.model.state_variables])
         assert numpy.all(test_simulator.model.state_variable_mask == [True, True, True, False, False])
-        assert (test_simulator.model.nvar - test_simulator.model.n_nintvar) == \
+        assert (test_simulator.model.nvar - test_simulator.model.n_intvar) == \
                 len(test_simulator.model.non_integrated_variables) == \
                 (test_simulator.model.nvar - numpy.sum(test_simulator.model.state_variable_mask)) == 2
 
