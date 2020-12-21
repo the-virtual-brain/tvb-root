@@ -464,7 +464,7 @@ class TimeSeriesPlotter(BasePlotter):
         interactive_plotters.show(blocl=block, **kwargs)
 
     def plot_power_spectra_interactive(self, time_series, spectral_props, **kwargs):
-        self.plot_tvb_power_spectra_interactive(self, time_series._tvb, spectral_props, **kwargs)
+        self.plot_tvb_power_spectra_interactive(self, time_series, spectral_props, **kwargs)
 
     # TODO: refactor to not have the plot commands here
     def _plot_ts_spectral_analysis_raster(self, data, time=None, var_label="", time_unit="ms",
