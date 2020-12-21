@@ -94,8 +94,6 @@ class Model(HasTraits):
         if self.stvar is None:
             self.stvar = self.cvar.copy()
         super(Model, self).configure()
-        self.update_derived_parameters()
-        self._build_observer()
         # Make sure that if there are any state variable boundaries, ...
         if isinstance(self.state_variable_boundaries, dict):
             self._setup_sv_boundaries()
