@@ -198,11 +198,11 @@ class Simulator(HasTraits):
         return False
 
     def configure_integration_for_model(self):
-        self.integrator.configure_boundaries(self.model.state_variables, self.model.state_variable_boundaries)
+        self.integrator.configure_boundaries(self.model)
         if self.model.nvar - self.model.n_intvar:
             self.integrate_next_step = self.integrator.integrate_with_update
             self.integrator.\
-                reconfigure_boundaries_and_clamping_for_integration_state_variables(self.model.state_variable_mask)
+                reconfigure_boundaries_and_clamping_for_integration_state_variables(self.model)
         else:
             self.integrate_next_step = self.integrator.integrate
 

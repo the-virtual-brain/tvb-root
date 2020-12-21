@@ -201,10 +201,9 @@ class TestIntegrators(BaseTestCase):
             except:
                 pass
             integrator.configure()
-            integrator.configure_boundaries(model.state_variables, model.state_variable_boundaries)
+            integrator.configure_boundaries(model)
             if model.nvar - model.n_intvar:
-                integrator.reconfigure_boundaries_and_clamping_for_integration_state_variables(
-                    model.state_variable_mask)
+                integrator.reconfigure_boundaries_and_clamping_for_integration_state_variables(model)
             # Bound the whole of initial condition:
             x0 = numpy.copy(x)
             integrator.bound_and_clamp(x0)
