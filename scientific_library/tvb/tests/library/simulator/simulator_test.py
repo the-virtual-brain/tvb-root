@@ -273,8 +273,9 @@ class TestSimulator(BaseTestCase):
                          [var not in test_simulator.model.non_integrated_variables
                           for var in test_simulator.model.state_variables])
         assert numpy.all(test_simulator.model.state_variable_mask == [True, True, True, False, False])
-        assert test_simulator.model.n_nonintvar == len(test_simulator.model.non_integrated_variables) == \
-               test_simulator.model.nvar - numpy.sum(test_simulator.model.state_variable_mask) == 2
+        assert (test_simulator.model.nvar - test_simulator.model.n_nintvar) == \
+                len(test_simulator.model.non_integrated_variables) == \
+                (test_simulator.model.nvar - numpy.sum(test_simulator.model.state_variable_mask)) == 2
 
     def test_integrator_update_variables_with_boundaries_and_clamp_config(self):
         from .models_test import TestUpdateVariablesBoundsModel
