@@ -54,7 +54,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
@@ -62,7 +61,6 @@ from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-from tvb.core.neotraits._h5accessors import DataSetMetaData
 from tvb.core.neotraits.forms import Form
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
@@ -564,9 +562,12 @@ class ABCAdapter(object):
         store on the index is not correct, so we need to update them.
         """
         metadata = analyzer_h5.array_data.get_cached_metadata()
-        analyzer_index.array_data_max = metadata.max
-        analyzer_index.array_data_min = metadata.min
-        analyzer_index.array_data_mean = metadata.mean
+
+        if not metadata.has_complex:
+            analyzer_index.array_data_max = float(metadata.max)
+            analyzer_index.array_data_min = float(metadata.min)
+            analyzer_index.array_data_mean = float(metadata.mean)
+
         analyzer_index.aray_has_complex = metadata.has_complex
         analyzer_index.array_is_finite = metadata.is_finite
         analyzer_index.shape = json.dumps(analyzer_h5.array_data.shape)
