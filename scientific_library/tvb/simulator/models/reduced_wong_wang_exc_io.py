@@ -220,7 +220,7 @@ class ReducedWongWangExcIO(TVBReducedWongWang):
         code that updates an arbitrary models parameters -- ie, this can be
         safely called on any model, whether it's used or not.
         """
-        self.n_nonintvar = self.nvar - self.n_intvar
+        self.n_nonintvar = self.nvar - self.nintvar
         self._R = None
         self._Rin = None
         self._stimulus = 0.0

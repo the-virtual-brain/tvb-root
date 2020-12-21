@@ -359,8 +359,8 @@ class SpikingWongWangExcIOInhI(Model):
         """
         self._stimulus = 0.0
         self._non_integrated_variables = None
-        self.n_nonintvar = self.nvar - self.n_intvar
-        self._non_integrated_variables_inds = list(range(self.n_intvar, self.nvar))
+        self.n_nonintvar = self.nvar - self.nintvar
+        self._non_integrated_variables_inds = list(range(self.nintvar, self.nvar))
         self._N_E_max = int(numpy.max(self.N_E))  # maximum number of excitatory neurons/modes
         self.number_of_modes = int(self._N_E_max + numpy.max(self.N_I))
         # # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
