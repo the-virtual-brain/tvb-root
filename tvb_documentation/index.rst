@@ -23,21 +23,40 @@
 
 .. include:: /manuals/UserGuide/UserGuide-Overview.rst
 
-Download
---------
+Helpful external resources
+--------------------------
 
-To download it, check out the |download_site|.
+The **TVB main website** on `www.thevirtualbrain.org <https://www.thevirtualbrain.org/>`_ contains a lot of helpful resources:
 
-To get in touch with other users and developers, please head over to the |mailing_list|.
 
-Some more documents and artefacts for TVB can be found in this |sharing_area|
-(e.g. documentation from TVB Node# meetings, some team pictures).
+* `Download <https://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software>`_ **TVB software packages** for macOS, Windows and Linux.
+* `Learn <https://www.thevirtualbrain.org/tvb/zwei/neuroscience-simulation>`_ about the **scientific background and clinical applications** of TVB.
+* `Read <https://www.thevirtualbrain.org/tvb/zwei/newswire-blog>`_ the **TVB blog** about the latest news and achievements.
+* `Follow <https://www.thevirtualbrain.org/tvb/zwei/newswire-event>`_ international **TVB events** to meet other developers and scientists working with TVB.
+
+
+If you're familiar with Docker and/or Python environments, you can try early releases of the TVB software:
+
+
+* We publish **Docker containers** on the `TVB DockerHub <https://hub.docker.com/u/thevirtualbrain>`_.
+* We publish **Python packages** on the `TVB PyPI profile <https://pypi.org/user/tvb/>`_.
+
+
+These versions of TVB are updated more frequently and contain all the latest new features and bugfixes. You can follow all the latest changes on our |our_github| page.
+
+
+If you have specific questions, also about how to use TVB for your current research activity, you can use our `public discussion forum <https://groups.google.com/g/tvb-users>`_, which doubles as a *mailing list* if you prefer this channel.
+
+
+In this forum, you can meet and discuss with other TVB users, as well as experts from our own support team. It's a perfect place to ask things like *"Does anyone else see that both the EEG and the BOLD have similar shape in terms of the 1/f type of drop off towards the higher frequency range?"*.
+
+
 
 We are grateful to
 ------------------
 
  - our contributors (check their names on |our_github|)
- - our sponsors (check their names on the |our_sponsors_page|
+ - our sponsors (check their names on the |our_sponsors_page|)
  - all |third_party| tools that we used (licenses are also included in TVB_Distribution)
  - JetBrains for |pycharm_ide|
  - |jenkins| team for their continuous integration tool
@@ -57,46 +76,31 @@ We are grateful to
         :height: 64px
 
 
-.. |download_site| raw:: html
-
-   <a href="http://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software" target="_blank">TVB download site</a>
-
-
 .. |our_sponsors_page| raw:: html
 
-    <a href="http://www.thevirtualbrain.org/tvb/zwei/teamwork-sponsors" target="_blank"> our sponsors page </a>
-
-
-.. |mailing_list| raw:: html
-
-   <a href="https://groups.google.com/forum/#!forum/tvb-users" target="_blank">mailing list</a>
-
-
-.. |sharing_area| raw:: html
-
-    <a href="http://www.thevirtualbrain.org/tvb/zwei/client-area/public" target="_blank">share area</a>
+    <a href="http://www.thevirtualbrain.org/tvb/zwei/teamwork-sponsors" target="_blank">our sponsors page</a>
 
 
 .. |our_github| raw:: html
 
-   <a href="https://github.com/the-virtual-brain" target="_blank"> GitHub </a>
+   <a href="https://github.com/the-virtual-brain" target="_blank">GitHub</a>
 
 
 .. |third_party| raw:: html
 
-   <a href="http://www.thevirtualbrain.org/tvb/zwei/brainsimulator-requirements" target="_blank"> 3rd party </a>
+   <a href="http://www.thevirtualbrain.org/tvb/zwei/brainsimulator-requirements" target="_blank">3rd party</a>
 
 
 .. |pycharm_ide| raw:: html
 
-    <a href="https://www.jetbrains.com/pycharm/" target="_blank"> PyCharm IDE </a>
+    <a href="https://www.jetbrains.com/pycharm/" target="_blank">PyCharm IDE</a>
 
 
 .. |jenkins| raw:: html
 
-    <a href="https://www.jenkins.io/" target="_blank"> Jenkins </a>
+    <a href="https://www.jenkins.io/" target="_blank">Jenkins</a>
 
 
 .. |jira| raw:: html
 
-    <a href="https://www.atlassian.com/software/jira" target="_blank"> Jira </a>
+    <a href="https://www.atlassian.com/software/jira" target="_blank">Jira</a>

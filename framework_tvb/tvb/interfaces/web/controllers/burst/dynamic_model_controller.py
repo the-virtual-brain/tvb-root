@@ -111,8 +111,7 @@ class _InputTreeFragment(ABCAdapterForm):
     def __init__(self):
         super(_InputTreeFragment, self).__init__()
         self.dynamic_name = StrField(Str(label='Parameter configuration name',
-                                         doc="""The name of this parameter configuration"""),
-                                     self.project_id, name='dynamic_name')
+                                         doc="""The name of this parameter configuration"""), name='dynamic_name')
 
 
 @traced
@@ -144,8 +143,8 @@ class DynamicModelController(BurstBaseController):
     def index(self):
         dynamic_gid = utils.generate_guid()
         model_name_fragment = _InputTreeFragment()
-        model_fragment = SimulatorModelFragment()
-        integrator_fragment = SimulatorIntegratorFragment()
+        model_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorModelFragment())
+        integrator_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorIntegratorFragment())
         model_description = configure_matjax_doc(self.available_models)
 
         params = {

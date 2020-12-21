@@ -94,17 +94,15 @@ class NetworkxImporterModel(UploaderViewModel):
 
 class NetworkxConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, project_id=None):
-        super(NetworkxConnectivityImporterForm, self).__init__(project_id)
-        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', self.project_id, 'data_file',
-                                          self.temporary_files)
-        self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, self.project_id, 'key_edge_weight')
-        self.key_edge_tract = StrField(NetworkxImporterModel.key_edge_tract, self.project_id, name='key_edge_tract')
-        self.key_node_coordinates = StrField(NetworkxImporterModel.key_node_coordinates, self.project_id,
-                                             name='key_node_coordinates')
-        self.key_node_label = StrField(NetworkxImporterModel.key_node_label, self.project_id, name='key_node_label')
-        self.key_node_region = StrField(NetworkxImporterModel.key_node_region, self.project_id, name='key_node_region')
-        self.key_node_hemisphere = StrField(NetworkxImporterModel.key_node_hemisphere, self.project_id, name='key_node_hemisphere')
+    def __init__(self):
+        super(NetworkxConnectivityImporterForm, self).__init__()
+        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', 'data_file')
+        self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, 'key_edge_weight')
+        self.key_edge_tract = StrField(NetworkxImporterModel.key_edge_tract, name='key_edge_tract')
+        self.key_node_coordinates = StrField(NetworkxImporterModel.key_node_coordinates, name='key_node_coordinates')
+        self.key_node_label = StrField(NetworkxImporterModel.key_node_label, name='key_node_label')
+        self.key_node_region = StrField(NetworkxImporterModel.key_node_region, name='key_node_region')
+        self.key_node_hemisphere = StrField(NetworkxImporterModel.key_node_hemisphere, name='key_node_hemisphere')
 
     @staticmethod
     def get_view_model():

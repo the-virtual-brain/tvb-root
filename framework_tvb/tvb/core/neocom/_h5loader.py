@@ -197,7 +197,12 @@ class TVBLoader(object):
     def path_for_stored_index(self, dt_index_instance):
         # type: (DataType) -> str
         """ Given a Datatype(HasTraitsIndex) instance, build where the corresponding H5 should be or is stored"""
-        operation = dao.get_operation_by_id(dt_index_instance.fk_from_operation)
+        if hasattr(dt_index_instance, 'fk_simulation'):
+            # In case of BurstConfiguration the operation id is on fk_simulation
+            op_id = dt_index_instance.fk_simulation
+        else:
+            op_id = dt_index_instance.fk_from_operation
+        operation = dao.get_operation_by_id(op_id)
         operation_folder = self.file_handler.get_project_folder(operation.project, str(operation.id))
 
         gid = uuid.UUID(dt_index_instance.gid)

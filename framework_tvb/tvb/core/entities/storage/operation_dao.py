@@ -423,6 +423,14 @@ class OperationDAO(RootDAO):
     # ALGORITHM RELATED METHODS
     #
 
+    def get_all_algorithms(self):
+        try:
+            result = self.session.query(Algorithm).distinct().all()
+            return result
+        except SQLAlchemyError as ex:
+            self.logger.exception(ex)
+            return None
+
     def get_algorithm_by_id(self, algorithm_id):
         try:
             result = self.session.query(Algorithm).filter_by(id=algorithm_id).one()

@@ -70,11 +70,11 @@ class EegMonitorModel(ViewModel):
 
 class EegMonitorForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(EegMonitorForm, self).__init__(project_id)
-        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, self.project_id, name='input_data')
-        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, self.project_id, name='data_2')
-        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, self.project_id, name='data_3')
+    def __init__(self):
+        super(EegMonitorForm, self).__init__()
+        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, name='input_data')
+        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, name='data_2')
+        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, name='data_3')
 
     @staticmethod
     def get_view_model():

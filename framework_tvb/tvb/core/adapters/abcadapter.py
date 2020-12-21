@@ -154,13 +154,6 @@ class ABCAdapterForm(Form):
         """
         raise NotImplementedError
 
-    def get_traited_datatype(self):
-        """
-        This is used to fill in defaults for GET requests.
-        Makes sense for analyzers, because for each form, we have an algorithm to relate to.
-        """
-        return None
-
     def fill_from_post_plus_defaults(self, form_data):
         self.fill_from_trait(self.get_view_model()())
         for field in self.fields:
@@ -387,6 +380,9 @@ class ABCAdapter(object):
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id
 
         count_stored = 0
+        if result is None:
+            return "", count_stored
+
         group_type = None  # In case of a group, the first not-none type is sufficient to memorize here
         for res in result:
             if res is None:
@@ -557,3 +553,22 @@ class ABCAdapter(object):
         :return: size in kB
         """
         return size * TvbProfile.current.MAGIC_NUMBER / 8 / 2 ** 10
+
+    @staticmethod
+    def fill_index_from_h5(analyzer_index, analyzer_h5):
+        """
+        Method used only by analyzers that write slices of data.
+        As they never have the whole array_data in memory, the metadata related to array_data (min, max, etc.) they
+        store on the index is not correct, so we need to update them.
+        """
+        metadata = analyzer_h5.array_data.get_cached_metadata()
+
+        if not metadata.has_complex:
+            analyzer_index.array_data_max = float(metadata.max)
+            analyzer_index.array_data_min = float(metadata.min)
+            analyzer_index.array_data_mean = float(metadata.mean)
+
+        analyzer_index.aray_has_complex = metadata.has_complex
+        analyzer_index.array_is_finite = metadata.is_finite
+        analyzer_index.shape = json.dumps(analyzer_h5.array_data.shape)
+        analyzer_index.ndim = len(analyzer_h5.array_data.shape)

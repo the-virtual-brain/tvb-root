@@ -46,7 +46,7 @@ will be consistent with Monitor periods corresponding to any of [4096, 2048, 102
 """
 import abc
 import functools
-import numpy
+import numpy as np
 import scipy.integrate
 from . import noise
 from .common import get_logger, simple_gen_astr
@@ -127,22 +127,29 @@ class Integrator(HasTraits):
             if sv_bounds[1] is not None:
                 X[sv_ind][X[sv_ind] > sv_bounds[1]] = sv_bounds[1]
 
-    def bound_state(self, X):
-        self._bound_state(X, self.bounded_state_variable_indices, self.state_variable_boundaries)
-
-    def bound_integration_state(self, X):
-        self._bound_state(X, self._bounded_integration_state_variable_indices,
-                          self._integration_state_variable_boundaries)
-
-    def _clamp_state(self, X, indices, values):
-        X[indices] = values
-
     def clamp_state(self, X):
         self._clamp_state(X, self.clamped_state_variable_indices, self.clamped_state_variable_values)
 
     def clamp_integration_state(self, X):
         self._clamp_state(X, self._clamped_integration_state_variable_indices,
                           self._clamped_integration_state_variable_values)
+
+    def configure_boundaries(self, model):
+        if model.state_variable_boundaries is not None:
+            indices = []
+            boundaries = []
+            for sv, sv_bounds in model.state_variable_boundaries.items():
+                indices.append(model.state_variables.index(sv))
+                boundaries.append(sv_bounds)
+            sort_inds = np.argsort(indices)
+            self.bounded_state_variable_indices = np.array(indices)[sort_inds]
+            self.state_variable_boundaries = np.array(boundaries).astype("float64")[sort_inds]
+        else:
+            self.bounded_state_variable_indices = None
+            self.state_variable_boundaries = None
+
+    def set_random_state(self, random_state):
+        self.log.warn("random_state supplied for non-stochastic integration")
 
     def bound_and_clamp(self, state):
         # If there is a state boundary...
@@ -246,9 +253,6 @@ class Integrator(HasTraits):
         return simple_gen_astr(self, 'dt')
 
 
-# TODO: Decide about permanent removal of bounding and clamping for intermediate steps of integration schemes.
-
-
 class IntegratorStochastic(Integrator):
     r"""
     The IntegratorStochastic class is a base class for the stochastic
@@ -282,6 +286,12 @@ class IntegratorStochastic(Integrator):
         required = True,
         doc = """The stochastic integrator's noise source. It incorporates its
         own instance of Numpy's RandomState.""")  # type: noise.Noise
+
+    def set_random_state(self, random_state):
+        if random_state is not None:
+            self.noise.random_stream.set_state(random_state)
+            msg = "random_state supplied with seed %s"
+            self.log.info(msg, self.noise.random_stream.get_state()[1][0])
 
     def __str__(self):
         return simple_gen_astr(self, 'dt noise')
@@ -542,6 +552,10 @@ class SciPyODE(SciPyODEBase):
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
         return X_next
 
 class SciPySDE(SciPyODEBase):
@@ -549,6 +563,10 @@ class SciPySDE(SciPyODEBase):
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
         X_next += self.noise.gfun(X) * self.noise.generate(X.shape)
+        if self.state_variable_boundaries is not None:
+            self.bound_state(X_next)
+        if self.clamped_state_variable_values is not None:
+            self.clamp_state(X_next)
         return X_next
 
 

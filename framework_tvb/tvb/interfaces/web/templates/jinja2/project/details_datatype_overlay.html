@@ -68,7 +68,7 @@
             <ul>
                 {% for exporter in exporters %}
                     <li>
-                        <button class="action action-export" onclick="window.location='/project/downloaddata/{{ entity_gid }}/{{ exporter }}';">{{ exporters[exporter] }}</button>
+                        <button class="action action-export" onclick="window.location='/project/downloaddatatype/{{ entity_gid }}/{{ exporter }}';">{{ exporters[exporter] }}</button>
                     </li>
                 {% endfor %}
             </ul>

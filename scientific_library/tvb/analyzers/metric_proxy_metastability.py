@@ -50,8 +50,7 @@ Proxy synchrony (S) : the reciprocal of mean spatial variance across time.
 """
 
 import numpy
-import tvb.analyzers.metrics_base as metrics_base
-
+from tvb.basic.logger.builder import get_logger
 
 
 def remove_mean(x, axis):
@@ -68,55 +67,76 @@ def remove_mean(x, axis):
     return x - x.mean(axis=axis)[idx]
 
 
-class ProxyMetastabilitySynchrony(metrics_base.BaseTimeseriesMetricAlgorithm):
-    r"""
-    Subtract the mean time-series and compute. 
 
-    Input:
-    TimeSeries DataType
+r"""
+Subtract the mean time-series and compute. 
+
+Input:
+TimeSeries DataType
     
-    Output: 
-    Float, Float
+Output: 
+Float, Float
     
-    The two metrics given by this analyzers are a proxy for metastability and synchrony. 
-    The underlying dynamical model used in the article was the Kuramoto model.
+The two metrics given by this analyzers are a proxy for metastability and synchrony. 
+The underlying dynamical model used in the article was the Kuramoto model.
 
-    .. math::
-            V(t) &= \frac{1}{N} \sum_{i=1}^{N} |S_i(t) - <S(t)>| \\
-            M(t) &= \sqrt{E[V(t)^{2}]-(E[V(t)])^{2}} \\
-            S(t) &= \frac{1}{\bar{V(t)}}
+.. math::
+        V(t) &= \frac{1}{N} \sum_{i=1}^{N} |S_i(t) - <S(t)>| \\
+        M(t) &= \sqrt{E[V(t)^{2}]-(E[V(t)])^{2}} \\
+        S(t) &= \frac{1}{\bar{V(t)}}
 
+"""
+
+log = get_logger(__name__)
+
+
+def compute_proxy_metastability_metric(params):
+    """
+    # type: dict(TimeSeries, float, int) -> (float, float)
+    Compute the zero centered variance of node variances for the time_series.
+
+    Parameters
+    ----------
+    params : a dictionary containing
+        time_series : TimeSeries
+        Input time series for which the metric will be computed.
+
+        start_point : float
+        Determines how many points of the TimeSeries will be discarded before computing the metric
+
+        segment : int
+        Divides the input time-series into discrete equally sized sequences and use the last segment to compute
+        the metric. Only used when the start point is larger than the time-series length
     """
 
-    def evaluate(self):
-        """
-        Compute the zero centered variance of node variances for the time_series.
-        """
+    time_series = params['time_series']
+    start_point = params['start_point']
+    segment = params['segment']
+    shape = time_series.data.shape
+    tpts = shape[0]
 
-        shape = self.time_series.data.shape
-        tpts = shape[0]
+    if start_point != 0.0:
+        start_tpt = start_point / time_series.sample_period
+        log.debug("Will discard: %s time points" % start_tpt)
+    else:
+        start_tpt = 0
 
-        if self.start_point != 0.0:
-            start_tpt = self.start_point / self.time_series.sample_period
-            self.log.debug("Will discard: %s time points" % start_tpt)
-        else:
-            start_tpt = 0
+    if start_tpt > tpts:
+        log.warning("The time-series is shorter than the starting point")
+        log.debug("Will divide the time-series into %d segments." % segment)
+        # Lazy strategy
+        start_tpt = int((segment - 1) * (tpts // segment))
 
-        if start_tpt > tpts:
-            self.log.warning("The time-series is shorter than the starting point")
-            self.log.debug("Will divide the time-series into %d segments." % self.segment)
-            # Lazy strategy
-            start_tpt = int((self.segment - 1) * (tpts // self.segment))
+    start_tpt = int(start_tpt)
+    time_series_diffs = remove_mean(time_series.data[start_tpt:, :], axis=2)
+    v_data = abs(time_series_diffs).mean(axis=2)
 
-        start_tpt = int(start_tpt)
-        time_series_diffs = remove_mean(self.time_series.data[start_tpt:, :], axis=2)
-        v_data = abs(time_series_diffs).mean(axis=2)
+    # handle state-variables & modes
+    cat_tpts = v_data.shape[0] * shape[1] * shape[3]
+    v_data = v_data.reshape((cat_tpts,), order="F")
+    # std across time-points
+    metastability = v_data.std(axis=0)
+    synchrony = 1. / v_data.mean(axis=0)
 
-        # handle state-variables & modes
-        cat_tpts = v_data.shape[0] * shape[1] * shape[3]
-        v_data = v_data.reshape((cat_tpts,), order="F")
-        # std across time-points
-        metastability = v_data.std(axis=0)
-        synchrony = 1. / v_data.mean(axis=0)
-        return {"Metastability": metastability,
-                "Synchrony": synchrony}
+    return {"Metastability": metastability,
+            "Synchrony": synchrony}

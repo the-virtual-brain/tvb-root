@@ -71,12 +71,11 @@ class TimeSeriesVolumeVisualiserModel(ViewModel):
 
 class TimeSeriesVolumeVisualiserForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(TimeSeriesVolumeVisualiserForm, self).__init__(project_id)
-        self.time_series = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.time_series, self.project_id,
-                                                    name='time_series', conditions=self.get_filters())
-        self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, self.project_id,
-                                                    name='background')
+    def __init__(self):
+        super(TimeSeriesVolumeVisualiserForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.time_series, name='time_series',
+                                                    conditions=self.get_filters())
+        self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, name='background')
 
     @staticmethod
     def get_view_model():

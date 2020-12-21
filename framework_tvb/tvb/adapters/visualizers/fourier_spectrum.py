@@ -56,9 +56,9 @@ class FourierSpectrumModel(ViewModel):
 
 class FourierSpectrumForm(ABCAdapterForm):
 
-    def __init__(self, project_id=None):
-        super(FourierSpectrumForm, self).__init__(project_id)
-        self.input_data = TraitDataTypeSelectField(FourierSpectrumModel.input_data, self.project_id, name='input_data',
+    def __init__(self):
+        super(FourierSpectrumForm, self).__init__()
+        self.input_data = TraitDataTypeSelectField(FourierSpectrumModel.input_data, name='input_data',
                                                    conditions=self.get_filters())
 
     @staticmethod
@@ -75,9 +75,6 @@ class FourierSpectrumForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None
-
-    def get_traited_datatype(self):
         return None
 
 
