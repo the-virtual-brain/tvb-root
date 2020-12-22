@@ -1,7 +1,7 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
  Version: 2.1 - build 10***
- Release Date: ** June 2020
+ Release Date: 23 December 2020
  Description: TVB_Distribution with Python 3
 ======================================================================================================================================
     * Add a REST API (server in tvb-framework and tvb-rest-client separately)
@@ -10,6 +10,9 @@
     * Improve the Simulator page
     * CFF import was removed
     * tvb-contrib is a package on Pypi
+    * Refactor the analyzers in library towards functions.
+    * New export button on datatypes to allow download of a datatype together with its references.
+    * Data migration from version 1.5.8 is supported. For data generated with older versions, users should first install 1.5.8 to update their data, and then install 2.1
 
 ======================================================================================================================================
  The Virtual Brain (TVB) tvb-library

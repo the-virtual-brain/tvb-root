@@ -45,7 +45,7 @@ class VersionSettings(object):
     """
 
     # Current release number
-    BASE_VERSION = "2.0.10"
+    BASE_VERSION = "2.1a1"
 
     # Current DB version. Increment this and create a new xxx_update_db.py migrate script
     DB_STRUCTURE_VERSION = 18
