@@ -40,8 +40,8 @@ import json
 import os
 import sys
 import uuid
-
 import numpy
+
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -940,6 +940,14 @@ def _migrate_simulation_state(**kwargs):
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
+def _migrate_tracts(**kwargs):
+    if kwargs['operation_xml_parameters']['region_volume'] != '':
+        root_metadata = kwargs['root_metadata']
+        root_metadata['region_volume_map'] = _parse_gid(root_metadata['region_volume_map'])
+    kwargs['storage_manager'].store_data('tract_region', kwargs['root_metadata'])
+    _migrate_dataset_metadata(['tract_region', 'tract_start_idx', 'vertices'], kwargs['storage_manager'])
+
+
 def _migrate_dataset_metadata(dataset_list, storage_manager):
     for dataset in dataset_list:
         metadata = DataSetMetaData.from_array(storage_manager.get_data(dataset)).to_dict()
@@ -990,6 +998,7 @@ def _migrate_datatype_group(operation_group, burst_gid, generic_attributes):
     dao.store_entity(stored_datatype_group)
 
 
+
 datatypes_to_be_migrated = {
     'Connectivity': _migrate_connectivity,
     'BrainSkull': _migrate_surface,
@@ -1033,7 +1042,8 @@ datatypes_to_be_migrated = {
     'StimuliRegion': _migrate_stimuli_region,
     'StimuliSurface': _migrate_stimuli_surface,
     'ValueWrapper': _migrate_value_wrapper,
-    'SimulationState': _migrate_simulation_state
+    'SimulationState': _migrate_simulation_state,
+    'Tracts': _migrate_tracts
 }
 
 
