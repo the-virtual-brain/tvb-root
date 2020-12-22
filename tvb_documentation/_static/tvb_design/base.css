@@ -1,6 +1,6 @@
 /* -------------------------------------------- */
 /* The Virtual Brain: DOCS website */
-/* Version: 7 */
+/* Version: 8 */
 /* -------------------------------------------- */
 /* Created by @twotribes, Germany */
 /* -------------------------------------------- */
@@ -935,6 +935,7 @@ body div.document table.indextable dt {
     background: #f8f8f8;
     border-left: 1px solid #627986;
     margin-bottom: 5px;
+    word-break: break-all;
 }
 
 body div.document table.indextable dd dl dt {
@@ -950,6 +951,7 @@ body div.document table.indextable dd dl dt + dt {
 
 body div.document table.indextable dd {
     margin-bottom: 2em;
+    word-break: break-all;
 }
 
 /* !-------------------------------------------- */
