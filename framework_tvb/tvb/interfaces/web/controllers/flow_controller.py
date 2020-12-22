@@ -50,6 +50,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
@@ -266,6 +267,11 @@ class FlowController(BaseController):
         values = []
 
         for idx in range(len(filters_dict['fields'])):
+            if filters_dict['field_current_gids'][idx] is not None:
+                datatype_index = dao.get_datatype_by_gid(filters_dict['field_current_gids'][idx])
+                compare_to_value = getattr(datatype_index, filters_dict['field_names'][idx])
+                filters_dict['values'][idx] = compare_to_value
+
             fields.append(filters_dict['fields'][idx])
             operations.append(filters_dict['operations'][idx])
             values.append(filters_dict['values'][idx])

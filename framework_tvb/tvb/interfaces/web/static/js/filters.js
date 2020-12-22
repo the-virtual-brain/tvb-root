@@ -81,11 +81,14 @@ function addFilter(div_id, filters) {
 }
 
 /** gather all the data from the filters */
-function _FIL_gatherData(divId, datatypeIndex){
+function _FIL_gatherData(divId, datatypeIndex=null, uiValue=null, sourceName){
     var children = $('#'+divId).children('div');
     var fields = [];
     var operations = [];
     var values = [];
+    var field_names = [];
+    var field_current_gids = [];
+    var field_name = null;
 
     for (var i = 0; i < children.length; i++) {
         var elem = children[i].children;
@@ -97,7 +100,20 @@ function _FIL_gatherData(divId, datatypeIndex){
 
             if(children[i].classList.length !== 0){
                 datatypeIndex = value.replace(/'/g, '').replace('<class ', '').replace('>', '');
-                value = $("#" + children[i].classList[0].replace('_runtime_trigger', ''))[0].value;
+                value = $("#" + sourceName)[0].value;
+                field_name = children[i].className.replace(sourceName + '_', '').replace('runtime_trigger', '');
+
+                if (field_name.length > 1){
+                    field_name = field_name.substring(0, field_name.length - 1);
+                   field_names.push(field_name);
+                   field_current_gids.push(uiValue);
+                }else{
+                    field_names.push(null);
+                    field_current_gids.push(null);
+                }
+            }else{
+                field_names.push(null);
+                field_current_gids.push(null);
             }
 
             values.push(value);
@@ -115,7 +131,8 @@ function _FIL_gatherData(divId, datatypeIndex){
     var dt_module = datatypeIndex.substring(0, dt_class_start_index);
     var dt_class = datatypeIndex.substring(dt_class_start_index + 1, datatypeIndex.length);
 
-    return {dt_class: dt_class, dt_module: dt_module, filters: {fields: fields, operations: operations, values: values}};
+    return {dt_class: dt_class, dt_module: dt_module, filters: {fields: fields, operations: operations, values: values,
+        field_names: field_names, field_current_gids: field_current_gids}};
 }
 
 function computeOptionSettings(select_field){
@@ -162,7 +179,7 @@ function applyUserFilters(datatypeIndex, divId, name, gatheredData) {
     if (!gatheredData) {
         //gather all the data from the filters and make an
         //ajax request to get new data
-        gatheredData = _FIL_gatherData(divId, datatypeIndex);
+        gatheredData = _FIL_gatherData(divId, datatypeIndex, null, name);
         if (gatheredData == null) {
             return;
         }
@@ -181,12 +198,13 @@ function applyUserFilters(datatypeIndex, divId, name, gatheredData) {
 }
 
 function applyRuntimeFilters(value, divId, name){
-    var triggered_fields = $('.' + name + '_runtime_trigger');
+    var triggered_fields = $('div[class^=' + name + '][class$="runtime_trigger"');
     var select_fields = triggered_fields.parent().parent().find('select.dataset-selector');
+    console.log(name);
 
     for(i=0; i<triggered_fields.length; i++) {
         var select_field_id = triggered_fields[i].parentElement.id;
-        var gatheredData = _FIL_gatherData(select_field_id);
+        var gatheredData = _FIL_gatherData(select_field_id, null, value, name);
         if (gatheredData.filters.fields.length === 0) {
             return;
         }

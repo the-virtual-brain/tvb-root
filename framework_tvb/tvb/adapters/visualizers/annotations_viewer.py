@@ -37,11 +37,13 @@ from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer, SurfaceURLGenerator
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.annotation import *
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import dao
+from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.datatypes.connectivity import Connectivity
@@ -74,12 +76,14 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
     def __init__(self):
         super(ConnectivityAnnotationsViewForm, self).__init__()
         # Used for filtering
-        self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index,
-                                                           'connectivity_index')
+        self.connectivity_index = TraitDataTypeSelectField(
+            ConnectivityAnnotationsViewModel.connectivity_index, 'connectivity_index',
+            runtime_conditions=self.get_runtime_filters_for_connectivity())
         self.annotations_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.annotations_index,
                                                           'annotations_index', conditions=self.get_filters())
-        self.region_mapping_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.region_mapping_index,
-                                                             'region_mapping_index')
+        self.region_mapping_index = TraitDataTypeSelectField(
+            ConnectivityAnnotationsViewModel.region_mapping_index, 'region_mapping_index',
+            runtime_conditions=self.get_runtime_filters_for_region_mapping())
 
     @staticmethod
     def get_view_model():
@@ -104,6 +108,19 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
         #
         # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
         return None
+
+    @staticmethod
+    def get_runtime_filters_for_connectivity():
+        return {'annotations_index_fk_connectivity_gid': FilterChain(fields=[FilterChain.datatype + '.gid'],
+                                                                     operations=["=="],
+                                                                     values=[REGISTRY.get_index_for_datatype(
+                ConnectivityAnnotationsViewModel.connectivity_index.linked_datatype)])}
+
+    @staticmethod
+    def get_runtime_filters_for_region_mapping():
+        return {'connectivity_index': FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'],
+                                                  operations=["=="], values=[REGISTRY.get_index_for_datatype(
+                ConnectivityAnnotationsViewModel.region_mapping_index.linked_datatype)])}
 
 
 class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
