@@ -24,7 +24,7 @@ RUN activate tvb-run && pip install h5py==2.10 formencode cfflib jinja2 nibabel 
 RUN activate tvb-run && pip install typing tvb-gdist BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
 
 # Download and install tvb data
-ADD https://zenodo.org/record/3688773/files/tvb-data.zip C:\\TEMP\\tvb_data.zip
+ADD https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 C:\\TEMP\\tvb_data.zip
 RUN powershell.exe -NoP -NonI -Command "Expand-Archive 'C:\\TEMP\\tvb_data.zip' 'C:\\tvb_data'"
 RUN activate tvb-run && cd c:\\tvb_data && python setup.py develop
 
