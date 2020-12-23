@@ -84,7 +84,7 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
 
-    def __init__(self, equation_choices):
+    def __init__(self, equation_choices=None):
         super(LocalConnectivityCreatorForm, self).__init__()
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, name=self.get_input_name(),
                                                 conditions=self.get_filters())
