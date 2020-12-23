@@ -37,6 +37,7 @@ import json
 import os
 import shutil
 import uuid
+
 import numpy
 from tvb.adapters.simulator.monitor_forms import MonitorForm
 from tvb.basic.logger.builder import get_logger
@@ -128,23 +129,22 @@ class SimulatorService(object):
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
         simulator_vm = h5.load_view_model_from_file(simulator_file)
         operation = self.operation_service.prepare_operation(user_id, project.id, algorithm, simulator_vm.gid)
+        ga = self.operation_service._prepare_metadata(algorithm.algorithm_category, {}, None)
+        simulator_vm.generic_attributes = ga
         storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
-        self.async_launch_simulation_on_server(operation, zip_folder_path, storage_operation_path)
+        h5.store_view_model(simulator_vm, storage_operation_path)
+        self.async_launch_simulation_on_server(operation, zip_folder_path)
 
         return operation
 
-    def async_launch_simulation_on_server(self, operation, zip_folder_path, storage_operation_path):
+    def async_launch_simulation_on_server(self, operation, zip_folder_path):
         try:
-            for file in os.listdir(zip_folder_path):
-                shutil.move(os.path.join(zip_folder_path, file), storage_operation_path)
-            try:
-                OperationService().launch_operation(operation.id, True)
-                shutil.rmtree(zip_folder_path)
-                return operation
-            except Exception as excep:
-                self.logger.error(excep)
+            OperationService().launch_operation(operation.id, True)
+            return operation
         except Exception as excep:
             self.logger.error(excep)
+        finally:
+            shutil.rmtree(zip_folder_path)
 
     @staticmethod
     def _set_range_param_in_dict(param_value):

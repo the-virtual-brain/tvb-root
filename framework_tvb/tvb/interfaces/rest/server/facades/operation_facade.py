@@ -34,6 +34,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ProjectServiceException
@@ -84,22 +85,25 @@ class OperationFacade:
         except ProjectServiceException:
             raise InvalidIdentifierException()
 
-        algorithm = AlgorithmService.get_algorithm_by_module_and_class(algorithm_module, algorithm_classname)
-        if algorithm is None:
-            raise InvalidIdentifierException('No algorithm found for: %s.%s' % (algorithm_module, algorithm_classname))
-
         try:
-            adapter_instance = ABCAdapter.build_adapter(algorithm)
-            view_model = adapter_instance.get_view_model_class()()
+            algorithm = AlgorithmService.get_algorithm_by_module_and_class(algorithm_module, algorithm_classname)
+            if algorithm is None:
+                raise InvalidIdentifierException(
+                    'No algorithm found for: %s.%s' % (algorithm_module, algorithm_classname))
 
-            view_model_h5 = ViewModelH5(model_h5_path, view_model)
-            view_model_gid = view_model_h5.gid.load()
+            adapter_instance = ABCAdapter.build_adapter(algorithm)
+            view_model = h5.load_view_model_from_file(model_h5_path)
+            ga = self.operation_service._prepare_metadata(algorithm.algorithm_category, {}, None,
+                                                          current_ga=view_model.generic_attributes)
+            view_model.generic_attributes = ga
 
             operation = self.operation_service.prepare_operation(current_user_id, project.id, algorithm,
-                                                                 view_model_gid.hex)
+                                                                 view_model.gid.hex)
             storage_path = FilesHelper().get_project_folder(project, str(operation.id))
+            self.operation_service.store_view_model(operation, project, view_model)
 
             if isinstance(adapter_instance, ABCUploader):
+                view_model_h5 = ViewModelH5(model_h5_path, view_model)
                 for key, value in adapter_instance.get_form_class().get_upload_information().items():
                     data_file = fetch_file(request_file_key=key, file_extension=value)
                     data_file_path = save_temporary_file(data_file, temp_folder)
@@ -107,12 +111,12 @@ class OperationFacade:
                     upload_field = getattr(view_model_h5, key)
                     upload_field.store(os.path.join(storage_path, file_name))
                     shutil.move(data_file_path, storage_path)
+                view_model_h5.close()
 
-            shutil.move(model_h5_path, storage_path)
-            os.rmdir(temp_folder)
-            view_model_h5.close()
             OperationService().launch_operation(operation.id, True)
             return operation.gid
         except Exception as excep:
             self.logger.error(excep, exc_info=True)
             raise ServiceException(str(excep))
+        finally:
+            shutil.rmtree(temp_folder)
