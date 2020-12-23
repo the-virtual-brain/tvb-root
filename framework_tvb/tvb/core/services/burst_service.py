@@ -32,7 +32,6 @@ import json
 import os
 from datetime import datetime
 
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -265,7 +264,7 @@ class BurstService(object):
 
     def prepare_index_for_metric_result(self, operation, result_filename, burst):
         self.logger.debug("Preparing index for metric result in operation {}...".format(operation.id))
-        index = DatatypeMeasureIndex()
+        index = h5.index_for_h5_file(result_filename)()
         with DatatypeMeasureH5(result_filename) as dti_h5:
             index.gid = dti_h5.gid.load().hex
             index.metrics = json.dumps(dti_h5.metrics.load())

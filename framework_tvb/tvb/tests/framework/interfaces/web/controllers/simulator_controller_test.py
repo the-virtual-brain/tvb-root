@@ -38,6 +38,7 @@ from os import path
 from uuid import UUID
 from mock import patch
 from datetime import datetime
+
 from cherrypy.lib.sessions import RamSession
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex

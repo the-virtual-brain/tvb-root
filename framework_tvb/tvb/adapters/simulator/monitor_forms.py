@@ -28,6 +28,7 @@
 #
 
 import numpy
+
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
 from tvb.basic.neotraits.api import List
 from tvb.core.entities.file.simulator.view_model import *
@@ -82,6 +83,23 @@ def get_monitor_to_ui_name_dict(surface):
 
 def get_form_for_monitor(monitor_class):
     return get_monitor_to_form_dict().get(monitor_class)
+
+
+def build_list_of_monitors_from_names(monitor_names, is_surface_simulation):
+    next_monitors_dict = dict()
+    monitor_dict = get_ui_name_to_monitor_dict(is_surface_simulation)
+
+    count = 0
+    for monitor_name in monitor_names:
+        monitor = monitor_dict[monitor_name]
+        next_monitors_dict[monitor.__name__] = (monitor(), count + 1)
+        count = count + 1
+
+    return next_monitors_dict
+
+
+def prepare_monitor_legend(is_surface_simulation, monitor):
+    return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
 
 
 class MonitorForm(Form):
