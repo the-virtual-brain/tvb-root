@@ -32,8 +32,8 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
-
 import cherrypy
+
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
@@ -42,7 +42,8 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
-from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorWizzardURLs
+from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 
 
 @traced
@@ -50,9 +51,14 @@ class NoiseConfigurationController(BurstBaseController):
     """
     Controller class for placing noise parameters in nodes.
     """
+
+    def __init__(self):
+        super(NoiseConfigurationController, self).__init__()
+        self.simulator_context = SimulatorContext()
+
     @expose_page
     def index(self):
-        des = SerializationManager(common.get_from_session(common.KEY_SIMULATOR_CONFIG))
+        des = SerializationManager(self.simulator_context.simulator)
         connectivity = des.conf.connectivity
         conn_idx = dao.get_datatype_by_gid(connectivity.hex)
         model = des.conf.model
@@ -87,9 +93,9 @@ class NoiseConfigurationController(BurstBaseController):
         Submit noise dispersions
         :param node_values: A map from state variable names to noise dispersion arrays. Ex {'V': [1,2...74]}
         """
-        des = SerializationManager(common.get_from_session(common.KEY_SIMULATOR_CONFIG))
+        des = SerializationManager(self.simulator_context.simulator)
         des.write_noise_parameters(json.loads(node_values))
-        common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
+        self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
         raise cherrypy.HTTPRedirect("/burst/")
 
     @staticmethod

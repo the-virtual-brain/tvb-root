@@ -35,6 +35,7 @@
 
 import cherrypy
 import json
+
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.subform_helper import SubformHelper
@@ -54,6 +55,7 @@ from tvb.interfaces.web.controllers.decorators import expose_page, expose_fragme
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorWizzardURLs
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.entities.context_model_parameters import SurfaceContextModelParameters
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 
 ### SESSION KEY for ContextModelParameter entity.
 KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
@@ -121,11 +123,15 @@ class SurfaceModelParametersController(SpatioTemporalController):
     EQUATION_PARAMS_FIELD = 'set_equation_param'
     base_url = '/spatial/modelparameters/surface'
 
+    def __init__(self):
+        super(SurfaceModelParametersController, self).__init__()
+        self.simulator_context = SimulatorContext()
+
     def get_data_from_burst_configuration(self):
         """
         Returns the model and surface instances from the burst configuration.
         """
-        des = SerializationManager(common.get_from_session(common.KEY_SIMULATOR_CONFIG))
+        des = SerializationManager(self.simulator_context.simulator)
         ### Read from session current burst-configuration
         if des.conf is None:
             return None, None
@@ -302,7 +308,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         """
         if submit_action == "submit_action":
             context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
-            simulator = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+            simulator = self.simulator_context.simulator
 
             for param_name in self.model_params_dict.values():
                 param_data = context_model_parameters.get_data_for_model_param(param_name)
@@ -310,7 +316,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
                     continue
                 setattr(simulator.model, param_name, param_data)
             ### Update in session the last loaded URL for burst-page.
-            common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SET_INTEGRATOR_URL)
+            self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
 
         ### Clean from session drawing context
         common.remove_from_session(KEY_CONTEXT_MPS)

@@ -33,11 +33,10 @@
 """
 
 import json
-import cherrypy
+
 from tvb.core.entities.file.simulator.view_model import HeunStochasticViewModel
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 
 
@@ -49,8 +48,9 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
         """
         self.init()
         noise_controller = NoiseConfigurationController()
-        SimulatorController().index()
-        simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
+        simulator_controller = SimulatorController()
+        simulator_controller.index()
+        simulator = simulator_controller.context.simulator
         connectivity = connectivity_factory()
         simulator.connectivity = connectivity.gid
         simulator.integrator = HeunStochasticViewModel()

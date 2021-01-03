@@ -49,8 +49,9 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
     def test_edit_model_parameters(self, region_mapping_index_factory):
         self.init()
         surface_m_p_c = SurfaceModelParametersController()
-        SimulatorController().index()
-        simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
+        simulator_controller = SimulatorController()
+        simulator_controller.index()
+        simulator = simulator_controller.context.simulator
         region_mapping_index = region_mapping_index_factory()
         simulator.connectivity = region_mapping_index.fk_connectivity_gid
         simulator.surface = CortexViewModel()
