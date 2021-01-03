@@ -430,7 +430,7 @@ class SimulatorController(BurstBaseController):
         last_loaded_fragment_url = self.get_first_monitor_fragment_url(
             session_stored_simulator, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
 
-        if cherrypy.request.method:
+        if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(last_loaded_fragment_url)
 
         rendering_rules = SimulatorFragmentRenderingRules(
@@ -797,6 +797,8 @@ class SimulatorController(BurstBaseController):
             if upload_param in data and data[upload_param]:
                 simulator, burst_config = self.burst_service.load_simulation_from_zip(data[upload_param],
                                                                                       self.context.project)
+                self.next_monitors_dict = self.simulator_service.build_list_of_monitors_from_view_models(
+                    simulator.monitors)
                 if burst_config.is_pse_burst():
                     last_loaded_form_url = SimulatorWizzardURLs.LAUNCH_PSE_URL
                 self.context.init_session_at_sim_config_from_zip(burst_config, simulator, last_loaded_form_url)

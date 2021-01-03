@@ -121,7 +121,7 @@ class OperationService:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
     @staticmethod
-    def prepare_metadata(algo_category, submit_data, operation_group=None, burst=None,
+    def prepare_metadata(algo_category, submit_data, burst=None,
                           current_ga=GenericAttributes()):
         """
         Gather generic_metadata from submitted fields and current to be execute algorithm.
@@ -166,7 +166,7 @@ class OperationService:
         metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
         datatype_index = h5.REGISTRY.get_index_for_datatype(TimeSeries)
         time_series_index = dao.get_generic_entity(datatype_index, sim_operation.id, 'fk_from_operation')[0]
-        ga = self.prepare_metadata(metric_algo.algorithm_category, {}, None, time_series_index.fk_parent_burst)
+        ga = self.prepare_metadata(metric_algo.algorithm_category, {}, time_series_index.fk_parent_burst)
         ga.visible = False
 
         view_model = get_class_by_name("{}.{}".format(MEASURE_METRICS_MODULE, MEASURE_METRICS_MODEL_CLASS))()
@@ -234,7 +234,7 @@ class OperationService:
         group_id = None
         if group is not None:
             group_id = group.id
-        ga = self.prepare_metadata(category, kwargs, group, current_ga=view_model.generic_attributes)
+        ga = self.prepare_metadata(category, kwargs, current_ga=view_model.generic_attributes)
         ga.visible = visible
         view_model.generic_attributes = ga
 
