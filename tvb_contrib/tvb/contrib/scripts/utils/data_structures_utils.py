@@ -719,8 +719,8 @@ def assert_arrays(params, shape=None, transpose=False):
         shape = tuple(shapes[ind])
 
     if transpose and len(shape) > 1:
-        if (transpose is "horizontal" or "row" and shape[0] > shape[1]) or \
-                (transpose is "vertical" or "column" and shape[0] < shape[1]):
+        if (isequal_string(transpose, "horizontal") or isequal_string(transpose, "row") and shape[0] > shape[1]) or \
+                (isequal_string(transpose, "vertical") or isequal_string(transpose, "column")  and shape[0] < shape[1]):
             shape = list(shape)
             temp = shape[1]
             shape[1] = shape[0]
