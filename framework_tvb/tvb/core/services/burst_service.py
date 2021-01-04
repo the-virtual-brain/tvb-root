@@ -372,4 +372,6 @@ class BurstService(object):
         simulator = h5.load_view_model_from_file(simulator_h5_filepath)
 
         burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
-        return simulator, burst_config
+        burst_config_copy = burst_config.clone()
+
+        return simulator, burst_config_copy
