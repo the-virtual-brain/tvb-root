@@ -48,8 +48,16 @@ USER root
 ARG LAST_SHA=LATEST
 RUN cd tvb-root; \
     git pull; \
-    cd tvb_build; \
-    /bin/bash -c "source activate tvb-run && /bin/bash install_full_tvb.sh"
+    cd framework_tvb; \
+    /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps; \
+    cd ../scientific_library; \
+    /opt/conda/envs/tvb-run/bin/python setup.py develop; \
+    cd ../tvb_contrib; \
+    /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps; \
+    cd ../tvb_bin; \
+    /opt/conda/envs/tvb-run/bin/python setup.py develop; \
+    cd ../tvb_build; \
+    /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps
 
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
 COPY --chown=$TVB_USER:$TVB_USER step1/_help $USER_HOME/tvb-root/framework_tvb/tvb/interfaces/web/static/help
