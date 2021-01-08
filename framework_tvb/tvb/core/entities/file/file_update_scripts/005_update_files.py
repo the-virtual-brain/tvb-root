@@ -427,8 +427,8 @@ def _migrate_noise(operation_xml_parameters, integrator, integrator_name, noise_
 
 
 def _migrate_common_root_metadata_time_series(metadata, root_metadata, storage_manager):
-    root_metadata.pop(FIELD_SURFACE_MAPPING)
-    root_metadata.pop(FIELD_VOLUME_MAPPING)
+    root_metadata.pop(FIELD_SURFACE_MAPPING, False)
+    root_metadata.pop(FIELD_VOLUME_MAPPING, False)
     _pop_lengths(root_metadata)
 
     root_metadata['sample_period'] = float(root_metadata['sample_period'])
