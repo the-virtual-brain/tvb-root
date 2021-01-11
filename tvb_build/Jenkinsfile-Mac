@@ -1,0 +1,79 @@
+pipeline {
+    agent { label 'TVB_Mac_Node' }
+
+    stages {
+        stage('Copy Step 1') {
+             steps {
+                 sh '''#!/bin/bash
+                       rm -R -f tvb_build/build
+                 '''
+                 step ([$class: 'CopyArtifact',
+                     projectName: 'TVB - Step1',
+                     selector: lastSuccessful(),
+                     filter: 'tvb_build/build/TVB_build_step1.zip']);
+                 sh '''#!/bin/bash
+                       ls -all tvb_build/build
+                 '''
+                 stash includes: 'tvb_build/build/TVB_build_step1.zip', name: 'step1'
+             }
+        }
+        stage ('Build TVB Env') {
+            steps {
+                sh '''#!/bin/bash
+                    cd tvb_build
+                    bash mac_conda_env.sh
+                '''
+            }
+        }
+        stage ('Install TVB') {
+                steps {
+                    unstash 'step1'
+                    sh '''#!/bin/bash
+                        source /WORK/anaconda3/anaconda3/etc/profile.d/conda.sh
+                        conda activate mac-distribution
+
+                        echo "Install TVB framework"
+                        cd framework_tvb
+                        python setup.py install
+
+                        echo "Install TVB library"
+                        cd ../scientific_library
+                        python setup.py install
+
+                        echo "Install TVB library contrib"
+                        cd ../tvb_contrib
+                        python setup.py install
+
+                        echo "Install TVB library bin"
+                        cd ../tvb_bin
+                        python setup.py install
+
+                        echo "Install TVB build"
+                        cd ../tvb_build
+                        python setup.py install
+                    '''
+                }
+            }
+        stage ('Build TVB Distribution') {
+                steps {
+                    sh '''#!/bin/bash
+                        source /WORK/anaconda3/anaconda3/etc/profile.d/conda.sh
+                        conda activate mac-distribution
+                        echo "Start setup_mac"
+                        python tvb_build/setup_mac.py
+                    '''
+                    archiveArtifacts artifacts: 'TVB_Mac*.zip'
+                }
+            }
+    }
+    post {
+        changed {
+            mail to: 'lia.domide@codemart.ro paula.popa@codemart.ro bogdan.valean@codemart.ro',
+            subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
+            body: """
+                Result: ${currentBuild.result}
+                Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'
+                Check console output at ${env.BUILD_URL}"""
+        }
+    }
+}
