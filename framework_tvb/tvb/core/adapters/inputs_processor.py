@@ -69,11 +69,11 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
                 attr_default = getattr(form_model, field.name)
 
             if isinstance(attr_vm, numpy.ndarray):
-                check_for_none = attr_vm.size != 0
+                check_for_changed = attr_vm.size != 0
             else:
-                check_for_none = attr_vm != attr_default
+                check_for_changed = attr_vm != attr_default
 
-            if check_for_none:
+            if check_for_changed:
                 if isinstance(attr_vm, float) or isinstance(attr_vm, int) or isinstance(attr_vm, str):
                     changed_attr[field.label] = attr_vm
                 elif isinstance(attr_vm, tuple) or isinstance(attr_vm, list):
