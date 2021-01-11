@@ -61,3 +61,15 @@ class RegionVolumeMappingH5(VolumetricDataMixin, DataTypeMatrixH5):
         self.array_data = DataSet(RegionVolumeMapping.array_data, self)
         self.connectivity = Reference(RegionVolumeMapping.connectivity, self)
         self.volume = Reference(RegionVolumeMapping.volume, self)
+
+    def read_data_shape(self):
+        """
+        The shape of the data
+        """
+        return self.array_data.shape
+
+    def read_data_slice(self, data_slice):
+        """
+        Expose chunked-data access.
+        """
+        return self.array_data[data_slice]

@@ -32,12 +32,18 @@
 A tracts visualizer
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+import json
+
+from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.tracts import TractsIndex
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.surfaces import CorticalSurface, Surface
+from tvb.datatypes.surfaces import CorticalSurface, Surface, CORTICAL
 from tvb.datatypes.tracts import Tracts
 
 
@@ -92,26 +98,38 @@ class TractViewer(ABCSpaceDisplayer):
     # TODO: migrate to neotraits
     def launch(self, view_model):
         # type: (TractViewerModel) -> dict
-        from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
+        tracts_index = dao.get_datatype_by_gid(view_model.tracts.hex)
+        region_volume_mapping_index = dao.get_datatype_by_gid(tracts_index.fk_region_volume_map_gid)
+        connectivity = dao.get_datatype_by_gid(region_volume_mapping_index.fk_connectivity_gid)
 
-        url_track_starts, url_track_vertices = view_model.tracts.get_urls_for_rendering()
+        shell_surface_index = None
+        if view_model.shell_surface:
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
-        if view_model.tracts.region_volume_map is None:
-            raise Exception('only tracts with an associated region volume map are supported at this moment')
+        shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index, CORTICAL)
 
-        connectivity = view_model.tracts.region_volume_map.connectivity
+        tracts_starts = URLGenerator.build_h5_url(tracts_index.gid, 'get_line_starts')
+        tracts_vertices = URLGenerator.build_binary_datatype_attribute_url(tracts_index.gid, 'get_vertices')
 
         params = dict(title="Tract Visualizer",
-                      shelfObject=prepare_shell_surface_urls(self.current_project_id, view_model.shell_surface,
-                                                             preferred_type=CorticalSurface),
+                      shelfObject=self._prepare_shell_surface_params(shell_surface_index),
+                      urlTrackStarts=tracts_starts, urlTrackVertices=tracts_vertices)
 
-                      urlTrackStarts=url_track_starts,
-                      urlTrackVertices=url_track_vertices)
-
-        params.update(self.build_params_for_selectable_connectivity(connectivity))
+        params.update(self.build_params_for_selectable_connectivity(h5.load_from_index(connectivity)))
 
         return self.build_display_result("tract/tract_view", params,
                                          pages={"controlPage": "tract/tract_viewer_controls"})
+
+    def _prepare_shell_surface_params(self, shell_surface):
+        if shell_surface:
+            shell_h5_class, shell_h5_path = self._load_h5_of_gid(shell_surface.gid)
+            with shell_h5_class(shell_h5_path) as shell_h5:
+                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(
+                    shell_h5)
+                shelfObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
+
+            return shelfObject
+        return None
 
     def get_required_memory_size(self, view_model):
         # type: (TractViewerModel) -> int

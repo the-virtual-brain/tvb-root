@@ -33,6 +33,8 @@ from tvb.datatypes.tracts import Tracts
 
 
 class TractsH5(H5File):
+    MAX_N_VERTICES = 2 ** 16
+
     def __init__(self, path):
         super(TractsH5, self).__init__(path)
         self.vertices = DataSet(Tracts.vertices, self, expand_dimension=0)
@@ -49,7 +51,7 @@ class TractsH5(H5File):
 
     # fixme: these are broken, they have to live at a higher level
     def _get_tract_ids(self, region_id):
-        tract_ids = numpy.where(self.tract_region == region_id)[0]
+        tract_ids = numpy.where(self.tract_region.load() == region_id)[0]
         return tract_ids
 
     def _get_track_ids_webgl_chunks(self, region_id):
@@ -67,11 +69,10 @@ class TractsH5(H5File):
 
         count = 0
         tidx = 0
-        tract_start_idx = self.tract_start_idx  # traits make . expensive
 
         while tidx < len(tract_ids):  # tidx always grows
             tid = tract_ids[tidx]
-            start, end = tract_start_idx[tid:tid + 2]
+            start, end = self.tract_start_idx[tid:tid + 2]
             track_len = end - start
 
             if track_len >= self.MAX_N_VERTICES:
@@ -114,7 +115,7 @@ class TractsH5(H5File):
         for tid in tract_ids:
             tracts_vertices.append(self.get_tract(tid))
 
-        self.close_file()
+        self.close()
 
         if tracts_vertices:
             tracts_vertices = numpy.concatenate(tracts_vertices)
@@ -147,12 +148,10 @@ class TractsH5(H5File):
 
         return chunk_line_starts
 
-    def get_urls_for_rendering(self):
-        return ('/flow/read_datatype_attribute/' + self.gid + '/get_line_starts/False',
-                '/flow/read_binary_datatype_attribute/' + self.gid + '/get_vertices')
-
     def write_vertices_slice(self, partial_result):
         """
         Append a new value to the ``vertices`` attribute.
         """
         self.vertices.append(partial_result)
+
+

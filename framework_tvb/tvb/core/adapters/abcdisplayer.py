@@ -51,6 +51,7 @@ class URLGenerator(object):
     INVOKE_ADAPTER = 'invoke_adapter'
     H5_FILE = 'read_from_h5_file'
     DATATYPE_ATTRIBUTE = 'read_datatype_attribute'
+    BINARY_DATATYPE_ATTRIBUTE = 'read_binary_datatype_attribute'
 
     @staticmethod
     def build_base_h5_url(entity_gid):
@@ -93,6 +94,17 @@ class URLGenerator(object):
         url_regex = '/{}/{}/{}/{}/{}'
         url = url_regex.format(URLGenerator.FLOW, URLGenerator.DATATYPE_ATTRIBUTE,
                                datatype_gid, attribute_name, flatten)
+        if parameter is not None:
+            url += "?" + str(parameter)
+        return url
+
+    @staticmethod
+    def build_binary_datatype_attribute_url(datatype_gid, attribute_name, parameter=None):
+        if isinstance(datatype_gid, UUID):
+            datatype_gid = datatype_gid.hex
+        url_regex = '/{}/{}/{}/{}'
+        url = url_regex.format(URLGenerator.FLOW, URLGenerator.BINARY_DATATYPE_ATTRIBUTE,
+                               datatype_gid, attribute_name)
         if parameter is not None:
             url += "?" + str(parameter)
         return url
