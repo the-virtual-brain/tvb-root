@@ -22,8 +22,7 @@ should be able to reproduce the results from the simulations in the project
 BuildingYourOwnBrainNetworkModel.
 
 In this tutorial, all the data have already been generated. You can download the 
-BuildingYourOwnBrainNetworkModel.zip file in the `TVB sharing area
-<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. We’ll only go through
+BuildingYourOwnBrainNetworkModel.zip file in the `TVB dataset repo <https://zenodo.org/record/4263723>`_. We’ll only go through
 the necessary steps required to reproduce some simulations. You can always
 start over, click along and/or try to change parameters.
 

@@ -34,8 +34,7 @@ interface, with TVB as a Python library, please see `the resting state network
 scripting tutorial <https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/tutorials/tutorial_s5_ModelingRestingStateNetworks.ipynb>`_.
 
 All of the model configurations and data shown in the following are available
-as a TVB project in the RestingStateNetworks.zip file in the `TVB sharing area
-<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_.  We will only go
+as a TVB project in the RestingStateNetworks.zip file in the `TVB dataset repo <https://zenodo.org/record/4263723>`_.  We will only go
 through the necessary steps required to reproduce these simulations, along with
 the relevant outline.  You can always start over, click along and/or try to
 change parameters.  We will use the default subject connectivity matrix and
