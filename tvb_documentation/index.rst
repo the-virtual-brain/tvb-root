@@ -31,6 +31,7 @@ The **TVB main website** on `www.thevirtualbrain.org <https://www.thevirtualbrai
 
 * `Download <https://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software>`_ **TVB software packages** for macOS, Windows and Linux.
 * `Learn <https://www.thevirtualbrain.org/tvb/zwei/neuroscience-simulation>`_ about the **scientific background and clinical applications** of TVB.
+* `Study <https://www.thevirtualbrain.org/tvb/zwei/newswire-educase>`_ dozens of **TVB EduCases with video lectures**, explaining the software step by step.
 * `Read <https://www.thevirtualbrain.org/tvb/zwei/newswire-blog>`_ the **TVB blog** about the latest news and achievements.
 * `Follow <https://www.thevirtualbrain.org/tvb/zwei/newswire-event>`_ international **TVB events** to meet other developers and scientists working with TVB.
 
