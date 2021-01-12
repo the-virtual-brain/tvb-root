@@ -126,7 +126,7 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
         if not (0 <= x_plane < self.region_volume_shape[0] and
                 0 <= y_plane < self.region_volume_shape[1] and
                 0 <= z_plane < self.region_volume_shape[2]):
-            raise IndexError('vertices outside the region volume map cube')
+            raise IndexError('There are vertices outside the region volume map cube!')
 
         # in memory data set
         if self.full_rmap_cache is not None:
@@ -149,7 +149,7 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
 
     def _base_before_launch(self, data_file, region_volume):
         if data_file is None:
-            raise LaunchException("Please select a file to import")
+            raise LaunchException("Please select a file to import!")
 
         if region_volume is not None:
             rvm_index = dao.get_datatype_by_gid(region_volume.hex)

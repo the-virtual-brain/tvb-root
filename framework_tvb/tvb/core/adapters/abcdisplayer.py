@@ -210,7 +210,7 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
             with shell_h5_class(shell_h5_path) as shell_h5:
                 shell_vertices, shell_normals, _, shell_triangles, _ = surface_url_generator.get_urls_for_rendering(
                     shell_h5)
-                shelfObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
+                shellObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
 
-            return shelfObject
+            return shellObject
         return None

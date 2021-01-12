@@ -109,7 +109,7 @@ class TractViewer(ABCSpaceDisplayer):
         tracts_vertices = URLGenerator.build_binary_datatype_attribute_url(tracts_index.gid, 'get_vertices')
 
         params = dict(title="Tract Visualizer",
-                      shelfObject=self.prepare_shell_surface_params(shell_surface_index, SurfaceURLGenerator),
+                      shellObject=self.prepare_shell_surface_params(shell_surface_index, SurfaceURLGenerator),
                       urlTrackStarts=tracts_starts, urlTrackVertices=tracts_vertices)
 
         params.update(self.build_params_for_selectable_connectivity(h5.load_from_index(connectivity)))

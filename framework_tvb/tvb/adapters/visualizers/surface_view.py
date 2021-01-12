@@ -429,14 +429,14 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
         surface_h5.close()
 
-        params['shelfObject'] = None
+        params['shellObject'] = None
 
         shell_surface_index = None
         if view_model.shell_surface:
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface_index)
-        params['shelfObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
+        params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
         return self.build_display_result("surface/surface_view", params,
                                          pages={"controlPage": "surface/surface_viewer_controls"})
 

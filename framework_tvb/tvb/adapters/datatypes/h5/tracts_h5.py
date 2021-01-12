@@ -49,7 +49,6 @@ class TractsH5(H5File):
         start, end = self.tract_start_idx[i:i + 2]
         return self.vertices[start:end]
 
-    # fixme: these are broken, they have to live at a higher level
     def _get_tract_ids(self, region_id):
         tract_ids = numpy.where(self.tract_region.load() == region_id)[0]
         return tract_ids
@@ -76,7 +75,7 @@ class TractsH5(H5File):
             track_len = end - start
 
             if track_len >= self.MAX_N_VERTICES:
-                raise ValueError('cannot yet handle very long tracts')
+                raise ValueError('Currently tracts are too long to be handled!')
 
             count += track_len
 
@@ -92,11 +91,6 @@ class TractsH5(H5File):
 
         if chunk:
             tract_id_chunks.append(chunk)
-
-        # q = []
-        # for a in tract_id_chunks:
-        #     q.extend(a)
-        # assert (numpy.array(q) == tract_ids).all()
 
         return tract_id_chunks
 
@@ -153,5 +147,3 @@ class TractsH5(H5File):
         Append a new value to the ``vertices`` attribute.
         """
         self.vertices.append(partial_result)
-
-

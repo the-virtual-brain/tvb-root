@@ -267,7 +267,7 @@ class BrainViewer(ABCSurfaceDisplayer):
                            time=json.dumps(time_urls), minActivity=min_val, maxActivity=max_val,
                            legendLabels=legend_labels, labelsStateVar=state_variables,
                            labelsModes=list(range(time_series.data_length_4d)), extended_view=False,
-                           shelfObject=self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
+                           shellObject=self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
                            biHemispheric=self.surface_h5.bi_hemispheric.load(),
                            hemisphereChunkMask=json.dumps(hemisphere_chunk_mask),
                            pageSize=self.PAGE_SIZE, urlRegionBoundaries=boundary_url,
@@ -501,7 +501,7 @@ class DualBrainViewer(BrainViewer):
 
         if isinstance(time_series_index, TimeSeriesSEEGIndex):
             params['brainViewerTemplate'] = "internal_view.html"
-            # Mark as None since we only display shelf face and no point to load these as well
+            # Mark as None since we only display shell face and no point to load these as well
             params['urlVertices'] = None
             params['isSEEG'] = True
 

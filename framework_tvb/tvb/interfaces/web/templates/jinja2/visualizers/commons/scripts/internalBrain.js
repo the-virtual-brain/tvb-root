@@ -49,9 +49,9 @@ function _VSI_init_sphericalMeasurePoints(){
 }
 
 function VSI_StartInternalSensorViewer(urlMeasurePoints,  noOfMeasurePoints, urlMeasurePointsLabels,
-                                       shelfObject, minMeasure, maxMeasure, measure){
+                                       shellObject, minMeasure, maxMeasure, measure){
     _VS_static_entrypoint('', '[]', '', '', urlMeasurePoints, noOfMeasurePoints, '', urlMeasurePointsLabels, '',
-                          shelfObject, null, false, true, minMeasure, maxMeasure, measure);
+                          shellObject, null, false, true, minMeasure, maxMeasure, measure);
     isInternalSensorView = true;
     displayMeasureNodes = true;
 
@@ -62,12 +62,12 @@ function VSI_StartInternalSensorViewer(urlMeasurePoints,  noOfMeasurePoints, url
 function VSI_StartInternalActivityViewer(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                     urlRegionMapList, minActivity, maxActivity,
-                    oneToOneMapping, doubleView, shelfObject, urlMeasurePointsLabels, boundaryURL) {
+                    oneToOneMapping, doubleView, shellObject, urlMeasurePointsLabels, boundaryURL) {
 
     _VS_movie_entrypoint(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                     urlRegionMapList, minActivity, maxActivity,
-                    oneToOneMapping, doubleView, shelfObject, null, urlMeasurePointsLabels, boundaryURL);
+                    oneToOneMapping, doubleView, shellObject, null, urlMeasurePointsLabels, boundaryURL);
     isInternalSensorView = true;
     displayMeasureNodes = true;
     isFaceToDisplay = true;

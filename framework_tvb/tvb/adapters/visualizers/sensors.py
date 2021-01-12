@@ -211,7 +211,7 @@ class SensorsViewer(ABCDisplayer):
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface, CORTICAL)
 
-        params['shelfObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
+        params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
 
         return self.build_display_result('sensors/sensors_internal', params,
                                          pages={"controlPage": "sensors/sensors_controls"})
@@ -226,7 +226,7 @@ class SensorsViewer(ABCDisplayer):
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
 
         params.update({
-            'shelfObject': self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
+            'shellObject': self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
             'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': ''
         })
 
@@ -245,7 +245,7 @@ class SensorsViewer(ABCDisplayer):
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
 
         params.update({
-            'shelfObject': self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
+            'shellObject': self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
             'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': '',
             'boundaryURL': '', 'urlRegionMap': ''})
 
