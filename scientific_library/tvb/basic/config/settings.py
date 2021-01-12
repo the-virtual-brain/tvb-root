@@ -36,6 +36,8 @@ Do not instantiate these classes directly, but rather use them through TvpProfil
 """
 
 import os
+
+import requests
 from tvb.basic.config import stored
 
 
@@ -43,6 +45,8 @@ class VersionSettings(object):
     """
     Gather settings related to various version numbers of TVB application
     """
+
+    SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
     BASE_VERSION = "2.1a1"
@@ -68,7 +72,7 @@ class VersionSettings(object):
         self.BIN_FOLDER = bin_folder
 
         # Concatenate BASE_VERSION with svn revision number
-        self.CURRENT_VERSION = self.BASE_VERSION + '-' + str(self.SVN_VERSION)
+        self.CURRENT_VERSION = self.BASE_VERSION + '-' + str(self.REVISION_NUMBER)
 
         # The version up until we done the upgrade properly for the file data storage.
         self.DATA_CHECKED_TO_VERSION = manager.get_attribute(stored.KEY_LAST_CHECKED_FILE_VERSION, 1, int)
@@ -77,24 +81,33 @@ class VersionSettings(object):
         self.CODE_CHECKED_TO_VERSION = manager.get_attribute(stored.KEY_LAST_CHECKED_CODE_VERSION, -1, int)
 
     @property
-    def SVN_VERSION(self):
+    def REVISION_NUMBER(self):
         try:
             import tvb.basic.config
             config_folder = os.path.dirname(os.path.abspath(tvb.basic.config.__file__))
             with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
-                return self.parse_svn_version(version_file.read())
+                return self.parse_revision_number(version_file.read())
         except Exception:
             pass
 
         return 42
 
     @staticmethod
-    def parse_svn_version(version_string):
+    def parse_revision_number(version_string):
         if ':' in version_string:
             version_string = version_string.split(':')[1]
 
         number = ''.join([ch for ch in version_string if ch.isdigit()])
         return int(number)
+
+    @staticmethod
+    def fetch_current_revision(branch):
+        url = f'https://api.github.com/repos/the-virtual-brain/tvb-root/commits'
+        params = {'per_page': 1, 'sha': branch}
+        resp = requests.get(url, params)
+        last_link = resp.links.get('last')
+        branch_revision = int(last_link['url'].split('&page=')[1])
+        return VersionSettings.SVN_GIT_MIGRATION_REVISION + branch_revision
 
 
 class ClusterSettings(object):

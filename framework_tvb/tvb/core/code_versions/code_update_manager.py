@@ -48,7 +48,7 @@ class CodeUpdateManager(UpdateManager):
 
     def __init__(self):
         super(CodeUpdateManager, self).__init__(code_versions, TvbProfile.current.version.CODE_CHECKED_TO_VERSION,
-                                                TvbProfile.current.version.SVN_VERSION)
+                                                TvbProfile.current.version.REVISION_NUMBER)
 
 
     def run_update_script(self, script_name):
@@ -75,7 +75,7 @@ class CodeUpdateManager(UpdateManager):
 
         if self.checked_version < self.current_version:
             TvbProfile.current.manager.add_entries_to_config_file(
-                {stored.KEY_LAST_CHECKED_CODE_VERSION: TvbProfile.current.version.SVN_VERSION})
+                {stored.KEY_LAST_CHECKED_CODE_VERSION: TvbProfile.current.version.REVISION_NUMBER})
         
         
         
