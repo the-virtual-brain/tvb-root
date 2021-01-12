@@ -182,6 +182,7 @@ class CoSimulator(Simulator):
             print_this = "\r...%0.1f%% done in %s" % \
                          (100.0 * (step - self.current_step) / n_steps, time_string)
             self.log.info(print_this)
+            print(print_this)
             self._tic_point += self._tic_ratio * n_steps
 
     def _apply_spike_stimulus(self, step):
@@ -291,10 +292,11 @@ class CoSimulator(Simulator):
             if self._spike_stimulus_fun:
                 self._apply_spike_stimulus(step + 1)
 
-            if output is not None:
-                yield output
             if self.PRINT_PROGRESSION_MESSAGE:
                 self._print_progression_message(step, n_steps)
+
+            if output is not None:
+                yield output
 
         self.current_state = state
         self.current_step = self.current_step + n_steps - 1  # -1 : don't repeat last point
