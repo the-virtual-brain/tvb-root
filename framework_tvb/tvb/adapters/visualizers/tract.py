@@ -32,8 +32,6 @@
 A tracts visualizer
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import json
-
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
@@ -111,24 +109,13 @@ class TractViewer(ABCSpaceDisplayer):
         tracts_vertices = URLGenerator.build_binary_datatype_attribute_url(tracts_index.gid, 'get_vertices')
 
         params = dict(title="Tract Visualizer",
-                      shelfObject=self._prepare_shell_surface_params(shell_surface_index),
+                      shelfObject=self.prepare_shell_surface_params(shell_surface_index, SurfaceURLGenerator),
                       urlTrackStarts=tracts_starts, urlTrackVertices=tracts_vertices)
 
         params.update(self.build_params_for_selectable_connectivity(h5.load_from_index(connectivity)))
 
         return self.build_display_result("tract/tract_view", params,
                                          pages={"controlPage": "tract/tract_viewer_controls"})
-
-    def _prepare_shell_surface_params(self, shell_surface):
-        if shell_surface:
-            shell_h5_class, shell_h5_path = self._load_h5_of_gid(shell_surface.gid)
-            with shell_h5_class(shell_h5_path) as shell_h5:
-                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(
-                    shell_h5)
-                shelfObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
-
-            return shelfObject
-        return None
 
     def get_required_memory_size(self, view_model):
         # type: (TractViewerModel) -> int

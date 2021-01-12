@@ -40,6 +40,7 @@ Backend-side for TS Visualizer of TS Volume DataTypes.
 
 import json
 import numpy
+
 from tvb.adapters.visualizers.region_volume_mapping import _MappedArrayVolumeBase
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5, TimeSeriesRegionH5
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
@@ -113,22 +114,22 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         url_timeseries_data = URLGenerator.build_url(self.stored_adapter.id, 'get_voxel_time_series',
                                                      view_model.time_series, '')
 
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.time_series.hex)
+        ts_h5_class, ts_h5_path = self.load_h5_of_gid(view_model.time_series.hex)
         ts_h5 = ts_h5_class(ts_h5_path)
         min_value, max_value = ts_h5.get_min_max_values()
 
         ts_index = self.load_entity_by_gid(view_model.time_series)
 
         if isinstance(ts_h5, TimeSeriesVolumeH5):
-            volume_h5_class, volume_h5_path = self._load_h5_of_gid(ts_h5.volume.load())
+            volume_h5_class, volume_h5_path = self.load_h5_of_gid(ts_h5.volume.load())
             volume_h5 = volume_h5_class(volume_h5_path)
             volume_shape = ts_h5.data.shape
         else:
             rmv_index = self.load_entity_by_gid(ts_h5.region_mapping_volume.load())
-            rmv_h5_class, rmv_h5_path = self._load_h5_of_gid(rmv_index.gid)
+            rmv_h5_class, rmv_h5_path = self.load_h5_of_gid(rmv_index.gid)
             rmv_h5 = rmv_h5_class(rmv_h5_path)
             volume_index = self.load_entity_by_gid(rmv_h5.volume.load())
-            volume_h5_class, volume_h5_path = self._load_h5_of_gid(volume_index.gid)
+            volume_h5_class, volume_h5_path = self.load_h5_of_gid(volume_index.gid)
             volume_h5 = volume_h5_class(volume_h5_path)
             volume_shape = [ts_h5.data.shape[0]]
             volume_shape.extend(rmv_h5.array_data.shape)
@@ -166,7 +167,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         if background_index is None:
             return _MappedArrayVolumeBase.compute_background_params()
 
-        background_class, background_path = self._load_h5_of_gid(background_index.gid)
+        background_class, background_path = self.load_h5_of_gid(background_index.gid)
         background_h5 = background_class(background_path)
         min_value, max_value = background_h5.get_min_max_values()
         background_h5.close()
@@ -186,7 +187,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
                 The main part will be a vector with all the values over time from the x,y,z coordinates.
         """
 
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(entity_gid)
+        ts_h5_class, ts_h5_path = self.load_h5_of_gid(entity_gid)
 
         with ts_h5_class(ts_h5_path) as ts_h5:
             if ts_h5_class is TimeSeriesRegionH5:
@@ -199,7 +200,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         if region_mapping_volume_gid is None:
             raise Exception("Invalid method called for TS without Volume Mapping!")
 
-        volume_rm_h5_class, volume_rm_h5_path = self._load_h5_of_gid(region_mapping_volume_gid.hex)
+        volume_rm_h5_class, volume_rm_h5_path = self.load_h5_of_gid(region_mapping_volume_gid.hex)
         volume_rm_h5 = volume_rm_h5_class(volume_rm_h5_path)
 
         volume_rm_shape = volume_rm_h5.array_data.shape
@@ -213,7 +214,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         voxel_slices = prepare_time_slice(time_length), slice(var, var + 1), slice(idx, idx + 1), slice(mode, mode + 1)
 
         connectivity_gid = volume_rm_h5.connectivity.load()
-        connectivity_h5_class, connectivity_h5_path = self._load_h5_of_gid(connectivity_gid.hex)
+        connectivity_h5_class, connectivity_h5_path = self.load_h5_of_gid(connectivity_gid.hex)
         connectivity_h5 = connectivity_h5_class(connectivity_h5_path)
         label = connectivity_h5.region_labels.load()[idx]
 

@@ -195,8 +195,22 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         format_str = "%0." + str(precision) + "g"
         return "[" + ",".join(format_str % s for s in xs) + "]"
 
-    def _load_h5_of_gid(self, entity_gid):
+    def load_h5_of_gid(self, entity_gid):
         entity_index = self.load_entity_by_gid(entity_gid)
         entity_h5_class = h5.REGISTRY.get_h5file_for_index(type(entity_index))
         entity_h5_path = h5.path_for_stored_index(entity_index)
         return entity_h5_class, entity_h5_path
+
+    def prepare_shell_surface_params(self, shell_surface, surface_url_generator):
+        """
+        Prepares urls that are necessary for a shell surface.
+        """
+        if shell_surface:
+            shell_h5_class, shell_h5_path = self.load_h5_of_gid(shell_surface.gid)
+            with shell_h5_class(shell_h5_path) as shell_h5:
+                shell_vertices, shell_normals, _, shell_triangles, _ = surface_url_generator.get_urls_for_rendering(
+                    shell_h5)
+                shelfObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
+
+            return shelfObject
+        return None

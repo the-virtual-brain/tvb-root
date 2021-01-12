@@ -36,6 +36,7 @@
 """
 import json
 import numpy
+
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
@@ -93,7 +94,7 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         """
         Return the required memory to run this algorithm.
         """
-        input_data_h5_class, input_data_h5_path = self._load_h5_of_gid(view_model.input_data.hex)
+        input_data_h5_class, input_data_h5_path = self.load_h5_of_gid(view_model.input_data.hex)
         with input_data_h5_class(input_data_h5_path) as input_data_h5:
             required_memory = numpy.prod(input_data_h5.read_data_shape()) * 8
         return required_memory
@@ -109,7 +110,7 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         """
         self.log.debug("Plot started...")
 
-        input_data_h5_class, input_data_h5_path = self._load_h5_of_gid(view_model.input_data.hex)
+        input_data_h5_class, input_data_h5_path = self.load_h5_of_gid(view_model.input_data.hex)
         with input_data_h5_class(input_data_h5_path) as input_data_h5:
             source_gid = input_data_h5.source.load()
 
