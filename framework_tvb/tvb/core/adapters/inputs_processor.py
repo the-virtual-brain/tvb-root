@@ -33,6 +33,7 @@
 """
 
 import os
+import numpy
 from uuid import UUID
 
 from tvb.core.entities.load import load_entity_by_gid
@@ -66,7 +67,13 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
             attr_default = None
             if hasattr(form_model, field.name):
                 attr_default = getattr(form_model, field.name)
-            if attr_vm != attr_default:
+
+            if isinstance(attr_vm, numpy.ndarray):
+                check_for_changed = attr_vm.size != 0
+            else:
+                check_for_changed = attr_vm != attr_default
+
+            if check_for_changed:
                 if isinstance(attr_vm, float) or isinstance(attr_vm, int) or isinstance(attr_vm, str):
                     changed_attr[field.label] = attr_vm
                 elif isinstance(attr_vm, tuple) or isinstance(attr_vm, list):
