@@ -31,6 +31,7 @@ The **TVB main website** on `www.thevirtualbrain.org <https://www.thevirtualbrai
 
 * `Download <https://www.thevirtualbrain.org/tvb/zwei/brainsimulator-software>`_ **TVB software packages** for macOS, Windows and Linux.
 * `Learn <https://www.thevirtualbrain.org/tvb/zwei/neuroscience-simulation>`_ about the **scientific background and clinical applications** of TVB.
+* `Watch <https://www.thevirtualbrain.org/tvb/zwei/newswire-educase>`_ dozens of **TVB EduCases with video lectures**, explaining the software step by step.
 * `Read <https://www.thevirtualbrain.org/tvb/zwei/newswire-blog>`_ the **TVB blog** about the latest news and achievements.
 * `Follow <https://www.thevirtualbrain.org/tvb/zwei/newswire-event>`_ international **TVB events** to meet other developers and scientists working with TVB.
 
@@ -44,6 +45,8 @@ If you're familiar with Docker and/or Python environments, you can try early rel
 
 These versions of TVB are updated more frequently and contain all the latest new features and bugfixes. You can follow all the latest changes on our |our_github| page.
 
+
+On CERN's data sharing platform *Zenodo*, we offer `various demonstration datasets <https://zenodo.org/record/4263723>`_, readily packaged for usage with The Virtual Brain software.
 
 If you have specific questions, also about how to use TVB for your current research activity, you can use our `public discussion forum <https://groups.google.com/g/tvb-users>`_, which doubles as a *mailing list* if you prefer this channel.
 

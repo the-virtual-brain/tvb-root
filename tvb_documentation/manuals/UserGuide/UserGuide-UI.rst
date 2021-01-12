@@ -43,6 +43,12 @@ The typical workflow within |TVB| GUI proceeds through these steps:
 A history of launched simulations is kept to have the traceability of any
 modifications that took place in the simulation chain.
 
+The *TVB EduPack* on the **TVB main website** contains several video lectures guiding you step by step through TVB's web interface:
+
+* `LEARN: How to interact with the GUI and script interface of TVB <https://www.thevirtualbrain.org/tvb/zwei/newswire-educase/single/42180-learn-how-to-interact-with-the-gui-and-script-interface-of-tvb>`_, lecture by Paula Prodan & Mihai Andrei
+* `LEARN: Hands-On: Introduction to the GUI <https://www.thevirtualbrain.org/tvb/zwei/newswire-educase/single/42183-learn-hands-on-introduction-to-the-gui>`_, lecture by Paul Triebkorn
+
+
 .. toctree::
     :maxdepth: 2
 
