@@ -233,8 +233,8 @@ class TrackvizTractsImporter(_TrackImporterBase):
             datatype.vertices = vox2ras.transform(vertices)
             tracts_h5.write_vertices_slice(datatype.vertices)
 
-        datatype.tract_start_idx = numpy.array(tract_start_indices, dtype=numpy.int16)
-        datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)
+        datatype.tract_start_idx = numpy.array(tract_start_indices)
+        datatype.tract_region = numpy.array(tract_region)
 
         tracts_index = TractsIndex()
         tracts_index.fill_from_has_traits(datatype)
@@ -281,5 +281,5 @@ class ZipTxtTractsImporter(_TrackImporterBase):
                 vertices_file.close()
 
         datatype.tract_start_idx = tract_start_indices
-        datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)
+        datatype.tract_region = numpy.array(tract_region)
         return datatype

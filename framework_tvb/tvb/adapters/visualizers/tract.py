@@ -43,7 +43,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.surfaces import CorticalSurface, Surface, CORTICAL
+from tvb.datatypes.surfaces import CorticalSurface, Surface, FACE
 from tvb.datatypes.tracts import Tracts
 
 
@@ -95,7 +95,6 @@ class TractViewer(ABCSpaceDisplayer):
     def get_form_class(self):
         return TractViewerForm
 
-    # TODO: migrate to neotraits
     def launch(self, view_model):
         # type: (TractViewerModel) -> dict
         tracts_index = dao.get_datatype_by_gid(view_model.tracts.hex)
@@ -106,7 +105,7 @@ class TractViewer(ABCSpaceDisplayer):
         if view_model.shell_surface:
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
-        shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index, CORTICAL)
+        shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index, FACE)
 
         tracts_starts = URLGenerator.build_h5_url(tracts_index.gid, 'get_line_starts')
         tracts_vertices = URLGenerator.build_binary_datatype_attribute_url(tracts_index.gid, 'get_vertices')
