@@ -155,7 +155,7 @@ class SpikingWongWangExcIOInhI(Model):
 
     G = NArray(
         label=":math:`G`",
-        default=numpy.array([20.0, ]),
+        default=numpy.array([2.0, ]),
         domain=Range(lo=0.0, hi=100.0, step=1.0),
         doc="""Global coupling scaling""")
 
