@@ -4,7 +4,8 @@
 Getting Started
 ===============
 
-First things first. We need you to upload the projects from the `TVB dataset repo <https://zenodo.org/record/4263723>`_. This might
+First things first. We need you to upload the projects from the `TVB sharing
+area <http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. This might
 take some time, so while we continue with the program you can start importing
 the projects into your copy of TVB.
 
@@ -28,7 +29,8 @@ other users and/or link data to other TVB projects.  After this tutorial you
 should be able to import a new dataset, export a project and share it with a colleague.
 
 For your convenience, all the data were already generated. You can download
-the LinkandShare_a.zip and LinkandShare_b.zip files in the `TVB dataset repo <https://zenodo.org/record/4263723>`_. We’ll only go
+the LinkandShare_a.zip and LinkandShare_b.zip files in the `TVB sharing area
+<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. We’ll only go
 through the steps required to reproduce some simulations.  You can always start
 over, click along and/or try to change parameters.
 

@@ -463,8 +463,8 @@ We need:
    parcellation mask.
 
     .. Note::
-        Demo data as described in this chapter, can be found on Zenodo:
-        https://zenodo.org/record/4263723, or inside `TVB_Distribution`, under the following path:
+        Demo data as described in this chapter, can be found on Github:
+        https://github.com/the-virtual-brain/tvb-data, or inside `TVB_Distribution`, under the following path:
         `TVB_Distribution/tvb_data/Lib/site-packages/tvb_data/` on Windows,
         `TVB_Distribution/tvb_data/lib/python3.x/site-packages/tvb_data/` on Linux, or
         `TVB_Distribution/tvb.app/Contents/Resources/lib/python3.x/tvb_data/` on Mac.

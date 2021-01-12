@@ -23,7 +23,8 @@ of a brain region that can trigger a seizure, or surgical resection of brain
 regions.
 
 In this project, all the data were already generated. You can download the
-ModelingEpilepsy.zip file in the `TVB dataset repo <https://zenodo.org/record/4263723>`_.  We’ll only go
+ModelingEpilepsy.zip file in the `TVB sharing area
+<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_.  We’ll only go
 through the necessary steps required to reproduce these simulations, along with
 the relevant outline.  You can always start over, click along and/or try to
 change parameters.  We will use the default subject connectivity matrix and
