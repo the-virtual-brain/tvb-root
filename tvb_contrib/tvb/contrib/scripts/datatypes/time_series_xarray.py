@@ -468,7 +468,7 @@ class TimeSeries(HasTraits):
     def duplicate(self, **kwargs):
         _data, kwargs = self._duplicate(**kwargs)
         duplicate = self.__class__()
-        duplicate.from_xarray_DataArray(_data, **kwargs)
+        duplicate.from_xarray_DataArray(_data.copy(deep=True), **kwargs.copy())
         return duplicate
 
     def to_tvb_instance(self, datatype=TimeSeriesTVB, **kwargs):
