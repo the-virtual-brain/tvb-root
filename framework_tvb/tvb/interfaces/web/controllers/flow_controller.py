@@ -50,6 +50,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
@@ -281,6 +282,47 @@ class FlowController(BaseController):
         self.algorithm_service.fill_selectfield_with_datatypes(select_field, project.id)
 
         return {'options': select_field.options()}
+
+    @expose_fragment('form_fields/form')
+    @settings
+    @context_selected
+    def get_runtime_filtered_form(self, algorithm_id, filters):
+        algorithm = dao.get_algorithm_by_id(algorithm_id)
+        adapter = getattr(sys.modules[algorithm.module], algorithm.classname)()
+        form = adapter.get_form_class()()
+
+        filter_dict = json.loads(filters)
+        project_id = common.get_current_project().id
+
+        fields = []
+        operations = []
+        values = []
+
+        runtime_fields = []
+        runtime_operations = []
+        runtime_values = []
+
+        for key, value in filter_dict.items():
+            select_field_attr = getattr(form, key)
+            for i in range(len(value['fields'])):
+                if value['isRuntimeFilter'][i]:
+                    runtime_fields.append(value['fields'][i])
+                    runtime_operations.append(value['operations'][i])
+                    runtime_values.append(value['values'][i])
+                else:
+                    fields.append(value['fields'][i])
+                    operations.append(value['operations'][i])
+                    values.append(value['values'][i])
+
+            conditions = FilterChain(fields=fields, operations=operations, values=values)
+            select_field_attr.conditions = conditions
+
+            runtime_conditions = FilterChain(fields=runtime_fields, operations=runtime_operations,
+                                             values=runtime_values)
+            select_field_attr.runtime_conditions = runtime_conditions
+            self.algorithm_service.fill_selectfield_with_datatypes(select_field_attr, project_id)
+
+        return {'adapter_form': form}
 
     def execute_post(self, project_id, submit_url, step_key, algorithm, **data):
         """ Execute HTTP POST on a generic step."""

@@ -134,7 +134,7 @@ class TraitDataTypeSelectField(TraitField):
 
     def __init__(self, trait_attribute, name=None, conditions=None,
                  draw_dynamic_conditions_buttons=True, has_all_option=False,
-                 show_only_all_option=False):
+                 show_only_all_option=False, runtime_conditions=None):
         super(TraitDataTypeSelectField, self).__init__(trait_attribute, name)
 
         if issubclass(type(trait_attribute), DataTypeGidAttr):
@@ -151,6 +151,7 @@ class TraitDataTypeSelectField(TraitField):
         self.has_all_option = has_all_option
         self.show_only_all_option = show_only_all_option
         self.datatype_options = []
+        self.runtime_conditions = runtime_conditions
 
     def from_trait(self, trait, f_name):
         if hasattr(trait, f_name):
@@ -165,6 +166,10 @@ class TraitDataTypeSelectField(TraitField):
     @property
     def get_form_filters(self):
         return self.conditions
+
+    @property
+    def get_runtime_filters(self):
+        return self.runtime_conditions
 
     def options(self):
         if not self.required:
@@ -414,6 +419,7 @@ class FormField(Field):
 
 
 class Form(object):
+    template = 'form_fields/form.html'
 
     def __init__(self):
         self.errors = []

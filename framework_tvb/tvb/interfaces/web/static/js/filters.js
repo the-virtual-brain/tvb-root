@@ -81,30 +81,43 @@ function addFilter(div_id, filters) {
 }
 
 /** gather all the data from the filters */
-function _FIL_gatherData(divId){
+function _FIL_gatherData(divId, uiValue){
     var children = $('#'+divId).children('div');
     var fields = [];
     var operations = [];
     var values = [];
+    var isRuntimeFilter = [];
+    var triggersFiltering = false;
 
     for (var i = 0; i < children.length; i++) {
         var elem = children[i].children;
         //Get info about the filters.
         if (elem[3].value.trim().length > 0) {
+            var value = elem[3].value.trim();
+
+            if(children[i].className.endsWith('runtime_trigger')){
+                value = uiValue;
+                triggersFiltering = true;
+                isRuntimeFilter.push(true);
+            }else{
+                isRuntimeFilter.push(false);
+            }
+
             fields.push(elem[1].value);
             operations.push(elem[2].value);
-            values.push(elem[3].value.trim());
+            values.push(value);
             displayMessage("Filters processed");
         } else {
             displayMessage("Please set a value for all the filters.", "errorMessage");
             return;
         }
     }
-    if (fields.length === 0 && operations.length === 0 && values.length === 0) {
+    if (fields.length === 0 && operations.length === 0 && values.length === 0 && triggersFiltering === false) {
         displayMessage("Cleared filters");
     }
 
-    return { fields: fields, operations: operations, values: values};
+    return { filters: {fields: fields, operations: operations, values: values, isRuntimeFilter: isRuntimeFilter},
+        triggersFiltering: triggersFiltering};
 }
 
 function applyFilters(datatypeIndex, divId, name, gatheredData) {
@@ -160,6 +173,38 @@ function applyFilters(datatypeIndex, divId, name, gatheredData) {
             displayMessage("Invalid filter data.", "errorMessage");
         }
     });
+}
+
+function applyRuntimeFilters(name, selected_value){
+    var form = $('#' + name).closest('form');
+    let form_action = form[0].action;
+    let algorithm_id_start = form_action.lastIndexOf('/');
+    let algorthimm_id = form_action.substring(algorithm_id_start + 1, form_action.length);
+
+    let select_fields = form.find('select.dataset-selector');
+    var fields_and_filters = {}
+
+    let filters;
+    for (var i = 0; i < select_fields.length; i++) {
+        filter_values = _FIL_gatherData(select_fields[i].id + 'data_select', selected_value);
+        fields_and_filters[select_fields[i].id] = filter_values.filters;
+    }
+
+    if(filter_values.triggersFiltering) {
+        doAjaxCall({
+            type: 'POST',
+            url: "/flow/get_runtime_filtered_form/" + algorthimm_id + '/' + $.toJSON(fields_and_filters),
+            success: function (response) {
+                const t = document.createRange().createContextualFragment(response);
+
+                let adapters_div = $('.adaptersDiv');
+                adapters_div.children('fieldset').replaceWith(t);
+            },
+            error: function (response) {
+                displayMessage("Invalid filter data.", "errorMessage");
+            }
+        });
+    }
 }
 
 

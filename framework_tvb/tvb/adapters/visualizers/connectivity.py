@@ -114,8 +114,8 @@ class ConnectivityViewerForm(ABCAdapterForm):
     def __init__(self):
         super(ConnectivityViewerForm, self).__init__()
 
-        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, name='input_data',
-                                                     conditions=self.get_filters())
+        self.connectivity_data = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity,
+                                                          name='connectivity_data', conditions=self.get_filters())
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
         self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, name='surface_data',
@@ -125,10 +125,12 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
         colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
         self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
-                                               conditions=colors_conditions)
+                                               conditions=colors_conditions,
+                                               runtime_conditions=self.get_runtime_filters())
 
         rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions)
+        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions,
+                                             runtime_conditions=self.get_runtime_filters())
 
     @staticmethod
     def get_view_model():
@@ -141,6 +143,11 @@ class ConnectivityViewerForm(ABCAdapterForm):
     @staticmethod
     def get_filters():
         return None
+
+    @staticmethod
+    def get_runtime_filters():
+        return {'input_data': FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'], operations=["=="],
+                                          values=[ConnectivityIndex])}
 
     @staticmethod
     def get_input_name():
@@ -258,7 +265,8 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         path_labels = SurfaceURLGenerator.paths2url(conn_gid, 'ordered_labels')
         path_hemisphere_order_indices = SurfaceURLGenerator.paths2url(conn_gid, 'hemisphere_order_indices')
 
-        algo = AlgorithmService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS)
+        algo = AlgorithmService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE,
+                                                                    CONNECTIVITY_CREATOR_CLASS)
         submit_url = '/{}/{}/{}'.format(SurfaceURLGenerator.FLOW, algo.fk_category, algo.id)
         global_pages = dict(controlPage="connectivity/top_right_controls")
 
