@@ -25,19 +25,14 @@ onchange="applyRuntimeFilters('{{ field.name }}', this.value)">
 
             {% set runtime_filters = field.get_runtime_filters %}
 
-            {% if runtime_filters %}
-                {% for key, value in runtime_filters.items() %}
-                    <div class='{{ key }}_runtime_trigger'>
-
-                    {% for idx in range(value.fields | length) %}
+            {% for idx in range(runtime_filters.fields | length) %}
+                <div class='runtime_trigger'>
                         <label></label>
-                        <select hidden><option value='{{ value.fields[idx] }}'></option></select>
-                        <select hidden><option value='{{ value.operations[idx] }}'></option></select>
-                        <input type="hidden" value='{{ value.values[idx] }}'>
-                    {% endfor %}
-                    </div>
-                {% endfor %}
-            {% endif %}
+                        <select hidden><option value='{{ runtime_filters.fields[idx] }}'></option></select>
+                        <select hidden><option value='{{ runtime_filters.operations[idx] }}'></option></select>
+                        <input type="hidden" value='{{ runtime_filters.values[idx] }}'>
+                </div>
+            {% endfor %}
         {% endwith %}
     </div>
 {% endif %}

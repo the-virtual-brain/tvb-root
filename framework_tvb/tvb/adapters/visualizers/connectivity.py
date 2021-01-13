@@ -123,14 +123,17 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
         self.step = FloatField(ConnectivityViewerModel.step, name='step')
 
+        runtime_condition = FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'], operations=["=="],
+                                        values=[''])
+
         colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
         self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
                                                conditions=colors_conditions,
-                                               runtime_conditions=self.get_runtime_filters())
+                                               runtime_conditions=runtime_condition)
 
         rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
         self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions,
-                                             runtime_conditions=self.get_runtime_filters())
+                                             runtime_conditions=runtime_condition)
 
     @staticmethod
     def get_view_model():
@@ -143,11 +146,6 @@ class ConnectivityViewerForm(ABCAdapterForm):
     @staticmethod
     def get_filters():
         return None
-
-    @staticmethod
-    def get_runtime_filters():
-        return {'input_data': FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'], operations=["=="],
-                                          values=[ConnectivityIndex])}
 
     @staticmethod
     def get_input_name():

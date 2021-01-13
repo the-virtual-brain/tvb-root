@@ -304,6 +304,7 @@ class FlowController(BaseController):
 
         for key, value in filter_dict.items():
             select_field_attr = getattr(form, key)
+
             for i in range(len(value['fields'])):
                 if value['isRuntimeFilter'][i]:
                     runtime_fields.append(value['fields'][i])
@@ -321,6 +322,14 @@ class FlowController(BaseController):
                                              values=runtime_values)
             select_field_attr.runtime_conditions = runtime_conditions
             self.algorithm_service.fill_selectfield_with_datatypes(select_field_attr, project_id)
+
+            fields = []
+            operations = []
+            values = []
+
+            runtime_fields = []
+            runtime_operations = []
+            runtime_values = []
 
         return {'adapter_form': form}
 

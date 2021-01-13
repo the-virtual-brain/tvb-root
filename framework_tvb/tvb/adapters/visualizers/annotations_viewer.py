@@ -37,6 +37,7 @@ from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer, SurfaceURLGenerator
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.annotation import *
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
@@ -76,6 +77,10 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
         # Used for filtering
         self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index,
                                                            'connectivity_index')
+
+        annotations_index_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=["=="],
+                                        values=['fk_connectivity_gid'])
+
         self.annotations_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.annotations_index,
                                                           'annotations_index', conditions=self.get_filters())
         self.region_mapping_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.region_mapping_index,
