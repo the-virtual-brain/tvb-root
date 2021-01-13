@@ -59,12 +59,16 @@ class TVBLinkedExporter(ABCExporter):
         1. If data is a normal data type, simply exports storage file (HDF format)
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
-        dt_path_list = []
-        self.__gather_datatypes_for_copy(data, dt_path_list)
+        if self.is_data_a_group(data):
+            download_file_name = self.get_export_file_name(data)
+            return self.group_export(data, data_export_folder, project, download_file_name, True)
+        else:
+            dt_path_list = []
+            self.__gather_datatypes_for_copy(data, dt_path_list)
 
-        download_file_name = self._get_export_file_name(data)
-        zip_to_export = self.storage_interface.export_datatypes(dt_path_list, data, download_file_name)
-        return None, zip_to_export, True
+            download_file_name = self._get_export_file_name(data)
+            zip_to_export = self.storage_interface.export_datatypes(dt_path_list, data, download_file_name)
+            return None, zip_to_export, True
 
     def __gather_datatypes_for_copy(self, data, dt_path_list):
         data_path = h5.path_for_stored_index(data)
@@ -81,4 +85,4 @@ class TVBLinkedExporter(ABCExporter):
         return StorageInterface.TVB_ZIP_FILE_EXTENSION
 
     def skip_group_datatypes(self):
-        return True
+        return False

@@ -33,11 +33,18 @@ Root class for export functionality.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from abc import ABCMeta, abstractmethod
+import os
 from datetime import datetime
+from abc import ABCMeta, abstractmethod
+from distutils.dir_util import copy_tree
 
+from tvb.adapters.exporters.exceptions import ExportException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
+from tvb.core.neotraits._h5core import H5File
 from tvb.core.services.project_service import ProjectService
 
 # List of DataTypes to be excluded from export due to not having a valid export mechanism implemented yet.
@@ -144,6 +151,63 @@ class ABCExporter(metaclass=ABCMeta):
         Checks if the provided data, ready for export is a DataTypeGroup or not
         """
         return isinstance(data, DataTypeGroup)
+
+    def group_export(self, data, export_folder, project, download_file_name, is_linked_export=False):
+        all_datatypes = self._get_all_data_types_arr(data)
+
+        if all_datatypes is None or len(all_datatypes) == 0:
+            raise ExportException("Could not export a data type group with no data")
+
+        # Now process each data type from group and add it to ZIP file
+        operation_folders = []
+        sub_dt_refs = None
+        references_folder_path = None
+        temp_export_folders = []
+
+        for data_type in all_datatypes:
+            if is_linked_export and not sub_dt_refs:
+                references_folder_path = self.copy_ref_files_to_temp_dir(data_type, export_folder, temp_export_folders, references_folder_path)
+
+            operation_folder = FilesHelper().get_operation_folder(project.name, data_type.fk_from_operation)
+            operation_folders.append(operation_folder)
+
+        for operation_folder in operation_folders:
+            tmp_op_folder_path = os.path.join(export_folder, os.path.basename(operation_folder))
+            copy_tree(operation_folder, tmp_op_folder_path)
+            temp_export_folders.append(tmp_op_folder_path)
+
+        if is_linked_export:
+            operation_folders = temp_export_folders
+
+        # Create ZIP archive
+        zip_file = os.path.join(export_folder, download_file_name)
+        FilesHelper().zip_folders(zip_file, operation_folders, self.OPERATION_FOLDER_PREFIX)
+
+        return download_file_name, zip_file, True
+
+    def copy_ref_files_to_temp_dir(self, data_type, export_folder, temp_export_folders, references_folder_path):
+        data_path = h5.path_for_stored_index(data_type)
+        with H5File.from_file(data_path) as f:
+            sub_dt_refs = f.gather_references()
+
+            for reference in sub_dt_refs:
+                if reference[1]:
+                    dt = dao.get_datatype_by_gid(reference[1].hex)
+                    ref_data_path = h5.path_for_stored_index(dt)
+
+                    # Create folder for references if it's not created already
+                    if not references_folder_path:
+                        reference_folder_name = os.path.basename(os.path.dirname(ref_data_path))
+                        references_folder_path = os.path.join(export_folder, reference_folder_name)
+                        if not os.path.exists(references_folder_path):
+                            os.makedirs(references_folder_path)
+                            temp_export_folders.append(references_folder_path)
+
+                    ref_file_path = os.path.join(references_folder_path, os.path.basename(ref_data_path))
+                    if not os.path.exists(ref_file_path):
+                        FilesHelper().copy_file(ref_data_path, ref_file_path)
+                    self.copy_ref_files_to_temp_dir(dt, export_folder, temp_export_folders, references_folder_path)
+        return references_folder_path
 
     @abstractmethod
     def export(self, data, project):

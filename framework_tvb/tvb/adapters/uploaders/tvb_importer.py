@@ -118,6 +118,7 @@ class TVBImporter(ABCUploader):
                     # In case we import a DatatypeGroup, we want the default import flow
                     if dirs:
                         current_op_id = None
+                        linked_group_op_id = None
                         is_group = True
                     # We check for 3 because in the case of group simulation with links zip the first folder contains
                     # the links which will need the current op id and the rest are from the normal group simulation
