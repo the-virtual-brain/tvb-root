@@ -32,7 +32,7 @@ import numpy as np
 import numpy.random as rgn
 
 import tvb.simulator.lab as lab
-from tvb.contrib.tests.cosimulation import \
+from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import \
     ReducedWongWangProxy, _numba_dfun_proxy
 
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim

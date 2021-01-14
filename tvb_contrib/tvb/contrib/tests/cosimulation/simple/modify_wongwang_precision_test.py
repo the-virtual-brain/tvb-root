@@ -30,7 +30,7 @@ import numpy as np
 
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.contrib.tests.cosimulation import ReducedWongWangProxy
+from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
 
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim
 from tvb.contrib.cosimulation.cosimulator import CoSimulator

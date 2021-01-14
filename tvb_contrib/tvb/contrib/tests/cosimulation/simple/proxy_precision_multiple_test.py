@@ -30,50 +30,54 @@ import numpy as np
 import numpy.random as rgn
 
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.contrib.tests.cosimulation import TvbSim
+from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim
 
 
-
-class TestProxyPrecision(BaseTestCase):
+class TestProxyPrecisionDelaiMultiple(BaseTestCase):
     """
-    Compare the result between simulation with one proxy and without proxy
+    Compare the result between simulation with 1-3 proxies and without proxy
     """
 
-    def test_precision(self):
-        weight = np.array([[2, 8], [3, 5]])
-        delay = 1.5
-        delays = np.array([[delay, delay], [delay, delay]])
-        init_value = [[0.9,0.0], [0.9,0.0]]
+    def test_precision_delay(self):
+        weight = np.array([[5, 2, 4, 0],
+                           [8, 5, 4, 1],
+                           [6, 1, 7, 9],
+                           [10, 0, 5, 6]])
+        delay = np.array([[0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1],
+                          [0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1]]) * 10
+        max = np.int(np.max(delay)*10+1)
+        init_value = np.array([[[0.1,0.0], [0.1,0.0], [0.2,0.0], [0.2,0.0]]* max] )
+        initial_condition = init_value.reshape((max, 2, weight.shape[0], 1))
         resolution_simulation = 0.1
-        synchronization_time = resolution_simulation * 10.0
-        nb_init = (int(delay / resolution_simulation)) + 1
-        initial_condition = np.array(init_value * nb_init).reshape((nb_init, 2, weight.shape[0], 1))
-        proxy_id = [0]
+        synchronization_time = np.min(delay)
+        proxy_id = [0,2,3]
         no_proxy = [1]
 
-        # simulation with one proxy
+        # simulation with one or more proxy
         rgn.seed(42)
-        sim = TvbSim(weight, delays, proxy_id, resolution_simulation, synchronization_time,
-                     initial_condition=initial_condition)
-        time, s, result = sim(synchronization_time, rate=True)
+        sim = TvbSim(weight, delay, proxy_id, resolution_simulation,
+                     synchronization_time, initial_condition=initial_condition)
+        time, s , result= sim(synchronization_time, rate=True)
 
         # full simulation
         rgn.seed(42)
-        sim_ref = TvbSim(weight, delays, [], resolution_simulation, synchronization_time,
-                         initial_condition=initial_condition)
-        time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
+        sim_ref = TvbSim(weight, delay, [], resolution_simulation,
+                         synchronization_time, initial_condition=initial_condition)
+        time, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
 
-        # compare with the Cosim Monitor RawCosim
-        diff = np.where(result_ref[:,no_proxy,:] != result[0][:,no_proxy,:])
-        diff_s = np.where(s_ref[:,no_proxy,:] != s[0][:,no_proxy,:])
+        # compare with the CosimMonitor RawCosim
+        diff = np.where(np.squeeze(result_ref[:, no_proxy, :], axis=2) !=
+                        np.squeeze(result[0][:, no_proxy, :], axis=2))
+        diff_s = np.where(np.squeeze(s_ref[:, no_proxy, :], axis=2) !=
+                          np.squeeze(s[0][:, no_proxy, :], axis=2))
         assert diff[0].size == 0
         assert diff_s[0].size == 0
 
         for i in range(0, 10000):
             time, s, result = sim(synchronization_time,
-                                  rate_data=[time_ref, result_ref[:, proxy_id][:, :, 0]], rate=True)
+                                  rate_data=[time, result_ref[:, proxy_id][:, :, 0]], rate=True)
 
-            # compare with monitor delayed by synchronization_time
+            # compare with RawDelayed monitor, delayed by synchronization_time
             diff = np.where(result_ref[:, no_proxy, :] != result[1][:, no_proxy, :])
             diff_1 = np.where(result_ref[:, proxy_id, :] != result[1][:, proxy_id, :])
             diff_s = np.where(s_ref != s[1])
@@ -81,9 +85,9 @@ class TestProxyPrecision(BaseTestCase):
             assert diff_1[0].size !=0
             assert diff_s[0].size ==0
 
-            time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
+            time, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
 
-            # compare with the Cosim Monitor RawCosim
+            # compare with the CosimMonitor RawCosim
             diff = np.where(result_ref[:, no_proxy, :] != result[0][:, no_proxy, :])
             diff_s = np.where(s_ref[:, no_proxy, :] != s[0][:, no_proxy, :])
             assert diff[0].size == 0
