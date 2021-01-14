@@ -27,9 +27,11 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.tests.cosimulation.co_simulation_paralelle.function_tvb import TvbSim
-from tvb.tests.library.base_testcase import BaseTestCase
+
 import numpy as np
+
+from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.tests.cosimulation.cosimulation_parallel.function_tvb import TvbSim
 
 
 class TestUpdateModel(BaseTestCase):
@@ -40,23 +42,24 @@ class TestUpdateModel(BaseTestCase):
         weight = np.array([[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]])
         delay = np.array([[1.5, 1.5, 1.5, 1.5], [1.5, 1.5, 1.5, 1.5], [1.5, 1.5, 1.5, 1.5], [1.5, 1.5, 1.5, 1.5]])
         resolution_simulation = 0.1
-        time_synchronize = 1.0
+        synchronization_time = 1.0
         proxy_id = [0, 1]
         firing_rate = np.array([[20.0, 10.0]]) * 10 ** -3  # units time in tvb is ms so the rate is in KHz
 
         # Test the the update function
-        sim = TvbSim(weight, delay, proxy_id, resolution_simulation, time_synchronize)
+        sim = TvbSim(weight, delay, proxy_id, resolution_simulation, synchronization_time)
         time, result = sim(resolution_simulation, [np.array([resolution_simulation]), firing_rate])
         for i in range(0, 100):
-            time, result = sim(time_synchronize,
-                               [np.arange(i * time_synchronize, (i + 1) * time_synchronize, resolution_simulation),
-                                np.repeat(firing_rate.reshape(1, 2), int(time_synchronize / resolution_simulation),
-                                          axis=0)])
+            time, result = sim(synchronization_time,
+                               [np.arange(i * synchronization_time, (i + 1) * synchronization_time,
+                                          resolution_simulation),
+                                np.repeat(firing_rate.reshape(1, 2),
+                                          int(synchronization_time / resolution_simulation), axis=0)])
         assert True
 
         # Test a fail function due to the time of simulation too long
         try:
-            sim(time_synchronize, [np.array([resolution_simulation]), firing_rate])
+            sim(synchronization_time, [np.array([resolution_simulation]), firing_rate])
             assert False
         except:
             assert True

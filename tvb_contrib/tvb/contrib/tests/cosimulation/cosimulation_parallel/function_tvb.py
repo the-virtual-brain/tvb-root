@@ -27,12 +27,17 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import tvb.simulator.lab as lab
+
 import numpy as np
 import numpy.random as rgn
-from tvb.contrib.cosimulation import co_sim_monitor
+
+import tvb.simulator.lab as lab
+from tvb.tests.cosimulation.cosimulation_parallel.Reduced_Wongwang import \
+    ReducedWongWangProxy, _numba_dfun_proxy
+
+from tvb.contrib.cosimulation.cosim_monitors import RawCosim
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
-from tvb.tests.cosimulation.co_simulation_paralelle.Reduced_Wongwang import ReducedWongWangProxy, _numba_dfun_proxy
+
 
 rgn.seed(42)
 
@@ -100,9 +105,9 @@ def tvb_init(parameters, time_synchronize, initial_condition):
     else:
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = CoSimulator(
-                          voi = np.array([0]),
+                          voi=np.array([0]),
                           synchronization_time=time_synchronize,
-                          co_monitor = (co_sim_monitor.Raw_incomplete(),),
+                          cosim_monitors=(RawCosim(),),
                           proxy_inds=np.asarray(id_proxy, dtype=np.int),
                           model=model,
                           connectivity=connectivity,
@@ -135,7 +140,7 @@ def tvb_simulation(time, sim, data_proxy):
         start = sim.current_step - sim.synchronization_n_step + 1
         n_step = sim.synchronization_n_step
         result_delayed = sim.run(cosim_updates=data_proxy)
-        result = sim.output_co_sim_monitor(start, n_step)
+        result = sim.loop_cosim_monitor_output(start, n_step)
         time = result[0][0]
         s = [result[0][1][:,0], result_delayed[0][1][:,0]]
         rate = [result[0][1][:,1], result_delayed[0][1][:,1]]
@@ -144,7 +149,7 @@ def tvb_simulation(time, sim, data_proxy):
 
 class TvbSim:
 
-    def __init__(self, weight, delay, id_proxy, resolution_simulation, time_synchronize, initial_condition=None):
+    def __init__(self, weight, delay, id_proxy, resolution_simulation, synchronization_time, initial_condition=None):
         """
         initialise the simulator
         :param weight: weight on the connexion
@@ -155,10 +160,10 @@ class TvbSim:
         """
         self.nb_node = weight.shape[0] - len(id_proxy)
         model = tvb_model(resolution_simulation, weight, delay, id_proxy)
-        self.sim = tvb_init(model, time_synchronize, initial_condition)
+        self.sim = tvb_init(model, synchronization_time, initial_condition)
         self.dt = self.sim.integrator.dt
         if initial_condition is not None:
-            self.current_state = np.expand_dims(initial_condition[-1,0,id_proxy,0],[0,2]) # only one mod, only S
+            self.current_state = np.expand_dims(initial_condition[-1 ,0, id_proxy, 0],[0, 2]) # only one mode, only S
 
     def __call__(self, time, proxy_data=None, rate_data=None, rate=False):
         """

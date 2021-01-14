@@ -1,6 +1,10 @@
-from tvb.simulator.models.wong_wang import ReducedWongWang,Final,List
+# -*- coding: utf-8 -*-
+
 from numba import guvectorize, float64
 import numpy
+
+from tvb.simulator.models.wong_wang import ReducedWongWang,Final,List
+
 
 @guvectorize([(float64[:],) * 12], '(n),(m)' + ',()' * 8 + '->(n),(n)', nopython=True)
 def _numba_dfun(S, c, a, b, d, g, ts, w, j, io, dx, h):
