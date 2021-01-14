@@ -63,8 +63,7 @@ class TestForms(BaseTestCase):
         connectivity_file = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         data_file = Str('Test Upload Field')
         required_type = '.zip'
-        temporary_files = []
-        upload_field = TraitUploadField(data_file, required_type, self.name, temporary_files)
+        upload_field = TraitUploadField(data_file, required_type, self.name)
 
         post_data = {'Data_Subject': 'John Doe', self.name: connectivity_file, 'normalization': 'explicit-None-value'}
         upload_field.fill_from_post(post_data)
@@ -286,7 +285,7 @@ class TestForms(BaseTestCase):
         post_data = {'dummy_name': 'Dummy Hidden Str'}
         hidden_field.fill_from_post(post_data)
         assert hidden_field.data == post_data[self.name], "Hidden data was not set correctly on HiddenField!"
-        assert hidden_field.trait_attribute.label == '', "Hidden field's trait attributes should have empty labels!"
+        assert hidden_field.label == '', "Hidden field should have empty label!"
 
     def test_form_field(self):
         form_field = FormField(TestAdapter1Form, self.name)

@@ -80,10 +80,8 @@ class GIFTISurfaceImporterForm(ABCUploaderForm):
 
         self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, name='file_type',
                                      choices=GIFTISurfaceImporterModel.surface_types)
-        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', 'data_file',
-                                          self.temporary_files)
-        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', 'data_file_part2',
-                                                self.temporary_files)
+        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', 'data_file')
+        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', 'data_file_part2')
         self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, name='should_center')
 
     @staticmethod

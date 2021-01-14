@@ -8,25 +8,26 @@
    <a href="http://req.thevirtualbrain.org/issues/?filter=10421" target="_blank">open issues</a>
 
 
-.. _TVB Web Page: http://www.thevirtualbrain.org
+.. _TVB website: http://www.thevirtualbrain.org
 .. _mailing list: https://groups.google.com/forum/#!forum/tvb-users
 .. _contributors_manual:
 
 TVB Contributors manual
 =======================
 
-So you want to contribute to TVB, or simply use the latest code from sources.
-We welcome contributions, or using for testing. Thank you!
+So you want to contribute to TVB or simply use the latest code from sources. We welcome contributions, or using for testing. *Thank you!*
 
-Get in touch with the |TVB| team, we are glad to help tvb.admin@thevirtualbrain.org.
-Sign up for the `mailing list`_ and introduce yourself.
+* Get in touch with the |TVB| team, we are glad to help tvb.admin@thevirtualbrain.org. Sign up for the `mailing list`_ and introduce yourself.
+* Read trough these docs. Get to know TVB by installing a TVB Distribution (from the `TVB website`_) and playing with the GUI or following tutorials first.
+* Have a look at the open tasks in our Jira |open_issues|.
+* Finally revisit this document and find out how to set up |TVB| as a developer.
 
-Read trough these docs. Get to know TVB by installing a TVB Distribution
-(from `TVB Web Page`_) and playing with the GUI or following tutorials first.
+Once your changes haven been accepted and merged into the Master branch on `github`_, you will see them first on our pre-release platforms:
 
-Have a look at the open tasks in our Jira |open_issues|.
+* *Docker containers* on the `TVB DockerHub <https://hub.docker.com/u/thevirtualbrain>`_
+* *Python packages* on the `TVB PyPI profile <https://pypi.org/user/tvb/>`_
 
-Finally revisit this document and find out how to set up |TVB| as a developer.
+The TVB Distribution packages for multiple OS platforms are on a longer release cycle.
 
 
 Source code and working environment
@@ -49,7 +50,7 @@ Using a virtual environment inside Anaconda is a good idea.
    $ conda create -y --name $envname python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug matplotlib-base
    $ source activate $envname
    $ consta install -c conda-forge jupyterlab flask gevent
-   $ pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako
+   $ pip install h5py==2.10 formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako
    $ cd [tvb-root]/tvb_build/
    $ sh install_full_tvb.sh
 
@@ -87,28 +88,19 @@ We recommend running tests before submitting changes that touch code that you ha
 Contribution guidelines
 -----------------------
 
-You should put explanatory comments and documentation in your code.
-Document every public function with a docstring.
-Use english for both comments and names.
-
-Avoid cryptic short names. You may relax this if implementing a mathematical formula.
-But then please document it using latex docstrings.
-
-Try to adhere to the Python code style. Indent with 4 spaces. We are ok with 120 long lines.
-Naming: module_name, ClassName, function_name, CONSTANT_NAME function_parameter_name, local_var_name
-
-You should attach unit-tests for your new code, to prove that it is correct and that it fits into the overall architecture of TVB.
-
-Prefer small commits. Add a meaningful commit message.
-We strongly recommend that the commit message start with the Jira task id. (e.g. TVB-1963 Add FCT analyser).
-
-Use logging instead of print statements.
-
-If code is indented more than 6 levels your function is too complex.
-If a function has more than 50 lines it is too long. Split these functions.
-
-Do not copy paste code.
-Avoid reinventing the wheel. Use the python built in functions, the standard library and numpy.
+* You should put explanatory comments and documentation in your code.
+* Document every public function with a docstring.
+* Use english for both comments and names.
+* Avoid cryptic short names. You may relax this if implementing a mathematical formula. But then please document it using latex docstrings.
+* Try to adhere to the Python code style. Indent with 4 spaces. We are ok with 120 long lines.
+* Naming: module_name, ClassName, function_name, CONSTANT_NAME function_parameter_name, local_var_name
+* You should attach unit-tests for your new code, to prove that it is correct and that it fits into the overall architecture of TVB.
+* Aim for small commits. Add a meaningful commit message. *We strongly recommend that the commit message start with the Jira task id. (e.g. TVB-1963 Add FCT analyser)*.
+* Use logging instead of print statements.
+* If code is indented more than 6 levels your function is too complex.
+* If a function has more than 50 lines it is too long. Split these functions.
+* Do not copy/paste code.
+* Avoid reinventing the wheel. Use the python built in functions, the standard library and numpy.
 
 
 Git guidelines
@@ -131,22 +123,19 @@ We will later test that your changes are fit to be included, and notify you of t
 Tools
 -----
 
-We use pycharm to develop and debug TVB.
-To test quick ideas we like ipython notebooks.
+We use `pycharm` to develop and debug TVB.
+
+To test quick ideas we like `ipython` notebooks.
 
 
 Technologies used by TVB
 ------------------------
 
-TVB uses numpy extensively.
-Numpy is quite different from other python libraries.
-Learn a bit about it before trying to understand TVB code.
+TVB uses **numpy** extensively. Numpy is quite different from other python libraries. Learn a bit about it before trying to understand TVB code.
 
-The TVB framework uses sqlalchemy for ORM mapping, cherrypy as a web framework and server and jinja2 for html templating.
-Numeric arrays are stored in the hdf5 format.
-Client side we use jquery, d3 and webgl.
+The TVB framework uses **sqlalchemy** for ORM mapping, **cherrypy** as a web framework and server and **jinja2** for HTML templating. Numeric arrays are stored in the **hdf5** format. Client side we use **jQuery**, **d3** and **WebGL**.
 
-TVB uses some advanced python features to implement it's `Traits` system: metaclasses and data descriptors.
+TVB uses some advanced Python features to implement its `Traits` system: metaclasses and data descriptors.
 
 
 Glossary of terms used by TVB code

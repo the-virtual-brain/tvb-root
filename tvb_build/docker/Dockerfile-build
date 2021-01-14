@@ -22,18 +22,18 @@ RUN conda update -n base -c defaults conda
 
 RUN conda create -y --name tvb-docs python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-docs pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
-RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
+RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug==0.16.1
 RUN conda install -y --name tvb-docs -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
 # Latest functioning pair compatible tested for sqlalchemy==1.3.20 sqlalchemy-migrate==0.13.0
-RUN /opt/conda/envs/tvb-docs/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk
+RUN /opt/conda/envs/tvb-docs/bin/pip install h5py==2.10 formencode cfflib jinja2 nibabel sqlalchemy sqlalchemy-migrate allensdk
 RUN /opt/conda/envs/tvb-docs/bin/pip install tvb-gdist typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
 RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
 
 RUN conda update -n base -c defaults conda
 RUN conda create -y --name tvb-run python=3 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
-RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
+RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug==0.16.1 docutils
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 # Latest functioning pair compatible tested for sqlalchemy==1.3.20 sqlalchemy-migrate==0.13.0
@@ -47,7 +47,7 @@ RUN /bin/bash -c "source activate tvb-run"; \
     /opt/conda/envs/tvb-run/bin/jupyter notebook --generate-config; \
     echo "c.NotebookApp.password='sha1:12bff019c253:9daecd92c2e9bdb10b3b8a06767a74a0fe078d7c'">>$JUPYTER_CONFIG/jupyter_notebook_config.py
 
-RUN wget https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_data.zip; \
+RUN wget https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip; \
     mkdir tvb_data; unzip tvb_data.zip -d tvb_data; rm tvb_data.zip; \
     cd tvb_data; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop;\

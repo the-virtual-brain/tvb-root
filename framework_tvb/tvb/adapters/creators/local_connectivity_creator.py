@@ -36,6 +36,8 @@
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
+from tvb.adapters.simulator.subforms_mapping import GAUSSIAN_EQUATION, get_ui_name_to_equation_dict, \
+    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
@@ -83,12 +85,16 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
 
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
+    possible_equations = {GAUSSIAN_EQUATION: get_ui_name_to_equation_dict().get(GAUSSIAN_EQUATION),
+                          DOUBLE_GAUSSIAN_EQUATION: get_ui_name_to_equation_dict().get(DOUBLE_GAUSSIAN_EQUATION),
+                          SIGMOID_EQUATION: get_ui_name_to_equation_dict().get(SIGMOID_EQUATION)}
 
-    def __init__(self, equation_choices):
+    def __init__(self):
         super(LocalConnectivityCreatorForm, self).__init__()
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, name=self.get_input_name(),
                                                 conditions=self.get_filters())
-        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, name='spatial', choices=equation_choices,
+        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, name='spatial',
+                                   choices=self.possible_equations,
                                    display_none_choice=False, subform=GaussianEquationForm)
         self.cutoff = FloatField(LocalConnectivityCreatorModel.cutoff)
         self.display_name = StrField(LocalConnectivityCreatorModel.display_name, name='display_name')

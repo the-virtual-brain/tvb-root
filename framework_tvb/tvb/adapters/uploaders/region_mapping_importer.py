@@ -78,7 +78,7 @@ class RegionMappingImporterForm(ABCUploaderForm):
         super(RegionMappingImporterForm, self).__init__()
 
         self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'),
-                                             'mapping_file', self.temporary_files)
+                                             'mapping_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=[CORTICAL])
         self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, name='surface',

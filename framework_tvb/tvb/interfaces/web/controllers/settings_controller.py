@@ -282,7 +282,7 @@ class SettingsForm(formencode.Schema):
     DEPLOY_CLUSTER = validators.Bool()
     CLUSTER_SCHEDULER = validators.UnicodeString(not_empty=True)
 
-    KEYCLOAK_CONFIGURATION = validators.UnicodeString(not_empty=True)
+    KEYCLOAK_CONFIGURATION = validators.UnicodeString()
     KEYCLOAK_WEB_CONFIGURATION = validators.UnicodeString()
     ENABLE_KEYCLOAK_LOGIN = validators.Bool()
     TVB_STORAGE = validators.UnicodeString(not_empty=True)
