@@ -5,8 +5,8 @@ import abc
 import numpy
 
 from tvb.basic.neotraits.api import Attr, NArray
-from tvb.simulator.coupling import Coupling
-from tvb.monitors import Monitor, Raw, RawVoi
+from tvb.simulator.coupling import Coupling,Linear
+from tvb.simulator.monitors import Monitor, Raw, RawVoi
 
 
 class CosimMonitor(Monitor):
@@ -146,7 +146,7 @@ class CosimCoupling(CosimMonitor):
     coupling = Attr(
         field_type=Coupling,
         label="Long-range coupling function",
-        default=coupling.Linear(),
+        default=Linear(),
         required=True,
         doc="""The coupling function is applied to the activity propagated
         between regions by the ``Long-range connectivity`` before it enters the local

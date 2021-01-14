@@ -42,7 +42,7 @@ from tvb.basic.neotraits.api import Attr, NArray, Float, List
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator
 
-from tvb.contrib.cosimulation.history import CosimHistory
+from tvb.contrib.cosimulation.cosim_history import CosimHistory
 from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor
 
 

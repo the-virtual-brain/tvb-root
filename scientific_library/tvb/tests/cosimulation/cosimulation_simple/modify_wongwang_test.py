@@ -32,7 +32,7 @@ import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.tests.cosimulation.cosimulation_parallel.Reduced_Wongwang import ReducedWongWangProxy
 
-from tvb.contrib.cosimulation.cosim_monitor import RawCosim, CosimCoupling
+from tvb.contrib.cosimulation.cosim_monitors import RawCosim, CosimCoupling
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 
