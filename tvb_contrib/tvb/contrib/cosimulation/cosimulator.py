@@ -42,7 +42,7 @@ from tvb.basic.neotraits.api import Attr, NArray, Float, List
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator
 
-from tvb.contrib.cosimulation.history import CosimHistory
+from tvb.contrib.cosimulation.cosim_history import CosimHistory
 from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor
 
 
@@ -208,13 +208,15 @@ class CoSimulator(Simulator):
         # Initialization # TODO : avoid to do it at each call ??
         self._guesstimate_runtime()
         self._calculate_storage_requirement()
-        self._handle_random_state(random_state)
-        n_reg = self.connectivity.number_of_regions
+        # TODO a provided random_state should be used for history init
+        self.integrator.set_random_state(random_state)
         local_coupling = self._prepare_local_coupling()
         stimulus = self._prepare_stimulus()
         state = self.current_state
         start_step = self.current_step + 1
         node_coupling = self._loop_compute_node_coupling(start_step)
+
+        n_reg = self.connectivity.number_of_regions
         if cosim_updates is not None:
             self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt), dtype=numpy.int),
                                        cosim_updates[1], n_reg)
