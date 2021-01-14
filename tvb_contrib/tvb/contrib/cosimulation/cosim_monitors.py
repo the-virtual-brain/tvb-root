@@ -5,7 +5,7 @@ import abc
 import numpy
 
 from tvb.basic.neotraits.api import Attr, NArray
-from tvb.simulator.coupling import Linear, Coupling
+from tvb.simulator.coupling import Coupling,Linear
 from tvb.simulator.monitors import Monitor, Raw, RawVoi
 
 
