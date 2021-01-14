@@ -4,7 +4,7 @@ import abc
 from tvb.simulator import coupling, monitors
 from tvb.basic.neotraits.api import Attr, NArray
 
-class Co_sim_Monitor(monitors.Monitor):
+class CosimMonitor(monitors.Monitor):
     """
     Abstract base class for monitor implementations.
     """
@@ -19,8 +19,7 @@ class Co_sim_Monitor(monitors.Monitor):
     dt = None
 
     def __str__(self):
-        clsname = self.__class__.__name__
-        return '%s(voi=%s)' % (clsname, self.variables_of_interest.tolist())
+        return '%s(voi=%s)' % (self.__class__.__name__, self.variables_of_interest.tolist())
 
     def _config_vois(self, simulator):
         """
@@ -52,9 +51,9 @@ class Co_sim_Monitor(monitors.Monitor):
 
         """
 
-class Raw_delayed(Co_sim_Monitor):
+class Raw_delayed(CosimMonitor):
     """
-    A monitor that records the output raw data from the full history a tvb simulation:
+    A monitor that records the output raw data from the full history of a tvb simulation:
     It collects:
 
         - all state variables and modes from class :Model:
@@ -82,7 +81,8 @@ class Raw_delayed(Co_sim_Monitor):
             values.append(history_delayed.query_sparse(step))
         return [numpy.array(times),numpy.array(values)]
 
-class Raw_incomplete(Co_sim_Monitor):
+
+class Raw_incomplete(CosimMonitor):
     """
     A monitor that records the output raw data from the incomplete history of tvb simulation:
     It collects:
@@ -112,7 +112,8 @@ class Raw_incomplete(Co_sim_Monitor):
             values.append(history_incomplete.query_state(step))
         return [numpy.array(times),numpy.array(values)]
 
-class Coupling_co_sim(Co_sim_Monitor):
+
+class CosimCoupling(CosimMonitor):
     """
     WARNING don't use this monitor for a time smaller han the synchronization variable
     A monitor that records the future coupling of the variable:

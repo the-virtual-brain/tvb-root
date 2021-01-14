@@ -64,7 +64,7 @@ class CoSimulator(Simulator):
         required=True)
 
     co_monitor = List(
-                    of=co_sim_monitor.Co_sim_Monitor,
+                    of=co_sim_monitor.CosimMonitor,
                    label="TVB monitor")
 
     synchronization_time = Float(

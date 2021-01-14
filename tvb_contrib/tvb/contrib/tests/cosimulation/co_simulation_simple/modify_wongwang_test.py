@@ -222,7 +222,7 @@ class TestModifyWongWangSimple(TestModifyWongWang):
         sim_6 = CoSimulator(
                             voi=np.array([0]),
                             synchronization_time=1.0,
-                            co_monitor=(co_sim_monitor.Coupling_co_sim(coupling=coupling),),
+                            co_monitor=(co_sim_monitor.CosimCoupling(coupling=coupling),),
                             proxy_inds=np.asarray([0], dtype=np.int),
                             model=model,
                             connectivity=connectivity,
