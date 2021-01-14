@@ -29,7 +29,7 @@
 import numpy as np
 
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.tests.cosimulation.cosimulation_parallel.function_tvb import TvbSim
+from tvb.contrib.tests.cosimulation import TvbSim
 
 
 class TestUpdateModel(BaseTestCase):

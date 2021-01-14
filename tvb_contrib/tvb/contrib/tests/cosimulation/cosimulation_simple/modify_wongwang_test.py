@@ -30,24 +30,23 @@ import numpy as np
 
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.tests.cosimulation.cosimulation_parallel.Reduced_Wongwang import ReducedWongWangProxy
+from tvb.contrib.tests.cosimulation import ReducedWongWangProxy
 
-from tvb.contrib.cosimulation.cosim_monitors import RawCosim
+from tvb.contrib.cosimulation.cosim_monitor import RawCosim, CosimCoupling
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 
 class TestModifyWongWang(BaseTestCase):
     """
-    Initialisation of the test for the reference simulation
+    Test to compare the version in tvb and the modified version
     """
     @staticmethod
     def _reference_simulation():
         # reference simulation
         np.random.seed(42)
-        init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
-                               np.random.random_sample((385, 1, 76, 1))), axis=1)
+        init = np.random.random_sample((385, 1, 76, 1))
         np.random.seed(42)
-        model = ReducedWongWangProxy(tau_s=np.random.rand(76))
+        model = lab.models.ReducedWongWang(tau_s=np.random.rand(76))
         connectivity = lab.connectivity.Connectivity().from_file()
         connectivity.speed = np.array([4.0])
         connectivity.configure()
@@ -65,13 +64,11 @@ class TestModifyWongWang(BaseTestCase):
                                       )
         sim.configure()
         result_all = sim.run(simulation_length=10.0)
-        result = result_all[0][1][:,:,0,0]
+        result = result_all[0][1][:,0,0,0]
         return connectivity, coupling, integrator, monitors, sim, result, result_all
 
-class TestModifyWongWangRate(TestModifyWongWang):
-    """
-    Test to compare the version in TVB and the modified version
-    """
+
+class TestModifyWongWangSimple(TestModifyWongWang):
     def test_without_proxy(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
         # The modify model without proxy
@@ -82,23 +79,22 @@ class TestModifyWongWangRate(TestModifyWongWang):
         model = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim_2 = CoSimulator(
-            voi=np.array([0]),
-            synchronization_time=1.0,
-            cosim_monitors=(RawCosim(),),
-            proxy_inds=np.asarray([], dtype=np.int),
-            model=model,
-            connectivity=connectivity,
-            coupling=coupling,
-            integrator=integrator,
-            monitors=(monitors,),
-            initial_conditions=init,
-        )
+                            voi=np.array([0]),
+                            synchronization_time=10.0,
+                            cosim_monitors=RawCosim(),
+                            proxy_inds=np.asarray([], dtype=np.int),
+                            model=model,
+                            connectivity=connectivity,
+                            coupling=coupling,
+                            integrator=integrator,
+                            monitors=(monitors,),
+                            initial_conditions=init,
+                            )
         sim_2.configure()
-        result_2_init = sim_2.run()[0][1][:,:,0,0] # run the first steps because the history is delayed
-        for i in range(10):
-            result_2 = sim_2.run()[0][1][:,:,0,0]
-            diff = result[i*10:(i+1)*10] - result_2
-            assert np.sum(diff) == 0.0
+        result_2_all = sim_2.run()[0][1][:,0,0,0] # run the first steps because the history is delayed
+        result_2 = sim_2.run()[0][1][:,0,0,0]
+        diff = result - result_2
+        assert np.sum(diff) == 0.0
 
     def test_with_proxy(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -111,17 +107,17 @@ class TestModifyWongWangRate(TestModifyWongWang):
         model = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim_3 = CoSimulator(
-            voi=np.array([0]),
-            synchronization_time=1.,
-            cosim_monitors=(RawCosim(),),
-            proxy_inds=np.asarray(id_proxy, dtype=np.int),
-            model=model,
-            connectivity=connectivity,
-            coupling=coupling,
-            integrator=integrator,
-            monitors=(monitors,),
-            initial_conditions=init,
-        )
+                            voi=np.array([0]),
+                            synchronization_time=1.,
+                            cosim_monitors=(RawCosim(),),
+                            proxy_inds=np.asarray(id_proxy, dtype=np.int),
+                            model=model,
+                            connectivity=connectivity,
+                            coupling=coupling,
+                            integrator=integrator,
+                            monitors=(monitors,),
+                            initial_conditions=init,
+                            )
         sim_3.configure()
         sim_3.run() # run the first steps because the history is delayed
         result_3_all = [np.empty((0,)), np.empty((10, 2, 76, 1))]
@@ -135,18 +131,10 @@ class TestModifyWongWangRate(TestModifyWongWang):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_3_all[1][i+10, 0, len(id_proxy):]
             diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_3_all[1][i+10, 0, :len(id_proxy)]
             assert np.sum(diff) == 0.0 and np.sum(np.isnan(diff_2)) == len(id_proxy)
+        # after the delayed impact the simulation, This create some difference for rate and S
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1,100):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_3_all[1][i + 10, 0, len(id_proxy):]
             diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_3_all[1][i + 10, 0, :len(id_proxy)]
-            assert np.sum(diff) != 0.0 and np.sum(np.isnan(diff_2)) == len(id_proxy)
-        # after the delayed impact the simulation, This create some difference for rate and S
-        for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1):
-            diff = result_all[0][1][i][1][len(id_proxy):] - result_3_all[1][i+10, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_3_all[1][i+10, 1, :len(id_proxy)]
-            assert np.sum(diff) == 0.0 and np.sum(np.isnan(diff_2)) == len(id_proxy)
-        for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1,100):
-            diff = result_all[0][1][i][1][len(id_proxy):] - result_3_all[1][i + 10, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_3_all[1][i + 10, 1, :len(id_proxy)]
             assert np.sum(diff) != 0.0 and np.sum(np.isnan(diff_2)) == len(id_proxy)
 
     def test_with_proxy_bad_input(self):
@@ -160,17 +148,17 @@ class TestModifyWongWangRate(TestModifyWongWang):
         model = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim_4 = CoSimulator(
-            voi=np.array([0]),
-            synchronization_time=1.,
-            cosim_monitors=(RawCosim(),),
-            proxy_inds=np.asarray(id_proxy, dtype=np.int),
-            model=model,
-            connectivity=connectivity,
-            coupling=coupling,
-            integrator=integrator,
-            monitors=(monitors,),
-            initial_conditions=init,
-        )
+                            voi=np.array([0]),
+                            synchronization_time=1.,
+                            cosim_monitors=(RawCosim(),),
+                            proxy_inds=np.asarray(id_proxy, dtype=np.int),
+                            model=model,
+                            connectivity=connectivity,
+                            coupling=coupling,
+                            integrator=integrator,
+                            monitors=(monitors,),
+                            initial_conditions=init,
+                            )
         sim_4.configure()
         sim_4.run() # run the first steps because the history is delayed
         result_4_all = [np.empty((0,)), np.empty((10, 2, 76, 1))]
@@ -187,22 +175,12 @@ class TestModifyWongWangRate(TestModifyWongWang):
             diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_4_all[1][i+10, 0, :len(id_proxy)]
             assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
                    np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) != 0.0
+        # after the delayed impact the simulation, This create some difference for rate and S
         for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1,100):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_4_all[1][i+10, 0, len(id_proxy):]
             diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_4_all[1][i+10, 0, :len(id_proxy)]
             assert np.sum(diff, where=np.logical_not(np.isnan(diff))) != 0.0 and \
                    np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) != 0.0
-        # after the delayed impact the simulation, This create some difference for rate and S
-        for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1):
-            diff = result_all[0][1][i][1][len(id_proxy):] - result_4_all[1][i+10, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_4_all[1][i+10, 1, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                   np.sum(np.isnan(diff_2)) == len(id_proxy)
-        for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1,100):
-            diff = result_all[0][1][i][1][len(id_proxy):] - result_4_all[1][i+10, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_4_all[1][i+10, 1, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) != 0.0 and \
-                   np.sum(np.isnan(diff_2)) == len(id_proxy)
 
     def test_with_proxy_right_input(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -215,17 +193,17 @@ class TestModifyWongWangRate(TestModifyWongWang):
         model = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim_5 = CoSimulator(
-            voi = np.array([0]),
-            synchronization_time=1.,
-            cosim_monitors=(RawCosim(),),
-            proxy_inds=np.asarray(id_proxy, dtype=np.int),
-            model=model,
-            connectivity=connectivity,
-            coupling=coupling,
-            integrator=integrator,
-            monitors=(monitors,),
-            initial_conditions=init,
-        )
+                            voi=np.array([0]),
+                            synchronization_time=1.,
+                            cosim_monitors=(RawCosim(),),
+                            proxy_inds=np.asarray(id_proxy, dtype=np.int),
+                            model=model,
+                            connectivity=connectivity,
+                            coupling=coupling,
+                            integrator=integrator,
+                            monitors=(monitors,),
+                            initial_conditions=init,
+                            )
         sim_5.configure()
         sim_5.run() # run the first steps because the history is delayed
         result_5_all = [np.empty((0,)), np.empty((10, 2, 76, 1))]
@@ -236,14 +214,35 @@ class TestModifyWongWangRate(TestModifyWongWang):
                                          for i in range(10)]).reshape((10,len(id_proxy) , 1, 1))])
             result_5_all[0] = np.concatenate((result_5_all[0], result_5_all_step[0][0]))
             result_5_all[1] = np.concatenate((result_5_all[1], result_5_all_step[0][1]))
-        # test for rate and after for S
+
         for i in range(100):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_5_all[1][i+10, 0, len(id_proxy):]
             diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_5_all[1][i+10, 0, :len(id_proxy)]
             assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
                    np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) == 0.0
-        for i in range(100):
-            diff = result_all[0][1][i][1][len(id_proxy):] - result_5_all[1][i+10, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_5_all[1][i+10, 1, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                   np.sum(np.isnan(diff_2)) == len(id_proxy)
+
+    def test_without_proxy_coupling(self):
+        connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
+        # The modify model without proxy
+        np.random.seed(42)
+        model = ReducedWongWangProxy(tau_s=np.random.rand(76))
+        # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
+        sim_6 = CoSimulator(
+                            voi=np.array([0]),
+                            synchronization_time=1.0,
+                            cosim_monitors=(CosimCoupling(coupling=coupling),),
+                            proxy_inds=np.asarray([0], dtype=np.int),
+                            model=model,
+                            connectivity=connectivity,
+                            coupling=coupling,
+                            integrator=integrator,
+                            monitors=(monitors,),
+                            )
+        sim_6.configure()
+        result_2_all = sim_6.run()[0][1][:,0,0,0] # run the first steps because the history is delayed
+        coupling_future = sim_6.loop_cosim_monitor_output(10, 10)
+        for i in range(10):
+            result_2 = sim_6.run()[0][1][:,0,0,0]
+            diff = result[i*10:(i+1)*10] - result_2
+            assert np.sum(diff) != 0.0
+            assert np.sum(np.isnan(sim_6.loop_cosim_monitor_output(i * 10, 10)[0][1])) == 0

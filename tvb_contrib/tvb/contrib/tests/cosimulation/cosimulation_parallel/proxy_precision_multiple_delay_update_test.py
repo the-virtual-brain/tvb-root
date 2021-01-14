@@ -32,26 +32,26 @@ import numpy as np
 import numpy.random as rgn
 
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.tests.cosimulation.cosimulation_parallel.function_tvb import TvbSim
+from tvb.contrib.tests.cosimulation import TvbSim
 
 
-class TestPrecisionDelay(BaseTestCase):
+class TestPrecisionMultipleDelayUpdate(BaseTestCase):
     """
-    compare the result between simulation with one proxy and without proxy and different delay
+    Compare the result between simulation with 1-3 proxy and without proxy and different delay
     """
 
-    def test_precision_delay(self):
-        weight = np.array([[2, 8, 0], [0, 0, 0], [3, 0, 1]])
-        delay = np.array([[0.6, 0.5, 1.0], [0.7, 0.8, 3.0], [1.0, 0.5, 0.7]])
+    def test_precision_multiple_delay_update(self):
+        weight = np.array([[5, 2, 4, 0], [8, 5, 4, 1], [6, 1, 7, 9], [10, 0, 5, 6]])
+        delay = np.array([[0.1, 0.2, 0.5, 0.8], [0.3, 0.5, 0.5, 0.4], [0.6, 0.7, 0.1, 0.2], [0.3, 0.4, 0.5, 1.2]]) * 10
         max = np.int(np.max(delay)*10+1)
-        init_value = np.array([[[0.1,0.0], [0.1,0.0], [0.2,0.0]]] * max)
+        init_value = np.array([[[0.1,0.0], [0.1,0.0], [0.2,0.0], [0.2,0.0]]] * max)
         initial_condition = init_value.reshape((max, 2, weight.shape[0], 1))
         resolution_simulation = 0.1
-        synchronization_time = 0.1 * 4
-        proxy_id = [0]
-        no_proxy = [1,2]
+        synchronization_time = 0.1 * 10
+        proxy_id = [0, 1, 2]
+        no_proxy = [3]
 
-        # simulation with one proxy
+        # simulation with one or more proxy
         rgn.seed(42)
         sim = TvbSim(weight, delay, proxy_id, resolution_simulation, synchronization_time,
                      initial_condition=initial_condition)
@@ -63,13 +63,14 @@ class TestPrecisionDelay(BaseTestCase):
                          initial_condition=initial_condition)
         time, result_ref = sim_ref(synchronization_time)
 
-        # compare with TVB Raw monitor delayed by synchronization_time
-        diff = np.where(np.squeeze(result_ref[:, no_proxy, :], axis=2)[0] !=
-                        np.squeeze(result[0][:, no_proxy, :], axis=2)[0])
+        # compare with the CosimMonitor RawCosim
+        diff = np.where(np.squeeze(result_ref[:, no_proxy, :], axis=1)[0] !=
+                        np.squeeze(result[0][:, no_proxy, :], axis=1)[0])
         assert diff[0].size == 0
 
         for i in range(0, 10000):
-            time, result = sim(synchronization_time, [time, result_ref[:, proxy_id][:, :, 0]])
+            delai_input = [time, result_ref[:, proxy_id][:, :, 0]]
+            time, result = sim(synchronization_time, delai_input)
 
             # compare with Raw monitor delayed by synchronization_time
             diff_1 = np.where(result_ref != result[1])
@@ -77,6 +78,6 @@ class TestPrecisionDelay(BaseTestCase):
 
             time, result_ref = sim_ref(synchronization_time)
 
-            # compare with TVB Raw monitor delayed by synchronization_time
+            # compare with the CosimMonitor RawCosim
             diff = np.where(result_ref[:, no_proxy, :] != result[0][:, no_proxy, :])
             assert diff[0].size == 0
