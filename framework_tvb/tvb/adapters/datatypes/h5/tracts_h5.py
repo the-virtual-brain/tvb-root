@@ -150,3 +150,9 @@ class TractsH5(H5File):
     def get_urls_for_rendering(self):
         return ('/flow/read_datatype_attribute/' + self.gid + '/get_line_starts/False',
                 '/flow/read_binary_datatype_attribute/' + self.gid + '/get_vertices')
+
+    def write_vertices_slice(self, partial_result):
+        """
+        Append a new value to the ``vertices`` attribute.
+        """
+        self.vertices.append(partial_result)

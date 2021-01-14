@@ -28,16 +28,15 @@
 #
 #
 
+from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterForm, TS_EEG, \
+    RegionTimeSeriesImporter, RegionMatTimeSeriesImporterModel
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.datatypes.sensors import Sensors, SensorTypes
-from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterForm, TS_EEG, \
-    RegionTimeSeriesImporter
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 
-class EEGMatTimeSeriesImporterModel(UploaderViewModel):
+class EEGMatTimeSeriesImporterModel(RegionMatTimeSeriesImporterModel):
     datatype = DataTypeGidAttr(
         linked_datatype=Sensors,
         label='EEG Sensors'

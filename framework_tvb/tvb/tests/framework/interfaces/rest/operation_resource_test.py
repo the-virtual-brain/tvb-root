@@ -39,9 +39,8 @@ from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, SUPPORTED_WI
 from tvb.basic.exceptions import TVBException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.operation_service import OperationService
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.strings import Strings, RequestFileKey
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
@@ -155,9 +154,9 @@ class TestOperationResource(RestResourceTest):
         request_mock = mocker.patch.object(flask, 'request')
         request_mock.files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: dummy_file}
 
-        with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid=self.test_project.gid,
-                                                                                  algorithm_module=inexistent_algorithm,
-                                                                                  algorithm_classname='')
+        with pytest.raises(ServiceException): self.launch_resource.post(project_gid=self.test_project.gid,
+                                                                        algorithm_module=inexistent_algorithm,
+                                                                        algorithm_classname='')
 
     def test_server_launch_operation(self, mocker, time_series_index_factory):
         self._mock_user(mocker)
@@ -171,11 +170,7 @@ class TestOperationResource(RestResourceTest):
         fft_model.window_function = list(SUPPORTED_WINDOWING_FUNCTIONS)[0]
 
         input_folder = self.files_helper.get_project_folder(self.test_project)
-        view_model_h5_path = h5.path_for(input_folder, ViewModelH5, fft_model.gid)
-
-        view_model_h5 = ViewModelH5(view_model_h5_path, fft_model)
-        view_model_h5.store(fft_model)
-        view_model_h5.close()
+        view_model_h5_path = h5.store_view_model(fft_model, input_folder)
 
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
