@@ -41,8 +41,9 @@ import numpy
 from tvb.basic.neotraits.api import Attr, NArray, Float, List
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator
+
 from tvb.contrib.cosimulation.history import CosimHistory
-from tvb.contrib.cosimulation.cosim_monitor import CosimMonitor
+from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor
 
 
 class CoSimulator(Simulator):
@@ -64,7 +65,7 @@ class CoSimulator(Simulator):
         label="Indices of TVB proxy nodes",
         required=True)
 
-    cosim_monitor = List(
+    cosim_monitors = List(
                     of=CosimMonitor,
                     label="TVB monitor")
 
@@ -111,7 +112,7 @@ class CoSimulator(Simulator):
         self.cosim_history = CosimHistory.from_simulator(self)
 
         # Configure the cosimulator monitor
-        for monitor in self.cosim_monitor:
+        for monitor in self.cosim_monitors:
             monitor.configure()
             monitor.config_for_sim(self)
 
@@ -249,4 +250,4 @@ class CoSimulator(Simulator):
         if start_step + n_steps > self.good_update_value_shape[0] + self.current_step:
            ValueError("Incorrect start_step, too early step %i, the value should between %i and %i".format(
                       start_step,self.current_step,self.good_update_value_shape[0] + self.current_step))
-        return [monitor.sample(start_step, n_steps,self.cosim_history,self.history) for monitor in self.cosim_monitor]
+        return [monitor.sample(start_step, n_steps,self.cosim_history,self.history) for monitor in self.cosim_monitors]
