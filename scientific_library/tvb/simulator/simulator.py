@@ -197,25 +197,14 @@ class Simulator(HasTraits):
             return True
         return False
 
-    def _configure_integrator_next_step(self):
-        if self.model.n_nonintvar:
+    def configure_integration_for_model(self):
+        self.integrator.configure_boundaries(self.model)
+        if self.model.nvar - self.model.nintvar:
             self.integrate_next_step = self.integrator.integrate_with_update
+            self.integrator.\
+                reconfigure_boundaries_and_clamping_for_integration_state_variables(self.model)
         else:
             self.integrate_next_step = self.integrator.integrate
-
-    def _configure_integrator_boundaries(self):
-        if self.model.state_variable_boundaries is not None:
-            indices = []
-            boundaries = []
-            for sv, sv_bounds in self.model.state_variable_boundaries.items():
-                indices.append(self.model.state_variables.index(sv))
-                boundaries.append(sv_bounds)
-            sort_inds = numpy.argsort(indices)
-            self.integrator.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
-            self.integrator.state_variable_boundaries = numpy.array(boundaries).astype("float64")[sort_inds]
-        else:
-            self.integrator.bounded_state_variable_indices = None
-            self.integrator.state_variable_boundaries = None
 
     def preconfigure(self):
         """Configure just the basic fields, so that memory can be estimated."""
@@ -225,10 +214,14 @@ class Simulator(HasTraits):
         if self.stimulus:
             self.stimulus.configure()
         self.coupling.configure()
-        self.model.configure()
-        self.integrator.configure()
-        self.integrator.configure_boundaries(self.model)
-        self._configure_integrator_next_step()
+        # ------- Keep this order of configurations ----
+        self.model.configure()  # 1
+        self.integrator.configure()  # 2
+        # Configure integrators' next step computation
+        # and state variables' boundaries and clamping,
+        # based on model attributes  # 3
+        self.configure_integration_for_model()
+        # ----------------------------------------------
         # monitors needs to be a list or tuple, even if there is only one...
         if not isinstance(self.monitors, (list, tuple)):
             self.monitors = [self.monitors]
@@ -358,16 +351,6 @@ class Simulator(HasTraits):
         if any(outputi is not None for outputi in output):
             return output
 
-    def bound_and_clamp(self, state):
-        # If there is a state boundary...
-        if self.integrator.state_variable_boundaries is not None:
-            # ...use the integrator's bound_state
-            self.integrator.bound_state(state)
-        # If there is a state clamping...
-        if self.integrator.clamped_state_variable_values is not None:
-            # ...use the integrator's clamp_state
-            self.integrator.clamp_state(state)
-
     def __call__(self, simulation_length=None, random_state=None, n_steps=None):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
@@ -405,10 +388,9 @@ class Simulator(HasTraits):
         for step in range(start_step, start_step + n_steps):
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
-            self._loop_update_history(step, n_reg, state)
-            # needs implementing by history + coupling?
-            output = self._loop_monitor_output(step, state, node_coupling)
+            self._loop_update_history(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
+            output = self._loop_monitor_output(step, state, node_coupling)
             if output is not None:
                 yield output
 
@@ -428,36 +410,43 @@ class Simulator(HasTraits):
         Support 3 possible shapes:
             1) number_of_nodes;
 
-            2) number_of_state_variables; and
+            2) number_of_state_variables or number_of_integrated_state_variables; and
 
-            3) (number_of_state_variables, number_of_nodes).
+            3) (number_of_state_variables or number_of_integrated_state_variables, number_of_nodes).
 
         """
+        # Noise has to have a shape corresponding to only the integrated state variables!
+        good_history_shape = list(self.good_history_shape[1:])
+        good_history_shape[0] = self.model.nintvar
         if self.integrator.noise.ntau > 0.0:
-            self.integrator.noise.configure_coloured(self.integrator.dt,
-                                                     self.good_history_shape[1:])
+            self.integrator.noise.configure_coloured(self.integrator.dt, tuple(good_history_shape))
         else:
-            self.integrator.noise.configure_white(self.integrator.dt,
-                                                  self.good_history_shape[1:])
+            self.integrator.noise.configure_white(self.integrator.dt, tuple(good_history_shape))
 
         if self.surface is not None:
             if self.integrator.noise.nsig.size == self.connectivity.number_of_regions:
                 self.integrator.noise.nsig = self.integrator.noise.nsig[self.surface.region_mapping]
             elif self.integrator.noise.nsig.size == self.model.nvar * self.connectivity.number_of_regions:
+                self.integrator.noise.nsig = \
+                    self.integrator.noise.nsig[self.model.state_variable_mask][:, self.surface.region_mapping]
+            elif self.integrator.noise.nsig.size == self.model.nintvar * self.connectivity.number_of_regions:
                 self.integrator.noise.nsig = self.integrator.noise.nsig[:, self.surface.region_mapping]
 
-        good_nsig_shape = (self.model.nvar, self.number_of_nodes,
-                           self.model.number_of_modes)
+        good_nsig_shape = (self.model.nintvar, self.number_of_nodes, self.model.number_of_modes)
         nsig = self.integrator.noise.nsig
         self.log.debug("Given noise shape is %s", nsig.shape)
         if nsig.shape in (good_nsig_shape, (1,)):
             return
         elif nsig.shape == (self.model.nvar,):
-            nsig = nsig.reshape((self.model.nvar, 1, 1))
+            nsig = nsig[self.model.state_variable_mask].reshape((self.model.nintvar, 1, 1))
+        elif nsig.shape == (self.model.nintvar,):
+            nsig = nsig.reshape((self.model.nintvar, 1, 1))
         elif nsig.shape == (self.number_of_nodes,):
             nsig = nsig.reshape((1, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nvar, self.number_of_nodes):
-            nsig = nsig.reshape((self.model.nvar, self.number_of_nodes, 1))
+            nsig = nsig[self.model.state_variable_mask].reshape((self.n_intvar, self.number_of_nodes, 1))
+        elif nsig.shape == (self.model.nintvar, self.number_of_nodes):
+            nsig = nsig.reshape((self.model.nintvar, self.number_of_nodes, 1))
         else:
             msg = "Bad Simulator.integrator.noise.nsig shape: %s"
             self.log.error(msg % str(nsig.shape))
@@ -482,8 +471,6 @@ class Simulator(HasTraits):
                 self.stimulus.configure_space(region_mapping=numpy.r_[self.surface.region_mapping, self.connectivity.unmapped_indices(self.surface.region_mapping)])
             else:
                 self.stimulus.configure_space()
-
-    # TODO: update all those functions below to compute the fine scale requirements as well, ...if you can! :)
 
     # used by simulator adaptor
     def memory_requirement(self):

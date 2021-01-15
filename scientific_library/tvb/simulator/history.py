@@ -132,7 +132,7 @@ class BaseHistory(StaticAttr):
 
         # Make sure that history values are bounded
         for it in range(history.shape[0]):
-            sim.bound_and_clamp(history[it])
+            sim.integrator.bound_and_clamp(history[it])
         sim.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
