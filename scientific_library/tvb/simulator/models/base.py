@@ -45,14 +45,15 @@ class Model(HasTraits):
     """
 
     state_variables = ()  # type: typing.Tuple[str]
-    integration_variables = None  # type: typing.Tuple[str]
+    non_integrated_variables = None  # type: typing.Tuple[str]
     variables_of_interest = ()
     _nvar = None   # todo make this a prop len(state_variables)
+    _nintvar = _nvar
     number_of_modes = 1
     cvar = None
     stvar = None
     state_variable_boundaries = None
-    state_variables_mask = None
+    state_variable_mask = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -92,22 +93,39 @@ class Model(HasTraits):
         if self.stvar is None:
             self.stvar = self.cvar.copy()
         super(Model, self).configure()
-        self.update_derived_parameters()
-        self._build_observer()
         # Make sure that if there are any state variable boundaries, ...
         if isinstance(self.state_variable_boundaries, dict):
             self._setup_sv_boundaries()
         elif self.state_variable_boundaries is not None:
             self.state_variable_boundaries = None
             Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
-        if self.integration_variables is None:
-            self.integration_variables = self.state_variables
-        self.state_variables_mask = [var in self.integration_variables for var in self.state_variables]
+        self.state_variable_mask = numpy.array([True] * self.nvar)
+        if self.non_integrated_variables is not None:
+            for var in self.non_integrated_variables:
+                self.state_variable_mask[self.state_variables.index(var)] = False
+        self._nintvar = numpy.sum(self.state_variable_mask)
+        self.update_derived_parameters()
+        self._build_observer()
 
     @property
     def nvar(self):
         """ The number of state variables in this model. """
         return self._nvar
+
+    @property
+    def nintvar(self):
+        """ The number of integrated state variables in this model. """
+        return self._nintvar
+
+    @property
+    def nnonintvar(self):
+        """ The number of non integrated state variables in this model. """
+        return self._nvar - self._nintvar
+
+    @property
+    def has_nonint_vars(self):
+        """ Flag to determine if there are any non integrated state variables. """
+        return self.nnonintvar > 0
 
     def update_derived_parameters(self):
         """

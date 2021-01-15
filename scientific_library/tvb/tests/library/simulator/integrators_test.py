@@ -39,7 +39,7 @@ Test for tvb.simulator.coupling module
 import numpy
 import pytest
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.tests.library.simulator.models_test import TestUpdateVariablesModel
+from tvb.tests.library.simulator.models_test import TestUpdateVariablesModel, TestUpdateVariablesBoundsModel
 from tvb.simulator import integrators
 from tvb.simulator import noise
 
@@ -150,7 +150,8 @@ class TestIntegrators(BaseTestCase):
         for integrator_class in INTEGRATORStoTEST:
             integrator = integrator_class(
                 bounded_state_variable_indices=bounded_state_variable_indices,
-                state_variable_boundaries=state_variable_boundaries)
+                state_variable_boundaries=state_variable_boundaries,
+                )
             integrator.dt = dt
             try:
                 # Set noise to 0 if this is a stochastic integrator
@@ -158,7 +159,9 @@ class TestIntegrators(BaseTestCase):
                 integrator.noise.dt = dt
             except:
                 pass
+            integrator.configure()
             x = integrator.scheme(x, dfun, 0.0, 0.0, 0.0)
+            integrator.bound_and_clamp(x)
             for idx, val in zip(integrator.bounded_state_variable_indices, integrator.state_variable_boundaries):
                 if idx == 0:
                     assert numpy.all(x[idx] >= val[0])
@@ -179,24 +182,31 @@ class TestIntegrators(BaseTestCase):
         x = numpy.ones((5, 4, 2))
         for i in range(10):
             x = vode.scheme(x, self._dummy_dfun, 0.0, 0.0, 0.0)
+            vode.bound_and_clamp(x)
         for idx, val in zip(vode.clamped_state_variable_indices, vode.clamped_state_variable_values):
             assert numpy.allclose(x[idx], val)
 
-    def test_update_variables(self):
+    def _test_update_variables(self, model):
+        model.configure()
         x = numpy.ones((5, 4, 2))
         x[:, 0, ] = -x[:, 0, ]
         x[:, 1, ] = 2 * x[:, 1, ]
-        x0 = numpy.array(x)
-        model = TestUpdateVariablesModel()
         for integrator_class in INTEGRATORStoTEST:
             integrator = integrator_class()
             integrator.dt = dt
             try:
                 # Set noise to 0 if this is a stochastic integrator
-                integrator.noise.nsig = numpy.array([0.0])
-                integrator.noise.dt = dt
+                integrator.noise.configure_white(dt, x[model.state_variable_mask].shape)
+                integrator.noise.nsig = numpy.array([0.0] * self.model.nintvar)
             except:
                 pass
+            integrator.configure()
+            integrator.configure_boundaries(model)
+            if model.has_nonint_vars:
+                integrator.reconfigure_boundaries_and_clamping_for_integration_state_variables(model)
+            # Bound the whole of initial condition:
+            x0 = numpy.copy(x)
+            integrator.bound_and_clamp(x0)
             # The integration will happen with TestUpdateVariablesModel methods:
             # a dfun that does nothing:
             # def dfun(self, state_variables, node_coupling, local_coupling=0.0):
@@ -204,15 +214,23 @@ class TestIntegrators(BaseTestCase):
             #
             # an update before integration that adds state[0] to state[3], and state[1] and state[2] to state[4]
             # def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
-            #     state[3] += state[0]
-            #     state[4] += state[1] + state[2]
+            #     new_state = numpy.copy(state)
+            #     new_state[3] = state[3] + state[0]
+            #     new_state[4] = state[4] + state[1] + state[2]
             #     return state
             #
             # and an update after integration that reverses the effect of the update before integration
-            # def update_state_variables_after_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
-            #     state[3] -= state[0]
-            #     state[4] -= state[1] + state[2]
+            # def update_state_variables_after_integration(self, state):
+            #     new_state = numpy.copy(state)
+            #     new_state[3] = state[3] - state[0]
+            #     new_state[4] = state[4] - state[1] - state[2]
             #     return state
-            x = integrator.integrate_with_update(x0, model, 0.0, 0.0, 0.0)
+            x1 = integrator.integrate_with_update(x0, model, 0.0, 0.0, 0.0)
             # Eventually, the state should be left unchanged:
-            assert numpy.all(x == x0)
+            assert numpy.all(x1 == x0)
+
+    def test_update_variables(self):
+        self._test_update_variables(TestUpdateVariablesModel())
+
+    def test_update_variables_with_boundaries(self):
+        self._test_update_variables(TestUpdateVariablesBoundsModel())

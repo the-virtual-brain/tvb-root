@@ -208,7 +208,7 @@ class TestSimulator(BaseTestCase):
         test_simulator.model.configure()
         test_simulator.integrator = HeunDeterministic()
         test_simulator.integrator.configure()
-        test_simulator.integrator.configure_boundaries(test_simulator.model)
+        test_simulator.configure_integration_for_model()
         assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
         min_float = numpy.finfo("double").min
         max_float = numpy.finfo("double").max
@@ -242,7 +242,7 @@ class TestSimulator(BaseTestCase):
         test_simulator._configure_history(None)
         assert numpy.all(test_simulator.integrator.bounded_state_variable_indices is None)
 
-        test_simulator.integrator.configure_boundaries(test_simulator.model)
+        test_simulator.configure_integration_for_model()
         test_simulator._configure_history(None)
         assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
         self._assert_history_inside_boundaries(test_simulator)
@@ -259,7 +259,7 @@ class TestSimulator(BaseTestCase):
         value_for_clamp = numpy.zeros((2, 76, 1))
         test_simulator.integrator.clamped_state_variable_values = value_for_clamp
         test_simulator.integrator.configure()
-        test_simulator.integrator.configure_boundaries(test_simulator.model)
+        test_simulator.configure_integration_for_model()
 
         test_simulator._configure_history(None)
         assert numpy.array_equal(test_simulator.current_state[1:3, :, :], value_for_clamp)
@@ -270,11 +270,38 @@ class TestSimulator(BaseTestCase):
         test_simulator.model = TestUpdateVariablesModel()
         test_simulator.model.configure()
         test_simulator.integrator.configure()
-        test_simulator._configure_integrator_next_step()
+        test_simulator.configure_integration_for_model()
         assert test_simulator.integrate_next_step == test_simulator.integrator.integrate_with_update
-        assert test_simulator.model.state_variables_mask == \
-               [var in test_simulator.model.integration_variables for var in test_simulator.model.state_variables]
-        assert test_simulator.model.state_variables_mask == [True, True, True, False, False]
+        assert numpy.all(test_simulator.model.state_variable_mask == \
+                         [var not in test_simulator.model.non_integrated_variables
+                          for var in test_simulator.model.state_variables])
+        assert numpy.all(test_simulator.model.state_variable_mask == [True, True, True, False, False])
+        assert (test_simulator.model.nvar - test_simulator.model.nintvar) == \
+               len(test_simulator.model.non_integrated_variables) == \
+               (test_simulator.model.nvar - numpy.sum(test_simulator.model.state_variable_mask)) == 2
+
+    def test_integrator_update_variables_with_boundaries_and_clamp_config(self):
+        from .models_test import TestUpdateVariablesBoundsModel
+        test_simulator = simulator.Simulator()
+        test_simulator.model = TestUpdateVariablesBoundsModel()
+        test_simulator.model.configure()
+        test_simulator.integrator.clamped_state_variable_indices = numpy.array([0, 4])
+        test_simulator.integrator.clamped_state_variable_values = numpy.array([0.0, 0.0])
+        test_simulator.integrator.configure()
+        test_simulator.configure_integration_for_model()
+        assert numpy.all(test_simulator.integrator.bounded_state_variable_indices == numpy.array([0, 1, 2, 3]))
+        finfo = numpy.finfo(dtype="float64")
+        assert numpy.all(
+            test_simulator.integrator.state_variable_boundaries ==
+                numpy.array([[0.0, 1.0], [finfo.min, 1.0], [0.0, finfo.max], [finfo.min, finfo.max]]))
+        assert numpy.all(
+            test_simulator.integrator._bounded_integration_state_variable_indices == numpy.array([0, 1, 2]))
+        assert numpy.all(
+            test_simulator.integrator._integration_state_variable_boundaries == numpy.array([[0.0, 1.0],
+                                                                                             [finfo.min, 1.0],
+                                                                                             [0.0, finfo.max]]))
+        assert numpy.all(test_simulator.integrator._clamped_integration_state_variable_indices == numpy.array([0]))
+        assert numpy.all(test_simulator.integrator._clamped_integration_state_variable_values == numpy.array([0.0]))
 
     @pytest.mark.parametrize('default_connectivity', [True, False])
     def test_simulator_regional_stimulus(self, default_connectivity):
