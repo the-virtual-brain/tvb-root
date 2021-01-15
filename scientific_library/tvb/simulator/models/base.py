@@ -124,6 +124,7 @@ class Model(HasTraits):
 
     @property
     def has_nonint_vars(self):
+        """ Flag to determine if there are any non integrated state variables. """
         return self.nnonintvar > 0
 
     def update_derived_parameters(self):
