@@ -202,7 +202,7 @@ class TestIntegrators(BaseTestCase):
                 pass
             integrator.configure()
             integrator.configure_boundaries(model)
-            if model.nvar - model.nintvar:
+            if model.has_nonint_vars:
                 integrator.reconfigure_boundaries_and_clamping_for_integration_state_variables(model)
             # Bound the whole of initial condition:
             x0 = numpy.copy(x)

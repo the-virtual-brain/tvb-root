@@ -117,6 +117,16 @@ class Model(HasTraits):
         """ The number of integrated state variables in this model. """
         return self._nintvar
 
+    @property
+    def nnonintvar(self):
+        """ The number of non integrated state variables in this model. """
+        return self._nvar - self._nintvar
+
+    @property
+    def has_nonint_vars(self):
+        """ Flag to determine if there are any non integrated state variables. """
+        return self.nnonintvar > 0
+
     def update_derived_parameters(self):
         """
         When needed, this should be a method for calculating parameters that are
