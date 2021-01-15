@@ -143,13 +143,12 @@ class CoSimulator(Simulator):
         super(CoSimulator, self).configure(full_configure=full_configure)
         self._configure_cosimulation()
 
-    def _loop_update_cosim_history(self, step, n_reg, state):
+    def _loop_update_cosim_history(self, step, state):
         """
         update the history :
             - copy the state and put the state in the cosim_history and the history
             - copy the delayed state and pass it to the monitor
         :param step: the actual step
-        :param n_reg: the number of region
         :param state: the current state
         :return:
         """
@@ -160,15 +159,14 @@ class CoSimulator(Simulator):
         self.cosim_history.update(step, state_copy)
         state_copy[:, self.proxy_inds] = 0.0
         # Update TVB history to allow for all types of coupling
-        super(CoSimulator,self)._loop_update_history(step, n_reg, state_copy)
+        super(CoSimulator,self)._loop_update_history(step, state_copy)
         return state_delayed
 
-    def _update_cosim_history(self, current_steps, cosim_updates, n_reg, ):
+    def _update_cosim_history(self, current_steps, cosim_updates):
         """
         Update cosim history and history with the external data
         :param current_steps: the steps to update
         :param cosim_updates: the value of the update step
-        :param n_reg: the number of region
         :return:
         """
         # Update the proxy nodes in the cosimulation history for synchronization_n_step past steps
@@ -177,7 +175,7 @@ class CoSimulator(Simulator):
         # TODO optimize step : update all the steps in one
         for step in current_steps:
             state = numpy.copy(self.cosim_history.query(step))
-            super(CoSimulator,self)._loop_update_history(step, n_reg, state)
+            super(CoSimulator,self)._loop_update_history(step, state)
 
     def __call__(self, cosim_updates=None, random_state=None):
         """
@@ -216,10 +214,9 @@ class CoSimulator(Simulator):
         start_step = self.current_step + 1
         node_coupling = self._loop_compute_node_coupling(start_step)
 
-        n_reg = self.connectivity.number_of_regions
         if cosim_updates is not None:
             self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt), dtype=numpy.int),
-                                       cosim_updates[1], n_reg)
+                                       cosim_updates[1])
 
         # integration loop
         if cosim_updates is None:
@@ -229,7 +226,7 @@ class CoSimulator(Simulator):
         for step in range(start_step, start_step + n_steps):
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
-            state_delayed = self._loop_update_cosim_history(step, n_reg, state)
+            state_delayed = self._loop_update_cosim_history(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
             output = self._loop_monitor_output(step-self.synchronization_n_step, state_delayed, node_coupling)
             if output is not None:
