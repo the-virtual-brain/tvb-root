@@ -4,8 +4,9 @@ import numpy
 
 from tvb.simulator.history import BaseHistory
 from tvb.simulator.descriptors import Dim, NDArray
-from tvb.simulator.backend.ref import ReferenceBackend
 
+#  # Update simulator initial_conditions to be used later on for CosimHistory initialization
+#         sim.initial_conditions = history
 
 class CosimHistory(BaseHistory):
 
@@ -26,7 +27,6 @@ class CosimHistory(BaseHistory):
 
     @property
     def nbytes(self):
-        arrays = 'weights delays cvars'.split()
         return self.buffer.nbytes
 
     def __init__(self,  n_time, n_var, n_node, n_mode):
@@ -34,11 +34,13 @@ class CosimHistory(BaseHistory):
         self.n_var = n_var
         self.n_node = n_node
         self.n_mode = n_mode
-        self.buffer[:]=numpy.NAN
+        self.buffer[:] = numpy.NAN
 
-    def initialize(self, initial_condition):
-        """Initialize CosimHistory from the initial condition."""
-        self.buffer[:] = initial_condition[:self.n_time]
+    def initialize(self, history, current_step=0):
+        """Initialize CosimHistory from the TVB history which is assumed already configured.
+        """
+        for i_step, step in enumerate(range(current_step, current_step+self.n_time)):
+            self.buffer[i_step] = history.query(step)[0]
 
     def update(self, step, new_state):
         """This method will update the CosimHistory state buffer
@@ -56,7 +58,7 @@ class CosimHistory(BaseHistory):
                    sim.model.nvar,
                    sim.number_of_nodes,
                    sim.model.number_of_modes)
-        inst.initialize(sim.initial_conditions)
+        inst.initialize(sim.history, sim.current_step)
         return inst
 
     def update_state_from_cosim(self, steps, new_states, vois, proxy_inds):

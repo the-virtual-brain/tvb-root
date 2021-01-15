@@ -107,8 +107,8 @@ class CoSimulator(Simulator):
                                         self.number_of_nodes,self.model.number_of_modes]
         # We create a CosimHistory,
         # for delayed state [synchronization_step+1, n_var, n_node, n_mode],
-        # including, initialization of the delayed state from the simulator's initial condition,
-        # which must be already configured during history configuration
+        # including, initialization of the delayed state from the simulator's history,
+        # which must be already configured.
         self.cosim_history = CosimHistory.from_simulator(self)
 
         # Configure the cosimulator monitor
