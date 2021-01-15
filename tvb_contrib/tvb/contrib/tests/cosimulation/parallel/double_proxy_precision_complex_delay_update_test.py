@@ -66,10 +66,12 @@ class TestDoubleProxyPrecisionComplexDelayUpdate(BaseTestCase):
         time, result_ref = sim_ref(time_synchronize)
 
         # COMPARE PROXY 1
-        diff_1 = np.where(np.squeeze(result_ref[:,proxy_id_2,:], axis=2)[0] != np.squeeze(result_1[0][:,proxy_id_2,:], axis=2)[0])
+        diff_1 = np.where(np.squeeze(result_ref[:, proxy_id_2, :], axis=2)[0] !=
+                          np.squeeze(result_1[0][:, proxy_id_2, :], axis=2)[0])
         assert diff_1[0].size == 0
         # COMPARE PROXY 2
-        diff_2 = np.where(np.squeeze(result_ref[:,proxy_id_1,:], axis=2)[0] != np.squeeze(result_2[0][:,proxy_id_1,:], axis=2)[0])
+        diff_2 = np.where(np.squeeze(result_ref[:, proxy_id_1, :], axis=2)[0] !=
+                          np.squeeze(result_2[0][:, proxy_id_1, :], axis=2)[0])
         assert diff_2[0].size == 0
 
         for i in range(0, 100):
@@ -88,8 +90,10 @@ class TestDoubleProxyPrecisionComplexDelayUpdate(BaseTestCase):
             time, result_ref = sim_ref(time_synchronize)
 
             # COMPARE PROXY 1
-            diff_1 = np.where(np.squeeze(result_ref[:,proxy_id_2,:], axis=2)[0] != np.squeeze(result_1[0][:,proxy_id_2,:], axis=2)[0])
+            diff_1 = np.where(np.squeeze(result_ref[:, proxy_id_2, :], axis=2)[0] !=
+                              np.squeeze(result_1[0][:, proxy_id_2, :], axis=2)[0])
             assert diff_1[0].size == 0
             # COMPARE PROXY 2
-            diff_2 = np.where(np.squeeze(result_ref[:,proxy_id_1,:], axis=2)[0] != np.squeeze(result_2[0][:,proxy_id_1,:], axis=2)[0])
+            diff_2 = np.where(np.squeeze(result_ref[:, proxy_id_1,:], axis=2)[0] !=
+                              np.squeeze(result_2[0][:, proxy_id_1,:], axis=2)[0])
             assert diff_2[0].size == 0
