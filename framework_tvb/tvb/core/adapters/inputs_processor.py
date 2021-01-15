@@ -49,7 +49,7 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
         if not hasattr(view_model, field.name):
             continue
         attr_vm = getattr(view_model, field.name)
-        if type(field) == TraitUploadField:
+        if attr_vm and type(field) == TraitUploadField:
             attr_vm = os.path.basename(attr_vm)
 
         if isinstance(field, TraitDataTypeSelectField):
