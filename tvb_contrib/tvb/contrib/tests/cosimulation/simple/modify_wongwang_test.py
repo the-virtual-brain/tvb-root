@@ -81,7 +81,7 @@ class TestModifyWongWangSimple(TestModifyWongWang):
         sim_2 = CoSimulator(
                             voi=np.array([0]),
                             synchronization_time=10.0,
-                            cosim_monitors=RawCosim(),
+                            cosim_monitors=(RawCosim(),),
                             proxy_inds=np.asarray([], dtype=np.int),
                             model=model,
                             connectivity=connectivity,
@@ -225,6 +225,8 @@ class TestModifyWongWangSimple(TestModifyWongWang):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
         # The modify model without proxy
         np.random.seed(42)
+        init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
+                               np.random.random_sample((385, 1, 76, 1))), axis=1)
         model = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim_6 = CoSimulator(
@@ -237,6 +239,7 @@ class TestModifyWongWangSimple(TestModifyWongWang):
                             coupling=coupling,
                             integrator=integrator,
                             monitors=(monitors,),
+                            initial_conditions=init,
                             )
         sim_6.configure()
         result_2_all = sim_6.run()[0][1][:,0,0,0] # run the first steps because the history is delayed
