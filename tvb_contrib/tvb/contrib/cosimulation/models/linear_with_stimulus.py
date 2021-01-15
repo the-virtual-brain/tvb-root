@@ -32,7 +32,7 @@ Generic linear model.
 """
 
 import numpy
-from tvb.simulator.models.base import Model
+from .base import Model
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 from tvb.simulator.models.linear import Linear
 
@@ -83,6 +83,7 @@ class Linear(Linear):
         default=("R", 'Rin'), )
 
     state_variables = ('R', 'Rin')
+    integration_variables = ('R',)
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
@@ -100,7 +101,7 @@ class Linear(Linear):
             setattr(self, "Rin", numpy.array([0.0, ]))
             setattr(self, "_Rin", numpy.array([False, ]))
 
-    def update_non_state_variables(self, state_variables, coupling, local_coupling=0.0, use_numba=True):
+    def update_non_state_variables_after_integration(self, state_variables):
         # Reset to 0 the Rin for nodes not updated by Spiking Network
         state_variables[1] = numpy.where(self._Rin, state_variables[1], 0.0)
         return state_variables
