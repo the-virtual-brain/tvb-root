@@ -5,8 +5,6 @@ import numpy
 from tvb.simulator.history import BaseHistory
 from tvb.simulator.descriptors import Dim, NDArray
 
-#  # Update simulator initial_conditions to be used later on for CosimHistory initialization
-#         sim.initial_conditions = history
 
 class CosimHistory(BaseHistory):
 
