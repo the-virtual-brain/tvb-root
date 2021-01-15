@@ -38,13 +38,13 @@ class ReducedWongWangProxy(ReducedWongWang):
         default=("S","H"),
         doc="""default state variables to be monitored""")
     _coupling_variable = None
-    integration_variables = ['S']
+    non_integrated_variables = ["H"]
     H_save = None
 
-    def update_state_variables_before_integration(self,x,c, local_coupling=0.0, stimulus=0.0):
+    def update_state_variables_before_integration(self, x, c, local_coupling=0.0, stimulus=0.0):
         return None
 
-    def update_state_variables_after_integration(self,X):
+    def update_state_variables_after_integration(self, X):
         X[1,:] = self.H_save # only work for Euler integrator
         return X
 
