@@ -79,6 +79,8 @@ class CoSimulator(Simulator):
 
     cosim_history = None  # type: CosimHistory
 
+    _compute_requirements = True
+
     def _configure_cosimulation(self):
         """This method will
            - set the synchronization time and number of steps,
@@ -120,6 +122,10 @@ class CoSimulator(Simulator):
         if self.exclusive:
             self.connectivity.weights[self.proxy_inds][:, self.proxy_inds] = 0.0
             self.connectivity.configure()
+
+        # (Re)Set his flag after every configuration, so that runtime and storage requirements are recomputed,
+        # just in case the simulator has been modified (connectivity size, synchronization time, dt etc)
+        self._compute_requirements = True
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
@@ -177,7 +183,7 @@ class CoSimulator(Simulator):
             state = numpy.copy(self.cosim_history.query(step))
             super(CoSimulator,self)._loop_update_history(step, state)
 
-    def __call__(self, cosim_updates=None, random_state=None):
+    def __call__(self, cosim_updates=None, random_state=None, recompute_requirements=False):
         """
         Return an iterator which steps through simulation time, generating monitor outputs.
 
@@ -203,11 +209,14 @@ class CoSimulator(Simulator):
         else:
             self.simulation_length = cosim_updates[1].shape[0]*self.integrator.dt
 
-        # Initialization # TODO : avoid to do it at each call ??
-        self._guesstimate_runtime()
-        self._calculate_storage_requirement()
+        # Initialization
+        if self._compute_requirements or recompute_requirements:
+            self._guesstimate_runtime()
+            self._calculate_storage_requirement()
+            self._compute_requirements = False
         # TODO a provided random_state should be used for history init
         self.integrator.set_random_state(random_state)
+
         local_coupling = self._prepare_local_coupling()
         stimulus = self._prepare_stimulus()
         state = self.current_state
