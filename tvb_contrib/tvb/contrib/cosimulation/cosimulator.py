@@ -105,8 +105,8 @@ class CoSimulator(Simulator):
             if cvar not in self.voi:
                 raise ValueError('The variables of interest need to contain the coupling variables')
 
-        self.good_update_value_shape = [self.synchronization_n_step, self.voi.shape[0],
-                                        self.number_of_nodes,self.model.number_of_modes]
+        self.good_update_value_shape = (self.synchronization_n_step, self.voi.shape[0],
+                                        self.number_of_nodes,self.model.number_of_modes)
         # We create a CosimHistory,
         # for delayed state [synchronization_step+1, n_var, n_node, n_mode],
         # including, initialization of the delayed state from the simulator's history,
@@ -196,24 +196,26 @@ class CoSimulator(Simulator):
 
         self.calls += 1
 
-        # Check if the cosimulation update inputs are correct or not
-        if cosim_updates is not None\
-            and len(cosim_updates) == 2\
-            and len(cosim_updates[1].shape) == 4\
-            and self.good_update_value_shape[0] <  cosim_updates[1].shape[0]\
-            and self.good_update_value_shape[1] != cosim_updates[1].shape[1]\
-            and self.good_update_value_shape[2] != cosim_updates[1].shape[2]\
-            and self.good_update_value_shape[3] != cosim_updates[1].shape[3]:
-            raise ValueError("Incorrect update value shape %s, expected %s"%
-            cosim_updates[1].shape, self.good_update_value_shape )
+        # Check if the cosimulation update inputs (if any) are correct and update cosimulation history:
         if cosim_updates is None:
             n_steps = self.synchronization_n_step
-        else:
+        elif len(cosim_updates) != 2:
+            raise ValueError("Incorrect cosimulation updates input length %s, expected 2 (i.e., time steps, values)"
+                             % len(cosim_updates))
+        elif len(cosim_updates[1].shape) != 4 \
+                 or self.good_update_value_shape[0] < cosim_updates[1].shape[0] \
+                 or np.any(self.good_update_value_shape[1:] != cosim_updates[1].shape[1:]):
+            raise ValueError("Incorrect cosimulation updates values shape %s, \nexpected %s "
+                             "(i.e., (<=synchronization_n_step, n_voi, number_of_nodes, number_of_modes))" %
+                                 cosim_updates[1].shape, self.good_update_value_shape)
             n_steps = cosim_updates[0].shape[0]
-            assert n_steps <= self.synchronization_n_step
-        self.simulation_length = n_steps * self.integrator.dt
+            # Now update cosimulation history with the cosimulation inputs:
+            self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt),
+                                                   dtype=numpy.int),
+                                       cosim_updates[1])
 
         # Initialization
+        self.simulation_length = n_steps * self.integrator.dt
         if self._compute_requirements or recompute_requirements:
             self._guesstimate_runtime()
             self._calculate_storage_requirement()
@@ -225,11 +227,6 @@ class CoSimulator(Simulator):
         state = self.current_state
         start_step = self.current_step + 1
         node_coupling = self._loop_compute_node_coupling(start_step)
-
-        if cosim_updates is not None:
-            self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt),
-                                                   dtype=numpy.int),
-                                       cosim_updates[1])
 
         # integration loop
         for step in range(start_step, start_step + n_steps):
