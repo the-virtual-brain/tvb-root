@@ -218,7 +218,6 @@ class CoSimulator(Simulator):
             self._guesstimate_runtime()
             self._calculate_storage_requirement()
             self._compute_requirements = False
-        # TODO a provided random_state should be used for history init
         self.integrator.set_random_state(random_state)
 
         local_coupling = self._prepare_local_coupling()
