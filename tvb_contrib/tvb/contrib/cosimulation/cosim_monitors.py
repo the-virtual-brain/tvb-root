@@ -43,7 +43,7 @@ class RawDelayed(CosimMonitor):
         for step in range(start_step, start_step + n_steps):
             times.append(step*self.dt)
             values.append(history.query_sparse(step))
-        return [numpy.array(times),numpy.array(values)]
+        return [numpy.array(times), numpy.array(values)]
 
 
 class RawCosim(CosimMonitor):
@@ -66,7 +66,7 @@ class RawCosim(CosimMonitor):
         for step in range(start_step, start_step + n_steps):
             times.append(step*self.dt)
             values.append(cosim_history.query(step))
-        return [numpy.array(times),numpy.array(values)]
+        return [numpy.array(times), numpy.array(values)]
 
 
 class CosimCoupling(CosimMonitor):

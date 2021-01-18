@@ -184,7 +184,7 @@ class TvbSim:
         else:
             return time, s_out
 
-    def transform_rate_to_s(self,rate_data):
+    def transform_rate_to_s(self, rate_data):
         """
         Transform the rate in percentage of open synapse
         :param rate_data: rate data
@@ -197,7 +197,7 @@ class TvbSim:
                 g = self.sim.model.gamma
                 t = self.sim.model.tau_s
                 return _numba_dfun_proxy(x,np.expand_dims(h,[0,2]),g,t)
-            X = self.sim.integrator.scheme(X,dfun_proxy,0.0,0.0,0.0)
+            X = self.sim.integrator.scheme(X, dfun_proxy, 0.0, 0.0, 0.0)
             S.append(X)
         self.current_state = X
         return np.concatenate(S)

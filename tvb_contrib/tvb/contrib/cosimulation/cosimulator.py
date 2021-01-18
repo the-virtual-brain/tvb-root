@@ -256,4 +256,5 @@ class CoSimulator(Simulator):
         if start_step + n_steps > self.good_cosim_update_values_shape[0] + self.current_step:
            ValueError("Incorrect start_step, too early step %i, the value should between %i and %i".format(
                       start_step,self.current_step, self.good_cosim_update_values_shape[0] + self.current_step))
-        return [monitor.sample(start_step, n_steps,self.cosim_history,self.history) for monitor in self.cosim_monitors]
+        return [monitor.sample(start_step, n_steps,self.cosim_history, self.history)
+                for monitor in self.cosim_monitors]

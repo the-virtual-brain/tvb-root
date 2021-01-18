@@ -54,28 +54,28 @@ class TestDoubleProxyPrecisionSimple(BaseTestCase):
         # simulation with one proxy
         rgn.seed(42)
         sim_1 = TvbSim(weight, delay, proxy_id_1, resolution_simulation,
-                       synchronization_time,initial_condition=initial_condition)
+                       synchronization_time, initial_condition=initial_condition)
         time, result_1 = sim_1(synchronization_time)
 
         # simulation_2 with one proxy
         rgn.seed(42)
         sim_2 = TvbSim(weight, delay, proxy_id_2, resolution_simulation,
-                       synchronization_time,initial_condition=initial_condition)
+                       synchronization_time, initial_condition=initial_condition)
         time, result_2 = sim_2(synchronization_time)
 
         # full simulation
         rgn.seed(42)
         sim_ref = TvbSim(weight, delay, [], resolution_simulation,
-                         synchronization_time,initial_condition=initial_condition)
+                         synchronization_time, initial_condition=initial_condition)
         time, result_ref = sim_ref(synchronization_time)
 
         # COMPARE PROXY 1
-        diff_1 = np.where(np.squeeze(result_ref[:,proxy_id_2,:], axis=2)[0] !=
-                          np.squeeze(result_1[0][:,proxy_id_2,:], axis=2)[0])
+        diff_1 = np.where(np.squeeze(result_ref[:, proxy_id_2, :], axis=2)[0] !=
+                          np.squeeze(result_1[0][:, proxy_id_2, :], axis=2)[0])
         assert diff_1[0].size == 0
         # COMPARE PROXY 2
-        diff_2 = np.where(np.squeeze(result_ref[:,proxy_id_1,:], axis=2)[0] !=
-                          np.squeeze(result_2[0][:,proxy_id_1,:], axis=2)[0])
+        diff_2 = np.where(np.squeeze(result_ref[:, proxy_id_1, :], axis=2)[0] !=
+                          np.squeeze(result_2[0][:, proxy_id_1, :], axis=2)[0])
         assert diff_2[0].size == 0
 
         for i in range(0, 100):
@@ -94,10 +94,10 @@ class TestDoubleProxyPrecisionSimple(BaseTestCase):
             time, result_ref = sim_ref(synchronization_time)
 
             # COMPARE PROXY 1
-            diff_1 = np.where(np.squeeze(result_ref[:,proxy_id_2,:], axis=2)[0] !=
-                              np.squeeze(result_1[0][:,proxy_id_2,:], axis=2)[0])
+            diff_1 = np.where(np.squeeze(result_ref[:, proxy_id_2, :], axis=2)[0] !=
+                              np.squeeze(result_1[0][:, proxy_id_2, :], axis=2)[0])
             assert diff_1[0].size == 0
             # COMPARE PROXY 2
-            diff_2 = np.where(np.squeeze(result_ref[:,proxy_id_1,:], axis=2)[0] !=
-                              np.squeeze(result_2[0][:,proxy_id_1,:], axis=2)[0])
+            diff_2 = np.where(np.squeeze(result_ref[:, proxy_id_1, :], axis=2)[0] !=
+                              np.squeeze(result_2[0][:, proxy_id_1, :], axis=2)[0])
             assert diff_2[0].size == 0
