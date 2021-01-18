@@ -64,22 +64,7 @@ class CosimHistory(BaseHistory):
            - the state variables with indices vois,
            - the region nodes with indices proxy_inds,
            - and for the specified time steps."""
-        index = [[] for i in range(4)]
-        # get the index to update #TODO need to be optimize
-        for i in steps % self.n_time:
-            for j in vois:
-                for k in proxy_inds:
-                    for l in range(self.buffer.shape[3]):
-                        index[0].append(i)
-                        index[1].append(j)
-                        index[2].append(k)
-                        index[3].append(l)
-        shape = self.buffer[tuple(index)].shape
-        self.buffer[tuple(index)] = new_states.reshape(shape)
-        # The following two methods are faster but loose precision...:
-        # self.buffer[numpy.ix_(numpy.arange(steps.shape[0]), vois,
-        #                                    proxy_inds, numpy.arange(self.n_mode))] = new_states
-        # self.buffer[np.arange(steps.shape[0])[:, None, None, None],
-        #             vois[None, :, None, None],
-        #             proxy_inds[None, None, :, None],
-        #             numpy.arange(self.n_mode)[None, None, None, :]] = new_states
+        self.buffer[(steps % self.n_time)[:, None, None, None],
+                    vois[None, :, None, None],
+                    proxy_inds[None, None, :, None],
+                    numpy.arange(self.n_mode)[None, None, None, :]] = new_states
