@@ -193,8 +193,10 @@ class CoSimulator(Simulator):
         :param random_state:  State of NumPy RNG to use for stochastic integration,
         :return: Iterator over monitor outputs.
         """
+
         self.calls += 1
-        # check if the update value are correct or not
+
+        # Check if the cosimulation update inputs are correct or not
         if cosim_updates is not None\
             and len(cosim_updates) == 2\
             and len(cosim_updates[1].shape) == 4\
@@ -205,9 +207,11 @@ class CoSimulator(Simulator):
             raise ValueError("Incorrect update value shape %s, expected %s"%
             cosim_updates[1].shape, self.good_update_value_shape )
         if cosim_updates is None:
-            self.simulation_length = self.synchronization_n_step*self.integrator.dt
+            n_steps = self.synchronization_n_step
         else:
-            self.simulation_length = cosim_updates[1].shape[0]*self.integrator.dt
+            n_steps = cosim_updates[0].shape[0]
+            assert n_steps <= self.synchronization_n_step
+        self.simulation_length = n_steps * self.integrator.dt
 
         # Initialization
         if self._compute_requirements or recompute_requirements:
@@ -229,10 +233,6 @@ class CoSimulator(Simulator):
                                        cosim_updates[1])
 
         # integration loop
-        if cosim_updates is None:
-            n_steps = self.synchronization_n_step
-        else:
-            n_steps = cosim_updates[0].shape[0]
         for step in range(start_step, start_step + n_steps):
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
