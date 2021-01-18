@@ -105,8 +105,8 @@ class CoSimulator(Simulator):
             if cvar not in self.voi:
                 raise ValueError('The variables of interest need to contain the coupling variables')
 
-        self.good_cosim_update_values_shape = (self.synchronization_n_step, len(self.proxy_inds),
-                                               self.voi.shape[0], self.model.number_of_modes)
+        self.good_cosim_update_values_shape = (self.synchronization_n_step, self.voi.shape[0],
+                                               self.proxy_inds.shape[0], self.model.number_of_modes)
         # We create a CosimHistory,
         # for delayed state [synchronization_step+1, n_var, n_node, n_mode],
         # including, initialization of the delayed state from the simulator's history,
@@ -206,7 +206,7 @@ class CoSimulator(Simulator):
                  or self.good_cosim_update_values_shape[0] < cosim_updates[1].shape[0] \
                  or numpy.any(self.good_cosim_update_values_shape[1:] != cosim_updates[1].shape[1:]):
             raise ValueError("Incorrect cosimulation updates values shape %s, \nexpected %s "
-                             "(i.e., (<=synchronization_n_step, n_proxy_nodes, n_voi, number_of_modes))" %
+                             "(i.e., (<=synchronization_n_step, n_voi, n_proxy_nodes, number_of_modes))" %
                              (str(cosim_updates[1].shape), str(self.good_cosim_update_values_shape)))
         else:
             n_steps = cosim_updates[0].shape[0]

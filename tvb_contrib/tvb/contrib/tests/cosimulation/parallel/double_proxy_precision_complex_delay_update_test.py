@@ -43,8 +43,6 @@ class TestDoubleProxyPrecisionComplexDelayUpdate(BaseTestCase):
         weight = np.array([[5, 2, 4, 0], [8, 5, 4, 1], [6, 1, 7, 9], [10, 0, 5, 6]])
         delay = np.array([[7, 8, 5, 1], [9, 3, 7, 9], [4, 3, 2, 8], [9, 10, 11, 5]])
         max = np.int(np.max(delay)*10+1)
-        init_value = np.array([[[0.1, 0.0], [0.1, 0.0], [0.2, 0.0], [0.6, 0.0]]] * max)
-        initial_condition = init_value.reshape((max, 2, weight.shape[0], 1))
         resolution_simulation = 0.1
         time_synchronize = np.min(delay)
         proxy_id_1 = [1]

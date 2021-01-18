@@ -129,14 +129,18 @@ def tvb_simulation(time, sim, data_proxy):
     :return:
         the time, the firing rate and the state of the network
     """
-    if data_proxy is not None:
-        data_proxy[1] = np.reshape(data_proxy[1], (data_proxy[1].shape[0], data_proxy[1].shape[1], 1, 1))
     if sim.__class__ == lab.simulator.Simulator:
         result = sim.run(simulation_length=time)
         time = result[0][0]
         s = result[0][1][:, 0]
         rate = result[0][1][:, 1]
     else:
+        if data_proxy is not None:
+            # We assume only 1 voi, 1 or 2 proxy nodes, and only 1 mode,
+            # therefore data_proxy.shape -> (synchronization_n_step, n_voi=1, n_proxy, n_mode=1)
+            data_proxy[1] = np.reshape(data_proxy[1],
+                                       (data_proxy[1].shape[0], sim.voi.shape[0],
+                                        sim.proxy_inds.shape[0], sim.model.number_of_modes))
         start = sim.current_step - sim.synchronization_n_step + 1
         n_step = sim.synchronization_n_step
         result_delayed = sim.run(cosim_updates=data_proxy)

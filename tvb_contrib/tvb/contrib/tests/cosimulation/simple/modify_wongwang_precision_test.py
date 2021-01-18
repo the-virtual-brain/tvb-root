@@ -177,11 +177,11 @@ class TestModifyWongWangRate(TestModifyWongWang):
         for j in range(0,10):
             result_4_all_step = sim_4.run(
                 cosim_updates=[np.array([result_all[0][0][(10 * j) + i] for i in range(10)]),
-                               np.ones((10,len(id_proxy), 1,1)) * 0.7])
+                               np.ones((10, 1, len(id_proxy), 1)) * 0.7])
             result_4_all[0] = np.concatenate((result_4_all[0], result_4_all_step[0][0]))
             result_4_all[1] = np.concatenate((result_4_all[1], result_4_all_step[0][1]))
 
-        # The begging is good for rate and S
+        # The beggining is good for rate and S
         for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_4_all[1][i+10, 0, len(id_proxy):]
             diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_4_all[1][i+10, 0, :len(id_proxy)]
@@ -233,7 +233,7 @@ class TestModifyWongWangRate(TestModifyWongWang):
             result_5_all_step = sim_5.run(
                 cosim_updates=[np.array([result_all[0][0][(10 * j) + i] for i in range(10)]),
                                np.array([result_all[0][1][(10 * j) + i][0][id_proxy]
-                                         for i in range(10)]).reshape((10,len(id_proxy) , 1, 1))])
+                                         for i in range(10)]).reshape((10, 1, len(id_proxy), 1))])
             result_5_all[0] = np.concatenate((result_5_all[0], result_5_all_step[0][0]))
             result_5_all[1] = np.concatenate((result_5_all[1], result_5_all_step[0][1]))
         # test for rate and after for S
