@@ -136,7 +136,7 @@ def tvb_simulation(time, sim, data_proxy):
         time = result[0][0]
         s = result[0][1][:, 0]
         rate = result[0][1][:, 1]
-    else :
+    else:
         start = sim.current_step - sim.synchronization_n_step + 1
         n_step = sim.synchronization_n_step
         result_delayed = sim.run(cosim_updates=data_proxy)

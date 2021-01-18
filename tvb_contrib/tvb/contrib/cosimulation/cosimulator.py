@@ -224,7 +224,8 @@ class CoSimulator(Simulator):
         node_coupling = self._loop_compute_node_coupling(start_step)
 
         if cosim_updates is not None:
-            self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt), dtype=numpy.int),
+            self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt),
+                                                   dtype=numpy.int),
                                        cosim_updates[1])
 
         # integration loop
