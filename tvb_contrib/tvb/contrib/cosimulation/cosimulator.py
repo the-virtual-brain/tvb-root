@@ -105,8 +105,8 @@ class CoSimulator(Simulator):
             if cvar not in self.voi:
                 raise ValueError('The variables of interest need to contain the coupling variables')
 
-        self.good_update_value_shape = (self.synchronization_n_step, self.voi.shape[0],
-                                        self.number_of_nodes,self.model.number_of_modes)
+        self.good_cosim_update_values_shape = (self.synchronization_n_step, len(self.proxy_inds),
+                                               self.voi.shape[0], self.model.number_of_modes)
         # We create a CosimHistory,
         # for delayed state [synchronization_step+1, n_var, n_node, n_mode],
         # including, initialization of the delayed state from the simulator's history,
@@ -200,14 +200,15 @@ class CoSimulator(Simulator):
         if cosim_updates is None:
             n_steps = self.synchronization_n_step
         elif len(cosim_updates) != 2:
-            raise ValueError("Incorrect cosimulation updates input length %s, expected 2 (i.e., time steps, values)"
+            raise ValueError("Incorrect cosimulation updates input length %i, expected 2 (i.e., time steps, values)"
                              % len(cosim_updates))
         elif len(cosim_updates[1].shape) != 4 \
-                 or self.good_update_value_shape[0] < cosim_updates[1].shape[0] \
-                 or np.any(self.good_update_value_shape[1:] != cosim_updates[1].shape[1:]):
+                 or self.good_cosim_update_values_shape[0] < cosim_updates[1].shape[0] \
+                 or numpy.any(self.good_cosim_update_values_shape[1:] != cosim_updates[1].shape[1:]):
             raise ValueError("Incorrect cosimulation updates values shape %s, \nexpected %s "
-                             "(i.e., (<=synchronization_n_step, n_voi, number_of_nodes, number_of_modes))" %
-                                 cosim_updates[1].shape, self.good_update_value_shape)
+                             "(i.e., (<=synchronization_n_step, n_proxy_nodes, n_voi, number_of_modes))" %
+                             (str(cosim_updates[1].shape), str(self.good_cosim_update_values_shape)))
+        else:
             n_steps = cosim_updates[0].shape[0]
             # Now update cosimulation history with the cosimulation inputs:
             self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt),
@@ -249,10 +250,10 @@ class CoSimulator(Simulator):
         :return:
         """
         # check if it's valid input
-        if self.good_update_value_shape[0] < n_steps:
+        if self.good_cosim_update_values_shape[0] < n_steps:
            ValueError("Incorrect n_step, for a number of steps %i, the value should be under %i".format(
-                      n_steps, self.good_update_value_shape[0]))
-        if start_step + n_steps > self.good_update_value_shape[0] + self.current_step:
+                      n_steps, self.good_cosim_update_values_shape[0]))
+        if start_step + n_steps > self.good_cosim_update_values_shape[0] + self.current_step:
            ValueError("Incorrect start_step, too early step %i, the value should between %i and %i".format(
-                      start_step,self.current_step,self.good_update_value_shape[0] + self.current_step))
+                      start_step,self.current_step, self.good_cosim_update_values_shape[0] + self.current_step))
         return [monitor.sample(start_step, n_steps,self.cosim_history,self.history) for monitor in self.cosim_monitors]
