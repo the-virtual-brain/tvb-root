@@ -100,7 +100,7 @@ class CoSimulator(Simulator):
         if self.synchronization_n_step > numpy.min(self.connectivity.idelays[numpy.nonzero(self.connectivity.idelays)]):
             raise ValueError('the synchronization time is too long')
 
-        # check if the couplings variables are in the variables of interest to change
+        # Check if the couplings variables are in the variables of interest to change
         for cvar in self.model.cvar:
             if cvar not in self.voi:
                 raise ValueError('The variables of interest need to contain the coupling variables')
