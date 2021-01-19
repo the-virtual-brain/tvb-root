@@ -259,6 +259,9 @@ class H5File(object):
         meta = storage_manager.get_metadata()
         return meta.get(param)
 
+    def store_metadata_param(self, key, value):
+        self.storage_manager.set_metadata({key: value})
+
     @staticmethod
     def h5_class_from_file(path):
         # type: (str) -> typing.Type[H5File]

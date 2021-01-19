@@ -98,7 +98,7 @@ class OperationFacade:
                     for key, value in adapter_instance.get_form_class().get_upload_information().items():
                         data_file = fetch_file(request_file_key=key, file_extension=value)
                         data_file_path = save_temporary_file(data_file, temp_folder)
-                        view_model_h5.storage_manager.set_metadata({key: data_file_path})
+                        view_model_h5.store_metadata_param(key, data_file_path)
             view_model = h5.load_view_model_from_file(model_h5_path)
 
             ga = self.operation_service._prepare_metadata(algorithm.algorithm_category, {}, None,
