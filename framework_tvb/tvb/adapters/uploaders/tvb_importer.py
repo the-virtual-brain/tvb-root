@@ -113,12 +113,12 @@ class TVBImporter(ABCUploader):
                 tmp_folder = os.path.join(self.get_storage_path(), "tmp_import")
                 self.storage_interface.unpack_zip(view_model.data_file, tmp_folder)
                 is_group = False
+                linked_group_op_id = None
                 current_op_id = current_op.id
                 for _, dirs, _ in os.walk(tmp_folder):
                     # In case we import a DatatypeGroup, we want the default import flow
                     if dirs:
                         current_op_id = None
-                        linked_group_op_id = None
                         is_group = True
                     # We check for 3 because in the case of group simulation with links zip the first folder contains
                     # the links which will need the current op id and the rest are from the normal group simulation
