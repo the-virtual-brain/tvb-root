@@ -89,11 +89,7 @@ class TVBLinkedExporter(ABCExporter):
                     dt = dao.get_datatype_by_gid(reference[1].hex)
                     self.copy_dt_to_export_folder(dt, data_export_folder)
 
-        with H5File.from_file(file_destination) as dest_file:
-            if 'parent_burst' in dest_file.storage_manager.get_metadata():
-                dest_file.storage_manager.remove_metadata('parent_burst')
-
-
+        H5File.remove_metadata_param(file_destination, 'parent_burst')
 
     def get_export_file_extension(self, data):
         return "zip"

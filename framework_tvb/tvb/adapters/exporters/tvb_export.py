@@ -38,7 +38,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
-from tvb.core.neotraits._h5core import H5File
+from tvb.core.neotraits.h5 import H5File
 
 
 class TVBExporter(ABCExporter):
@@ -90,10 +90,7 @@ class TVBExporter(ABCExporter):
         file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
         if not os.path.exists(file_destination):
             FilesHelper().copy_file(data_path, file_destination)
-
-        with H5File.from_file(file_destination) as dest_file:
-            if 'parent_burst' in dest_file.storage_manager.get_metadata():
-                dest_file.storage_manager.remove_metadata('parent_burst')
+        H5File.remove_metadata_param(file_destination, 'parent_burst')
 
         return file_destination
 
