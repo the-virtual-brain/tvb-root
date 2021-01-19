@@ -14,30 +14,27 @@ class CosimMonitor(HasTraits):
     Abstract base class for cosimnulaiton monitors implementations.
     """
 
+    def get_sample(self, start_step, n_steps, history,cosim):
+        times = []
+        values = []
+        for step in range(start_step, start_step + n_steps):
+            if cosim:
+                state = history.query(step)
+            else:
+                state = history.query(step)[0]
+            tmp = super(self.__class__,self).sample(step,state)
+            if tmp is not None:
+                times.append(tmp[0])
+                values.append(tmp[1])
+        return [numpy.array(times), numpy.array(values)]
+
     @abc.abstractmethod
-    def cosim_sample(self, voi, start_step, n_steps, cosim_history, history):
+    def sample(self, voi, start_step, n_steps, cosim_history, history):
         """
         This method provides monitor output, and should be overridden by subclasses.
         Use the original signature.
         """
         pass
-
-
-class CosimMonitorFromHistory(CosimMonitor):
-    """
-        Abstract base class for a monitor that records output raw data of coupling variables
-        from the full history of a tvb simulation
-    """
-
-    def cosim_sample(self, voi, dt, start_step, n_steps, cosim_history, history):
-        "Return voi's states of the delayed (by synchronization time) TVB history"
-        times = []
-        values = []
-        for step in range(start_step, start_step + n_steps):
-            times.append(step * dt)
-            values.append(history.query_sparse(step)[voi])
-        return [numpy.array(times), numpy.array(values)]
-
 
 class CosimMonitorFromCoupling(CosimMonitor):
     """
@@ -55,32 +52,52 @@ class CosimMonitorFromCoupling(CosimMonitor):
                dynamic equations of the Model. Its primary purpose is to 'rescale' the
                incoming activity to a level appropriate to Model.""")
 
-    def cosim_sample(self, voi, dt, start_step, n_steps, cosim_history, history):
-        "Return voi's coupling values of the nodes from the TVB history"
-        times = []
-        couplings = []
-        for step in range(start_step, start_step + n_steps):
-            times.append(step * dt)
-            couplings.append(self.coupling(step, history)[voi])
-        return [numpy.array(times), numpy.array(couplings)]
-
-
-class CosimMonitorFromCosimHistory(CosimMonitor):
-    """
-        Abstract base class for a monitor that records output raw data from the incomplete history of TVB simulation.
-    """
-
-    def cosim_sample(self, voi, dt, start_step, n_steps, cosim_history, history):
-        "Return voi's states of the incomplete (up to synchronization time) cosimulation history"
+    def get_sample(self,start_step,n_steps,history):
         times = []
         values = []
         for step in range(start_step, start_step + n_steps):
-            times.append(step * dt)
-            values.append(cosim_history.query(step)[voi])
+            tmp = super(self.__class__,self).sample(step,self.coupling(step,history))
+            if tmp is not None:
+                times.append(tmp[0])
+                values.append(tmp[1])
         return [numpy.array(times), numpy.array(values)]
 
 
-class RawDelayed(CosimMonitorFromHistory, AfferentCoupling):
+class RawCosim(Raw, CosimMonitor):
+    """
+    A monitor that records the output raw data from the incomplete history of TVB simulation.
+    It collects:
+
+        - all state variables and modes from class :Model:
+        - all nodes of a region or surface based
+        - all the integration time steps
+
+    """
+    _ui_name = "Cosimulation Raw recording"
+
+    def sample(self, start_step, n_steps, cosim_history, history):
+        "Return all the states of the incomplete (up to synchronization time) cosimulation history"
+        return self.get_sample(start_step, n_steps, cosim_history, cosim=True)
+
+
+class RawVoiCosim(RawVoi, CosimMonitor):
+    """
+    A monitor that records the output raw data of selected variables from the incomplete history of TVB simulation.
+    It collects:
+
+        - voi state variables and all modes from class :Model:
+        - all nodes of a region or surface based
+        - all the integration time steps
+
+    """
+    _ui_name = "Cosimulation RawVoi recording"
+
+    def sample(self, start_step, n_steps, cosim_history, history):
+        "Return all the states of the incomplete (up to synchronization time) cosimulation history"
+        return self.get_sample(start_step, n_steps, cosim_history, cosim=True)
+
+
+class RawDelayed(Raw, CosimMonitor):
     """
     A monitor that records the output raw data of all coupling variables from the full history of a tvb simulation.
     It collects:
@@ -93,20 +110,12 @@ class RawDelayed(CosimMonitorFromHistory, AfferentCoupling):
 
     _ui_name = "Cosimulation Raw Delayed recording"
 
-    variables_of_interest = NArray(
-        dtype=int,
-        label="Set all the couplings variables exclusively!!! Resistance is futile...",
-        required=False)
-
-    def _config_vois(self, simulator):
-        self.voi = numpy.r_[:len(simulator.model.cvar)]
-
     def sample(self, start_step, n_steps, cosim_history, history):
-        "Return all the states of the delayed (by synchronization time) TVB history"
-        return self.cosim_sample(self.voi, self.dt, start_step, n_steps, cosim_history, history)
+        "Return all the states of the incomplete (up to synchronization time) cosimulation history"
+        return self.get_sample(start_step, n_steps,history, cosim=False)
 
 
-class RawVoiDelayed(CosimMonitorFromHistory, AfferentCoupling):
+class RawVoiDelayed(RawVoi,CosimMonitor):
     """
     A monitor that records the output raw data of selected coupling variables from the full history of a tvb simulation.
     It collects:
@@ -121,10 +130,10 @@ class RawVoiDelayed(CosimMonitorFromHistory, AfferentCoupling):
 
     def sample(self, start_step, n_steps, cosim_history, history):
         "Return selected states of the delayed (by synchronization time) TVB history"
-        return self.cosim_sample(self.voi, self.dt, start_step, n_steps, cosim_history, history)
+        return self.get_sample(start_step, n_steps,history, cosim=False)
 
 
-class CosimCoupling(CosimMonitorFromCoupling, AfferentCoupling):
+class CosimCoupling(AfferentCoupling, CosimMonitorFromCoupling):
     """
     A monitor that records the future coupling of all variables:
     It collects:
@@ -138,68 +147,6 @@ class CosimCoupling(CosimMonitorFromCoupling, AfferentCoupling):
 
     _ui_name = "Cosimulation Coupling recording"
 
-    variables_of_interest = NArray(
-        dtype=int,
-        label="Set all the couplings variables exclusively!!! Resistance is futile...",
-        required=False)
-
-    def _config_vois(self, simulator):
-        self.voi = numpy.r_[:len(simulator.model.cvar)]
-
-    def sample(self, start_step, n_steps, cosim_history, history):
-        "Return the all coupling values of the nodes from the TVB history"
-        return self.cosim_sample(self.voi, self.dt, start_step, n_steps, cosim_history, history)
-
-
-class CosimCouplingVoi(CosimMonitorFromCoupling, AfferentCoupling):
-    """
-
-    A monitor that records the future coupling of selected variables:
-    It collects:
-
-        - selected coupling values and all modes from class :Model:
-        - all nodes of a region or surface based
-        - all the integration time steps
-
-    !!!WARNING don't use this monitor for a time smaller than the synchronization variable!!!
-    """
-
-    _ui_name = "Cosimulation CouplingVoi recording"
-
-    def sample(self, start_step, n_steps, cosim_history, history):
-        "Return selected coupling values of the nodes from the TVB history"
-        return self.cosim_sample(self.voi, self.dt, start_step, n_steps, cosim_history, history)
-
-
-class RawCosim(CosimMonitorFromCosimHistory, Raw):
-    """
-    A monitor that records the output raw data from the incomplete history of TVB simulation.
-    It collects:
-
-        - all state variables and modes from class :Model:
-        - all nodes of a region or surface based
-        - all the integration time steps
-
-    """
-    _ui_name = "Cosimulation Raw recording"
-
     def sample(self, start_step, n_steps, cosim_history, history):
         "Return all the states of the incomplete (up to synchronization time) cosimulation history"
-        return self.cosim_sample(self.voi, self.dt, start_step, n_steps, cosim_history, history)
-
-
-class RawVoiCosim(CosimMonitorFromCosimHistory, RawVoi):
-    """
-    A monitor that records the output raw data of selected variables from the incomplete history of TVB simulation.
-    It collects:
-
-        - voi state variables and all modes from class :Model:
-        - all nodes of a region or surface based
-        - all the integration time steps
-
-    """
-    _ui_name = "Cosimulation RawVoi recording"
-
-    def sample(self, start_step, n_steps, cosim_history, history):
-        "Return all the states of the incomplete (up to synchronization time) cosimulation history"
-        return self.cosim_sample(self.voi, self.dt, start_step, n_steps, cosim_history, history)
+        return self.get_sample(start_step, n_steps, history)

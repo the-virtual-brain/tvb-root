@@ -90,11 +90,12 @@ class TestModifyWongWangSimple(TestModifyWongWang):
                             monitors=(monitors,),
                             initial_conditions=init,
                             )
-        sim_2.configure()
-        result_2_all = sim_2.run()[0][1][:,0,0,0] # run the first steps because the history is delayed
-        result_2 = sim_2.run()[0][1][:,0,0,0]
-        diff = result - result_2
-        assert np.sum(diff) == 0.0
+        try :
+            sim_2.configure()
+        except ValueError:
+            assert True
+        except:
+            assert False
 
     def test_with_proxy(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
