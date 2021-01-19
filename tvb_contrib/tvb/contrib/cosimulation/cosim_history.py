@@ -34,11 +34,11 @@ class CosimHistory(BaseHistory):
         self.n_mode = n_mode
         self.buffer[:] = numpy.NAN
 
-    def initialize(self, history, current_step=0):
+    def initialize(self, history, voi, current_step=0):
         """Initialize CosimHistory from the TVB history which is assumed already configured.
         """
         for i_step, step in enumerate(range(current_step, current_step+self.n_time)):
-            self.buffer[i_step] = history.query(step)[0]
+            self.buffer[i_step, voi[None, :,]] = history.query(step)[0]
 
     def update(self, step, new_state):
         """This method will update the CosimHistory state buffer
@@ -56,7 +56,7 @@ class CosimHistory(BaseHistory):
                    sim.model.nvar,
                    sim.number_of_nodes,
                    sim.model.number_of_modes)
-        inst.initialize(sim.history, sim.current_step)
+        inst.initialize(sim.history, sim.voi, sim.current_step)
         return inst
 
     def update_state_from_cosim(self, steps, new_states, vois, proxy_inds):
