@@ -90,7 +90,6 @@ class CoSimulator(Simulator):
            """
         # the synchronization time should be at least equal to integrator.dt:
         self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
-        self.simulation_length = self.synchronization_time
         # Compute the number of synchronization time steps:
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
         # Check if the synchronization time is smaller than the delay of the connectivity
@@ -191,6 +190,12 @@ class CoSimulator(Simulator):
             state = numpy.copy(self.cosim_history.query(step))
             super(CoSimulator,self)._loop_update_history(step, state)
 
+    def _prepare_stimulus(self, synchronization_time):
+        simulation_length = float(self.simulation_length)
+        self.simulation_length = float(synchronization_time)
+        super(CoSimulator, self)._prepare_stimulus()
+        self.simulation_length = simulation_length
+
     def __call__(self, simulation_length=None, random_state=None, n_steps=None,
                  cosim_updates=None, recompute_requirements=False):
         """
@@ -205,12 +210,13 @@ class CoSimulator(Simulator):
 
         self.calls += 1
 
+        if simulation_length is not None:
+            self.simulation_length = float(simulation_length)
+
         # Check if the cosimulation update inputs (if any) are correct and update cosimulation history:
         if self._cosimulation_flag:
-            if simulation_length is not None:
-               raise ValueError("simulation_length is not used in cosimulation")
             if n_steps is not None:
-                raise ValueError("n_steps is not used in cosimulation")
+                raise ValueError("n_steps is not used in cosimulation!")
             if cosim_updates is None:
                 n_steps = self.synchronization_n_step
             elif len(cosim_updates) != 2:
@@ -229,13 +235,24 @@ class CoSimulator(Simulator):
                                                        dtype=numpy.int),
                                            cosim_updates[1])
 
-            self.simulation_length = n_steps * self.integrator.dt
+            # Effective time to run for this __call__
+            synchronization_time = n_steps * self.integrator.dt
+
+            if self.simulation_length is None:
+                self.simulation_length = float(synchronization_time)
+
+            # Stimulus initialization...
+            if self.simulation_length != synchronization_time:
+                # ...for synchronization_time = simulation_length
+                stimulus = super(CoSimulator, self)._prepare_stimulus()
+            else:
+                # ...for synchronization_time != simulation_length
+                stimulus = self._prepare_stimulus()
         else:
+            # Normal TVB simulation - no cosimulation:
             if cosim_updates is not None:
                 raise ValueError("cosim_update is not used in normal simulation")
 
-            if simulation_length is not None:
-                self.simulation_length = float(simulation_length)
             if n_steps is None:
                 n_steps = int(math.ceil(self.simulation_length / self.integrator.dt))
             else:
@@ -243,15 +260,18 @@ class CoSimulator(Simulator):
                     raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
                 self.simulation_length = n_steps * self.integrator.dt
 
+            # Stimulus initialization for simulation_length
+            stimulus = super(CoSimulator, self)._prepare_stimulus()
+
         # Initialization
         if self._compute_requirements or recompute_requirements:
+            # Compute requirements for CoSimulation.simulation_length, not for synchronization time
             self._guesstimate_runtime()
             self._calculate_storage_requirement()
             self._compute_requirements = False
         self.integrator.set_random_state(random_state)
 
         local_coupling = self._prepare_local_coupling()
-        stimulus = self._prepare_stimulus()
         state = self.current_state
         start_step = self.current_step + 1
         node_coupling = self._loop_compute_node_coupling(start_step)
