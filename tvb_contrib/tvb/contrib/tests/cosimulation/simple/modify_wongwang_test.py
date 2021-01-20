@@ -43,13 +43,15 @@ class TestModifyWongWang(BaseTestCase):
     """
     Test to compare the version in tvb and the modified version
     """
+
     @staticmethod
-    def _reference_simulation():
+    def _reference_simulation(model_class=lab.models.ReducedWongWang, simulator=lab.simulator.Simulator, init=None):
         # reference simulation
         np.random.seed(42)
-        init = np.random.random_sample((385, 1, 76, 1))
+        if init is None:
+            init = np.random.random_sample((385, 1, 76, 1))
         np.random.seed(42)
-        model = lab.models.ReducedWongWang(tau_s=np.random.rand(76))
+        model = model_class(tau_s=np.random.rand(76))
         connectivity = lab.connectivity.Connectivity().from_file()
         connectivity.speed = np.array([4.0])
         connectivity.configure()
@@ -58,47 +60,31 @@ class TestModifyWongWang(BaseTestCase):
                                                        state_variable_boundaries=np.array([[0.0, 1.0]]))
         monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
-        sim = lab.simulator.Simulator(model=model,
-                                      connectivity=connectivity,
-                                      coupling=coupling,
-                                      integrator=integrator,
-                                      monitors=(monitors,),
-                                      initial_conditions=init,
-                                      )
+        sim = simulator(model=model,
+                        connectivity=connectivity,
+                        coupling=coupling,
+                        integrator=integrator,
+                        monitors=(monitors,),
+                        initial_conditions=init,
+                        simulation_length=10.0,
+                        )
         sim.configure()
-        result_all = sim.run(simulation_length=10.0)
-        result = result_all[0][1][:,0,0,0]
+        result_all = sim.run()
+        result = result_all[0][1][:, 0, 0, 0]
         return connectivity, coupling, integrator, monitors, sim, result, result_all
 
 
 class TestModifyWongWangSimple(TestModifyWongWang):
-    def test_without_proxy(self):
+
+    def test_with_no_cosimulation(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
-        # The modify model without proxy
         np.random.seed(42)
         init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
                                np.random.random_sample((385, 1, 76, 1))), axis=1)
         np.random.seed(42)
-        model = ReducedWongWangProxy(tau_s=np.random.rand(76))
-        # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
-        sim_2 = CoSimulator(
-                            voi=np.array([0]),
-                            synchronization_time=10.0,
-                            cosim_monitors=(RawCosim(),),
-                            proxy_inds=np.asarray([], dtype=np.int),
-                            model=model,
-                            connectivity=connectivity,
-                            coupling=coupling,
-                            integrator=integrator,
-                            monitors=(monitors,),
-                            initial_conditions=init,
-                            )
-        try :
-            sim_2.configure()
-        except ValueError:
-            assert True
-        except:
-            assert False
+        result_2 = self._reference_simulation(model_class=ReducedWongWangProxy, simulator=CoSimulator, init=init)[5]
+        diff = result - result_2
+        assert np.sum(diff) == 0.0
 
     def test_with_proxy(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()

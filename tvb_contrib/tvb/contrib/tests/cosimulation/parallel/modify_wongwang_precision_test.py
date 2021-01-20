@@ -45,12 +45,13 @@ class TestModifyWongWang(BaseTestCase):
     """
 
     @staticmethod
-    def _reference_simulation():
+    def _reference_simulation(model_class=lab.models.ReducedWongWang, simulator=lab.simulator.Simulator, init=None):
         # reference simulation
         np.random.seed(42)
-        init = np.random.random_sample((385, 1, 76, 1))
+        if init is None:
+            init = np.random.random_sample((385, 1, 76, 1))
         np.random.seed(42)
-        model = lab.models.ReducedWongWang(tau_s=np.random.rand(76))
+        model = model_class(tau_s=np.random.rand(76))
         connectivity = lab.connectivity.Connectivity().from_file()
         connectivity.speed = np.array([4.0])
         coupling = lab.coupling.Linear(a=np.array(0.0154))
@@ -58,48 +59,28 @@ class TestModifyWongWang(BaseTestCase):
                                                        state_variable_boundaries=np.array([[0.0, 1.0]]))
         monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
-        sim = lab.simulator.Simulator(model=model,
-                                      connectivity=connectivity,
-                                      coupling=coupling,
-                                      integrator=integrator,
-                                      monitors=(monitors,),
-                                      initial_conditions=init,
-                                      )
+        sim = simulator(model=model,
+                        connectivity=connectivity,
+                        coupling=coupling,
+                        integrator=integrator,
+                        monitors=(monitors,),
+                        initial_conditions=init,
+                        simulation_length=10.0
+                        )
         sim.configure()
-        result_all = sim.run(simulation_length=10.0)
+        result_all = sim.run()
         result = result_all[0][1][0][0]
         return connectivity, coupling, integrator, monitors, sim, result, result_all
 
-    def test_precision_without_proxy(self):
+    def test_with_no_cosimulation(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
-        # New simulator without proxy
         np.random.seed(42)
         init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
                                np.random.random_sample((385, 1, 76, 1))), axis=1)
         np.random.seed(42)
-        model_1 = ReducedWongWangProxy(tau_s=np.random.rand(76))
-        # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
-        sim_1 = CoSimulator(
-                            voi=np.array([0]),
-                            synchronization_time=1.0,
-                            cosim_monitors=(RawCosim(),),
-                            proxy_inds=np.asarray([], dtype=np.int),
-                            model=model_1,
-                            connectivity=connectivity,
-                            coupling=coupling,
-                            integrator=integrator,
-                            monitors=(monitors,),
-                            initial_conditions=init,
-        )
-        sim_1.configure()
-        result_1_all = sim_1.run(cosim_updates=None) # run the first steps because the history is delayed
-        for j in range(10):
-            result_1_all = sim_1.run(cosim_updates=None)
-            for i in range(10):
-                diff = result_all[0][1][j*10+i][0][2:] - result_1_all[0][1][i][0][2:]
-                diff_2 = result_all[0][1][j*10+i][0][:2] - result_1_all[0][1][i][0][:2]
-                assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                       np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) == 0.0
+        result_2 = self._reference_simulation(model_class=ReducedWongWangProxy, simulator=CoSimulator, init=init)[5]
+        diff = result - result_2
+        assert np.sum(diff) == 0.0
 
     def test_precision_with_proxy(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -125,7 +106,7 @@ class TestModifyWongWang(BaseTestCase):
         sim_1.configure()
         result_1_all = [np.empty((0,)), np.empty((10, 2, 76, 1))]
         sim_1.run() # run the first steps because the history is delayed
-        for j in range(0,10):
+        for j in range(0, 10):
             result_1_all_step = sim_1.run(
                 cosim_updates=[np.array([result_all[0][0][(10 * j) + i] for i in range(10)]),
                             np.array([result_all[0][1][(10 * j) + i][0][0]
