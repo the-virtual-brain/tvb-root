@@ -41,29 +41,28 @@ from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 SIMULATION_LENGTH = 3.0
 
-
-def _prepare_reference_simulation():
-    # reference simulation
-    np.random.seed(42)
-    init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
-                           np.random.random_sample((385, 1, 76, 1))), axis=1)
-    np.random.seed(42)
-    model = ReducedWongWangProxy(tau_s=np.random.rand(76))
-    connectivity = lab.connectivity.Connectivity().from_file()
-    connectivity.speed = np.array([4.0])
-    connectivity.configure()
-    coupling = lab.coupling.Linear(a=np.array(0.0154))
-    integrator = lab.integrators.HeunDeterministic(dt=0.1, bounded_state_variable_indices=np.array([0]),
-                                                   state_variable_boundaries=np.array([[0.0, 1.0]]))
-    monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int))
-
-    return model, connectivity, coupling, init, integrator, monitors
-
-
 class TestModifyWongWang(BaseTestCase):
     """
     Initialisation of the test for the reference simulation
     """
+
+    @staticmethod
+    def _prepare_reference_simulation():
+        # reference simulation
+        np.random.seed(42)
+        init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
+                               np.random.random_sample((385, 1, 76, 1))), axis=1)
+        np.random.seed(42)
+        model = ReducedWongWangProxy(tau_s=np.random.rand(76))
+        connectivity = lab.connectivity.Connectivity().from_file()
+        connectivity.speed = np.array([4.0])
+        connectivity.configure()
+        coupling = lab.coupling.Linear(a=np.array(0.0154))
+        integrator = lab.integrators.HeunDeterministic(dt=0.1, bounded_state_variable_indices=np.array([0]),
+                                                       state_variable_boundaries=np.array([[0.0, 1.0]]))
+        monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int))
+
+        return model, connectivity, coupling, init, integrator, monitors
 
     @staticmethod
     def _reference_simulation(simulator=lab.simulator.Simulator):
@@ -80,7 +79,6 @@ class TestModifyWongWang(BaseTestCase):
         result_all = sim.run(simulation_length=SIMULATION_LENGTH)
         result = result_all[0][1][:,:,0,0]
         return connectivity, coupling, integrator, monitors, sim, result, result_all
-
 
 class TestModifyWongWangRate(TestModifyWongWang):
     """

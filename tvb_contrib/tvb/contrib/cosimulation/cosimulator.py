@@ -88,12 +88,8 @@ class CoSimulator(Simulator):
            - configure the cosimulation monitor
            - zero connectivity weights to/from nodes modelled exclusively by the other cosimulator
            """
-        if self.synchronization_time is None:
-            # Default synchronization time to dt:
-            self.synchronization_time = self.integrator.dt
-        else:
-            # ...or it should be at least equal to integrator.dt:
-            self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
+        # the synchronization time should be at least equal to integrator.dt:
+        self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
         self.simulation_length = self.synchronization_time
         # Compute the number of synchronization time steps:
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
@@ -148,7 +144,7 @@ class CoSimulator(Simulator):
         # (Re)Set his flag after every configuration, so that runtime and storage requirements are recomputed,
         # just in case the simulator has been modified (connectivity size, synchronization time, dt etc)
         self._compute_requirements = True
-        if self.voi.shape[0] * self.proxy_inds.shape[0]:
+        if self.voi.shape[0] * self.proxy_inds.shape[0] != 0:
             self._cosimulation_flag = True
             self._configure_cosimulation()
         elif self.voi.shape[0] + self.proxy_inds.shape[0] > 0:
@@ -211,6 +207,10 @@ class CoSimulator(Simulator):
 
         # Check if the cosimulation update inputs (if any) are correct and update cosimulation history:
         if self._cosimulation_flag:
+            if simulation_length is not None:
+               raise ValueError("simulation_length is not used in cosimulation")
+            if n_steps is not None:
+                raise ValueError("n_steps is not used in cosimulation")
             if cosim_updates is None:
                 n_steps = self.synchronization_n_step
             elif len(cosim_updates) != 2:
@@ -231,6 +231,9 @@ class CoSimulator(Simulator):
 
             self.simulation_length = n_steps * self.integrator.dt
         else:
+            if cosim_updates is not None:
+                raise ValueError("cosim_update is not used in normal simulation")
+
             if simulation_length is not None:
                 self.simulation_length = float(simulation_length)
             if n_steps is None:
