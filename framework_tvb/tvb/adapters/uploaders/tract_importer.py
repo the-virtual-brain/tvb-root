@@ -230,7 +230,7 @@ class TrackvizTractsImporter(_TrackImporterBase):
             tracts_h5.write_vertices_slice(datatype.vertices)
 
         datatype.tract_start_idx = numpy.array(tract_start_indices)
-        datatype.tract_region = numpy.array(tract_region)
+        datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)
 
         tracts_index = TractsIndex()
         tracts_index.fill_from_has_traits(datatype)
