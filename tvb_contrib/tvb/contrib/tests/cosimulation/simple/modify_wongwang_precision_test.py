@@ -64,9 +64,8 @@ class TestModifyWongWang(BaseTestCase):
 
         return model, connectivity, coupling, init, integrator, monitors
 
-    @staticmethod
-    def _reference_simulation(simulator=lab.simulator.Simulator):
-        model, connectivity, coupling, init, integrator, monitors = _prepare_reference_simulation()
+    def _reference_simulation(self,simulator=lab.simulator.Simulator):
+        model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = simulator(model=model,
                         connectivity=connectivity,
@@ -91,7 +90,7 @@ class TestModifyWongWangRate(TestModifyWongWang):
         assert np.sum(diff) == 0.0
 
     def test_without_proxy(self):
-        model, connectivity, coupling, init, integrator, monitors = _prepare_reference_simulation()
+        model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
         np.random.seed(42)
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = CoSimulator(
@@ -114,7 +113,7 @@ class TestModifyWongWangRate(TestModifyWongWang):
             assert False
 
     def test_without_voi(self):
-        model, connectivity, coupling, init, integrator, monitors = _prepare_reference_simulation()
+        model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
         np.random.seed(42)
         id_proxy = range(11)
         model = ReducedWongWangProxy(tau_s=np.random.rand(76))
