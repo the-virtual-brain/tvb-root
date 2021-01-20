@@ -52,7 +52,7 @@ function _FIL_createUiForFilterType(filter, newDiv, isDate){
 
 function addFilter(div_id, filters) {
     //Create a new div for the filter
-    var newDiv = $('<div> <label> Filter : </label> </div>');
+    var newDiv = $('<div class="user_trigger"> <label> Filter : </label> </div>');
     $('#' + div_id).append(newDiv);
 
     //This will be the select row to filter by
@@ -77,17 +77,17 @@ function addFilter(div_id, filters) {
         }
         // recreate them
         _FIL_createUiForFilterType(filters[this.value], newDiv, filters[this.value].type === 'date');
-    });
+    })
 }
+
+
 
 /** gather all the data from the filters */
 function _FIL_gatherData(divId, uiValue){
     var children = $('#'+divId).children('div');
-    var fields = [];
-    var operations = [];
-    var values = [];
-    var isRuntimeFilter = [];
-    var triggersFiltering = false;
+    var default_fields = [], default_operations = [], default_values = [];
+    var user_fields = [], user_operations = [], user_values = [];
+    var runtime_fields = [], runtime_operations = [], runtime_values = [], runtime_reverse_filtering_values = [];
 
     for (var i = 0; i < children.length; i++) {
         var elem = children[i].children;
@@ -95,32 +95,48 @@ function _FIL_gatherData(divId, uiValue){
         if (elem[3].value.trim().length > 0) {
             var value = elem[3].value.trim();
 
-            if(children[i].className.endsWith('runtime_trigger')){
-                value = uiValue;
-                triggersFiltering = true;
-                isRuntimeFilter.push(true);
-            }else{
-                isRuntimeFilter.push(false);
-            }
+            if (children[i].className === "user_trigger") {
+                user_fields.push(elem[1].value);
+                user_operations.push(elem[2].value);
+                user_values.push(value);
+            } else {
+                if (children[i].className.endsWith('runtime_trigger')) {
+                    let value_from_field = $('#' + children[i].className.replace('_runtime_trigger', '')).val();
+                    if(value === "default_runtime_value"){
+                        if (!uiValue) {
+                            value = value_from_field;
+                        } else {
+                            value = uiValue;
+                        }
+                        runtime_reverse_filtering_values.push('');
+                    }else{
+                        runtime_reverse_filtering_values.push(value_from_field);
+                    }
 
-            fields.push(elem[1].value);
-            operations.push(elem[2].value);
-            values.push(value);
+                    runtime_fields.push(elem[1].value);
+                    runtime_operations.push(elem[2].value);
+                    runtime_values.push(value);
+                } else {
+                    default_fields.push(elem[1].value);
+                    default_operations.push(elem[2].value);
+                    default_values.push(value);
+                }
+            }
             displayMessage("Filters processed");
-        } else {
+        }
+        else {
             displayMessage("Please set a value for all the filters.", "errorMessage");
             return;
         }
     }
-    if (fields.length === 0 && operations.length === 0 && values.length === 0 && triggersFiltering === false) {
-        displayMessage("Cleared filters");
-    }
 
-    return { filters: {fields: fields, operations: operations, values: values, isRuntimeFilter: isRuntimeFilter},
-        triggersFiltering: triggersFiltering};
+    return {default_filters: {default_fields: default_fields, default_operations: default_operations, default_values:
+            default_values}, user_filters: {user_fields: user_fields, user_operations: user_operations, user_values:
+            user_values}, runtime_filters: {runtime_fields: runtime_fields, runtime_operations: runtime_operations,
+            runtime_values: runtime_values, runtime_reverse_filtering_values: runtime_reverse_filtering_values}};
 }
 
-function applyFilters(datatypeIndex, divId, name, gatheredData) {
+function applyUserFilters(datatypeIndex, divId, name, gatheredData) {
     if (!gatheredData) {
         //gather all the data from the filters and make an
         //ajax request to get new data
@@ -155,7 +171,7 @@ function applyFilters(datatypeIndex, divId, name, gatheredData) {
     //Make a request to get new data
     doAjaxCall({
         type: 'POST',
-        url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' + $.toJSON(gatheredData) + '/' +
+        url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' + $.toJSON(gatheredData.filters) + '/' +
             has_all_option + '/' + has_none_option,
         success: function (response) {
             if (!response) {
@@ -175,30 +191,63 @@ function applyFilters(datatypeIndex, divId, name, gatheredData) {
     });
 }
 
-function applyRuntimeFilters(name, selected_value){
+function applyRuntimeFilters(name, selected_value, dynamic_filters){
+
+    if($('.' + name + '_runtime_trigger').length === 0){
+        return;
+    }
+
     var form = $('#' + name).closest('form');
     let form_action = form[0].action;
     let algorithm_id_start = form_action.lastIndexOf('/');
-    let algorthimm_id = form_action.substring(algorithm_id_start + 1, form_action.length);
+    let algorithm_id = form_action.substring(algorithm_id_start + 1, form_action.length);
 
-    let select_fields = form.find('select.dataset-selector');
-    var fields_and_filters = {}
-
-    let filters;
-    for (var i = 0; i < select_fields.length; i++) {
-        filter_values = _FIL_gatherData(select_fields[i].id + 'data_select', selected_value);
-        fields_and_filters[select_fields[i].id] = filter_values.filters;
+    algorithm_id_start = algorithm_id.lastIndexOf('?');
+    if(algorithm_id_start!==-1){
+        algorithm_id = algorithm_id.substring(0, algorithm_id_start)
     }
 
-    if(filter_values.triggersFiltering) {
+    let select_fields = form.find('select.dataset-selector');
+    var fields_and_default_filters = {};
+    var fields_and_user_filters = {};
+    var fields_and_runtime_filters = {};
+
+    var is_runtime_filtering = false;
+    let filter_values;
+    for (let i = 0; i < select_fields.length; i++) {
+        filter_values = _FIL_gatherData(select_fields[i].id + 'data_select', selected_value);
+        filter_values.runtime_filters['ui_value'] = select_fields[i].value;
+        fields_and_default_filters[select_fields[i].id] = filter_values.default_filters;
+        fields_and_user_filters[select_fields[i].id] = filter_values.user_filters;
+        fields_and_runtime_filters[select_fields[i].id] = filter_values.runtime_filters;
+
+        if(filter_values.runtime_filters['runtime_fields'].length > 0){
+            is_runtime_filtering = true;
+        }
+    }
+
+    if(is_runtime_filtering) {
         doAjaxCall({
             type: 'POST',
-            url: "/flow/get_runtime_filtered_form/" + algorthimm_id + '/' + $.toJSON(fields_and_filters),
+            url: "/flow/get_runtime_filtered_form/" + algorithm_id + '/' + $.toJSON(fields_and_default_filters) +
+                '/' + $.toJSON(fields_and_user_filters) + '/' + $.toJSON(fields_and_runtime_filters),
             success: function (response) {
                 const t = document.createRange().createContextualFragment(response);
 
                 let adapters_div = $('.adaptersDiv');
                 adapters_div.children('fieldset').replaceWith(t);
+
+                for(var key in fields_and_user_filters){
+                    const divId = key + 'data_select';
+                    for(var i=0; i<fields_and_user_filters[key]['user_fields'].length; i++) {
+                        addFilter(divId, dynamic_filters);
+                        var children = $('#'+divId).children('div');
+                        var elem = children[children.length - 1].children;
+                        elem[1].value = fields_and_user_filters[key]['user_fields'][i];
+                        elem[2].value = fields_and_user_filters[key]['user_operations'][i];
+                        elem[3].value = fields_and_user_filters[key]['user_values'][i];
+                    }
+                }
             },
             error: function (response) {
                 displayMessage("Invalid filter data.", "errorMessage");

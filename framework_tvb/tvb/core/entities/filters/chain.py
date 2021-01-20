@@ -77,6 +77,8 @@ class FilterChain(object):
     algorithm_category_replacement = "AlgorithmCategory"
     operation_replacement = "Operation"
 
+    DEFAULT_RUNTIME_VALUE = "default_runtime_value"
+
     def __init__(self, display_name="", fields=None, values=None, operations=None, operator_between_fields='and'):
         """
         Initialize filter attributes.

@@ -286,50 +286,59 @@ class FlowController(BaseController):
     @expose_fragment('form_fields/form')
     @settings
     @context_selected
-    def get_runtime_filtered_form(self, algorithm_id, filters):
+    def get_runtime_filtered_form(self, algorithm_id, default_filters, user_filters, runtime_filters):
         algorithm = dao.get_algorithm_by_id(algorithm_id)
         adapter = getattr(sys.modules[algorithm.module], algorithm.classname)()
         form = adapter.get_form_class()()
 
-        filter_dict = json.loads(filters)
+        default_filter_dict = json.loads(default_filters)
+        user_filter_dict = json.loads(user_filters)
+        runtime_filter_dict = json.loads(runtime_filters)
         project_id = common.get_current_project().id
 
-        fields = []
-        operations = []
-        values = []
-
-        runtime_fields = []
-        runtime_operations = []
-        runtime_values = []
-
-        for key, value in filter_dict.items():
+        for key, default_filters in default_filter_dict.items():
             select_field_attr = getattr(form, key)
 
-            for i in range(len(value['fields'])):
-                if value['isRuntimeFilter'][i]:
-                    runtime_fields.append(value['fields'][i])
-                    runtime_operations.append(value['operations'][i])
-                    runtime_values.append(value['values'][i])
-                else:
-                    fields.append(value['fields'][i])
-                    operations.append(value['operations'][i])
-                    values.append(value['values'][i])
+            default_filter_chain = None
+            if len(default_filters['default_fields']) > 0:
+                default_filter_chain = FilterChain(fields=default_filters['default_fields'],
+                                                   operations=default_filters['default_operations'],
+                                                   values=default_filters['default_values'])
+                select_field_attr.conditions = default_filter_chain
 
-            conditions = FilterChain(fields=fields, operations=operations, values=values)
-            select_field_attr.conditions = conditions
+            user_filters = user_filter_dict[key]
+            if len(user_filters['user_fields']) > 0:
+                select_field_attr.conditions += FilterChain(fields=user_filters['user_fields'],
+                                                            operations=user_filters['user_operations'],
+                                                            values=user_filters['user_values'])
+            runtime_filters = runtime_filter_dict[key]
+            runtime_filter_values_copy = runtime_filters['runtime_values'].copy()
+            if len(runtime_filters['runtime_fields']) > 0:
 
-            runtime_conditions = FilterChain(fields=runtime_fields, operations=runtime_operations,
-                                             values=runtime_values)
-            select_field_attr.runtime_conditions = runtime_conditions
+                for i in range(len(runtime_filters['runtime_fields'])):
+                    if(len(runtime_filters['runtime_reverse_filtering_values'][i])) > 0:
+                        datatype_index = dao.get_datatype_by_gid(runtime_filters['runtime_reverse_filtering_values'][i])
+                        if datatype_index:
+                            linked_datatype_field = runtime_filters['runtime_values'][i]
+                            linked_datatype_gid = getattr(datatype_index, linked_datatype_field)
+                            linked_datatype_index = dao.get_datatype_by_gid(linked_datatype_gid)
+                            filter_field = runtime_filters['runtime_fields'][i].replace(FilterChain.datatype + '.', '')
+                            filter_value = getattr(linked_datatype_index, filter_field)
+                            runtime_filters['runtime_values'][i] = filter_value
+                    else:
+                        runtime_filter_values_copy[i] = FilterChain.DEFAULT_RUNTIME_VALUE
+
+                select_field_attr.runtime_conditions = (
+                    select_field_attr.runtime_conditions[0], FilterChain(
+                        fields=runtime_filters['runtime_fields'], operations=runtime_filters['runtime_operations'],
+                        values=runtime_filters['runtime_values']))
+
             self.algorithm_service.fill_selectfield_with_datatypes(select_field_attr, project_id)
+            select_field_attr.data = runtime_filters['ui_value']
+            select_field_attr.conditions = default_filter_chain
 
-            fields = []
-            operations = []
-            values = []
-
-            runtime_fields = []
-            runtime_operations = []
-            runtime_values = []
+            if select_field_attr.runtime_conditions:
+                select_field_attr.runtime_conditions[1].values = runtime_filter_values_copy
 
         return {'adapter_form': form}
 
@@ -354,7 +363,6 @@ class FlowController(BaseController):
                 raise InvalidFormValues("Invalid form inputs! Could not fill algorithm from the given inputs!",
                                         error_dict=form.get_errors_dict())
 
-
             adapter_instance.submit_form(form)
 
             if issubclass(type(adapter_instance), ABCDisplayer):
@@ -368,7 +376,7 @@ class FlowController(BaseController):
                 return {}
 
             result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
-                                                        project_id, view_model=view_model)
+                                                            project_id, view_model=view_model)
             if isinstance(result, list):
                 result = "Launched %s operations." % len(result)
             common.set_important_message(str(result))

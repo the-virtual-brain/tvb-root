@@ -112,7 +112,10 @@ class AlgorithmService(object):
         filtering_conditions = FilterChain()
         filtering_conditions += field.conditions
         filtering_conditions += extra_conditions
-        filtering_conditions += field.runtime_conditions
+
+        if field.runtime_conditions is not None:
+            filtering_conditions += field.runtime_conditions[1]
+
         datatypes, _ = dao.get_values_of_datatype(project_id, field.datatype_index, filtering_conditions)
         datatype_options = []
         for datatype in datatypes:
