@@ -251,6 +251,17 @@ class FlowController(BaseController):
         self.fill_default_attributes(template_specification, algorithm.displayname)
         return template_specification
 
+    @staticmethod
+    def _fill_reversed_filter_value(runtime_filters, i):
+        datatype_index = dao.get_datatype_by_gid(runtime_filters['runtime_reverse_filtering_values'][i])
+        if datatype_index:
+            linked_datatype_field = runtime_filters['runtime_values'][i]
+            linked_datatype_gid = getattr(datatype_index, linked_datatype_field)
+            linked_datatype_index = dao.get_datatype_by_gid(linked_datatype_gid)
+            filter_field = runtime_filters['runtime_fields'][i].replace(FilterChain.datatype + '.', '')
+            filter_value = getattr(linked_datatype_index, filter_field)
+            runtime_filters['runtime_values'][i] = filter_value
+
     @expose_fragment('form_fields/options_field')
     @settings
     @context_selected
@@ -264,6 +275,10 @@ class FlowController(BaseController):
         default_filters_dict = json.loads(default_filters)
         user_filters_dict = json.loads(user_filters)
         runtime_filters_dict = json.loads(runtime_filters)
+
+        for i in range(len(runtime_filters_dict['runtime_fields'])):
+            if (len(runtime_filters_dict['runtime_reverse_filtering_values'][i])) > 0:
+                self._fill_reversed_filter_value(runtime_filters_dict, i)
 
         filters = FilterChain(fields=default_filters_dict['default_fields'],
                               operations=default_filters_dict['default_operations'],
@@ -301,37 +316,26 @@ class FlowController(BaseController):
         for key, default_filters in default_filter_dict.items():
             select_field_attr = getattr(form, key)
 
-            default_filter_chain = None
-            if len(default_filters['default_fields']) > 0:
-                default_filter_chain = FilterChain(fields=default_filters['default_fields'],
-                                                   operations=default_filters['default_operations'],
-                                                   values=default_filters['default_values'])
-                select_field_attr.conditions = default_filter_chain
+            default_filter_chain = FilterChain(fields=default_filters['default_fields'],
+                                               operations=default_filters['default_operations'],
+                                               values=default_filters['default_values'])
+            select_field_attr.conditions = default_filter_chain
 
             user_filters = user_filter_dict[key]
-            if len(user_filters['user_fields']) > 0:
-                select_field_attr.conditions += FilterChain(fields=user_filters['user_fields'],
-                                                            operations=user_filters['user_operations'],
-                                                            values=user_filters['user_values'])
+            select_field_attr.conditions += FilterChain(fields=user_filters['user_fields'],
+                                                        operations=user_filters['user_operations'],
+                                                        values=user_filters['user_values'])
             runtime_filters = runtime_filter_dict[key]
             runtime_filter_values_copy = runtime_filters['runtime_values'].copy()
-            if len(runtime_filters['runtime_fields']) > 0:
 
-                for i in range(len(runtime_filters['runtime_fields'])):
-                    if (len(runtime_filters['runtime_reverse_filtering_values'][i])) > 0:
-                        datatype_index = dao.get_datatype_by_gid(runtime_filters['runtime_reverse_filtering_values'][i])
-                        if datatype_index:
-                            linked_datatype_field = runtime_filters['runtime_values'][i]
-                            linked_datatype_gid = getattr(datatype_index, linked_datatype_field)
-                            linked_datatype_index = dao.get_datatype_by_gid(linked_datatype_gid)
-                            filter_field = runtime_filters['runtime_fields'][i].replace(FilterChain.datatype + '.', '')
-                            filter_value = getattr(linked_datatype_index, filter_field)
-                            runtime_filters['runtime_values'][i] = filter_value
-                    else:
-                        runtime_filter_values_copy[i] = FilterChain.DEFAULT_RUNTIME_VALUE
+            for i in range(len(runtime_filters['runtime_fields'])):
+                if (len(runtime_filters['runtime_reverse_filtering_values'][i])) > 0:
+                    self._fill_reversed_filter_value(runtime_filters, i)
+                else:
+                    runtime_filter_values_copy[i] = FilterChain.DEFAULT_RUNTIME_VALUE
 
-                select_field_attr.runtime_conditions = (
-                    select_field_attr.runtime_conditions[0], FilterChain(
+            if select_field_attr.runtime_conditions:
+                select_field_attr.runtime_conditions = (select_field_attr.runtime_conditions[0], FilterChain(
                         fields=runtime_filters['runtime_fields'], operations=runtime_filters['runtime_operations'],
                         values=runtime_filters['runtime_values']))
 
