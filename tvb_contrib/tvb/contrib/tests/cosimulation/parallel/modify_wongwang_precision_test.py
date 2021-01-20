@@ -39,6 +39,9 @@ from tvb.contrib.cosimulation.cosim_monitors import RawCosim
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 
+SIMULATION_LENGTH = 3.0
+
+
 class TestModifyWongWang(BaseTestCase):
     """
      test for compare the version in tvb and the modified version in different condition
@@ -65,7 +68,7 @@ class TestModifyWongWang(BaseTestCase):
                         integrator=integrator,
                         monitors=(monitors,),
                         initial_conditions=init,
-                        simulation_length=10.0
+                        simulation_length=SIMULATION_LENGTH
                         )
         sim.configure()
         result_all = sim.run()
@@ -90,10 +93,11 @@ class TestModifyWongWang(BaseTestCase):
                                np.random.random_sample((385, 1, 76, 1))), axis=1)
         np.random.seed(42)
         model_1 = ReducedWongWangProxy(tau_s=np.random.rand(76))
+        synchronization_time = 1.
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim_1 = CoSimulator(
                             voi=np.array([0]),
-                            synchronization_time=1.,
+                            synchronization_time=synchronization_time,
                             cosim_monitors=(RawCosim(),),
                             proxy_inds=np.asarray([0], dtype=np.int),
                             model=model_1,
@@ -104,18 +108,23 @@ class TestModifyWongWang(BaseTestCase):
                             initial_conditions=init,
         )
         sim_1.configure()
-        result_1_all = [np.empty((0,)), np.empty((10, 2, 76, 1))]
+
+        sim_to_sync_time = int(SIMULATION_LENGTH / synchronization_time)
+        sync_steps = int(synchronization_time / integrator.dt)
+
+        result_1_all = [np.empty((0,)), np.empty((sync_steps, 2, 76, 1))]
         sim_1.run() # run the first steps because the history is delayed
-        for j in range(0, 10):
+
+        for j in range(0, sim_to_sync_time):
             result_1_all_step = sim_1.run(
-                cosim_updates=[np.array([result_all[0][0][(10 * j) + i] for i in range(10)]),
-                            np.array([result_all[0][1][(10 * j) + i][0][0]
-                                      for i in range(10)]).reshape((10, 1, 1, 1))])
+                cosim_updates=[np.array([result_all[0][0][(sync_steps * j) + i] for i in range(sync_steps)]),
+                            np.array([result_all[0][1][(sync_steps * j) + i][0][0]
+                                      for i in range(sync_steps)]).reshape((sync_steps, 1, 1, 1))])
             result_1_all[0] = np.concatenate((result_1_all[0], result_1_all_step[0][0]))
             result_1_all[1] = np.concatenate((result_1_all[1], result_1_all_step[0][1]))
 
-        for i in range(100):
-            diff = result_all[0][1][i][0][1:] - result_1_all[1][i+10, 0, 1:]
-            diff_2 = result_all[0][1][i][0][:1] - result_1_all[1][i+10, 0, :1]
+        for i in range(int(SIMULATION_LENGTH/integrator.dt)):
+            diff = result_all[0][1][i][0][1:] - result_1_all[1][i+sync_steps, 0, 1:]
+            diff_2 = result_all[0][1][i][0][:1] - result_1_all[1][i+sync_steps, 0, :1]
             assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
                    np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) == 0.0

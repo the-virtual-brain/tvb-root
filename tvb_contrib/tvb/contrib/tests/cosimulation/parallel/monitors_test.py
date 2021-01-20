@@ -40,6 +40,9 @@ from tvb.contrib.cosimulation.cosim_monitors import RawCosim, RawVoiCosim, RawDe
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 
+SIMULATION_LENGTH = 3.0
+
+
 class TestMonitors(BaseTestCase):
     """
      test for compare the version in tvb and the modified version in different condition
@@ -67,7 +70,7 @@ class TestMonitors(BaseTestCase):
                                       initial_conditions=init,
                                       )
         sim.configure()
-        result_all = sim.run(simulation_length=10.0)
+        result_all = sim.run(simulation_length=SIMULATION_LENGTH)
         result = result_all[0][1][0][0]
         return connectivity, coupling, integrator, monitors, sim, result, result_all
 
@@ -80,9 +83,10 @@ class TestMonitors(BaseTestCase):
         np.random.seed(42)
         model_1 = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
+        synchronization_time = 1.0
         sim_1 = CoSimulator(
                             voi=np.array([0]),
-                            synchronization_time=1.,
+                            synchronization_time=synchronization_time,
                             cosim_monitors=(RawCosim(), RawVoiCosim( variables_of_interest=np.array([0]) ),
                                             RawDelayed(), RawVoiDelayed( variables_of_interest=np.array([0]) ),
                                             CosimCoupling( coupling=coupling ),
@@ -96,33 +100,39 @@ class TestMonitors(BaseTestCase):
                             initial_conditions=init,
         )
         sim_1.configure()
-        result_1_all = [np.empty((0,)), np.empty((10, 2, 76, 1))]
+
+        sim_to_sync_time = int(SIMULATION_LENGTH / synchronization_time)
+        sync_steps = int(synchronization_time / integrator.dt)
+
+        result_1_all = [np.empty((0,)), np.empty((sync_steps, 2, 76, 1))]
         result_cosim_monitors = []
         sim_1.run() # run the first steps because the history is delayed
-        for j in range(0,10):
-            result_cosim_monitors.append(sim_1.loop_cosim_monitor_output(sim.current_step-10,10))
+
+        for j in range(0, sim_to_sync_time):
+            result_cosim_monitors.append(sim_1.loop_cosim_monitor_output(sim.current_step-sync_steps, sync_steps))
             result_1_all_step = sim_1.run(
-                cosim_updates=[np.array([result_all[0][0][(10 * j) + i] for i in range(10)]),
-                            np.array([result_all[0][1][(10 * j) + i][0][0]
-                                      for i in range(10)]).reshape((10, 1, 1, 1))])
+                cosim_updates=[np.array([result_all[0][0][(sync_steps * j) + i] for i in range(sync_steps)]),
+                            np.array([result_all[0][1][(sync_steps * j) + i][0][0]
+                                      for i in range(sync_steps)]).reshape((sync_steps, 1, 1, 1))])
             result_1_all[0] = np.concatenate((result_1_all[0], result_1_all_step[0][0]))
             result_1_all[1] = np.concatenate((result_1_all[1], result_1_all_step[0][1]))
 
-        for i in range(100):
-            diff = result_all[0][1][i][0][1:] - result_1_all[1][i+10, 0, 1:]
-            diff_2 = result_all[0][1][i][0][:1] - result_1_all[1][i+10, 0, :1]
+        for i in range(int(SIMULATION_LENGTH/integrator.dt)):
+            diff = result_all[0][1][i][0][1:] - result_1_all[1][i+sync_steps, 0, 1:]
+            diff_2 = result_all[0][1][i][0][:1] - result_1_all[1][i+sync_steps, 0, :1]
             assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
                    np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) == 0.0
 
-        for i in range(10):
+        for i in range(sim_to_sync_time):
             result_step = result_cosim_monitors[i]
             # check the dimension of the monitors
-            assert result_step[0][1].shape == (10,2,76,1)
-            assert result_step[1][1].shape == (10,1,76,1)
-            assert result_step[3][1].shape == (10,1,76,1)
-            assert result_step[4][1].shape == (10,1,76,1)
-            assert result_step[5][1].shape == (10,1,76,1)
+            assert result_step[0][1].shape == (sync_steps, 2, 76, 1)
+            assert result_step[1][1].shape == (sync_steps, 1, 76, 1)
+            assert result_step[3][1].shape == (sync_steps, 1, 76, 1)
+            assert result_step[4][1].shape == (sync_steps, 1, 76, 1)
+            assert result_step[5][1].shape == (sync_steps, 1, 76, 1)
             # compare the monitors between them
             assert np.sum(result_step[2][1] != result_step[3][1]) == 0
             assert np.sum(result_step[4][1] != result_step[5][1]) == 0
-            assert np.sum(result_step[0][1][:,0,:,:] != result_step[1][1][:,0,:,:]) == np.sum(np.isnan(result_step[1][1]))
+            assert np.sum(result_step[0][1][:,0,:,:] != result_step[1][1][:, 0, :, :]) == \
+                   np.sum(np.isnan(result_step[1][1]))
