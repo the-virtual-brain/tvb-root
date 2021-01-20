@@ -39,6 +39,7 @@ Module in charge with Launching an operation (creating the Operation entity as w
 
 import json
 import os
+import shutil
 import sys
 import uuid
 import zipfile
@@ -298,7 +299,7 @@ class OperationService:
                 for upload_field in fields:
                     if hasattr(view_model, upload_field):
                         file = getattr(view_model, upload_field)
-                        if file.startswith(tmp_folder):
+                        if file.startswith(tmp_folder) or file.startswith(TvbProfile.current.TVB_TEMP_FOLDER):
                             temp_files.append(file)
             except AttributeError:
                 # Skip if we don't have upload fields on current form
@@ -392,6 +393,8 @@ class OperationService:
                 try:
                     if os.path.exists(pth) and os.path.isfile(pth):
                         os.remove(pth)
+                        if len(os.listdir(os.path.dirname(pth))) == 0:
+                            shutil.rmtree(os.path.dirname(pth))
                         self.logger.debug("We no longer need file:" + pth + " => deleted")
                     else:
                         self.logger.warning("Trying to remove not existent file:" + pth)
