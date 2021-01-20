@@ -39,32 +39,32 @@ from tvb.contrib.cosimulation.cosim_monitors import RawCosim
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 
+def _prepare_reference_simulation():
+    # reference simulation
+    np.random.seed(42)
+    init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
+                           np.random.random_sample((385, 1, 76, 1))), axis=1)
+    np.random.seed(42)
+    model = ReducedWongWangProxy(tau_s=np.random.rand(76))
+    connectivity = lab.connectivity.Connectivity().from_file()
+    connectivity.speed = np.array([4.0])
+    connectivity.configure()
+    coupling = lab.coupling.Linear(a=np.array(0.0154))
+    integrator = lab.integrators.HeunDeterministic(dt=0.1, bounded_state_variable_indices=np.array([0]),
+                                                   state_variable_boundaries=np.array([[0.0, 1.0]]))
+    monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int))
+
+    return model, connectivity, coupling, init, integrator, monitors
+
+
 class TestModifyWongWang(BaseTestCase):
     """
     Initialisation of the test for the reference simulation
     """
 
     @staticmethod
-    def _prepare_reference_simulation():
-        # reference simulation
-        np.random.seed(42)
-        init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
-                               np.random.random_sample((385, 1, 76, 1))), axis=1)
-        np.random.seed(42)
-        model = ReducedWongWangProxy(tau_s=np.random.rand(76))
-        connectivity = lab.connectivity.Connectivity().from_file()
-        connectivity.speed = np.array([4.0])
-        connectivity.configure()
-        coupling = lab.coupling.Linear(a=np.array(0.0154))
-        integrator = lab.integrators.HeunDeterministic(dt=0.1, bounded_state_variable_indices=np.array([0]),
-                                                       state_variable_boundaries=np.array([[0.0, 1.0]]))
-        monitors = lab.monitors.Raw(period=0.1, variables_of_interest=np.array(0, dtype=np.int))
-
-        return model, connectivity, coupling, init, integrator, monitors
-
-    @staticmethod
     def _reference_simulation(simulator=lab.simulator.Simulator):
-        model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
+        model, connectivity, coupling, init, integrator, monitors = _prepare_reference_simulation()
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = simulator(model=model,
                         connectivity=connectivity,
@@ -90,7 +90,7 @@ class TestModifyWongWangRate(TestModifyWongWang):
         assert np.sum(diff) == 0.0
 
     def test_without_proxy(self):
-        model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
+        model, connectivity, coupling, init, integrator, monitors = _prepare_reference_simulation()
         np.random.seed(42)
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = CoSimulator(
@@ -113,13 +113,13 @@ class TestModifyWongWangRate(TestModifyWongWang):
             assert False
 
     def test_without_voi(self):
-        model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
+        model, connectivity, coupling, init, integrator, monitors = _prepare_reference_simulation()
         np.random.seed(42)
         id_proxy = range(11)
         model = ReducedWongWangProxy(tau_s=np.random.rand(76))
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = CoSimulator(
-            voi=np.array([]),
+            voi=np.array([], dtype=np.int),
             synchronization_time=1.,
             cosim_monitors=(RawCosim(),),
             proxy_inds=np.asarray(id_proxy, dtype=np.int),
