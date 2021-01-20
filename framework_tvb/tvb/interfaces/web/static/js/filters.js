@@ -171,8 +171,9 @@ function applyUserFilters(datatypeIndex, divId, name, gatheredData) {
     //Make a request to get new data
     doAjaxCall({
         type: 'POST',
-        url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' + $.toJSON(gatheredData.filters) + '/' +
-            has_all_option + '/' + has_none_option,
+        url: "/flow/get_filtered_datatypes/" + dt_module + '/' + dt_class + '/' +
+            $.toJSON(gatheredData.default_filters) + '/' + $.toJSON(gatheredData.user_filters) +
+            '/' + $.toJSON(gatheredData.runtime_filters) + '/' + has_all_option + '/' + has_none_option,
         success: function (response) {
             if (!response) {
                 displayMessage(`No results for the ${name} filtering!`, "warningMessage");

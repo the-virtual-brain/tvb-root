@@ -254,30 +254,32 @@ class FlowController(BaseController):
     @expose_fragment('form_fields/options_field')
     @settings
     @context_selected
-    def get_filtered_datatypes(self, dt_module, dt_class, filters, has_all_option, has_none_option):
+    def get_filtered_datatypes(self, dt_module, dt_class, default_filters, user_filters, runtime_filters,
+                               has_all_option, has_none_option):
         """
         Given the name from the input tree, the dataType required and a number of
         filters, return the available dataType that satisfy the conditions imposed.
         """
         index_class = getattr(sys.modules[dt_module], dt_class)()
-        filters_dict = json.loads(filters)
+        default_filters_dict = json.loads(default_filters)
+        user_filters_dict = json.loads(user_filters)
+        runtime_filters_dict = json.loads(runtime_filters)
 
-        fields = []
-        operations = []
-        values = []
-
-        for idx in range(len(filters_dict['fields'])):
-            fields.append(filters_dict['fields'][idx])
-            operations.append(filters_dict['operations'][idx])
-            values.append(filters_dict['values'][idx])
-
-        filter = FilterChain(fields=fields, operations=operations, values=values)
+        filters = FilterChain(fields=default_filters_dict['default_fields'],
+                              operations=default_filters_dict['default_operations'],
+                              values=default_filters_dict['default_values'])
+        filters += FilterChain(fields=user_filters_dict['user_fields'],
+                               operations=user_filters_dict['user_operations'],
+                               values=user_filters_dict['user_values'])
+        filters += FilterChain(fields=runtime_filters_dict['runtime_fields'],
+                               operations=runtime_filters_dict['runtime_operations'],
+                               values=runtime_filters_dict['runtime_values'])
         project = common.get_current_project()
 
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
         data_type_gid_attr.required = not string2bool(has_none_option)
 
-        select_field = TraitDataTypeSelectField(data_type_gid_attr, conditions=filter,
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, conditions=filters,
                                                 has_all_option=string2bool(has_all_option))
         self.algorithm_service.fill_selectfield_with_datatypes(select_field, project.id)
 
@@ -316,7 +318,7 @@ class FlowController(BaseController):
             if len(runtime_filters['runtime_fields']) > 0:
 
                 for i in range(len(runtime_filters['runtime_fields'])):
-                    if(len(runtime_filters['runtime_reverse_filtering_values'][i])) > 0:
+                    if (len(runtime_filters['runtime_reverse_filtering_values'][i])) > 0:
                         datatype_index = dao.get_datatype_by_gid(runtime_filters['runtime_reverse_filtering_values'][i])
                         if datatype_index:
                             linked_datatype_field = runtime_filters['runtime_values'][i]
