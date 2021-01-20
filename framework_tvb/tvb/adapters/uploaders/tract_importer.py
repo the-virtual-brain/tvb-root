@@ -161,11 +161,7 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
 
             region_volume = h5.load_from_index(rvm_index)
 
-            # this is called here and not in _get_tract_region because it goes to disk to get this info
-            # which would massively dominate the runtime of the import
-
         datatype = Tracts()
-        datatype.storage_path = self.storage_path
         datatype.region_volume_map = region_volume
         return datatype
 

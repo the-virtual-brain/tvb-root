@@ -206,11 +206,9 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         Prepares urls that are necessary for a shell surface.
         """
         if shell_surface:
-            shell_h5_class, shell_h5_path = self.load_h5_of_gid(shell_surface.gid)
-            with shell_h5_class(shell_h5_path) as shell_h5:
-                shell_vertices, shell_normals, _, shell_triangles, _ = surface_url_generator.get_urls_for_rendering(
-                    shell_h5)
-                shellObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
-
+            shell_h5 = h5.h5_file_for_index(shell_surface)
+            shell_vertices, shell_normals, _, shell_triangles, _ = surface_url_generator.get_urls_for_rendering(shell_h5)
+            shellObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
+            shell_h5.close()
             return shellObject
         return None
