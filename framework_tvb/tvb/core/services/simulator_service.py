@@ -36,8 +36,8 @@ import copy
 import json
 import shutil
 import uuid
-import numpy
 
+import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper

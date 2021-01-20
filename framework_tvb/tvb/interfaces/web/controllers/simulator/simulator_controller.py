@@ -425,7 +425,7 @@ class SimulatorController(BurstBaseController):
 
             self.next_monitors_dict = build_list_of_monitors_from_names(
                 fragment.monitors.value, session_stored_simulator.is_surface_simulation)
-            session_stored_simulator.monitors = list(monitor[0] for monitor in self.next_monitors_dict.values())
+            session_stored_simulator.monitors = list(monitor for monitor, _ in self.next_monitors_dict.values())
 
         last_loaded_fragment_url = self.get_first_monitor_fragment_url(
             session_stored_simulator, SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL)
@@ -706,7 +706,7 @@ class SimulatorController(BurstBaseController):
             raise
 
     def _prepare_first_fragment_for_burst_copy(self, burst_config_id, burst_name_format):
-        simulator, burst_config_copy = self.burst_service.prepare_first_fragment_for_burst_copy(
+        simulator, burst_config_copy = self.burst_service.prepare_data_for_burst_copy(
             burst_config_id, burst_name_format, self.context.project)
         self.next_monitors_dict = self.simulator_service.build_list_of_monitors_from_view_models(simulator.monitors)
 
@@ -737,7 +737,7 @@ class SimulatorController(BurstBaseController):
     def reset_simulator_configuration(self):
         burst_config = BurstConfiguration(self.context.project.id)
         self.context.init_session_at_sim_reset(burst_config, SimulatorWizzardURLs.SET_CONNECTIVITY_URL)
-        if self.next_monitors_dict is not None:
+        if self.next_monitors_dict:
             self.next_monitors_dict.clear()
 
         form = self.prepare_first_fragment()

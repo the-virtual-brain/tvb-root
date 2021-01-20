@@ -350,7 +350,7 @@ class BurstService(object):
 
         return param1, param2
 
-    def prepare_first_fragment_for_burst_copy(self, burst_config_id, burst_name_format, project):
+    def prepare_data_for_burst_copy(self, burst_config_id, burst_name_format, project):
         burst_config = self.load_burst_configuration(burst_config_id)
         burst_config_copy = burst_config.clone()
         count = dao.count_bursts_with_name(burst_config.name, burst_config.fk_project)
