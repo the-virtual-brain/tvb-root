@@ -263,6 +263,13 @@ class H5File(object):
         self.storage_manager.set_metadata({key: value})
 
     @staticmethod
+    def remove_metadata_param(file_path, param, dataset_name='', where=HDF5StorageManager.ROOT_NODE_PATH):
+        base_dir, fname = os.path.split(file_path)
+        storage_manager = HDF5StorageManager(base_dir, fname)
+        if param in storage_manager.get_metadata(dataset_name=dataset_name, where=where):
+            storage_manager.remove_metadata(param, dataset_name=dataset_name, where=where)
+
+    @staticmethod
     def h5_class_from_file(path):
         # type: (str) -> typing.Type[H5File]
         h5file_class_fqn = H5File.get_metadata_param(path, H5File.KEY_WRITTEN_BY)

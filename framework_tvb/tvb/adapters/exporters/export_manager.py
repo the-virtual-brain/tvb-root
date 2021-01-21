@@ -36,7 +36,7 @@ Class responsible for all TVB exports (datatype or project).
 
 import os
 from datetime import datetime
-from tvb.adapters.exporters.TVBLinkedExporter import TVBLinkedExporter
+from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.basic.profile import TvbProfile
