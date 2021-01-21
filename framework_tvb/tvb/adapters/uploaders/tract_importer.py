@@ -31,24 +31,25 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import numpy
 from abc import ABCMeta
+
+import numpy
 from nibabel import trackvis
+from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionVolumeMappingH5
 from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
-from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.storage import transactional, dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import path_for
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
-from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 
 
 def chunk_iter(iterable, n):
@@ -277,5 +278,5 @@ class ZipTxtTractsImporter(_TrackImporterBase):
                 vertices_file.close()
 
         datatype.tract_start_idx = tract_start_indices
-        datatype.tract_region = numpy.array(tract_region)
+        datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)
         return datatype
