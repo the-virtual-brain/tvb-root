@@ -213,7 +213,7 @@ class SettingsService(object):
         first_run = TvbProfile.is_first_run()
         if first_run:
             data[stored.KEY_LAST_CHECKED_FILE_VERSION] = TvbProfile.current.version.DATA_VERSION
-            data[stored.KEY_LAST_CHECKED_CODE_VERSION] = TvbProfile.current.version.SVN_VERSION
+            data[stored.KEY_LAST_CHECKED_CODE_VERSION] = TvbProfile.current.version.REVISION_NUMBER
             file_data = data
             if self.KEY_ADMIN_PWD in data:
                 data[self.KEY_ADMIN_PWD] = hash_password(data[self.KEY_ADMIN_PWD])
