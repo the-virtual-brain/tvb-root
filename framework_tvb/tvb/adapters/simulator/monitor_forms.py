@@ -30,7 +30,6 @@
 import numpy
 
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
-from tvb.basic.neotraits.api import List
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
@@ -85,17 +84,19 @@ def get_form_for_monitor(monitor_class):
     return get_monitor_to_form_dict().get(monitor_class)
 
 
-def build_list_of_monitors_from_names(monitor_names, is_surface_simulation):
+def build_list_of_monitors_from_view_models(monitor_view_models):
     next_monitors_dict = dict()
-    monitor_dict = get_ui_name_to_monitor_dict(is_surface_simulation)
-
     count = 0
-    for monitor_name in monitor_names:
-        monitor = monitor_dict[monitor_name]
-        next_monitors_dict[monitor.__name__] = (monitor(), count + 1)
+    for monitor_model in monitor_view_models:
+        next_monitors_dict[monitor_model.__class__.__name__] = (monitor_model, count + 1)
         count = count + 1
-
     return next_monitors_dict
+
+
+def build_list_of_monitors_from_names(monitor_names, is_surface_simulation):
+    monitor_dict = get_ui_name_to_monitor_dict(is_surface_simulation)
+    monitor_view_models = [monitor_dict[monitor_name]() for monitor_name in monitor_names]
+    return build_list_of_monitors_from_view_models(monitor_view_models)
 
 
 def prepare_monitor_legend(is_surface_simulation, monitor):
@@ -116,7 +117,7 @@ class MonitorForm(Form):
 
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
                                                            choices=tuple(self.variables_of_interest_indexes.keys())),
-                                                    name='variables_of_interest')
+                                                      name='variables_of_interest')
 
     def fill_from_trait(self, trait):
         super(MonitorForm, self).fill_from_trait(trait)
@@ -255,7 +256,7 @@ class BoldMonitorForm(MonitorForm):
 
         self.period = FloatField(Bold.period)
         self.hrf_kernel = SelectField(Attr(HRFKernelEquation, label='Equation', default=default_hrf_kernel),
-                                    name='hrf_kernel', choices=self.hrf_kernel_choices)
+                                      name='hrf_kernel', choices=self.hrf_kernel_choices)
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)

@@ -37,8 +37,9 @@ from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
-from tvb.adapters.simulator.monitor_forms import build_list_of_monitors_from_names
-from tvb.adapters.simulator.noise_forms import get_form_for_noise, NoiseForm
+from tvb.adapters.simulator.monitor_forms import build_list_of_monitors_from_names, \
+    build_list_of_monitors_from_view_models
+from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
@@ -423,8 +424,8 @@ class SimulatorController(BurstBaseController):
             fragment = SimulatorMonitorFragment(is_surface_simulation=session_stored_simulator.is_surface_simulation)
             fragment.fill_from_post(data)
 
-            self.next_monitors_dict = build_list_of_monitors_from_names(
-                fragment.monitors.value, session_stored_simulator.is_surface_simulation)
+            self.next_monitors_dict = build_list_of_monitors_from_names(fragment.monitors.value,
+                                                                        session_stored_simulator.is_surface_simulation)
             session_stored_simulator.monitors = list(monitor for monitor, _ in self.next_monitors_dict.values())
 
         last_loaded_fragment_url = self.get_first_monitor_fragment_url(
@@ -693,8 +694,7 @@ class SimulatorController(BurstBaseController):
 
             form = self.prepare_first_fragment()
             session_stored_simulator = self.context.simulator
-            self.next_monitors_dict = self.simulator_service.build_list_of_monitors_from_view_models(
-                session_stored_simulator.monitors)
+            self.next_monitors_dict = build_list_of_monitors_from_view_models(session_stored_simulator.monitors)
             rendering_rules = SimulatorFragmentRenderingRules(form, SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                               is_simulation_readonly_load=True, is_first_fragment=True)
             return rendering_rules.to_dict()
@@ -708,7 +708,7 @@ class SimulatorController(BurstBaseController):
     def _prepare_first_fragment_for_burst_copy(self, burst_config_id, burst_name_format):
         simulator, burst_config_copy = self.burst_service.prepare_data_for_burst_copy(
             burst_config_id, burst_name_format, self.context.project)
-        self.next_monitors_dict = self.simulator_service.build_list_of_monitors_from_view_models(simulator.monitors)
+        self.next_monitors_dict = build_list_of_monitors_from_view_models(simulator.monitors)
 
         last_loaded_form_url = self.get_url_for_final_fragment(burst_config_copy)
         self.context.init_session_at_copy_preparation(burst_config_copy, simulator, last_loaded_form_url)
@@ -797,8 +797,7 @@ class SimulatorController(BurstBaseController):
             if upload_param in data and data[upload_param]:
                 simulator, burst_config = self.burst_service.load_simulation_from_zip(data[upload_param],
                                                                                       self.context.project)
-                self.next_monitors_dict = self.simulator_service.build_list_of_monitors_from_view_models(
-                    simulator.monitors)
+                self.next_monitors_dict = build_list_of_monitors_from_view_models(simulator.monitors)
                 if burst_config.is_pse_burst():
                     last_loaded_form_url = SimulatorWizzardURLs.LAUNCH_PSE_URL
                 self.context.init_session_at_sim_config_from_zip(burst_config, simulator, last_loaded_form_url)

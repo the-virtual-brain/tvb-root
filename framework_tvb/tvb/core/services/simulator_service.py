@@ -247,15 +247,6 @@ class SimulatorService(object):
         return None
 
     @staticmethod
-    def build_list_of_monitors_from_view_models(monitor_view_models):
-        next_monitors_dict = dict()
-        count = 0
-        for monitor_model in monitor_view_models:
-            next_monitors_dict[monitor_model.__class__.__name__] = (monitor_model, count + 1)
-            count = count + 1
-        return next_monitors_dict
-
-    @staticmethod
     def get_current_and_next_monitor_form(current_monitor_name, simulator, next_monitors_dict):
         current_monitor, next_monitor_index = next_monitors_dict[current_monitor_name]
 
