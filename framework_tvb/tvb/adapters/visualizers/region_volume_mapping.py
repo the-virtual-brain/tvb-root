@@ -125,7 +125,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
     def get_mapped_array_volume_view(self, entity_gid, mapped_array_gid, x_plane, y_plane, z_plane,
                                      mapped_array_slice=None, **kwargs):
-        entity_h5_class, entity_h5_path = self._load_h5_of_gid(entity_gid)
+        entity_h5_class, entity_h5_path = self.load_h5_of_gid(entity_gid)
         with entity_h5_class(entity_h5_path) as entity_h5:
             data_shape = entity_h5.array_data.shape
             x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
@@ -133,7 +133,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
             slice_x, slice_y, slice_z = entity_h5.get_volume_slice(x_plane, y_plane, z_plane)
             connectivity_gid = entity_h5.connectivity.load().hex
 
-        mapped_array_h5_class, mapped_array_h5_path = self._load_h5_of_gid(mapped_array_gid)
+        mapped_array_h5_class, mapped_array_h5_path = self.load_h5_of_gid(mapped_array_gid)
         with mapped_array_h5_class(mapped_array_h5_path) as mapped_array_h5:
             if mapped_array_slice:
                 matrix_slice = parse_slice(mapped_array_slice)
@@ -165,7 +165,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
     def get_voxel_region(self, region_mapping_volume_gid, x_plane, y_plane, z_plane):
 
-        entity_h5_class, entity_h5_path = self._load_h5_of_gid(region_mapping_volume_gid)
+        entity_h5_class, entity_h5_path = self.load_h5_of_gid(region_mapping_volume_gid)
         with entity_h5_class(entity_h5_path) as entity_h5:
 
             data_shape = entity_h5.array_data.shape
@@ -216,7 +216,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return params
 
     def get_volume_view(self, entity_gid, **kwargs):
-        h5_class, h5_path = self._load_h5_of_gid(entity_gid)
+        h5_class, h5_path = self.load_h5_of_gid(entity_gid)
         with h5_class(h5_path) as h5_opened:
             if h5_class is TimeSeriesRegionH5:
                 return self._get_volume_view_region(h5_opened, **kwargs)
@@ -240,7 +240,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         if region_mapping_volume_gid is None:
             raise Exception("Invalid method called for TS without Volume Mapping!")
 
-        volume_rm_h5_class, volume_rm_h5_path = self._load_h5_of_gid(region_mapping_volume_gid)
+        volume_rm_h5_class, volume_rm_h5_path = self.load_h5_of_gid(region_mapping_volume_gid)
         volume_rm_h5 = volume_rm_h5_class(volume_rm_h5_path)
         volume_rm_shape = volume_rm_h5.array_data.shape
 

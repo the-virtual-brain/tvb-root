@@ -416,8 +416,7 @@ class FlowController(BaseController):
             return method(entity_gid, **kwargs)
         return method(entity_gid)
 
-    @expose_json
-    def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
+    def _read_from_h5(self, entity_gid, method_name, datatype_kwargs='null', **kwargs):
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + method_name + "/" + str(kwargs))
         entity = load_entity_by_gid(entity_gid)
         entity_h5 = h5.h5_file_for_index(entity)
@@ -432,8 +431,13 @@ class FlowController(BaseController):
             result = result(**kwargs)
         else:
             result = result()
-
         entity_h5.close()
+
+        return result
+
+    @expose_json
+    def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
+        result = self._read_from_h5(entity_gid, method_name, datatype_kwargs, **kwargs)
         return self._prepare_result(result, flatten)
 
     @expose_json
@@ -464,8 +468,8 @@ class FlowController(BaseController):
             return result
 
     @expose_numpy_array
-    def read_binary_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
-        return self._read_datatype_attribute(entity_gid, dataset_name, datatype_kwargs, **kwargs)
+    def read_binary_datatype_attribute(self, entity_gid, method_name, datatype_kwargs='null', **kwargs):
+        return self._read_from_h5(entity_gid, method_name, datatype_kwargs, **kwargs)
 
     @expose_fragment("flow/genericAdapterFormFields")
     def get_simple_adapter_interface(self, algorithm_id, parent_div='', is_uploader=False):
