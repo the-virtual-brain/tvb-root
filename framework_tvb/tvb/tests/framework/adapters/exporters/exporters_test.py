@@ -107,6 +107,46 @@ class TestExporters(TransactionalTestCase):
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
 
+    def test_tvb_export_of_datatype_with_storage(self, dummy_datatype_index_factory):
+        """
+        Test export of a data type which has no data stored on file system
+        """
+        datatype = dummy_datatype_index_factory()
+        _, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
+
+        assert file_path is not None, "Export process should return path to export file"
+        assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
+
+    def test_export_datatype_with_links(self, region_mapping_index_factory, user_factory, project_factory):
+        """
+        This is a test for exporting region mapping with links, that results in importing:
+        connectivity, surface and region mapping all from one zip.
+        """
+        self.test_user = user_factory()
+        self.test_project = project_factory(self.test_user)
+
+        region_mapping_index = region_mapping_index_factory()
+
+        export_manager = ExportManager()
+        _, exported_h5_file, _ = export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER, self.test_project)
+        assert zipfile.is_zipfile(exported_h5_file), "Generated file is not a valid ZIP file"
+
+        with zipfile.ZipFile(exported_h5_file, 'r') as zipObj:
+            # Get list of files names in zip
+            dts_in_zip = len(zipObj.namelist())
+            assert 3 == dts_in_zip
+
+            has_conn = False
+            has_surface = False
+            for dt_file in zipObj.namelist():
+                if dt_file.find(region_mapping_index.fk_connectivity_gid):
+                    has_conn = True
+                if dt_file.find(region_mapping_index.fk_surface_gid):
+                    has_surface = True
+
+        assert has_conn is True, "Connectivity was exported in zip"
+        assert has_surface is True, "Surface was exported in zip"
+
     def test_tvb_export_for_datatype_group(self, datatype_group_factory):
         """
         This method checks export of a data type group
