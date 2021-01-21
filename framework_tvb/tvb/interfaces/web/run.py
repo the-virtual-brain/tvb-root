@@ -73,7 +73,7 @@ from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import Re
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.controllers.hpc_controller import HPCController
 
 if __name__ == '__main__':
