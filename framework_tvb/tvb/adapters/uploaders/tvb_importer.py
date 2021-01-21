@@ -120,9 +120,10 @@ class TVBImporter(ABCUploader):
                     if dirs:
                         current_op_id = None
                         is_group = True
-                    # We check for 3 because in the case of group simulation with links zip the first folder contains
-                    # the links which will need the current op id and the rest are from the normal group simulation
-                    if len(dirs) == 3:
+                    # We check for 3 folders because in the case of group simulation with links zip the first folder
+                    # contains the links which will need the current op id and the rest are from the normal
+                    # group simulation (a minimum of 2 for PSE) => at least 3 folders in the zip pse with links
+                    if len(dirs) >= 3:
                         linked_group_op_id = current_op.id
                     break
                 try:
