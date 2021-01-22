@@ -388,8 +388,12 @@ class ConnectivityMeasureVolumeVisualizerForm(BaseVolumeVisualizerForm):
         self.connectivity_measure = TraitDataTypeSelectField(
             ConnectivityMeasureVolumeVisualizerModel.connectivity_measure, name='connectivity_measure',
             conditions=self.get_filters())
+
+        rvm_runtime_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=["=="],
+                                         values=['fk_connectivity_gid:fk_connectivity_gid'])
         self.region_mapping_volume = TraitDataTypeSelectField(
-            ConnectivityMeasureVolumeVisualizerModel.region_mapping_volume, name='region_mapping_volume')
+            ConnectivityMeasureVolumeVisualizerModel.region_mapping_volume, name='region_mapping_volume',
+            runtime_conditions=('connectivity_measure', rvm_runtime_filter))
 
     @staticmethod
     def get_view_model():
@@ -461,8 +465,12 @@ class RegionVolumeMappingVisualiserForm(BaseVolumeVisualizerForm):
         cm_conditions = FilterChain(
             fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_volume_mapping'],
             operations=["==", "=="], values=[1, True])
+        cm_runtime_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=["=="],
+                                        values=['fk_connectivity_gid:fk_connectivity_gid'])
         self.connectivity_measure = TraitDataTypeSelectField(RegionVolumeMappingVisualiserModel.connectivity_measure,
-                                                             name='connectivity_measure', conditions=cm_conditions)
+                                                             name='connectivity_measure', conditions=cm_conditions,
+                                                             runtime_conditions=('region_mapping_volume',
+                                                                                 cm_runtime_filter))
 
     @staticmethod
     def get_view_model():
