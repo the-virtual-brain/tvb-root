@@ -37,6 +37,7 @@ import json
 import math
 import numpy
 from copy import copy
+
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.neotraits.api import Attr
@@ -114,8 +115,9 @@ class ConnectivityViewerForm(ABCAdapterForm):
     def __init__(self):
         super(ConnectivityViewerForm, self).__init__()
 
-        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, name='input_data',
-                                                     conditions=self.get_filters())
+        self.connectivity_data = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity,
+                                                          name='connectivity_data', conditions=self.get_filters())
+
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
         self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, name='surface_data',
@@ -123,12 +125,15 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
         self.step = FloatField(ConnectivityViewerModel.step, name='step')
 
-        colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
-                                               conditions=colors_conditions)
+        cm_condition = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
+        cm_runtime_condition = FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'], operations=["=="],
+                                           values=[FilterChain.DEFAULT_RUNTIME_VALUE])
 
-        rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions)
+        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
+                                               conditions=cm_condition,
+                                               runtime_conditions=('connectivity_data', cm_runtime_condition))
+        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=cm_condition,
+                                             runtime_conditions=('connectivity_data', cm_runtime_condition))
 
     @staticmethod
     def get_view_model():
@@ -258,7 +263,8 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         path_labels = SurfaceURLGenerator.paths2url(conn_gid, 'ordered_labels')
         path_hemisphere_order_indices = SurfaceURLGenerator.paths2url(conn_gid, 'hemisphere_order_indices')
 
-        algo = AlgorithmService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE, CONNECTIVITY_CREATOR_CLASS)
+        algo = AlgorithmService().get_algorithm_by_module_and_class(CONNECTIVITY_CREATOR_MODULE,
+                                                                    CONNECTIVITY_CREATOR_CLASS)
         submit_url = '/{}/{}/{}'.format(SurfaceURLGenerator.FLOW, algo.fk_category, algo.id)
         global_pages = dict(controlPage="connectivity/top_right_controls")
 
