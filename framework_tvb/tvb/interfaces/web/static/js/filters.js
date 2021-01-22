@@ -103,11 +103,7 @@ function _FIL_gatherData(divId, uiValue){
                 if (children[i].className.endsWith('runtime_trigger')) {
                     let value_from_field = $('#' + children[i].className.replace('_runtime_trigger', '')).val();
                     if(value === "default_runtime_value"){
-                        if (!uiValue) {
-                            value = value_from_field;
-                        } else {
-                            value = uiValue;
-                        }
+                        value = value_from_field;
                         runtime_reverse_filtering_values.push('');
                     }else{
                         runtime_reverse_filtering_values.push(value_from_field);
@@ -192,7 +188,7 @@ function applyUserFilters(datatypeIndex, divId, name, gatheredData) {
     });
 }
 
-function applyRuntimeFilters(name, selected_value, dynamic_filters){
+function applyRuntimeFilters(name, selected_value){
 
     if($('.' + name + '_runtime_trigger').length === 0){
         return;
@@ -241,7 +237,8 @@ function applyRuntimeFilters(name, selected_value, dynamic_filters){
                 for(var key in fields_and_user_filters){
                     const divId = key + 'data_select';
                     for(var i=0; i<fields_and_user_filters[key]['user_fields'].length; i++) {
-                        addFilter(divId, dynamic_filters);
+                        let field_df = JSON.parse($('#' + key + '_df').val());
+                        addFilter(divId, field_df);
                         var children = $('#'+divId).children('div');
                         var elem = children[children.length - 1].children;
                         elem[1].value = fields_and_user_filters[key]['user_fields'][i];

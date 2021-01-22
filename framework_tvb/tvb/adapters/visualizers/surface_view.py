@@ -159,12 +159,18 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
 
     def __init__(self):
         super(BaseSurfaceViewerForm, self).__init__()
+
         self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, name='region_map')
+
         conn_filter = FilterChain(
             fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_surface_mapping'],
-            operations=["==", "=="], values=[1, True])
+            operations=["==", "=="], values=[1, "1"])
+        cm_runtime_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=["=="],
+                                        values=['fk_connectivity_gid:fk_connectivity_gid'])
         self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure,
-                                                             name='connectivity_measure', conditions=conn_filter)
+                                                             name='connectivity_measure', conditions=conn_filter,
+                                                             runtime_conditions=('region_map', cm_runtime_filter))
+
         self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, name='shell_surface')
 
     @staticmethod
@@ -184,6 +190,10 @@ class SurfaceViewerModel(BaseSurfaceViewerModel):
 class SurfaceViewerForm(BaseSurfaceViewerForm):
     def __init__(self):
         super(SurfaceViewerForm, self).__init__()
+        rm_runtime_condition = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid'], operations=["=="],
+                                           values=[FilterChain.DEFAULT_RUNTIME_VALUE])
+        self.region_map.runtime_conditions = ('surface', rm_runtime_condition)
+
         self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, name='surface')
 
     @staticmethod

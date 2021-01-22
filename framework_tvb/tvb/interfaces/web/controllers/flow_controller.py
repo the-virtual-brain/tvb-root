@@ -256,11 +256,16 @@ class FlowController(BaseController):
         datatype_index = dao.get_datatype_by_gid(runtime_filters['runtime_reverse_filtering_values'][i])
         if datatype_index:
             linked_datatype_field = runtime_filters['runtime_values'][i]
-            linked_datatype_gid = getattr(datatype_index, linked_datatype_field)
+            split_linked_datatype_field = linked_datatype_field.split(':')
+            linked_datatype_gid = getattr(datatype_index, split_linked_datatype_field[0])
             linked_datatype_index = dao.get_datatype_by_gid(linked_datatype_gid)
             filter_field = runtime_filters['runtime_fields'][i].replace(FilterChain.datatype + '.', '')
+
             filter_value = getattr(linked_datatype_index, filter_field)
             runtime_filters['runtime_values'][i] = filter_value
+            runtime_filters['runtime_fields'][i] = FilterChain.datatype + '.' + (split_linked_datatype_field[1] if
+                                                                                 len(split_linked_datatype_field) > 1
+                                                                                 else filter_field)
 
     @expose_fragment('form_fields/options_field')
     @settings
@@ -327,7 +332,7 @@ class FlowController(BaseController):
                                                         values=user_filters['user_values'])
             runtime_filters = runtime_filter_dict[key]
             runtime_filter_values_copy = runtime_filters['runtime_values'].copy()
-
+            runtime_filter_fields_copy = runtime_filters['runtime_fields'].copy()
             for i in range(len(runtime_filters['runtime_fields'])):
                 if (len(runtime_filters['runtime_reverse_filtering_values'][i])) > 0:
                     self._fill_reversed_filter_value(runtime_filters, i)
@@ -345,6 +350,7 @@ class FlowController(BaseController):
 
             if select_field_attr.runtime_conditions:
                 select_field_attr.runtime_conditions[1].values = runtime_filter_values_copy
+                select_field_attr.runtime_conditions[1].fields = runtime_filter_fields_copy
 
         return {'adapter_form': form}
 

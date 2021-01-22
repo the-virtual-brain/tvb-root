@@ -76,7 +76,11 @@ class TimeSeriesVolumeVisualiserForm(ABCAdapterForm):
         super(TimeSeriesVolumeVisualiserForm, self).__init__()
         self.time_series = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.time_series, name='time_series',
                                                     conditions=self.get_filters())
-        self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, name='background')
+
+        volume_index_filter = FilterChain(fields=[FilterChain.datatype + '.voxel_size'], operations=["=="],
+                                          values=['fk_volume_gid'])
+        self.background = TraitDataTypeSelectField(TimeSeriesVolumeVisualiserModel.background, name='background',
+                                                   runtime_conditions=('time_series', volume_index_filter))
 
     @staticmethod
     def get_view_model():

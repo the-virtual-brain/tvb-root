@@ -1,6 +1,6 @@
 <p class="field-data">
 <select name="{{ field.name }}" id="{{ field.name }}" class="dataset-selector" tabindex="1" title="Fully Loaded!"
-onchange="applyRuntimeFilters('{{ field.name }}', this.value,  {{ field.get_dynamic_filters }})">
+onchange="applyRuntimeFilters('{{ field.name }}', this.value)">
 {% for option in field.options() %}
     <option value="{{ option.value }}" {{ 'selected' if option.checked }} class="form-control">{{ option.label }}</option>
 {% endfor %}
