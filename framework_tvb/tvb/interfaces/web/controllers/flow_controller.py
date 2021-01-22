@@ -253,15 +253,19 @@ class FlowController(BaseController):
 
     @staticmethod
     def _fill_reversed_filter_value(runtime_filters, i):
+        # Get index of the currently chosen value for the field that the filtering will be applied on
         datatype_index = dao.get_datatype_by_gid(runtime_filters['runtime_reverse_filtering_values'][i])
         if datatype_index:
+            # Get the linked datatype and the value that needs to be used for the filter
             linked_datatype_field = runtime_filters['runtime_values'][i]
             split_linked_datatype_field = linked_datatype_field.split(':')
             linked_datatype_gid = getattr(datatype_index, split_linked_datatype_field[0])
             linked_datatype_index = dao.get_datatype_by_gid(linked_datatype_gid)
             filter_field = runtime_filters['runtime_fields'][i].replace(FilterChain.datatype + '.', '')
-
             filter_value = getattr(linked_datatype_index, filter_field)
+
+            # If there was a ':' character in linked_datatype_field, it means that the linked datatype is not among the
+            # ui fields of the current form and the value needed to be obtained from one of the existing fields
             runtime_filters['runtime_values'][i] = filter_value
             runtime_filters['runtime_fields'][i] = FilterChain.datatype + '.' + (split_linked_datatype_field[1] if
                                                                                  len(split_linked_datatype_field) > 1
@@ -272,9 +276,17 @@ class FlowController(BaseController):
     @context_selected
     def get_filtered_datatypes(self, dt_module, dt_class, default_filters, user_filters, runtime_filters,
                                has_all_option, has_none_option):
+        # type: (str, str, str, str, str, bool, bool) -> dict
         """
-        Given the name from the input tree, the dataType required and a number of
-        filters, return the available dataType that satisfy the conditions imposed.
+        This method applies all three types of filters on one field.
+        @param dt_module: module of the field's datatype index
+        @param dt_class: class of the field's datatype index
+        @param default_filters: a string in json format which contains all default filters for this field
+        @param user_filters: a string in json format which contains all filters defined by users for this field
+        @param runtime_filters: a string in json format which contains all filters for this field
+        that have values that can be obtained only at runtime (related to linked data types)
+        @param has_all_option: if the All option should be added or not
+        @param has_none_option: if the None option should be added or not (if the field is required or not)
         """
         index_class = getattr(sys.modules[dt_module], dt_class)()
         default_filters_dict = json.loads(default_filters)
@@ -309,45 +321,72 @@ class FlowController(BaseController):
     @settings
     @context_selected
     def get_runtime_filtered_form(self, algorithm_id, default_filters, user_filters, runtime_filters):
+        # type: (str, str, str, str) -> dict
+        """
+        This method returns a newly rendered form, where all the filters are applied on the respective fields.
+        @param algorithm_id: id of the adapter that can be used to return an instance of the current form
+        @param default_filters: a string in json format which contains all default filters
+        @param user_filters: a string in json format which contains all filters defined by users
+        @param runtime_filters: a string in json format which contains all filters that have values that can be obtained
+        only at runtime (related to linked data types)
+        """
+
+        # Get an instance of the needed form class
         algorithm = dao.get_algorithm_by_id(algorithm_id)
         adapter = getattr(sys.modules[algorithm.module], algorithm.classname)()
         form = adapter.get_form_class()()
 
-        default_filter_dict = json.loads(default_filters)
-        user_filter_dict = json.loads(user_filters)
-        runtime_filter_dict = json.loads(runtime_filters)
+        # Load filters as dictionaries
+        user_filters_dict = json.loads(user_filters)
+        default_filters_dict = json.loads(default_filters)
+        runtime_filters_dict = json.loads(runtime_filters)
         project_id = common.get_current_project().id
 
-        for key, default_filters in default_filter_dict.items():
+        # Iterate over the filters of each field
+        for key, user_filters in user_filters_dict.items():
             select_field_attr = getattr(form, key)
 
-            default_filter_chain = FilterChain(fields=default_filters['default_fields'],
-                                               operations=default_filters['default_operations'],
-                                               values=default_filters['default_values'])
+            # Add default filters even if they are empty, otherwise applying the + operator on None will fail
+            default_filter_chain = FilterChain(fields=default_filters_dict[key]['default_fields'],
+                                               operations=default_filters_dict[key]['default_operations'],
+                                               values=default_filters_dict[key]['default_values'])
             select_field_attr.conditions = default_filter_chain
 
-            user_filters = user_filter_dict[key]
+            # Add filters defined by users so they can both be applied
             select_field_attr.conditions += FilterChain(fields=user_filters['user_fields'],
                                                         operations=user_filters['user_operations'],
                                                         values=user_filters['user_values'])
-            runtime_filters = runtime_filter_dict[key]
+            runtime_filters = runtime_filters_dict[key]
+
+            # Keep these values because they need to be reset after applying the runtime filters
             runtime_filter_values_copy = runtime_filters['runtime_values'].copy()
             runtime_filter_fields_copy = runtime_filters['runtime_fields'].copy()
+
             for i in range(len(runtime_filters['runtime_fields'])):
+
+                # If this condition is true, then it means we need to apply the filters in 'inversed order',
+                # so we need the information from the filter value (and maybe from the filter field as well)
                 if (len(runtime_filters['runtime_reverse_filtering_values'][i])) > 0:
                     self._fill_reversed_filter_value(runtime_filters, i)
                 else:
                     runtime_filter_values_copy[i] = FilterChain.DEFAULT_RUNTIME_VALUE
 
+            # Runtime conditions are added as a tuple of two elements, where the first element is the field that can
+            # trigger a change in the current field and the second element is the filter itself
             if select_field_attr.runtime_conditions:
                 select_field_attr.runtime_conditions = (select_field_attr.runtime_conditions[0], FilterChain(
                         fields=runtime_filters['runtime_fields'], operations=runtime_filters['runtime_operations'],
                         values=runtime_filters['runtime_values']))
 
+            # Perform the filtering
             self.algorithm_service.fill_selectfield_with_datatypes(select_field_attr, project_id)
             select_field_attr.data = runtime_filters['ui_value']
+
+            # After applying the user defined filters, we need to eliminate them so they won't be added as hidden
+            # fields next to the default and runtime filters
             select_field_attr.conditions = default_filter_chain
 
+            # Runtime conditions need to be reset, because they were edited so they can be applied
             if select_field_attr.runtime_conditions:
                 select_field_attr.runtime_conditions[1].values = runtime_filter_values_copy
                 select_field_attr.runtime_conditions[1].fields = runtime_filter_fields_copy

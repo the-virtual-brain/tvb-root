@@ -77,6 +77,7 @@ class FilterChain(object):
     algorithm_category_replacement = "AlgorithmCategory"
     operation_replacement = "Operation"
 
+    # This is used for the simplest runtime filters, where we just have to replace the current value at runtime
     DEFAULT_RUNTIME_VALUE = "default_runtime_value"
 
     def __init__(self, display_name="", fields=None, values=None, operations=None, operator_between_fields='and'):

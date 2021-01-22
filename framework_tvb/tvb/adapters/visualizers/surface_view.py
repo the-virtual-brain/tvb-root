@@ -164,7 +164,7 @@ class BaseSurfaceViewerForm(ABCAdapterForm):
 
         conn_filter = FilterChain(
             fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_surface_mapping'],
-            operations=["==", "=="], values=[1, "1"])
+            operations=["==", "=="], values=[1, True])
         cm_runtime_filter = FilterChain(fields=[FilterChain.datatype + '.gid'], operations=["=="],
                                         values=['fk_connectivity_gid:fk_connectivity_gid'])
         self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure,

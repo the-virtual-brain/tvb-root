@@ -37,6 +37,7 @@ import json
 import math
 import numpy
 from copy import copy
+
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.neotraits.api import Attr
@@ -116,6 +117,7 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
         self.connectivity_data = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity,
                                                           name='connectivity_data', conditions=self.get_filters())
+
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
         self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, name='surface_data',
@@ -123,17 +125,15 @@ class ConnectivityViewerForm(ABCAdapterForm):
 
         self.step = FloatField(ConnectivityViewerModel.step, name='step')
 
-        runtime_condition = FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'], operations=["=="],
-                                        values=[FilterChain.DEFAULT_RUNTIME_VALUE])
+        cm_condition = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
+        cm_runtime_condition = FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'], operations=["=="],
+                                           values=[FilterChain.DEFAULT_RUNTIME_VALUE])
 
-        colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
         self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
-                                               conditions=colors_conditions,
-                                               runtime_conditions=('connectivity_data', runtime_condition))
-
-        rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions,
-                                             runtime_conditions=('connectivity_data', runtime_condition))
+                                               conditions=cm_condition,
+                                               runtime_conditions=('connectivity_data', cm_runtime_condition))
+        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=cm_condition,
+                                             runtime_conditions=('connectivity_data', cm_runtime_condition))
 
     @staticmethod
     def get_view_model():

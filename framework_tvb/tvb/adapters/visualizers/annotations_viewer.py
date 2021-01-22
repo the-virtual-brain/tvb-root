@@ -33,6 +33,7 @@
 """
 
 import json
+
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer, SurfaceURLGenerator
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
@@ -74,10 +75,9 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
 
     def __init__(self):
         super(ConnectivityAnnotationsViewForm, self).__init__()
-        # Used for filtering
+
         connectivity_index_filter = FilterChain(fields=[FilterChain.datatype + '.number_of_regions'], operations=["=="],
                                                 values=['fk_connectivity_gid'])
-
         self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index,
                                                            'connectivity_index',
                                                            runtime_conditions=('annotations_index',
@@ -88,7 +88,6 @@ class ConnectivityAnnotationsViewForm(ABCAdapterForm):
 
         rm_runtime_condition = FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid'], operations=["=="],
                                            values=[FilterChain.DEFAULT_RUNTIME_VALUE])
-
         self.region_mapping_index = TraitDataTypeSelectField(
             ConnectivityAnnotationsViewModel.region_mapping_index, 'region_mapping_index',
             runtime_conditions=('connectivity_index', rm_runtime_condition))
