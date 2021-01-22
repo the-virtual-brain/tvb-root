@@ -127,7 +127,8 @@ def init_cherrypy(arguments=None):
     #### Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
-    CONFIGUER["/"]["tools.sessions.storage_class"] = CleanupSessionHandler
+    if DataEncryptionHandler.encryption_enabled():
+        CONFIGUER["/"]["tools.sessions.storage_class"] = CleanupSessionHandler
     for module in arguments:
         module_inst = importlib.import_module(str(module))
         module_path = os.path.dirname(os.path.abspath(module_inst.__file__))
