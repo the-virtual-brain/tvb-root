@@ -80,6 +80,7 @@ class TVBImporter(ABCUploader):
     _ui_name = "TVB HDF5 / ZIP"
     _ui_subsection = "tvb_datatype_importer"
     _ui_description = "Upload H5 file with TVB generic entity"
+    LINKS = "Links"
 
     def get_form_class(self):
         return TVBImporterForm
@@ -123,7 +124,7 @@ class TVBImporter(ABCUploader):
                     # We check for 3 folders because in the case of group simulation with links zip the first folder
                     # contains the links which will need the current op id and the rest are from the normal
                     # group simulation (a minimum of 2 for PSE) => at least 3 folders in the zip pse with links
-                    if len(dirs) >= 3:
+                    if len(dirs) >= 3 and self.LINKS in dirs:
                         linked_group_op_id = current_op.id
                     break
                 try:
