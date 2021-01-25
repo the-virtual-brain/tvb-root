@@ -52,6 +52,7 @@ from tvb.simulator.models.base import Model
 from .backend import ReferenceBackend
 from .common import psutil
 from .history import SparseHistory
+import _addat
 
 
 # TODO with refactor, this becomes more of a builder, since iterator will account for

@@ -50,6 +50,17 @@ LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
 
+try:
+    from Cython.Build import cythonize
+    _ext_add_at = setuptools.Extension(
+        '_addat', sources=['tvb/ext/_addat.pyx']
+    )
+    ext_modules = cythonize([_ext_add_at])
+except ImportError:
+    _ext_add_at = setuptools.Extension(
+        '_addat', sources=['tvb/ext/_addat.c']
+    )
+    ext_modules = [_ext_add_at]
 
 setuptools.setup(name='tvb-library',
                  version=LIBRARY_VERSION,
@@ -57,6 +68,7 @@ setuptools.setup(name='tvb-library',
                  include_package_data=True,
                  install_requires=LIBRARY_REQUIRED_PACKAGES,
                  extras_require={"test": LIBRARY_REQUIRED_EXTRA},
+                 ext_modules=ext_modules,
                  description='A package for performing whole brain simulations',
                  long_description=DESCRIPTION,
                  license="GPL-3.0-or-later",
