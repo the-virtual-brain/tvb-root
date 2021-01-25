@@ -52,7 +52,7 @@ from tvb.simulator.models.base import Model
 from .backend import ReferenceBackend
 from .common import psutil
 from .history import SparseHistory
-import _addat
+from tvb.simulator._numba.util import add_at_313
 
 
 # TODO with refactor, this becomes more of a builder, since iterator will account for
