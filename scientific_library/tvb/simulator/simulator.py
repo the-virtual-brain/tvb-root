@@ -49,7 +49,7 @@ from tvb.simulator import models, integrators, monitors, coupling
 from .common import psutil, numpy_add_at
 from .history import SparseHistory
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
-
+import _addat
 
 # TODO with refactor, this becomes more of a builder, since iterator will account for
 # most of the runtime associated with a simulation.
@@ -380,8 +380,25 @@ class Simulator(HasTraits):
     def _loop_update_history(self, step, n_reg, state):
         """Update history."""
         if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
+            # todo: maybe lift this allocation?
             region_state = numpy.zeros((n_reg, state.shape[0], state.shape[2]))         # temp (node, cvar, mode)
-            numpy_add_at(region_state, self._regmap, state.transpose((1, 0, 2)))        # sum within region
+            # region_state2 = numpy.zeros((n_reg, state.shape[0], state.shape[2]))         # temp (node, cvar, mode)
+            # this transpose costs because it returns an array that is not contiguous in memory
+            # all the striding messes with the cache
+            # the reason for this transpose is that state comes from history shape, that one is t, sv, node, mode
+            # before transpose state is sv, node, mode
+            # after it is node, sv, mode
+            # state.data.strides = {tuple:            region_state = numpy.zeros((n_reg, state.shape[0], state.shape[2]))         # temp (node, cvar, mode) 3}(175360, 8, 8)
+            # state.transpose((1, 0, 2)).data.strides = {tuple: 3}(8, 175360, 350720)
+            # to get to next sv for a node i have to skip 175360 bytes in memory! to get to next mode for node, sv 350720
+
+            # numpy_add_at(region_state2, self._regmap, state.transpose((1, 0, 2)))        # sum within region
+
+            _addat.add_at_313_unsafe(region_state, self._regmap, state.transpose((1, 0, 2)))
+
+            # assert numpy.abs(region_state - region_state2).max() < 1e-8
+
+            #todo: this bincount can be lifted out of loop
             region_state /= numpy.bincount(self._regmap).reshape((-1, 1, 1))            # div by n node in region
             state = region_state.transpose((1, 0, 2))                                   # (cvar, node, mode)
         self.history.update(step, state)
