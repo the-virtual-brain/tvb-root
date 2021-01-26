@@ -226,18 +226,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return volume_view
 
     @staticmethod
-    def _get_volume_view_region(ts_h5, from_idx, to_idx, x_plane, y_plane, z_plane, var=0, mode=0):
-        """
-        Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
-
-        :param from_idx: int This will be the limit on the first dimension (time)
-        :param to_idx: int Also limit on the first Dimension (time)
-        :param x_plane: int coordinate
-        :param y_plane: int coordinate
-        :param z_plane: int coordinate
-
-        :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
-        """
+    def prepare_space_parameters(ts_h5, x_plane, y_plane, z_plane):
         region_mapping_volume_gid = ts_h5.region_mapping_volume.load()
 
         if region_mapping_volume_gid is None:
@@ -249,6 +238,22 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         # Work with space inside Volume:
         x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, volume_rm_shape[0],
                                                                 volume_rm_shape[1], volume_rm_shape[2])
+
+        return x_plane, y_plane, z_plane, volume_rm_h5
+
+    def _get_volume_view_region(self, ts_h5, from_idx, to_idx, x_plane, y_plane, z_plane, var=0, mode=0):
+        """
+        Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
+
+        :param from_idx: int This will be the limit on the first dimension (time)
+        :param to_idx: int Also limit on the first Dimension (time)
+        :param x_plane: int coordinate
+        :param y_plane: int coordinate
+        :param z_plane: int coordinate
+
+        :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
+        """
+        x_plane, y_plane, z_plane, volume_rm_h5 = self.prepare_space_parameters(ts_h5, x_plane, y_plane, z_plane)
         var, mode = int(var), int(mode)
         slice_x, slice_y, slice_z = volume_rm_h5.get_volume_slice(x_plane, y_plane, z_plane)
 

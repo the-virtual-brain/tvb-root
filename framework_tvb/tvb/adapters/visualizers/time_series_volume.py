@@ -47,7 +47,7 @@ from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.arguments_serialisation import preprocess_space_parameters, postprocess_voxel_ts
+from tvb.core.adapters.arguments_serialisation import postprocess_voxel_ts
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -188,14 +188,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
 
     @staticmethod
     def _get_voxel_time_series_region(ts_h5, x, y, z, var=0, mode=0):
-        region_mapping_volume_gid = ts_h5.region_mapping_volume.load()
-        if region_mapping_volume_gid is None:
-            raise Exception("Invalid method called for TS without Volume Mapping!")
-
-        volume_rm_h5 = h5.h5_file_for_gid(region_mapping_volume_gid)
-
-        volume_rm_shape = volume_rm_h5.array_data.shape
-        x, y, z = preprocess_space_parameters(x, y, z, volume_rm_shape[0], volume_rm_shape[1], volume_rm_shape[2])
+        x, y, z, volume_rm_h5 = _MappedArrayVolumeBase.prepare_space_parameters(ts_h5, x, y, z)
         idx_slices = slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
 
         idx = int(volume_rm_h5.array_data[idx_slices])
