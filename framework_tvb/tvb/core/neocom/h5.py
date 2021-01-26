@@ -72,6 +72,11 @@ def index_for_h5_file(source_path):
     return REGISTRY.get_index_for_h5file(h5_class)
 
 
+def h5_file_for_gid(data_gid):
+    datatype_index = load_entity_by_gid(data_gid)
+    return h5_file_for_index(datatype_index)
+
+
 def load_from_index(dt_index):
     # type: (DataType) -> HasTraits
     loader = TVBLoader(REGISTRY)

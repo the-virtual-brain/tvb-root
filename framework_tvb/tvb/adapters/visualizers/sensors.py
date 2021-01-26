@@ -231,9 +231,9 @@ class SensorsViewer(ABCDisplayer):
         })
 
         if eeg_cap is not None:
-            eeg_cap_h5_class, eeg_cap_h5_path = self.load_h5_of_gid(eeg_cap.gid)
-            with eeg_cap_h5_class(eeg_cap_h5_path) as eeg_cap_h5:
-                params.update(self._compute_surface_params(eeg_cap_h5))
+            eeg_cap_h5 = h5.h5_file_for_gid(eeg_cap.gid)
+            params.update(self._compute_surface_params(eeg_cap_h5))
+            eeg_cap_h5.close()
 
         return self.build_display_result("sensors/sensors_eeg", params,
                                          pages={"controlPage": "sensors/sensors_controls"})
@@ -250,9 +250,9 @@ class SensorsViewer(ABCDisplayer):
             'boundaryURL': '', 'urlRegionMap': ''})
 
         if projection_surface is not None:
-            projection_surface_h5_class, projection_surface_h5_path = self.load_h5_of_gid(projection_surface.gid)
-            with projection_surface_h5_class(projection_surface_h5_path) as projection_surface_h5:
-                params.update(self._compute_surface_params(projection_surface_h5))
+            projection_surface_h5 = h5.h5_file_for_gid(projection_surface.gid)
+            params.update(self._compute_surface_params(projection_surface_h5))
+            projection_surface_h5.close()
 
         return self.build_display_result("sensors/sensors_eeg", params,
                                          pages={"controlPage": "sensors/sensors_controls"})

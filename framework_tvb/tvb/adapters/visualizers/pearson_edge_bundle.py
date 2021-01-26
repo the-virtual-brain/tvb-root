@@ -36,6 +36,7 @@ from tvb.adapters.visualizers.pearson_cross_correlation import PearsonCorrelatio
     PearsonCorrelationCoefficientVisualizerModel
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.neocom import h5
 from tvb.datatypes.graph import CorrelationCoefficients
 
 
@@ -62,17 +63,18 @@ class PearsonEdgeBundle(ABCSpaceDisplayer):
         # type: (PearsonCorrelationCoefficientVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
 
-        datatype_h5_class, datatype_h5_path = self.load_h5_of_gid(view_model.datatype.hex)
-        with datatype_h5_class(datatype_h5_path) as datatype_h5:
-            matrix_shape = datatype_h5.array_data.shape[0:2]
-            ts_gid = datatype_h5.source.load()
+        datatype_h5 = h5.h5_file_for_gid(view_model.datatype.hex)
+        matrix_shape = datatype_h5.array_data.shape[0:2]
+        ts_gid = datatype_h5.source.load()
+        datatype_h5.close()
+
         ts_index = self.load_entity_by_gid(ts_gid)
         state_list = ts_index.get_labels_for_dimension(1)
         mode_list = list(range(ts_index.data_length_4d))
 
-        ts_h5_class, ts_h5_path = self.load_h5_of_gid(ts_index.gid)
-        with ts_h5_class(ts_h5_path) as ts_h5:
-            labels = self.get_space_labels(ts_h5)
+        ts_h5 = h5.load_from_index(ts_index)
+        labels = self.get_space_labels(ts_h5)
+        ts_h5.close()
         if not labels:
             labels = None
         pars = dict(matrix_labels=json.dumps(labels),

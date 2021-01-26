@@ -95,9 +95,9 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         """
          Return the required memory to run this algorithm.
          """
-        input_h5_class, input_h5_path = self.load_h5_of_gid(view_model.input_data.hex)
-        with input_h5_class(input_h5_path) as input_h5:
-            shape = input_h5.data.shape
+        input_h5 = h5.h5_file_for_gid(view_model.input_data.hex)
+        shape = input_h5.data.shape
+        input_h5.close()
         return shape[0] * shape[1] * 8
 
     def generate_preview(self, view_model):
