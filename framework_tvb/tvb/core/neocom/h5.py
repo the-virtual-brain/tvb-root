@@ -73,8 +73,15 @@ def index_for_h5_file(source_path):
 
 
 def h5_file_for_gid(data_gid):
+    # type: (str) -> H5File
     datatype_index = load_entity_by_gid(data_gid)
     return h5_file_for_index(datatype_index)
+
+
+def load_from_gid(data_gid):
+    # type: (str) -> HasTraits
+    datatype_index = load_entity_by_gid(data_gid)
+    return load_from_index(datatype_index)
 
 
 def load_from_index(dt_index):

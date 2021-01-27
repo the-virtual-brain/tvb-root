@@ -96,8 +96,9 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         Return the required memory to run this algorithm.
         """
         input_data_h5 = h5.h5_file_for_gid(view_model.input_data.hex)
-        required_memory = numpy.prod(input_data_h5.read_data_shape()) * 8
-        input_data_h5.close()
+        with input_data_h5:
+            required_memory = numpy.prod(input_data_h5.read_data_shape()) * 8
+
         return required_memory
 
     def generate_preview(self, view_model, figure_size=None):
@@ -112,21 +113,21 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         self.log.debug("Plot started...")
 
         input_data_h5 = h5.h5_file_for_gid(view_model.input_data.hex)
-        source_gid = input_data_h5.source.load()
-        source_index = self.load_entity_by_gid(source_gid)
+        with input_data_h5:
+            source_gid = input_data_h5.source.load()
+            source_index = self.load_entity_by_gid(source_gid)
 
-        params = dict(plotName=source_index.type,
-                      xAxisName="Frequency [kHz]",
-                      yAxisName="CohSpec",
-                      available_xScale=["Linear", "Logarithmic"],
-                      available_spectrum=json.dumps(input_data_h5.spectrum_types),
-                      spectrum_list=input_data_h5.spectrum_types,
-                      xscale="Linear",
-                      spectrum=input_data_h5.spectrum_types[0],
-                      url_base=URLGenerator.build_h5_url(view_model.input_data, 'get_spectrum_data', parameter=""),
-                      # TODO investigate the static xmin and xmax values
-                      xmin=0.02,
-                      xmax=0.8)
+            params = dict(plotName=source_index.type,
+                          xAxisName="Frequency [kHz]",
+                          yAxisName="CohSpec",
+                          available_xScale=["Linear", "Logarithmic"],
+                          available_spectrum=json.dumps(input_data_h5.spectrum_types),
+                          spectrum_list=input_data_h5.spectrum_types,
+                          xscale="Linear",
+                          spectrum=input_data_h5.spectrum_types[0],
+                          url_base=URLGenerator.build_h5_url(view_model.input_data, 'get_spectrum_data', parameter=""),
+                          # TODO investigate the static xmin and xmax values
+                          xmin=0.02,
+                          xmax=0.8)
 
-        input_data_h5.close()
         return self.build_display_result("complex_coherence/view", params)

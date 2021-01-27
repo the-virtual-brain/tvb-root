@@ -118,15 +118,14 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         ts_index = h5.load_entity_by_gid(view_model.time_series.hex)
         ts_h5 = h5.h5_file_for_index(ts_index)
         min_value, max_value = ts_h5.get_min_max_values()
-        volume_h5 = h5.h5_file_for_gid(ts_h5.volume.load())
+        volume = h5.load_from_gid(ts_h5.volume.load())
 
         if isinstance(ts_h5, TimeSeriesVolumeH5):
             volume_shape = ts_h5.data.shape
         else:
-            rmv_h5 = h5.h5_file_for_gid(ts_h5.region_mapping_volume.load())
+            rmv = h5.load_from_gid(ts_h5.region_mapping_volume.load())
             volume_shape = [ts_h5.data.shape[0]]
-            volume_shape.extend(rmv_h5.array_data.shape)
-            rmv_h5.close()
+            volume_shape.extend(rmv.array_data.shape)
 
         background_index = None
         if view_model.background:
@@ -142,14 +141,13 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
                       samplePeriod=ts_h5.sample_period.load(),
                       samplePeriodUnit=ts_h5.sample_period_unit.load(),
                       volumeShape=json.dumps(volume_shape),
-                      volumeOrigin=json.dumps(volume_h5.origin.load().tolist()),
-                      voxelUnit=volume_h5.voxel_unit.load(),
-                      voxelSize=json.dumps(volume_h5.voxel_size.load().tolist()))
+                      volumeOrigin=json.dumps(volume.origin.tolist()),
+                      voxelUnit=volume.voxel_unit,
+                      voxelSize=json.dumps(volume.voxel_size.tolist()))
 
         params.update(self.ensure_background(background_index))
-
-        volume_h5.close()
         ts_h5.close()
+
         return self.build_display_result("time_series_volume/view", params,
                                          pages=dict(controlPage="time_series_volume/controls"))
 
@@ -161,8 +159,8 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
             return _MappedArrayVolumeBase.compute_background_params()
 
         background_h5 = h5.h5_file_for_index(background_index)
-        min_value, max_value = background_h5.get_min_max_values()
-        background_h5.close()
+        with background_h5:
+            min_value, max_value = background_h5.get_min_max_values()
 
         url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_volume_view', background_index.gid, '')
         return _MappedArrayVolumeBase.compute_background_params(min_value, max_value, url_volume_data)
@@ -180,10 +178,10 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         """
 
         ts_h5 = h5.h5_file_for_gid(entity_gid)
+        with ts_h5:
+            if isinstance(ts_h5, TimeSeriesRegionH5):
+                return self._get_voxel_time_series_region(ts_h5, **kwargs)
 
-        if isinstance(ts_h5, TimeSeriesRegionH5):
-            return self._get_voxel_time_series_region(ts_h5, **kwargs)
-        ts_h5.close()
         return ts_h5.get_voxel_time_series(**kwargs)
 
     @staticmethod
@@ -207,9 +205,6 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
             background = numpy.ones((time_length, 1)) * ts_h5.out_of_range(back_min)
             label = 'background'
 
-        volume_rm_h5.close()
-        connectivity_h5.close()
         ts_h5.close()
-
         result = postprocess_voxel_ts(ts_h5, voxel_slices, background, back_min, back_max, label)
         return result

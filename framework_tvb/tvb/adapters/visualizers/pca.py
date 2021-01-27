@@ -91,12 +91,12 @@ class PCA(ABCSpaceDisplayer):
         # type: (PCAModel) -> dict
         """Construct data for visualization and launch it."""
         ts_h5 = h5.h5_file_for_gid(view_model.pca.hex)
-        source_gid = ts_h5.source.load()
-        ts_h5.close()
+        with ts_h5:
+            source_gid = ts_h5.source.load()
 
         source_h5 = h5.h5_file_for_gid(source_gid.hex)
-        labels_data = self.get_space_labels(source_h5)
-        source_h5.close()
+        with source_h5:
+            labels_data = self.get_space_labels(source_h5)
 
         fractions_update_url = URLGenerator.build_h5_url(view_model.pca, 'read_fractions_data')
         weights_update_url = URLGenerator.build_h5_url(view_model.pca, 'read_weights_data')

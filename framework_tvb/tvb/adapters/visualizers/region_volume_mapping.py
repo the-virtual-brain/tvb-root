@@ -126,20 +126,20 @@ class _MappedArrayVolumeBase(ABCDisplayer):
     def get_mapped_array_volume_view(self, entity_gid, mapped_array_gid, x_plane, y_plane, z_plane,
                                      mapped_array_slice=None, **kwargs):
         entity_h5 = h5.h5_file_for_gid(entity_gid)
-        data_shape = entity_h5.array_data.shape
-        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
-                                                                data_shape[1], data_shape[2])
-        slice_x, slice_y, slice_z = entity_h5.get_volume_slice(x_plane, y_plane, z_plane)
-        connectivity_gid = entity_h5.connectivity.load().hex
-        entity_h5.close()
+        with entity_h5:
+            data_shape = entity_h5.array_data.shape
+            x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
+                                                                    data_shape[1], data_shape[2])
+            slice_x, slice_y, slice_z = entity_h5.get_volume_slice(x_plane, y_plane, z_plane)
+            connectivity_gid = entity_h5.connectivity.load().hex
 
         mapped_array_h5 = h5.h5_file_for_gid(mapped_array_gid)
-        if mapped_array_slice:
-            matrix_slice = parse_slice(mapped_array_slice)
-            measure = mapped_array_h5.array_data[matrix_slice]
-        else:
-            measure = mapped_array_h5.array_data[:]
-        mapped_array_h5.close()
+        with mapped_array_h5:
+            if mapped_array_slice:
+                matrix_slice = parse_slice(mapped_array_slice)
+                measure = mapped_array_h5.array_data[matrix_slice]
+            else:
+                measure = mapped_array_h5.array_data[:]
 
         connectivity_index = self.load_entity_by_gid(connectivity_gid)
         if measure.shape != (connectivity_index.number_of_regions,):
@@ -166,19 +166,17 @@ class _MappedArrayVolumeBase(ABCDisplayer):
     @staticmethod
     def get_voxel_region(region_mapping_volume_gid, x_plane, y_plane, z_plane):
         entity_h5 = h5.h5_file_for_gid(region_mapping_volume_gid)
+        with entity_h5:
+            data_shape = entity_h5.array_data.shape
+            x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
+                                                                    data_shape[1], data_shape[2])
+            slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
+            voxel = entity_h5.array_data[slices][0, 0, 0]
+            connectivity_gid = entity_h5.connectivity.load().hex
 
-        data_shape = entity_h5.array_data.shape
-        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
-                                                                data_shape[1], data_shape[2])
-        slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
-        voxel = entity_h5.array_data[slices][0, 0, 0]
-        connectivity_gid = entity_h5.connectivity.load().hex
-        entity_h5.close()
         if voxel != -1:
-            conn_index = load_entity_by_gid(connectivity_gid)
-            with h5.h5_file_for_index(conn_index) as conn_h5:
-                labels = conn_h5.region_labels.load()
-                return labels[int(voxel)]
+            conn = h5.load_from_gid(connectivity_gid)
+            return conn.region_labels[int(voxel)]
         else:
             return 'background'
 
@@ -218,11 +216,12 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
     def get_volume_view(self, entity_gid, **kwargs):
         ts_region_h5 = h5.h5_file_for_gid(entity_gid)
-        if isinstance(ts_region_h5, TimeSeriesRegionH5):
-            return self._get_volume_view_region(ts_region_h5, **kwargs)
+        with ts_region_h5:
+            if isinstance(ts_region_h5, TimeSeriesRegionH5):
+                return self._get_volume_view_region(ts_region_h5, **kwargs)
 
-        volume_view = ts_region_h5.get_volume_view(**kwargs)
-        ts_region_h5.close()
+            volume_view = ts_region_h5.get_volume_view(**kwargs)
+
         return volume_view
 
     @staticmethod

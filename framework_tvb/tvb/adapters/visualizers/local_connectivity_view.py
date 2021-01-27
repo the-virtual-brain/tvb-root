@@ -104,13 +104,13 @@ class LocalConnectivityViewer(ABCDisplayer):
                       isOneToOneMapping=False, hasRegionMap=False)
 
         local_conn_h5 = h5.h5_file_for_gid(view_model.local_conn.hex)
-        surface_gid = local_conn_h5.surface.load().hex
-        min_value, max_value = local_conn_h5.get_min_max_values()
-        local_conn_h5.close()
+        with local_conn_h5:
+            surface_gid = local_conn_h5.surface.load().hex
+            min_value, max_value = local_conn_h5.get_min_max_values()
 
         surface_h5 = h5.h5_file_for_gid(surface_gid)
-        params.update(self._compute_surface_params(surface_h5))
-        surface_h5.close()
+        with surface_h5:
+            params.update(self._compute_surface_params(surface_h5))
 
         params['local_connectivity_gid'] = view_model.local_conn.hex
         params['minValue'] = min_value
