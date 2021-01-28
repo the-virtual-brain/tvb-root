@@ -136,6 +136,21 @@ class MontbrioPazoRoxin(Model):
                 "r": numpy.array([0.0, numpy.inf])
             },
     )
+
+    # TODO should match cvars below..
+    coupling_terms = Final(
+        label="Coupling terms",
+        # how to unpack coupling array
+        default=["Coupling_Term_r", "Coupling_Term_V"]
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions",
+        default={
+            "r": "1/tau * ( Delta / (pi * tau) + 2 * V * r)",
+            "V": "1/tau * ( V**2 - pi**2 * tau**2 * r**2 + eta + J * tau * r + I + cr * Coupling_Term_r + cv * Coupling_Term_V)"
+        }
+    )
     
     variables_of_interest = List(
             of=str,
@@ -145,6 +160,10 @@ class MontbrioPazoRoxin(Model):
             doc="The quantities of interest for monitoring for the Infinite QIF 2D oscillator.",
     )
 
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default='tau Delta tau eta J I cr cv'.split())
 
     state_variables = ('r', 'V')
     _nvar = 2
@@ -835,7 +854,7 @@ class DumontGutkin(Model):
     )
 
     Gamma = NArray(
-        label=":math:`\Gamma`",
+        label=":math:`\\Gamma`",
         default=numpy.array([5.0]),
         domain=Range(lo=0., hi=10., step=0.1),
         doc="""Ratio of excitatory VS inhibitory global couplings G_ie/G_ee .""",

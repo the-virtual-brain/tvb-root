@@ -59,15 +59,15 @@ following:
 .. math::
 
     \\left(\\begin{matrix} a & b \\
-        c & d \end{matrix}\\right)
+        c & d \\end{matrix}\\right)
 
-         C_{kj}  &= \left(\\begin{matrix} ^\mathrm{To}/_\mathrm{from} & 0 & 1 & 2 & \cdots & l \\
+         C_{kj}  &= \\left(\\begin{matrix} ^\\mathrm{To}/_\\mathrm{from} & 0 & 1 & 2 & \\cdots & l \\
                                                            0         & 1  & 1  &  0 & 1  &  0 \\
                                                            1         & 1  & 1  &  0 & 1  &  0 \\
                                                            2         & 1  & 0  &  0 & 1  &  0 \\
                                                      \\vdots          & 1  & 0  &  1 & 0  &  1 \\
                                                            l         & 0  & 0  &  0 & 0  &  0 \\
-                                                           \end{matrix}\\right)
+                                                           \\end{matrix}\\right)
 
 .. NOTE: Our convention is the inverse of the BCT toolbox. Furthermore, this
          convention is consistent with the notation used in Physics and in our
@@ -308,6 +308,10 @@ class Sigmoidal(Coupling):
         default=numpy.array([230.0,]),
         domain=Range(lo=0.01, hi=1000.0, step=10.0),
         doc="Standard deviation of the sigmoidal",)
+
+    parameter_names = 'cmin cmax midpoint a sigma'.split()
+    pre_expr = 'x_i * 0 + x_j'
+    post_expr = 'cmin + ((cmax - cmin) / (1.0 + exp(-a *((gx - midpoint) / sigma))))'
 
     def __str__(self):
         return simple_gen_astr(self, 'cmin cmax midpoint a sigma')
