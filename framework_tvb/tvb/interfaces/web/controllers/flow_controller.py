@@ -261,16 +261,12 @@ class FlowController(BaseController):
         index_class = getattr(sys.modules[dt_module], dt_class)()
         filters_dict = json.loads(filters)
 
-        fields = []
-        operations = []
-        values = []
-
         for idx in range(len(filters_dict['fields'])):
-            fields.append(filters_dict['fields'][idx])
-            operations.append(filters_dict['operations'][idx])
-            values.append(filters_dict['values'][idx])
+            if filters_dict['values'][idx] in ['True', 'False']:
+                filters_dict['values'][idx] = string2bool(filters_dict['values'][idx])
 
-        filter = FilterChain(fields=fields, operations=operations, values=values)
+        filter = FilterChain(fields=filters_dict['fields'], operations=filters_dict['operations'],
+                             values=filters_dict['values'])
         project = common.get_current_project()
 
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
