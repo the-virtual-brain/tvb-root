@@ -1,18 +1,15 @@
-__global__ void mpr_dfun(
+<%self:cu_kernel_signature name="mpr_dfun">
     unsigned int n_node,
     float * __restrict__ dX,
     float * __restrict__ state,
     float * __restrict__ coupling
-)
+</%self:cu_kernel_signature>
 {
     const unsigned int id = threadIdx.x;
 
-    % for par in model.parameter_names:
-    ${decl_const_float(par, getattr(model, par)[0])}
-    % endfor
-    ${decl_const_float('pi', np.pi)}
+    ${compile_time_parameters()}
 
-    % if debug_id:
+    % if debug:
     printf("id = %d, n_node = %d, blockdim.x = %d\\n", id, n_node, blockDim.x);
     % endif
 
@@ -31,11 +28,24 @@ __global__ void mpr_dfun(
     </%self:thread_guard>
 }
 
+<%def name="cu_kernel_signature(name)">
+__global__ void ${name}(
+    ${caller.body()}
+    )
+</%def>
+
 <%def name="thread_guard(limit)">
     if (threadIdx.x < ${limit})
     {
         ${caller.body()}
     }
+</%def>
+
+<%def name="compile_time_parameters()">
+% for par in model.parameter_names:
+${decl_const_float(par, getattr(model, par)[0])}
+% endfor
+${decl_const_float('pi', np.pi)}
 </%def>
 
 <%def name="get2d(src,n,i,j)">${src}[${i}*${n} + ${j}]</%def>

@@ -294,12 +294,12 @@ def pre_post(X):
         np.testing.assert_allclose(cg_gX, gX, 1e-5, 1e-6)
 
 
-@unittest.skipUnless(pycuda, 'requires Numba')
+@unittest.skipUnless(pycuda, 'requires working PyCUDA')
 class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
     "Test model definitions in form of generated CUDA kernels."
 
     def test_mpr_dfun(self):
-        "Test MPR dfun against built-in model dfun."
+        "Test generated CUDA MPR dfun against built-in."
         from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
         mpr = MontbrioPazoRoxin()
         state, coupling = np.random.rand(2, 2, 32).astype('f')
@@ -307,7 +307,7 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
         coupling[1] -= 2.0
         drift = mpr.dfun(state, coupling).astype('f')
         template = '<%include file="test_cu_mpr_dfun.mako"/>'
-        content = dict(np=np, model=mpr, debug_id=False)
+        content = dict(np=np, model=mpr, debug=False)
         cg_flow = self._build_cu_func(template, content, 'mpr_dfun')
         cg_drift = np.zeros_like(drift)
         # TODO unit test higher level driver separately
