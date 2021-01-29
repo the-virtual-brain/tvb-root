@@ -29,8 +29,6 @@
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
 """
 
-import abc
-
 import numpy
 
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray
@@ -43,13 +41,12 @@ class CosimMonitor(HasTraits):
     Abstract base class for cosimulation monitors implementations.
     """
 
-    @abc.abstractmethod
     def _sample_with_tvb_monitor(self, step, state):
         """
         This method provides output from TVB Monitor classes, and should be set to a TVB Monitor parent class.
         Use the original signature.
         """
-        pass
+        raise NotImplemented
 
     def _get_sample(self, start_step, n_steps, history, cosim):
         times = []
@@ -65,13 +62,12 @@ class CosimMonitor(HasTraits):
                 values.append(tmp[1])
         return [numpy.array(times), numpy.array(values)]
 
-    @abc.abstractmethod
     def sample(self, start_step, n_steps, cosim_history, history):
         """
         This method provides monitor output, and should be overridden by subclasses.
         Use the original signature.
         """
-        pass
+        raise NotImplemented
 
 
 class CosimMonitorFromCoupling(CosimMonitor):
