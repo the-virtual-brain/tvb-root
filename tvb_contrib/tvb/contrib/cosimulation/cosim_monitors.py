@@ -43,6 +43,14 @@ class CosimMonitor(HasTraits):
     Abstract base class for cosimulation monitors implementations.
     """
 
+    @abc.abstractmethod
+    def sample_with_tvb_monitor(self, step, state):
+        """
+        This method provides output from TVB Monitor classes, and should be set to a TVB Monitor parent class.
+        Use the original signature.
+        """
+        pass
+
     def get_sample(self, start_step, n_steps, history,cosim):
         times = []
         values = []
@@ -51,7 +59,7 @@ class CosimMonitor(HasTraits):
                 state = history.query(step)
             else:
                 state = history.query(step)[0]
-            tmp = super(self.__class__, self).sample(step, state)
+            tmp = self.sample_with_tvb_monitor(step, state)
             if tmp is not None:
                 times.append(tmp[0])
                 values.append(tmp[1])
@@ -64,6 +72,7 @@ class CosimMonitor(HasTraits):
         Use the original signature.
         """
         pass
+
 
 class CosimMonitorFromCoupling(CosimMonitor):
     """
@@ -85,7 +94,7 @@ class CosimMonitorFromCoupling(CosimMonitor):
         times = []
         values = []
         for step in range(start_step, start_step + n_steps):
-            tmp = super(self.__class__, self).sample(step,  self.coupling(step, history))
+            tmp = self.sample_with_tvb_monitor(step, self.coupling(step, history))
             if tmp is not None:
                 times.append(tmp[0])
                 values.append(tmp[1])
@@ -105,6 +114,9 @@ class RawCosim(Raw, CosimMonitor):
     """
     _ui_name = "Cosimulation Raw recording"
 
+    def sample_with_tvb_monitor(self, step, state):
+        return Raw.sample(self, step, state)
+
     def sample(self, start_step, n_steps, cosim_history, history):
         "Return all the states of the partial (up to synchronization time) cosimulation history"
         return self.get_sample(start_step, n_steps, cosim_history, cosim=True)
@@ -122,6 +134,9 @@ class RawVoiCosim(RawVoi, CosimMonitor):
 
     """
     _ui_name = "Cosimulation RawVoi recording"
+
+    def sample_with_tvb_monitor(self, step, state):
+        return RawVoi.sample(self, step, state)
 
     def sample(self, start_step, n_steps, cosim_history, history):
         "Return all the states of the partial (up to synchronization time) cosimulation history"
@@ -142,6 +157,9 @@ class RawDelayed(Raw, CosimMonitor):
 
     _ui_name = "Cosimulation Raw Delayed recording"
 
+    def sample_with_tvb_monitor(self, step, state):
+        return Raw.sample(self, step, state)
+
     def sample(self, start_step, n_steps, cosim_history, history):
         "Return all the states of the delayed (by synchronization time) TVB history"
         return self.get_sample(start_step, n_steps, history, cosim=False)
@@ -161,6 +179,9 @@ class RawVoiDelayed(RawVoi,CosimMonitor):
 
     _ui_name = "Cosimulation RawVoi Delayed recording"
 
+    def sample_with_tvb_monitor(self, step, state):
+        return RawVoi.sample(self, step, state)
+
     def sample(self, start_step, n_steps, cosim_history, history):
         "Return selected states of the delayed (by synchronization time) TVB history"
         return self.get_sample(start_step, n_steps, history, cosim=False)
@@ -179,6 +200,9 @@ class CosimCoupling(AfferentCoupling, CosimMonitorFromCoupling):
     """
 
     _ui_name = "Cosimulation Coupling recording"
+
+    def sample_with_tvb_monitor(self, step, state):
+        return AfferentCoupling.sample(self, step, state)
 
     def sample(self, start_step, n_steps, cosim_history, history):
         "Return selected values of future coupling from (up to synchronization time) cosimulation history"
