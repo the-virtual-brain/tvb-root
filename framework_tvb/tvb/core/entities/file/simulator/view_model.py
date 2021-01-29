@@ -176,6 +176,10 @@ class RawViewModel(MonitorViewModel, Raw):
     def linked_has_traits(self):
         return Raw
 
+    def __str__(self):
+        clsname = self.__class__.__name__
+        return '%s(period=%f)' % (clsname, self.period)
+
 
 class SubSampleViewModel(MonitorViewModel, SubSample):
     @property
