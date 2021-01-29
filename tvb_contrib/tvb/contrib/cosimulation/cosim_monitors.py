@@ -77,7 +77,6 @@ class CosimMonitor(HasTraits):
 class CosimMonitorFromCoupling(CosimMonitor):
     """
        Abstract base class for a monitor that records the future coupling values.
-       !!!WARNING don't use this monitor for a time smaller than the synchronization variable!!!
     """
 
     coupling = Attr(
@@ -195,8 +194,6 @@ class CosimCoupling(AfferentCoupling, CosimMonitorFromCoupling):
         - selected coupling values and all modes from class :Model:
         - all nodes of a region or surface based
         - all the integration time steps
-
-    !!!WARNING don't use this monitor for a time smaller than the synchronization variable!!!
     """
 
     _ui_name = "Cosimulation Coupling recording"
