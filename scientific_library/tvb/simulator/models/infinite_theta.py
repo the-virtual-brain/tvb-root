@@ -148,7 +148,7 @@ class MontbrioPazoRoxin(Model):
         label="Drift functions",
         default={
             "r": "1/tau * ( Delta / (pi * tau) + 2 * V * r)",
-            "V": "1/tau * ( V**2 - pi**2 * tau**2 * r**2 + eta + J * tau * r + I + cr * Coupling_Term_r + cv * Coupling_Term_V)"
+            "V": "1/tau * ( V*V - pi*pi*tau*tau*r*r + eta + J * tau * r + I + cr * Coupling_Term_r + cv * Coupling_Term_V)"
         }
     )
     
@@ -163,7 +163,7 @@ class MontbrioPazoRoxin(Model):
     parameter_names = List(
         of=str,
         label="List of parameters for this model",
-        default='tau Delta tau eta J I cr cv'.split())
+        default='tau Delta eta J I cr cv'.split())
 
     state_variables = ('r', 'V')
     _nvar = 2

@@ -51,16 +51,8 @@ except Exception as exc:
     pycuda_why_not = exc
 
 
-# maybe import numba
-try:
-    import numba
-except Exception as exc:
-    numba = None
-    numba_why_not = exc
-
-
 @unittest.skipUnless(pycuda, 'requires working PyCUDA & GPU')
-class TestPyCUDA(unittest.TestCase):
+class TestPyCUDABasics(unittest.TestCase):
     "Tests validating basic usage of PyCUDA and working GPU."
 
     def test_demo(self):
@@ -104,10 +96,10 @@ class TestPyCUDA(unittest.TestCase):
         np.testing.assert_allclose(gX.get(), X, 1e-5, 1e-6)
 
 
-class TestMako(unittest.TestCase):
-    "Test basic Mako usage."
+class MakoUtilMix:
 
-    def _build_func(self, template_source, content, name):
+    def _build_py_func(self, template_source, content, name):
+        "Build and retrieve a Python function from template."
         template = Template(template_source)
         source = template.render(**content)
         globals_ = {}
@@ -118,12 +110,35 @@ class TestMako(unittest.TestCase):
             raise exc
         return globals_[name]
 
+    def _insert_line_numbers(self, source):
+        lines = source.split('\n')
+        numbers = range(1, len(lines) + 1)
+        nu_lines = ['%03d\t%s' % (nu, li) for (nu, li) in zip(numbers, lines)]
+        nu_source = '\n'.join(nu_lines)
+        return nu_source
+
+    def _build_cu_func(self, template_source, content, name):
+        "Build and retrieve a Python function from template."
+        template = Template(template_source)
+        source = template.render(**content)
+        try:
+            module = SourceModule(source)
+        except pycuda.driver.CompileError as exc:
+            print(self._insert_line_numbers(source))
+            raise exc
+        func = module.get_function(name)
+        return func
+
+
+class TestMako(unittest.TestCase, MakoUtilMix):
+    "Test basic Mako usage."
+
     def _assert_flow_ok(self, template_source, content):
-        cg_flow = self._build_func(template_source, content, "flow")
+        cg_flow = self._build_py_func(template_source, content, "flow")
         dX, X, Z = np.random.randn(3,2,10)
         cg_X = X.copy()
         cg_flow(dX, cg_X, Z)
-        TestPyCUDA.flow(dX, X, Z)
+        TestPyCUDABasics.flow(dX, X, Z)
         np.testing.assert_allclose(X, cg_X)
 
     def test_template(self):
@@ -227,7 +242,7 @@ def flow(state, coupling):
             dt=0.1,
             sigma=0.1,
         )
-        cg_flow = self._build_func(template, content, 'flow')
+        cg_flow = self._build_py_func(template, content, 'flow')
         cg_drift = cg_flow(state, coupling)
         self.assertTrue(np.isfinite(cg_drift).all())
         self.assertTrue(np.isfinite(drift).all())
@@ -257,7 +272,7 @@ def pre_post(X):
         content = dict(
             cfun=cfun
         )
-        cg_pre_post = self._build_func(template, content, 'pre_post')
+        cg_pre_post = self._build_py_func(template, content, 'pre_post')
         def pre_post(X):
             x_i, x_j = X, X.reshape((-1, 1))+0*X
             gx = cfun.pre(x_i, x_j).sum(axis=0)
@@ -269,6 +284,75 @@ def pre_post(X):
         np.testing.assert_allclose(cg_gX, gX, 1e-5, 1e-6)
 
 
-@unittest.skipUnless(numba, 'requires Numba')
-class TestNumbaCG(unittest.TestCase):
-    pass
+@unittest.skipUnless(pycuda, 'requires Numba')
+class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
+    "Test model definitions in form of generated CUDA kernels."
+
+    def test_mpr_dfun(self):
+        "Test MPR dfun against built-in model dfun."
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        mpr = MontbrioPazoRoxin()
+        state, coupling = np.random.rand(2, 2, 32).astype('f')
+        state[1] -= 2.0
+        coupling[1] -= 2.0
+        drift = mpr.dfun(state, coupling).astype('f')
+        template = """
+#include <stdio.h>
+#include <stdint.h>
+
+__global__ void mpr_dfun(
+    unsigned int n_node,
+    float * __restrict__ dX,
+    float * __restrict__ state,
+    float * __restrict__ coupling
+)
+{
+    const unsigned int id = threadIdx.x;
+    
+    % for par in model.parameter_names:
+    ${decl_const_float(par, getattr(model, par)[0])}
+    % endfor
+    ${decl_const_float('pi', np.pi)}
+    
+    printf("id = %d, n_node = %d, blockdim.x = %d\\n", id, n_node, blockDim.x);
+    
+    if (id < n_node)
+    {
+        % for svar in svars:
+        float ${svar} = ${get2d('state', 'n_node', loop.index, 'id')};
+        % endfor
+        
+        % for cterm in cterms:
+        float ${cterm} = ${get2d('coupling', 'n_node', loop.index, 'id')};
+        % endfor
+         
+        % for svar in svars:
+        dX[${loop.index}*n_node + id] = ${dfuns[svar]};
+        % endfor
+    }
+}
+
+<%def name="get2d(src,n,i,j)">${src}[${i}*${n} + ${j}]</%def>
+<%def name="decl_float(name,val)">float ${name} = ${val}f;</%def>
+<%def name="decl_const_float(name,val)">const ${decl_float(name,val)}</%def>
+"""
+        content = dict(
+            math=math,
+            np=np,
+            model=mpr,
+            svars=mpr.state_variables,
+            dfuns=mpr.state_variable_dfuns,
+            cterms=mpr.coupling_terms,
+            dt=0.1,
+            sigma=0.1,
+        )
+        cg_flow = self._build_cu_func(template, content, 'mpr_dfun')
+        cg_drift = np.zeros_like(drift)
+        # TODO unit test higher level driver separately
+        from pycuda.driver import Out, In, InOut
+        cg_flow(np.uintc(cg_drift.shape[1]),
+                InOut(cg_drift), InOut(state), InOut(coupling),
+                grid=(1,1), block=(state.shape[-1],1,1))
+        self.assertTrue(np.isfinite(cg_drift).all())
+        self.assertTrue(np.isfinite(drift).all())
+        np.testing.assert_allclose(cg_drift, drift, 1e-5, 1e-6)
