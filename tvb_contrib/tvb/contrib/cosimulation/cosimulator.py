@@ -43,7 +43,7 @@ from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor
 
 class CoSimulator(Simulator):
 
-    exclusive = Attr( #Todo need to test it
+    exclusive = Attr(
         field_type=bool,
         default=False, required=False,
         doc="1, when the proxy nodes substitute TVB nodes and their mutual connections should be removed.")
