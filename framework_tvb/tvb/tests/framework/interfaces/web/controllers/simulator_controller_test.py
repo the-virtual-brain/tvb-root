@@ -130,7 +130,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
         surface = TestFactory.get_entity(self.test_project, SurfaceIndex)
 
-        self.sess_mock['surface'] = surface.gid
+        self.sess_mock['surface_gid'] = surface.gid
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             common.add2session(common.KEY_SIMULATOR_CONFIG, self.session_stored_simulator)
@@ -158,7 +158,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         self.session_stored_simulator.surface = CortexViewModel()
 
-        self.sess_mock['region_mapping'] = region_mapping.gid
+        self.sess_mock['region_mapping_data'] = region_mapping.gid
         self.sess_mock['local_connectivity'] = 'explicit-None-value'
         self.sess_mock['coupling_strength'] = '[1.0]'
 
@@ -188,7 +188,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         self.session_stored_simulator.surface = CortexViewModel()
 
-        self.sess_mock['region_mapping'] = region_mapping.gid
+        self.sess_mock['region_mapping_data'] = region_mapping.gid
         self.sess_mock['local_connectivity'] = lconn_index.gid
         self.sess_mock['coupling_strength'] = '[1.0]'
 
