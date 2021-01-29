@@ -34,14 +34,17 @@
 """
 import os
 import shutil
-import migrate.versioning.api as migratesqlapi
 from sqlalchemy.sql import text
 from sqlalchemy.engine import reflection
+from alembic.config import Config
+from alembic import command
+
+
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.core.neotraits.db import Base
-import tvb.core.entities.model.db_update_scripts as scripts
+import tvb.config.init.migrations.versions as scripts
 
 LOGGER = get_logger(__name__)
 
@@ -56,24 +59,29 @@ def initialize_startup():
         is_db_empty = True
     session.close()
 
+    directory_path = os.path.join(os.path.dirname(__file__), 'migrations')
+    alembic_cfg = Config(os.path.join(directory_path, 'alembic.ini'))
+    alembic_cfg.set_main_option('script_location', directory_path)
+
     versions_repo = TvbProfile.current.db.DB_VERSIONING_REPO
     if is_db_empty:
         LOGGER.info("Initializing Database")
         if os.path.exists(versions_repo):
             shutil.rmtree(versions_repo)
-        migratesqlapi.create(versions_repo, os.path.split(versions_repo)[1])
+
         _update_sql_scripts()
-        migratesqlapi.version_control(TvbProfile.current.db.DB_URL, versions_repo,
-                                      version=TvbProfile.current.version.DB_STRUCTURE_VERSION)
         session = SA_SESSIONMAKER()
         Base.metadata.create_all(bind=session.connection())
         session.commit()
         session.close()
+
+        command.stamp(alembic_cfg, 'head')
         LOGGER.info("Database Default Tables created successfully!")
     else:
         _update_sql_scripts()
-        migratesqlapi.upgrade(TvbProfile.current.db.DB_URL, versions_repo,
-                              version=TvbProfile.current.version.DB_STRUCTURE_VERSION)
+        with session.connection() as connection:
+            alembic_cfg.attributes['connection'] = connection
+            command.upgrade(alembic_cfg, "head")
         LOGGER.info("Database already has some data, will not be re-created!")
     return is_db_empty
 
@@ -97,7 +105,7 @@ def reset_database():
                 except Exception as excep1:
                     LOGGER.error("Could no drop table %s", table)
                     LOGGER.exception(excep1)
-        migratesqlapi.drop_version_control(TvbProfile.current.db.DB_URL, TvbProfile.current.db.DB_VERSIONING_REPO)
+
         session.commit()
         LOGGER.info("Database was cleanup!")
     except Exception as excep:
