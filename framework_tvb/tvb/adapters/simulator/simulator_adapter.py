@@ -135,9 +135,9 @@ class SimulatorAdapter(ABCAdapter):
 
     def get_adapter_fragments(self, view_model):
         # type (SimulatorAdapterModel) -> dict
-        forms = {None: [SimulatorSurfaceFragment, SimulatorRMFragment, SimulatorStimulusFragment,
+        forms = {None: [SimulatorStimulusFragment,
                         SimulatorModelFragment, SimulatorIntegratorFragment, SimulatorMonitorFragment,
-                        SimulatorFinalFragment]}
+                        SimulatorFinalFragment], "surface": [SimulatorSurfaceFragment, SimulatorRMFragment]}
 
         current_model_class = type(view_model.model)
         all_model_forms = get_model_to_form_dict()

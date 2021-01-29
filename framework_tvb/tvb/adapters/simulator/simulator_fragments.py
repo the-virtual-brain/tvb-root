@@ -53,7 +53,7 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
     def __init__(self):
         super(SimulatorSurfaceFragment, self).__init__()
         conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="], values=[CORTICAL])
-        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, name='surface', conditions=conditions)
+        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, name='surface_gid', conditions=conditions)
 
     def fill_trait(self, datatype):
         surface_gid = self.surface.value
@@ -77,7 +77,7 @@ class SimulatorRMFragment(ABCAdapterForm):
                                         values=[str(surface_index.gid), str(connectivity_gid.hex)])
             lc_conditions = FilterChain(fields=[rm_conditions.fields[0]], operations=[rm_conditions.operations[0]],
                                         values=[rm_conditions.values[0]])
-        self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, name='region_mapping',
+        self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, name='region_mapping_data',
                                            conditions=rm_conditions)
 
         self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, name='local_connectivity',

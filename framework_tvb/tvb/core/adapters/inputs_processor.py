@@ -34,9 +34,6 @@
 
 import os
 import numpy
-from uuid import UUID
-
-from tvb.core.entities.file.simulator.view_model import CortexViewModel
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField
 
@@ -53,13 +50,7 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
         if attr_vm and type(field) == TraitUploadField:
             attr_vm = os.path.basename(attr_vm)
 
-        if isinstance(attr_vm, CortexViewModel):
-            for attr, value in attr_vm.__dict__.items():
-                if isinstance(value, UUID) and attr is not "gid":
-                    data_type = load_entity_by_gid(value)
-                    changed_attr[data_type.display_type] = data_type.display_name if data_type else "None"
-
-        elif isinstance(field, TraitDataTypeSelectField):
+        if isinstance(field, TraitDataTypeSelectField):
             data_type = None
             if attr_vm:
                 data_type = load_entity_by_gid(attr_vm)
