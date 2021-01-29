@@ -176,6 +176,14 @@ class RawViewModel(MonitorViewModel, Raw):
     def linked_has_traits(self):
         return Raw
 
+    def __str__(self):
+        clsname = self.__class__.__name__
+        if self.variables_of_interest:
+            voi = self.variables_of_interest.tolist()
+        else:
+            voi = ""
+        return '%s(period=%f, voi=%s)' % (clsname, self.period, "")
+
 
 class SubSampleViewModel(MonitorViewModel, SubSample):
     @property
