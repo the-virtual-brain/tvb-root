@@ -37,6 +37,7 @@ import uuid
 import numpy
 from abc import ABCMeta
 from six import add_metaclass
+
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
@@ -428,21 +429,14 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
         surface_h5.close()
 
-        params['shelfObject'] = None
+        params['shellObject'] = None
 
         shell_surface_index = None
         if view_model.shell_surface:
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface_index)
-
-        if shell_surface:
-            shell_h5 = h5.h5_file_for_index(shell_surface)
-            assert isinstance(shell_h5, SurfaceH5)
-            shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(shell_h5)
-            params['shelfObject'] = json.dumps([shell_vertices, shell_normals, shell_triangles])
-            shell_h5.close()
-
+        params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
         return self.build_display_result("surface/surface_view", params,
                                          pages={"controlPage": "surface/surface_viewer_controls"})
 

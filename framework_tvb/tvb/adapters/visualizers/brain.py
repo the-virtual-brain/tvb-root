@@ -35,6 +35,7 @@
 """
 
 import numpy
+
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator, ABCSurfaceDisplayer
@@ -42,7 +43,6 @@ from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_p
 from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_points_params
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.core.adapters.abcdisplayer import URLGenerator
-from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.time_series import *
 from tvb.core.entities.storage import dao
@@ -260,14 +260,6 @@ class BrainViewer(ABCSurfaceDisplayer):
             boundary_url = ''
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
-        shelf_object = None
-
-        if shell_surface:
-            with h5.h5_file_for_index(shell_surface) as shell_h5:
-                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(
-                    shell_h5)
-                shelf_object = json.dumps([shell_vertices, shell_normals, shell_triangles])
-
         params.update(dict(title="Cerebral Activity: " + time_series.title, isOneToOneMapping=self.one_to_one_map,
                            urlVertices=json.dumps(url_vertices), urlTriangles=json.dumps(url_triangles),
                            urlLines=json.dumps(url_lines), urlNormals=json.dumps(url_normals),
@@ -275,7 +267,7 @@ class BrainViewer(ABCSurfaceDisplayer):
                            time=json.dumps(time_urls), minActivity=min_val, maxActivity=max_val,
                            legendLabels=legend_labels, labelsStateVar=state_variables,
                            labelsModes=list(range(time_series.data_length_4d)), extended_view=False,
-                           shelfObject=shelf_object,
+                           shellObject=self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
                            biHemispheric=self.surface_h5.bi_hemispheric.load(),
                            hemisphereChunkMask=json.dumps(hemisphere_chunk_mask),
                            pageSize=self.PAGE_SIZE, urlRegionBoundaries=boundary_url,
@@ -509,7 +501,7 @@ class DualBrainViewer(BrainViewer):
 
         if isinstance(time_series_index, TimeSeriesSEEGIndex):
             params['brainViewerTemplate'] = "internal_view.html"
-            # Mark as None since we only display shelf face and no point to load these as well
+            # Mark as None since we only display shell face and no point to load these as well
             params['urlVertices'] = None
             params['isSEEG'] = True
 

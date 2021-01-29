@@ -37,6 +37,7 @@ Plot the power of a WaveletCoefficients object
 """
 
 import json
+
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
@@ -94,7 +95,7 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         """
          Return the required memory to run this algorithm.
          """
-        input_h5_class, input_h5_path = self._load_h5_of_gid(view_model.input_data.hex)
+        input_h5_class, input_h5_path = self.load_h5_of_gid(view_model.input_data.hex)
         with input_h5_class(input_h5_path) as input_h5:
             shape = input_h5.data.shape
         return shape[0] * shape[1] * 8

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -18,7 +18,7 @@
 # program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# CITATION:
+#   CITATION:
 # When using The Virtual Brain for scientific publications, please cite it as follows:
 #
 #   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
@@ -28,46 +28,22 @@
 #
 #
 
-"""
-module docstring
-.. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
-"""
 
-from tvb.datatypes.region_mapping import RegionVolumeMapping
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
-
-TRACTS_CHUNK_SIZE = 100
-
-
-class Tracts(HasTraits):
-    """Datatype for results of diffusion imaging tractography."""
-
-    vertices = NArray(
-        label="Vertex positions",
-        doc="""An array specifying coordinates for the tracts vertices."""
-    )
-
-    tract_start_idx = NArray(
-        dtype=int,
-        label="Tract starting indices",
-        doc="""Where is the first vertex of a tract in the vertex array"""
-    )
-
-    tract_region = NArray(
-        dtype=int,
-        label="Tract region index",
-        required=False,
-        doc="""
-            An index used to find quickly all tract emerging from a region
-            tract_region[i] is the region of the i'th tract. -1 represents the background
-            """
-    )
-
-    region_volume_map = Attr(
-        field_type=RegionVolumeMapping,
-        label="Region volume Mapping used to create the tract_region index",
-    )
-
-    @property
-    def tracts_count(self):
-        return len(self.tract_start_idx) - 1
+class SimulatorWizzardURLs(object):
+    SET_CONNECTIVITY_URL = '/burst/set_connectivity'
+    SET_COUPLING_PARAMS_URL = '/burst/set_coupling_params'
+    SET_SURFACE_URL = '/burst/set_surface'
+    SET_STIMULUS_URL = '/burst/set_stimulus'
+    SET_CORTEX_URL = '/burst/set_cortex'
+    SET_MODEL_URL = '/burst/set_model'
+    SET_MODEL_PARAMS_URL = '/burst/set_model_params'
+    SET_INTEGRATOR_URL = '/burst/set_integrator'
+    SET_INTEGRATOR_PARAMS_URL = '/burst/set_integrator_params'
+    SET_NOISE_PARAMS_URL = '/burst/set_noise_params'
+    SET_NOISE_EQUATION_PARAMS_URL = '/burst/set_noise_equation_params'
+    SET_MONITORS_URL = '/burst/set_monitors'
+    SET_MONITOR_PARAMS_URL = '/burst/set_monitor_params'
+    SET_MONITOR_EQUATION_URL = '/burst/set_monitor_equation'
+    SETUP_PSE_URL = '/burst/setup_pse'
+    SET_PSE_PARAMS_URL = '/burst/set_pse_params'
+    LAUNCH_PSE_URL = '/burst/launch_pse'

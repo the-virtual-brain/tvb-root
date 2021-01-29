@@ -64,7 +64,7 @@ from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -261,16 +261,12 @@ class FlowController(BaseController):
         index_class = getattr(sys.modules[dt_module], dt_class)()
         filters_dict = json.loads(filters)
 
-        fields = []
-        operations = []
-        values = []
-
         for idx in range(len(filters_dict['fields'])):
-            fields.append(filters_dict['fields'][idx])
-            operations.append(filters_dict['operations'][idx])
-            values.append(filters_dict['values'][idx])
+            if filters_dict['values'][idx] in ['True', 'False']:
+                filters_dict['values'][idx] = string2bool(filters_dict['values'][idx])
 
-        filter = FilterChain(fields=fields, operations=operations, values=values)
+        filter = FilterChain(fields=filters_dict['fields'], operations=filters_dict['operations'],
+                             values=filters_dict['values'])
         project = common.get_current_project()
 
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
@@ -416,8 +412,7 @@ class FlowController(BaseController):
             return method(entity_gid, **kwargs)
         return method(entity_gid)
 
-    @expose_json
-    def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
+    def _read_from_h5(self, entity_gid, method_name, datatype_kwargs='null', **kwargs):
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + method_name + "/" + str(kwargs))
         entity = load_entity_by_gid(entity_gid)
         entity_h5 = h5.h5_file_for_index(entity)
@@ -432,8 +427,13 @@ class FlowController(BaseController):
             result = result(**kwargs)
         else:
             result = result()
-
         entity_h5.close()
+
+        return result
+
+    @expose_json
+    def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
+        result = self._read_from_h5(entity_gid, method_name, datatype_kwargs, **kwargs)
         return self._prepare_result(result, flatten)
 
     @expose_json
@@ -464,8 +464,8 @@ class FlowController(BaseController):
             return result
 
     @expose_numpy_array
-    def read_binary_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
-        return self._read_datatype_attribute(entity_gid, dataset_name, datatype_kwargs, **kwargs)
+    def read_binary_datatype_attribute(self, entity_gid, method_name, datatype_kwargs='null', **kwargs):
+        return self._read_from_h5(entity_gid, method_name, datatype_kwargs, **kwargs)
 
     @expose_fragment("flow/genericAdapterFormFields")
     def get_simple_adapter_interface(self, algorithm_id, parent_div='', is_uploader=False):

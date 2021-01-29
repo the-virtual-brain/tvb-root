@@ -81,12 +81,15 @@ class TVBLinkedExporter(ABCExporter):
             file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
             if not os.path.exists(file_destination):
                 FilesHelper().copy_file(data_path, file_destination)
+
             sub_dt_refs = f.gather_references()
 
             for reference in sub_dt_refs:
                 if reference[1]:
                     dt = dao.get_datatype_by_gid(reference[1].hex)
                     self.copy_dt_to_export_folder(dt, data_export_folder)
+
+        H5File.remove_metadata_param(file_destination, 'parent_burst')
 
     def get_export_file_extension(self, data):
         return "zip"

@@ -93,9 +93,8 @@ class TestExporters(TransactionalTestCase):
         Test export of a data type which has no data stored on file system
         """
         datatype = dummy_datatype_index_factory()
-        file_name, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
+        _, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
 
-        assert file_name is not None, "Export process should return a file name"
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
@@ -104,9 +103,8 @@ class TestExporters(TransactionalTestCase):
         Test export of a data type which has no data stored on file system
         """
         datatype = dummy_datatype_index_factory()
-        file_name, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
+        _, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
 
-        assert file_name is not None, "Export process should return a file name"
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
