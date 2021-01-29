@@ -38,6 +38,7 @@ Tests for template code generation.
 import math
 import unittest
 from mako.template import Template
+from mako.lookup import TemplateLookup
 import numpy as np
 
 # maybe import pycuda
@@ -98,10 +99,20 @@ class TestPyCUDABasics(unittest.TestCase):
 
 class MakoUtilMix:
 
+    @property
+    def lookup(self):
+        from tvb.simulator import templates
+        lookup = TemplateLookup(directories=[templates.__path__[0]])
+        return lookup
+
+    def _render_template(self, source, content):
+        template = Template(source, lookup=self.lookup)
+        source = template.render(**content)
+        return source
+
     def _build_py_func(self, template_source, content, name):
         "Build and retrieve a Python function from template."
-        template = Template(template_source)
-        source = template.render(**content)
+        source = self._render_template(template_source, content)
         globals_ = {}
         try:
             exec(source, globals_)
@@ -119,8 +130,7 @@ class MakoUtilMix:
 
     def _build_cu_func(self, template_source, content, name):
         "Build and retrieve a Python function from template."
-        template = Template(template_source)
-        source = template.render(**content)
+        source = self._render_template(template_source, content)
         try:
             module = SourceModule(source)
         except pycuda.driver.CompileError as exc:
@@ -296,59 +306,12 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
         state[1] -= 2.0
         coupling[1] -= 2.0
         drift = mpr.dfun(state, coupling).astype('f')
-        template = """
-#include <stdio.h>
-#include <stdint.h>
-
-__global__ void mpr_dfun(
-    unsigned int n_node,
-    float * __restrict__ dX,
-    float * __restrict__ state,
-    float * __restrict__ coupling
-)
-{
-    const unsigned int id = threadIdx.x;
-    
-    % for par in model.parameter_names:
-    ${decl_const_float(par, getattr(model, par)[0])}
-    % endfor
-    ${decl_const_float('pi', np.pi)}
-    
-    printf("id = %d, n_node = %d, blockdim.x = %d\\n", id, n_node, blockDim.x);
-    
-    if (id < n_node)
-    {
-        % for svar in svars:
-        float ${svar} = ${get2d('state', 'n_node', loop.index, 'id')};
-        % endfor
-        
-        % for cterm in cterms:
-        float ${cterm} = ${get2d('coupling', 'n_node', loop.index, 'id')};
-        % endfor
-         
-        % for svar in svars:
-        dX[${loop.index}*n_node + id] = ${dfuns[svar]};
-        % endfor
-    }
-}
-
-<%def name="get2d(src,n,i,j)">${src}[${i}*${n} + ${j}]</%def>
-<%def name="decl_float(name,val)">float ${name} = ${val}f;</%def>
-<%def name="decl_const_float(name,val)">const ${decl_float(name,val)}</%def>
-"""
-        content = dict(
-            math=math,
-            np=np,
-            model=mpr,
-            svars=mpr.state_variables,
-            dfuns=mpr.state_variable_dfuns,
-            cterms=mpr.coupling_terms,
-            dt=0.1,
-            sigma=0.1,
-        )
+        template = '<%include file="test_cu_mpr_dfun.mako"/>'
+        content = dict(np=np, model=mpr, debug_id=False)
         cg_flow = self._build_cu_func(template, content, 'mpr_dfun')
         cg_drift = np.zeros_like(drift)
         # TODO unit test higher level driver separately
+        # TODO use prepared calls
         from pycuda.driver import Out, In, InOut
         cg_flow(np.uintc(cg_drift.shape[1]),
                 InOut(cg_drift), InOut(state), InOut(coupling),
@@ -356,3 +319,11 @@ __global__ void mpr_dfun(
         self.assertTrue(np.isfinite(cg_drift).all())
         self.assertTrue(np.isfinite(drift).all())
         np.testing.assert_allclose(cg_drift, drift, 1e-5, 1e-6)
+
+    # def test_mpr_traj(self):
+    #     from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+    #     mpr = MontbrioPazoRoxin()
+    #     state, coupling = np.random.rand(2, 2, 32).astype('f')
+    #     state[1] -= 2.0
+    #     coupling[1] -= 2.0
+    #     mpr.stationary_trajectory()
