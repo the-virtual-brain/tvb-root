@@ -1223,8 +1223,7 @@ def update(input_file, burst_match_dict):
 
             if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname\
                     and time_series_gid is None:
-                burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
-                                                                  TvbProfile.current.db.SELECTED_DB, DATE_FORMAT_V4_DB)
+                burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict, DATE_FORMAT_V4_DB)
                 if burst_config:
                     root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                     burst_config.simulator_gid = vm.gid.hex
