@@ -47,6 +47,7 @@ try:
     import pycuda.autoinit
     import pycuda.driver as drv
     from pycuda.compiler import SourceModule
+    from pycuda.driver import Out, In, InOut
 except Exception as exc:
     pycuda = None
     pycuda_why_not = exc
@@ -128,9 +129,11 @@ class MakoUtilMix:
         nu_source = '\n'.join(nu_lines)
         return nu_source
 
-    def _build_cu_func(self, template_source, content, name):
+    def _build_cu_func(self, template_source, content, name, print_source=False):
         "Build and retrieve a Python function from template."
         source = self._render_template(template_source, content)
+        if print_source:
+            print(source)
         try:
             module = SourceModule(source)
         except pycuda.driver.CompileError as exc:
@@ -312,7 +315,6 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
         cg_drift = np.zeros_like(drift)
         # TODO unit test higher level driver separately
         # TODO use prepared calls
-        from pycuda.driver import Out, In, InOut
         cg_flow(np.uintc(cg_drift.shape[1]),
                 InOut(cg_drift), InOut(state), InOut(coupling),
                 grid=(1,1), block=(state.shape[-1],1,1))
@@ -320,10 +322,70 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
         self.assertTrue(np.isfinite(drift).all())
         np.testing.assert_allclose(cg_drift, drift, 1e-5, 1e-6)
 
-    # def test_mpr_traj(self):
-    #     from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
-    #     mpr = MontbrioPazoRoxin()
-    #     state, coupling = np.random.rand(2, 2, 32).astype('f')
-    #     state[1] -= 2.0
-    #     coupling[1] -= 2.0
-    #     mpr.stationary_trajectory()
+    def test_mpr_traj(self):
+        "Test generated time stepping against built in."
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        mpr = MontbrioPazoRoxin()
+        state, coupling = np.random.rand(2, 2, 32).astype('f')
+        state[1] -= 2.0
+        coupling[1] -= 2.0
+        state_copy, coupling_copy = state.copy(), coupling.copy()
+        nt = 100
+        t, y = mpr.stationary_trajectory(
+            initial_conditions=state, coupling=coupling,
+            n_step=nt-1, n_skip=1, dt=0.01)
+        nt, nsvar, nmode, nnode = y.shape
+        self.assertEqual(y.shape, (nt, 2, 1, coupling.shape[1]))
+        template = '<%include file="test_cu_mpr_traj.mako"/>'
+        content = dict(np=np, model=mpr, dt=0.01, nt=nt, debug=False)
+        cg_traj = self._build_cu_func(template, content, 'mpr_traj', print_source=True)
+        cg_drift = np.empty_like(state)
+        cg_trace = np.empty((nt,2,coupling.shape[1]),'f')
+        cg_traj(np.uintc(cg_drift.shape[1]),
+                Out(cg_drift), In(state_copy), In(coupling_copy),
+                Out(cg_trace),
+                grid=(1,1), block=(state.shape[-1],1,1))
+        self.assertTrue(np.isfinite(cg_trace).all())
+        np.testing.assert_allclose(cg_trace, y[:,:,0], 1e-5, 1e-6)
+
+    def test_mpr_net_no_delay(self):
+        "Test generated time stepping network without delay."
+        from tvb.simulator.simulator import Simulator
+        from tvb.datatypes.connectivity import Connectivity
+        from tvb.simulator.integrators import EulerDeterministic
+        from tvb.simulator.monitors import Raw
+        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+        mpr = MontbrioPazoRoxin()
+        conn = Connectivity.from_file()
+        integrator = EulerDeterministic(dt=0.01)
+        sim = Simulator(connectivity=conn, model=mpr, integrator=integrator, 
+            monitors=[Raw()],
+            simulation_length=0.1)
+        sim.configure()
+        state = sim.current_state.copy()[:,:,0].astype('f')
+        self.assertEqual(state.shape[0], 2)
+        self.assertEqual(state.shape[1], conn.weights.shape[0])
+        (t,y), = sim.run()
+        nt = len(t)
+        template = '<%include file="test_cu_mpr_net_no_delay.mako"/>'
+        content = dict(np=np, model=mpr, dt=0.01, nt=nt, 
+            cfun_a=sim.coupling.a[0], debug=False)
+        cu_loop = self._build_cu_func(template, content, 'mpr_net', print_source=True)
+        # prep args
+        dX = state.copy()
+        trace = np.empty((nt,)+state.shape, 'f')
+        # run it
+        cu_loop(np.uintc(state.shape[1]),
+            Out(dX), In(state), Out(trace), 
+            grid=(1,1), block=(128,1,1))
+        # check we don't have numerical errors
+        self.assertTrue(np.isfinite(trace).all())
+        # first step should be close enough
+        maxtol = np.max(np.abs(trace[0] - y[0,:,:,0]))
+        self.assertLess(maxtol, 0.01)
+        # tolerance should increase but less than 2x
+        for t in range(1, nt):
+            new_maxtol = np.max(np.abs(trace[t] - y[t,:,:,0]))
+            self.assertLess(maxtol, new_maxtol)
+            self.assertGreater(maxtol*2, new_maxtol)
+            maxtol = new_maxtol

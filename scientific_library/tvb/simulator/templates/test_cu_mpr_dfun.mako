@@ -15,6 +15,9 @@
     printf("id = %d, n_node = %d, blockdim.x = %d\\n", id, n_node, blockDim.x);
     % endif
 
+## TODO compile/default parameters, thread parameters, per node parameters,
+## per node per thread for just subset is probably best ROI
+
     <%cu:thread_guard limit="n_node">
         % for svar in model.state_variables:
         float ${svar} = ${cu.get2d('state', 'n_node', loop.index, 'id')};
