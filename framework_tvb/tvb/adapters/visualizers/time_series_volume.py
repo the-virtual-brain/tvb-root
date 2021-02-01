@@ -180,13 +180,12 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         ts_h5 = h5.h5_file_for_gid(entity_gid)
         with ts_h5:
             if isinstance(ts_h5, TimeSeriesRegionH5):
-                return self._get_voxel_time_series_region(ts_h5, **kwargs)
+                return self.prepare_view_region(ts_h5, **kwargs)
 
-        return ts_h5.get_voxel_time_series(**kwargs)
+            data = ts_h5.get_voxel_time_series(**kwargs)
+        return data
 
-    @staticmethod
-    def _get_voxel_time_series_region(ts_h5, x, y, z, var=0, mode=0):
-        x, y, z, volume_rm_h5 = _MappedArrayVolumeBase.prepare_space_parameters(ts_h5, x, y, z)
+    def get_view_region(self, ts_h5, volume_rm_h5, from_idx, to_idx, x, y, z, var=0, mode=0):
         idx_slices = slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
 
         idx = int(volume_rm_h5.array_data[idx_slices])
@@ -205,6 +204,5 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
             background = numpy.ones((time_length, 1)) * ts_h5.out_of_range(back_min)
             label = 'background'
 
-        ts_h5.close()
         result = postprocess_voxel_ts(ts_h5, voxel_slices, background, back_min, back_max, label)
         return result

@@ -95,8 +95,7 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         """
         Return the required memory to run this algorithm.
         """
-        input_data_h5 = h5.h5_file_for_gid(view_model.input_data.hex)
-        with input_data_h5:
+        with h5.h5_file_for_gid(view_model.input_data.hex) as input_data_h5:
             required_memory = numpy.prod(input_data_h5.read_data_shape()) * 8
 
         return required_memory
