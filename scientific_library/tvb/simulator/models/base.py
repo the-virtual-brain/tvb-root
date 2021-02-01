@@ -220,7 +220,8 @@ class Model(HasTraits):
         # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
         # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
         excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
-                           "noise", "psi_table", "nerf_table", "gid")
+                           "noise", "psi_table", "nerf_table", "gid", "state_variable_dfuns",
+                           "parameter_names", "coupling_terms")
         spatial_reshape = self.spatial_param_reshape
         for param in type(self).declarative_attrs:
             if param in excluded_params:
