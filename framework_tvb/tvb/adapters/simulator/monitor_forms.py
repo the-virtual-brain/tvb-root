@@ -84,10 +84,6 @@ def get_form_for_monitor(monitor_class):
     return get_monitor_to_form_dict().get(monitor_class)
 
 
-def prepare_monitor_legend(is_surface_simulation, monitor):
-    return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
-
-
 class MonitorForm(Form):
 
     def __init__(self, session_stored_simulator=None):

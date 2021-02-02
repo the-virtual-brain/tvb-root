@@ -34,7 +34,7 @@
 
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.monitor_forms import AdditiveNoiseViewModel, get_ui_name_to_monitor_dict, \
-    get_form_for_monitor, prepare_monitor_legend, BoldViewModel
+    get_form_for_monitor, BoldViewModel, get_monitor_to_ui_name_dict
 from tvb.adapters.simulator.simulator_fragments import SimulatorMonitorFragment, SimulatorFinalFragment
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
@@ -45,27 +45,33 @@ class MonitorsWizardHandler:
         self.next_monitors_dict = None
 
     def set_monitors_list_on_simulator(self, session_stored_simulator, monitor_names):
-        self.build_list_of_monitors_from_names(monitor_names, session_stored_simulator.is_surface_simulation)
-        session_stored_simulator.monitors = list(monitor for monitor, _ in self.next_monitors_dict.values())
+        self.build_list_of_monitors_from_names(monitor_names)
+        monitor_dict = get_ui_name_to_monitor_dict(session_stored_simulator.is_surface_simulation)
+        session_stored_simulator.monitors = list(monitor_dict[monitor]() for monitor in self.next_monitors_dict.keys())
 
     def clear_next_monitors_dict(self):
         if self.next_monitors_dict:
             self.next_monitors_dict.clear()
 
-    def build_list_of_monitors_from_view_models(self, monitor_view_models):
+    def build_list_of_monitors_from_view_models(self, simulator):
+        monitor_names = []
+        monitor_dict = get_monitor_to_ui_name_dict(simulator.is_surface_simulation)
+        for monitor in simulator.monitors:
+            monitor_names.append(monitor_dict[monitor.__class__])
+
+        self.build_list_of_monitors_from_names(monitor_names)
+
+    def build_list_of_monitors_from_names(self, monitor_names):
         self.next_monitors_dict = dict()
         count = 0
-        for monitor_model in monitor_view_models:
-            self.next_monitors_dict[monitor_model.__class__.__name__] = (monitor_model, count + 1)
+        for monitor_name in monitor_names:
+            self.next_monitors_dict[monitor_name] = count
             count = count + 1
 
-    def build_list_of_monitors_from_names(self, monitor_names, is_surface_simulation):
-        monitor_dict = get_ui_name_to_monitor_dict(is_surface_simulation)
-        monitor_view_models = [monitor_dict[monitor_name]() for monitor_name in monitor_names]
-        return self.build_list_of_monitors_from_view_models(monitor_view_models)
-
     def get_current_and_next_monitor_form(self, current_monitor_name, simulator):
-        current_monitor, next_monitor_index = self.next_monitors_dict[current_monitor_name]
+        current_monitor_index = self.next_monitors_dict[current_monitor_name]
+        current_monitor = simulator.monitors[current_monitor_index]
+        next_monitor_index = current_monitor_index + 1
 
         if next_monitor_index < len(self.next_monitors_dict):
             return current_monitor, simulator.monitors[next_monitor_index]
@@ -81,7 +87,7 @@ class MonitorsWizardHandler:
         return rendering_rules.to_dict()
 
     @staticmethod
-    def prepare_next_fragment_if_bold(monitor, rendering_rules, form_action_url):
+    def _prepare_next_fragment_if_bold(monitor, rendering_rules, form_action_url):
         next_form = get_form_for_equation(type(monitor.hrf_kernel))()
         next_form.fill_from_trait(monitor.hrf_kernel)
         rendering_rules.form = next_form
@@ -92,7 +98,7 @@ class MonitorsWizardHandler:
                                           form_action_url, if_bold_url):
         simulator, _, _, is_branch = context.get_common_params()
         if isinstance(current_monitor, BoldViewModel) and is_noise_form is False:
-            return self.prepare_next_fragment_if_bold(current_monitor, rendering_rules, if_bold_url)
+            return self._prepare_next_fragment_if_bold(current_monitor, rendering_rules, if_bold_url)
         if not next_monitor:
             rendering_rules.is_branch = is_branch
             return SimulatorFinalFragment.prepare_final_fragment(simulator, context.burst_config, context.project.id,
@@ -101,7 +107,7 @@ class MonitorsWizardHandler:
         next_form = get_form_for_monitor(type(next_monitor))(simulator)
         next_form = AlgorithmService().prepare_adapter_form(form_instance=next_form, project_id=context.project.id)
         next_form.fill_from_trait(next_monitor)
-        monitor_name = prepare_monitor_legend(simulator.is_surface_simulation, next_monitor)
+        monitor_name = self.prepare_monitor_legend(simulator.is_surface_simulation, next_monitor)
         rendering_rules.form = next_form
         rendering_rules.form_action_url = form_action_url
         rendering_rules.monitor_name = monitor_name
@@ -133,7 +139,11 @@ class MonitorsWizardHandler:
         form = AlgorithmService().prepare_adapter_form(form_instance=form)
         form.fill_from_trait(first_monitor)
 
-        monitor_name = prepare_monitor_legend(simulator.is_surface_simulation, first_monitor)
+        monitor_name = MonitorsWizardHandler.prepare_monitor_legend(simulator.is_surface_simulation, first_monitor)
         rendering_rules.monitor_name = monitor_name
         rendering_rules.form = form
         return rendering_rules.to_dict()
+
+    @staticmethod
+    def prepare_monitor_legend(is_surface_simulation, monitor):
+        return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
