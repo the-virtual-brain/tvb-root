@@ -138,8 +138,7 @@ class ConnectivityCreator(ABCAdapter):
         linked_region_mappings = dao.get_generic_entity(RegionMappingIndex, original_conn_gid, 'fk_connectivity_gid')
         for mapping in linked_region_mappings:
             original_rm = h5.load_from_index(mapping)
-            surface_idx = dao.get_generic_entity(SurfaceIndex, mapping.fk_surface_gid, 'gid')[0]
-            surface = h5.load_from_index(surface_idx)
+            surface = h5.load_from_gid(mapping.fk_surface_gid)
 
             new_rm = RegionMapping()
             new_rm.connectivity = new_connectivity_ht
@@ -157,8 +156,7 @@ class ConnectivityCreator(ABCAdapter):
         Connectivity matrix in the Visualizer.
         """
         # note: is_branch is missing instead of false because browsers only send checked boxes in forms.
-        original_connectivity_index = load_entity_by_gid(view_model.original_connectivity.hex)
-        original_conn_ht = h5.load_from_index(original_connectivity_index)
+        original_conn_ht = h5.load_from_gid(view_model.original_connectivity.hex)
         assert isinstance(original_conn_ht, Connectivity)
 
         if not view_model.is_branch:

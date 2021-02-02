@@ -36,13 +36,12 @@ from abc import ABCMeta
 import numpy
 from nibabel import trackvis
 from tvb.adapters.datatypes.db.tracts import TractsIndex
-from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionVolumeMappingH5
 from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.entities.storage import transactional, dao
+from tvb.core.entities.storage import transactional
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import path_for
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
@@ -153,14 +152,13 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
             raise LaunchException("Please select a file to import!")
 
         if region_volume is not None:
-            rvm_index = dao.get_datatype_by_gid(region_volume.hex)
-            rvm_h5_path = h5.path_for_stored_index(rvm_index)
-            with RegionVolumeMappingH5(rvm_h5_path) as rvm:
+
+            with h5.h5_file_for_gid(region_volume.hex) as rvm:
                 self._attempt_to_cache_regionmap(rvm)
                 self.region_volume_shape = rvm.read_data_shape()
                 self.region_volume = rvm
 
-            region_volume = h5.load_from_index(rvm_index)
+            region_volume = h5.load_from_gid(region_volume.hex)
 
         datatype = Tracts()
         datatype.region_volume_map = region_volume

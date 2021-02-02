@@ -105,11 +105,8 @@ def function_sensors_to_surface(sensors_gid, surface_to_map_gid):
     Assumes coordinate systems are aligned, i.e. common x,y,z and origin.
 
     """
-    index = load_entity_by_gid(sensors_gid)
-    sensors_dt = h5.load_from_index(index)
-
-    index = load_entity_by_gid(surface_to_map_gid)
-    surface_dt = h5.load_from_index(index)
+    sensors_dt = h5.load_from_gid(sensors_gid)
+    surface_dt = h5.load_from_gid(surface_to_map_gid)
 
     return sensors_dt.sensors_to_surface(surface_dt).tolist()
 

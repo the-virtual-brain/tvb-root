@@ -128,8 +128,7 @@ class BaseBCT(ABCAdapter):
         return 0
 
     def get_connectivity(self, view_model):
-        conn_index = self.load_entity_by_gid(view_model.connectivity)
-        return h5.load_from_index(conn_index)
+        return self.load_traited_by_gid(view_model.connectivity)
 
     def execute_matlab(self, matlab_code, data):
         self.matlab_worker.add_to_path(BCT_PATH)

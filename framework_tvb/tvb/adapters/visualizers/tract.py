@@ -97,7 +97,6 @@ class TractViewer(ABCSpaceDisplayer):
         # type: (TractViewerModel) -> dict
         tracts_index = dao.get_datatype_by_gid(view_model.tracts.hex)
         region_volume_mapping_index = dao.get_datatype_by_gid(tracts_index.fk_region_volume_map_gid)
-        connectivity = dao.get_datatype_by_gid(region_volume_mapping_index.fk_connectivity_gid)
 
         shell_surface_index = None
         if view_model.shell_surface:
@@ -112,7 +111,8 @@ class TractViewer(ABCSpaceDisplayer):
                       shellObject=self.prepare_shell_surface_params(shell_surface_index, SurfaceURLGenerator),
                       urlTrackStarts=tracts_starts, urlTrackVertices=tracts_vertices)
 
-        params.update(self.build_params_for_selectable_connectivity(h5.load_from_index(connectivity)))
+        params.update(self.build_params_for_selectable_connectivity(h5.load_from_gid(
+            region_volume_mapping_index.fk_connectivity_gid)))
 
         return self.build_display_result("tract/tract_view", params,
                                          pages={"controlPage": "tract/tract_viewer_controls"})

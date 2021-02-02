@@ -37,6 +37,7 @@ import numpy
 import shutil
 import zipfile
 import tempfile
+
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -151,26 +152,24 @@ class RegionMappingImporter(ABCUploader):
             raise LaunchException("Uploaded file does not contains any data. Please initiate upload with another file.")
 
         # Check if we have a mapping for each surface vertex.
-        surface_index = self.load_entity_by_gid(view_model.surface)
-        if len(array_data) != surface_index.number_of_vertices:
+        surface_ht = self.load_traited_by_gid(view_model.surface)
+        if len(array_data) != surface_ht.number_of_vertices:
             msg = "Imported file contains a different number of values than the number of surface vertices. " \
                   "Imported: %d values while surface has: %d vertices." % (
-                      len(array_data), surface_index.number_of_vertices)
+                      len(array_data), surface_ht.number_of_vertices)
             raise LaunchException(msg)
 
         # Now check if the values from imported file correspond to connectivity regions
         if array_data.min() < 0:
             raise LaunchException("Imported file contains negative values. Please fix problem and re-import file")
 
-        connectivity_index = self.load_entity_by_gid(view_model.connectivity)
-        if array_data.max() >= connectivity_index.number_of_regions:
+        connectivity_ht = self.load_traited_by_gid(view_model.connectivity)
+        if array_data.max() >= connectivity_ht.number_of_regions:
             msg = "Imported file contains invalid regions. Found region: %d while selected connectivity has: %d " \
-                  "regions defined (0 based)." % (array_data.max(), connectivity_index.number_of_regions)
+                  "regions defined (0 based)." % (array_data.max(), connectivity_ht.number_of_regions)
             raise LaunchException(msg)
 
         self.logger.debug("Creating RegionMapping instance")
 
-        connectivity_ht = h5.load_from_index(connectivity_index)
-        surface_ht = h5.load_from_index(surface_index)
         region_mapping = RegionMapping(surface=surface_ht, connectivity=connectivity_ht, array_data=array_data)
         return h5.store_complete(region_mapping, self.storage_path)
