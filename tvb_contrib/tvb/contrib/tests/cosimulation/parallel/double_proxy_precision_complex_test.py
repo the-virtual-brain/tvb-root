@@ -30,7 +30,6 @@
 """
 
 import numpy as np
-import numpy.random as rgn
 
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim
@@ -53,19 +52,19 @@ class TestDoubleProxyPrecisionComplex(BaseTestCase):
         proxy_id_2 = [0, 2]
 
         # simulation with one proxy
-        rgn.seed(42)
+        np.random.seed(42)
         sim_1 = TvbSim(weight, delay, proxy_id_1, resolution_simulation,
                        synchronization_time, initial_condition=initial_condition)
         time, result_1 = sim_1(synchronization_time)
 
         # simulation_2 with one proxy
-        rgn.seed(42)
+        np.random.seed(42)
         sim_2 = TvbSim(weight, delay, proxy_id_2, resolution_simulation,
                        synchronization_time, initial_condition=initial_condition)
         time, result_2 = sim_2(synchronization_time)
 
         # full simulation
-        rgn.seed(42)
+        np.random.seed(42)
         sim_ref = TvbSim(weight, delay, [], resolution_simulation,
                          synchronization_time, initial_condition=initial_condition)
         time, result_ref = sim_ref(synchronization_time)

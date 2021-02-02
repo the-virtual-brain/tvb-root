@@ -190,12 +190,6 @@ class CoSimulator(Simulator):
             state = numpy.copy(self.cosim_history.query(step))
             super(CoSimulator,self)._loop_update_history(step, state)
 
-    def _prepare_stimulus(self, synchronization_time):
-        simulation_length = float(self.simulation_length)
-        self.simulation_length = float(synchronization_time)
-        super(CoSimulator, self)._prepare_stimulus()
-        self.simulation_length = simulation_length
-
     def __call__(self, simulation_length=None, random_state=None, n_steps=None,
                  cosim_updates=None, recompute_requirements=False):
         """
@@ -203,8 +197,11 @@ class CoSimulator(Simulator):
 
         See the run method for a convenient way to collect all output in one call.
 
+        :param simulation_length: Length of the simulation to perform in ms.
+        :param random_state:  State of NumPy RNG to use for stochastic integration.
+        :param n_steps: Length of the simulation to perform in integration steps. Overrides simulation_length.
         :param cosim_updates: data from the other co-simulator to update TVB state and history
-        :param random_state:  State of NumPy RNG to use for stochastic integration,
+        :param recompute_requirements: check if the requirement of the simulation
         :return: Iterator over monitor outputs.
         """
 
@@ -235,19 +232,7 @@ class CoSimulator(Simulator):
                                                        dtype=numpy.int),
                                            cosim_updates[1])
 
-            # Effective time to run for this __call__
-            synchronization_time = n_steps * self.integrator.dt
-
-            if self.simulation_length is None:
-                self.simulation_length = float(synchronization_time)
-
-            # Stimulus initialization...
-            if self.simulation_length != synchronization_time:
-                # ...for synchronization_time = simulation_length
-                stimulus = super(CoSimulator, self)._prepare_stimulus()
-            else:
-                # ...for synchronization_time != simulation_length
-                stimulus = self._prepare_stimulus()
+            self.simulation_length = n_steps * self.integrator.dt
         else:
             # Normal TVB simulation - no cosimulation:
             if cosim_updates is not None:
@@ -260,9 +245,6 @@ class CoSimulator(Simulator):
                     raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
                 self.simulation_length = n_steps * self.integrator.dt
 
-            # Stimulus initialization for simulation_length
-            stimulus = super(CoSimulator, self)._prepare_stimulus()
-
         # Initialization
         if self._compute_requirements or recompute_requirements:
             # Compute requirements for CoSimulation.simulation_length, not for synchronization time
@@ -272,6 +254,7 @@ class CoSimulator(Simulator):
         self.integrator.set_random_state(random_state)
 
         local_coupling = self._prepare_local_coupling()
+        stimulus = self._prepare_stimulus()
         state = self.current_state
         start_step = self.current_step + 1
         node_coupling = self._loop_compute_node_coupling(start_step)

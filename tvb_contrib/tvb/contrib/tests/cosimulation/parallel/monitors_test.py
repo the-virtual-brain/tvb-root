@@ -40,16 +40,15 @@ from tvb.contrib.cosimulation.cosim_monitors import RawCosim, RawVoiCosim, RawDe
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 
-SIMULATION_LENGTH = 3.0
-
-
 class TestMonitors(BaseTestCase):
     """
      test for compare the version in tvb and the modified version in different condition
     """
 
+    _simulation_length = 3.0
+
     @staticmethod
-    def _reference_simulation():
+    def _reference_simulation(simulation_lenght):
         # reference simulation
         np.random.seed(42)
         init = np.random.random_sample((385, 1, 76, 1))
@@ -70,12 +69,12 @@ class TestMonitors(BaseTestCase):
                                       initial_conditions=init,
                                       )
         sim.configure()
-        result_all = sim.run(simulation_length=SIMULATION_LENGTH)
+        result_all = sim.run(simulation_length=simulation_lenght)
         result = result_all[0][1][0][0]
         return connectivity, coupling, integrator, monitors, sim, result, result_all
 
     def test_monitor(self):
-        connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
+        connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation(self._simulation_length)
         # New simulator with proxy
         np.random.seed(42)
         init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
@@ -101,7 +100,7 @@ class TestMonitors(BaseTestCase):
         )
         sim_1.configure()
 
-        sim_to_sync_time = int(SIMULATION_LENGTH / synchronization_time)
+        sim_to_sync_time = int(self._simulation_length / synchronization_time)
         sync_steps = int(synchronization_time / integrator.dt)
 
         result_1_all = [np.empty((0,)), np.empty((sync_steps, 2, 76, 1))]
@@ -117,7 +116,7 @@ class TestMonitors(BaseTestCase):
             result_1_all[0] = np.concatenate((result_1_all[0], result_1_all_step[0][0]))
             result_1_all[1] = np.concatenate((result_1_all[1], result_1_all_step[0][1]))
 
-        for i in range(int(SIMULATION_LENGTH/integrator.dt)):
+        for i in range(int(self._simulation_length/integrator.dt)):
             diff = result_all[0][1][i][0][1:] - result_1_all[1][i+sync_steps, 0, 1:]
             diff_2 = result_all[0][1][i][0][:1] - result_1_all[1][i+sync_steps, 0, :1]
             assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \

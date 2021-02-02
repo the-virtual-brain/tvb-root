@@ -30,7 +30,6 @@
 """
 
 import numpy as np
-import numpy.random as rgn
 
 import tvb.simulator.lab as lab
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import \
@@ -39,8 +38,6 @@ from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import \
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
-
-rgn.seed(42)
 
 
 def tvb_model(dt, weight, delay, id_proxy):
@@ -130,12 +127,7 @@ def tvb_simulation(time, sim, data_proxy):
     :return:
         the time, the firing rate and the state of the network
     """
-    if sim.__class__ == lab.simulator.Simulator:
-        result = sim.run(simulation_length=time)
-        time = result[0][0]
-        s = result[0][1][:, 0]
-        rate = result[0][1][:, 1]
-    else:
+    if isinstance(sim, CoSimulator):
         if data_proxy is not None:
             # We assume only 1 voi, 1 or 2 proxy nodes, and only 1 mode,
             # therefore data_proxy.shape -> (synchronization_n_step, n_voi=1, n_proxy, n_mode=1)
@@ -149,6 +141,13 @@ def tvb_simulation(time, sim, data_proxy):
         time = result[0][0]
         s = [result[0][1][:,0], result_delayed[0][1][:,0]]
         rate = [result[0][1][:,1], result_delayed[0][1][:,1]]
+    elif isinstance(sim, lab.simulator.Simulator):
+        result = sim.run(simulation_length=time)
+        time = result[0][0]
+        s = result[0][1][:, 0]
+        rate = result[0][1][:, 1]
+    else:
+        raise ValueError('The class type is not supported.')
     return time, s, rate
 
 

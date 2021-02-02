@@ -25,6 +25,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 
 """
+This model is an example of used the cosimulation with a nonstate variable.
+It's used by the other test for testing the co-simulation
+
 .. moduleauthor:: Lionel Kusch <lkusch@thevirtualbrain.org>
 .. moduleauthor:: Dionysios Perdikis <dionperd@gmail.com>
 """

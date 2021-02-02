@@ -30,6 +30,7 @@
 """
 
 import numpy as np
+import pytest
 
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim
@@ -49,7 +50,7 @@ class TestUpdateModel(BaseTestCase):
 
         # Test the the update function
         sim = TvbSim(weight, delay, proxy_id, resolution_simulation, synchronization_time)
-        time, result = sim(resolution_simulation, [np.array([resolution_simulation]), firing_rate])
+        time, result = sim(resolution_simulation,[np.array([resolution_simulation]), firing_rate])
         for i in range(0, 100):
             time, result = sim(synchronization_time,
                                [np.arange(i * synchronization_time, (i + 1) * synchronization_time,
@@ -59,8 +60,14 @@ class TestUpdateModel(BaseTestCase):
         assert True
 
         # Test a fail function due to the time of simulation too long
-        try:
-            sim(synchronization_time, [np.array([resolution_simulation]), firing_rate])
-            assert False
-        except:
-            assert True
+        with pytest.raises(ValueError):
+            sim(synchronization_time,[np.arange(100 * synchronization_time, 102 * synchronization_time,
+                                          resolution_simulation),
+                                np.repeat(firing_rate.reshape(1, 2),
+                                          int(synchronization_time / resolution_simulation)*2, axis=0)] )
+        # Test a fail function due to the resoulation time is not good
+        with pytest.raises(ValueError):
+            sim(synchronization_time,[np.arange(100 * synchronization_time, 101 * synchronization_time,
+                                            resolution_simulation*2),
+                                  np.repeat(firing_rate.reshape(1, 2),
+                                            int(synchronization_time / resolution_simulation)*2, axis=0)] )
