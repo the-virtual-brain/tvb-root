@@ -4,6 +4,7 @@
     unsigned int n_node,
     float * __restrict__ dX,
     float * __restrict__ state,
+    float * __restrict__ weights,
     float * __restrict__ trace
 </%cu:kernel_signature>
 {
@@ -29,8 +30,11 @@
 
             for (unsigned int j=0; j < n_node; j++)
             {
+                float wij = ${cu.get2d('weights', 'n_node', 'j', 'id')};
+                if (wij == 0.0f)
+                    continue;
                 % for cterm in model.coupling_terms:
-                ${cterm} += ${cu.get2d('state', 'n_node', loop.index, 'j')};
+                ${cterm} += wij * ${cu.get2d('state', 'n_node', loop.index, 'j')};
                 % endfor
             }
 

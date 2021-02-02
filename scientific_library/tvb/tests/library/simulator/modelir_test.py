@@ -348,6 +348,9 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
         self.assertTrue(np.isfinite(cg_trace).all())
         np.testing.assert_allclose(cg_trace, y[:,:,0], 1e-5, 1e-6)
 
+
+class TestSimNoDelay(unittest.TestCase, MakoUtilMix):
+
     def test_mpr_net_no_delay(self):
         "Test generated time stepping network without delay."
         from tvb.simulator.simulator import Simulator
@@ -357,35 +360,39 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
         from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
         mpr = MontbrioPazoRoxin()
         conn = Connectivity.from_file()
-        integrator = EulerDeterministic(dt=0.01)
+        conn.speed = np.r_[np.inf]
+        dt = 0.01
+        integrator = EulerDeterministic(dt=dt)
         sim = Simulator(connectivity=conn, model=mpr, integrator=integrator, 
             monitors=[Raw()],
-            simulation_length=0.1)
+            simulation_length=0.1)  # 10 steps
         sim.configure()
+        self.assertTrue((conn.idelays == 0).all())
         state = sim.current_state.copy()[:,:,0].astype('f')
         self.assertEqual(state.shape[0], 2)
         self.assertEqual(state.shape[1], conn.weights.shape[0])
         (t,y), = sim.run()
         nt = len(t)
         template = '<%include file="test_cu_mpr_net_no_delay.mako"/>'
-        content = dict(np=np, model=mpr, dt=0.01, nt=nt, 
+        content = dict(np=np, model=mpr, dt=dt, nt=nt, 
             cfun_a=sim.coupling.a[0], debug=False)
-        cu_loop = self._build_cu_func(template, content, 'mpr_net', print_source=True)
+        cu_loop = self._build_cu_func(template, content, 'mpr_net')
         # prep args
         dX = state.copy()
+        weights = conn.weights.astype('f')
         trace = np.empty((nt,)+state.shape, 'f')
         # run it
         cu_loop(np.uintc(state.shape[1]),
-            Out(dX), In(state), Out(trace), 
+            Out(dX), In(state), In(weights), Out(trace), 
             grid=(1,1), block=(128,1,1))
         # check we don't have numerical errors
         self.assertTrue(np.isfinite(trace).all())
         # first step should be close enough
         maxtol = np.max(np.abs(trace[0] - y[0,:,:,0]))
-        self.assertLess(maxtol, 0.01)
-        # tolerance should increase but less than 2x
+        self.assertLess(maxtol, 0.002)
+        # tolerance should increase but less than dt
         for t in range(1, nt):
             new_maxtol = np.max(np.abs(trace[t] - y[t,:,:,0]))
             self.assertLess(maxtol, new_maxtol)
-            self.assertGreater(maxtol*2, new_maxtol)
+            self.assertLess(new_maxtol, maxtol+dt)
             maxtol = new_maxtol
