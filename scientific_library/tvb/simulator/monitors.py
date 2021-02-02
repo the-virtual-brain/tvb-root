@@ -54,7 +54,6 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 
 """
 
-import os
 import abc
 import numpy
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG,

@@ -50,6 +50,7 @@ class SensorTypes(Enum):
     TYPE_MEG = "MEG"
     TYPE_INTERNAL = "Internal"
 
+
 class Sensors(HasTraits):
     """
     Base Sensors class.

@@ -501,6 +501,3 @@ class Kuramoto(SparseCoupling):
 
     def post(self, gx):
         return self.a / gx.shape[0] * gx
-
-
-CouplingWithCurrentState = [Difference, Kuramoto]

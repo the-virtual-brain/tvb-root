@@ -45,7 +45,6 @@ class FiguresConfig(object):
     LARGE_SIZE = (20, 15)
     SMALL_SIZE = (15, 10)
     NOTEBOOK_SIZE = (20, 10)
-    DEFAULT_SIZE = SMALL_SIZE
     FIG_FORMAT = 'png'
     SAVE_FLAG = True
     SHOW_FLAG = False
