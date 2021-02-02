@@ -379,7 +379,7 @@ class TestSimNoDelay(unittest.TestCase, MakoUtilMix):
         cu_loop = self._build_cu_func(template, content, 'mpr_net')
         # prep args
         dX = state.copy()
-        weights = conn.weights.astype('f')
+        weights = conn.weights.T.copy().astype('f')
         trace = np.empty((nt,)+state.shape, 'f')
         # run it
         cu_loop(np.uintc(state.shape[1]),
@@ -387,12 +387,8 @@ class TestSimNoDelay(unittest.TestCase, MakoUtilMix):
             grid=(1,1), block=(128,1,1))
         # check we don't have numerical errors
         self.assertTrue(np.isfinite(trace).all())
-        # first step should be close enough
+        # check tolerances
         maxtol = np.max(np.abs(trace[0] - y[0,:,:,0]))
-        self.assertLess(maxtol, 0.002)
-        # tolerance should increase but less than dt
         for t in range(1, nt):
-            new_maxtol = np.max(np.abs(trace[t] - y[t,:,:,0]))
-            self.assertLess(maxtol, new_maxtol)
-            self.assertLess(new_maxtol, maxtol+dt)
-            maxtol = new_maxtol
+            print(t, 'tol:', np.max(np.abs(trace[t] - y[t,:,:,0])))
+        np.testing.assert_allclose(trace, y[:, :, :, 0], 1e-5, 1e-6)
