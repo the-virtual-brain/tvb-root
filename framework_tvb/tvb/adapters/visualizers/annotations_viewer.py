@@ -33,6 +33,7 @@
 """
 
 import json
+
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer, SurfaceURLGenerator
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
@@ -145,8 +146,7 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
                                                                          region_mapping_index.gid,
                                                                          self.stored_adapter.id)
 
-        surface_index = self.load_entity_by_gid(region_mapping_index.fk_surface_gid)
-        surface_h5 = h5.h5_file_for_index(surface_index)
+        surface_h5 = h5.h5_file_for_gid(region_mapping_index.fk_surface_gid)
         assert isinstance(surface_h5, SurfaceH5)
         url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(
             surface_h5)

@@ -162,8 +162,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
     def compute_background_params(min_value=0, max_value=0, url=None):
         return dict(minBackgroundValue=min_value, maxBackgroundValue=max_value, urlBackgroundVolumeData=url)
 
-    @staticmethod
-    def get_voxel_region(region_mapping_volume_gid, x_plane, y_plane, z_plane):
+    def get_voxel_region(self, region_mapping_volume_gid, x_plane, y_plane, z_plane):
         entity_h5 = h5.h5_file_for_gid(region_mapping_volume_gid)
         with entity_h5:
             data_shape = entity_h5.array_data.shape
@@ -174,7 +173,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
             connectivity_gid = entity_h5.connectivity.load().hex
 
         if voxel != -1:
-            conn = h5.load_from_gid(connectivity_gid)
+            conn = self.load_traited_by_gid(connectivity_gid)
             return conn.region_labels[int(voxel)]
         else:
             return 'background'

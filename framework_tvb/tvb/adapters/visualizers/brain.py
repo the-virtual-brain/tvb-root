@@ -122,16 +122,16 @@ class BrainViewer(ABCSurfaceDisplayer):
         """
         Generate the preview for the burst page
         """
-        time_series = self.load_entity_by_gid(view_model.time_series)
-        self.populate_surface_fields(time_series)
+        time_series_index = self.load_entity_by_gid(view_model.time_series)
+        self.populate_surface_fields(time_series_index)
 
         url_vertices, url_normals, url_lines, url_triangles, url_region_map = \
             SurfaceURLGenerator.get_urls_for_rendering(self.surface_h5, self.region_map_gid)
 
-        params = self.retrieve_measure_points_params(time_series)
-        base_adapter_url, time_urls = self._prepare_data_slices(time_series)
+        params = self.retrieve_measure_points_params(time_series_index)
+        base_adapter_url, time_urls = self._prepare_data_slices(time_series_index)
 
-        with h5.h5_file_for_index(time_series) as time_series_h5:
+        with h5.h5_file_for_index(time_series_index) as time_series_h5:
             assert isinstance(time_series_h5, TimeSeriesH5)
             min_val, max_val = time_series_h5.get_min_max_values()
 
@@ -346,17 +346,17 @@ class BrainViewer(ABCSurfaceDisplayer):
         return activity_base_url, time_urls
 
     def read_data_page_split(self, time_series_gid, from_idx, to_idx, step=None, specific_slices=None):
-        time_series_index = self.load_entity_by_gid(time_series_gid)
-        with h5.h5_file_for_index(time_series_index) as time_series_h5:
+        # time_series_index = self.load_entity_by_gid(time_series_gid)
+        with h5.h5_file_for_gid(time_series_gid) as time_series_h5:
             assert isinstance(time_series_h5, TimeSeriesH5)
             basic_result = time_series_h5.read_data_page(from_idx, to_idx, step, specific_slices)
 
-        if not isinstance(time_series_index, TimeSeriesSurfaceIndex):
-            return basic_result.tolist()
+            if not isinstance(time_series_h5, TimeSeriesSurfaceIndex):
+                return basic_result.tolist()
+            surface_gid = time_series_h5.surface.load()
 
         result = []
-        surface_index = self.load_entity_by_gid(time_series_index.fk_surface_gid)
-        surface_h5 = h5.h5_file_for_index(surface_index)
+        surface_h5 = h5.h5_file_for_gid(surface_gid)
         assert isinstance(surface_h5, SurfaceH5)
         number_of_split_slices = surface_h5.number_of_split_slices.load()
         if number_of_split_slices <= 1:

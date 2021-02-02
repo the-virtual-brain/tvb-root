@@ -108,11 +108,11 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
     def launch(self, view_model):
         # type: (WaveletSpectrogramVisualizerModel) -> dict
 
-        input_index = self.load_entity_by_gid(view_model.input_data)
-        with h5.h5_file_for_index(input_index) as input_h5:
+        with h5.h5_file_for_gid(view_model.input_data) as input_h5:
             shape = input_h5.array_data.shape
             input_sample_period = input_h5.sample_period.load()
             input_frequencies = input_h5.frequencies.load()
+            ts_index = self.load_entity_by_gid(input_h5.source.load())
 
             slices = (slice(shape[0]),
                       slice(shape[1]),
@@ -122,7 +122,6 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
             data_matrix = input_h5.power[slices]
             data_matrix = data_matrix.sum(axis=3)
 
-        ts_index = self.load_entity_by_gid(input_index.fk_source_gid)
         assert isinstance(ts_index, TimeSeriesIndex)
 
         wavelet_sample_period = ts_index.sample_period * max((1, int(input_sample_period / ts_index.sample_period)))

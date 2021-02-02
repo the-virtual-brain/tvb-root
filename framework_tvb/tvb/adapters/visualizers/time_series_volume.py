@@ -118,12 +118,12 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         ts_index = h5.load_entity_by_gid(view_model.time_series.hex)
         ts_h5 = h5.h5_file_for_index(ts_index)
         min_value, max_value = ts_h5.get_min_max_values()
-        volume = h5.load_from_gid(ts_h5.volume.load())
+        volume = self.load_traited_by_gid(ts_h5.volume.load())
 
         if isinstance(ts_h5, TimeSeriesVolumeH5):
             volume_shape = ts_h5.data.shape
         else:
-            rmv = h5.load_from_gid(ts_h5.region_mapping_volume.load())
+            rmv = self.load_traited_by_gid(ts_h5.region_mapping_volume.load())
             volume_shape = [ts_h5.data.shape[0]]
             volume_shape.extend(rmv.array_data.shape)
 
@@ -158,8 +158,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         if background_index is None:
             return _MappedArrayVolumeBase.compute_background_params()
 
-        background_h5 = h5.h5_file_for_index(background_index)
-        with background_h5:
+        with h5.h5_file_for_index(background_index) as background_h5:
             min_value, max_value = background_h5.get_min_max_values()
 
         url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_volume_view', background_index.gid, '')

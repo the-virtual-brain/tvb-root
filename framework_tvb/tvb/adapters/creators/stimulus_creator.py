@@ -33,6 +33,7 @@
 """
 
 import uuid
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
@@ -42,7 +43,6 @@ from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, TraitDataTypeSelectField, SelectField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
@@ -152,8 +152,7 @@ class SurfaceStimulusCreator(ABCAdapter):
         """
         return [StimuliSurfaceIndex]
 
-    @staticmethod
-    def prepare_stimuli_surface_from_view_model(view_model, load_full_surface=False):
+    def prepare_stimuli_surface_from_view_model(self, view_model, load_full_surface=False):
         # type: (SurfaceStimulusCreatorModel, bool) -> StimuliSurface
         stimuli_surface = StimuliSurface()
 
@@ -161,17 +160,16 @@ class SurfaceStimulusCreator(ABCAdapter):
         stimuli_surface.spatial = view_model.spatial
         stimuli_surface.temporal = view_model.temporal
 
-        surface_index = load_entity_by_gid(view_model.surface)
+        surface_h5 = h5.h5_file_for_gid(view_model.surface)
         if load_full_surface:
-            stimuli_surface.surface = h5.load_from_index(surface_index)
+            stimuli_surface.surface = self.load_traited_by_gid(view_model.surface)
         else:
             stimuli_surface.surface = CorticalSurface()
             stimuli_surface.gid = view_model.surface
-            surface_h5 = h5.h5_file_for_index(surface_index)
             # We need to load surface triangles on stimuli because focal_points_surface property needs to acces them
             stimuli_surface.surface.triangles = surface_h5.triangles.load()
-            surface_h5.close()
 
+        surface_h5.close()
         return stimuli_surface
 
     def launch(self, view_model):
