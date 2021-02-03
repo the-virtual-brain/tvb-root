@@ -212,8 +212,7 @@ class CosimCoupling(AfferentCoupling, CosimMonitorFromCoupling):
     def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return selected values of future coupling from (up to synchronization time) cosimulation history"
         if start_step + n_steps > current_step + self.synchronization_n_step:
-            raise ValueError("For the step : sum of start_step + n_steps ("+str(start_step + n_steps)+
-                             "), it missing values for the coupling."
-                             "The coupling can be computed for the maximal "
-                             "step :"+str(current_step + self.synchronization_n_step))
+            raise ValueError("Values are missing for a number of coupling steps of start_step + n_steps (=%d).\n"
+                             "The coupling can be computed for a maximum of %d steps."
+                             % (start_step + n_steps, current_step + self.synchronization_n_step))
         return self._get_sample(start_step, n_steps, history)
