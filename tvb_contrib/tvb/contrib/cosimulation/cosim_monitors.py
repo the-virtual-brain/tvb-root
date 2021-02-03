@@ -62,7 +62,7 @@ class CosimMonitor(HasTraits):
                 values.append(tmp[1])
         return [numpy.array(times), numpy.array(values)]
 
-    def sample(self, start_step, n_steps, cosim_history, history):
+    def sample(self, current_step, start_step, n_steps, cosim_history, history):
         """
         This method provides monitor output, and should be overridden by subclasses.
         Use the original signature.
@@ -85,6 +85,8 @@ class CosimMonitorFromCoupling(CosimMonitor):
                dynamic equations of the Model. Its primary purpose is to 'rescale' the
                incoming activity to a level appropriate to Model.""")
 
+    synchronization_n_step = None
+
     def _get_sample(self, start_step, n_steps, history):
         times = []
         values = []
@@ -94,6 +96,11 @@ class CosimMonitorFromCoupling(CosimMonitor):
                 times.append(tmp[0])
                 values.append(tmp[1])
         return [numpy.array(times), numpy.array(values)]
+
+    def _config_time(self, simulator):
+        self.synchronization_n_step = simulator.synchronization_n_step
+        # For less constraint, the previous value can be replaced by the minimum of delay.
+        # i.e. : numpy.min(simulator.connectivity.idelays[numpy.nonzero(simulator.connectivity.idelays)
 
 
 class RawCosim(Raw, CosimMonitor):
@@ -112,7 +119,7 @@ class RawCosim(Raw, CosimMonitor):
     def _sample_with_tvb_monitor(self, step, state):
         return Raw.sample(self, step, state)
 
-    def sample(self, start_step, n_steps, cosim_history, history):
+    def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return all the states of the partial (up to synchronization time) cosimulation history"
         return self._get_sample(start_step, n_steps, cosim_history, cosim=True)
 
@@ -133,7 +140,7 @@ class RawVoiCosim(RawVoi, CosimMonitor):
     def _sample_with_tvb_monitor(self, step, state):
         return RawVoi.sample(self, step, state)
 
-    def sample(self, start_step, n_steps, cosim_history, history):
+    def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return all the states of the partial (up to synchronization time) cosimulation history"
         return self._get_sample(start_step, n_steps, cosim_history, cosim=True)
 
@@ -155,7 +162,7 @@ class RawDelayed(Raw, CosimMonitor):
     def _sample_with_tvb_monitor(self, step, state):
         return Raw.sample(self, step, state)
 
-    def sample(self, start_step, n_steps, cosim_history, history):
+    def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return all the states of the delayed (by synchronization time) TVB history"
         return self._get_sample(start_step, n_steps, history, cosim=False)
 
@@ -177,7 +184,7 @@ class RawVoiDelayed(RawVoi,CosimMonitor):
     def _sample_with_tvb_monitor(self, step, state):
         return RawVoi.sample(self, step, state)
 
-    def sample(self, start_step, n_steps, cosim_history, history):
+    def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return selected states of the delayed (by synchronization time) TVB history"
         return self._get_sample(start_step, n_steps, history, cosim=False)
 
@@ -194,9 +201,19 @@ class CosimCoupling(AfferentCoupling, CosimMonitorFromCoupling):
 
     _ui_name = "Cosimulation Coupling recording"
 
+    def _config_time(self, simulator):
+        " Define time variables for the monitors and the cosimonitor."
+        AfferentCoupling._config_time(self,simulator)
+        CosimMonitorFromCoupling._config_time(self,simulator)
+
     def _sample_with_tvb_monitor(self, step, state):
         return AfferentCoupling.sample(self, step, state)
 
-    def sample(self, start_step, n_steps, cosim_history, history):
+    def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return selected values of future coupling from (up to synchronization time) cosimulation history"
+        if start_step + n_steps > current_step + self.synchronization_n_step:
+            raise ValueError("For the step : sum of start_step + n_steps ("+str(start_step + n_steps)+
+                             "), it missing values for the coupling."
+                             "The coupling can be computed for the maximal "
+                             "step :"+str(current_step + self.synchronization_n_step))
         return self._get_sample(start_step, n_steps, history)
