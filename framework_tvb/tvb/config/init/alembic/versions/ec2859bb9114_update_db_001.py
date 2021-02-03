@@ -11,6 +11,7 @@ from sqlalchemy import Column, String, Integer
 import uuid
 import json
 
+from sqlalchemy.sql.schema import UniqueConstraint
 from tvb.core.neotraits.db import Base
 from tvb.basic.logger.builder import get_logger
 
@@ -18,11 +19,12 @@ from tvb.basic.logger.builder import get_logger
 revision = 'ec2859bb9114'
 down_revision = None
 
+conn = op.get_bind()
 
 LOGGER = get_logger(__name__)
 
 
-def migrate_range_params(ranges):
+def _migrate_range_params(ranges):
     new_ranges = []
     for range in ranges:
         list_range = eval(range)
@@ -59,6 +61,26 @@ def migrate_range_params(ranges):
     return new_ranges
 
 
+def _update_range_parameters(burst_config_table, operation_groups_table, range1, range2, op_group_id):
+
+    conn.execute(burst_config_table.update().
+                 where(burst_config_table.c.fk_operation_group == op_group_id).
+                 values({'range1': range1}))
+
+    conn.execute(operation_groups_table.update().
+                 where(operation_groups_table.c.id == op_group_id).
+                 values({'range1': range1}))
+
+    if range2 != 'None':
+        conn.execute(burst_config_table.update().
+                     where(burst_config_table.c.fk_operation_group == op_group_id).
+                     values({'range2': range2}))
+
+        conn.execute(operation_groups_table.update().
+                     where(operation_groups_table.c.id == op_group_id).
+                     values({'range2': range2}))
+
+
 def upgrade():
     # Define columns that need to be added/deleted
     user_columns = [Column('gid', String),
@@ -68,10 +90,10 @@ def upgrade():
     op_column = Column('view_model_disk_size', Integer)
 
     # Get tables
-    conn = op.get_bind()
     inspector = Inspector.from_engine(conn)
     table_names = inspector.get_table_names()
     tables = Base.metadata.tables
+
     try:
         op.rename_table('BURST_CONFIGURATIONS', 'BurstConfiguration')
 
@@ -129,21 +151,18 @@ def upgrade():
         LOGGER.exception(excep)
 
     # Migrating USERS table
-    for column in user_columns:
-        op.add_column('USERS', column)
-
-    with op.batch_alter_table('USERS', schema=None, ) as batch_op:
-        # TODO: This must be changed to a constraint without a name
-        batch_op.create_unique_constraint('temp_unique', ['gid'])
+    with op.batch_alter_table('USERS', table_args=(UniqueConstraint('gid'),)) as batch_op:
+        batch_op.add_column(user_columns[0])
+        batch_op.add_column(user_columns[1])
 
     users_table = tables['USERS']
     user_ids = conn.execute("SELECT U.id FROM 'USERS' U").fetchall()
     for id in user_ids:
-        op.execute(users_table.update().where(users_table.c.id == id[0]).
-                   values({"gid": uuid.uuid4().hex, "display_name": users_table.c.username}))
-    op.execute('COMMIT')
+        conn.execute(users_table.update().where(users_table.c.id == id[0]).
+                     values({"gid": uuid.uuid4().hex, "display_name": users_table.c.username}))
+    conn.execute('COMMIT')
 
-    # Migrating BurstConfiguration
+    # Migrating BurstConfiguration table
     burst_config_table = tables['BurstConfiguration']
     for column in burst_columns:
         op.add_column('BurstConfiguration', column)
@@ -151,9 +170,11 @@ def upgrade():
     try:
         op.alter_column('BurstConfiguration', '_dynamic_ids', new_column_name='dynamic_ids')
         op.alter_column('BurstConfiguration', '_simulator_configuration', new_column_name='simulator_gid')
+        conn.execute(burst_config_table.delete().where(burst_config_table.c.status == 'error'))
 
-        op.execute(burst_config_table.delete().where(burst_config_table.c.status == 'error'))
-        ranges = conn.execute("SELECT OG.id, OG.range1, OG.range2 from 'OPERATION_GROUPS' OG").fetchall()
+        # Take only values with odd id numbers, otherwise each range value will be processed twice
+        ranges = conn.execute("SELECT OG.id, OG.range1, OG.range2 from 'OPERATION_GROUPS' OG "
+                              "WHERE OG.id % 2 == 1").fetchall()
 
         ranges_1 = []
         ranges_2 = []
@@ -162,8 +183,8 @@ def upgrade():
             ranges_1.append(str(r[1]))
             ranges_2.append(str(r[2]))
 
-        new_ranges_1 = migrate_range_params(ranges_1)
-        new_ranges_2 = migrate_range_params(ranges_2)
+        new_ranges_1 = _migrate_range_params(ranges_1)
+        new_ranges_2 = _migrate_range_params(ranges_2)
 
         # Migrating Operation Groups
         operation_groups_table = tables['OPERATION_GROUPS']
@@ -176,45 +197,30 @@ def upgrade():
 
             # Find if operation refers to an operation group or a metric operation group
             if 'time_series' in operation[1]:
-                op.execute(burst_config_table.update().where(burst_config_table.c.id == burst_id).
-                           values({"fk_metric_operation_group": operation[0]}))
+                conn.execute(burst_config_table.update().where(burst_config_table.c.id == burst_id).
+                             values({"fk_metric_operation_group": operation[0]}))
             else:
-                op.execute(burst_config_table.update().where(burst_config_table.c.id == burst_id).
-                           values({"fk_operation_group": operation[0]}))
+                conn.execute(burst_config_table.update().where(burst_config_table.c.id == burst_id).
+                             values({"fk_operation_group": operation[0]}))
 
         for i in range(len(ranges_1)):
             range1 = str(new_ranges_1[i]).replace('\'', '')
             range2 = str(new_ranges_2[i]).replace('\'', '')
+            _update_range_parameters(burst_config_table, operation_groups_table, range1, range2, ranges[i][0])
+            _update_range_parameters(burst_config_table, operation_groups_table, range1, range2, ranges[i][0] + 1)
 
-            op.execute(burst_config_table.update().
-                       where(burst_config_table.c.fk_operation_group == ranges[i][0]).
-                       values({'range1': range1}))
-
-            op.execute(operation_groups_table.update().
-                       where(operation_groups_table.c.id == ranges[i][0]).
-                       values({'range1': range1}))
-
-            if range2 != 'None':
-                op.execute(burst_config_table.update().
-                           where(burst_config_table.c.fk_operation_group == ranges[i][0]).
-                           values({'range2': range2}))
-
-                op.execute(operation_groups_table.update().
-                           where(operation_groups_table.c.id == ranges[i][0]).
-                           values({'range2': range2}))
-
-        op.execute('COMMIT')
+        conn.execute('COMMIT')
     except Exception as excep:
         LOGGER.exception(excep)
 
-    # Finish BurstConfiguration migration by deleting unused column and creating constraints
-    with op.batch_alter_table('BurstConfiguration', schema=None) as batch_op:
+    # Finish BurstConfiguration migration by deleting unused column and adding foreign keys
+    with op.batch_alter_table('BurstConfiguration') as batch_op:
         batch_op.drop_column('workflows_number')
-        batch_op.create_foreign_key('BurstConfiguration1', 'OPERATIONS', ['fk_simulation'], ['id'])
-        batch_op.create_foreign_key('BurstConfiguration2', 'OPERATION_GROUPS', ['fk_operation_group'], ['id'])
-        batch_op.create_foreign_key('BurstConfiguration3', 'OPERATION_GROUPS', ['fk_metric_operation_group'], ['id'])
-
-    op.execute('COMMIT')
+        batch_op.create_foreign_key('bc_fk_simulation', 'OPERATIONS', ['fk_simulation'], ['id'])
+        batch_op.create_foreign_key('bc_fk_operation_group', 'OPERATION_GROUPS', ['fk_operation_group'], ['id'])
+        batch_op.create_foreign_key('bc_metric_operation_group', 'OPERATION_GROUPS',
+                                    ['fk_metric_operation_group'],['id'])
+    conn.execute('COMMIT')
 
     # MIGRATING Operations
     op_table = tables['OPERATIONS']
@@ -225,18 +231,18 @@ def upgrade():
 
         for metadata in burst_ref_metadata:
             metadata_dict = eval(str(metadata[1]))
-            op.execute(op_table.update().where(op_table.c.id == metadata[0]).
-                       values({'view_model_gid': json.dumps(metadata_dict['Burst_Reference'])}))
+            conn.execute(op_table.update().where(op_table.c.id == metadata[0]).
+                         values({'view_model_gid': json.dumps(metadata_dict['Burst_Reference'])}))
 
         op.rename_table('BurstConfiguration', 'BURST_CONFIGURATION')
-        op.execute('COMMIT')
+        conn.execute('COMMIT')
     except Exception as excep:
         LOGGER.exception(excep)
 
-    with op.batch_alter_table('OPERATIONS', schema=None) as batch_op:
+    with op.batch_alter_table('OPERATIONS') as batch_op:
         batch_op.add_column(op_column)
         batch_op.drop_column('meta_data')
-    op.execute('COMMIT')
+    conn.execute('COMMIT')
 
     try:
         op.drop_table('ALGORITHMS')
