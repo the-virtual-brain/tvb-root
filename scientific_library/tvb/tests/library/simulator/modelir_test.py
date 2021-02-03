@@ -374,7 +374,8 @@ class TestSimNoDelay(unittest.TestCase, MakoUtilMix):
         (t,y), = sim.run()
         nt = len(t)
         template = '<%include file="test_cu_mpr_net_no_delay.mako"/>'
-        content = dict(np=np, model=mpr, dt=dt, nt=nt, 
+        content = dict(kernel_name='mpr_net',
+            np=np, model=mpr, dt=dt, nt=nt, 
             cfun_a=sim.coupling.a[0], debug=False)
         cu_loop = self._build_cu_func(template, content, 'mpr_net')
         # prep args
