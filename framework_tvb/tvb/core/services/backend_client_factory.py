@@ -31,9 +31,12 @@
 """
 .. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 """
-
+# TODO: Review SimulatorAdapter import (HBP-134)
+from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.backend_clients.cluster_scheduler_client import ClusterSchedulerClient
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
@@ -46,9 +49,11 @@ LOGGER = get_logger(__name__)
 class BackendClientFactory(object):
 
     @staticmethod
-    def _get_backend_client():
-        # type: () -> BackendClient
-        if TvbProfile.current.hpc.IS_HPC_RUN:
+    def _get_backend_client(adapter_instance):
+        # type: (ABCAdapter) -> BackendClient
+
+        # For the moment run only simulations on HPC
+        if TvbProfile.current.hpc.IS_HPC_RUN and type(adapter_instance) is SimulatorAdapter:
             if not TvbProfile.current.hpc.CAN_RUN_HPC:
                 raise InvalidSettingsException("We can not enable HPC run. Most probably pyunicore is not installed!")
             # Return an entity capable to submit jobs to HPC.
@@ -61,10 +66,13 @@ class BackendClientFactory(object):
 
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
-        backend_client = BackendClientFactory._get_backend_client()
+        backend_client = BackendClientFactory._get_backend_client(adapter_instance)
         backend_client.execute(operation_id, user_name_label, adapter_instance)
 
     @staticmethod
     def stop_operation(operation_id):
-        backend_client = BackendClientFactory._get_backend_client()
+        operation = dao.get_operation_by_id(operation_id)
+        algorithm = operation.algorithm
+        adapter_instance = ABCAdapter.build_adapter(algorithm)
+        backend_client = BackendClientFactory._get_backend_client(adapter_instance)
         return backend_client.stop_operation(operation_id)

@@ -168,7 +168,7 @@ class ImportService(object):
             # Removing from DB is not necessary because in transactional env a simple exception throw
             # will erase everything to be inserted.
             for project in self.created_projects:
-                project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project.name)
+                project_path = self.files_helper.get_project_folder(project)
                 shutil.rmtree(project_path)
             raise ImportException(str(excep))
 

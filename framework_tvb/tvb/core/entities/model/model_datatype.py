@@ -149,6 +149,11 @@ class DataType(HasTraitsIndex):
         self.disk_size = disk_size
         self.fk_parent_burst = fk_parent_burst
 
+    def fill_from_h5(self, h5_file):
+        LOG.warning("fill_from_h5 for: {}".format(type(self)))
+        self.gid = h5_file.gid.load().hex
+
+
     def after_store(self):
         """
         Put here code (as a trigger after storage) to be executed by

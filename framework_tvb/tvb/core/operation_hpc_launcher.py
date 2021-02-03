@@ -57,6 +57,7 @@ def _encrypt_results(adapter_instance, encryption_handler):
     output_plain_dir = adapter_instance._get_output_path()
     output_plain_files = os.listdir(output_plain_dir)
     output_plain_files = [os.path.join(output_plain_dir, plain_file) for plain_file in output_plain_files]
+    log.info("Encrypt files: {}".format(output_plain_files))
     encryption_handler.encrypt_inputs(output_plain_files, adapter_instance.OUTPUT_FOLDER)
 
 
@@ -66,7 +67,7 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         populate_datatypes_registry()
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
         encyrption_handler = EncryptionHandler(simulator_gid)
-        _request_passfile(simulator_gid, operation_id, base_url, os.path.dirname(encyrption_handler.get_password_file()))
+        _request_passfile(simulator_gid, operation_id, base_url, encyrption_handler.get_password_file())
         encyrption_handler.decrypt_results_to_dir(plain_dir)
         log.info("Current wdir is: {}".format(plain_dir))
         view_model = h5.load_view_model(simulator_gid, plain_dir)
@@ -80,6 +81,7 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         log.error("Could not execute operation {}".format(str(sys.argv[1])))
         log.exception(excep)
         _update_operation_status(STATUS_ERROR, simulator_gid, operation_id, base_url)
+        raise excep
 
 
 # TODO: extract common rest api parts
@@ -94,7 +96,7 @@ def _save_file(file_path, response):
     return file_path
 
 
-def _request_passfile(simulator_gid, operation_id, base_url, passfile_folder):
+def _request_passfile(simulator_gid, operation_id, base_url, destination_path):
     # type: (str, str, str, str) -> str
     try:
         req_params = "{}/hpc/encryption_config/{}/{}".format(base_url, simulator_gid, operation_id)
@@ -102,12 +104,11 @@ def _request_passfile(simulator_gid, operation_id, base_url, passfile_folder):
         response = _build_secured_request().get(req_params)
         log.info('Response is: {}'.format(response))
         if response.ok:
-            content_disposition = response.headers['Content-Disposition']
-            value, params = cgi.parse_header(content_disposition)
-            file_name = params['filename']
-            file_path = os.path.join(passfile_folder, os.path.basename(file_name))
-            log.info('Passfile downloaded at: {}'.format(file_path))
-            return _save_file(file_path, response)
+            log.info('Passfile downloaded at: {}'.format(destination_path))
+            path = _save_file(destination_path, response)
+            if not os.path.exists(path):
+                raise Exception("Cannot find password file.")
+            return path
     except HTTPError:
         log.warning(
             "Failed to request passfile from TVB server {} for simulator {}".format(base_url, simulator_gid))

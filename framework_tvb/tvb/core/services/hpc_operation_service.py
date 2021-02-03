@@ -40,6 +40,7 @@ from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELE
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient, HPCJobStatus
+from tvb.core.services.exceptions import OperationException
 
 try:
     from pyunicore.client import Job, Transport
@@ -72,11 +73,17 @@ class HPCOperationService(object):
         # TODO: Handle login
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
-        sim_h5_filenames, metric_op, metric_h5_filename = \
-            HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
-        operation.mark_complete(STATUS_FINISHED)
-        dao.store_entity(operation)
-        HPCSchedulerClient().update_db_with_results(operation, sim_h5_filenames, metric_op, metric_h5_filename)
+        try:
+            sim_h5_filenames, metric_op, metric_h5_filename = \
+                HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
+
+            operation.mark_complete(STATUS_FINISHED)
+            dao.store_entity(operation)
+            HPCSchedulerClient().update_db_with_results(operation, sim_h5_filenames, metric_op, metric_h5_filename)
+
+        except OperationException as exception:
+            HPCOperationService.LOGGER.error(exception)
+            HPCOperationService._operation_error(operation)
 
     @staticmethod
     def handle_hpc_status_changed(operation, simulator_gid, new_status):

@@ -206,6 +206,7 @@ class HPCSettings(object):
     UNICORE_RESOURCER_KEY = 'Resources'
     UNICORE_ARGS_KEY = 'Arguments'
     UNICORE_EXE_KEY = 'Executable'
+    UNICORE_PROJECT_KEY = 'Project'
 
     JOB_STATUS_KEY = 'status'
     JOB_MOUNT_POINT_KEY = 'mountPoint'
