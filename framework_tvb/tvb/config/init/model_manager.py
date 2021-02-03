@@ -39,7 +39,6 @@ from sqlalchemy.engine import reflection
 from alembic.config import Config
 from alembic import command
 
-
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import SA_SESSIONMAKER
@@ -59,11 +58,10 @@ def initialize_startup():
         is_db_empty = True
     session.close()
 
-    directory_path = os.path.join(os.path.dirname(__file__), 'alembic')
-    alembic_cfg = Config(os.path.join(os.path.dirname(__file__), 'alembic.ini'))
-    alembic_cfg.set_main_option('script_location', directory_path)
-
     versions_repo = TvbProfile.current.db.DB_VERSIONING_REPO
+    alembic_cfg = Config(os.path.join(os.path.dirname(__file__), 'alembic.ini'))
+    alembic_cfg.set_main_option('script_location', versions_repo)
+
     if is_db_empty:
         LOGGER.info("Initializing Database")
         if os.path.exists(versions_repo):
@@ -124,3 +122,5 @@ def _update_sql_scripts():
         shutil.rmtree(versions_folder)
     ignore_patters = shutil.ignore_patterns('.svn')
     shutil.copytree(scripts_folder, versions_folder, ignore=ignore_patters)
+    shutil.copyfile(os.path.join(os.path.dirname(__file__), 'alembic/env.py'),
+                    os.path.join(versions_folder, os.pardir, 'env.py'))

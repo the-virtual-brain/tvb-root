@@ -74,6 +74,7 @@ def upgrade():
     tables = Base.metadata.tables
     try:
         op.rename_table('BURST_CONFIGURATIONS', 'BurstConfiguration')
+
         # Dropping tables which don't exist in the new version
         op.drop_table('MAPPED_LOOK_UP_TABLE_DATA')
         op.drop_table('MAPPED_DATATYPE_MEASURE_DATA')
@@ -235,6 +236,7 @@ def upgrade():
     with op.batch_alter_table('OPERATIONS', schema=None) as batch_op:
         batch_op.add_column(op_column)
         batch_op.drop_column('meta_data')
+    op.execute('COMMIT')
 
     try:
         op.drop_table('ALGORITHMS')
