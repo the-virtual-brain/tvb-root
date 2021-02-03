@@ -44,7 +44,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.core.neotraits.db import Base
-import tvb.config.init.migrations.versions as scripts
+import tvb.config.init.alembic.versions as scripts
 
 LOGGER = get_logger(__name__)
 
@@ -59,8 +59,8 @@ def initialize_startup():
         is_db_empty = True
     session.close()
 
-    directory_path = os.path.join(os.path.dirname(__file__), 'migrations')
-    alembic_cfg = Config(os.path.join(directory_path, 'alembic.ini'))
+    directory_path = os.path.join(os.path.dirname(__file__), 'alembic')
+    alembic_cfg = Config(os.path.join(os.path.dirname(__file__), 'alembic.ini'))
     alembic_cfg.set_main_option('script_location', directory_path)
 
     versions_repo = TvbProfile.current.db.DB_VERSIONING_REPO
@@ -81,7 +81,7 @@ def initialize_startup():
         _update_sql_scripts()
         with session.connection() as connection:
             alembic_cfg.attributes['connection'] = connection
-            command.upgrade(alembic_cfg, "head")
+            command.upgrade(alembic_cfg, TvbProfile.current.version.DB_STRUCTURE_VERSION)
         LOGGER.info("Database already has some data, will not be re-created!")
     return is_db_empty
 
