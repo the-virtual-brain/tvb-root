@@ -36,8 +36,10 @@ Utility file, to compute number of code lines in TVB project folder.
 
 import os
 
-INTROSPECT_FOLDER = os.path.dirname(os.path.dirname(__file__))
+INTROSPECT_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IGNORED_LIST = {"__init__.py", "project_metrics.py"}
+IGNORED_FOR_TVB_LIST = ('tvb_contrib', 'externals', 'tvb/tests/framework', 'tvb/tests/library')
+IGNORED_FOR_TEST_LIST = ('tvb_contrib', 'externals')
 
 TVB_LIST = []
 TVB_CODE_LINES = 0
@@ -71,14 +73,15 @@ for pydir, _, pyfiles in os.walk(INTROSPECT_FOLDER):
         totalpath = os.path.join(pydir, pyfile)
         tmp = totalpath.split(INTROSPECT_FOLDER)[1]
 
-        if pyfile.endswith(".py") and pyfile not in IGNORED_LIST \
-                and not ('externals' in pydir or 'tvb/tests/framework' in pydir or 'tvb/tests/library' in pydir):
+        if (pyfile.endswith(".py") and pyfile not in IGNORED_LIST and
+                not any(dirname in pydir for dirname in IGNORED_FOR_TVB_LIST)):
 
             TVB_LIST.append((count_lines(totalpath), tmp))
             TVB_CODE_LINES += count_code_lines(totalpath)
 
-        elif pyfile.endswith(".py") and pyfile not in IGNORED_LIST and 'externals' not in pydir \
-                and ('tvb/tests/framework' in pydir or 'tvb/tests/library' in pydir):
+        elif (pyfile.endswith(".py") and pyfile not in IGNORED_LIST and
+              not any(dirname in pydir for dirname in IGNORED_FOR_TEST_LIST) and
+              ('tvb/tests/framework' in pydir or 'tvb/tests/library' in pydir)):
 
             TEST_LIST.append((count_lines(totalpath), tmp))
 
