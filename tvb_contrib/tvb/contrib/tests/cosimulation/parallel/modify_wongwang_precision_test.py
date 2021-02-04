@@ -81,8 +81,7 @@ class TestModifyWongWang(BaseTestCase):
                                np.random.random_sample((385, 1, 76, 1))), axis=1)
         np.random.seed(42)
         result_2 = self._reference_simulation(self._simulation_length,model_class=ReducedWongWangProxy, simulator=CoSimulator, init=init)[5]
-        diff = result - result_2
-        assert np.sum(diff) == 0.0
+        np.testing.assert_array_equal(result, result_2)
 
     def test_precision_with_proxy(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation(self._simulation_length)
@@ -123,7 +122,5 @@ class TestModifyWongWang(BaseTestCase):
             result_1_all[1] = np.concatenate((result_1_all[1], result_1_all_step[0][1]))
 
         for i in range(int(self._simulation_length/integrator.dt)):
-            diff = result_all[0][1][i][0][1:] - result_1_all[1][i+sync_steps, 0, 1:]
-            diff_2 = result_all[0][1][i][0][:1] - result_1_all[1][i+sync_steps, 0, :1]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                   np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) == 0.0
+            np.testing.assert_array_equal(result_all[0][1][i][0][1:],result_1_all[1][i+sync_steps, 0, 1:])
+            np.testing.assert_array_equal(result_all[0][1][i][0][:1], result_1_all[1][i+sync_steps, 0, :1])

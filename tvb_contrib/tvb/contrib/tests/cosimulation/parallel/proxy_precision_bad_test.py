@@ -30,6 +30,7 @@
 """
 
 import numpy as np
+import operator
 
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.function_tvb import TvbSim
@@ -67,31 +68,39 @@ class TestPrecisionBad(BaseTestCase):
         time, result_ref = sim_ref(synchronization_time)
 
         # the results are different because the data of the proxy is wrong
-        diff = np.where(result_ref[:, no_proxy, :] != result[0][:, no_proxy, :])
-        assert diff[0].size == 0
+        np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[0][:, no_proxy, :])
 
         # the first part of the result are correct because the wrong result are delayed
         for i in range(0, 99):
-            time, result = sim(synchronization_time, [time, result_ref[:, proxy_id][:, :, 0]])
+            time, result = sim(synchronization_time, [time, np.zeros_like(result_ref[:, proxy_id][:, :, 0])])
 
             # compare with Raw monitor delayed by synchronization_time
-            diff_1 = np.where(result_ref != result[1])
-            assert diff_1[0].size ==0
+            np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[1][:, no_proxy, :])
+            np.testing.assert_array_compare(operator.__ne__, result_ref[:, proxy_id, :], result[1][:, proxy_id, :])
 
             time, result_ref = sim_ref(synchronization_time)
             # compare with the CosimMonitor RawCosim
-            diff = np.where(result_ref[:, no_proxy, :] != result[0][:, no_proxy, :])
-            assert diff[0].size == 0
+            np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[0][:, no_proxy, :])
 
         # the result become of different value when the delayed result is computed
-        for i in range(100, 5000):
-            time, result_ref = sim_ref(synchronization_time)
+        for i in range(100, 1000):
+            time, result = sim(synchronization_time, [time, np.zeros_like(result_ref[:, proxy_id][:, :, 0])])
 
             # compare with Raw monitor delayed by synchronization_time
-            diff_1 = np.where(result_ref != result[1])
-            assert diff_1[0].size != 0
+            if i == 100: # as precedent
+                np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[1][:, no_proxy, :])
+                np.testing.assert_array_compare(operator.__ne__, result_ref[:, proxy_id, :], result[1][:, proxy_id, :])
+            elif i == 101: # the first one is the same
+                np.testing.assert_array_equal(result_ref[:1, no_proxy, :], result[1][:1, no_proxy, :])
+                np.testing.assert_array_compare(operator.__ne__, result_ref[1:, proxy_id, :], result[1][1:, proxy_id, :])
+                np.testing.assert_array_compare(operator.__ne__, result_ref[1:, :, :], result[1][1:, :, :])
+            else:
+                np.testing.assert_array_compare(operator.__ne__,result_ref, result[1])
 
-            time, result = sim(synchronization_time, [time, result_ref[:, proxy_id][:, :, 0]])
+            time, result_ref = sim_ref(synchronization_time)
             # compare with the CosimMonitor RawCosim
-            diff = np.where(result_ref[:, no_proxy, :] != result[0][:, no_proxy, :])
-            assert diff[0].size != 0
+            if i == 100: # the first one is the same
+                np.testing.assert_array_equal(result_ref[:1, no_proxy, :], result[0][:1, no_proxy, :])
+                np.testing.assert_array_compare(operator.__ne__,result_ref[1:, no_proxy, :], result[0][1:, no_proxy, :])
+            else:
+                np.testing.assert_array_compare(operator.__ne__,result_ref[:, no_proxy, :], result[0][:, no_proxy, :])

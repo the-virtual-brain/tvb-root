@@ -51,7 +51,7 @@ class CosimMonitor(HasTraits):
     def _get_sample(self, start_step, n_steps, history, cosim):
         times = []
         values = []
-        for step in range(start_step, start_step + n_steps):
+        for step in range(start_step + 1, start_step + 1 + n_steps):
             if cosim:
                 state = history.query(step)
             else:
@@ -90,7 +90,7 @@ class CosimMonitorFromCoupling(CosimMonitor):
     def _get_sample(self, start_step, n_steps, history):
         times = []
         values = []
-        for step in range(start_step, start_step + n_steps):
+        for step in range(start_step + 1, start_step + 1 + n_steps):
             tmp = self._sample_with_tvb_monitor(step, self.coupling(step, history))
             if tmp is not None:
                 times.append(tmp[0])

@@ -64,20 +64,17 @@ class TestPrecisionDelayUpdate(BaseTestCase):
         time, result_ref = sim_ref(synchronization_time)
 
         # compare with TVB Raw monitor delayed by synchronization_time
-        diff = np.where(np.squeeze(result_ref[:, no_proxy, :], axis=2)[0] !=
+        np.testing.assert_array_equal(np.squeeze(result_ref[:, no_proxy, :], axis=2)[0],
                         np.squeeze(result[0][:, no_proxy, :], axis=2)[0])
-        assert diff[0].size == 0
 
-        for i in range(0, 10000):
+        for i in range(0, 1000):
             delay_input = [time, result_ref[:, proxy_id][:, :, 0]]
             time, result = sim(synchronization_time, delay_input)
 
             # compare with Raw monitor delayed by synchronization_time
-            diff_1 = np.where(result_ref != result[1])
-            assert diff_1[0].size ==0
+            np.testing.assert_array_equal(result_ref, result[1])
 
             time, result_ref = sim_ref(synchronization_time)
 
             # compare with TVB Raw monitor delayed by synchronization_time
-            diff = np.where(result_ref[:, no_proxy, :] != result[0][:, no_proxy, :])
-            assert diff[0].size == 0
+            np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[0][:, no_proxy, :])

@@ -30,6 +30,8 @@
 """
 
 import numpy as np
+import pytest
+import operator
 
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
@@ -105,12 +107,8 @@ class TestModifyWongWangRate(TestModifyWongWang):
             monitors=(monitors,),
             initial_conditions=init,
         )
-        try:
+        with pytest.raises(ValueError):
             sim.configure()
-        except ValueError:
-            assert True
-        except:
-            assert False
 
     def test_without_voi(self):
         model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
@@ -130,12 +128,8 @@ class TestModifyWongWangRate(TestModifyWongWang):
             monitors=(monitors,),
             initial_conditions=init,
         )
-        try:
+        with pytest.raises(ValueError):
             sim.configure()
-        except ValueError:
-            assert True
-        except:
-            assert False
 
     def test_with_proxy(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -173,26 +167,27 @@ class TestModifyWongWangRate(TestModifyWongWang):
             result_3_all[1] = np.concatenate((result_3_all[1], result_3_all_step[0][1]))
 
         simulation_n_steps = int(SIMULATION_LENGTH / integrator.dt)
-        # The begging is good for rate and S
+        # The begging is good for rate
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1):
-            diff = result_all[0][1][i][0][len(id_proxy):] - result_3_all[1][i+sync_steps, 0, len(id_proxy):]
-            diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_3_all[1][i+sync_steps, 0, :len(id_proxy)]
-            assert np.sum(diff) == 0.0 and np.sum(np.isnan(diff_2)) == len(id_proxy)
+            np.testing.assert_array_equal(result_all[0][1][i][0][len(id_proxy):], result_3_all[1][i+sync_steps, 0, len(id_proxy):])
+            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)]*np.NAN, result_3_all[1][i+sync_steps, 0, :len(id_proxy)])
+        # after the delayed impact the simulation, This create some difference for rate
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1,
                        simulation_n_steps):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_3_all[1][i + sync_steps, 0, len(id_proxy):]
-            diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_3_all[1][i + sync_steps, 0, :len(id_proxy)]
-            assert np.sum(diff) != 0.0 and np.sum(np.isnan(diff_2)) == len(id_proxy)
-        # after the delayed impact the simulation, This create some difference for rate and S
+            assert np.sum(diff) != 0.0
+            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)]*np.NAN, result_3_all[1][i + sync_steps, 0, :len(id_proxy)])
+
+        # The begging is good for S
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1):
-            diff = result_all[0][1][i][1][len(id_proxy):] - result_3_all[1][i+sync_steps, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_3_all[1][i+sync_steps, 1, :len(id_proxy)]
-            assert np.sum(diff) == 0.0 and np.sum(np.isnan(diff_2)) == len(id_proxy)
+            np.testing.assert_array_equal(result_all[0][1][i][1][len(id_proxy):], result_3_all[1][i+sync_steps, 1, len(id_proxy):])
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)]*np.NAN, result_3_all[1][i+sync_steps, 1, :len(id_proxy)])
+        # after the delayed impact the simulation, This create some difference for S
         for i in range(np.min(sim_3.connectivity.idelays[np.nonzero(sim_3.connectivity.idelays)]) + 1,
                        simulation_n_steps):
             diff = result_all[0][1][i][1][len(id_proxy):] - result_3_all[1][i + sync_steps, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_3_all[1][i + sync_steps, 1, :len(id_proxy)]
-            assert np.sum(diff) != 0.0 and np.sum(np.isnan(diff_2)) == len(id_proxy)
+            assert np.sum(diff) != 0.0
+            np.testing.assert_array_equal( result_all[0][1][i][1][:len(id_proxy)]*np.NAN, result_3_all[1][i + sync_steps, 1, :len(id_proxy)])
 
     def test_with_proxy_bad_input(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -233,32 +228,27 @@ class TestModifyWongWangRate(TestModifyWongWang):
             result_4_all[1] = np.concatenate((result_4_all[1], result_4_all_step[0][1]))
 
         simulation_n_steps = int(SIMULATION_LENGTH / integrator.dt)
-        # The beggining is good for rate and S
+        # The beggining is good for rate
         for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1):
+            np.testing.assert_array_equal(result_all[0][1][i][0][len(id_proxy):], result_4_all[1][i+sync_steps, 0, len(id_proxy):])
+            np.testing.assert_array_compare(operator.__ne__,result_all[0][1][i][0][:len(id_proxy)], result_4_all[1][i+sync_steps, 0, :len(id_proxy)])
+        # after the delayed impact the simulation, This create some difference for rate
+        for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1,
+                       simulation_n_steps):
             diff = result_all[0][1][i][0][len(id_proxy):] - result_4_all[1][i+sync_steps, 0, len(id_proxy):]
-            diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_4_all[1][i+sync_steps, 0, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                   np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) != 0.0
+            assert np.sum(diff) != 0
+            np.testing.assert_array_compare(operator.__ne__,result_all[0][1][i][0][:len(id_proxy)], result_4_all[1][i+sync_steps, 0, :len(id_proxy)])
 
-        simulation_n_steps = int(SIMULATION_LENGTH/integrator.dt)
-        for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1,
-                       simulation_n_steps):
-            diff = result_all[0][1][i][0][len(id_proxy):] - result_4_all[1][i+sync_steps, 0, len(id_proxy):]
-            diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_4_all[1][i+sync_steps, 0, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) != 0.0 and \
-                   np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) != 0.0
-        # after the delayed impact the simulation, This create some difference for rate and S
+        # The beggining is good for S
         for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1):
-            diff = result_all[0][1][i][1][len(id_proxy):] - result_4_all[1][i+sync_steps, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_4_all[1][i+sync_steps, 1, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                   np.sum(np.isnan(diff_2)) == len(id_proxy)
+            np.testing.assert_array_equal(result_all[0][1][i][1][len(id_proxy):], result_4_all[1][i+sync_steps, 1, len(id_proxy):])
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)]*np.NAN, result_4_all[1][i+sync_steps, 1, :len(id_proxy)])
+        # after the delayed impact the simulation, This create some difference for S
         for i in range(np.min(sim_4.connectivity.idelays[np.nonzero(sim_4.connectivity.idelays)])+1,
                        simulation_n_steps):
             diff = result_all[0][1][i][1][len(id_proxy):] - result_4_all[1][i+sync_steps, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_4_all[1][i+sync_steps, 1, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) != 0.0 and \
-                   np.sum(np.isnan(diff_2)) == len(id_proxy)
+            assert np.sum(diff) != 0
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)]*np.NAN, result_4_all[1][i+sync_steps, 1, :len(id_proxy)])
 
     def test_with_proxy_right_input(self):
         connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation()
@@ -302,12 +292,8 @@ class TestModifyWongWangRate(TestModifyWongWang):
         # test for rate and after for S
         simulation_n_steps = int(SIMULATION_LENGTH/integrator.dt)
         for i in range(simulation_n_steps):
-            diff = result_all[0][1][i][0][len(id_proxy):] - result_5_all[1][i+sync_steps, 0, len(id_proxy):]
-            diff_2 = result_all[0][1][i][0][:len(id_proxy)] - result_5_all[1][i+sync_steps, 0, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                   np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) == 0.0
+            np.testing.assert_array_equal(result_all[0][1][i][0][len(id_proxy):], result_5_all[1][i+sync_steps, 0, len(id_proxy):])
+            np.testing.assert_array_equal(result_all[0][1][i][0][:len(id_proxy)], result_5_all[1][i+sync_steps, 0, :len(id_proxy)])
         for i in range(simulation_n_steps):
-            diff = result_all[0][1][i][1][len(id_proxy):] - result_5_all[1][i+sync_steps, 1, len(id_proxy):]
-            diff_2 = result_all[0][1][i][1][:len(id_proxy)] - result_5_all[1][i+sync_steps, 1, :len(id_proxy)]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                   np.sum(np.isnan(diff_2)) == len(id_proxy)
+            np.testing.assert_array_equal(result_all[0][1][i][1][len(id_proxy):], result_5_all[1][i+sync_steps, 1, len(id_proxy):])
+            np.testing.assert_array_equal(result_all[0][1][i][1][:len(id_proxy)]*np.NAN, result_5_all[1][i+sync_steps, 1, :len(id_proxy)])

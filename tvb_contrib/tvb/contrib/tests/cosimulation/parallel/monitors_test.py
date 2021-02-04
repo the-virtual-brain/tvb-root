@@ -30,6 +30,7 @@
 """
 
 import numpy as np
+import operator
 
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
@@ -117,21 +118,18 @@ class TestMonitors(BaseTestCase):
             result_1_all[1] = np.concatenate((result_1_all[1], result_1_all_step[0][1]))
 
         for i in range(int(self._simulation_length/integrator.dt)):
-            diff = result_all[0][1][i][0][1:] - result_1_all[1][i+sync_steps, 0, 1:]
-            diff_2 = result_all[0][1][i][0][:1] - result_1_all[1][i+sync_steps, 0, :1]
-            assert np.sum(diff, where=np.logical_not(np.isnan(diff))) == 0.0 and \
-                   np.sum(diff_2, where=np.logical_not(np.isnan(diff_2))) == 0.0
+            np.testing.assert_array_equal(result_all[0][1][i][0][1:], result_1_all[1][i+sync_steps, 0, 1:])
+            np.testing.assert_array_equal(result_all[0][1][i][0][:1], result_1_all[1][i+sync_steps, 0, :1])
 
         for i in range(sim_to_sync_time):
             result_step = result_cosim_monitors[i]
             # check the dimension of the monitors
-            assert result_step[0][1].shape == (sync_steps, 2, 76, 1)
-            assert result_step[1][1].shape == (sync_steps, 1, 76, 1)
-            assert result_step[3][1].shape == (sync_steps, 1, 76, 1)
-            assert result_step[4][1].shape == (sync_steps, 1, 76, 1)
-            assert result_step[5][1].shape == (sync_steps, 1, 76, 1)
+            np.testing.assert_array_equal(result_step[0][1].shape, (sync_steps, 2, 76, 1))
+            np.testing.assert_array_equal(result_step[1][1].shape, (sync_steps, 1, 76, 1))
+            np.testing.assert_array_equal(result_step[3][1].shape, (sync_steps, 1, 76, 1))
+            np.testing.assert_array_equal(result_step[4][1].shape, (sync_steps, 1, 76, 1))
+            np.testing.assert_array_equal(result_step[5][1].shape, (sync_steps, 1, 76, 1))
             # compare the monitors between them
-            assert np.sum(result_step[2][1] != result_step[3][1]) == 0
-            assert np.sum(result_step[4][1] != result_step[5][1]) == 0
-            assert np.sum(result_step[0][1][:,0,:,:] != result_step[1][1][:, 0, :, :]) == \
-                   np.sum(np.isnan(result_step[1][1]))
+            np.testing.assert_array_equal(result_step[2][1], result_step[3][1])
+            np.testing.assert_array_equal(result_step[4][1], result_step[5][1])
+            np.testing.assert_array_equal(result_step[0][1][:,0,:,:], result_step[1][1][:, 0, :, :])

@@ -67,58 +67,44 @@ class TestDoubleProxyPrecisionSimple(BaseTestCase):
         np.random.seed(42)
         sim_ref = TvbSim(weight, delay, [], resolution_simulation,
                          synchronization_time, initial_condition=initial_condition)
-        time, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
+        time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
 
         # COMPARE PROXY 1
-        diff_1 = np.where(np.squeeze(result_ref[:, proxy_id_2, :], axis=2) !=
+        np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_2, :], axis=2),
                           np.squeeze(result_1[0][:, proxy_id_2, :], axis=2))
-        diff_s_1 = np.where(np.squeeze(s_ref[:, proxy_id_2, :], axis=2) !=
+        np.testing.assert_array_equal(np.squeeze(s_ref[:, proxy_id_2, :], axis=2),
                             np.squeeze(s_1[0][:, proxy_id_2, :], axis=2))
-        assert diff_1[0].size == 0
-        assert diff_s_1[0].size == 0
         # COMPARE PROXY 2
-        diff_2 = np.where(np.squeeze(result_ref[:, proxy_id_1, :], axis=2) !=
+        np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_1, :], axis=2),
                           np.squeeze(result_2[0][:, proxy_id_1, :], axis=2))
-        diff_s_2 = np.where(np.squeeze(s_ref[:, proxy_id_1, :], axis=2) !=
+        np.testing.assert_array_equal(np.squeeze(s_ref[:, proxy_id_1, :], axis=2),
                             np.squeeze(s_2[0][:, proxy_id_1, :], axis=2))
-        assert diff_2[0].size == 0
-        assert diff_s_2[0].size == 0
 
-        for i in range(0, 100):
+        for i in range(0, 1000):
             time, s_2, result_2 = sim_2(synchronization_time,
                                         rate_data=[time, result_1[0][:, proxy_id_2][:, :, 0]], rate=True)
 
             # compare with Raw monitor delayed by synchronization_time
-            diff_2 = np.where(result_ref[:,proxy_id_1,:] != result_2[1][:,proxy_id_1,:])
-            diff_2_1 = np.where(result_ref[:,proxy_id_2,:] != result_2[1][:,proxy_id_2,:])
-            diff_2_s = np.where(s_ref != s_2[1])
-            assert diff_2[0].size ==0
-            assert diff_2_1[0].size !=0
-            assert diff_2_s[0].size ==0
+            np.testing.assert_array_equal(result_ref[:,proxy_id_1,:], result_2[1][:,proxy_id_1,:])
+            np.testing.assert_array_equal(result_ref[:,proxy_id_2,:]*np.NAN, result_2[1][:,proxy_id_2,:])
+            np.testing.assert_array_equal(s_ref, s_2[1])
 
             time, s_1, result_1 = sim_1(synchronization_time,
-                                        rate_data=[time, result_ref[:, proxy_id_1][:, :, 0]], rate=True)
+                                        rate_data=[time_ref, result_ref[:, proxy_id_1][:, :, 0]], rate=True)
 
             # compare with Raw monitor delayed by synchronization_time
-            diff_1 = np.where(result_ref[:, proxy_id_2, :] != result_1[1][:, proxy_id_2, :])
-            diff_1_1 = np.where(result_ref[:, proxy_id_1, :] != result_1[1][:, proxy_id_1, :])
-            diff_1_s = np.where(s_ref != s_1[1])
-            assert diff_1[0].size ==0
-            assert diff_1_1[0].size !=0
-            assert diff_1_s[0].size ==0
+            np.testing.assert_array_equal(result_ref[:, proxy_id_2, :], result_1[1][:, proxy_id_2, :])
+            np.testing.assert_array_equal(result_ref[:, proxy_id_1, :]*np.NAN, result_1[1][:, proxy_id_1, :])
+            np.testing.assert_array_equal(s_ref, s_1[1])
 
-            time, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
+            time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
             # COMPARE PROXY 1
-            diff_1 = np.where(np.squeeze(result_ref[:, proxy_id_2, :], axis=2) !=
+            np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_2, :], axis=2),
                               np.squeeze(result_1[0][:, proxy_id_2, :], axis=2))
-            diff_s_1 = np.where(np.squeeze(s_ref[:, proxy_id_2, :], axis=2) !=
+            np.testing.assert_array_equal(np.squeeze(s_ref[:, proxy_id_2, :], axis=2),
                                 np.squeeze(s_1[0][:, proxy_id_2, :], axis=2))
-            assert diff_1[0].size == 0
-            assert diff_s_1[0].size == 0
             # COMPARE PROXY 2
-            diff_2 = np.where(np.squeeze(result_ref[:, proxy_id_1, :], axis=2) !=
+            np.testing.assert_array_equal(np.squeeze(result_ref[:, proxy_id_1, :], axis=2),
                               np.squeeze(result_2[0][:, proxy_id_1, :], axis=2))
-            diff_s_2 = np.where(np.squeeze(s_ref[:, proxy_id_1, :], axis=2) !=
+            np.testing.assert_array_equal(np.squeeze(s_ref[:, proxy_id_1, :], axis=2),
                                 np.squeeze(s_2[0][:, proxy_id_1, :], axis=2))
-            assert diff_2[0].size == 0
-            assert diff_s_2[0].size == 0

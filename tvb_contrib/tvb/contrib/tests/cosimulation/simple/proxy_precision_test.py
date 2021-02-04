@@ -65,27 +65,20 @@ class TestProxyPrecision(BaseTestCase):
         time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
 
         # compare with the Cosim Monitor RawCosim
-        diff = np.where(result_ref[:,no_proxy,:] != result[0][:,no_proxy,:])
-        diff_s = np.where(s_ref[:,no_proxy,:] != s[0][:,no_proxy,:])
-        assert diff[0].size == 0
-        assert diff_s[0].size == 0
+        np.testing.assert_array_equal(result_ref[:,no_proxy,:], result[0][:,no_proxy,:])
+        np.testing.assert_array_equal(s_ref[:,no_proxy,:], s[0][:,no_proxy,:])
 
-        for i in range(0, 10000):
+        for i in range(0, 1000):
             time, s, result = sim(synchronization_time,
                                   rate_data=[time_ref, result_ref[:, proxy_id][:, :, 0]], rate=True)
 
             # compare with monitor delayed by synchronization_time
-            diff = np.where(result_ref[:, no_proxy, :] != result[1][:, no_proxy, :])
-            diff_1 = np.where(result_ref[:, proxy_id, :] != result[1][:, proxy_id, :])
-            diff_s = np.where(s_ref != s[1])
-            assert diff[0].size ==0
-            assert diff_1[0].size !=0
-            assert diff_s[0].size ==0
+            np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[1][:, no_proxy, :])
+            np.testing.assert_array_equal(result_ref[:, proxy_id, :]*np.NAN, result[1][:, proxy_id, :])
+            np.testing.assert_array_equal(s_ref, s[1])
 
             time_ref, s_ref, result_ref = sim_ref(synchronization_time, rate=True)
 
             # compare with the Cosim Monitor RawCosim
-            diff = np.where(result_ref[:, no_proxy, :] != result[0][:, no_proxy, :])
-            diff_s = np.where(s_ref[:, no_proxy, :] != s[0][:, no_proxy, :])
-            assert diff[0].size == 0
-            assert diff_s[0].size ==0
+            np.testing.assert_array_equal(result_ref[:, no_proxy, :], result[0][:, no_proxy, :])
+            np.testing.assert_array_equal(s_ref[:, no_proxy, :], s[0][:, no_proxy, :])
