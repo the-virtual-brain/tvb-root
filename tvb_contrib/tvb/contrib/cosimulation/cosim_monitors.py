@@ -48,7 +48,15 @@ class CosimMonitor(HasTraits):
         """
         raise NotImplemented
 
-    def _get_sample(self, start_step, n_steps, history, cosim):
+    def _get_sample(self, current_step, start_step, n_steps, history, cosim):
+        if start_step + n_steps > current_step:
+            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
+                             "The simulator contains only the state until the step %d "
+                             % (start_step, start_step + n_steps, current_step))
+        if start_step < current_step - history.n_time:
+            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
+                             "The simulator contains only the state since %d step."
+                             % (start_step, start_step + n_steps, current_step - history.n_time))
         times = []
         values = []
         for step in range(start_step + 1, start_step + 1 + n_steps):
@@ -87,7 +95,16 @@ class CosimMonitorFromCoupling(CosimMonitor):
 
     synchronization_n_step = None
 
-    def _get_sample(self, start_step, n_steps, history):
+    def _get_sample(self, current_step, start_step, n_steps, history):
+        if start_step + n_steps > current_step + self.synchronization_n_step:
+            raise ValueError("Values are missing for a number of coupling steps of start_step + n_steps (=%d).\n"
+                             "The coupling can be computed for a maximum of %d steps."
+                             % (start_step + n_steps, current_step + self.synchronization_n_step))
+        if start_step < current_step - history.n_time + self.synchronization_n_step:
+            raise ValueError("Values are missing for coupling of start_step (=%d) to start_step + n_steps (=%d).\n"
+                             "The coupling can be computed for a minimum of %d steps."
+                             % (start_step, start_step + n_steps, current_step - history.n_time
+                                + self.synchronization_n_step))
         times = []
         values = []
         for step in range(start_step + 1, start_step + 1 + n_steps):
@@ -121,15 +138,7 @@ class RawCosim(Raw, CosimMonitor):
 
     def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return all the states of the partial (up to synchronization time) cosimulation history"
-        if start_step + n_steps > current_step:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state until the step %d "
-                             % (start_step, start_step + n_steps, current_step))
-        if start_step < current_step - cosim_history.n_time:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state since %d step."
-                             % (start_step, start_step + n_steps, current_step - cosim_history.n_time))
-        return self._get_sample(start_step, n_steps, cosim_history, cosim=True)
+        return self._get_sample(current_step, start_step, n_steps, cosim_history, cosim=True)
 
 
 class RawVoiCosim(RawVoi, CosimMonitor):
@@ -150,15 +159,7 @@ class RawVoiCosim(RawVoi, CosimMonitor):
 
     def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return all the states of the partial (up to synchronization time) cosimulation history"
-        if start_step + n_steps > current_step:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state until the step %d "
-                             % (start_step, start_step + n_steps, current_step))
-        if start_step < current_step - cosim_history.n_time:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state since %d step."
-                             % (start_step, start_step + n_steps, current_step - cosim_history.n_time))
-        return self._get_sample(start_step, n_steps, cosim_history, cosim=True)
+        return self._get_sample(current_step, start_step, n_steps, cosim_history, cosim=True)
 
 
 class RawDelayed(Raw, CosimMonitor):
@@ -180,15 +181,7 @@ class RawDelayed(Raw, CosimMonitor):
 
     def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return all the states of the delayed (by synchronization time) TVB history"
-        if start_step + n_steps > current_step:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state until the step %d "
-                             % (start_step, start_step + n_steps, current_step))
-        if start_step < current_step - history.n_time:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state since %d step."
-                             % (start_step, start_step + n_steps, current_step - history.n_time))
-        return self._get_sample(start_step, n_steps, history, cosim=False)
+        return self._get_sample(current_step, start_step, n_steps, history, cosim=False)
 
 
 class RawVoiDelayed(RawVoi,CosimMonitor):
@@ -210,15 +203,7 @@ class RawVoiDelayed(RawVoi,CosimMonitor):
 
     def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return selected states of the delayed (by synchronization time) TVB history"
-        if start_step + n_steps > current_step:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state until the step %d "
-                             % (start_step, start_step + n_steps, current_step))
-        if start_step < current_step - history.n_time:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state since %d step."
-                             % (start_step, start_step + n_steps, current_step - history.n_time))
-        return self._get_sample(start_step, n_steps, history, cosim=False)
+        return self._get_sample(current_step, start_step, n_steps, history, cosim=False)
 
 
 class CosimCoupling(AfferentCoupling, CosimMonitorFromCoupling):
@@ -243,13 +228,4 @@ class CosimCoupling(AfferentCoupling, CosimMonitorFromCoupling):
 
     def sample(self, current_step, start_step, n_steps, cosim_history, history):
         "Return selected values of future coupling from (up to synchronization time) cosimulation history"
-        if start_step + n_steps > current_step + self.synchronization_n_step:
-            raise ValueError("Values are missing for a number of coupling steps of start_step + n_steps (=%d).\n"
-                             "The coupling can be computed for a maximum of %d steps."
-                             % (start_step + n_steps, current_step + self.synchronization_n_step))
-        if start_step < current_step - history.n_time + self.synchronization_n_step:
-            raise ValueError("Values are missing for coupling of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The coupling can be computed for a minimum of %d steps."
-                             % (start_step, start_step + n_steps, current_step - history.n_time
-                                + self.synchronization_n_step))
-        return self._get_sample(start_step, n_steps, history)
+        return self._get_sample(current_step, start_step, n_steps, history)
