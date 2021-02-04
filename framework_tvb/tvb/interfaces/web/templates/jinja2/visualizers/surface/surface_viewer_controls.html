@@ -2,7 +2,11 @@
     <dl>
         {% include 'flow/color_scheme.html' %}
         {% with %}
-            {% set urlRegionBoundaries=True %}
+            {% if boundaryURL %}
+                {% set urlRegionBoundaries=True %}
+            {% else %}
+                {% set urlRegionBoundaries=False %}
+            {% endif %}
             {% include 'visualizers/commons/brain_toggle_controls.html' %}
         {% endwith %}
     </dl>
