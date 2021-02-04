@@ -39,6 +39,7 @@ from tvb.simulator.simulator import Simulator, math
 
 from tvb.contrib.cosimulation.cosim_history import CosimHistory
 from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor
+from tvb.contrib.cosimulation.exception import NumericalInstability
 
 
 class CoSimulator(Simulator):
@@ -188,6 +189,8 @@ class CoSimulator(Simulator):
         # TODO optimize step : update all the steps in one
         for step in current_steps:
             state = numpy.copy(self.cosim_history.query(step))
+            if np.any(numpy.isnan(state)):
+                raise NumericalInstability("There are missing values for continue the simulation")
             super(CoSimulator,self)._loop_update_history(step, state)
 
     def __call__(self, simulation_length=None, random_state=None, n_steps=None,
