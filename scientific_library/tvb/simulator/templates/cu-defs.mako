@@ -5,10 +5,10 @@ __global__ void ${name}(
 </%def>
 
 <%def name="thread_guard(limit)">
-    if (threadIdx.x < ${limit})
-    {
-        ${caller.body()}
-    }
+if (threadIdx.x < ${limit})
+{
+${caller.body()}
+}
 </%def>
 
 <%def name="compile_time_parameters()">

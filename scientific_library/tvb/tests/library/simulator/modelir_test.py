@@ -37,8 +37,10 @@ Tests for template code generation.
 
 import math
 import unittest
+import pytest
 from mako.template import Template
 from mako.lookup import TemplateLookup
+from mako.exceptions import text_error_template
 import numpy as np
 
 # maybe import pycuda
@@ -52,6 +54,13 @@ except Exception as exc:
     pycuda = None
     pycuda_why_not = exc
 
+from tvb.simulator import templates
+from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+from tvb.simulator.coupling import Sigmoidal, Linear
+from tvb.datatypes.connectivity import Connectivity
+from tvb.simulator.integrators import EulerDeterministic
+from tvb.simulator.monitors import Raw
+from tvb.simulator.simulator import Simulator
 
 @unittest.skipUnless(pycuda, 'requires working PyCUDA & GPU')
 class TestPyCUDABasics(unittest.TestCase):
@@ -102,13 +111,16 @@ class MakoUtilMix:
 
     @property
     def lookup(self):
-        from tvb.simulator import templates
         lookup = TemplateLookup(directories=[templates.__path__[0]])
         return lookup
 
     def _render_template(self, source, content):
-        template = Template(source, lookup=self.lookup)
-        source = template.render(**content)
+        template = Template(source, lookup=self.lookup, strict_undefined=True)
+        try:
+            source = template.render(**content)
+        except Exception as exc:
+            print(text_error_template().render())
+            raise exc
         return source
 
     def _build_py_func(self, template_source, content, name):
@@ -129,7 +141,7 @@ class MakoUtilMix:
         nu_source = '\n'.join(nu_lines)
         return nu_source
 
-    def _build_cu_func(self, template_source, content, name, print_source=False):
+    def _build_cu_func(self, template_source, content, name='kernel', print_source=False):
         "Build and retrieve a Python function from template."
         source = self._render_template(template_source, content)
         if print_source:
@@ -225,7 +237,6 @@ def flow(dX, X, Z):
 
     def test_mpr_dfun(self):
         "Test MPR dfun against built-in model dfun."
-        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
         mpr = MontbrioPazoRoxin()
         state, coupling = np.random.rand(2,2,32).astype('f')
         state[1] -= 2.0
@@ -263,7 +274,6 @@ def flow(state, coupling):
 
     def test_sigmoidal_cfun(self):
         "Test cfun code gen against builtin sigmoidal cfun."
-        from tvb.simulator.coupling import Sigmoidal
         cfun = Sigmoidal()
         template = """
 import numpy as np
@@ -303,7 +313,6 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
 
     def test_mpr_dfun(self):
         "Test generated CUDA MPR dfun against built-in."
-        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
         mpr = MontbrioPazoRoxin()
         state, coupling = np.random.rand(2, 2, 32).astype('f')
         state[1] -= 2.0
@@ -324,7 +333,6 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
 
     def test_mpr_traj(self):
         "Test generated time stepping against built in."
-        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
         mpr = MontbrioPazoRoxin()
         state, coupling = np.random.rand(2, 2, 32).astype('f')
         state[1] -= 2.0
@@ -349,17 +357,14 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
         np.testing.assert_allclose(cg_trace, y[:,:,0], 1e-5, 1e-6)
 
 
-class TestSimNoDelay(unittest.TestCase, MakoUtilMix):
+class TestSimODE(unittest.TestCase, MakoUtilMix):
 
-    def test_mpr_net_no_delay(self):
-        "Test generated time stepping network without delay."
-        from tvb.simulator.simulator import Simulator
-        from tvb.datatypes.connectivity import Connectivity
-        from tvb.simulator.integrators import EulerDeterministic
-        from tvb.simulator.monitors import Raw
-        from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+    def _create_sim(self, inhom_mmpr=False):
         mpr = MontbrioPazoRoxin()
         conn = Connectivity.from_file()
+        if inhom_mmpr:
+            dispersion = 1 + np.random.randn(conn.weights.shape[0])*0.1
+            mpr = MontbrioPazoRoxin(eta=mpr.eta*dispersion)
         conn.speed = np.r_[np.inf]
         dt = 0.01
         integrator = EulerDeterministic(dt=dt)
@@ -372,24 +377,85 @@ class TestSimNoDelay(unittest.TestCase, MakoUtilMix):
         self.assertEqual(state.shape[0], 2)
         self.assertEqual(state.shape[1], conn.weights.shape[0])
         (t,y), = sim.run()
-        nt = len(t)
+        return sim, state, t, y
+
+    def _check_match(self, expected, actual):
+        # check we don't have numerical errors
+        self.assertTrue(np.isfinite(actual).all())
+        # check tolerances
+        maxtol = np.max(np.abs(actual[0] - expected[0,:,:,0]))
+        for t in range(1, len(actual)):
+            print(t, 'tol:', np.max(np.abs(actual[t] - expected[t,:,:,0])))
+            np.testing.assert_allclose(actual[0], expected[0, :, :, 0], 2e-5*t, 1e-5*t)      
+
+    def test_mpr_cu1(self):
+        "Test generated time stepping network without delay."
+        sim, state, t, y = self._create_sim()
         template = '<%include file="test_cu_mpr_net_no_delay.mako"/>'
         content = dict(kernel_name='mpr_net',
-            np=np, model=mpr, dt=dt, nt=nt, 
+            np=np, model=sim.model,
+            dt=sim.integrator.dt, nt=len(t), 
             cfun_a=sim.coupling.a[0], debug=False)
         cu_loop = self._build_cu_func(template, content, 'mpr_net')
-        # prep args
         dX = state.copy()
-        weights = conn.weights.T.copy().astype('f')
-        trace = np.empty((nt,)+state.shape, 'f')
-        # run it
+        weights = sim.connectivity.weights.T.copy().astype('f')
+        yh = np.empty((len(t),)+state.shape, 'f')
+        with self.assertRaises(AssertionError):
+            self._check_match(y, yh)
         cu_loop(np.uintc(state.shape[1]),
-            Out(dX), In(state), In(weights), Out(trace), 
+            Out(dX), In(state), In(weights), Out(yh), 
             grid=(1,1), block=(128,1,1))
-        # check we don't have numerical errors
-        self.assertTrue(np.isfinite(trace).all())
-        # check tolerances
-        maxtol = np.max(np.abs(trace[0] - y[0,:,:,0]))
-        for t in range(1, nt):
-            print(t, 'tol:', np.max(np.abs(trace[t] - y[t,:,:,0])))
-        np.testing.assert_allclose(trace, y[:, :, :, 0], 1e-5, 1e-6)
+        self._check_match(y, yh)
+
+    # a functionally identical test which generates directly from a
+    # configured simulator instance, and uses the coupling function
+    # template instead of monolithically generating everything.
+
+    def test_mpr_cu2(self):
+        "Test generated CUDA kernel directly from Simulator instance."
+        sim, state, t, y = self._create_sim(inhom_mmpr=True)
+        template = '<%include file="cu-sim-ode.mako"/>'
+        kernel = self._build_cu_func(template, dict(sim=sim, pi=np.pi))
+        dX = state.copy()
+        weights = sim.connectivity.weights.T.copy().astype('f')
+        eta = sim.model.eta.astype('f')
+        yh = np.empty((len(t),)+state.shape, 'f')
+        kernel(
+            In(state), In(weights), Out(yh), In(eta),
+            grid=(1,1), block=(128,1,1))
+        self._check_match(y, yh)
+
+
+# each component has it's main template like cu-coupling.mako
+# TODO inject a namespace "target" with concrete rendering functions
+
+class TestCoupling(unittest.TestCase, MakoUtilMix):     
+
+    def _eval_cfun_no_delay(self, cfun, weights, X):
+        nsvar, nnode = X.shape
+        x_i, x_j = X.reshape((nsvar, 1, nnode)), X.reshape((nsvar, nnode, 1))
+        gx = (weights * cfun.pre(x_i+x_j*0, x_j+x_i*0)).sum(axis=1)
+        return cfun.post(gx)
+
+    def _test_cu_cfun(self, cfun):
+        class sim:  # dummy
+            model = MontbrioPazoRoxin()
+            coupling = Linear()
+        template = '''
+<%include file="cu-coupling.mako"/>
+__global__ void kernel(float *state, float *weights, float *cX) {
+    coupling(threadIdx.x, ${n_node}, cX, weights, state);
+}
+'''
+        content = dict(n_node=128, sim=sim)
+        kernel = self._build_cu_func(template, content)
+        state = np.random.rand(2, content['n_node']).astype('f')
+        weights = np.random.randn(state.shape[1], state.shape[1]).astype('f')
+        cX = np.empty_like(state)
+        kernel(In(state), In(weights), Out(cX), 
+            grid=(1,1), block=(content['n_node'],1,1))
+        expected = self._eval_cfun_no_delay(sim.coupling, weights, state)
+        np.testing.assert_allclose(cX, expected, 1e-5, 1e-6)
+
+    def test_cu_linear(self): self._test_cu_cfun(Linear())
+    def test_cu_sigmoidal(self): self._test_cu_cfun(Sigmoidal())

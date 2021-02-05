@@ -2,7 +2,7 @@
 <%namespace name="cu" file="cu-defs.mako" />
 
 <%block name="kernel_args">
-    unsigned int n_node,
+    unsigned int n_node,   
     float * __restrict__ dX,
     float * __restrict__ state,
     float * __restrict__ weights,
@@ -30,5 +30,3 @@
     </%cu:time_loop>
 </%cu:thread_guard>
 
-## is this going at it the wrong way?
-## a template should 
