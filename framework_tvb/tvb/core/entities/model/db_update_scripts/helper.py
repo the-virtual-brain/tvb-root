@@ -60,7 +60,7 @@ def change_algorithm(module, classname, new_module, new_class):
         session.close()
 
 
-def get_burst_for_migration(burst_id, burst_match_dict, date_format):
+def get_burst_for_migration(burst_id, burst_match_dict, date_format, selected_db):
     """
     This method is supposed to only be used when migrating from version 4 to version 5.
     It finds a BurstConfig in the old format (when it did not inherit from HasTraitsIndex), deletes it
@@ -68,6 +68,7 @@ def get_burst_for_migration(burst_id, burst_match_dict, date_format):
     """
     session = SA_SESSIONMAKER()
     burst_params = session.execute("""SELECT * FROM "BURST_CONFIGURATION" WHERE id = """ + burst_id).fetchone()
+    session.close()
 
     if burst_params is None:
         return None, False
@@ -80,8 +81,10 @@ def get_burst_for_migration(burst_id, burst_match_dict, date_format):
                          'finish_time': burst_params['finish_time'], 'fk_simulation': burst_params['fk_simulation'],
                          'fk_operation_group': burst_params['fk_operation_group'],
                          'fk_metric_operation_group': burst_params['fk_metric_operation_group']}
-    burst_params_dict['start_time'] = string2date(burst_params_dict['start_time'], date_format=date_format)
-    burst_params_dict['finish_time'] = string2date(burst_params_dict['finish_time'], date_format=date_format)
+
+    if selected_db == 'sqlite':
+        burst_params_dict['start_time'] = string2date(burst_params_dict['start_time'], date_format=date_format)
+        burst_params_dict['finish_time'] = string2date(burst_params_dict['finish_time'], date_format=date_format)
 
     if burst_id not in burst_match_dict:
         burst_config = BurstConfiguration(burst_params_dict['fk_project'])
@@ -117,6 +120,7 @@ def delete_old_burst_table_after_migration():
         LOGGER.exception(excep)
         try:
             session.execute(text("""DROP TABLE if exists "BURST_CONFIGURATION" cascade; """))
+            session.commit()
         except Exception as excep:
             LOGGER.exception(excep)
     finally:

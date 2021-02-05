@@ -12,6 +12,7 @@ import uuid
 import json
 
 from sqlalchemy.sql.schema import UniqueConstraint
+from tvb.basic.profile import TvbProfile
 from tvb.core.neotraits.db import Base
 from tvb.basic.logger.builder import get_logger
 
@@ -123,12 +124,12 @@ def upgrade():
         op.drop_table('MAPPED_REGION_MAPPING_DATA')
         op.drop_table('MAPPED_REGION_VOLUME_MAPPING_DATA')
         op.drop_table('MAPPED_TIME_SERIES_REGION_DATA')
-        op.drop_table('MAPPED_TIME_SERIES_DATA')
         op.drop_table('MAPPED_TIME_SERIES_EEG_DATA')
         op.drop_table('MAPPED_TIME_SERIES_MEG_DATA')
         op.drop_table('MAPPED_TIME_SERIES_SEEG_DATA')
         op.drop_table('MAPPED_TIME_SERIES_SURFACE_DATA')
         op.drop_table('MAPPED_TIME_SERIES_VOLUME_DATA')
+        op.drop_table('MAPPED_TIME_SERIES_DATA')
         op.drop_table('MAPPED_SENSORS_DATA')
         op.drop_table('MAPPED_TRACTS_DATA')
         op.drop_table('MAPPED_STIMULI_REGION_DATA')
@@ -151,12 +152,17 @@ def upgrade():
         LOGGER.exception(excep)
 
     # Migrating USERS table
-    with op.batch_alter_table('USERS', table_args=(UniqueConstraint('gid'),)) as batch_op:
-        batch_op.add_column(user_columns[0])
-        batch_op.add_column(user_columns[1])
+    if TvbProfile.current.db.SELECTED_DB == 'postgres':
+        op.add_column('USERS', user_columns[0])
+        op.add_column('USERS', user_columns[1])
+        op.create_unique_constraint('USERS_gid_key', 'USERS', ['gid'])
+    else:
+        with op.batch_alter_table('USERS', table_args=(UniqueConstraint('gid'),)) as batch_op:
+            batch_op.add_column(user_columns[0])
+            batch_op.add_column(user_columns[1])
 
     users_table = tables['USERS']
-    user_ids = conn.execute("SELECT U.id FROM 'USERS' U").fetchall()
+    user_ids = conn.execute("""SELECT U.id FROM "USERS" U""").fetchall()
     for id in user_ids:
         conn.execute(users_table.update().where(users_table.c.id == id[0]).
                      values({"gid": uuid.uuid4().hex, "display_name": users_table.c.username}))
@@ -173,8 +179,7 @@ def upgrade():
         conn.execute(burst_config_table.delete().where(burst_config_table.c.status == 'error'))
 
         # Take only values with odd id numbers, otherwise each range value will be processed twice
-        ranges = conn.execute("SELECT OG.id, OG.range1, OG.range2 from 'OPERATION_GROUPS' OG "
-                              "WHERE OG.id % 2 == 1").fetchall()
+        ranges = conn.execute("""SELECT OG.id, OG.range1, OG.range2 from "OPERATION_GROUPS" OG """).fetchall()[::2]
 
         ranges_1 = []
         ranges_2 = []
@@ -188,11 +193,11 @@ def upgrade():
 
         # Migrating Operation Groups
         operation_groups_table = tables['OPERATION_GROUPS']
-        operation_groups = conn.execute("SELECT * FROM OPERATION_GROUPS").fetchall()
+        operation_groups = conn.execute("""SELECT * FROM "OPERATION_GROUPS" """).fetchall()
 
         for op_g in operation_groups:
-            operation = conn.execute("SELECT fk_operation_group, parameters, meta_data FROM OPERATIONS O "
-                                     "WHERE O.fk_operation_group = " + str(op_g[0])).fetchone()
+            operation = conn.execute("""SELECT fk_operation_group, parameters, meta_data FROM "OPERATIONS" O """
+                                     """WHERE O.fk_operation_group = """ + str(op_g[0])).fetchone()
             burst_id = eval(operation[2])['Burst_Reference']
 
             # Find if operation refers to an operation group or a metric operation group
@@ -225,8 +230,8 @@ def upgrade():
     # MIGRATING Operations
     op_table = tables['OPERATIONS']
     try:
-        burst_ref_metadata = conn.execute("SELECT id, meta_data FROM 'OPERATIONS' "
-                                          "WHERE meta_data like '%Burst_Reference%' ").fetchall()
+        burst_ref_metadata = conn.execute("""SELECT id, meta_data FROM "OPERATIONS" """
+                                          """WHERE meta_data like '%%Burst_Reference%%' """).fetchall()
         op.alter_column('OPERATIONS', 'parameters', new_column_name='view_model_gid')
 
         for metadata in burst_ref_metadata:
@@ -249,6 +254,12 @@ def upgrade():
         op.drop_table('ALGORITHM_CATEGORIES')
         op.drop_table('DATA_TYPES')
     except Exception as excep:
+        try:
+            conn.execute("""DROP TABLE if exists "ALGORITHMS" cascade; """)
+            conn.execute("""DROP TABLE if exists "ALGORITHM_CATEGORIES" cascade; """)
+            conn.execute("""DROP TABLE if exists "DATA_TYPES" cascade; """)
+        except Exception as excep:
+            LOGGER.exception(excep)
         LOGGER.exception(excep)
 
 

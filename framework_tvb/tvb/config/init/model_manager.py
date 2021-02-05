@@ -59,8 +59,9 @@ def initialize_startup():
     session.close()
 
     versions_repo = TvbProfile.current.db.DB_VERSIONING_REPO
-    alembic_cfg = Config(os.path.join(os.path.dirname(__file__), 'alembic.ini'))
+    alembic_cfg = Config()
     alembic_cfg.set_main_option('script_location', versions_repo)
+    alembic_cfg.set_main_option('sqlalchemy.url', TvbProfile.current.db.DB_URL)
 
     if is_db_empty:
         LOGGER.info("Initializing Database")
