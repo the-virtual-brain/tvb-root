@@ -285,11 +285,11 @@ class CoSimulator(Simulator):
         if self._cosimulation_flag:
             # check if it's valid input
             if self.good_cosim_update_values_shape[0] < n_steps:
-               ValueError("Incorrect n_step, for a number of steps %i, the value should be under %i".format(
+               ValueError("Incorrect n_steps = %i, the value should be <= %i".format(
                           n_steps, self.good_cosim_update_values_shape[0]))
             if start_step + n_steps > self.good_cosim_update_values_shape[0] + self.current_step:
-               ValueError("Incorrect start_step, too early step %i, the value should between %i and %i".format(
-                          start_step,self.current_step, self.good_cosim_update_values_shape[0] + self.current_step))
+               ValueError("Incorrect start_step %i, the value should be <= %i".format(
+                          start_step, self.good_cosim_update_values_shape[0] + self.current_step - n_steps))
             return [monitor.sample(self.current_step, start_step, n_steps, self.cosim_history, self.history)
                     for monitor in self.cosim_monitors]
         else:
