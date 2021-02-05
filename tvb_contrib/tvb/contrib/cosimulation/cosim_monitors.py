@@ -49,21 +49,25 @@ class CosimMonitor(HasTraits):
         raise NotImplemented
 
     def _get_sample(self, current_step, start_step, n_steps, history, cosim):
-        if start_step + n_steps > current_step:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state until the step %d "
-                             % (start_step, start_step + n_steps, current_step))
+        end_step = start_step + n_steps
+        if end_step > current_step:
+            raise ValueError("Values of state variables are missing for time steps "
+                             "from start_step (=%d) to start_step + n_steps (=%d).\n"
+                             "The simulator contains only the state until step %d."
+                             % (start_step, end_step, current_step))
+        last_available_step_in_the_past = current_step - history.n_time
         if start_step < current_step - history.n_time:
-            raise ValueError("Values are missing for states variable of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The simulator contains only the state since %d step."
-                             % (start_step, start_step + n_steps, current_step - history.n_time))
+            raise ValueError("Values of state variables are missing for time steps "
+                             "from start_step (=%d) to start_step + n_steps (=%d).\n"
+                             "The simulator contains only the state from start_step = %d."
+                             % (start_step, end_step, last_available_step_in_the_past))
         times = []
         values = []
-        for step in range(start_step + 1, start_step + 1 + n_steps):
+        for step in range(start_step, end_step):
             if cosim:
                 state = history.query(step)
             else:
-                state = history.query(step)[0]
+                state = history.query(step+1)[0]
             tmp = self._sample_with_tvb_monitor(step, state)
             if tmp is not None:
                 times.append(tmp[0])
@@ -96,18 +100,22 @@ class CosimMonitorFromCoupling(CosimMonitor):
     synchronization_n_step = None
 
     def _get_sample(self, current_step, start_step, n_steps, history):
-        if start_step + n_steps > current_step + self.synchronization_n_step:
-            raise ValueError("Values are missing for a number of coupling steps of start_step + n_steps (=%d).\n"
-                             "The coupling can be computed for a maximum of %d steps."
-                             % (start_step + n_steps, current_step + self.synchronization_n_step))
-        if start_step < current_step - history.n_time + self.synchronization_n_step:
-            raise ValueError("Values are missing for coupling of start_step (=%d) to start_step + n_steps (=%d).\n"
-                             "The coupling can be computed for a minimum of %d steps."
-                             % (start_step, start_step + n_steps, current_step - history.n_time
-                                + self.synchronization_n_step))
+        end_step = start_step + n_steps
+        last_available_step_in_the_future = current_step + self.synchronization_n_step
+        if end_step > last_available_step_in_the_future:
+            raise ValueError("Values of coupling are missing for time steps"
+                             "from start_step (=%d) to start_step + n_steps (=%d).\n"
+                             "The coupling can be computed until step %d."
+                             % (start_step, end_step, last_available_step_in_the_future))
+        first_available_step = last_available_step_in_the_future - history.n_time
+        if start_step < first_available_step:
+            raise ValueError("Values of coupling are missing for time steps "
+                             "from start_step (=%d) to start_step + n_steps (=%d).\n"
+                             "The coupling can be computed from step %d."
+                             % (start_step, end_step, first_available_step))
         times = []
         values = []
-        for step in range(start_step + 1, start_step + 1 + n_steps):
+        for step in range(start_step + 1, end_step + 1):
             tmp = self._sample_with_tvb_monitor(step, self.coupling(step, history))
             if tmp is not None:
                 times.append(tmp[0])
