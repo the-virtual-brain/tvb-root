@@ -189,7 +189,7 @@ class CoSimulator(Simulator):
         # TODO optimize step : update all the steps in one
         for step in current_steps:
             state = numpy.copy(self.cosim_history.query(step))
-            if np.any(numpy.isnan(state)):
+            if numpy.any(numpy.isnan(state[self.model.cvar,:,:])):
                 raise NumericalInstability("There are missing values for continue the simulation")
             super(CoSimulator,self)._loop_update_history(step, state)
 
