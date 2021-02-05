@@ -51,16 +51,20 @@ class CosimMonitor(HasTraits):
     def _get_sample(self, current_step, start_step, n_steps, history, cosim):
         end_step = start_step + n_steps
         if end_step - 1 > current_step:
-            raise ValueError("Values of state variables are missing for time steps "
-                             "from start_step (=%d) to start_step + n_steps (=%d).\n"
+            raise ValueError("Values of state variables are missing for %d time steps "
+                             "from start_step (=%d) to start_step + n_steps - 1 (=%d).\n"
                              "The simulator contains only the state until step %d."
-                             % (start_step, end_step - 1, current_step))
-        last_available_step_in_the_past = current_step - history.n_time
+                             % (n_steps, start_step, end_step - 1, current_step))
+        # cosim_history has n_time = n_synchronization_step past values, including the current_step
+        # so, the last available step in the past is current_step - n_synchronization_step + 1
+        # whereas TVB history has n_time = max_delay + 1 past values, i.e., max_delay steps + the current_step,
+        # and the last TVB available step in the past is current_step - max_delay
+        last_available_step_in_the_past = current_step - history.n_time + numpy.where(cosim, 1, 0)
         if start_step < current_step - history.n_time:
-            raise ValueError("Values of state variables are missing for time steps "
-                             "from start_step (=%d) to start_step + n_steps (=%d).\n"
+            raise ValueError("Values of state variables are missing for %d time steps "
+                             "from start_step (=%d) to start_step + n_steps - 1 (=%d).\n"
                              "The simulator contains only the state from start_step = %d."
-                             % (start_step, end_step - 1, last_available_step_in_the_past))
+                             % (n_steps, start_step, end_step - 1, last_available_step_in_the_past))
         times = []
         values = []
         for step in range(start_step, end_step):
@@ -103,16 +107,16 @@ class CosimMonitorFromCoupling(CosimMonitor):
         end_step = start_step + n_steps
         last_available_step_in_the_future = current_step + self.synchronization_n_step
         if end_step - 1 > last_available_step_in_the_future:
-            raise ValueError("Values of coupling are missing for time steps"
-                             "from start_step (=%d) to start_step + n_steps (=%d).\n"
+            raise ValueError("Values of coupling are missing for %d time steps "
+                             "from start_step (=%d) to start_step + n_steps -1 (=%d).\n"
                              "The coupling can be computed until step %d."
-                             % (start_step, end_step - 1, last_available_step_in_the_future))
+                             % (n_steps, start_step, end_step - 1, last_available_step_in_the_future))
         first_available_step = last_available_step_in_the_future - history.n_time
         if start_step < first_available_step:
-            raise ValueError("Values of coupling are missing for time steps "
-                             "from start_step (=%d) to start_step + n_steps (=%d).\n"
+            raise ValueError("Values of coupling are missing for %d time steps "
+                             "from start_step (=%d) to start_step + n_steps -1 (=%d).\n"
                              "The coupling can be computed from step %d."
-                             % (start_step, end_step, first_available_step))
+                             % (n_steps, start_step, end_step, first_available_step))
         times = []
         values = []
         for step in range(start_step, end_step):
@@ -192,7 +196,7 @@ class RawDelayed(Raw, CosimMonitor):
         return self._get_sample(current_step, start_step, n_steps, history, cosim=False)
 
 
-class RawVoiDelayed(RawVoi,CosimMonitor):
+class RawVoiDelayed(RawVoi, CosimMonitor):
     """
     A monitor that records the output raw data of selected coupling variables
     from the full history of a TVB simulation.
