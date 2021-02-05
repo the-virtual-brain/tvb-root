@@ -109,6 +109,7 @@ class TestMonitors(BaseTestCase):
         sim_1.run() # run the first steps because the history is delayed
 
         for j in range(0, sim_to_sync_time):
+            # This should fail for CosimCoupling that can only return FUTURE coupling values!!!
             result_cosim_monitors.append(sim_1.loop_cosim_monitor_output(sim_1.current_step-sync_steps, sync_steps))
             result_1_all_step = sim_1.run(
                 cosim_updates=[np.array([result_all[0][0][(sync_steps * j) + i] for i in range(sync_steps)]),

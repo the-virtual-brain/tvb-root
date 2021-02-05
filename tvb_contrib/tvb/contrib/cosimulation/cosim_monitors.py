@@ -111,12 +111,12 @@ class CosimMonitorFromCoupling(CosimMonitor):
                              "from start_step (=%d) to start_step + n_steps -1 (=%d).\n"
                              "The coupling can be computed until step %d."
                              % (n_steps, start_step, end_step - 1, last_available_step_in_the_future))
-        first_available_step = last_available_step_in_the_future - history.n_time
+        first_available_step = current_step + 1
         if start_step < first_available_step:
             raise ValueError("Values of coupling are missing for %d time steps "
                              "from start_step (=%d) to start_step + n_steps -1 (=%d).\n"
-                             "The coupling can be computed from step %d."
-                             % (n_steps, start_step, end_step, first_available_step))
+                             "The coupling can be computed from current_step + 1 = %d."
+                             % (n_steps, start_step, end_step - 1, first_available_step))
         times = []
         values = []
         for step in range(start_step, end_step):
