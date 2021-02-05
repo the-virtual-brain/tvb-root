@@ -191,6 +191,10 @@ class Linear(SparseCoupling):
         doc="Shifts the base of the connection strength while maintaining "
             "the absolute difference between different values.")
 
+    parameter_names = 'a b'.split()
+    pre_expr = 'x_j'
+    post_expr = 'a * gx + b'
+
     def post(self, gx):
         return self.a * gx + self.b
 
