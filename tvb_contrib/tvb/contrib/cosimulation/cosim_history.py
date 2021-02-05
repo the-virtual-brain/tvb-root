@@ -57,7 +57,7 @@ class CosimHistory(BaseHistory):
         return self.buffer.nbytes
 
     def __init__(self,  n_time, n_var, n_node, n_mode):
-        self.n_time = n_time  # state buffer has n past steps and the current one
+        self.n_time = n_time  # state buffer has n past steps including the current one
         self.n_var = n_var
         self.n_node = n_node
         self.n_mode = n_mode
