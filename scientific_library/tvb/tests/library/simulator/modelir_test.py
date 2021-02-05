@@ -29,9 +29,14 @@
 #
 
 """
-Tests for template code generation.
+Tests for template code generation using the simulator instance as an
+intermediate representation. 
 
-.. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
+Several TestCases here are related to ensuring generation proceeds
+correctly and is verified against the simulator result itself, so
+these can later be refactored as per-backend conformance tests.
+
+.. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
 
@@ -123,7 +128,7 @@ class MakoUtilMix:
             raise exc
         return source
 
-    def _build_py_func(self, template_source, content, name):
+    def _build_py_func(self, template_source, content, name='kernel'):
         "Build and retrieve a Python function from template."
         source = self._render_template(template_source, content)
         globals_ = {}
@@ -440,7 +445,7 @@ class TestCoupling(unittest.TestCase, MakoUtilMix):
     def _test_cu_cfun(self, cfun):
         class sim:  # dummy
             model = MontbrioPazoRoxin()
-            coupling = Linear()
+            coupling = cfun
         template = '''
 <%include file="cu-coupling.mako"/>
 __global__ void kernel(float *state, float *weights, float *cX) {
@@ -451,11 +456,43 @@ __global__ void kernel(float *state, float *weights, float *cX) {
         kernel = self._build_cu_func(template, content)
         state = np.random.rand(2, content['n_node']).astype('f')
         weights = np.random.randn(state.shape[1], state.shape[1]).astype('f')
-        cX = np.empty_like(state)
+        cX = np.zeros_like(state)
         kernel(In(state), In(weights), Out(cX), 
             grid=(1,1), block=(content['n_node'],1,1))
         expected = self._eval_cfun_no_delay(sim.coupling, weights, state)
         np.testing.assert_allclose(cX, expected, 1e-5, 1e-6)
 
     def test_cu_linear(self): self._test_cu_cfun(Linear())
-    def test_cu_sigmoidal(self): self._test_cu_cfun(Sigmoidal())
+    # def test_cu_sigmoidal(self): self._test_cu_cfun(Sigmoidal())
+
+    def _test_nb_cfun(self, cfun):
+        class sim:  # dummy
+            model = MontbrioPazoRoxin()
+            coupling = cfun
+        template = '<%include file="nb-coupling.mako"/>'
+        kernel = self._build_py_func(template, dict(sim=sim), name='coupling')
+        state = np.random.rand(2, 128).astype('f')
+        weights = np.random.randn(state.shape[1], state.shape[1]).astype('f')
+        cX = np.zeros_like(state)
+        kernel(cX, weights.T, state)
+        expected = self._eval_cfun_no_delay(sim.coupling, weights, state)
+        np.testing.assert_allclose(cX, expected, 1e-5, 1e-6)
+
+    def test_nb_linear(self): self._test_nb_cfun(Linear())
+    # def test_nb_sigmoidal(self): self._test_nb_cfun(Sigmoidal())
+
+    def _test_np_cfun(self, cfun):
+        class sim:  # dummy
+            model = MontbrioPazoRoxin()
+            coupling = cfun
+        template = '<%include file="np-coupling.mako"/>'
+        kernel = self._build_py_func(template, dict(sim=sim), name='coupling')
+        state = np.random.rand(2, 128).astype('f')
+        weights = np.random.randn(state.shape[1], state.shape[1]).astype('f')
+        cX = np.zeros_like(state)
+        kernel(cX, weights.T, state)
+        expected = self._eval_cfun_no_delay(sim.coupling, weights, state)
+        np.testing.assert_allclose(cX, expected, 1e-5, 1e-6)
+
+    def test_np_linear(self): self._test_np_cfun(Linear())
+    # def test_nb_sigmoidal(self): self._test_nb_cfun(Sigmoidal())
