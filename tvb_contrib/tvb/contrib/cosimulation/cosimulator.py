@@ -287,9 +287,15 @@ class CoSimulator(Simulator):
     def loop_cosim_monitor_output(self, n_steps=None, relative_start_step=0):
         """
         return the value of the cosimulator monitors
-        :param start_step: the first step of the values
-        :param n_steps: the number of step
-        :return:
+        :param n_steps=None: the number of steps, it defaults to CoSimulator.synchronization_n_step
+        :param relative_start_step=0: the first step of the values,
+                                      the default value 0 corresponds to
+                                      start_step = CoSimulator.current_step - CoSimulator.synchronization_n_step + 1
+                                      for non-coupling CosimMonitor,
+                                      and to start_step = CoSimulator.current_step + 1
+                                      for coupling CosimMonitor, instances
+
+        :return: list of monitor outputs
         """
         if self._cosimulation_flag:
             if n_steps is None:
