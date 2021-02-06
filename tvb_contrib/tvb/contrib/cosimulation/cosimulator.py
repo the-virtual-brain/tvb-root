@@ -38,7 +38,7 @@ from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
 
 from tvb.contrib.cosimulation.cosim_history import CosimHistory
-from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor
+from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor, CosimMonitorFromCoupling
 from tvb.contrib.cosimulation.exception import NumericalInstability
 
 
@@ -80,6 +80,9 @@ class CoSimulator(Simulator):
     cosim_history = None  # type: CosimHistory
     _cosimulation_flag = False
     _compute_requirements = True
+    number_of_cosim_monitors = 0
+    _cosim_monitors_noncoupling_indices = []
+    _cosim_monitors_coupling_indices = []
 
     def _configure_cosimulation(self):
         """This method will
@@ -117,9 +120,15 @@ class CoSimulator(Simulator):
             self.connectivity.configure()
 
         # Configure the cosimulator monitor
-        for monitor in self.cosim_monitors:
+        self.number_of_cosim_monitors = len(self.cosim_monitors)
+        self._cosim_monitors_noncoupling_indices = list(range(self.number_of_cosim_monitors))
+        self._cosim_monitors_coupling_indices = []
+        for iM, monitor in enumerate(self.cosim_monitors):
             monitor.configure()
             monitor.config_for_sim(self)
+            if isinstance(monitor, CosimMonitorFromCoupling):
+                self._cosim_monitors_noncoupling_indices.remove(iM)
+                self._cosim_monitors_coupling_indices.append(iM)
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
@@ -275,7 +284,7 @@ class CoSimulator(Simulator):
         self.current_state = state
         self.current_step = self.current_step + n_steps
 
-    def loop_cosim_monitor_output(self, start_step, n_steps):
+    def loop_cosim_monitor_output(self, n_steps=None, relative_start_step=0):
         """
         return the value of the cosimulator monitors
         :param start_step: the first step of the values
@@ -283,14 +292,27 @@ class CoSimulator(Simulator):
         :return:
         """
         if self._cosimulation_flag:
-            # check if it's valid input
-            if self.good_cosim_update_values_shape[0] < n_steps:
-               ValueError("Incorrect n_steps = %i, the value should be <= %i".format(
-                          n_steps, self.good_cosim_update_values_shape[0]))
-            if start_step + n_steps > self.good_cosim_update_values_shape[0] + self.current_step:
-               ValueError("Incorrect start_step %i, the value should be <= %i".format(
-                          start_step, self.good_cosim_update_values_shape[0] + self.current_step - n_steps))
-            return [monitor.sample(self.current_step, start_step, n_steps, self.cosim_history, self.history)
-                    for monitor in self.cosim_monitors]
+            if n_steps is None:
+                n_steps = self.synchronization_n_step
+            elif self.good_cosim_update_values_shape[0] < n_steps:
+                # check if it's valid input
+                ValueError("Incorrect n_steps = %i, the value should be <= %i".format(
+                           n_steps, self.good_cosim_update_values_shape[0]))
+            if relative_start_step < 0 or \
+                    relative_start_step + n_steps > self.good_cosim_update_values_shape[0]:
+               ValueError("Incorrect relative_start_step %i, the value should be 0 <= %i".format(
+                          relative_start_step, self.good_cosim_update_values_shape[0] - n_steps))
+            coupling_start_step = self.current_step + relative_start_step + 1  # it has to be in the future
+            start_step = coupling_start_step - self.synchronization_n_step  # it has to be in the past
+            outputs = [[]] * self.number_of_cosim_monitors
+            for iM in self._cosim_monitors_noncoupling_indices:
+                # Loop over all non coupling cosimulation monitors:
+                outputs[iM] = self.cosim_monitors[iM].sample(
+                                    self.current_step, start_step, n_steps, self.cosim_history, self.history)
+            for iM in self._cosim_monitors_coupling_indices:
+                # Loop over all coupling cosimulation monitors:
+                outputs[iM] = self.cosim_monitors[iM].sample(
+                                    self.current_step, coupling_start_step, n_steps, self.cosim_history, self.history)
+            return outputs
         else:
             return []

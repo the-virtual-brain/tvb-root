@@ -256,11 +256,11 @@ class TestModifyWongWangSimple(TestModifyWongWang):
         sync_steps = int(synchronization_time / integrator.dt)
 
         with pytest.raises(ValueError):
-           coupling_future = sim_6.loop_cosim_monitor_output(sim_6.current_step, sync_steps)
+           coupling_future = sim_6.loop_cosim_monitor_output(sync_steps, 1)
 
-        coupling_future = sim_6.loop_cosim_monitor_output(sim_6.current_step + 1, sync_steps)
+        coupling_future = sim_6.loop_cosim_monitor_output()
 
         for i in range(sim_to_sync_time):
             result_2 = sim_6.run()[0][1][:, 0, 0, 0]
             np.testing.assert_array_equal( result[i*sync_steps:(i+1)*sync_steps]*np.NAN, result_2)
-            assert np.sum(np.isnan(sim_6.loop_cosim_monitor_output(sim_6.current_step + 1, sync_steps)[0][1])) == 0
+            assert np.sum(np.isnan(sim_6.loop_cosim_monitor_output()[0][1])) == 0
