@@ -296,11 +296,11 @@ class CoSimulator(Simulator):
                 n_steps = self.synchronization_n_step
             elif self.good_cosim_update_values_shape[0] < n_steps:
                 # check if it's valid input
-                ValueError("Incorrect n_steps = %i, the value should be <= %i".format(
+                ValueError("Incorrect n_steps = %i; it should be <= %i".format(
                            n_steps, self.good_cosim_update_values_shape[0]))
             if relative_start_step < 0 or \
                     relative_start_step + n_steps > self.good_cosim_update_values_shape[0]:
-               ValueError("Incorrect relative_start_step %i, the value should be 0 <= %i".format(
+               ValueError("Incorrect relative_start_step %i; it should be in the interval [0, %i]".format(
                           relative_start_step, self.good_cosim_update_values_shape[0] - n_steps))
             coupling_start_step = self.current_step + relative_start_step + 1  # it has to be in the future
             start_step = coupling_start_step - self.synchronization_n_step  # it has to be in the past
