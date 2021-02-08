@@ -45,9 +45,9 @@ class MonitorsWizardHandler:
         self.next_monitors_dict = None
 
     def set_monitors_list_on_simulator(self, session_stored_simulator, monitor_names):
-        self.build_list_of_monitors_from_names(monitor_names)
+        self.build_list_of_monitors_from_names(monitor_names, session_stored_simulator.is_surface_simulation)
         monitor_dict = get_ui_name_to_monitor_dict(session_stored_simulator.is_surface_simulation)
-        session_stored_simulator.monitors = list(monitor_dict[monitor]() for monitor in self.next_monitors_dict.keys())
+        session_stored_simulator.monitors = list(monitor_dict[monitor]() for monitor in monitor_names)
 
     def clear_next_monitors_dict(self):
         if self.next_monitors_dict:
@@ -57,15 +57,17 @@ class MonitorsWizardHandler:
         monitor_names = []
         monitor_dict = get_monitor_to_ui_name_dict(simulator.is_surface_simulation)
         for monitor in simulator.monitors:
-            monitor_names.append(monitor_dict[monitor.__class__])
+            monitor_names.append(monitor_dict[type(monitor)])
 
-        self.build_list_of_monitors_from_names(monitor_names)
+        self.build_list_of_monitors_from_names(monitor_names, simulator.is_surface_simulation)
 
-    def build_list_of_monitors_from_names(self, monitor_names):
+    def build_list_of_monitors_from_names(self, monitor_names, is_surface):
         self.next_monitors_dict = dict()
+        monitors_dict = get_ui_name_to_monitor_dict(is_surface)
         count = 0
         for monitor_name in monitor_names:
-            self.next_monitors_dict[monitor_name] = count
+            monitor_vm = monitors_dict[monitor_name].__name__
+            self.next_monitors_dict[monitor_vm] = count
             count = count + 1
 
     def get_current_and_next_monitor_form(self, current_monitor_name, simulator):

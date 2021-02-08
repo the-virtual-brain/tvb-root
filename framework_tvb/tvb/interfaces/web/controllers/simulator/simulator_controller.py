@@ -399,8 +399,8 @@ class SimulatorController(BurstBaseController):
     def get_first_monitor_fragment_url(self, simulator, monitors_url):
         first_monitor = simulator.first_monitor
         if first_monitor is not None:
-            monitor_name = get_monitor_to_ui_name_dict(simulator)[first_monitor.__class__]
-            return self.build_monitor_url(monitors_url, monitor_name)
+            monitor_vm_name = type(first_monitor).__name__
+            return self.build_monitor_url(monitors_url, monitor_vm_name)
         return SimulatorWizzardURLs.SETUP_PSE_URL
 
     @expose_fragment('simulator_fragment')
@@ -429,8 +429,7 @@ class SimulatorController(BurstBaseController):
         if isinstance(current_monitor, BoldViewModel):
             return self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL, monitor_name)
         if next_monitor is not None:
-            next_monitor_name = get_monitor_to_ui_name_dict(False)[next_monitor.__class__]
-            return self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL, next_monitor_name)
+            return self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL, type(next_monitor).__name__)
         return SimulatorWizzardURLs.SETUP_PSE_URL
 
     @staticmethod
@@ -439,12 +438,11 @@ class SimulatorController(BurstBaseController):
             return SimulatorWizzardURLs.LAUNCH_PSE_URL
         return SimulatorWizzardURLs.SETUP_PSE_URL
 
-    def get_urls_for_next_monitor_fragment(self, next_monitor, current_monitor, is_surface_simulation):
-        monitors_dict = get_monitor_to_ui_name_dict(is_surface_simulation)
-        next_monitor_name = monitors_dict[next_monitor.__class__] if next_monitor else 'None'
-        form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL, next_monitor_name)
-        current_monitor_name = monitors_dict[current_monitor.__class__]
-        if_bold_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL, current_monitor_name)
+    def get_urls_for_next_monitor_fragment(self, next_monitor, current_monitor):
+        form_action_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_PARAMS_URL,
+                                                 type(next_monitor).__name__)
+        if_bold_url = self.build_monitor_url(SimulatorWizzardURLs.SET_MONITOR_EQUATION_URL,
+                                             type(current_monitor).__name__)
         return form_action_url, if_bold_url
 
     @expose_fragment('simulator_fragment')
@@ -470,8 +468,7 @@ class SimulatorController(BurstBaseController):
             last_request_type=cherrypy.request.method, last_form_url=self.context.last_loaded_fragment_url,
             previous_form_action_url=previous_form_action_url)
 
-        form_action_url, if_bold_url = self.get_urls_for_next_monitor_fragment(
-            next_monitor, current_monitor, session_stored_simulator.is_surface_simulation)
+        form_action_url, if_bold_url = self.get_urls_for_next_monitor_fragment(next_monitor, current_monitor)
         return self.monitors_handler.handle_next_fragment_for_monitors(self.context, rendering_rules, current_monitor,
                                                                        next_monitor, False, form_action_url,
                                                                        if_bold_url)

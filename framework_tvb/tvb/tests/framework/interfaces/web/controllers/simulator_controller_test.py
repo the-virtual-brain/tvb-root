@@ -38,8 +38,8 @@ from os import path
 from uuid import UUID
 from mock import patch
 from datetime import datetime
-
 from cherrypy.lib.sessions import RamSession
+
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
@@ -432,7 +432,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
-            rendering_rules = self.simulator_controller.set_monitor_params('SubSampleViewModel', **self.sess_mock._data)
+            rendering_rules = self.simulator_controller.set_monitor_params('Temporally sub-sample', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.8, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -486,7 +486,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
-            self.simulator_controller.set_monitor_params('EEGViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('EEG', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -532,7 +532,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
-            self.simulator_controller.set_monitor_params('MEGViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('MEG', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -578,7 +578,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
-            self.simulator_controller.set_monitor_params('iEEGViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('Intracerebral / Stereo EEG', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 0.75, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -604,7 +604,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.set_monitors(**self.sess_mock._data)
-            self.simulator_controller.set_monitor_params('BoldViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('BOLD', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].period == 2000.0, "Period was not set correctly."
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
@@ -633,9 +633,10 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
-            self.simulator_controller.set_monitor_params('SpatialAverageViewModel', **self.sess_mock._data)
-            self.simulator_controller.set_monitor_params('TemporalAverageViewModel', **self.sess_mock._data)
-            self.simulator_controller.set_monitor_params('EEGViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('Spatial average with temporal sub-sample',
+                                                         **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('Temporal average', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('EEG', **self.sess_mock._data)
 
         assert list(self.session_stored_simulator.monitors[0].variables_of_interest) == \
                list(variable_of_interest_indexes.values()), "Variables of interest were not set correctly."
@@ -664,7 +665,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
-            self.simulator_controller.set_monitor_equation('BoldViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_equation('BOLD', **self.sess_mock._data)
 
         assert self.session_stored_simulator.monitors[0].hrf_kernel.parameters[
                    'tau_s'] == 0.8, "tau_s value was not set correctly."
