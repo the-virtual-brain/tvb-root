@@ -578,8 +578,11 @@ def _migrate_time_series_surface(**kwargs):
         cortical_surface.surface_gid = uuid.UUID(surface_gid)
         cortical_surface.region_mapping_data = uuid.UUID(
             operation_xml_parameters['surface_parameters_region_mapping_data'])
-        cortical_surface.local_connectivity = uuid.UUID(
-            operation_xml_parameters['surface_parameters_local_connectivity'])
+
+        if len(operation_xml_parameters['surface_parameters_local_connectivity']) > 0:
+            cortical_surface.local_connectivity = uuid.UUID(
+                operation_xml_parameters['surface_parameters_local_connectivity'])
+
         cortical_surface.coupling_strength = numpy.asarray(
             eval(operation_xml_parameters['surface_parameters_coupling_strength'].replace(' ', ', ')))
         operation_xml_parameters['surface'] = cortical_surface
