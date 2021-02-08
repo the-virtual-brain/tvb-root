@@ -173,7 +173,7 @@ class ABCExporter(metaclass=ABCMeta):
 
         for operation_folder in operation_folders:
             tmp_op_folder_path = os.path.join(export_folder, os.path.basename(operation_folder))
-            copy_tree(operation_folder, tmp_op_folder_path)
+            copy_tree(operation_folder, tmp_op_folder_path, preserve_mode=None)
             temp_export_folders.append(tmp_op_folder_path)
 
         if is_linked_export:

@@ -346,11 +346,12 @@ class ImportService(object):
                         operation.id = importer_operation_id
                     elif linked_group_op_id:
                         operation.id = linked_group_op_id
+                        # Set the create of op to that of the first dt because otherwise the Links operation will be
+                        # older then the operations that need the links since it was just created
+                        operation.create_date = self.load_datatype_from_file(dt_paths[0], linked_group_op_id).create_date
 
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
-        if linked_group_op_id:
-            return retrieved_operations
 
         return sorted(retrieved_operations, key=lambda op_data: op_data.order_field)
 
