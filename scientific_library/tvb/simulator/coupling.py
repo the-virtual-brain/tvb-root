@@ -314,7 +314,7 @@ class Sigmoidal(Coupling):
         doc="Standard deviation of the sigmoidal",)
 
     parameter_names = 'cmin cmax midpoint a sigma'.split()
-    pre_expr = 'x_i * 0 + x_j'
+    pre_expr = 'x_j'
     post_expr = 'cmin + ((cmax - cmin) / (1.0 + exp(-a *((gx - midpoint) / sigma))))'
 
     def __str__(self):
