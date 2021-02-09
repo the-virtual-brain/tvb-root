@@ -1,9 +1,10 @@
 <%namespace name="cu" file="cu-defs.mako" />
 
+#define M_PI_F 3.14159265358979f
+
 <%include file="cu-coupling.mako" />
 <%include file="cu-dfuns.mako" />
 
-#define M_PI_F 3.14159265358979f
 
 __global__ void kernel(
     float * __restrict__ state,

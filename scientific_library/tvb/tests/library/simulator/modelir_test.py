@@ -395,7 +395,7 @@ class TestSimODE(unittest.TestCase, MakoUtilMix):
         maxtol = np.max(np.abs(actual[0] - expected[0,:,:,0]))
         for t in range(1, len(actual)):
             print(t, 'tol:', np.max(np.abs(actual[t] - expected[t,:,:,0])))
-            np.testing.assert_allclose(actual[t], expected[t, :, :, 0], 2e-5*t, 1e-5*t)      
+            np.testing.assert_allclose(actual[t], expected[t, :, :, 0], 2e-5*t*2, 1e-5*t*2)      
 
     @unittest.skipUnless(pycuda, 'requires working PyCUDA')
     def test_mpr_cu1(self):
@@ -508,10 +508,21 @@ __global__ void kernel(float *state, float *weights, float *cX) {
 class TestDfuns(unittest.TestCase, MakoUtilMix):
     "Unit tests for dfun evaluations in-kernel."
 
-    def _test_py_model(self, model):
+    def _prep_model(self, n_spatial=0):
+        model = MontbrioPazoRoxin()
+        if n_spatial > 0:
+            model.eta = model.eta * (1 - np.r_[:0.1:128j])
+        if n_spatial > 1:
+            model.J = model.J * (1 - np.r_[:0.1:128j])
+        if n_spatial > 2:
+            raise NotImplemented
+        self.assertEqual(len(model.spatial_parameter_matrix), n_spatial)
+        return model
+
+    def _test_py_model(self, model_):
         "Test a Python cfun template."
         class sim:  # dummy sim
-            model = MontbrioPazoRoxin()
+            model = model_
         template = f'<%include file="np-dfuns.mako"/>'
         kernel = self._build_py_func(template, dict(sim=sim), name='dfuns',
                     print_source=True)
@@ -521,19 +532,52 @@ class TestDfuns(unittest.TestCase, MakoUtilMix):
         kernel(dX, state, cX, parmat)
         np.testing.assert_allclose(dX, sim.model.dfun(state, cX))
 
-    def test_mpr_symmetric(self):
+    def test_py_mpr_symmetric(self):
         "Test symmetric MPR model"
-        self._test_py_model(MontbrioPazoRoxin())
+        self._test_py_model(self._prep_model())
 
-    def test_mpr_spatial1(self):
+    def test_py_mpr_spatial1(self):
         "Test MPR w/ 1 spatial parameter."
-        mpr = MontbrioPazoRoxin()
-        mpr.eta = mpr.eta * (1 - np.r_[:0.1:128j])
-        self._test_py_model(mpr)
+        self._test_py_model(self._prep_model(1))
 
-    def test_mpr_spatial2(self):
+    def test_py_mpr_spatial2(self):
         "Test MPR w/ 2 spatial parameters."
-        mpr = MontbrioPazoRoxin()
-        mpr.eta = mpr.eta * (1 - np.r_[:0.1:128j])
-        mpr.J = mpr.J * (1 - np.r_[:0.1:128j])
-        self._test_py_model(mpr)
+        self._test_py_model(self._prep_model(2))
+
+    def _test_cu_model(self, model_):
+        "Test CUDA model dfuns."
+        class sim:  # dummy
+            model = model_
+        template = '''
+
+#define M_PI_F 3.14159265358979f
+
+<%include file="cu-dfuns.mako"/>
+__global__ void kernel(float *dX, float *state, float *cX, float *parmat) {
+    dfuns(threadIdx.x, ${n_node}, dX, state, cX, parmat);
+}
+'''
+        content = dict(n_node=128, sim=sim)
+        kernel = self._build_cu_func(template, content, print_source=True)
+        dX, state, cX = np.random.rand(3, 2, content['n_node']).astype('f')
+        parmat = sim.model.spatial_parameter_matrix.astype('f')
+        if parmat.size == 0:
+            parmat = np.zeros((1,),'f') # dummy
+        kernel(Out(dX), In(state), In(cX), In(parmat), 
+            grid=(1,1), block=(content['n_node'],1,1))
+        expected = sim.model.dfun(state, cX)
+        np.testing.assert_allclose(dX, expected, 1e-5, 1e-6)
+
+    @unittest.skipUnless(pycuda, 'requires working PyCUDA')
+    def test_cu_mpr_symmetric(self):
+        self._test_cu_model(self._prep_model())
+
+    @unittest.skipUnless(pycuda, 'requires working PyCUDA')
+    def test_cu_mpr_spatial1(self):
+        "Test MPR w/ 1 spatial parameter."
+        self._test_cu_model(self._prep_model(1))
+
+    @unittest.skipUnless(pycuda, 'requires working PyCUDA')
+    def test_cu_mpr_spatial2(self):
+        "Test MPR w/ 2 spatial parameters."
+        self._test_cu_model(self._prep_model(2))
