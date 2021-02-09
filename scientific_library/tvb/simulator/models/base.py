@@ -248,6 +248,21 @@ class Model(HasTraits):
     def update_state_variables_after_integration(self, state_variables):
         return state_variables
 
+    @property
+    def spatial_parameter_names(self):
+        return [_ for _ in self.parameter_names if getattr(self, _).size != 1]
+    
+    @property
+    def global_parameter_names(self):
+        return [_ for _ in self.parameter_names if getattr(self, _).size == 1]
+
+    @property
+    def spatial_parameter_matrix(self):
+        names = self.spatial_parameter_names
+        matrix = numpy.array([getattr(self,_).reshape((-1,)) for _ in names])
+        return matrix
+    
+
 
 class ModelNumbaDfun(Model):
     "Base model for Numba-implemented dfuns."

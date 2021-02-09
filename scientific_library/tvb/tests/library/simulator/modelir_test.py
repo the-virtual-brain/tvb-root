@@ -395,7 +395,7 @@ class TestSimODE(unittest.TestCase, MakoUtilMix):
         maxtol = np.max(np.abs(actual[0] - expected[0,:,:,0]))
         for t in range(1, len(actual)):
             print(t, 'tol:', np.max(np.abs(actual[t] - expected[t,:,:,0])))
-            np.testing.assert_allclose(actual[0], expected[0, :, :, 0], 2e-5*t, 1e-5*t)      
+            np.testing.assert_allclose(actual[t], expected[t, :, :, 0], 2e-5*t, 1e-5*t)      
 
     @unittest.skipUnless(pycuda, 'requires working PyCUDA')
     def test_mpr_cu1(self):
@@ -435,12 +435,14 @@ class TestSimODE(unittest.TestCase, MakoUtilMix):
     def test_np_mpr(self):
         sim, state, t, y = self._create_sim(inhom_mmpr=True)
         template = '<%include file="np-sim-ode.mako"/>'
-        kernel = self._build_py_func(template, dict(sim=sim))
+        kernel = self._build_py_func(template, dict(sim=sim), print_source=True)
         dX = state.copy()
         weights = sim.connectivity.weights.copy()
-        eta = sim.model.eta.reshape((-1,))
         yh = np.empty((len(t),)+state.shape)
-        kernel(state, weights, yh, eta)
+        parmat = sim.model.spatial_parameter_matrix
+        self.assertEqual(parmat.shape[0], 1)
+        self.assertEqual(parmat.shape[1], weights.shape[1])
+        kernel(state, weights, yh, parmat)
         self._check_match(y, yh)
 
 
@@ -496,3 +498,37 @@ __global__ void kernel(float *state, float *weights, float *cX) {
 
     def test_np_linear(self): self._test_py_cfun('np', Linear())
     def test_np_sigmoidal(self): self._test_py_cfun('np', Sigmoidal())
+
+
+class TestDfuns(unittest.TestCase, MakoUtilMix):
+    "Unit tests for dfun evaluations in-kernel."
+
+    def _test_py_model(self, model):
+        "Test a Python cfun template."
+        class sim:  # dummy sim
+            model = MontbrioPazoRoxin()
+        template = f'<%include file="np-dfuns.mako"/>'
+        kernel = self._build_py_func(template, dict(sim=sim), name='dfuns',
+                    print_source=True)
+        state, cX = np.random.rand(2, 2, 128)
+        dX = np.zeros_like(state)
+        parmat = sim.model.spatial_parameter_matrix
+        kernel(dX, state, cX, parmat)
+        np.testing.assert_allclose(dX, sim.model.dfun(state, cX))
+
+    def test_mpr_symmetric(self):
+        "Test symmetric MPR model"
+        self._test_py_model(MontbrioPazoRoxin())
+
+    def test_mpr_spatial1(self):
+        "Test MPR w/ 1 spatial parameter."
+        mpr = MontbrioPazoRoxin()
+        mpr.eta = mpr.eta * (1 - np.r_[:0.1:128j])
+        self._test_py_model(mpr)
+
+    def test_mpr_spatial2(self):
+        "Test MPR w/ 2 spatial parameters."
+        mpr = MontbrioPazoRoxin()
+        mpr.eta = mpr.eta * (1 - np.r_[:0.1:128j])
+        mpr.J = mpr.J * (1 - np.r_[:0.1:128j])
+        self._test_py_model(mpr)
