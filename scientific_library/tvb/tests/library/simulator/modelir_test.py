@@ -425,10 +425,10 @@ class TestSimODE(unittest.TestCase, MakoUtilMix):
         kernel = self._build_cu_func(template, dict(sim=sim, pi=np.pi))
         dX = state.copy()
         weights = sim.connectivity.weights.T.copy().astype('f')
-        eta = sim.model.eta.astype('f')
+        parmat = sim.model.spatial_parameter_matrix.astype('f')
         yh = np.empty((len(t),)+state.shape, 'f')
         kernel(
-            In(state), In(weights), Out(yh), In(eta),
+            In(state), In(weights), Out(yh), In(parmat),
             grid=(1,1), block=(128,1,1))
         self._check_match(y, yh)
 
@@ -475,8 +475,13 @@ __global__ void kernel(float *state, float *weights, float *cX) {
         expected = self._eval_cfun_no_delay(sim.coupling, weights, state)
         np.testing.assert_allclose(cX, expected, 1e-5, 1e-6)
 
-    def test_cu_linear(self): self._test_cu_cfun(Linear())
-    def test_cu_sigmoidal(self): self._test_cu_cfun(Sigmoidal())
+    @unittest.skipUnless(pycuda, 'requires working PyCUDA')
+    def test_cu_linear(self):
+        self._test_cu_cfun(Linear())
+
+    @unittest.skipUnless(pycuda, 'requires working PyCUDA')
+    def test_cu_sigmoidal(self):
+        self._test_cu_cfun(Sigmoidal())
 
     def _test_py_cfun(self, mode, cfun):
         "Test a Python cfun template."
