@@ -366,6 +366,7 @@ class TestPyCUDAModel(unittest.TestCase, MakoUtilMix):
 
 
 class TestSimODE(unittest.TestCase, MakoUtilMix):
+    "Integration tests of ODE cases against TVB builtins."
 
     def _create_sim(self, inhom_mmpr=False):
         mpr = MontbrioPazoRoxin()
@@ -396,6 +397,7 @@ class TestSimODE(unittest.TestCase, MakoUtilMix):
             print(t, 'tol:', np.max(np.abs(actual[t] - expected[t,:,:,0])))
             np.testing.assert_allclose(actual[0], expected[0, :, :, 0], 2e-5*t, 1e-5*t)      
 
+    @unittest.skipUnless(pycuda, 'requires working PyCUDA')
     def test_mpr_cu1(self):
         "Test generated time stepping network without delay."
         sim, state, t, y = self._create_sim()
@@ -415,10 +417,7 @@ class TestSimODE(unittest.TestCase, MakoUtilMix):
             grid=(1,1), block=(128,1,1))
         self._check_match(y, yh)
 
-    # a functionally identical test which generates directly from a
-    # configured simulator instance, and uses the coupling function
-    # template instead of monolithically generating everything.
-
+    @unittest.skipUnless(pycuda, 'requires working PyCUDA')
     def test_mpr_cu2(self):
         "Test generated CUDA kernel directly from Simulator instance."
         sim, state, t, y = self._create_sim(inhom_mmpr=True)
@@ -433,9 +432,17 @@ class TestSimODE(unittest.TestCase, MakoUtilMix):
             grid=(1,1), block=(128,1,1))
         self._check_match(y, yh)
 
+    def test_np_mpr(self):
+        sim, state, t, y = self._create_sim(inhom_mmpr=True)
+        template = '<%include file="np-sim-ode.mako"/>'
+        kernel = self._build_py_func(template, dict(sim=sim))
+        dX = state.copy()
+        weights = sim.connectivity.weights.copy()
+        eta = sim.model.eta.reshape((-1,))
+        yh = np.empty((len(t),)+state.shape)
+        kernel(state, weights, yh, eta)
+        self._check_match(y, yh)
 
-# each component has it's main template like cu-coupling.mako
-# TODO inject a namespace "target" with concrete rendering functions
 
 class TestCoupling(unittest.TestCase, MakoUtilMix):     
 
