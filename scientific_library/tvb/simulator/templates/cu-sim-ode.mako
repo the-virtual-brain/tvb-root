@@ -1,7 +1,5 @@
 <%namespace name="cu" file="cu-defs.mako" />
 
-
-## TODO extract this (and function definitions at top) into a <%def> w/ own unittest
 <%include file="cu-coupling.mako"/>
 
 #define M_PI_F 3.14159265358979f
