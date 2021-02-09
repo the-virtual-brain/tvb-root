@@ -578,8 +578,11 @@ def _migrate_time_series_surface(**kwargs):
         cortical_surface.surface_gid = uuid.UUID(surface_gid)
         cortical_surface.region_mapping_data = uuid.UUID(
             operation_xml_parameters['surface_parameters_region_mapping_data'])
-        cortical_surface.local_connectivity = uuid.UUID(
-            operation_xml_parameters['surface_parameters_local_connectivity'])
+
+        if len(operation_xml_parameters['surface_parameters_local_connectivity']) > 0:
+            cortical_surface.local_connectivity = uuid.UUID(
+                operation_xml_parameters['surface_parameters_local_connectivity'])
+
         cortical_surface.coupling_strength = numpy.asarray(
             eval(operation_xml_parameters['surface_parameters_coupling_strength'].replace(' ', ', ')))
         operation_xml_parameters['surface'] = cortical_surface
@@ -1224,7 +1227,7 @@ def update(input_file, burst_match_dict):
             if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname\
                     and time_series_gid is None:
                 burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
-                                                                  TvbProfile.current.db.SELECTED_DB, DATE_FORMAT_V4_DB)
+                                                                  DATE_FORMAT_V4_DB, TvbProfile.current.db.SELECTED_DB)
                 if burst_config:
                     root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                     burst_config.simulator_gid = vm.gid.hex
