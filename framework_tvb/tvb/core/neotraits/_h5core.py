@@ -29,21 +29,21 @@
 #
 
 import importlib
-import typing
 import os.path
+import typing
 import uuid
+from datetime import datetime
+
 import numpy
 import scipy.sparse
-from datetime import datetime
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits._attr import Final
+from tvb.basic.neotraits.api import Final, HasTraits, Attr, List, NArray, Range
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
-from tvb.core.neotraits._h5accessors import EquationScalar, SparseMatrix, ReferenceList
+from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
+from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
 from tvb.datatypes.equations import Equation
@@ -335,17 +335,17 @@ class ViewModelH5(H5File):
                 ref = Accessor(attr, self)
             setattr(self, attr.field_name, ref)
 
-    def gather_references_by_uuid(self):
+    def gather_datatypes_references(self):
         """
         Mind that ViewModelH5 stores references towards ViewModel objects (eg. Coupling) as Reference attributes, and
         references towards existent Datatypes (eg. Connectivity) as Uuid.
         Thus, the method gather_references will return only references towards other ViewModels, and we need this
-        method to gather also the other references.
+        method to gather also datatypes references.
         """
         ret = []
         for accessor in self.iter_accessors():
             if isinstance(accessor, Uuid) and not isinstance(accessor, Reference):
-                if accessor.field_name is 'gid':
+                if accessor.field_name in ('gid', 'parent_burst', 'operation_group_gid'):
                     continue
                 ret.append((accessor.trait_attribute, accessor.load()))
         return ret

@@ -39,14 +39,13 @@ from datetime import datetime
 from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
-
+from tvb.core.services.project_service import ProjectService
 
 class ExportManager(object):
     """
@@ -101,7 +100,7 @@ class ExportManager(object):
         :param data: data type to be exported
         :param exporter_id: identifier of the exporter to be used
         :param project: project that contains data to be exported
-            
+
         :returns: a tuple with the following elements
             1. name of the file to be shown to user
             2. full path of the export file (available for download)
@@ -121,7 +120,7 @@ class ExportManager(object):
         if project is None:
             raise ExportException("Please provide the project where data files are stored")
 
-        # Now we start the real export        
+        # Now we start the real export
         if not exporter.accepts(data):
             raise InvalidExportDataException("Current data can not be exported by specified exporter")
 
@@ -139,25 +138,9 @@ class ExportManager(object):
 
         return export_data
 
-    def _get_linked_datatypes_storage_path(self, project):
-        """
-        :return: the file paths to the datatypes that are linked in `project`
-        """
-        paths = []
-        for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
-            # get datatype as a mapped type
-            lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
-            path = h5.path_for_stored_index(lnk_dt)
-            if path is not None:
-                paths.append(path)
-            else:
-                self.logger.warning("Problem when trying to retrieve path on %s:%s for "
-                                    "export!" % (lnk_dt.type, lnk_dt.gid))
-        return paths
-
     def _export_linked_datatypes(self, project, zip_file):
         files_helper = FilesHelper()
-        linked_paths = self._get_linked_datatypes_storage_path(project)
+        linked_paths = ProjectService().get_linked_datatypes_storage_path(project)
 
         if not linked_paths:
             # do not export an empty operation
@@ -251,7 +234,7 @@ class ExportManager(object):
 
     def _build_data_export_folder(self, data):
         """
-        This method computes the folder where results of an export operation will be 
+        This method computes the folder where results of an export operation will be
         stored for a while (e.g until download is done; or for 1 day)
         """
         now = datetime.now()

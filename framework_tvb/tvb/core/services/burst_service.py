@@ -241,24 +241,33 @@ class BurstService(object):
         indexes = list()
         self.logger.debug("Preparing indexes for simulation results in operation {}...".format(operation.id))
         for filename in result_filenames:
-            index = h5.index_for_h5_file(filename)()
-            h5_class = h5.REGISTRY.get_h5file_for_index(type(index))
+            try:
+                self.logger.debug("Preparing index for filename: {}".format(filename))
+                index = h5.index_for_h5_file(filename)()
+                h5_class = h5.REGISTRY.get_h5file_for_index(type(index))
 
-            with h5_class(filename) as ts_h5:
-                index.fill_from_h5(ts_h5)
-                index.fill_from_generic_attributes(ts_h5.load_generic_attributes())
-                index.gid = ts_h5.gid.load().hex
+                with h5_class(filename) as index_h5:
+                    index.fill_from_h5(index_h5)
+                    index.fill_from_generic_attributes(index_h5.load_generic_attributes())
 
-            index.fk_parent_burst = burst.gid
-            index.fk_from_operation = operation.id
-            if operation.fk_operation_group:
-                datatype_group = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group)
+                index.fk_parent_burst = burst.gid
+                index.fk_from_operation = operation.id
+                if operation.fk_operation_group:
+                    datatype_group = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group)
+                    self.logger.debug(
+                        "Found DatatypeGroup with id {} for operation {}".format(datatype_group.id, operation.id))
+                    index.fk_datatype_group = datatype_group.id
+
+                    # Update the operation group name
+                    operation_group = dao.get_operationgroup_by_id(operation.fk_operation_group)
+                    operation_group.fill_operationgroup_name("TimeSeriesRegionIndex")
+                    dao.store_entity(operation_group)
                 self.logger.debug(
-                    "Found DatatypeGroup with id {} for operation {}".format(datatype_group.id, operation.id))
-                index.fk_datatype_group = datatype_group.id
-            self.logger.debug(
-                "Prepared index {} for file {} in operation {}".format(index.summary_info, filename, operation.id))
-            indexes.append(index)
+                    "Prepared index {} for file {} in operation {}".format(index.summary_info, filename, operation.id))
+                indexes.append(index)
+            except Exception as e:
+                self.logger.debug("Skip preparing index {} because there was an error.".format(filename))
+                self.logger.error(e)
         self.logger.debug("Prepared {} indexes for results in operation {}...".format(len(indexes), operation.id))
         return indexes
 
