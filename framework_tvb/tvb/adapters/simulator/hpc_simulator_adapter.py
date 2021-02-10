@@ -45,10 +45,10 @@ from tvb.basic.neotraits.api import HasTraits
 from tvb.config import ALGORITHMS
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 
 
 class HPCSimulatorAdapter(SimulatorAdapter):
-    OUTPUT_FOLDER = 'output'
 
     def __init__(self, storage_path, is_group_launch):
         super(HPCSimulatorAdapter, self).__init__()
@@ -85,7 +85,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         return self.is_group_launch
 
     def _get_output_path(self):
-        output_path = os.path.join(self.storage_path, self.OUTPUT_FOLDER)
+        output_path = os.path.join(self.storage_path, HPCSchedulerClient.OUTPUT_FOLDER)
         if not os.path.isdir(output_path):
             os.mkdir(output_path)
         return output_path

@@ -40,13 +40,10 @@ from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
 from requests import HTTPError
-# TODO: Review adapters import (HBP-134)
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel
-from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.config import MEASURE_METRICS_MODEL_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR, OperationProcessIdentifier
@@ -107,6 +104,7 @@ class HPCSchedulerClient(BackendClient):
     Simple class, to mimic the same behavior we are expecting from StandAloneClient, but firing the operation on
     an HPC node. Define TVB_BIN_ENV_KEY and CSCS_LOGIN_TOKEN_ENV_KEY as environment variables before running on HPC.
     """
+    OUTPUT_FOLDER = 'output'
     TVB_BIN_ENV_KEY = 'TVB_BIN'
     CSCS_LOGIN_TOKEN_ENV_KEY = 'CSCS_LOGIN_TOKEN'
     CSCS_PROJECT = 'CSCS_PROJECT'
@@ -197,10 +195,6 @@ class HPCSchedulerClient(BackendClient):
         for index in all_indexes:
             index = dao.store_entity(index)
             index_list.append(index)
-
-        sim_adapter = SimulatorAdapter()
-        sim_adapter.extract_operation_data(operation)
-        sim_adapter.generic_attributes.parent_burst = burst_config.gid
 
         burst_service.update_burst_status(burst_config)
 
@@ -308,11 +302,11 @@ class HPCSchedulerClient(BackendClient):
     @staticmethod
     def _stage_out_results(working_dir, simulator_gid):
         # type: (Storage, typing.Union[uuid.UUID, str]) -> list
-        output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSimulatorAdapter.OUTPUT_FOLDER
+        output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSchedulerClient.OUTPUT_FOLDER
         output_list = HPCSchedulerClient._listdir(working_dir, output_subfolder)
         LOGGER.info("Output list {}".format(output_list))
         encryption_handler = EncryptionHandler(simulator_gid)
-        encrypted_dir = os.path.join(encryption_handler.get_encrypted_dir(), HPCSimulatorAdapter.OUTPUT_FOLDER)
+        encrypted_dir = os.path.join(encryption_handler.get_encrypted_dir(), HPCSchedulerClient.OUTPUT_FOLDER)
         encrypted_files = HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
         # Clean data uploaded on CSCS
@@ -348,7 +342,7 @@ class HPCSchedulerClient(BackendClient):
         for encrypted_file in encrypted_files:
             if os.path.basename(encrypted_file).startswith(DatatypeMeasureH5.file_name_base()):
                 metric_encrypted_file = encrypted_file
-            elif os.path.basename(encrypted_file).startswith(TimeseriesMetricsAdapterModel.__name__):
+            elif os.path.basename(encrypted_file).startswith(MEASURE_METRICS_MODEL_CLASS):
                 metric_vm_encrypted_file = encrypted_file
             else:
                 simulation_results.append(encrypted_file)
