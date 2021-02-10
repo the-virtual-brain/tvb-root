@@ -469,7 +469,7 @@ __global__ void kernel(float *state, float *weights, float *cX) {
         kernel = self._build_cu_func(template, content)
         state = np.random.rand(2, content['n_node']).astype('f')
         weights = np.random.randn(state.shape[1], state.shape[1]).astype('f')
-        cX = np.zeros_like(state)
+        cX = np.empty_like(state)
         kernel(In(state), In(weights), Out(cX), 
             grid=(1,1), block=(content['n_node'],1,1))
         expected = self._eval_cfun_no_delay(sim.coupling, weights, state)

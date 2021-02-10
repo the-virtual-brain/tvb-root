@@ -12,6 +12,10 @@ __device__ void coupling(
 
 	float x_i, x_j, gx; // special names in cfun definitions
 
+% for cterm in sim.model.coupling_terms:
+	cX[${loop.index}*n_node + id] = 0.0f;
+% endfor
+
 	for (unsigned int j=0; j < n_node; j++)
 	{
 		const float wij = weights[j*n_node + id];
