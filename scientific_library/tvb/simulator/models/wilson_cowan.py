@@ -57,6 +57,50 @@ class WilsonCowan(Model):
 
     The default parameters are taken from figure 4 of [WC_1972]_, pag. 10
 
+    +---------------------------+
+    |          Table 0          |
+    +--------------+------------+
+    |Parameter     |  Value     |
+    +==============+============+
+    | k_e, k_i     |    0.00    |
+    +--------------+------------+
+    | r_e, r_i     |    0.00    |
+    +--------------+------------+
+    | tau_e, tau_i |    9.0    |
+    +--------------+------------+
+    | c_ee         |    11.0    |
+    +--------------+------------+
+    | c_ei         |    3.0     |
+    +--------------+------------+
+    | c_ie         |    12.0    |
+    +--------------+------------+
+    | c_ii         |    10.0    |
+    +--------------+------------+
+    | a_e          |    0.2     |
+    +--------------+------------+
+    | a_i          |    0.0     |
+    +--------------+------------+
+    | b_e          |    1.8     |
+    +--------------+------------+
+    | b_i          |    3.0     |
+    +--------------+------------+
+    | theta_e      |    -1.0     |
+    +--------------+------------+
+    | theta_i      |    -1.0     |
+    +--------------+------------+
+    | alpha_e      |    1.0     |
+    +--------------+------------+
+    | alpha_i      |    1.0     |
+    +--------------+------------+
+    | P            |    -1.0     |
+    +--------------+------------+
+    | Q            |    -1.0     |
+    +--------------+------------+
+    | c_e, c_i     |    0.0     |
+    +--------------+------------+
+    | shift_sigmoid|    True    |
+    +--------------+------------+
+
     In [WC_1973]_ they present a model of neural tissue on the pial surface is.
     See Fig. 1 in page 58. The following local couplings (lateral interactions)
     occur given a region i and a region j:
@@ -81,13 +125,13 @@ class WilsonCowan(Model):
     +--------------+------------+
     | tau_e, tau_i |    10.0    |
     +--------------+------------+
-    | c_1          |    10.0    |
+    | c_ee         |    10.0    |
     +--------------+------------+
-    | c_2          |    6.0     |
+    | c_ei         |    6.0     |
     +--------------+------------+
-    | c_3          |    1.0     |
+    | c_ie         |    10.0    |
     +--------------+------------+
-    | c_4          |    1.0     |
+    | c_ii         |    1.0     |
     +--------------+------------+
     | a_e, a_i     |    1.0     |
     +--------------+------------+
@@ -103,13 +147,11 @@ class WilsonCowan(Model):
     +--------------+------------+
     | P            |    0.5     |
     +--------------+------------+
-    | Q            |    0       |
+    | Q            |    0.0     |
     +--------------+------------+
     | c_e, c_i     |    1.0     |
     +--------------+------------+
-    | alpha_e      |    1.2     |
-    +--------------+------------+
-    | alpha_i      |    2.0     |
+    | shift_sigmoid|    False   |
     +--------------+------------+
     |                           |
     |  frequency peak at 20  Hz |
@@ -284,6 +326,15 @@ class WilsonCowan(Model):
         doc="""External stimulus to the inhibitory population.
         Constant intensity.Entry point for coupling.""")
 
+    shift_sigmoid=NArray(
+        dtype= numpy.bool,
+        label=r":math:`shift sigmoid`",
+        default=numpy.array([True]),
+        doc="""In order to have resting state (E=0 and I=0) in absence of external input,
+        the logistic curve are translated downward S(0)=0""",
+        )
+
+
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
@@ -332,8 +383,14 @@ class WilsonCowan(Model):
         x_e = self.alpha_e * (self.c_ee * E - self.c_ei * I + self.P  - self.theta_e +  c_0 + lc_0 + lc_1)
         x_i = self.alpha_i * (self.c_ie * E - self.c_ii * I + self.Q  - self.theta_i + lc_0 + lc_1)
 
-        s_e = self.c_e / (1.0 + numpy.exp(-self.a_e * (x_e - self.b_e)))
-        s_i = self.c_i / (1.0 + numpy.exp(-self.a_i * (x_i - self.b_i)))
+        if self.shift_sigmoid:
+            s_e = self.c_e * (1.0 / (1.0 + numpy.exp(-self.a_e * (x_e - self.b_e))) - 1.0
+                              / (1.0 + numpy.exp(-self.a_e * -self.b_e)))
+            s_i = self.c_i * (1.0 / (1.0 + numpy.exp(-self.a_i * (x_i - self.b_i))) - 1.0
+                              / (1.0 + numpy.exp(-self.a_i * -self.b_i)))
+        else:
+            s_e = self.c_e / (1.0 + numpy.exp(-self.a_e * (x_e - self.b_e)))
+            s_i = self.c_i / (1.0 + numpy.exp(-self.a_i * (x_i - self.b_i)))
 
         derivative[0] = (-E + (self.k_e - self.r_e * E) * s_e) / self.tau_e
         derivative[1] = (-I + (self.k_i - self.r_i * I) * s_i) / self.tau_i
