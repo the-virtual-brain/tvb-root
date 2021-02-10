@@ -32,11 +32,11 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
-import cherrypy
 
+import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
+from tvb.core.entities import load
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -59,8 +59,7 @@ class NoiseConfigurationController(BurstBaseController):
     @expose_page
     def index(self):
         des = SerializationManager(self.simulator_context.simulator)
-        connectivity = des.conf.connectivity
-        conn_idx = dao.get_datatype_by_gid(connectivity.hex)
+        conn_idx = load.load_entity_by_gid(des.conf.connectivity)
         model = des.conf.model
         integrator = des.conf.integrator
 
@@ -79,8 +78,8 @@ class NoiseConfigurationController(BurstBaseController):
             'isSingleMode': True,
             'submit_parameters_url': '/burst/noise/submit',
             'stateVars': state_vars,
-            'stateVarsJson' : json.dumps(state_vars),
-            'noiseInputValues' : initial_noise[0],
+            'stateVarsJson': json.dumps(state_vars),
+            'noiseInputValues': initial_noise[0],
             'initialNoiseValues': json.dumps(initial_noise)
         })
         return self.fill_default_attributes(params, 'regionmodel')
@@ -133,4 +132,4 @@ class NoiseConfigurationController(BurstBaseController):
         elif nsig.shape == (nr_state_vars, nr_nodes):
             return noise_values
         else:
-            raise ValueError("Got unexpected noise shape %s." % (nsig.shape, ))
+            raise ValueError("Got unexpected noise shape %s." % (nsig.shape,))

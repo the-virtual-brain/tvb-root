@@ -115,7 +115,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         url_timeseries_data = URLGenerator.build_url(self.stored_adapter.id, 'get_voxel_time_series',
                                                      view_model.time_series, '')
 
-        ts_index = self.load_entity_by_gid(view_model.time_series.hex)
+        ts_index = self.load_entity_by_gid(view_model.time_series)
         ts_h5 = h5.h5_file_for_index(ts_index)
         min_value, max_value = ts_h5.get_min_max_values()
         volume = self.load_traited_by_gid(ts_h5.volume.load())

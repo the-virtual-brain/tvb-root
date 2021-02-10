@@ -37,7 +37,7 @@ from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceU
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
-from tvb.core.entities.storage import dao
+from tvb.core.entities import load
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.surfaces import Surface, FACE
@@ -94,8 +94,8 @@ class TractViewer(ABCSpaceDisplayer):
 
     def launch(self, view_model):
         # type: (TractViewerModel) -> dict
-        tracts_index = dao.get_datatype_by_gid(view_model.tracts.hex)
-        region_volume_mapping_index = dao.get_datatype_by_gid(tracts_index.fk_region_volume_map_gid)
+        tracts_index = load.load_entity_by_gid(view_model.tracts)
+        region_volume_mapping_index = load.load_entity_by_gid(tracts_index.fk_region_volume_map_gid)
 
         shell_surface_index = None
         if view_model.shell_surface:

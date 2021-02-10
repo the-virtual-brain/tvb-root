@@ -130,7 +130,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
             x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
                                                                     data_shape[1], data_shape[2])
             slice_x, slice_y, slice_z = entity_h5.get_volume_slice(x_plane, y_plane, z_plane)
-            connectivity_gid = entity_h5.connectivity.load().hex
+            connectivity_gid = entity_h5.connectivity.load()
 
         with h5.h5_file_for_gid(mapped_array_gid) as mapped_array_h5:
             if mapped_array_slice:
@@ -168,7 +168,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
                                                                     data_shape[1], data_shape[2])
             slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
             voxel = entity_h5.array_data[slices][0, 0, 0]
-            connectivity_gid = entity_h5.connectivity.load().hex
+            connectivity_gid = entity_h5.connectivity.load()
 
         if voxel != -1:
             conn = self.load_traited_by_gid(connectivity_gid)
