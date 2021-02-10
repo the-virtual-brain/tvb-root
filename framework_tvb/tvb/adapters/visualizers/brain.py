@@ -34,22 +34,20 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import numpy
-
-from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
-from tvb.adapters.visualizers.eeg_monitor import EegMonitor
-from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator, ABCSurfaceDisplayer
-from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params, function_sensors_to_surface
-from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_points_params
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.core.adapters.abcdisplayer import URLGenerator
-from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.adapters.datatypes.db.time_series import *
+from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
+from tvb.adapters.visualizers.eeg_monitor import EegMonitor
+from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_points_params
+from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params, function_sensors_to_surface
+from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator, ABCSurfaceDisplayer
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
 from tvb.datatypes.surfaces import CORTICAL, EEG_CAP, Surface
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
-from tvb.core.neocom import h5
 
 MAX_MEASURE_POINTS_LENGTH = 600
 
@@ -122,16 +120,16 @@ class BrainViewer(ABCSurfaceDisplayer):
         """
         Generate the preview for the burst page
         """
-        time_series = self.load_entity_by_gid(view_model.time_series)
-        self.populate_surface_fields(time_series)
+        time_series_index = self.load_entity_by_gid(view_model.time_series)
+        self.populate_surface_fields(time_series_index)
 
         url_vertices, url_normals, url_lines, url_triangles, url_region_map = \
             SurfaceURLGenerator.get_urls_for_rendering(self.surface_h5, self.region_map_gid)
 
-        params = self.retrieve_measure_points_params(time_series)
-        base_adapter_url, time_urls = self._prepare_data_slices(time_series)
+        params = self.retrieve_measure_points_params(time_series_index)
+        base_adapter_url, time_urls = self._prepare_data_slices(time_series_index)
 
-        with h5.h5_file_for_index(time_series) as time_series_h5:
+        with h5.h5_file_for_index(time_series_index) as time_series_h5:
             assert isinstance(time_series_h5, TimeSeriesH5)
             min_val, max_val = time_series_h5.get_min_max_values()
 
@@ -346,26 +344,24 @@ class BrainViewer(ABCSurfaceDisplayer):
         return activity_base_url, time_urls
 
     def read_data_page_split(self, time_series_gid, from_idx, to_idx, step=None, specific_slices=None):
-        time_series_index = self.load_entity_by_gid(time_series_gid)
-        with h5.h5_file_for_index(time_series_index) as time_series_h5:
+        with h5.h5_file_for_gid(time_series_gid) as time_series_h5:
             assert isinstance(time_series_h5, TimeSeriesH5)
             basic_result = time_series_h5.read_data_page(from_idx, to_idx, step, specific_slices)
 
-        if not isinstance(time_series_index, TimeSeriesSurfaceIndex):
-            return basic_result.tolist()
+            if not isinstance(time_series_h5, TimeSeriesSurfaceIndex):
+                return basic_result.tolist()
+            surface_gid = time_series_h5.surface.load()
 
         result = []
-        surface_index = self.load_entity_by_gid(time_series_index.fk_surface_gid)
-        surface_h5 = h5.h5_file_for_index(surface_index)
-        assert isinstance(surface_h5, SurfaceH5)
-        number_of_split_slices = surface_h5.number_of_split_slices.load()
-        if number_of_split_slices <= 1:
-            result.append(basic_result.tolist())
-        else:
-            for slice_number in range(surface_h5.number_of_split_slices):
-                start_idx, end_idx = surface_h5.get_slice_vertex_boundaries(slice_number)
-                result.append(basic_result[:, start_idx:end_idx].tolist())
-        surface_h5.close()
+        with h5.h5_file_for_gid(surface_gid) as surface_h5:
+            assert isinstance(surface_h5, SurfaceH5)
+            number_of_split_slices = surface_h5.number_of_split_slices.load()
+            if number_of_split_slices <= 1:
+                result.append(basic_result.tolist())
+            else:
+                for slice_number in range(surface_h5.number_of_split_slices):
+                    start_idx, end_idx = surface_h5.get_slice_vertex_boundaries(slice_number)
+                    result.append(basic_result[:, start_idx:end_idx].tolist())
 
         return result
 

@@ -299,7 +299,6 @@ class FlowController(BaseController):
                 raise InvalidFormValues("Invalid form inputs! Could not fill algorithm from the given inputs!",
                                         error_dict=form.get_errors_dict())
 
-
             adapter_instance.submit_form(form)
 
             if issubclass(type(adapter_instance), ABCDisplayer):
@@ -313,7 +312,7 @@ class FlowController(BaseController):
                 return {}
 
             result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
-                                                        project_id, view_model=view_model)
+                                                            project_id, view_model=view_model)
             if isinstance(result, list):
                 result = "Launched %s operations." % len(result)
             common.set_important_message(str(result))
@@ -383,8 +382,7 @@ class FlowController(BaseController):
     def _read_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
 
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
-        entity = load_entity_by_gid(entity_gid)
-        entity_dt = h5.load_from_index(entity)
+        entity_dt = h5.load_from_gid(entity_gid)
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
@@ -414,20 +412,18 @@ class FlowController(BaseController):
 
     def _read_from_h5(self, entity_gid, method_name, datatype_kwargs='null', **kwargs):
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + method_name + "/" + str(kwargs))
-        entity = load_entity_by_gid(entity_gid)
-        entity_h5 = h5.h5_file_for_index(entity)
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
             for key, value in six.iteritems(datatype_kwargs):
                 kwargs[key] = load_entity_by_gid(value)
 
-        result = getattr(entity_h5, method_name)
-        if kwargs:
-            result = result(**kwargs)
-        else:
-            result = result()
-        entity_h5.close()
+        with h5.h5_file_for_gid(entity_gid) as entity_h5:
+            result = getattr(entity_h5, method_name)
+            if kwargs:
+                result = result(**kwargs)
+            else:
+                result = result()
 
         return result
 

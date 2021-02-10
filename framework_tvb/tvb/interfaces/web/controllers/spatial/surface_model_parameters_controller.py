@@ -33,16 +33,16 @@
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
 
-import cherrypy
 import json
 
+import cherrypy
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, SIGMOID_EQUATION
 from tvb.basic.neotraits.api import Attr, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.storage import dao
+from tvb.core.entities import load
 from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
@@ -195,7 +195,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         """
         model, cortex = self.get_data_from_burst_configuration()
         surface_gid = cortex.surface_gid
-        surface_index = dao.get_datatype_by_gid(surface_gid.hex)
+        surface_index = load.load_entity_by_gid(surface_gid)
 
         self.model_params_dict = self._prepare_model_params_dict(model)
         context_model_parameters = SurfaceContextModelParameters(surface_index, model,

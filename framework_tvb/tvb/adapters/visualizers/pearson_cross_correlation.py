@@ -90,7 +90,7 @@ class PearsonCorrelationCoefficientVisualizer(ABCMappedArraySVGVisualizer):
 
     def launch(self, view_model):
         """Construct data for visualization and launch it."""
-        cc_gid = view_model.datatype.hex
+        cc_gid = view_model.datatype
         cc_index = self.load_entity_by_gid(cc_gid)
         assert isinstance(cc_index, CorrelationCoefficientsIndex)
         matrix_shape = cc_index.parsed_shape[0:2]

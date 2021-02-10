@@ -32,16 +32,15 @@
 A tracts visualizer
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.adapters.abcdisplayer import URLGenerator
-from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.core.entities import load
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.surfaces import CorticalSurface, Surface, FACE
+from tvb.datatypes.surfaces import Surface, FACE
 from tvb.datatypes.tracts import Tracts
 
 
@@ -95,9 +94,8 @@ class TractViewer(ABCSpaceDisplayer):
 
     def launch(self, view_model):
         # type: (TractViewerModel) -> dict
-        tracts_index = dao.get_datatype_by_gid(view_model.tracts.hex)
-        region_volume_mapping_index = dao.get_datatype_by_gid(tracts_index.fk_region_volume_map_gid)
-        connectivity = dao.get_datatype_by_gid(region_volume_mapping_index.fk_connectivity_gid)
+        tracts_index = load.load_entity_by_gid(view_model.tracts)
+        region_volume_mapping_index = load.load_entity_by_gid(tracts_index.fk_region_volume_map_gid)
 
         shell_surface_index = None
         if view_model.shell_surface:
@@ -112,7 +110,8 @@ class TractViewer(ABCSpaceDisplayer):
                       shellObject=self.prepare_shell_surface_params(shell_surface_index, SurfaceURLGenerator),
                       urlTrackStarts=tracts_starts, urlTrackVertices=tracts_vertices)
 
-        params.update(self.build_params_for_selectable_connectivity(h5.load_from_index(connectivity)))
+        connectivity = self.load_traited_by_gid(region_volume_mapping_index.fk_connectivity_gid)
+        params.update(self.build_params_for_selectable_connectivity(connectivity))
 
         return self.build_display_result("tract/tract_view", params,
                                          pages={"controlPage": "tract/tract_viewer_controls"})

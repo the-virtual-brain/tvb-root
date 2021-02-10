@@ -49,7 +49,6 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.arguments_serialisation import *
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeMatrix
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -125,16 +124,15 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
     def get_mapped_array_volume_view(self, entity_gid, mapped_array_gid, x_plane, y_plane, z_plane,
                                      mapped_array_slice=None, **kwargs):
-        entity_h5_class, entity_h5_path = self.load_h5_of_gid(entity_gid)
-        with entity_h5_class(entity_h5_path) as entity_h5:
+
+        with h5.h5_file_for_gid(entity_gid) as entity_h5:
             data_shape = entity_h5.array_data.shape
             x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
                                                                     data_shape[1], data_shape[2])
             slice_x, slice_y, slice_z = entity_h5.get_volume_slice(x_plane, y_plane, z_plane)
-            connectivity_gid = entity_h5.connectivity.load().hex
+            connectivity_gid = entity_h5.connectivity.load()
 
-        mapped_array_h5_class, mapped_array_h5_path = self.load_h5_of_gid(mapped_array_gid)
-        with mapped_array_h5_class(mapped_array_h5_path) as mapped_array_h5:
+        with h5.h5_file_for_gid(mapped_array_gid) as mapped_array_h5:
             if mapped_array_slice:
                 matrix_slice = parse_slice(mapped_array_slice)
                 measure = mapped_array_h5.array_data[matrix_slice]
@@ -164,22 +162,19 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return dict(minBackgroundValue=min_value, maxBackgroundValue=max_value, urlBackgroundVolumeData=url)
 
     def get_voxel_region(self, region_mapping_volume_gid, x_plane, y_plane, z_plane):
-
-        entity_h5_class, entity_h5_path = self.load_h5_of_gid(region_mapping_volume_gid)
-        with entity_h5_class(entity_h5_path) as entity_h5:
-
+        with h5.h5_file_for_gid(region_mapping_volume_gid) as entity_h5:
             data_shape = entity_h5.array_data.shape
             x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
                                                                     data_shape[1], data_shape[2])
             slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
             voxel = entity_h5.array_data[slices][0, 0, 0]
-            if voxel != -1:
-                conn_index = load_entity_by_gid(entity_h5.connectivity.load().hex)
-                with h5.h5_file_for_index(conn_index) as conn_h5:
-                    labels = conn_h5.region_labels.load()
-                    return labels[int(voxel)]
-            else:
-                return 'background'
+            connectivity_gid = entity_h5.connectivity.load()
+
+        if voxel != -1:
+            conn = self.load_traited_by_gid(connectivity_gid)
+            return conn.region_labels[int(voxel)]
+        else:
+            return 'background'
 
     def compute_params(self, region_mapping_volume=None, measure=None, data_slice='', background=None):
         # type: (RegionVolumeMappingIndex, DataTypeMatrix, str, StructuralMRIIndex) -> dict
@@ -216,17 +211,35 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return params
 
     def get_volume_view(self, entity_gid, **kwargs):
-        h5_class, h5_path = self.load_h5_of_gid(entity_gid)
-        with h5_class(h5_path) as h5_opened:
-            if h5_class is TimeSeriesRegionH5:
-                return self._get_volume_view_region(h5_opened, **kwargs)
+        with h5.h5_file_for_gid(entity_gid) as ts_region_h5:
+            if isinstance(ts_region_h5, TimeSeriesRegionH5):
+                return self.prepare_view_region(ts_region_h5, **kwargs)
 
-            return h5_opened.get_volume_view(**kwargs)
+            volume_view = ts_region_h5.get_volume_view(**kwargs)
+        return volume_view
 
-    def _get_volume_view_region(self, ts_h5, from_idx, to_idx, x_plane, y_plane, z_plane, var=0, mode=0):
+    def prepare_view_region(self, ts_h5, x_plane, y_plane, z_plane, from_idx=None, to_idx=None, var=0, mode=0):
+        region_mapping_volume_gid = ts_h5.region_mapping_volume.load()
+
+        if region_mapping_volume_gid is None:
+            raise Exception("Invalid method called for TS without Volume Mapping!")
+
+        with h5.h5_file_for_gid(region_mapping_volume_gid) as volume_rm_h5:
+            volume_rm_shape = volume_rm_h5.array_data.shape
+
+            # Work with space inside Volume:
+            x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, volume_rm_shape[0],
+                                                                    volume_rm_shape[1], volume_rm_shape[2])
+            region = self.get_view_region(ts_h5, volume_rm_h5, from_idx, to_idx, x_plane, y_plane, z_plane, var, mode)
+
+        return region
+
+    def get_view_region(self, ts_h5, volume_rm_h5, from_idx, to_idx, x_plane, y_plane, z_plane, var=0, mode=0):
         """
         Retrieve 3 slices through the Volume TS, at the given X, y and Z coordinates, and in time [from_idx .. to_idx].
 
+        :param ts_h5: input TimeSeriesH5
+        :param volume_rm_h5: input RegionVolumeMappingH5
         :param from_idx: int This will be the limit on the first dimension (time)
         :param to_idx: int Also limit on the first Dimension (time)
         :param x_plane: int coordinate
@@ -235,18 +248,6 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
         :return: An array of 3 Matrices 2D, each containing the values to display in planes xy, yz and xy.
         """
-        region_mapping_volume_gid = ts_h5.region_mapping_volume.load()
-
-        if region_mapping_volume_gid is None:
-            raise Exception("Invalid method called for TS without Volume Mapping!")
-
-        volume_rm_h5_class, volume_rm_h5_path = self.load_h5_of_gid(region_mapping_volume_gid)
-        volume_rm_h5 = volume_rm_h5_class(volume_rm_h5_path)
-        volume_rm_shape = volume_rm_h5.array_data.shape
-
-        # Work with space inside Volume:
-        x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, volume_rm_shape[0],
-                                                                volume_rm_shape[1], volume_rm_shape[2])
         var, mode = int(var), int(mode)
         slice_x, slice_y, slice_z = volume_rm_h5.get_volume_slice(x_plane, y_plane, z_plane)
 
@@ -258,8 +259,6 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         min_signal = ts_h5.get_min_max_values()[0]
         regions_ts = ts_h5.read_data_slice(time_slices)[:, 0, :, 0]
         regions_ts = numpy.hstack((regions_ts, numpy.ones((current_time_length, 1)) * ts_h5.out_of_range(min_signal)))
-
-        volume_rm_h5.close()
 
         # Index from TS with the space mapping:
         result_x, result_y, result_z = [], [], []

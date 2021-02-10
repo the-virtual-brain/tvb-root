@@ -72,6 +72,18 @@ def index_for_h5_file(source_path):
     return REGISTRY.get_index_for_h5file(h5_class)
 
 
+def h5_file_for_gid(data_gid):
+    # type: (str) -> H5File
+    datatype_index = load_entity_by_gid(data_gid)
+    return h5_file_for_index(datatype_index)
+
+
+def load_from_gid(data_gid):
+    # type: (str) -> HasTraits
+    datatype_index = load_entity_by_gid(data_gid)
+    return load_from_index(datatype_index)
+
+
 def load_from_index(dt_index):
     # type: (DataType) -> HasTraits
     loader = TVBLoader(REGISTRY)
@@ -276,7 +288,7 @@ def gather_all_references_by_index(h5_file, ref_files):
     for _, gid in refs:
         if not gid:
             continue
-        index = load_entity_by_gid(gid.hex)
+        index = load_entity_by_gid(gid)
         h5_file = h5_file_for_index(index)
         ref_files.append(h5_file.path)
         gather_all_references_by_index(h5_file, ref_files)

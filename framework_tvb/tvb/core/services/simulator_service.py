@@ -40,6 +40,7 @@ import uuid
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities import load
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_datatype import DataTypeGroup
@@ -240,7 +241,7 @@ class SimulatorService(object):
     @staticmethod
     def _compute_conn_branch_conditions(is_branch, simulator):
         if is_branch:
-            conn = dao.get_datatype_by_gid(simulator.connectivity.hex)
+            conn = load.load_entity_by_gid(simulator.connectivity)
             if conn.number_of_regions:
                 return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
                                    operations=["=="], values=[conn.number_of_regions])

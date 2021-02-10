@@ -210,13 +210,10 @@ class ABCSurfaceDisplayer(ABCSpaceDisplayer):
         boundary_lines = []
         boundary_normals = []
 
-        surface_index = self.load_entity_by_gid(surface_gid)
-        rm_index = self.load_entity_by_gid(region_mapping_gid)
-
-        with h5.h5_file_for_index(rm_index) as rm_h5:
+        with h5.h5_file_for_gid(region_mapping_gid) as rm_h5:
             array_data = rm_h5.array_data[:]
 
-        with h5.h5_file_for_index(surface_index) as surface_h5:
+        with h5.h5_file_for_gid(surface_gid) as surface_h5:
             for slice_idx in range(surface_h5.get_number_of_split_slices()):
                 # Generate the boundaries sliced for the off case where we might overflow the buffer capacity
                 slice_triangles = surface_h5.get_triangles_slice(slice_idx)
