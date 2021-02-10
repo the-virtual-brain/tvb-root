@@ -40,7 +40,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Final
 from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
-from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -139,7 +139,7 @@ class H5File(object):
             if not store_references and isinstance(accessor, Reference):
                 continue
             accessor.store(getattr(datatype, f_name))
-        DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.path))
+        encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.path))
 
     def load_into(self, datatype):
         # type: (HasTraits) -> None
@@ -196,7 +196,7 @@ class H5File(object):
         self.visible.store(self.generic_attributes.visible)
         if self.generic_attributes.parent_burst is not None:
             self.parent_burst.store(uuid.UUID(self.generic_attributes.parent_burst))
-        DataEncryptionHandler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.path))
+        encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.path))
 
     def load_generic_attributes(self):
         # type: () -> GenericAttributes
