@@ -38,8 +38,8 @@ from os import path
 from uuid import UUID
 from mock import patch
 from datetime import datetime
-
 from cherrypy.lib.sessions import RamSession
+
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
@@ -57,7 +57,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, TemporalApplicableEquation, Linear
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.web.controllers.common import *
-from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController, common
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.models import ModelsEnum
 from tvb.tests.framework.core.factory import TestFactory
@@ -633,7 +633,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.add_session_stored_simulator(self.session_stored_simulator)
             self.simulator_controller.context.add_burst_config_to_session(BurstConfiguration(self.test_project.id))
             self.simulator_controller.set_monitors(**self.sess_mock._data)
-            self.simulator_controller.set_monitor_params('SpatialAverageViewModel', **self.sess_mock._data)
+            self.simulator_controller.set_monitor_params('SpatialAverageViewModel',
+                                                         **self.sess_mock._data)
             self.simulator_controller.set_monitor_params('TemporalAverageViewModel', **self.sess_mock._data)
             self.simulator_controller.set_monitor_params('EEGViewModel', **self.sess_mock._data)
 

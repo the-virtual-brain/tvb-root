@@ -246,14 +246,6 @@ class SimulatorService(object):
                                    operations=["=="], values=[conn.number_of_regions])
         return None
 
-    @staticmethod
-    def get_current_and_next_monitor_form(current_monitor_name, simulator, next_monitors_dict):
-        current_monitor, next_monitor_index = next_monitors_dict[current_monitor_name]
-
-        if next_monitor_index < len(next_monitors_dict):
-            return current_monitor, simulator.monitors[next_monitor_index]
-        return current_monitor, None
-
     def get_simulation_state_index(self, burst_config, simulation_history_class):
         parent_burst = burst_config.parent_burst_object
         simulation_state_index = dao.get_generic_entity(simulation_history_class, parent_burst.gid, "fk_parent_burst")
