@@ -36,19 +36,16 @@
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
-from tvb.datatypes.projections import ProjectionMatrix, ProjectionSurfaceEEG, ProjectionSurfaceMEG, \
-    ProjectionSurfaceSEEG
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.projections import *
-from tvb.datatypes.surfaces import CorticalSurface, Surface
-from tvb.basic.neotraits.api import Attr
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
+from tvb.datatypes.surfaces import Surface
 
 DEFAULT_DATASET_NAME = "ProjectionMatrix"
 
@@ -151,9 +148,6 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         if view_model.surface is None:
             raise LaunchException("No source selected. Please initiate upload again and select a source.")
 
-        surface_ht = self.load_traited_by_gid(view_model.surface)
-        expected_surface_shape = surface_ht.number_of_vertices
-
         sensors_ht = self.load_traited_by_gid(view_model.sensors)
         expected_sensors_shape = sensors_ht.number_of_sensors
 
@@ -170,10 +164,14 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
             raise LaunchException("Invalid Projection Matrix shape[0]: %d Expected: %d" % (projection_data.shape[0],
                                                                                            expected_sensors_shape))
 
+        surface_idx = self.load_entity_by_gid(view_model.surface)
+        expected_surface_shape = surface_idx.number_of_vertices
+
         if projection_data.shape[1] != expected_surface_shape:
             raise LaunchException("Invalid Projection Matrix shape[1]: %d Expected: %d" % (projection_data.shape[1],
                                                                                            expected_surface_shape))
 
+        surface_ht = h5.load_from_index(surface_idx)
         projection_matrix_type = determine_projection_type(sensors_ht)
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,

@@ -160,16 +160,15 @@ class SurfaceStimulusCreator(ABCAdapter):
         stimuli_surface.spatial = view_model.spatial
         stimuli_surface.temporal = view_model.temporal
 
-        surface_h5 = h5.h5_file_for_gid(view_model.surface)
         if load_full_surface:
             stimuli_surface.surface = self.load_traited_by_gid(view_model.surface)
         else:
             stimuli_surface.surface = CorticalSurface()
             stimuli_surface.gid = view_model.surface
             # We need to load surface triangles on stimuli because focal_points_surface property needs to acces them
-            stimuli_surface.surface.triangles = surface_h5.triangles.load()
+            with h5.h5_file_for_gid(view_model.surface) as surface_h5:
+                stimuli_surface.surface.triangles = surface_h5.triangles.load()
 
-        surface_h5.close()
         return stimuli_surface
 
     def launch(self, view_model):

@@ -39,14 +39,14 @@ Backend-side for TS Visualizer of TS Volume DataTypes.
 """
 
 import json
-import numpy
 
-from tvb.adapters.visualizers.region_volume_mapping import _MappedArrayVolumeBase
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5, TimeSeriesRegionH5
+import numpy
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5, TimeSeriesRegionH5
+from tvb.adapters.visualizers.region_volume_mapping import _MappedArrayVolumeBase
 from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.adapters.arguments_serialisation import postprocess_voxel_ts
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.storage import dao
@@ -115,7 +115,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         url_timeseries_data = URLGenerator.build_url(self.stored_adapter.id, 'get_voxel_time_series',
                                                      view_model.time_series, '')
 
-        ts_index = h5.load_entity_by_gid(view_model.time_series.hex)
+        ts_index = self.load_entity_by_gid(view_model.time_series.hex)
         ts_h5 = h5.h5_file_for_index(ts_index)
         min_value, max_value = ts_h5.get_min_max_values()
         volume = self.load_traited_by_gid(ts_h5.volume.load())
@@ -176,8 +176,7 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
                 The main part will be a vector with all the values over time from the x,y,z coordinates.
         """
 
-        ts_h5 = h5.h5_file_for_gid(entity_gid)
-        with ts_h5:
+        with h5.h5_file_for_gid(entity_gid) as ts_h5:
             if isinstance(ts_h5, TimeSeriesRegionH5):
                 return self.prepare_view_region(ts_h5, **kwargs)
 
@@ -194,8 +193,8 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
         voxel_slices = prepare_time_slice(time_length), slice(var, var + 1), slice(idx, idx + 1), slice(mode, mode + 1)
 
         connectivity_gid = volume_rm_h5.connectivity.load()
-        connectivity_h5 = h5.h5_file_for_gid(connectivity_gid)
-        label = connectivity_h5.region_labels.load()[idx]
+        with h5.h5_file_for_gid(connectivity_gid) as connectivity_h5:
+            label = connectivity_h5.region_labels.load()[idx]
 
         background, back_min, back_max = None, None, None
         if idx < 0:

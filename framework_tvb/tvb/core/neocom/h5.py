@@ -288,7 +288,7 @@ def gather_all_references_by_index(h5_file, ref_files):
     for _, gid in refs:
         if not gid:
             continue
-        index = load_entity_by_gid(gid.hex)
+        index = load_entity_by_gid(gid)
         h5_file = h5_file_for_index(index)
         ref_files.append(h5_file.path)
         gather_all_references_by_index(h5_file, ref_files)
@@ -317,7 +317,7 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
         for _, gid in uuids:
             if not gid:
                 continue
-            index = load_entity_by_gid(gid.hex)
+            index = load_entity_by_gid(gid)
             h5_file = h5_file_for_index(index)
             uuid_files.append(h5_file.path)
             gather_all_references_by_index(h5_file, uuid_files)

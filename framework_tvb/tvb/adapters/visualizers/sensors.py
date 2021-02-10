@@ -35,13 +35,12 @@
 
 import json
 
-from tvb.basic.logger.builder import get_logger
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
+from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -228,8 +227,7 @@ class SensorsViewer(ABCDisplayer):
         })
 
         if eeg_cap is not None:
-            eeg_cap_h5 = h5.h5_file_for_gid(eeg_cap.gid)
-            with eeg_cap_h5:
+            with h5.h5_file_for_gid(eeg_cap.gid) as eeg_cap_h5:
                 params.update(self._compute_surface_params(eeg_cap_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,
@@ -247,8 +245,7 @@ class SensorsViewer(ABCDisplayer):
             'boundaryURL': '', 'urlRegionMap': ''})
 
         if projection_surface is not None:
-            projection_surface_h5 = h5.h5_file_for_gid(projection_surface.gid)
-            with projection_surface_h5:
+            with h5.h5_file_for_gid(projection_surface.gid) as projection_surface_h5:
                 params.update(self._compute_surface_params(projection_surface_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,

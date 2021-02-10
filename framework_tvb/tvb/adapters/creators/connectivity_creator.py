@@ -35,10 +35,8 @@
 import numpy
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.api import Attr, NArray
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ArrayField, BoolField, TraitDataTypeSelectField
@@ -138,7 +136,7 @@ class ConnectivityCreator(ABCAdapter):
         linked_region_mappings = dao.get_generic_entity(RegionMappingIndex, original_conn_gid, 'fk_connectivity_gid')
         for mapping in linked_region_mappings:
             original_rm = h5.load_from_index(mapping)
-            surface = h5.load_from_gid(mapping.fk_surface_gid)
+            surface = self.load_traited_by_gid(mapping.fk_surface_gid)
 
             new_rm = RegionMapping()
             new_rm.connectivity = new_connectivity_ht
@@ -155,8 +153,7 @@ class ConnectivityCreator(ABCAdapter):
         Method to be called when user submits changes on the
         Connectivity matrix in the Visualizer.
         """
-        # note: is_branch is missing instead of false because browsers only send checked boxes in forms.
-        original_conn_ht = h5.load_from_gid(view_model.original_connectivity.hex)
+        original_conn_ht = self.load_traited_by_gid(view_model.original_connectivity)
         assert isinstance(original_conn_ht, Connectivity)
 
         if not view_model.is_branch:

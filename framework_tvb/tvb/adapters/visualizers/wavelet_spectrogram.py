@@ -38,12 +38,12 @@ Plot the power of a WaveletCoefficients object
 
 import json
 
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.spectral import WaveletCoefficients
 
@@ -95,14 +95,13 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         """
          Return the required memory to run this algorithm.
          """
-        input_h5 = h5.h5_file_for_gid(view_model.input_data.hex)
-        with input_h5:
-            shape = input_h5.data.shape
+        wavelet_idx = self.load_entity_by_gid(view_model.input_data)
+        shape = wavelet_idx.shape
 
         return shape[0] * shape[1] * 8
 
-    def generate_preview(self, view_model):
-        # type: (WaveletSpectrogramVisualizerModel) -> dict
+    def generate_preview(self, view_model, figure_size=None):
+        # type: (WaveletSpectrogramVisualizerModel, (int,int)) -> dict
         return self.launch(view_model)
 
     def launch(self, view_model):

@@ -37,11 +37,11 @@ given action are described here.
 
 import json
 import sys
+
 import cherrypy
 import formencode
 import numpy
 import six
-
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -412,19 +412,18 @@ class FlowController(BaseController):
 
     def _read_from_h5(self, entity_gid, method_name, datatype_kwargs='null', **kwargs):
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + method_name + "/" + str(kwargs))
-        entity_h5 = h5.h5_file_for_gid(entity_gid)
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
             for key, value in six.iteritems(datatype_kwargs):
                 kwargs[key] = load_entity_by_gid(value)
 
-        result = getattr(entity_h5, method_name)
-        if kwargs:
-            result = result(**kwargs)
-        else:
-            result = result()
-        entity_h5.close()
+        with h5.h5_file_for_gid(entity_gid) as entity_h5:
+            result = getattr(entity_h5, method_name)
+            if kwargs:
+                result = result(**kwargs)
+            else:
+                result = result()
 
         return result
 

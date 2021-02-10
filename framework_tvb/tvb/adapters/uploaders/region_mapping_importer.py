@@ -33,20 +33,20 @@
 """
 
 import os
-import numpy
 import shutil
-import zipfile
 import tempfile
+import zipfile
 
+import numpy
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -152,24 +152,27 @@ class RegionMappingImporter(ABCUploader):
             raise LaunchException("Uploaded file does not contains any data. Please initiate upload with another file.")
 
         # Check if we have a mapping for each surface vertex.
-        surface_ht = self.load_traited_by_gid(view_model.surface)
-        if len(array_data) != surface_ht.number_of_vertices:
+        surface_idx = self.load_entity_by_gid(view_model.surface)
+        if len(array_data) != surface_idx.number_of_vertices:
             msg = "Imported file contains a different number of values than the number of surface vertices. " \
                   "Imported: %d values while surface has: %d vertices." % (
-                      len(array_data), surface_ht.number_of_vertices)
+                      len(array_data), surface_idx.number_of_vertices)
             raise LaunchException(msg)
 
         # Now check if the values from imported file correspond to connectivity regions
         if array_data.min() < 0:
             raise LaunchException("Imported file contains negative values. Please fix problem and re-import file")
 
-        connectivity_ht = self.load_traited_by_gid(view_model.connectivity)
-        if array_data.max() >= connectivity_ht.number_of_regions:
+        conn_idx = self.load_entity_by_gid(view_model.connectivity)
+        if array_data.max() >= conn_idx.number_of_regions:
             msg = "Imported file contains invalid regions. Found region: %d while selected connectivity has: %d " \
-                  "regions defined (0 based)." % (array_data.max(), connectivity_ht.number_of_regions)
+                  "regions defined (0 based)." % (array_data.max(), conn_idx.number_of_regions)
             raise LaunchException(msg)
 
         self.logger.debug("Creating RegionMapping instance")
+
+        surface_ht = h5.load_from_index(surface_idx)
+        connectivity_ht = h5.load_from_index(conn_idx)
 
         region_mapping = RegionMapping(surface=surface_ht, connectivity=connectivity_ht, array_data=array_data)
         return h5.store_complete(region_mapping, self.storage_path)

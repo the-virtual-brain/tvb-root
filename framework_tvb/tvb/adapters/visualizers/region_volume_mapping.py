@@ -36,8 +36,8 @@ Backend-side for Visualizers that display measures on regions in the brain volum
 
 import json
 from abc import ABCMeta
-from six import add_metaclass
 
+from six import add_metaclass
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
@@ -124,16 +124,15 @@ class _MappedArrayVolumeBase(ABCDisplayer):
 
     def get_mapped_array_volume_view(self, entity_gid, mapped_array_gid, x_plane, y_plane, z_plane,
                                      mapped_array_slice=None, **kwargs):
-        entity_h5 = h5.h5_file_for_gid(entity_gid)
-        with entity_h5:
+
+        with h5.h5_file_for_gid(entity_gid) as entity_h5:
             data_shape = entity_h5.array_data.shape
             x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
                                                                     data_shape[1], data_shape[2])
             slice_x, slice_y, slice_z = entity_h5.get_volume_slice(x_plane, y_plane, z_plane)
             connectivity_gid = entity_h5.connectivity.load().hex
 
-        mapped_array_h5 = h5.h5_file_for_gid(mapped_array_gid)
-        with mapped_array_h5:
+        with h5.h5_file_for_gid(mapped_array_gid) as mapped_array_h5:
             if mapped_array_slice:
                 matrix_slice = parse_slice(mapped_array_slice)
                 measure = mapped_array_h5.array_data[matrix_slice]
@@ -163,8 +162,7 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return dict(minBackgroundValue=min_value, maxBackgroundValue=max_value, urlBackgroundVolumeData=url)
 
     def get_voxel_region(self, region_mapping_volume_gid, x_plane, y_plane, z_plane):
-        entity_h5 = h5.h5_file_for_gid(region_mapping_volume_gid)
-        with entity_h5:
+        with h5.h5_file_for_gid(region_mapping_volume_gid) as entity_h5:
             data_shape = entity_h5.array_data.shape
             x_plane, y_plane, z_plane = preprocess_space_parameters(x_plane, y_plane, z_plane, data_shape[0],
                                                                     data_shape[1], data_shape[2])
@@ -213,13 +211,11 @@ class _MappedArrayVolumeBase(ABCDisplayer):
         return params
 
     def get_volume_view(self, entity_gid, **kwargs):
-        ts_region_h5 = h5.h5_file_for_gid(entity_gid)
-        with ts_region_h5:
+        with h5.h5_file_for_gid(entity_gid) as ts_region_h5:
             if isinstance(ts_region_h5, TimeSeriesRegionH5):
                 return self.prepare_view_region(ts_region_h5, **kwargs)
 
             volume_view = ts_region_h5.get_volume_view(**kwargs)
-
         return volume_view
 
     def prepare_view_region(self, ts_h5, x_plane, y_plane, z_plane, from_idx=None, to_idx=None, var=0, mode=0):

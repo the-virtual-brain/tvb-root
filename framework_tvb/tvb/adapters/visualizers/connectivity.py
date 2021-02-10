@@ -195,7 +195,7 @@ class ConnectivityViewer(ABCSpaceDisplayer):
 
         global_params, global_pages = self._compute_connectivity_global_params(connectivity)
         if view_model.surface_data is not None:
-            with h5.h5_file_for_gid(view_model.surface_data.hex) as surface_h5:
+            with h5.h5_file_for_gid(view_model.surface_data) as surface_h5:
                 url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
         else:
             url_vertices, url_normals, url_triangles = [], [], []
