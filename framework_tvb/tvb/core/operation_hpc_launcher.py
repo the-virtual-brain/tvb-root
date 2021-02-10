@@ -58,7 +58,7 @@ def _encrypt_results(adapter_instance, encryption_handler):
     output_plain_files = os.listdir(output_plain_dir)
     output_plain_files = [os.path.join(output_plain_dir, plain_file) for plain_file in output_plain_files]
     log.info("Encrypt files: {}".format(output_plain_files))
-    encryption_handler.encrypt_inputs(output_plain_files, adapter_instance.OUTPUT_FOLDER)
+    encryption_handler.encrypt_inputs(output_plain_files, HPCSchedulerClient.OUTPUT_FOLDER)
 
 
 def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url, operation_id, plain_dir='/root/plain'):

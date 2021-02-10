@@ -31,11 +31,11 @@
 """
 .. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 """
-# TODO: Review SimulatorAdapter import (HBP-134)
-from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.backend_clients.cluster_scheduler_client import ClusterSchedulerClient
@@ -53,7 +53,8 @@ class BackendClientFactory(object):
         # type: (ABCAdapter) -> BackendClient
 
         # For the moment run only simulations on HPC
-        if TvbProfile.current.hpc.IS_HPC_RUN and type(adapter_instance) is SimulatorAdapter:
+        if TvbProfile.current.hpc.IS_HPC_RUN and type(adapter_instance) is get_class_by_name(
+                "{}.{}".format(SIMULATOR_MODULE, SIMULATOR_CLASS)):
             if not TvbProfile.current.hpc.CAN_RUN_HPC:
                 raise InvalidSettingsException("We can not enable HPC run. Most probably pyunicore is not installed!")
             # Return an entity capable to submit jobs to HPC.
