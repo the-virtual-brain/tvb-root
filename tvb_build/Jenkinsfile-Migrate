@@ -6,13 +6,6 @@ pipeline {
     }
 
     stages {
-        stage ('Build docker image') {
-            steps {
-                script{
-                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "-f tvb_build/docker/Dockerfile-migrate tvb_build/docker")
-                }
-            }
-        }
         stage ('Test Migration'){
             agent {
                 docker {
