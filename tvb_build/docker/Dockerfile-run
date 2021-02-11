@@ -29,7 +29,7 @@ RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install h5py==2.10 formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk
 RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
-RUN /opt/conda/envs/tvb-run/bin/pip install typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
+RUN /opt/conda/envs/tvb-run/bin/pip install typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN /opt/conda/envs/tvb-run/bin/pip install lockfile
 RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
 
