@@ -1,0 +1,4 @@
+FROM tvb-run
+
+ARG TVB_USER=tvb_user
+COPY --chown=$TVB_USER:$TVB_USER TVB /home/tvb_user/TVB_STORAGE

@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+
+    environment{
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-migrate:latest'
+    }
+
+    stages {
+        stage ('Build docker image') {
+            steps {
+                script{
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "-f tvb_build/docker/Dockerfile-migrate tvb_build/docker")
+                }
+            }
+        }
+        stage ('Test Migration'){
+            agent {
+                docker {
+                    image '${FULL_DOCKER_IMAGE_NAME}'
+                }
+            }
+            steps {
+                sh '''#!/bin/bash
+                    source activate tvb-run
+                    cd tvb_build
+                    bash install_full_tvb.sh
+                    cd ..
+                    python -m tvb.interfaces.web.run WEB_PROFILE
+                    exit 0
+                '''
+            }
+        }
+    }
+    post {
+        changed {
+            mail to: 'robert.vincze@codemart.ro',
+            subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
+            body: """
+                Result: ${currentBuild.result}
+                Job: '${env.JOB_NAME}' [${env.BUILD_NUMBER}]'
+                Check console output at ${env.BUILD_URL}"""
+        }
+    }
+}
