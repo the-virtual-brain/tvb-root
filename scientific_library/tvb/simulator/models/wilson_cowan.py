@@ -31,11 +31,29 @@ Wilson-Cowan equations based model definition.
 
 """
 import numpy
-from .base import Model
+from .base import ModelNumbaDfun
 from tvb.basic.neotraits.api import NArray, Final, List, Range
+from numba import guvectorize, float64
 
 
-class WilsonCowan(Model):
+@guvectorize([(float64[:],) * 27], '(n),(m),(o)' + ',()'*23 + '->(n)', nopython=True)
+def _numba_dfun(y, c, lc, c_ee, c_ei, c_ie, c_ii, tau_e, tau_i, a_e, b_e, c_e, theta_e, a_i, b_i, theta_i, c_i,
+                r_e, r_i, k_e, k_i, P, Q, alpha_e, alpha_i, shift_sigmoid, ydot):
+    x_e = alpha_e[0] * (c_ee[0] * y[0] - c_ei[0] * y[1] + P[0]  - theta_e[0] +  c[0] + lc[0] + lc[1])
+    x_i = alpha_i[0] * (c_ie[0] * y[0] - c_ii[0] * y[1] + Q[0]  - theta_i[0] + lc[0] + lc[1])
+    if shift_sigmoid:
+        s_e = c_e[0] * (1.0 / (1.0 + numpy.exp(-a_e[0] * (x_e - b_e[0]))) - 1.0
+                        / (1.0 + numpy.exp(-a_e[0] * -b_e[0])))
+        s_i = c_i[0] * (1.0 / (1.0 + numpy.exp(-a_i[0] * (x_i - b_i[0]))) - 1.0
+                        / (1.0 + numpy.exp(-a_i[0] * -b_i[0])))
+    else:
+        s_e = c_e[0] / (1.0 + numpy.exp(-a_e[0] * (x_e - b_e[0])))
+        s_i = c_i[0] / (1.0 + numpy.exp(-a_i[0] * (x_i - b_i[0])))
+    ydot[0] = (-y[0] + (k_e[0] - r_e[0] * y[0]) * s_e) / tau_e[0]
+    ydot[1] = (-y[1] + (k_i[0] - r_i[0] * y[1]) * s_i) / tau_i[0]
+
+
+class WilsonCowan(ModelNumbaDfun):
     r"""
     **References**:
 
@@ -360,7 +378,7 @@ class WilsonCowan(Model):
     _nvar = 2
     cvar = numpy.array([0, 1], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
 
         .. math::
@@ -396,3 +414,21 @@ class WilsonCowan(Model):
         derivative[1] = (-I + (self.k_i - self.r_i * I) * s_i) / self.tau_i
 
         return derivative
+
+    def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+
+        .. math::
+            \tau \dot{x}(t) &= -z(t) + \phi(z(t)) \\
+            \phi(x) &= \frac{c}{1-exp(-a (x-b))}
+
+        """
+        x_ = state_variables.reshape(state_variables.shape[:-1]).T
+        c_ = coupling.reshape(coupling.shape[:-1]).T
+        local_coupling = numpy.array([local_coupling * state_variables[0, :], local_coupling * state_variables[1, :]])
+        local_coupling_ = local_coupling.reshape(local_coupling.shape[:-1]).T
+        deriv = _numba_dfun(x_, c_, local_coupling_,
+                            self.c_ee, self.c_ei, self.c_ie, self.c_ii, self.tau_e, self.tau_i, self.a_e, self.b_e,
+                            self.c_e, self.theta_e, self.a_i, self.b_i, self.theta_i, self.c_i, self.r_e, self.r_i,
+                            self.k_e, self.k_i, self.P, self.Q, self.alpha_e, self.alpha_i, self.shift_sigmoid)
+        return deriv.T[..., numpy.newaxis]
