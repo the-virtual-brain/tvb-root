@@ -176,7 +176,7 @@ class FilesUpdateManager(UpdateManager):
             # were marked as invalid due to missing files or invalid manager.
             start_time = datetime.now()
 
-            file_paths = self._get_all_h5_paths()
+            file_paths = self.get_all_h5_paths()
             total_count = len(file_paths)
             no_ok, no_error = self.__upgrade_h5_list(file_paths)
 
@@ -214,7 +214,7 @@ class FilesUpdateManager(UpdateManager):
         return HDF5StorageManager(folder, file_name)
 
     @staticmethod
-    def _get_all_h5_paths():
+    def get_all_h5_paths():
         """
         This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
         The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).

@@ -18,7 +18,6 @@ pipeline {
                     cd tvb_build
                     bash install_full_tvb.sh
                     cd ..
-                    python -m tvb.interfaces.web.run WEB_PROFILE
                     python -m tvb.config.init.migrated_files_counter
                     exit 0
                 '''
