@@ -29,10 +29,38 @@
 #
 
 """
-Currently tests for various backend templating.
-
-TODO have just tests to cover various attributes of models have everything
+A CUDA backend which uses templating to generate simulation
+code, with PyCUDA as the driver.
 
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
+
+
+try:
+    import pycuda
+    import pycuda.autoinit
+    from pycuda.compiler import SourceModule
+    import pycuda.driver as drv
+    from pycuda.driver import Out, In, InOut
+    pycuda_available = True
+except Exception as exc:
+	pycuda_available = False
+
+from .templates import MakoUtilMix
+
+
+class CuBackend(MakoUtilMix):
+
+    def build_cu_func(self, template_source, content, name='kernel', print_source=False):
+        "Build and retrieve a Python function from template."
+        source = self._render_template(template_source, content)
+        if print_source:
+            print(source)
+        try:
+            module = SourceModule(source)
+        except pycuda.driver.CompileError as exc:
+            print(self._insert_line_numbers(source))
+            raise exc
+        func = module.get_function(name)
+        return func

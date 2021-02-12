@@ -29,10 +29,30 @@
 #
 
 """
-Currently tests for various backend templating.
-
-TODO have just tests to cover various attributes of models have everything
+A plain NumPy backend which uses templating to generate simulation
+code.
 
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
+
+import numpy as np
+
+from .templates import MakoUtilMix
+
+
+class NpBackend(MakoUtilMix):
+
+    def build_py_func(self, template_source, content, name='kernel', print_source=False):
+        "Build and retrieve a Python function from template."
+        source = self.render_template(template_source, content)
+        if print_source:
+            print(self.insert_line_numbers(source))
+        globals_ = {}
+        try:
+            exec(source, globals_)
+        except Exception as exc:
+            if not print_source:
+                print(self._insert_line_numbers(source))
+            raise exc
+        return globals_[name]
