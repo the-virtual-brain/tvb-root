@@ -139,13 +139,52 @@ class TestExporters(TransactionalTestCase):
             has_conn = False
             has_surface = False
             for dt_file in zipObj.namelist():
-                if dt_file.find(region_mapping_index.fk_connectivity_gid):
+                if dt_file.find(region_mapping_index.fk_connectivity_gid) > -1:
                     has_conn = True
                 if dt_file.find(region_mapping_index.fk_surface_gid):
                     has_surface = True
 
         assert has_conn is True, "Connectivity was exported in zip"
         assert has_surface is True, "Surface was exported in zip"
+
+    def test_tvb_export_for_datatype_group_with_links(self, datatype_group_factory):
+        """
+        This method checks export of a data type group with Links
+        """
+        datatype_group = datatype_group_factory(project=self.test_project, store_vm=True, use_time_series_region=True)
+        file_name, file_path, _ = self.export_manager.export_data(datatype_group, self.TVB_LINKED_EXPORTER, self.test_project)
+
+        assert file_name is not None, "Export process should return a file name"
+        assert file_path is not None, "Export process should return path to export file"
+        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+
+        # Now check if the generated file is a correct ZIP file
+        assert zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file"
+
+        with closing(zipfile.ZipFile(file_path)) as zip_file:
+            list_of_files = zip_file.namelist()
+
+            list_of_folders = []
+            links_folder_found = False
+            for file in list_of_files:
+                dir_name = os.path.dirname(file)
+                if not links_folder_found:
+                    if "Links" in dir_name:
+                        links_folder_found = True
+                        assert file_path is not None, "Export process should return path to export file"
+
+                if dir_name not in list_of_folders:
+                    list_of_folders.append(dir_name)
+
+            assert links_folder_found is not None, "Links folder was not exported"
+
+            count_datatypes = dao.count_datatypes_in_group(datatype_group.id)
+
+            # Check if ZIP files contains files for data types and view models (multiple H5 files in case of a Sim)
+            # +1 For Links folder
+            assert count_datatypes + 1 == len(list_of_folders)
+            # +3 for the 3 files in Links folder: Connectivity, Surface, Region Mapping
+            assert count_datatypes * 6 + 3 == len(list_of_files)
 
     def test_tvb_export_for_datatype_group(self, datatype_group_factory):
         """
