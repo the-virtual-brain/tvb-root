@@ -42,9 +42,11 @@ from tvb.adapters.exporters.exceptions import ExportException, InvalidExportData
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.storage import dao
+from tvb.core.neotraits._h5core import H5File
 from tvb.core.services.project_service import ProjectService
 
 class ExportManager(object):
@@ -54,6 +56,7 @@ class ExportManager(object):
     all_exporters = {}  # Dictionary containing all available exporters
     export_folder = None
     EXPORT_FOLDER_NAME = "EXPORT_TMP"
+    EXPORTED_SIMULATION_NAME = "exported_simulation"
     ZIP_FILE_EXTENSION = "zip"
     logger = get_logger(__name__)
 
@@ -253,6 +256,18 @@ class ExportManager(object):
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
         op_folder = FilesHelper().get_project_folder(burst.project, str(burst.fk_simulation))
+        tmp_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, self.EXPORTED_SIMULATION_NAME)
+
+        if not os.path.exists(tmp_folder):
+            os.makedirs(tmp_folder)
+        for r, d, files in os.walk(op_folder):
+            for file in files:
+                dest = os.path.join(tmp_folder, file)
+                initial_path = os.path.join(r, file)
+                FilesHelper().copy_file(initial_path, dest)
+                dest_file_class = H5File.determine_type(dest)
+                if dest_file_class is SimulatorAdapterModel:
+                    H5File.remove_metadata_param(dest, 'history_gid')
 
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
@@ -261,7 +276,7 @@ class ExportManager(object):
         result_path = os.path.join(tmp_export_folder, zip_file_name)
 
         with TvbZip(result_path, "w") as zip_file:
-            for filename in os.listdir(op_folder):
-                zip_file.write(os.path.join(op_folder, filename), filename)
-
+            for filename in os.listdir(tmp_folder):
+                zip_file.write(os.path.join(tmp_folder, filename), filename)
+        FilesHelper().remove_folder(tmp_folder)
         return result_path
