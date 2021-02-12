@@ -36,3 +36,18 @@ TODO have just tests to cover various attributes of models have everything
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
+
+import unittest
+
+from tvb.simulator.coupling import Sigmoidal, Linear
+from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+
+
+class TestModelIR(unittest.TestCase):
+    
+    def _test_model(self, model):
+        for key in 'coupling_terms state_variable_dfuns parameter_names'.split():
+            self.assertTrue(hasattr(model, key))
+
+    def test_MontbrioPazoRoxin(self):
+        self._test_model(MontbrioPazoRoxin())
