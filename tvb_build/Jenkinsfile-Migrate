@@ -19,8 +19,10 @@ pipeline {
                     bash install_full_tvb.sh
                     cd ..
                     python -m tvb.config.init.migrated_files_counter
+                    cp -R /home/tvb_user/TVB_STORAGE/logs .
                     exit 0
                 '''
+                archiveArtifacts artifacts: 'logs/*'
             }
         }
     }
