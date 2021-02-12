@@ -42,8 +42,6 @@ from datetime import datetime
 
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
-from tvb.basic.config.stored import KEY_ADMIN_DISPLAY_NAME, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIGURATION, \
-    KEY_KC_CONFIGURATION
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
