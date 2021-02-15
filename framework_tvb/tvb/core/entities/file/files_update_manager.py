@@ -124,7 +124,7 @@ class FilesUpdateManager(UpdateManager):
             except FileMigrationException as excep:
                 self.files_helper.copy_file(temp_file_path, input_file_name)
                 os.remove(temp_file_path)
-                self.log.info(excep)
+                self.log.error(excep)
                 return False
 
         if datatype:

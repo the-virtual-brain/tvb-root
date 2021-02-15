@@ -9,6 +9,7 @@ pipeline {
         stage ('Test Migration'){
             agent {
                 docker {
+                    alwaysPull true
                     image '${FULL_DOCKER_IMAGE_NAME}'
                 }
             }
