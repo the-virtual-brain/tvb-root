@@ -455,7 +455,7 @@ def _migrate_time_series(operation_xml_parameters):
     operation_xml_parameters['coupling'] = coupling
 
     model_name = operation_xml_parameters['model']
-    model = getattr(sys.modules['tvb.simulator.models'], model_name)()
+    model = getattr(sys.modules['tvb.simulator.models'], model_name[0].upper() + model_name[1:])()
     operation_xml_parameters['model'] = model
 
     integrator_name = operation_xml_parameters['integrator']
@@ -944,11 +944,10 @@ def _migrate_simulation_state(**kwargs):
 
 
 def _migrate_tracts(**kwargs):
-    if kwargs['operation_xml_parameters']['region_volume'] != '':
-        root_metadata = kwargs['root_metadata']
-        root_metadata['region_volume_map'] = _parse_gid(root_metadata['region_volume_map'])
-    kwargs['storage_manager'].store_data('tract_region', kwargs['root_metadata'])
+    root_metadata = kwargs['root_metadata']
+    root_metadata['region_volume_map'] = _parse_gid(root_metadata['region_volume_map'])
     _migrate_dataset_metadata(['tract_region', 'tract_start_idx', 'vertices'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
 def _migrate_dataset_metadata(dataset_list, storage_manager):
