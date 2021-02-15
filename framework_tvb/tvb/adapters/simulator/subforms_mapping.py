@@ -70,6 +70,13 @@ def get_ui_name_to_noise_dict():
     return ui_name_to_noise
 
 
+def get_integrator_name_list():
+    return ['Heun', 'Stochastic Heun', 'Euler', 'Euler-Maruyama', 'Runge-Kutta 4th order', 'Difference equation',
+            'Variable-order Adams / BDF', 'Stochastic variable-order Adams / BDF', 'Dormand-Prince, order (4, 5)',
+            'Stochastic Dormand-Prince, order (4, 5)', 'Stochastic Dormand-Prince, order (4, 5)',
+            'Stochastic Dormand-Prince, order 8 (5, 3)']
+
+
 def get_ui_name_to_integrator_dict():
     ui_name_to_integrator = {
         'Heun': HeunDeterministicViewModel,
@@ -78,8 +85,8 @@ def get_ui_name_to_integrator_dict():
         'Euler-Maruyama': EulerStochasticViewModel,
         'Runge-Kutta 4th order': RungeKutta4thOrderDeterministicViewModel,
         'Difference equation': IdentityViewModel,
-        'Variable-order Adams / BDF': VODEViewModel,
-        'Stochastic variable-order Adams / BDF': VODEStochasticViewModel,
+        'Variable-order Adams (BDF)': VODEViewModel,
+        'Stochastic variable-order Adams (BDF)': VODEStochasticViewModel,
         'Dormand-Prince, order (4, 5)': Dopri5ViewModel,
         'Stochastic Dormand-Prince, order (4, 5)': Dopri5StochasticViewModel,
         'Dormand-Prince, order 8 (5, 3)': Dop853ViewModel,

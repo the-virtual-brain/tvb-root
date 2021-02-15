@@ -36,7 +36,7 @@ from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTempora
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict, get_integrator_name_list
 from tvb.basic.neotraits.api import Attr, Range, List, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModel
@@ -164,7 +164,7 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
         self.integrator = SelectField(
             Attr(IntegratorViewModel, default=default_integrator, label=SimulatorAdapterModel.integrator.label,
                  doc=SimulatorAdapterModel.integrator.doc), name='integrator', choices=self.integrator_choices,
-            subform=get_form_for_integrator(default_integrator))
+            subform=get_form_for_integrator(default_integrator), ui_values=get_integrator_name_list())
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None
