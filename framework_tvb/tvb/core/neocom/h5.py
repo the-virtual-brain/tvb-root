@@ -322,3 +322,22 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
             uuid_files.append(h5_file.path)
             gather_all_references_by_index(h5_file, uuid_files)
         ref_files.extend(uuid_files)
+
+
+def gather_view_model_files(gid, base_dir, ref_files):
+    vm_path = determine_filepath(gid, base_dir)
+    ref_files.append(vm_path)
+    view_model_class = H5File.determine_type(vm_path)
+    view_model = view_model_class()
+
+    with ViewModelH5(vm_path, view_model) as vm_h5:
+        references = vm_h5.gather_references()
+
+        for _, gid in references:
+            if not gid:
+                continue
+            if isinstance(gid, (list, tuple)):
+                for list_gid in gid:
+                    gather_all_references_of_view_model(list_gid, base_dir, ref_files)
+            else:
+                gather_all_references_of_view_model(gid, base_dir, ref_files)

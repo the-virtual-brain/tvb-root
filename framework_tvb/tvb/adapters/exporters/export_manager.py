@@ -36,18 +36,20 @@ Class responsible for all TVB exports (datatype or project).
 
 import os
 from datetime import datetime
-from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
-from tvb.adapters.exporters.tvb_export import TVBExporter
+
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
+from tvb.adapters.exporters.tvb_export import TVBExporter
+from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
-from tvb.core.entities.model import model_operation
 from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
+from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits._h5core import H5File
+from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.project_service import ProjectService
+
 
 class ExportManager(object):
     """
@@ -256,27 +258,30 @@ class ExportManager(object):
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
         op_folder = FilesHelper().get_project_folder(burst.project, str(burst.fk_simulation))
-        tmp_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, self.EXPORTED_SIMULATION_NAME)
+        tmp_export_folder = self._build_data_export_folder(burst)
+        tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
 
-        if not os.path.exists(tmp_folder):
-            os.makedirs(tmp_folder)
-        for r, d, files in os.walk(op_folder):
-            for file in files:
-                dest = os.path.join(tmp_folder, file)
-                initial_path = os.path.join(r, file)
-                FilesHelper().copy_file(initial_path, dest)
-                dest_file_class = H5File.determine_type(dest)
-                if dest_file_class is SimulatorAdapterModel:
-                    H5File.remove_metadata_param(dest, 'history_gid')
+        if not os.path.exists(tmp_sim_folder):
+            os.makedirs(tmp_sim_folder)
+
+        burst_path = h5.determine_filepath(burst.gid, op_folder)
+        all_view_model_paths = [burst_path]
+        h5.gather_view_model_files(burst.simulator_gid, op_folder, all_view_model_paths)
+
+        for vm_path in all_view_model_paths:
+            dest = os.path.join(tmp_sim_folder, os.path.basename(vm_path))
+            FilesHelper().copy_file(vm_path, dest)
+
+        main_vm_path = h5.determine_filepath(burst.simulator_gid, tmp_sim_folder)
+        H5File.remove_metadata_param(main_vm_path, 'history_gid')
 
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
         zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), self.ZIP_FILE_EXTENSION)
-        tmp_export_folder = self._build_data_export_folder(burst)
-        result_path = os.path.join(tmp_export_folder, zip_file_name)
 
+        result_path = os.path.join(tmp_export_folder, zip_file_name)
         with TvbZip(result_path, "w") as zip_file:
-            for filename in os.listdir(tmp_folder):
-                zip_file.write(os.path.join(tmp_folder, filename), filename)
-        FilesHelper().remove_folder(tmp_folder)
+            for filename in os.listdir(tmp_sim_folder):
+                zip_file.write(os.path.join(tmp_sim_folder, filename), filename)
+        FilesHelper().remove_folder(tmp_sim_folder)
         return result_path
