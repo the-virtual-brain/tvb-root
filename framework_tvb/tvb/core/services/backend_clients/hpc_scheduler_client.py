@@ -117,8 +117,7 @@ class HPCSchedulerClient(BackendClient):
     def _prepare_input(operation, simulator_gid):
         # type: (Operation, str) -> list
         storage_path = FilesHelper().get_project_folder(operation.project, str(operation.id))
-        input_files = []
-        h5.gather_all_references_of_view_model(simulator_gid, storage_path, input_files)
+        input_files = h5.gather_view_model_references(simulator_gid, storage_path)
         input_files = list(set(input_files))
         return input_files
 
