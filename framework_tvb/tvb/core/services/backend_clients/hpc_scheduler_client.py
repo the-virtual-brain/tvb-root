@@ -39,6 +39,7 @@ import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
+
 from requests import HTTPError
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
@@ -118,7 +119,6 @@ class HPCSchedulerClient(BackendClient):
         # type: (Operation, str) -> list
         storage_path = FilesHelper().get_project_folder(operation.project, str(operation.id))
         input_files = h5.gather_view_model_references(simulator_gid, storage_path)
-        input_files = list(set(input_files))
         return input_files
 
     @staticmethod
@@ -127,7 +127,8 @@ class HPCSchedulerClient(BackendClient):
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
-        inputs_in_container = os.path.join(HPCSchedulerClient.CONTAINER_INPUT_FOLDER, EncryptionHandler(simulator_gid).current_enc_dirname)
+        inputs_in_container = os.path.join(HPCSchedulerClient.CONTAINER_INPUT_FOLDER,
+                                           EncryptionHandler(simulator_gid).current_enc_dirname)
 
         # Build job configuration JSON
         my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
