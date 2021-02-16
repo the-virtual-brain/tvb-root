@@ -38,6 +38,7 @@ import shutil
 import uuid
 
 import numpy
+from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
@@ -225,14 +226,13 @@ class SimulatorService(object):
             self.logger.error(excep)
             self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
-    def prepare_first_simulation_fragment(self, simulator_algorithm, project_id, is_branch, simulator,
-                                          connectivity_index_class):
+    def prepare_first_simulation_fragment(self, simulator_algorithm, project_id, is_branch, simulator):
         adapter_instance = ABCAdapter.build_adapter(simulator_algorithm)
         branch_conditions = self._compute_conn_branch_conditions(is_branch, simulator)
         form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id,
                                                            extra_conditions=branch_conditions)
 
-        conn_count = dao.count_datatypes(project_id, connectivity_index_class)
+        conn_count = dao.count_datatypes(project_id, ConnectivityIndex)
         if conn_count == 0:
             form.connectivity.errors.append("No connectivity in the project! Simulation cannot be started without "
                                             "a connectivity!")

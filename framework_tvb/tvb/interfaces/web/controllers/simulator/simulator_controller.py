@@ -31,7 +31,6 @@
 import threading
 
 from cherrypy.lib.static import serve_file
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
@@ -144,8 +143,7 @@ class SimulatorController(BurstBaseController):
     def prepare_first_fragment(self):
         simulator, _, _, is_branch = self.context.get_common_params()
         form = self.simulator_service.prepare_first_simulation_fragment(self.cached_simulator_algorithm,
-                                                                        self.context.project.id, is_branch, simulator,
-                                                                        ConnectivityIndex)
+                                                                        self.context.project.id, is_branch, simulator)
         session_stored_simulator = self.context.simulator
         if session_stored_simulator is None:
             session_stored_simulator = SimulatorAdapterModel()
