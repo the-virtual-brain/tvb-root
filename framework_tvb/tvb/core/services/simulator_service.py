@@ -40,6 +40,7 @@ import uuid
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities import load
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_datatype import DataTypeGroup
@@ -240,19 +241,11 @@ class SimulatorService(object):
     @staticmethod
     def _compute_conn_branch_conditions(is_branch, simulator):
         if is_branch:
-            conn = dao.get_datatype_by_gid(simulator.connectivity.hex)
+            conn = load.load_entity_by_gid(simulator.connectivity)
             if conn.number_of_regions:
                 return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
                                    operations=["=="], values=[conn.number_of_regions])
         return None
-
-    @staticmethod
-    def get_current_and_next_monitor_form(current_monitor_name, simulator, next_monitors_dict):
-        current_monitor, next_monitor_index = next_monitors_dict[current_monitor_name]
-
-        if next_monitor_index < len(next_monitors_dict):
-            return current_monitor, simulator.monitors[next_monitor_index]
-        return current_monitor, None
 
     def get_simulation_state_index(self, burst_config, simulation_history_class):
         parent_burst = burst_config.parent_burst_object

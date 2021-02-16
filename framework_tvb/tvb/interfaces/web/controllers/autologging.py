@@ -631,6 +631,7 @@ def traced(*args, **keywords):
         return _install_traceable_methods(obj,
                                           exclude=keywords.get("exclude", False))
     elif isroutine(obj):  # `@traced' function
+        LOGGER.setLevel(TRACE)
         return _make_traceable_function(
             obj, LOGGER)
     elif isinstance(obj, logging.Logger):
@@ -874,6 +875,7 @@ def _install_traceable_methods(class_, *method_names, **keywords):
             warnings.warn("tracing not supported for %r" % descriptor_type)
             continue
 
+        LOGGER.setLevel(TRACE)
         tracing_proxy_descriptor = make_traceable_method(descriptor, LOGGER)
 
         # class_.__dict__ is a mappingproxy; direct assignment not supported

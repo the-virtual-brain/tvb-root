@@ -29,17 +29,18 @@
 #
 
 import os
-import uuid
 import typing
+import uuid
 from uuid import UUID
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
-from tvb.core.neotraits.h5 import H5File
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom._registry import Registry
+from tvb.core.neotraits.h5 import H5File
 
 H5_EXTENSION = '.h5'
 

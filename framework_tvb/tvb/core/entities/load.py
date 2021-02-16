@@ -34,9 +34,8 @@ Higher level entity loading.
 """
 import importlib
 import uuid
+
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.file.exceptions import FileVersioningException
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.storage import dao
 
 LOGGER = get_logger(__name__)
@@ -62,17 +61,6 @@ def load_entity_by_gid(data_gid):
     if isinstance(data_gid, uuid.UUID):
         data_gid = data_gid.hex
     datatype = dao.get_datatype_by_gid(data_gid)
-    # TODO
-    # from tvb.core.traits.types_mapped import MappedType
-
-    # if isinstance(datatype, MappedType):
-    #     datatype_path = datatype.get_storage_file_path()
-    #     files_update_manager = FilesUpdateManager()
-    #     if not files_update_manager.is_file_up_to_date(datatype_path):
-    #         datatype.invalid = True
-    #         dao.store_entity(datatype)
-    #         raise FileVersioningException("Encountered DataType with an incompatible storage or data version. "
-    #                                       "The DataType was marked as invalid.")
     return datatype
 
 

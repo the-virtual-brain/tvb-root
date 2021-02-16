@@ -288,7 +288,7 @@ def list_of_dicts_to_dict_of_lists(lst):
 
 
 def list_of_dicts_to_dicts_of_ndarrays(lst, shape=None):
-    d = list_of_dicts_to_dict_of_tuples(lst)
+    d = list_of_dicts_to_dict_of_tuples(ensure_list(lst))
     if isinstance(shape, tuple):
         for key, val in d.items():
             d[key] = np.reshape(np.stack(d[key]), shape)
@@ -339,10 +339,10 @@ def ensure_string(arg):
         return arg
 
 
-def flatten_list(lin, sort=False):
+def flatten_list(lin, sort=False, recursive=False):
     lout = []
     for sublist in lin:
-        if isinstance(sublist, (list, tuple)):
+        if recursive and isinstance(sublist, (list, tuple)):
             temp = flatten_list(list(sublist))
         else:
             temp = [sublist]
@@ -353,8 +353,8 @@ def flatten_list(lin, sort=False):
     return lout
 
 
-def flatten_tuple(t, sort=False):
-    return tuple(flatten_list(list(t), sort))
+def flatten_tuple(t, sort=False, recursive=True):
+    return tuple(flatten_list(list(t), sort, recursive))
 
 
 def extract_integer_intervals(iterable, print=False):
@@ -830,10 +830,13 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         filter_senders = np.unique(senders).tolist()
     else:
         filter_senders = np.unique(flatten_list(filter_senders)).tolist()
+    exclude_senders = ensure_list(exclude_senders)
     for sender in exclude_senders:
         filter_senders.remove(sender)
+    variables = ensure_list(variables)
     if len(variables) is None:
         variables = list(events.keys())
+    dims_names = ensure_list(dims_names)
     coords = OrderedDict()
     coords[dims_names[0]] = variables
     coords[dims_names[1]] = filter_senders
@@ -868,24 +871,28 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         from xarray import DataArray
         return DataArray(data, dims=list(coords.keys()), coords=coords, name=name)
     except:
+        # Return a dictionary as a plan B'
         return {"data": data, "dims": list(coords.keys()), "coords": coords, "name": name}
 
 
-def concatenate_heterogeneous_DataArrays(data, dim_name, data_name="", fill_value=np.nan, dims=None):
+def concatenate_heterogeneous_DataArrays(data, concat_dim_name,
+                                         data_keys=None, name=None, fill_value=np.nan, transpose_dims=None):
+    from pandas import Series
     from xarray import concat
     from pandas import Index
-    data_names = ensure_list(data.keys())
-    if isinstance(data, dict):  # dict
-        data = ensure_list(data.values())
-        name = data_name
-    else:  # pd.Series
-        name = data.name
-        data = ensure_list(data.values)
-    # assuming a pandas Series due to heterogeneity of populations in among brain regions:
-    data = concat(data, Index(data_names, name=dim_name), fill_value=fill_value)
+    if isinstance(data, (dict, Series)):
+        if data_keys is None:
+            data_keys = ensure_list(data.keys())
+        if isinstance(data, dict):  # dict
+            data = ensure_list(data.values())
+        else:  # pd.Series
+            if name is None:
+                name = data.name
+            data = ensure_list(data.values)
+    data = concat(data, Index(data_keys, name=concat_dim_name), fill_value=fill_value)
     data.name = name
-    if dims:
-        data = data.transpose(*dims)
+    if transpose_dims:
+        data = data.transpose(*transpose_dims)
     return data
 
 
@@ -894,3 +901,20 @@ def property_to_fun(property):
         return property
     else:
         return lambda *args, **kwargs: property
+
+
+def series_loop_generator(ser, inds_or_keys=None):
+    index = list(ser.index)
+    if inds_or_keys is None:
+        inds_or_keys = index
+    else:
+        inds_or_keys = ensure_list(inds_or_keys)
+    for index_or_key in inds_or_keys:
+        if isinstance(index_or_key, string_types):
+            lbl = index_or_key
+            id = index.index(index_or_key)
+        else:
+            lbl = index[index_or_key]
+            id = index_or_key
+        pop = ser[index_or_key]
+        yield id, lbl, pop

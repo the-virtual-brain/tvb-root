@@ -901,3 +901,18 @@ class ProjectService:
     def is_datatype_group(datatype_gid):
         """ Used to check if the dataType with the specified GID is a DataTypeGroup. """
         return dao.is_datatype_group(datatype_gid)
+
+    def get_linked_datatypes_storage_path(self, project):
+        """
+        :return: the file paths to the datatypes that are linked in `project`
+        """
+        paths = []
+        for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
+            # get datatype as a mapped type
+            lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
+            path = h5.path_for_stored_index(lnk_dt)
+            if path is not None:
+                paths.append(path)
+            else:
+                self.logger.warning("Problem when trying to retrieve path on %s:%s!" % (lnk_dt.type, lnk_dt.gid))
+        return paths

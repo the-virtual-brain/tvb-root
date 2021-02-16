@@ -195,13 +195,8 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         format_str = "%0." + str(precision) + "g"
         return "[" + ",".join(format_str % s for s in xs) + "]"
 
-    def load_h5_of_gid(self, entity_gid):
-        entity_index = self.load_entity_by_gid(entity_gid)
-        entity_h5_class = h5.REGISTRY.get_h5file_for_index(type(entity_index))
-        entity_h5_path = h5.path_for_stored_index(entity_index)
-        return entity_h5_class, entity_h5_path
-
-    def prepare_shell_surface_params(self, shell_surface, surface_url_generator):
+    @staticmethod
+    def prepare_shell_surface_params(shell_surface, surface_url_generator):
         """
         Prepares urls that are necessary for a shell surface.
         """

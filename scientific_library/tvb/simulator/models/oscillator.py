@@ -389,7 +389,7 @@ class Generic2dOscillator(ModelNumbaDfun):
 
 @guvectorize([(float64[:],) * 16], '(n),(m)' + ',()'*13 + '->(n)', nopython=True)
 def _numba_dfun_g2d(vw, c_0, tau, I, a, b, c, d, e, f, g, beta, alpha, gamma, lc_0, dx):
-    "Gufunc for reduced Wong-Wang model equations."
+    "Gufunc for Generic2dOscillator model equations."
     V = vw[0]
     V2 = V * V
     W = vw[1]

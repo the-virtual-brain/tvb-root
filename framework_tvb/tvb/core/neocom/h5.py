@@ -72,6 +72,18 @@ def index_for_h5_file(source_path):
     return REGISTRY.get_index_for_h5file(h5_class)
 
 
+def h5_file_for_gid(data_gid):
+    # type: (str) -> H5File
+    datatype_index = load_entity_by_gid(data_gid)
+    return h5_file_for_index(datatype_index)
+
+
+def load_from_gid(data_gid):
+    # type: (str) -> HasTraits
+    datatype_index = load_entity_by_gid(data_gid)
+    return load_from_index(datatype_index)
+
+
 def load_from_index(dt_index):
     # type: (DataType) -> HasTraits
     loader = TVBLoader(REGISTRY)
@@ -224,8 +236,8 @@ def store_view_model(view_model, base_dir):
                     store_view_model(model_attr[idx], base_dir)
             else:
                 store_view_model(model_attr, base_dir)
-
     return h5_path
+
 
 def determine_filepath(gid, base_dir):
     dir_loader = DirLoader(base_dir, REGISTRY, False)
@@ -276,7 +288,7 @@ def gather_all_references_by_index(h5_file, ref_files):
     for _, gid in refs:
         if not gid:
             continue
-        index = load_entity_by_gid(gid.hex)
+        index = load_entity_by_gid(gid)
         h5_file = h5_file_for_index(index)
         ref_files.append(h5_file.path)
         gather_all_references_by_index(h5_file, ref_files)
@@ -290,7 +302,7 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
 
     with ViewModelH5(vm_path, view_model) as vm_h5:
         references = vm_h5.gather_references()
-        uuids = vm_h5.gather_references_by_uuid()
+        uuids = vm_h5.gather_datatypes_references()
 
         for _, gid in references:
             if not gid:
@@ -305,7 +317,7 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
         for _, gid in uuids:
             if not gid:
                 continue
-            index = load_entity_by_gid(gid.hex)
+            index = load_entity_by_gid(gid)
             h5_file = h5_file_for_index(index)
             uuid_files.append(h5_file.path)
             gather_all_references_by_index(h5_file, uuid_files)

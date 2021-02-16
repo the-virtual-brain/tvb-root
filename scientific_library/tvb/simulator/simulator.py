@@ -199,7 +199,7 @@ class Simulator(HasTraits):
 
     def configure_integration_for_model(self):
         self.integrator.configure_boundaries(self.model)
-        if self.model.nvar - self.model.nintvar:
+        if self.model.has_nonint_vars:
             self.integrate_next_step = self.integrator.integrate_with_update
             self.integrator.\
                 reconfigure_boundaries_and_clamping_for_integration_state_variables(self.model)

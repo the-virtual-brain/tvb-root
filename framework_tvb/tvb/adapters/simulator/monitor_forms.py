@@ -84,25 +84,6 @@ def get_form_for_monitor(monitor_class):
     return get_monitor_to_form_dict().get(monitor_class)
 
 
-def build_list_of_monitors_from_view_models(monitor_view_models):
-    next_monitors_dict = dict()
-    count = 0
-    for monitor_model in monitor_view_models:
-        next_monitors_dict[monitor_model.__class__.__name__] = (monitor_model, count + 1)
-        count = count + 1
-    return next_monitors_dict
-
-
-def build_list_of_monitors_from_names(monitor_names, is_surface_simulation):
-    monitor_dict = get_ui_name_to_monitor_dict(is_surface_simulation)
-    monitor_view_models = [monitor_dict[monitor_name]() for monitor_name in monitor_names]
-    return build_list_of_monitors_from_view_models(monitor_view_models)
-
-
-def prepare_monitor_legend(is_surface_simulation, monitor):
-    return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
-
-
 class MonitorForm(Form):
 
     def __init__(self, session_stored_simulator=None):

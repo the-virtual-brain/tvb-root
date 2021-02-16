@@ -29,15 +29,14 @@
 #
 
 import uuid
-
 import formencode
 from formencode import validators
+
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
-from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict, \
-    get_form_for_monitor, prepare_monitor_legend
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
+from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict, get_integrator_name_list
 from tvb.basic.neotraits.api import Attr, Range, List, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModel
@@ -165,7 +164,7 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
         self.integrator = SelectField(
             Attr(IntegratorViewModel, default=default_integrator, label=SimulatorAdapterModel.integrator.label,
                  doc=SimulatorAdapterModel.integrator.doc), name='integrator', choices=self.integrator_choices,
-            subform=get_form_for_integrator(default_integrator))
+            subform=get_form_for_integrator(default_integrator), ui_values=get_integrator_name_list())
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None
@@ -191,32 +190,6 @@ class SimulatorMonitorFragment(ABCAdapterForm):
         self.monitors.data = [
             get_monitor_to_ui_name_dict(self.is_surface_simulation)[type(monitor)]
             for monitor in trait]
-
-    @staticmethod
-    def prepare_monitor_fragment(simulator, rendering_rules, form_action_url):
-        monitor_fragment = SimulatorMonitorFragment(simulator.is_surface_simulation)
-        monitor_fragment.fill_from_trait(simulator.monitors)
-
-        rendering_rules.form = monitor_fragment
-        rendering_rules.form_action_url = form_action_url
-        return rendering_rules.to_dict()
-
-    @staticmethod
-    def get_fragment_after_monitors(simulator, burst_config, project_id, is_branch, rendering_rules, setup_pse_url):
-        first_monitor = simulator.first_monitor
-        if first_monitor is None:
-            rendering_rules.is_branch = is_branch
-            return SimulatorFinalFragment.prepare_final_fragment(simulator, burst_config, project_id, rendering_rules,
-                                                                 setup_pse_url)
-
-        form = get_form_for_monitor(type(first_monitor))(simulator)
-        form = AlgorithmService().prepare_adapter_form(form_instance=form)
-        form.fill_from_trait(first_monitor)
-
-        monitor_name = prepare_monitor_legend(simulator.is_surface_simulation, first_monitor)
-        rendering_rules.monitor_name = monitor_name
-        rendering_rules.form = form
-        return rendering_rules.to_dict()
 
 
 class SimulatorFinalFragment(ABCAdapterForm):
