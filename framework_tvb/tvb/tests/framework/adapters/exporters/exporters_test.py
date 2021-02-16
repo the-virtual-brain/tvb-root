@@ -31,17 +31,19 @@
 """
 .. moduleauthor:: calin.pavel <calin.pavel@codemart.ro>
 """
-import pytest
 import os.path
 import shutil
 import zipfile
 from contextlib import closing
-from tvb.adapters.exporters.export_manager import ExportManager
+
+import pytest
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
+from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.services.burst_service import BurstService
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -181,12 +183,16 @@ class TestExporters(TransactionalTestCase):
         """
         Test export of a simulator configuration
         """
-        operation = operation_factory(is_simulation=True, store_vm=True)
+        operation = operation_factory(is_simulation=True, store_vm=True, test_project=self.test_project)
 
         burst_configuration = BurstConfiguration(self.test_project.id)
         burst_configuration.fk_simulation = operation.id
         burst_configuration.simulator_gid = operation.view_model_gid
+        burst_configuration.name = "Test_burst"
         burst_configuration = dao.store_entity(burst_configuration)
+
+        op_folder = FilesHelper().get_project_folder(self.test_project, str(operation.id))
+        BurstService().store_burst_configuration(burst_configuration, op_folder)
 
         export_file = self.export_manager.export_simulator_configuration(burst_configuration.id)
 
