@@ -1,6 +1,11 @@
-FROM continuumio/miniconda3
+FROM nvidia/cuda:11.2.1-devel 
 
-RUN apt-get -y update && apt-get -y install build-essential gcc
+RUN apt-get -y update && apt-get -y install build-essential gcc wget
+
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+ && bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda
+
+ENV PATH=/opt/conda/bin:$PATH
 
 RUN conda install python=3.7 nomkl numba scipy numpy networkx scikit-learn cython pip numexpr psutil \
     pytest pytest-cov pytest-benchmark pytest-mock matplotlib \
@@ -16,3 +21,5 @@ RUN cd /opt \
  && python3 setup.py develop
 
 RUN pip install h5py==2.10 tvb-gdist pytest-xdist sqlalchemy mako requests tqdm
+
+RUN pip install pycuda
