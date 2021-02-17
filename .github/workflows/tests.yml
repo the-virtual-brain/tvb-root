@@ -19,6 +19,8 @@ jobs:
   pytests:
     runs-on: mrs-ci
     steps:
+      - name: debug debug
+        run: env && pwd && ls -lh
       - name: run pytest
         run: cd scientific_library && pytest
 
