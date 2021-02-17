@@ -1,15 +1,16 @@
 name: Build image
 on: [push]
 jobs:
+
   smoke-test:
     runs-on: mrs-ci
     steps:
+
       - name: echo test
         run: echo test
-      - name: sudo docker test
-        run: sudo -S $MRS_CI_KEY docker ps
-      - name: docker test
-        run: docker ps
+
+      - name: nvidia-smi test
+        run: nvidia-smi
 
 
 
