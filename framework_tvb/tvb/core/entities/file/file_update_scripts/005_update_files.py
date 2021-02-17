@@ -947,7 +947,7 @@ def _migrate_tracts(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['region_volume_map'] = _parse_gid(root_metadata['region_volume_map'])
     _migrate_dataset_metadata(['tract_region', 'tract_start_idx', 'vertices'], kwargs['storage_manager'])
-    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+    # return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
 def _migrate_dataset_metadata(dataset_list, storage_manager):

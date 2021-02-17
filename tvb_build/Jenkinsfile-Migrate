@@ -20,14 +20,16 @@ pipeline {
                     bash install_full_tvb.sh
                     cd ../framework_tvb
                     python -m tvb.config.init.migrated_files_counter
-                    cp -R /home/tvb_user/TVB_STORAGE/logs .
-                    exit 0
                 '''
-                archiveArtifacts artifacts: 'logs/*'
+
             }
         }
     }
     post {
+        failure {
+            sh 'ls'
+            archiveArtifacts artifacts: 'logs/*', onlyIfSuccessful: false
+        }
         changed {
             mail to: 'robert.vincze@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
