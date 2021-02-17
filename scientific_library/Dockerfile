@@ -27,4 +27,4 @@ RUN pip install pycuda
 RUN apt-get install -y git
 
 # binary incompatibility?
-RUN pip uninstall tvb-gdist
+RUN pip uninstall -y tvb-gdist
