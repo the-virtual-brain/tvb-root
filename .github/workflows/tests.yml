@@ -6,10 +6,10 @@ jobs:
     steps:
       - name: echo test
         run: echo test
-      - name: docker test
-        run: docker ps
       - name: sudo docker test
         run: sudo -S $MRS_CI_KEY docker ps
+      - name: docker test
+        run: docker ps
 
 
 
