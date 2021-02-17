@@ -16,6 +16,11 @@ jobs:
         run: python -c "import pycuda.autoinit; print('yes')"
 
 
+  pytests:
+    runs-on: mrs-ci
+    steps:
+      - name: run pytest
+        run: cd scientific_library && pytest
 
 # name: Run tests (GitHub CI)
 # on: [push]
