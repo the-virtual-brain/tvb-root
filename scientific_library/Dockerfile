@@ -23,3 +23,5 @@ RUN cd /opt \
 RUN pip install h5py==2.10 tvb-gdist pytest-xdist sqlalchemy mako requests tqdm
 
 RUN pip install pycuda
+
+RUN apt-get install -y git
