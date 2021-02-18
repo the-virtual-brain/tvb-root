@@ -25,22 +25,24 @@ pipeline {
                 }
             }
             steps {
-                sh '''#!/bin/bash
-                    source activate tvb-run
-                    cd tvb_build
-                    bash install_full_tvb.sh
-                    cd ../framework_tvb
-                    python -m tvb.config.init.migrated_files_counter
-                '''
-
+                script{
+                    try{
+                        sh '''#!/bin/bash
+                            source activate tvb-run
+                            cd tvb_build
+                            bash install_full_tvb.sh
+                            cd ../framework_tvb
+                            python -m tvb.config.init.migrated_files_counter
+                        '''
+                    }catch(Exception e){
+                        archiveArtifacts artifacts: 'logs/*', onlyIfSuccessful: false
+                        exit -1
+                    }
+                }
             }
         }
     }
     post {
-        failure {
-            sh 'ls'
-            archiveArtifacts artifacts: 'logs/*', onlyIfSuccessful: false
-        }
         changed {
             mail to: 'robert.vincze@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
