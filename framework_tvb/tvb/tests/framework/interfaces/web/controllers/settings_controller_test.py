@@ -37,6 +37,8 @@ import os
 import json
 import copy
 import shutil
+from pathlib import Path
+
 import pytest
 import cherrypy
 from time import sleep
@@ -54,13 +56,14 @@ class TestSettingsController(BaseTransactionalControllerTest):
     """
 
     was_reset = False
-    accepted_db_url = ('sqlite:///TestFolder' + os.path.sep + 'tvb-database.db'
+    storage = str(Path.home()) + os.path.sep + "TestFolder"
+    accepted_db_url = ('sqlite:///' + storage + os.path.sep + 'tvb-database.db'
                        if TvbProfile.current.db.SELECTED_DB == 'sqlite'
                        else TvbProfile.current.db.DB_URL)
 
-    VALID_SETTINGS = {'KEYCLOAK_CONFIGURATION': 'TestFolder' + os.path.sep + 'keycloak-config.json',
-                      'KEYCLOAK_WEB_CONFIGURATION': 'TestFolder' + os.path.sep + 'keycloak-web-config.json',
-                      'TVB_STORAGE': "TestFolder",
+    VALID_SETTINGS = {'KEYCLOAK_CONFIGURATION': storage + os.path.sep + 'keycloak-config.json',
+                      'KEYCLOAK_WEB_CONFIGURATION': storage + os.path.sep + 'keycloak-web-config.json',
+                      'TVB_STORAGE': storage,
                       'USR_DISK_SPACE': 1,
                       'MAXIMUM_NR_OF_THREADS': 6,
                       'MAXIMUM_NR_OF_VERTICES_ON_SURFACE': 142,
@@ -144,7 +147,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
     def test_with_valid_settings(self):
         # Ensure we submit acceptable values, depending on the current profile (set-up after fixtures execution)
         submit_data = copy.copy(self.VALID_SETTINGS)
-        accepted_db_url = ('sqlite:///TestFolder' + os.path.sep + 'tvb-database.db'
+        accepted_db_url = ('sqlite:///' + self.storage + os.path.sep + 'tvb-database.db'
                            if TvbProfile.current.db.SELECTED_DB == 'sqlite'
                            else TvbProfile.current.db.DB_URL)
         submit_data['SELECTED_DB'] = TvbProfile.current.db.SELECTED_DB
