@@ -28,3 +28,5 @@ RUN apt-get install -y git
 
 # binary incompatibility?
 RUN pip uninstall -y tvb-gdist
+
+RUN pip install -y tvb-gdist --no-wheel
