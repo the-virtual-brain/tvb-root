@@ -2,10 +2,21 @@ pipeline {
     agent any
 
     environment{
-        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-migrate:latest'
+        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-migrate'
+        LATEST_TAG = 'latest'
     }
 
     stages {
+        stage ('Build docker image') {
+            steps {
+                script {
+                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-migrate tvb_build/docker")
+                    dockerImage.push('${LATEST_TAG}')
+                }
+            }
+        }
+
         stage ('Test Migration'){
             agent {
                 docker {

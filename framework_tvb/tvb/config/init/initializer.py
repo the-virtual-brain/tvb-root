@@ -135,6 +135,8 @@ def initialize(skip_import=False, skip_updates=False):
 
         # Clean tvb-first-time-run temporary folder, as we are no longer at the first run:
         shutil.rmtree(TvbProfile.current.FIRST_RUN_STORAGE, True)
+        print(TvbProfile.current.version.DATA_CHECKED_TO_VERSION)
+        print(thread)
         return thread
 
 
