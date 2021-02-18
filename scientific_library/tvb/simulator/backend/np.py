@@ -44,7 +44,7 @@ from .templates import MakoUtilMix
 class NpBackend(MakoUtilMix):
 
     def build_py_func(self, template_source, content, name='kernel', print_source=False):
-        "Build and retrieve a Python function from template."
+        "Build and retrieve one or more Python functions from template."
         source = self.render_template(template_source, content)
         if print_source:
             print(self.insert_line_numbers(source))
@@ -55,4 +55,5 @@ class NpBackend(MakoUtilMix):
             if not print_source:
                 print(self._insert_line_numbers(source))
             raise exc
-        return globals_[name]
+        fns = [globals_[n] for n in name.split(',')]
+        return fns[0] if len(fns)==1 else fns

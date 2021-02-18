@@ -41,6 +41,8 @@ import unittest
 
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
+    HeunDeterministic, HeunStochastic)
 
 
 class TestModelIR(unittest.TestCase):
@@ -51,3 +53,15 @@ class TestModelIR(unittest.TestCase):
 
     def test_MontbrioPazoRoxin(self):
         self._test_model(MontbrioPazoRoxin())
+
+
+class TestIntegratorIR(unittest.TestCase):
+
+    def _test_integrator(self, integrator):
+        for key in 'n_dx'.split():
+            self.assertTrue(hasattr(integrator, key))
+
+    def test_euler_deterministic(self): self._test_integrator(EulerDeterministic())
+    def test_euler_stochast(self): self._test_integrator(EulerDeterministic())
+    def test_heun_deterministic(self): self._test_integrator(HeunDeterministic())
+    def test_heun_stochastic(self): self._test_integrator(HeunDeterministic())

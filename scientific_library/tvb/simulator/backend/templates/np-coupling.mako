@@ -16,6 +16,7 @@ def coupling(cX, weights, state):
 % for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
     x_i = state[${cvar}].reshape((-1, 1))
     x_j = state[${cvar}].reshape((1, -1))
+    ## this is a lazy way to broadcast shapes
     x_i, x_j = x_i + 0*x_j, x_j + 0*x_i
     gx = np.sum(weights * (${sim.coupling.pre_expr}), axis=-1)
     cX[${loop.index}, :] = ${sim.coupling.post_expr}

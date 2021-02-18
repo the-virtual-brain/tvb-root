@@ -1,5 +1,3 @@
-import numpy as np
-
 def dfuns(dX, state, cX, parmat):
 
 % for par in sim.model.global_parameter_names:

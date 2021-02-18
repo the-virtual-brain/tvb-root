@@ -297,6 +297,7 @@ class HeunDeterministic(Integrator):
     """
 
     _ui_name = "Heun"
+    n_dx = 2
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         r"""
@@ -331,6 +332,7 @@ class HeunStochastic(IntegratorStochastic):
     """
 
     _ui_name = "Stochastic Heun"
+    n_dx = 2
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         """
@@ -377,6 +379,7 @@ class EulerDeterministic(Integrator):
     """
 
     _ui_name = "Euler"
+    n_dx = 1
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         r"""
@@ -406,6 +409,7 @@ class EulerStochastic(IntegratorStochastic):
     """
 
     _ui_name = "Euler-Maruyama"
+    n_dx = 1
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         r"""
@@ -438,6 +442,7 @@ class RungeKutta4thOrderDeterministic(Integrator):
     """
 
     _ui_name = "Runge-Kutta 4th order"
+    n_dx = 4
 
     def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0):
         r"""
@@ -497,6 +502,7 @@ class Identity(Integrator):
     """
 
     _ui_name = "Difference equation"
+    n_dx = 0
 
     def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
         """

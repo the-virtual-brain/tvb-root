@@ -73,3 +73,6 @@ class BaseTestDfun(unittest.TestCase):
         self.assertEqual(len(model.spatial_parameter_matrix), n_spatial)
         return model
 
+
+class BaseTestIntegrate(unittest.TestCase):
+    pass

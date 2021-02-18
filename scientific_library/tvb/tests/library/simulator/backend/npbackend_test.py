@@ -10,8 +10,11 @@ import numpy as np
 from tvb.simulator.backend.np import NpBackend
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
+    HeunDeterministic, HeunStochastic)
 
-from .backendtestbase import BaseTestSimODE, BaseTestCoupling, BaseTestDfun
+from .backendtestbase import (BaseTestSimODE, BaseTestCoupling, BaseTestDfun,
+    BaseTestIntegrate)
 
 
 class TestNpSimODE(BaseTestSimODE):
@@ -37,7 +40,9 @@ class TestNpCoupling(BaseTestCoupling):
         class sim:  # dummy
             model = MontbrioPazoRoxin()
             coupling = cfun
-        template = f'<%include file="{mode}-coupling.mako"/>'
+        template = f'''import numpy as np
+<%include file="{mode}-coupling.mako"/>
+'''
         kernel = NpBackend().build_py_func(template, dict(sim=sim), name='coupling',
             print_source=True)
         state = np.random.rand(2, 128).astype('f')
@@ -60,7 +65,9 @@ class TestNpDfun(BaseTestDfun):
         "Test a Python cfun template."
         class sim:  # dummy sim
             model = model_
-        template = f'<%include file="np-dfuns.mako"/>'
+        template = '''import numpy as np
+<%include file="np-dfuns.mako"/>
+'''
         kernel = NpBackend().build_py_func(template, dict(sim=sim), name='dfuns',
                     print_source=True)
         state, cX = np.random.rand(2, 2, 128)
@@ -80,3 +87,32 @@ class TestNpDfun(BaseTestDfun):
     def test_py_mpr_spatial2(self):
         "Test MPR w/ 2 spatial parameters."
         self._test_py_model(self._prep_model(2))
+
+
+class TestNpIntegrate(BaseTestIntegrate):
+
+    def _test_cfun(self, weights, state): weights.dot(state.T).T
+    def _test_dfun(self, state, cX): -state*cX**2/state.shape[1]
+    def _test_integrator(self, integrator_):
+        class sim:
+            integrator = integrator_
+        sim.integrator.configure()
+        template = '''
+import numpy as np
+def coupling(cX, weights, state): cX[:] = weights.dot(state.T).T
+def dfuns(dX, state, cX, parmat): dX[:] = -state*cX**2/state.shape[1]
+<%include file="np-integrate.mako" />
+'''
+        integrate = NpBackend().build_py_func(template, dict(sim=sim),
+            name='integrate')
+        state = np.random.randn(2, 64)
+        weights = np.random.randn(64, 64)
+        parmat = np.zeros(0)
+        dX = np.zeros((integrator_.n_dx, 2, 64))
+        cX = np.zeros((2, 64))
+        integrate(state, weights, parmat, dX, cX)
+
+    def test_euler_deterministic(self): self._test_integrator(EulerDeterministic())
+    def test_euler_stochast(self): self._test_integrator(EulerDeterministic())
+    def test_heun_deterministic(self): self._test_integrator(HeunDeterministic())
+    def test_heun_stochastic(self): self._test_integrator(HeunDeterministic())
