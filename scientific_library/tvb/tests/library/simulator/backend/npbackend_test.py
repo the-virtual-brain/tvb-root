@@ -11,7 +11,8 @@ from tvb.simulator.backend.np import NpBackend
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
-    HeunDeterministic, HeunStochastic)
+    HeunDeterministic, HeunStochastic, IntegratorStochastic)
+from tvb.simulator.noise import Additive as AdditiveNoise
 
 from .backendtestbase import (BaseTestSimODE, BaseTestCoupling, BaseTestDfun,
     BaseTestIntegrate)
@@ -91,28 +92,51 @@ class TestNpDfun(BaseTestDfun):
 
 class TestNpIntegrate(BaseTestIntegrate):
 
-    def _test_cfun(self, weights, state): weights.dot(state.T).T
-    def _test_dfun(self, state, cX): -state*cX**2/state.shape[1]
-    def _test_integrator(self, integrator_):
+    def _test_dfun(self, state, cX, lc):
+        return -state*cX**2/state.shape[1]
+
+    def _eval_cg(self, integrator_, state, weights_):
         class sim:
             integrator = integrator_
+            class connectivity:
+                weights = weights_
+            class model:
+                state_variables = 'foo', 'bar'
         sim.integrator.configure()
         template = '''
 import numpy as np
 def coupling(cX, weights, state): cX[:] = weights.dot(state.T).T
-def dfuns(dX, state, cX, parmat): dX[:] = -state*cX**2/state.shape[1]
+def dfuns(dX, state, cX, parmat):
+    d = -state*cX**2/state.shape[1]
+    print('d.shape =', d.shape)
+    dX[:] = d
 <%include file="np-integrate.mako" />
 '''
-        integrate = NpBackend().build_py_func(template, dict(sim=sim),
-            name='integrate')
+        integrate = NpBackend().build_py_func(template, dict(sim=sim, np=np),
+            name='integrate', print_source=True)
+        parmat = np.zeros(0)
+        dX = np.zeros((integrator_.n_dx,)+state.shape)
+        cX = np.zeros_like(state)
+        np.random.seed(42)
+        integrate(state, weights_, parmat, dX, cX)
+        return state
+
+    def _test_integrator(self, Integrator):
+        if issubclass(Integrator, IntegratorStochastic):
+            integrator = Integrator(dt=0.1, noise=AdditiveNoise(nsig=np.r_[0.01]))
+            integrator.noise.dt = integrator.dt
+        else:
+            integrator = Integrator(dt=0.1)
         state = np.random.randn(2, 64)
         weights = np.random.randn(64, 64)
-        parmat = np.zeros(0)
-        dX = np.zeros((integrator_.n_dx, 2, 64))
-        cX = np.zeros((2, 64))
-        integrate(state, weights, parmat, dX, cX)
+        cx = weights.dot(state.T).T
+        expected = integrator.scheme(state, self._test_dfun, cx, 0, 0)
+        actual = state.copy()
+        np.random.seed(42)
+        self._eval_cg(integrator, actual, weights)
+        np.testing.assert_allclose(actual, expected)
 
-    def test_euler_deterministic(self): self._test_integrator(EulerDeterministic())
-    def test_euler_stochast(self): self._test_integrator(EulerDeterministic())
-    def test_heun_deterministic(self): self._test_integrator(HeunDeterministic())
-    def test_heun_stochastic(self): self._test_integrator(HeunDeterministic())
+    def test_euler_deterministic(self): self._test_integrator(EulerDeterministic)
+    def test_euler_stochastic(self):      self._test_integrator(EulerStochastic)
+    def test_heun_deterministic(self):  self._test_integrator(HeunDeterministic)
+    def test_heun_stochastic(self):     self._test_integrator(HeunStochastic)

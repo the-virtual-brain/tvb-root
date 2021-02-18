@@ -7,7 +7,7 @@
 
 % if isinstance(sim.integrator, IntegratorStochastic):
 <%
-    assert isinstance(sim.integrator.noise, noise.Additive)
+    assert isinstance(sim.integrator.noise, Additive)
 %>
 def noise():
     n_node = ${sim.connectivity.weights.shape[0]}
@@ -25,6 +25,8 @@ def integrate(state, weights, parmat, dX, cX):
     dfuns(dX[0], state, cX, parmat)
 
 % if isinstance(sim.integrator, EulerDeterministic):
+    print('dX.shape = ', dX.shape)
+    print('dX[0].shape = ', dX[0].shape)
     state += dt * dX[0]
 % endif
 
