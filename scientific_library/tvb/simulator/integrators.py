@@ -121,7 +121,7 @@ class Integrator(HasTraits):
         """
 
     def set_random_state(self, random_state):
-        self.log.warn("random_state supplied for non-stochastic integration")
+        self.log.warning("random_state supplied for non-stochastic integration")
 
     def configure(self):
         # Set default configurations:
