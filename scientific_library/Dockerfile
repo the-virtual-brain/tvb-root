@@ -29,4 +29,4 @@ RUN apt-get install -y git
 # binary incompatibility?
 RUN pip uninstall -y tvb-gdist
 
-RUN pip install tvb-gdist --no-binary  # install from source
+RUN pip install tvb-gdist --no-binary :all:
