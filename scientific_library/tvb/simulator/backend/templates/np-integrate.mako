@@ -69,5 +69,5 @@ def integrate(state, weights, parmat, dX, cX
     next_state = state[:,0] + dt / 6 * (dX[0] + 2*(dX[1] + dX[2]) + dX[3])
 % endif
     state[:] = np.roll(state, 1, axis=1)
-    state[:,0] = next_state[:,None]
+    state[:,0] = next_state
 

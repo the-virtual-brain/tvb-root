@@ -164,8 +164,8 @@ def dfuns(dX, state, cX, parmat):
         integrate = NpBackend().build_py_func(template, dict(sim=sim, np=np),
             name='integrate', print_source=True)
         parmat = np.zeros(0)
-        dX = np.zeros((integrator_.n_dx,)+state.shape)
-        cX = np.zeros_like(state)
+        dX = np.zeros((integrator_.n_dx,)+state[:,0].shape)
+        cX = np.zeros_like(state[:,0])
         np.random.seed(42)
         args = state, weights_, parmat, dX, cX
         if isinstance(sim.integrator, IntegratorStochastic):
@@ -183,11 +183,11 @@ def dfuns(dX, state, cX, parmat):
         weights = np.random.randn(64, 64)
         cx = weights.dot(state[:,0].T).T
         assert cx.shape == (2, 64)
-        expected = integrator.scheme(state, self._test_dfun, cx, 0, 0)
+        expected = integrator.scheme(state[:,0], self._test_dfun, cx, 0, 0)
         actual = state.copy()
         np.random.seed(42)
         self._eval_cg(integrator, actual, weights)
-        np.testing.assert_allclose(actual, expected)
+        np.testing.assert_allclose(actual[:,0], expected)
 
     def test_euler(self): self._test_integrator(EulerDeterministic)
     def test_eulers(self): self._test_integrator(EulerStochastic)

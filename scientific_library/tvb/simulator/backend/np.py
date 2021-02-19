@@ -36,6 +36,8 @@ code.
 
 """
 
+import os
+import importlib
 import numpy as np
 import autopep8
 
@@ -44,12 +46,19 @@ from .templates import MakoUtilMix
 
 class NpBackend(MakoUtilMix):
 
-    def build_py_func(self, template_source, content, name='kernel', print_source=False):
+    def build_py_func(self, template_source, content, name='kernel', print_source=False,
+            modname=None):
         "Build and retrieve one or more Python functions from template."
         source = self.render_template(template_source, content)
         source = autopep8.fix_code(source)
         if print_source:
             print(self.insert_line_numbers(source))
+        if modname is not None:
+            return self.eval_module(source, name, modname)
+        else:
+            return self.eval_source(source, name)
+
+    def eval_source(self, source, name):
         globals_ = {}
         try:
             exec(source, globals_)
@@ -59,3 +68,15 @@ class NpBackend(MakoUtilMix):
             raise exc
         fns = [globals_[n] for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
+
+    def eval_module(self, source, name, modname):
+        here = os.path.abspath(os.path.dirname(__file__))
+        genp = os.path.join(here, 'templates', 'generated')
+        with open(f'{genp}/{modname}.py', 'w') as fd:
+            fd.write(source)
+        fullmodname = f'tvb.simulator.backend.templates.generated.{modname}'
+        mod = importlib.import_module(fullmodname)
+        fns = [getattr(mod,n) for n in name.split(',')]
+        return fns[0] if len(fns)==1 else fns
+
+
