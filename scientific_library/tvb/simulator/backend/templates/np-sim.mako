@@ -11,6 +11,9 @@ def kernel(state, weights, trace, parmat
 % if isinstance(sim.integrator, IntegratorStochastic):
     , nsig
 % endif
+% if sim.connectivity.idelays.any():
+    , delay_indices
+% endif
 ):
 
     # problem dimensions
@@ -27,6 +30,9 @@ def kernel(state, weights, trace, parmat
         integrate(state, weights, parmat, dX, cX
 % if isinstance(sim.integrator, IntegratorStochastic):
                   , nsig
+% endif
+% if sim.connectivity.idelays.any():
+    , delay_indices
 % endif
 )
         trace[t] = state.copy()

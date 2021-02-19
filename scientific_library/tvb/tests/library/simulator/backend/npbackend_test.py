@@ -15,6 +15,7 @@ from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
     RungeKutta4thOrderDeterministic, Identity, IdentityStochastic,
     VODEStochastic)
 from tvb.simulator.noise import Additive, Multiplicative
+from tvb.datatypes.connectivity import Connectivity
 
 from .backendtestbase import (BaseTestSim, BaseTestCoupling, BaseTestDfun,
     BaseTestIntegrate)
@@ -30,6 +31,9 @@ class TestNpSim(BaseTestSim):
         content = dict(sim=sim, np=np)
         kernel = NpBackend().build_py_func(template, content, print_source=True)
         dX = state.copy()
+        n_svar, n_node = state.shape
+        self.assertEqual(sim.connectivity.horizon, 1)  # for now
+        state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
         weights = sim.connectivity.weights.copy()
         yh = np.empty((len(t),)+state.shape)
         parmat = sim.model.spatial_parameter_matrix
@@ -87,11 +91,11 @@ class TestNpCoupling(BaseTestCoupling):
         template = f'''import numpy as np
 <%include file="{mode}-coupling.mako"/>
 '''
-        kernel = NpBackend().build_py_func(template, dict(sim=sim), name='coupling',
-            print_source=True)
-        state = np.random.rand(2, 128).astype('f')
-        weights = np.random.randn(state.shape[1], state.shape[1]).astype('f')
-        cX = np.zeros_like(state)
+        kernel = NpBackend().build_py_func(template, dict(sim=sim, np=np), 
+            name='coupling', print_source=True)
+        state = np.random.rand(2, 1, 128).astype('f')
+        weights = np.random.randn(state.shape[2], state.shape[2]).astype('f')
+        cX = np.zeros_like(state[:,0])
         kernel(cX, weights.T, state)
         expected = self._eval_cfun_no_delay(sim.coupling, weights, state)
         np.testing.assert_allclose(cX, expected, 1e-5, 1e-6)
@@ -112,10 +116,11 @@ class TestNpDfun(BaseTestDfun):
         template = '''import numpy as np
 <%include file="np-dfuns.mako"/>
 '''
-        kernel = NpBackend().build_py_func(template, dict(sim=sim), name='dfuns',
-                    print_source=True)
-        state, cX = np.random.rand(2, 2, 128)
-        dX = np.zeros_like(state)
+        kernel = NpBackend().build_py_func(template, dict(sim=sim, np=np),
+            name='dfuns', print_source=True)
+        cX = np.random.rand(2, 128)
+        dX = np.zeros_like(cX)
+        state = np.random.rand(2, 1, 128)
         parmat = sim.model.spatial_parameter_matrix
         kernel(dX, state, cX, parmat)
         np.testing.assert_allclose(dX, sim.model.dfun(state, cX))
@@ -141,14 +146,16 @@ class TestNpIntegrate(BaseTestIntegrate):
     def _eval_cg(self, integrator_, state, weights_):
         class sim:
             integrator = integrator_
-            class connectivity:
-                weights = weights_
+            connectivity = Connectivity.from_file()
             class model:
                 state_variables = 'foo', 'bar'
+        sim.connectivity.speed = np.r_[np.inf]
+        sim.connectivity.configure()
         sim.integrator.configure()
+        sim.connectivity.set_idelays(sim.integrator.dt)
         template = '''
 import numpy as np
-def coupling(cX, weights, state): cX[:] = weights.dot(state.T).T
+def coupling(cX, weights, state): cX[:] = weights.dot(state[:,0].T).T
 def dfuns(dX, state, cX, parmat):
     d = -state*cX**2/state.shape[1]
     dX[:] = d
@@ -172,9 +179,10 @@ def dfuns(dX, state, cX, parmat):
             integrator.noise.dt = integrator.dt
         else:
             integrator = Integrator(dt=0.1)
-        state = np.random.randn(2, 64)
+        state = np.random.randn(2, 1, 64)
         weights = np.random.randn(64, 64)
-        cx = weights.dot(state.T).T
+        cx = weights.dot(state[:,0].T).T
+        assert cx.shape == (2, 64)
         expected = integrator.scheme(state, self._test_dfun, cx, 0, 0)
         actual = state.copy()
         np.random.seed(42)
@@ -189,8 +197,6 @@ def dfuns(dX, state, cX, parmat):
     def test_id(self): self._test_integrator(Identity)
     def test_ids(self): self._test_integrator(IdentityStochastic)
 
-
-# TODO delay/history support
 
 # TODO monitor support
 

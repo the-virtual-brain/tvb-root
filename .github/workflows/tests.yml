@@ -2,8 +2,7 @@ name: pytest
 on: [push]
 jobs:
   pytest:
-    runs-on: mrs-ci
-    #ubuntu-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.7]
@@ -60,13 +59,6 @@ jobs:
         run: |
           cd tvb_data
           python3 setup.py develop
-
-      - name: reinstall gdist
-        run: |
-          pip uninstall -y tvb-gdist
-          git clone https://github.com/the-virtual-brain/tvb-gdist 
-          cd tvb-gdist 
-          python setup.py install
 
       - name: run library tests
         run: cd scientific_library && pytest -n12
