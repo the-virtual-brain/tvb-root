@@ -15,4 +15,9 @@ RUN cd /opt \
  && cd tvb_data \
  && python3 setup.py develop
 
-RUN pip install h5py==2.10 tvb-gdist pytest-xdist sqlalchemy mako
+RUN pip install h5py==2.10 pytest-xdist sqlalchemy mako requests autopep8
+
+RUN cd /opt \
+ && git clone https://github.com/the-virtual-brain/tvb-gdist \
+ && cd tvb-gdist \
+ && python setup.py install
