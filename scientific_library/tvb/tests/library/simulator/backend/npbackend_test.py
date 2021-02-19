@@ -79,7 +79,7 @@ class TestNpSim(BaseTestSim):
 
 class TestNpCoupling(BaseTestCoupling):
 
-    def _test_py_cfun(self, mode, cfun):
+    def _test_cfun(self, mode, cfun):
         "Test a Python cfun template."
         class sim:  # dummy
             model = MontbrioPazoRoxin()
@@ -96,16 +96,16 @@ class TestNpCoupling(BaseTestCoupling):
         expected = self._eval_cfun_no_delay(sim.coupling, weights, state)
         np.testing.assert_allclose(cX, expected, 1e-5, 1e-6)
 
-    def test_nb_linear(self): self._test_py_cfun('nb', Linear())
-    def test_nb_sigmoidal(self): self._test_py_cfun('nb', Sigmoidal())
+    def test_nb_linear(self): self._test_cfun('nb', Linear())
+    def test_nb_sigmoidal(self): self._test_cfun('nb', Sigmoidal())
 
-    def test_np_linear(self): self._test_py_cfun('np', Linear())
-    def test_np_sigmoidal(self): self._test_py_cfun('np', Sigmoidal())
+    def test_np_linear(self): self._test_cfun('np', Linear())
+    def test_np_sigmoidal(self): self._test_cfun('np', Sigmoidal())
 
 
 class TestNpDfun(BaseTestDfun):
 
-    def _test_py_model(self, model_):
+    def _test_dfun(self, model_):
         "Test a Python cfun template."
         class sim:  # dummy sim
             model = model_
@@ -122,15 +122,15 @@ class TestNpDfun(BaseTestDfun):
 
     def test_py_mpr_symmetric(self):
         "Test symmetric MPR model"
-        self._test_py_model(self._prep_model())
+        self._test_dfun(self._prep_model())
 
     def test_py_mpr_spatial1(self):
         "Test MPR w/ 1 spatial parameter."
-        self._test_py_model(self._prep_model(1))
+        self._test_dfun(self._prep_model(1))
 
     def test_py_mpr_spatial2(self):
         "Test MPR w/ 2 spatial parameters."
-        self._test_py_model(self._prep_model(2))
+        self._test_dfun(self._prep_model(2))
 
 
 class TestNpIntegrate(BaseTestIntegrate):
@@ -191,6 +191,8 @@ def dfuns(dX, state, cX, parmat):
 
 
 # TODO delay/history support
+
+# TODO monitor support
 
 # TODO surface support
 
