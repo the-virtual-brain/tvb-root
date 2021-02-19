@@ -11,7 +11,8 @@ from tvb.simulator.backend.np import NpBackend
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
-    HeunDeterministic, HeunStochastic, IntegratorStochastic)
+    HeunDeterministic, HeunStochastic, IntegratorStochastic, 
+    RungeKutta4thOrderDeterministic, Identity, IdentityStochastic)
 from tvb.simulator.noise import Additive as AdditiveNoise
 
 from .backendtestbase import (BaseTestSimODE, BaseTestCoupling, BaseTestDfun,
@@ -22,7 +23,7 @@ class TestNpSimODE(BaseTestSimODE):
 
     def test_np_mpr(self):
         sim, state, t, y = self._create_sim(inhom_mmpr=True)
-        template = '<%include file="np-sim-ode.mako"/>'
+        template = '<%include file="np-sim.mako"/>'
         kernel = NpBackend().build_py_func(template, dict(sim=sim), print_source=True)
         dX = state.copy()
         weights = sim.connectivity.weights.copy()
@@ -108,7 +109,6 @@ import numpy as np
 def coupling(cX, weights, state): cX[:] = weights.dot(state.T).T
 def dfuns(dX, state, cX, parmat):
     d = -state*cX**2/state.shape[1]
-    print('d.shape =', d.shape)
     dX[:] = d
 <%include file="np-integrate.mako" />
 '''
@@ -118,7 +118,10 @@ def dfuns(dX, state, cX, parmat):
         dX = np.zeros((integrator_.n_dx,)+state.shape)
         cX = np.zeros_like(state)
         np.random.seed(42)
-        integrate(state, weights_, parmat, dX, cX)
+        args = state, weights_, parmat, dX, cX
+        if isinstance(sim.integrator, IntegratorStochastic):
+            args = args + (sim.integrator.noise.nsig, )
+        integrate(*args)
         return state
 
     def _test_integrator(self, Integrator):
@@ -136,7 +139,23 @@ def dfuns(dX, state, cX, parmat):
         self._eval_cg(integrator, actual, weights)
         np.testing.assert_allclose(actual, expected)
 
-    def test_euler_deterministic(self): self._test_integrator(EulerDeterministic)
-    def test_euler_stochastic(self):      self._test_integrator(EulerStochastic)
-    def test_heun_deterministic(self):  self._test_integrator(HeunDeterministic)
-    def test_heun_stochastic(self):     self._test_integrator(HeunStochastic)
+    def test_euler(self): self._test_integrator(EulerDeterministic)
+    def test_eulers(self): self._test_integrator(EulerStochastic)
+    def test_heun(self): self._test_integrator(HeunDeterministic)
+    def test_heuns(self): self._test_integrator(HeunStochastic)
+    def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
+    def test_id(self): self._test_integrator(Identity)
+    def test_ids(self): self._test_integrator(IdentityStochastic)
+
+    # TODO Idnetitiy
+    # TODO MVAR
+    # TODO RK4
+
+# TODO delay/history support
+
+# TODO surface support
+
+# TODO stimulus support
+
+# TODO bounds/clamp support
+
