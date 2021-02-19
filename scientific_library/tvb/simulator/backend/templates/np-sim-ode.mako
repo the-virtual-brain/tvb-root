@@ -17,5 +17,5 @@ def kernel(state, weights, trace, parmat):
     cX = np.zeros((n_cvar, n_node))
 
     for t in range(nt):
-        integrate()
+        integrate(state, weights, parmat, dX, cX)
         trace[t] = state.copy()
