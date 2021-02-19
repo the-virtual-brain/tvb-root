@@ -8,6 +8,10 @@ from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 
 
 if __name__ == '__main__':
+    """
+    Script written for testing the migration from version 1.5.8 to 2.1.0.
+    """
+
     # set web profile
     TvbProfile.set_profile(TvbProfile.WEB_PROFILE)
 

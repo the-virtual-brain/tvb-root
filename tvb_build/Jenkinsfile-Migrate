@@ -31,8 +31,8 @@ pipeline {
                             source activate tvb-run
                             cd tvb_build
                             bash install_full_tvb.sh
-                            cd ../framework_tvb
-                            python -m tvb.config.init.migrated_files_counter
+                            cd ../tvb_bin
+                            python -m run_migration
                         '''
                     }catch(Exception e){
                         archiveArtifacts artifacts: 'logs/*', onlyIfSuccessful: false
@@ -44,7 +44,7 @@ pipeline {
     }
     post {
         changed {
-            mail to: 'robert.vincze@codemart.ro',
+            mail to: 'robert.vincze@codemart.ro paula.prodan@codemart.ro',
             subject: "Jenkins Pipeline ${currentBuild.fullDisplayName} changed status",
             body: """
                 Result: ${currentBuild.result}
