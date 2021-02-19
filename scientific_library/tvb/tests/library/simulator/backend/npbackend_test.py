@@ -12,8 +12,9 @@ from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
     HeunDeterministic, HeunStochastic, IntegratorStochastic, 
-    RungeKutta4thOrderDeterministic, Identity, IdentityStochastic)
-from tvb.simulator.noise import Additive as AdditiveNoise
+    RungeKutta4thOrderDeterministic, Identity, IdentityStochastic,
+    VODEStochastic)
+from tvb.simulator.noise import Additive, Multiplicative
 
 from .backendtestbase import (BaseTestSim, BaseTestCoupling, BaseTestDfun,
     BaseTestIntegrate)
@@ -47,7 +48,7 @@ class TestNpSim(BaseTestSim):
     def _test_integrator(self, Integrator):
         dt = 0.01
         if issubclass(Integrator, IntegratorStochastic):
-            integrator = Integrator(dt=dt, noise=AdditiveNoise(nsig=np.r_[dt]))
+            integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
             integrator.noise.dt = integrator.dt
         else:
             integrator = Integrator(dt=dt)
@@ -55,6 +56,8 @@ class TestNpSim(BaseTestSim):
             self._test_mvar(integrator)
         else:
             self._test_mpr(integrator)
+
+    # TODO move to BaseTestSim to avoid duplicating all the methods
 
     def test_euler(self): self._test_integrator(EulerDeterministic)
     def test_eulers(self): self._test_integrator(EulerStochastic)
@@ -64,6 +67,15 @@ class TestNpSim(BaseTestSim):
     def test_id(self): self._test_integrator(Identity)
     def test_ids(self): self._test_integrator(IdentityStochastic)
 
+    def test_scipy_int_notimpl(self):
+        with self.assertRaises(NotImplementedError):
+            self._test_integrator(VODEStochastic)
+
+    def test_multnoise_notimpl(self):
+        dt = 0.01
+        integrator = HeunStochastic(dt=dt, noise=Multiplicative(nsig=np.r_[dt]))
+        with self.assertRaises(NotImplementedError):
+            self._test_mpr(integrator)
 
 class TestNpCoupling(BaseTestCoupling):
 
@@ -156,7 +168,7 @@ def dfuns(dX, state, cX, parmat):
 
     def _test_integrator(self, Integrator):
         if issubclass(Integrator, IntegratorStochastic):
-            integrator = Integrator(dt=0.1, noise=AdditiveNoise(nsig=np.r_[0.01]))
+            integrator = Integrator(dt=0.1, noise=Additive(nsig=np.r_[0.01]))
             integrator.noise.dt = integrator.dt
         else:
             integrator = Integrator(dt=0.1)
