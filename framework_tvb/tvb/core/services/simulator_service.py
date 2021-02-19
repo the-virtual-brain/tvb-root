@@ -38,9 +38,7 @@ import shutil
 import uuid
 
 import numpy
-from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
@@ -226,26 +224,21 @@ class SimulatorService(object):
             self.logger.error(excep)
             self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
-    def prepare_first_simulation_fragment(self, simulator_algorithm, project_id, is_branch, simulator):
-        adapter_instance = ABCAdapter.build_adapter(simulator_algorithm)
-        branch_conditions = self._compute_conn_branch_conditions(is_branch, simulator)
-        form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id,
-                                                           extra_conditions=branch_conditions)
+    @staticmethod
+    def compute_conn_branch_conditions(is_branch, simulator):
+        if not is_branch:
+            return None
 
-        conn_count = dao.count_datatypes(project_id, ConnectivityIndex)
+        conn = load.load_entity_by_gid(simulator.connectivity)
+        if conn.number_of_regions:
+            return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
+                               operations=["=="], values=[conn.number_of_regions])
+
+    def validate_first_fragment(self, form, project_id, conn_idx):
+        conn_count = dao.count_datatypes(project_id, conn_idx)
         if conn_count == 0:
             form.connectivity.errors.append("No connectivity in the project! Simulation cannot be started without "
                                             "a connectivity!")
-        return form
-
-    @staticmethod
-    def _compute_conn_branch_conditions(is_branch, simulator):
-        if is_branch:
-            conn = load.load_entity_by_gid(simulator.connectivity)
-            if conn.number_of_regions:
-                return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
-                                   operations=["=="], values=[conn.number_of_regions])
-        return None
 
     def get_simulation_state_index(self, burst_config, simulation_history_class):
         parent_burst = burst_config.parent_burst_object
