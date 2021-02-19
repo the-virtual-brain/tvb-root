@@ -15,24 +15,54 @@ from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
     RungeKutta4thOrderDeterministic, Identity, IdentityStochastic)
 from tvb.simulator.noise import Additive as AdditiveNoise
 
-from .backendtestbase import (BaseTestSimODE, BaseTestCoupling, BaseTestDfun,
+from .backendtestbase import (BaseTestSim, BaseTestCoupling, BaseTestDfun,
     BaseTestIntegrate)
 
 
-class TestNpSimODE(BaseTestSimODE):
+class TestNpSim(BaseTestSim):
 
-    def test_np_mpr(self):
-        sim, state, t, y = self._create_sim(inhom_mmpr=True)
+    def _test_mpr(self, integrator):
+        sim, state, t, y = self._create_sim(
+            integrator,
+            inhom_mmpr=True)
         template = '<%include file="np-sim.mako"/>'
-        kernel = NpBackend().build_py_func(template, dict(sim=sim), print_source=True)
+        content = dict(sim=sim, np=np)
+        kernel = NpBackend().build_py_func(template, content, print_source=True)
         dX = state.copy()
         weights = sim.connectivity.weights.copy()
         yh = np.empty((len(t),)+state.shape)
         parmat = sim.model.spatial_parameter_matrix
         self.assertEqual(parmat.shape[0], 1)
         self.assertEqual(parmat.shape[1], weights.shape[1])
-        kernel(state, weights, yh, parmat)
+        np.random.seed(42)
+        args = state, weights, yh, parmat
+        if isinstance(integrator, IntegratorStochastic):
+            args = args + (integrator.noise.nsig,)
+        kernel(*args)
         self._check_match(y, yh)
+
+    def _test_mvar(self, integrator):
+        pass # TODO
+
+    def _test_integrator(self, Integrator):
+        dt = 0.01
+        if issubclass(Integrator, IntegratorStochastic):
+            integrator = Integrator(dt=dt, noise=AdditiveNoise(nsig=np.r_[dt]))
+            integrator.noise.dt = integrator.dt
+        else:
+            integrator = Integrator(dt=dt)
+        if isinstance(integrator, (Identity, IdentityStochastic)):
+            self._test_mvar(integrator)
+        else:
+            self._test_mpr(integrator)
+
+    def test_euler(self): self._test_integrator(EulerDeterministic)
+    def test_eulers(self): self._test_integrator(EulerStochastic)
+    def test_heun(self): self._test_integrator(HeunDeterministic)
+    def test_heuns(self): self._test_integrator(HeunStochastic)
+    def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
+    def test_id(self): self._test_integrator(Identity)
+    def test_ids(self): self._test_integrator(IdentityStochastic)
 
 
 class TestNpCoupling(BaseTestCoupling):
@@ -147,9 +177,6 @@ def dfuns(dX, state, cX, parmat):
     def test_id(self): self._test_integrator(Identity)
     def test_ids(self): self._test_integrator(IdentityStochastic)
 
-    # TODO Idnetitiy
-    # TODO MVAR
-    # TODO RK4
 
 # TODO delay/history support
 

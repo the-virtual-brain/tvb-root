@@ -11,23 +11,27 @@ import numpy as np
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.datatypes.connectivity import Connectivity
-from tvb.simulator.integrators import EulerDeterministic
+from tvb.simulator.integrators import EulerDeterministic, IntegratorStochastic
 from tvb.simulator.monitors import Raw
 from tvb.simulator.simulator import Simulator
 
 
-class BaseTestSimODE(unittest.TestCase):
+class BaseTestSim(unittest.TestCase):
     "Integration tests of ODE cases against TVB builtins."
 
-    def _create_sim(self, inhom_mmpr=False):
+
+    def _create_sim(self, integrator=None, inhom_mmpr=False):
         mpr = MontbrioPazoRoxin()
         conn = Connectivity.from_file()
         if inhom_mmpr:
             dispersion = 1 + np.random.randn(conn.weights.shape[0])*0.1
             mpr = MontbrioPazoRoxin(eta=mpr.eta*dispersion)
         conn.speed = np.r_[np.inf]
-        dt = 0.01
-        integrator = EulerDeterministic(dt=dt)
+        if integrator is None:
+            dt = 0.01
+            integrator = EulerDeterministic(dt=dt)
+        else:
+            dt = integrator.dt
         sim = Simulator(connectivity=conn, model=mpr, integrator=integrator, 
             monitors=[Raw()],
             simulation_length=0.1)  # 10 steps
@@ -36,6 +40,8 @@ class BaseTestSimODE(unittest.TestCase):
         state = sim.current_state.copy()[:,:,0].astype('f')
         self.assertEqual(state.shape[0], 2)
         self.assertEqual(state.shape[1], conn.weights.shape[0])
+        if isinstance(sim.integrator, IntegratorStochastic):
+            sim.integrator.noise.reset_random_stream()
         (t,y), = sim.run()
         return sim, state, t, y
 
@@ -44,6 +50,7 @@ class BaseTestSimODE(unittest.TestCase):
         self.assertTrue(np.isfinite(actual).all())
         # check tolerances
         maxtol = np.max(np.abs(actual[0] - expected[0,:,:,0]))
+        print('maxtol 1st step:', maxtol)
         for t in range(1, len(actual)):
             print(t, 'tol:', np.max(np.abs(actual[t] - expected[t,:,:,0])))
             np.testing.assert_allclose(actual[t], expected[t, :, :, 0], 2e-5*t*2, 1e-5*t*2)

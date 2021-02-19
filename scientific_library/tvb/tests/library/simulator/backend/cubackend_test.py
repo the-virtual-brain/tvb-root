@@ -11,10 +11,10 @@ from tvb.simulator.backend.cu import CuBackend, pycuda_available
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 
-from .backendtestbase import BaseTestSimODE, BaseTestCoupling, BaseTestDfun
+from .backendtestbase import BaseTestSim, BaseTestCoupling, BaseTestDfun
 
 
-class TestCUSimODE(BaseTestSimODE):
+class TestCUSim(BaseTestSim):
 
     @unittest.skipUnless(pycuda_available, 'requires working PyCUDA')
     def test_cu_mpr(self):
