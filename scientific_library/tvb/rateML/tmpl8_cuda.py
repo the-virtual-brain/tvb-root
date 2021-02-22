@@ -115,7 +115,7 @@ __global__ void ${modelname}(
     % endif /
 
     % for state_var in (dynamics.state_variables):
-    float ${state_var.name} = 0.0;
+    float ${state_var.name} = ${state_var.dimension};
     % endfor
 
     % for td in (dynamics.time_derivatives):
