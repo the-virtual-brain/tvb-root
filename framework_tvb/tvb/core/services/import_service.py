@@ -205,8 +205,7 @@ class ImportService(object):
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
             if DataEncryptionHandler.encryption_enabled():
-                project_folder = self.files_helper.get_project_folder(project)
-                DataEncryptionHandler.sync_folders(project_folder)
+                DataEncryptionHandler.sync_folders(project_path)
                 shutil.rmtree(project_path)
 
 

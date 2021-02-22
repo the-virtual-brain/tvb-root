@@ -175,7 +175,7 @@ class HDF5StorageManager(object):
                 data_buffer.flush_buffered_data()
         if close_file:
             self.close_file()
-            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+        encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
     def remove_data(self, dataset_name, where=ROOT_NODE_PATH):
         """
@@ -200,6 +200,7 @@ class HDF5StorageManager(object):
             raise FileStructureException("Could not locate dataset: %s" % dataset_name)
         finally:
             self.close_file()
+            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
     def get_data(self, dataset_name, data_slice=None, where=ROOT_NODE_PATH, ignore_errors=False, close_file=True):
         """
@@ -365,6 +366,7 @@ class HDF5StorageManager(object):
             raise FileStructureException("There is no metadata named %s on this node" % meta_key)
         finally:
             self.close_file()
+            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
     def get_metadata(self, dataset_name='', where=ROOT_NODE_PATH):
         """

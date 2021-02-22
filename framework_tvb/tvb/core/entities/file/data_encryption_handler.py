@@ -37,13 +37,13 @@ import threading
 from queue import Queue
 from threading import Lock
 
-from tvb.basic.config.settings import HPCSettings
+from tvb.basic.config.settings import WebSettings
 from tvb.core.services.exceptions import InvalidSettingsException
 
 try:
     from syncrypto import Crypto, Syncrypto
 except ImportError:
-    HPCSettings.CAN_ENCRYPT_STORAGE = False
+    WebSettings.CAN_ENCRYPT_STORAGE = False
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -229,14 +229,14 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     def encryption_enabled():
         if not TvbProfile.current.web.ENCRYPT_STORAGE:
             return False
-        if not TvbProfile.current.hpc.CAN_ENCRYPT_STORAGE:
+        if not TvbProfile.current.web.CAN_ENCRYPT_STORAGE:
             raise InvalidSettingsException(
                 "We can not enable STORAGE ENCRYPTION. Most probably syncrypto is not installed!")
         return True
 
     @staticmethod
     def _get_unencrypted_projects():
-        projects_folder = FilesHelper.get_projects_folder()
+        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
         project_list = os.listdir(projects_folder)
         return list(map(lambda project: os.path.join(projects_folder, str(project)),
                         filter(lambda project: not str(project).endswith(DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX),

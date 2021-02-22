@@ -193,9 +193,8 @@ class FlowController(BaseController):
         Having these generate a range of GID's for all the DataTypes in the group and
         launch a new operation group.
         """
-        prj_service = ProjectService()
-        dt_group = prj_service.get_datatypegroup_by_gid(group_gid)
-        datatypes = prj_service.get_datatypes_from_datatype_group(dt_group.id)
+        dt_group = self.project_service.get_datatypegroup_by_gid(group_gid)
+        datatypes = self.project_service.get_datatypes_from_datatype_group(dt_group.id)
         range_param_name = data.pop('range_param_name')
         data[RANGE_PARAMETER_1] = range_param_name
         data[range_param_name] = ','.join(dt.gid for dt in datatypes)
@@ -648,7 +647,7 @@ class FlowController(BaseController):
         range_list = [float(num) for num in val_range.split(",")]
         step_list = [float(num) for num in step.split(",")]
 
-        datatype_group_ob = ProjectService().get_datatypegroup_by_gid(dt_group_guid)
+        datatype_group_ob = self.project_service.get_datatypegroup_by_gid(dt_group_guid)
         operation_grp = datatype_group_ob.parent_operation_group
         operation_obj = OperationService.load_operation(datatype_group_ob.fk_from_operation)
         parameters = {}

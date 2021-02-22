@@ -325,10 +325,7 @@ class ProjectService:
             self.structure_helper.remove_project_structure(project2delete.name)
             encrypted_path = encryption_handler.compute_encrypted_folder_path(project_folder)
             if os.path.exists(encrypted_path):
-                if os.path.isdir(encrypted_path):
-                    self.structure_helper.remove_folder(encrypted_path)
-                else:
-                    os.remove(encrypted_path)
+                self.structure_helper.remove_folder(encrypted_path)
             dao.delete_project(project_id)
             self.logger.debug("Deleted project: id=" + str(project_id) + ' name=' + project2delete.name)
 

@@ -80,7 +80,6 @@ class ProjectController(BaseController):
 
     def __init__(self):
         super(ProjectController, self).__init__()
-        self.project_service = ProjectService()
         self.flow_controller = FlowController()
         self.file_helper = FilesHelper()
 

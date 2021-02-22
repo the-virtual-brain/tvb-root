@@ -106,7 +106,7 @@ class UserController(BaseController):
                     self.logger.debug("User " + user.username + " has just logged in!")
                     if user.selected_project is not None:
                         prj = user.selected_project
-                        prj = ProjectService().find_project(prj)
+                        prj = self.project_service.find_project(prj)
                         self._mark_selected(prj)
                     raise cherrypy.HTTPRedirect('/user/profile')
                 elif not keycloak_login:
