@@ -44,7 +44,7 @@ import numpy
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesVolumeH5, TimeSeriesRegionH5
-from tvb.adapters.visualizers.region_volume_mapping import _MappedArrayVolumeBase
+from tvb.adapters.visualizers.region_volume_mapping import _MappedArrayVolumeBase, MappedArrayVolumeVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.adapters.arguments_serialisation import postprocess_voxel_ts
@@ -111,18 +111,20 @@ class TimeSeriesVolumeVisualiser(_MappedArrayVolumeBase):
     def launch(self, view_model):
         # type: (TimeSeriesVolumeVisualiserModel) -> dict
 
-        url_volume_data = URLGenerator.build_url(self.stored_adapter.id, 'get_volume_view', view_model.time_series, '')
+        url_volume_data = URLGenerator.build_url(MappedArrayVolumeVisualizer.stored_adapter.id, 'get_volume_view', view_model.time_series, '')
         url_timeseries_data = URLGenerator.build_url(self.stored_adapter.id, 'get_voxel_time_series',
                                                      view_model.time_series, '')
 
         ts_index = self.load_entity_by_gid(view_model.time_series)
         ts_h5 = h5.h5_file_for_index(ts_index)
         min_value, max_value = ts_h5.get_min_max_values()
-        volume = self.load_traited_by_gid(ts_h5.volume.load())
 
         if isinstance(ts_h5, TimeSeriesVolumeH5):
             volume_shape = ts_h5.data.shape
+            volume = self.load_traited_by_gid(ts_h5.volume.load())
         else:
+            rm_index = self.load_entity_by_gid(ts_h5.region_mapping_volume.load())
+            volume = self.load_traited_by_gid(rm_index.fk_volume_gid)
             rmv = self.load_traited_by_gid(ts_h5.region_mapping_volume.load())
             volume_shape = [ts_h5.data.shape[0]]
             volume_shape.extend(rmv.array_data.shape)
