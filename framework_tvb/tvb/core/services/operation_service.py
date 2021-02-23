@@ -540,17 +540,15 @@ class OperationService:
         :param remove_after_stop: if True, also remove the operation(s) after stopping
         :returns True if the stop step was successfully
         """
-        result = False
         if is_group:
             op_group = ProjectService.get_operation_group_by_id(operation_id)
             operations_in_group = ProjectService.get_operations_in_group(op_group)
-            for operation in operations_in_group:
-                result = OperationService.stop_operation(operation.id, False, remove_after_stop) or result
-        else:
-            result = BackendClientFactory.stop_operation(operation_id)
-            if remove_after_stop:
-                burst_config = dao.get_burst_for_direct_operation_id(operation_id)
-                ProjectService().remove_operation(operation_id)
-                if burst_config is not None:
-                    result = dao.remove_entity(BurstConfiguration, burst_config.id) or result
+            operation_id = operations_in_group[0].id
+
+        result = BackendClientFactory.stop_operation(operation_id)
+        if remove_after_stop:
+            burst_config = dao.get_burst_for_direct_operation_id(operation_id)
+            ProjectService().remove_operation(operation_id)
+            if burst_config is not None:
+                result = dao.remove_entity(BurstConfiguration, burst_config.id) or result
         return result
