@@ -842,8 +842,8 @@ class ProjectService:
         return dao.get_results_for_operation(operation_id, selected_filter)
 
     @staticmethod
-    def get_first_operation_in_group(op_group):
-        return dao.get_operations_in_group(op_group.id, only_first_operation=True)
+    def get_operations_in_group(op_group):
+        return dao.get_operations_in_group(op_group.id)
 
     @staticmethod
     def get_datatype_by_id(datatype_id):
