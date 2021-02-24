@@ -67,6 +67,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
+from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
 
@@ -203,6 +204,10 @@ class ImportService(object):
             self.import_project_operations(project, temp_project_path)
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
+            if DataEncryptionHandler.encryption_enabled():
+                DataEncryptionHandler.sync_folders(project_path)
+                shutil.rmtree(project_path)
+
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """

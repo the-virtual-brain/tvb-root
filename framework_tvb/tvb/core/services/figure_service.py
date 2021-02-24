@@ -43,6 +43,7 @@ import xml.dom.minidom
 from io import BytesIO
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.model.model_operation import ResultFigure
 from tvb.core.entities.storage import dao
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -138,6 +139,7 @@ class FigureService:
         figure = dao.load_figure(entity.id)
         # Write image meta data to disk  
         self.file_helper.write_image_metadata(figure)
+        encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(project))
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
         """
@@ -173,6 +175,7 @@ class FigureService:
         figure = dao.load_figure(figure_id)
         # Store figure meta data in an XML attached to the image.
         self.file_helper.write_image_metadata(figure)
+        encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(figure.project.name))
 
     def remove_result_figure(self, figure_id):
         """
@@ -186,7 +189,7 @@ class FigureService:
         if os.path.exists(path2figure):
             os.remove(path2figure)
             self.file_helper.remove_image_metadata(figure)
-
+            encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(figure.project.name))
         # Remove figure reference from DB.
         result = dao.remove_entity(ResultFigure, figure_id)
         return result

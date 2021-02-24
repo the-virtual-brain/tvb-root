@@ -32,6 +32,7 @@ import json
 import os
 from datetime import datetime
 
+from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper

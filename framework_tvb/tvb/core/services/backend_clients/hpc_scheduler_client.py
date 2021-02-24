@@ -45,6 +45,7 @@ from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import MEASURE_METRICS_MODEL_CLASS
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR, OperationProcessIdentifier
@@ -364,6 +365,8 @@ class HPCSchedulerClient(BackendClient):
     def _run_hpc_job(operation_identifier):
         # type: (int) -> None
         operation = dao.get_operation_by_id(operation_identifier)
+        project_folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
+        encryption_handler.inc_running_op_count(project_folder)
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = operation.view_model_gid
         try:
@@ -373,6 +376,8 @@ class HPCSchedulerClient(BackendClient):
             operation.mark_complete(STATUS_ERROR,
                                     exception.response.text if isinstance(exception, HTTPError) else repr(exception))
             dao.store_entity(operation)
+        encryption_handler.dec_running_op_count(project_folder)
+        encryption_handler.check_and_delete(project_folder)
 
     @staticmethod
     def _stage_out_outputs(encrypted_dir_path, output_list):
