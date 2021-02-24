@@ -542,8 +542,7 @@ class OperationService:
         """
         if is_group:
             op_group = ProjectService.get_operation_group_by_id(operation_id)
-            operations_in_group = ProjectService.get_operations_in_group(op_group)
-            operation_id = operations_in_group[0].id
+            operation_id = ProjectService().get_first_operation_in_group(op_group).id
 
         result = BackendClientFactory.stop_operation(operation_id)
         if remove_after_stop:
