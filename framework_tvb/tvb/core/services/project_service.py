@@ -842,10 +842,6 @@ class ProjectService:
         return dao.get_results_for_operation(operation_id, selected_filter)
 
     @staticmethod
-    def get_operations_in_group(op_group):
-        return dao.get_operations_in_group(op_group.id)
-
-    @staticmethod
     def get_datatype_by_id(datatype_id):
         """Retrieve a DataType DB reference by its id."""
         return dao.get_datatype_by_id(datatype_id)
