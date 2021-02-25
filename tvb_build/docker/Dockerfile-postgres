@@ -1,0 +1,13 @@
+FROM thevirtualbrain/tvb-run
+
+ARG TVB_USER=tvb_user
+COPY --chown=$TVB_USER:$TVB_USER TVB.zip /home/tvb_user/TVB_STORAGE
+COPY --chown=$TVB_USER:$TVB_USER pgdata.zip /var/lib/postgresql/11
+
+USER root
+RUN chown -R postgres:postgres /var/lib/postgresql/11/main
+RUN cd /home/tvb_user/TVB_STORAGE; unzip TVB.zip -d .; rm TVB.zip; cp -R TVB/PROJECTS .; rm -R TVB;
+RUN cd /var/lib/postgresql/11; rm -R main/*; unzip pgdata.zip -d .; cp -R pgdata main; \
+rm pgdata.zip; rm -R pgdata; cd main; cp -R pgdata/* .; rm -R pgdata;
+RUN sed -i "s|URL_VALUE=sqlite:////home/tvb_user/TVB_STORAGE/tvb-database.db|URL_VALUE=postgresql+psycopg2://postgres:root@127.0.0.1:5432/tvb?user=postgres\&password=postgres |g" /home/tvb_user/.tvb.configuration;
+CMD ["bash","-c","service postgresql start"]
