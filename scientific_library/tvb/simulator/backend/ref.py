@@ -34,6 +34,8 @@ This module provides a reference backend implemented with NumPy.
 """
 import numpy
 import numpy as np
+from tvb.simulator._numba.util import add_at_313
+
 from .base import BaseBackend
 
 
@@ -130,9 +132,26 @@ class RefSurface(RefBase):
 
     @staticmethod
     def surface_state_to_rois(_regmap, n_reg, state):
+        # todo: maybe lift this allocation?
         region_state = numpy.zeros((n_reg, state.shape[0], state.shape[2]))  # temp (node, cvar, mode)
+        # region_state2 = numpy.zeros((n_reg, state.shape[0], state.shape[2]))         # temp (node, cvar, mode)
+        # this transpose costs because it returns an array that is not contiguous in memory
+        # all the striding messes with the cache
+        # the reason for this transpose is that state comes from history shape, that one is t, sv, node, mode
+        # before transpose state is sv, node, mode
+        # after it is node, sv, mode
+        # state.data.strides = {tuple:            region_state = numpy.zeros((n_reg, state.shape[0], state.shape[2]))         # temp (node, cvar, mode) 3}(175360, 8, 8)
+        # state.transpose((1, 0, 2)).data.strides = {tuple: 3}(8, 175360, 350720)
+        # to get to next sv for a node i have to skip 175360 bytes in memory! to get to next mode for node, sv 350720
+
+        # numpy_add_at(region_state2, self._regmap, state.transpose((1, 0, 2)))        # sum within region
+
         # TODO how to handle this?
-        RefBase.add_at(region_state, _regmap, state.transpose((1, 0, 2)))  # sum within region
+        # RefBase.add_at(region_state, _regmap, state.transpose((1, 0, 2)))  # sum within region
+        add_at_313(region_state, _regmap, state.transpose((1, 0, 2)))
+        # assert numpy.abs(region_state - region_state2).max() < 1e-8
+
+        # todo: this bincount can be lifted out of loop
         region_state /= numpy.bincount(_regmap).reshape((-1, 1, 1))  # div by n node in region
         # TODO out= argument to avoid alloc
         state = region_state.transpose((1, 0, 2))  # (cvar, node, mode)

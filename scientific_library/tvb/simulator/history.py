@@ -114,6 +114,15 @@ class BaseHistory(StaticAttr):
                     sim.log.debug("Using last %d time-steps for history.", sim.connectivity.horizon)
                     history = initial_conditions[-sim.connectivity.horizon:, :, :, :].copy()
                 else:
+                    # maybe a better broadcast test than this?
+                    if ic_shape[2] != sim._regmap.shape[0] or ic_shape[1] != len(sim.model.state_variables):
+                        raise ValueError(
+                            'Incorrect initial condition shape for a surface sim. '
+                            'Expected broadcastable to (time, n_state_vars, n_nodes, n_modes) = (1, %s, %s, %s). '
+                            'Found %s' %
+                            (len(sim.model.state_variables), sim._regmap.shape[0], sim.model.number_of_modes,
+                             ic_shape)
+                        )
                     sim.log.debug('Padding initial conditions with model.initial')
                     history = sim.model.initial_for_simulator(sim.integrator, sim.good_history_shape)
                     shift = sim.current_step % sim.connectivity.horizon
@@ -136,8 +145,17 @@ class BaseHistory(StaticAttr):
         sim.log.info('Final initial history shape is %r', history.shape)
 
         # create initial state from history
-        sim.current_state = history[sim.current_step % sim.connectivity.horizon].copy()
-        sim.log.debug('initial state has shape %r' % (sim.current_state.shape, ))
+        # TODO: FIXME: initial state of a surface sim is nr of vertices long
+        # while history is kept for nr_conn_nodes delayed connections
+        # History is not enough to recover initial conditions
+
+        if sim.surface is not None and initial_conditions is not None:
+            # here we take last time point in the initial conditions
+            # todo: check this time management
+            sim.current_state = initial_conditions[-1]
+        else:
+            sim.current_state = history[sim.current_step % sim.connectivity.horizon].copy()
+            sim.log.debug('initial state has shape %r' % (sim.current_state.shape, ))
         if sim.surface is not None and history.shape[2] > sim.connectivity.number_of_regions:
             n_reg = sim.connectivity.number_of_regions
             (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)

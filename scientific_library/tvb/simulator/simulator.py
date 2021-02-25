@@ -52,7 +52,6 @@ from tvb.simulator.models.base import Model
 from .backend import ReferenceBackend
 from .common import psutil
 from .history import SparseHistory
-from tvb.simulator._numba.util import add_at_313
 
 
 # TODO with refactor, this becomes more of a builder, since iterator will account for
@@ -247,15 +246,6 @@ class Simulator(HasTraits):
             self.log.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
                           nc, nsc, self.number_of_nodes)
 
-    def model_param_names(self):
-        # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
-        excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
-                           "noise", "psi_table", "nerf_table", "gid")
-        for param in type(self.model).declarative_attrs:
-            if param in excluded_params:
-                continue
-            yield param
-
     def configure(self, full_configure=True):
         """Configure simulator and its components.
 
@@ -343,7 +333,6 @@ class Simulator(HasTraits):
                     tmp = numpy.concatenate((tmp, subcortical_padding), axis=1)
 
             stimulus[self.model.stvar, :, :] = tmp
-
 
     def _loop_update_history(self, step, state):
         """Update history."""
