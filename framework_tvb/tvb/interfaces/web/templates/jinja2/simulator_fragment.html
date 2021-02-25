@@ -28,6 +28,20 @@
         </dl>
     </fieldset>
 
+    {% if renderer.include_previous_button %}
+        <button name="previous" type="button" class="btn btn-primary" tabindex="1"
+                onclick="previousWizzardStep(this.parentElement, '{{ renderer.previous_form_action_url }}')"
+                {% if renderer.hide_previous_button %} style="visibility: hidden" {% endif %}>Previous
+        </button>
+    {% endif %}
+
+    {% if renderer.include_next_button %}
+        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
+                onclick="wizzard_submit(this.parentElement)"
+                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Next
+        </button>
+    {% endif %}
+
     {% if renderer.include_setup_region_model %}
         <button type="button" title="Set up model parameters for region-based simulations" class="btn btn-primary" tabindex="1"
            onclick="configureModelParamsOnRegions();" id="configRegionModelParam" name="configRegionModelParam"
@@ -42,20 +56,6 @@
             <button type="button" title="Configure noise for region-based simulations" class="btn btn-primary" tabindex="1"
                onclick="configureNoiseParameters();" id="configNoiseValues" name="configNoiseValues"
                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Configure noise</button>
-    {% endif %}
-
-    {% if renderer.include_previous_button %}
-        <button name="previous" type="button" class="btn btn-primary" tabindex="1"
-                onclick="previousWizzardStep(this.parentElement, '{{ renderer.previous_form_action_url }}')"
-                {% if renderer.hide_previous_button %} style="visibility: hidden" {% endif %}>Previous
-        </button>
-    {% endif %}
-
-    {% if renderer.include_next_button %}
-        <button name="next" type="button" class="btn btn-primary btn-next" tabindex="1"
-                onclick="wizzard_submit(this.parentElement)"
-                {% if renderer.load_readonly %} style="visibility: hidden" {% endif %}>Next
-        </button>
     {% endif %}
 
     {% if renderer.include_branch_button %}

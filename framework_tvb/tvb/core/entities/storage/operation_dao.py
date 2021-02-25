@@ -115,7 +115,9 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-    def get_operations(self, status=[STATUS_PENDING, STATUS_STARTED], algorithm_classname="SimulatorAdapter"):
+    def get_operations(self, status=None, algorithm_classname="SimulatorAdapter"):
+        if status is None:
+            status = [STATUS_PENDING, STATUS_STARTED]
         try:
             result = self.session.query(Operation).join(Algorithm) \
                 .filter(Algorithm.classname == algorithm_classname) \

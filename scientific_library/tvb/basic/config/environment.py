@@ -83,15 +83,6 @@ class Environment(object):
             # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
             return False
 
-        try:
-            _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
-            version = VersionSettings.parse_svn_version(_proc.communicate()[0])
-            if version:
-                # usage from SVN (deprecated)
-                return False
-        except Exception:
-            pass
-
         # We default as usage from TVB_Distribution
         return True
 

@@ -12,7 +12,7 @@
             VSI_StartInternalActivityViewer('{{ base_adapter_url }}', {{ pageSize }}, '{{ time | safe }}', '{{ urlVertices if urlVertices else '' }}',
                     '{{urlLines | safe }}', '{{ urlTriangles | safe }}', '{{ urlNormals | safe }}', '{{ urlMeasurePoints | safe }}', {{ noOfMeasurePoints }},
                     '{{ urlRegionMap | safe }}', '{{ minActivity }}', '{{ maxActivity }}', '{{ isOneToOneMapping }}',
-                     {{ 'true' if extended_view else 'false' }}, {{ ("'" ~ shelfObject ~ "'" if shelfObject else 'null') | safe }},
+                     {{ 'true' if extended_view else 'false' }}, {{ ("'" ~ shellObject ~ "'" if shellObject else 'null') | safe }},
                     '{{ urlMeasurePointsLabels | safe }}', '{{ urlRegionBoundaries }}');
         });
     </script>

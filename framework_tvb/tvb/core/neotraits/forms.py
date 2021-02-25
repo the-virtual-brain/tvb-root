@@ -31,12 +31,11 @@
 import json
 import uuid
 from collections import namedtuple
-
 import numpy
-from tvb.basic.neotraits.api import List, Attr
-from tvb.basic.neotraits.ex import TraitError
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
+from tvb.basic.neotraits.ex import TraitError
+from tvb.basic.neotraits.api import List, Attr
 # TODO: remove dependency
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
@@ -295,7 +294,7 @@ class SelectField(TraitField):
             self.template = 'form_fields/select_field.html'
 
     def __init__(self, trait_attribute, name=None, disabled=False, choices=None, display_none_choice=True,
-                 subform=None, display_subform=True):
+                 subform=None, display_subform=True, ui_values=None):
         super(SelectField, self).__init__(trait_attribute, name, disabled)
         if choices:
             self.choices = choices
@@ -309,6 +308,7 @@ class SelectField(TraitField):
             self.subform_field = FormField(subform, self.subform_prefix + self.name)
             self.display_subform = display_subform
         self._prepare_template(self.choices)
+        self.ui_values = ui_values
 
     @property
     def value(self):
@@ -328,11 +328,13 @@ class SelectField(TraitField):
                     checked=self.data is None
                 )
 
+        choices = self.ui_values if self.ui_values is not None else list(self.choices.keys())
+
         for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=choice,
-                label=str(choice).title(),
+                label=str(choices[i]).title(),
                 checked=self.value == self.choices.get(choice)
             )
 

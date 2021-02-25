@@ -38,6 +38,7 @@ A Javascript displayer for time series, using SVG.
 import json
 from abc import ABCMeta
 from six import add_metaclass
+
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5, TimeSeriesSensorsH5, TimeSeriesH5
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.adapters.abcadapter import ABCAdapterForm
@@ -109,8 +110,7 @@ class ABCSpaceDisplayer(ABCDisplayer):
         """
         if isinstance(ts_h5, TimeSeriesSensorsH5):
             sensors_gid = ts_h5.sensors.load()
-            sensors_idx = self.load_entity_by_gid(sensors_gid)
-            with h5.h5_file_for_index(sensors_idx) as sensors_h5:
+            with h5.h5_file_for_gid(sensors_gid) as sensors_h5:
                 labels = sensors_h5.labels.load()
                 # TODO uncomment this when the UI component will be able to scale for many groups
                 # if isinstance(ts_h5, TimeSeriesSEEGH5):
@@ -133,16 +133,15 @@ class ABCSpaceDisplayer(ABCDisplayer):
             connectivity_gid = ts_h5.connectivity.load()
             if connectivity_gid is None:
                 return []
-            conn_idx = self.load_entity_by_gid(connectivity_gid)
-            with h5.h5_file_for_index(conn_idx) as conn_h5:
+
+            with h5.h5_file_for_gid(connectivity_gid) as conn_h5:
                 return list(conn_h5.region_labels.load())
 
         if isinstance(ts_h5, TimeSeriesSensorsH5):
             sensors_gid = ts_h5.sensors.load()
             if sensors_gid is None:
                 return []
-            sensors_idx = self.load_entity_by_gid(sensors_gid)
-            with h5.h5_file_for_index(sensors_idx) as sensors_h5:
+            with h5.h5_file_for_gid(sensors_gid) as sensors_h5:
                 return list(sensors_h5.labels.load())
 
         return ts_h5.get_space_labels()

@@ -39,7 +39,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter, ABCAdapterForm
 from tvb.core.entities.model.model_project import User
 from tvb.core.neotraits.forms import ArrayField
 from tvb.interfaces.web.controllers.decorators import using_template
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorFragmentRenderingRules, SimulatorWizzardURLs
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorFragmentRenderingRules, SimulatorWizzardURLs
 from tvb.simulator.models import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase

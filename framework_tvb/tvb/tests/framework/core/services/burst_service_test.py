@@ -33,6 +33,7 @@
 """
 
 import os
+
 from uuid import UUID
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -174,7 +175,7 @@ class TestBurstService(BaseTestCase):
         simulation = SimulatorAdapterModel()
         simulation.connectivity = UUID(connectivity.gid)
 
-        burst_config = self.burst_service.update_simulation_fields(stored_burst.id, op.id, simulation.gid)
+        burst_config = self.burst_service.update_simulation_fields(stored_burst, op.id, simulation.gid)
         assert burst_config.id == stored_burst.id, "The loaded burst does not have the same ID"
         assert burst_config.fk_simulation == op.id, "The loaded burst does not have the fk simulation that it was given"
         assert burst_config.simulator_gid == simulation.gid.hex, "The loaded burst does not have the simulation gid that it was given"
@@ -184,14 +185,14 @@ class TestBurstService(BaseTestCase):
         Test prepare burst name
         """
         stored_burst = TestFactory.store_burst(self.test_project.id)
-        simulation_tuple = self.burst_service.prepare_name(stored_burst, self.test_project.id)
+        simulation_tuple = self.burst_service.prepare_simulation_name(stored_burst, self.test_project.id)
         assert simulation_tuple[0] == 'simulation_' + str(dao.get_number_of_bursts(self.test_project.id) + 1), \
             "The default simulation name is not the defined one"
 
         busrt_test_name = "Burst Test Name"
         stored_burst.name = busrt_test_name
         stored_burst = dao.store_entity(stored_burst)
-        simulation_tuple = self.burst_service.prepare_name(stored_burst, self.test_project.id)
+        simulation_tuple = self.burst_service.prepare_simulation_name(stored_burst, self.test_project.id)
         assert simulation_tuple[0] == busrt_test_name, "The burst name is not the given one"
 
     def test_prepare_burst_for_pse(self):

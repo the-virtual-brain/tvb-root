@@ -35,10 +35,12 @@ A displayer for the principal components analysis.
 
 """
 import json
-from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
+
 from tvb.adapters.datatypes.db.mode_decompositions import PrincipalComponentsIndex
-from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.mode_decompositions import PrincipalComponents
@@ -88,12 +90,10 @@ class PCA(ABCSpaceDisplayer):
     def launch(self, view_model):
         # type: (PCAModel) -> dict
         """Construct data for visualization and launch it."""
-        ts_h5_class, ts_h5_path = self._load_h5_of_gid(view_model.pca.hex)
-        with ts_h5_class(ts_h5_path) as ts_h5:
+        with h5.h5_file_for_gid(view_model.pca) as ts_h5:
             source_gid = ts_h5.source.load()
 
-        source_h5_class, source_h5_path = self._load_h5_of_gid(source_gid.hex)
-        with source_h5_class(source_h5_path) as source_h5:
+        with h5.h5_file_for_gid(source_gid) as source_h5:
             labels_data = self.get_space_labels(source_h5)
 
         fractions_update_url = URLGenerator.build_h5_url(view_model.pca, 'read_fractions_data')

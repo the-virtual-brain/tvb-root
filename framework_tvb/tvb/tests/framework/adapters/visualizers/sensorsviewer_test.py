@@ -53,7 +53,7 @@ class TestSensorViewers(TransactionalTestCase):
     """
 
     EXPECTED_KEYS_INTERNAL = {'urlMeasurePoints': None, 'urlMeasurePointsLabels': None, 'noOfMeasurePoints': 103,
-                              'minMeasure': 0, 'maxMeasure': 103, 'urlMeasure': None, 'shelfObject': None}
+                              'minMeasure': 0, 'maxMeasure': 103, 'urlMeasure': None, 'shellObject': None}
 
     EXPECTED_KEYS_EEG = EXPECTED_KEYS_INTERNAL.copy()
     EXPECTED_KEYS_EEG.update({'urlVertices': None, 'urlTriangles': None, 'urlLines': None, 'urlNormals': None,

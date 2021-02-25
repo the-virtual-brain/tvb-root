@@ -34,8 +34,6 @@
 
 import os
 import numpy
-from uuid import UUID
-
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField
 
@@ -49,18 +47,13 @@ def _review_operation_inputs_for_adapter_model(form_fields, form_model, view_mod
         if not hasattr(view_model, field.name):
             continue
         attr_vm = getattr(view_model, field.name)
-        if type(field) == TraitUploadField:
+        if attr_vm and type(field) == TraitUploadField:
             attr_vm = os.path.basename(attr_vm)
 
         if isinstance(field, TraitDataTypeSelectField):
             data_type = None
             if attr_vm:
-                data_type = None
-                if isinstance(attr_vm, UUID) or isinstance(attr_vm, str):
-                    data_type = load_entity_by_gid(attr_vm)
-                if hasattr(attr_vm, field.name + '_gid'):
-                    dt_gid = getattr(attr_vm, field.name + '_gid')
-                    data_type = load_entity_by_gid(dt_gid)
+                data_type = load_entity_by_gid(attr_vm)
                 changed_attr[field.label] = data_type.display_name if data_type else "None"
             inputs_datatypes.append(data_type)
         else:
