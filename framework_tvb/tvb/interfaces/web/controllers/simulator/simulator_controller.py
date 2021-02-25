@@ -85,9 +85,10 @@ class SimulatorController(BurstBaseController):
         Cancel or Remove the burst entity given by burst_id (and all linked entities: op, DTs)
         :returns True: if the op was successfully.
         """
-        burst_id = int(burst_id)
-        op_id, is_group, remove_after_stop = self.burst_service.cancel_or_remove_burst(burst_id)
-        return self.cancel_or_remove_operation(op_id, is_group, remove_after_stop)
+        burst_config = BurstService.load_burst_configuration(int(burst_id))
+        op_id, is_group = burst_config.operation_info_for_burst_removal
+
+        return self.cancel_or_remove_operation(op_id, is_group, burst_config.is_finished)
 
     def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):
         """

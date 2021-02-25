@@ -34,16 +34,17 @@
 
 from sqlalchemy import Column, Integer, ForeignKey, String, DateTime
 from sqlalchemy.orm import relationship, backref
-from tvb.core.utils import format_timedelta
 from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.model.model_project import Project
 from tvb.core.neotraits.db import Base, HasTraitsIndex
+from tvb.core.utils import format_timedelta
 
 NUMBER_OF_PORTLETS_PER_TAB = 4
 
 PARAM_RANGE_PREFIX = 'range_'
 RANGE_PARAMETER_1 = "range_1"
 RANGE_PARAMETER_2 = "range_2"
+
 
 ## TabConfiguration entity is not moved in the "transient" module, although it's not stored in DB,
 ## because it was directly referenced from the BurstConfiguration old class.
@@ -195,3 +196,16 @@ class BurstConfiguration(HasTraitsIndex):
         if self.range1:
             return [self.range1]
         return None
+
+    @property
+    def is_finished(self):
+        return self.status != self.BURST_RUNNING
+
+    @property
+    def operation_info_for_burst_removal(self):
+        """
+        Return operation id for whole burst removal and a flag specifying whether the current burst is a group.
+        """
+        if self.fk_operation_group is None:
+            return self.fk_simulation, False
+        return self.fk_operation_group, True
