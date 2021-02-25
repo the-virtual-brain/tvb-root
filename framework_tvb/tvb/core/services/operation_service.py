@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -77,7 +77,7 @@ RANGE_PARAMETER_2 = RANGE_PARAMETER_2
 
 class OperationService:
     """
-    Class responsible for preparing an operation launch. 
+    Class responsible for preparing an operation launch.
     It will prepare parameters, and decide if the operation is to be executed
     immediately, or to be sent on the cluster.
     """
@@ -95,7 +95,7 @@ class OperationService:
         """
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
-        
+
         Invoke custom method on an Adapter Instance. Make sure when the
         operation has finished that the correct results are stored into DB.
         """
@@ -384,7 +384,7 @@ class OperationService:
 
     def _remove_files(self, file_list):
         """
-        Remove any files that exist in the file_dictionary. 
+        Remove any files that exist in the file_dictionary.
         Currently used to delete temporary files created during an operation.
         """
         for pth in file_list:
@@ -480,7 +480,7 @@ class OperationService:
     @staticmethod
     def __expand_arguments(arguments_list, range_values, range_title):
         """
-        Parse the arguments submitted from UI (flatten form) 
+        Parse the arguments submitted from UI (flatten form)
         If any ranger is found, return a list of arguments for all possible operations.
         """
         if range_values is None:
@@ -546,7 +546,7 @@ class OperationService:
             operations_in_group = ProjectService.get_operations_in_group(op_group)
             for operation in operations_in_group:
                 result = OperationService.stop_operation(operation.id, False, remove_after_stop) or result
-        else:
+        elif dao.try_get_operation_by_id(operation_id) is not None:
             result = BackendClientFactory.stop_operation(operation_id)
             if remove_after_stop:
                 burst_config = dao.get_burst_for_direct_operation_id(operation_id)
