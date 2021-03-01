@@ -287,13 +287,13 @@ class TestOperationService(BaseTestCase):
         view_model.test = 5
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, view_model=view_model)
+        operation = self.operation_service.prepare_operation_with_vm_storage(self.test_user.id, self.test_project,
+                                                                             algo, algo_category, view_model=view_model)
 
-        self.operation_service._send_to_cluster(operations, adapter)
-        self.operation_service.stop_operation(operations[0].id)
+        self.operation_service._send_to_cluster(operation, adapter)
+        self.operation_service.stop_operation(operation)
 
-        operation = dao.get_operation_by_id(operations[0].id)
+        operation = dao.get_operation_by_id(operation.id)
         assert operation.status, model_operation.STATUS_CANCELED == "Operation should have been canceled!"
 
     def test_stop_operation_finished(self, test_adapter_factory):
@@ -307,14 +307,14 @@ class TestOperationService(BaseTestCase):
         view_model.test1_val2 = 5
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, view_model=view_model)
-        self.operation_service._send_to_cluster(operations, adapter)
-        operation = dao.get_operation_by_id(operations[0].id)
+        operation = self.operation_service.prepare_operation_with_vm_storage(self.test_user.id, self.test_project, algo,
+                                                                             algo_category, view_model=view_model)
+        self.operation_service._send_to_cluster(operation, adapter)
+        operation = dao.get_operation_by_id(operation.id)
         operation.status = model_operation.STATUS_FINISHED
         dao.store_entity(operation)
-        self.operation_service.stop_operation(operations[0].id)
-        operation = dao.get_operation_by_id(operations[0].id)
+        self.operation_service.stop_operation(operation.id)
+        operation = dao.get_operation_by_id(operation.id)
         assert operation.status, model_operation.STATUS_FINISHED == "Operation shouldn't have been canceled!"
 
     def test_fire_operation(self):

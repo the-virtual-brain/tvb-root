@@ -55,9 +55,9 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         self.storage_path = storage_path
         self.is_group_launch = is_group_launch
 
-    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+    def _prelaunch(self, operation, view_model, available_disk_space=0):
         self.available_disk_space = available_disk_space
-        super(HPCSimulatorAdapter, self)._prelaunch(operation, view_model, uid, available_disk_space)
+        super(HPCSimulatorAdapter, self)._prelaunch(operation, view_model, available_disk_space)
 
     def get_output(self):
         return [TimeSeriesIndex, SimulationHistoryIndex, DatatypeMeasureIndex]

@@ -184,13 +184,13 @@ class TestFactory(object):
 
         # Prepare Operations group. Execute them synchronously
         service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category,
-                                                view_model=view_model, **args)[0]
-        service.launch_operation(operations[0].id, False, adapter_inst)
-        service.launch_operation(operations[1].id, False, adapter_inst)
+        operation = service.prepare_operation_with_vm_storage(test_user.id, test_project, algo, algo_category,
+                                                              view_model=view_model)
+        service.launch_operation(operation.id, False, adapter_inst)
+        service.launch_operation(operation.id, False, adapter_inst)
 
-        resulted_dts = dao.get_datatype_in_group(operation_group_id=operations[0].fk_operation_group)
-        return resulted_dts, operations[0].fk_operation_group
+        resulted_dts = dao.get_datatype_in_group(operation_group_id=operation.fk_operation_group)
+        return resulted_dts, operation.fk_operation_group
 
     @staticmethod
     def create_value_wrapper(test_user, test_project=None):
@@ -366,8 +366,8 @@ class TestFactory(object):
         algorithm = adapter_instance.stored_adapter
         if algo_category is None:
             algo_category = dao.get_category_by_id(algorithm.fk_category)
-        operation = service.prepare_operations(test_user.id, test_project, algorithm, algo_category,
-                                               True, view_model=view_model)[0][0]
+        operation = service.prepare_operation_with_vm_storage(test_user.id, test_project, algorithm, algo_category,
+                                                              True, view_model=view_model)
         service.initiate_prelaunch(operation, adapter_instance)
 
         operation = dao.get_operation_by_id(operation.id)

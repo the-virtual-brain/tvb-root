@@ -195,10 +195,11 @@ class TestFlowController(BaseControllersTest):
         view_model.test1_val2 = 6
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, view_model=view_model, **data)
-        self.operation_service._send_to_cluster(operations, adapter)
-        return operations
+        operation = self.operation_service.prepare_operation_with_vm_storage(self.test_user.id, self.test_project,
+                                                                              algo, algo_category,
+                                                                              view_model=view_model)
+        self.operation_service._send_to_cluster(operation, adapter)
+        return operation
 
     def test_stop_operations(self):
         operations = self._asynch_launch_simple_op()

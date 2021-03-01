@@ -101,7 +101,7 @@ class OperationFacade:
                         view_model_h5.store_metadata_param(key, data_file_path)
             view_model = h5.load_view_model_from_file(model_h5_path)
 
-            ga = self.operation_service.prepare_metadata(algorithm.algorithm_category, {}, None,
+            ga = self.operation_service.prepare_metadata(algorithm.algorithm_category, None,
                                                          current_ga=view_model.generic_attributes)
             view_model.generic_attributes = ga
 
