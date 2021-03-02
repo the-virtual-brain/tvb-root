@@ -103,8 +103,7 @@ class OperationService:
         algo = adapter_instance.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
 
-        operation = self.prepare_operation_with_vm_storage(current_user.id, project, algo, algo_category, visible,
-                                                           view_model=model_view)
+        operation = self.prepare_operation(current_user.id, project, algo, visible, model_view)
         if adapter_instance.launch_mode == AdapterLaunchModeEnum.SYNC_SAME_MEM:
             return self.initiate_prelaunch(operation, adapter_instance)
         else:
@@ -139,9 +138,8 @@ class OperationService:
         """
         Create and prepare the launch of a group of operations.
         """
-        category = dao.get_category_by_id(category_id)
         algorithm = dao.get_algorithm_by_id(algorithm_id)
-        ops, _ = self.prepare_operation(user_id, project, algorithm, category)
+        ops, _ = self.prepare_operation(user_id, project, algorithm)
         for operation in ops:
             self.launch_operation(operation.id, True)
 
@@ -181,32 +179,13 @@ class OperationService:
         self.store_view_model(metric_operation, sim_operation.project, view_model)
         return metric_operation
 
-    @transactional
-    def prepare_operation(self, user_id, project_id, algorithm, view_model_gid,
-                          op_group=None, ranges=None, visible=True):
-
-        op_group_id = None
-        if op_group:
-            op_group_id = op_group.id
-        if isinstance(view_model_gid, uuid.UUID):
-            view_model_gid = view_model_gid.hex
-
-        operation = Operation(view_model_gid, user_id, project_id, algorithm.id,
-                              op_group_id=op_group_id, range_values=ranges)
-        self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project_id) +
-                          ",algorithmId=" + str(algorithm.id) + ", ops_group= " + str(op_group_id) + ")")
-
-        operation.visible = visible
-        operation = dao.store_entity(operation)
-        return operation
-
-    def prepare_operation_with_vm_storage(self, user_id, project, algorithm, category, visible=True, view_model=None):
+    def prepare_operation(self, user_id, project, algorithm, visible=True, view_model=None):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a
         range of values create an operation group and multiple operations for each possible
         instance from the range.
         """
-        ga = self.prepare_metadata(category, current_ga=view_model.generic_attributes)
+        ga = self.prepare_metadata(algorithm.algorithm_category, current_ga=view_model.generic_attributes)
         ga.visible = visible
         view_model.generic_attributes = ga
 

@@ -41,7 +41,6 @@ Project, User, Operation, basic imports (e.g. CFF).
 import os
 import random
 import uuid
-import numpy as np
 import tvb_data
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -59,29 +58,23 @@ from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImpo
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel
-from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.utils import hash_password
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb_documentation.sim_doc.generate_model_phase_plane_images import TestModel
 
 
 class TestFactory(object):
@@ -167,36 +160,6 @@ class TestFactory(object):
         op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
         h5.store_view_model(view_model, op_dir)
         return dao.get_operation_by_id(operation.id)
-
-    @staticmethod
-    def create_group(test_user=None, test_project=None, subject="John Doe"):
-        """
-        Create a group of 2 operations, each with at least one resultant DataType.
-        """
-        if test_user is None:
-            test_user = TestFactory.create_user()
-        if test_project is None:
-            test_project = TestFactory.create_project(test_user)
-
-        adapter_inst = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        adapter_inst.generic_attributes.subject = subject
-
-        view_model = adapter_inst.get_view_model()()
-        args = {RANGE_PARAMETER_1: 'param_5', 'param_5': json.dumps({constants.ATT_MINVALUE: 1,
-                                                                     constants.ATT_MAXVALUE: 2.1,
-                                                                     constants.ATT_STEP: 1})}
-        algo = adapter_inst.stored_adapter
-        algo_category = dao.get_category_by_id(algo.fk_category)
-
-        # Prepare Operations group. Execute them synchronously
-        service = OperationService()
-        operation = service.prepare_operation_with_vm_storage(test_user.id, test_project, algo, algo_category,
-                                                              view_model=view_model)
-        service.launch_operation(operation.id, False, adapter_inst)
-        service.launch_operation(operation.id, False, adapter_inst)
-
-        resulted_dts = dao.get_datatype_in_group(operation_group_id=operation.fk_operation_group)
-        return resulted_dts, operation.fk_operation_group
 
     @staticmethod
     def create_value_wrapper(test_user, test_project=None):
@@ -372,8 +335,7 @@ class TestFactory(object):
         algorithm = adapter_instance.stored_adapter
         if algo_category is None:
             algo_category = dao.get_category_by_id(algorithm.fk_category)
-        operation = service.prepare_operation_with_vm_storage(test_user_id, test_project, algorithm, algo_category,
-                                                              True, view_model=view_model)
+        operation = service.prepare_operation(test_user_id, test_project, algorithm, True, view_model)
         service.initiate_prelaunch(operation, adapter_instance)
 
         operation = dao.get_operation_by_id(operation.id)

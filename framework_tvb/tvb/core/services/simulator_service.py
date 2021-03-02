@@ -98,7 +98,8 @@ class SimulatorService(object):
 
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo, simulator):
         try:
-            operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo, simulator.gid)
+            operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                 view_model=simulator.gid)
             ga = self.operation_service.prepare_metadata(simulator_algo.algorithm_category, burst_config.gid)
             simulator.generic_attributes = ga
             self.operation_service.store_view_model(operation, project, simulator)
@@ -126,7 +127,7 @@ class SimulatorService(object):
 
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
         simulator_vm = h5.load_view_model_from_file(simulator_file)
-        operation = self.operation_service.prepare_operation(user_id, project.id, algorithm, simulator_vm.gid)
+        operation = self.operation_service.prepare_operation(user_id, project, algorithm, view_model=simulator_vm)
         ga = self.operation_service.prepare_metadata(algorithm.algorithm_category)
         simulator_vm.generic_attributes = ga
         storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
@@ -183,8 +184,7 @@ class SimulatorService(object):
 
                     ranges = json.dumps(ranges)
 
-                    operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
-                                                                         simulator.gid, operation_group, ranges)
+                    operation = self.operation_service.prepare_operation(user.id, project, simulator_algo, simulator)
 
                     simulator.range_values = ranges
                     self.operation_service.store_view_model(operation, project, simulator)

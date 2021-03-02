@@ -296,8 +296,8 @@ class TestOperationService(BaseTestCase):
         view_model.test = 5
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operation = self.operation_service.prepare_operation_with_vm_storage(self.test_user.id, self.test_project,
-                                                                             algo, algo_category, view_model=view_model)
+        operation = self.operation_service.prepare_operation(self.test_user.id, self.test_project, algo,
+                                                             view_model=view_model)
 
         self.operation_service._send_to_cluster(operation, adapter)
         self.operation_service.stop_operation(operation)
@@ -316,8 +316,8 @@ class TestOperationService(BaseTestCase):
         view_model.test1_val2 = 5
         algo = adapter.stored_adapter
         algo_category = dao.get_category_by_id(algo.fk_category)
-        operation = self.operation_service.prepare_operation_with_vm_storage(self.test_user.id, self.test_project, algo,
-                                                                             algo_category, view_model=view_model)
+        operation = self.operation_service.prepare_operation(self.test_user.id, self.test_project, algo,
+                                                             view_model=view_model)
         self.operation_service._send_to_cluster(operation, adapter)
         operation = dao.get_operation_by_id(operation.id)
         operation.status = model_operation.STATUS_FINISHED

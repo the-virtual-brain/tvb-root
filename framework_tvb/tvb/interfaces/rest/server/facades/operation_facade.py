@@ -105,8 +105,8 @@ class OperationFacade:
                                                          current_ga=view_model.generic_attributes)
             view_model.generic_attributes = ga
 
-            operation = self.operation_service.prepare_operation(current_user_id, project.id, algorithm,
-                                                                 view_model.gid.hex)
+            operation = self.operation_service.prepare_operation(current_user_id, project, algorithm,
+                                                                 view_model=view_model)
             self.operation_service.store_view_model(operation, project, view_model)
             if os.path.exists(model_h5_path):
                 os.remove(model_h5_path)
