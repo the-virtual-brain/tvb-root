@@ -72,7 +72,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         model.connectivity = connectivity_index_factory(self.CONNECTIVITY_NODES).gid
         model.simulation_length = 32
 
-        TestFactory.launch_synchronously(self.test_user, self.test_project, self.simulator_adapter, model)
+        TestFactory.launch_synchronously(self.test_user.id, self.test_project, self.simulator_adapter, model)
         sim_result = dao.get_generic_entity(TimeSeriesRegionIndex, 'TimeSeriesRegion', 'time_series_type')[0]
         assert (sim_result.data_length_1d, sim_result.data_length_2d, sim_result.data_length_3d,
                 sim_result.data_length_4d) == (32, 1, self.CONNECTIVITY_NODES, 1)

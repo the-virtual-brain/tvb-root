@@ -500,7 +500,7 @@ def value_wrapper_factory():
         view_model.connectivity = get_filtered_datatypes(test_project.id, ConnectivityIndex, page_size=1)[0][0][2]
 
         adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        op = OperationService().fire_operation(adapter, test_user, test_project.id, view_model=view_model)[0]
+        op = OperationService().fire_operation(adapter, test_user, test_project.id, view_model=view_model)
         # wait for the operation to finish
         tries = 5
         while not op.has_finished and tries > 0:
@@ -534,7 +534,7 @@ def datatype_measure_factory():
 @pytest.fixture()
 def datatype_group_factory(connectivity_factory, time_series_index_factory, datatype_measure_factory,
                            project_factory, user_factory, operation_factory):
-    def build(project=None, store_vm=False):
+    def build(project=None, store_vm=False, status=STATUS_FINISHED):
         # there store the name and the (hi, lo, step) value of the range parameters
         range_1 = ["row1", [1, 2, 6]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
@@ -581,7 +581,7 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                 view_model_ms_gid = uuid.uuid4()
 
                 op = Operation(view_model_gid.hex, user.id, project.id, algorithm.id,
-                               status=STATUS_FINISHED, op_group_id=op_group.id,
+                               status=status, op_group_id=op_group.id,
                                range_values=json.dumps({range_1[0]: range_val1,
                                                         range_2[0]: range_val2}))
                 op = dao.store_entity(op)

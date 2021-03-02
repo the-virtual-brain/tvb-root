@@ -33,9 +33,11 @@
 """
 
 import pytest
+import uuid
+
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model import model_burst, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
@@ -83,33 +85,40 @@ class TestOperationService(BaseTestCase):
         assert datatype.subject == DataTypeMetaData.DEFAULT_SUBJECT, "Wrong data stored."
         return datatype
 
-    def test_datatypes_groups(self, test_adapter_factory):
+    def test_datatypes_groups(self, test_adapter_factory, datatype_group_factory):
         """
         Tests if the dataType group is set correct on the dataTypes resulted from the same operation group.
         """
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 0, "There should be no operation"
 
-        algo = test_adapter_factory(TestAdapter3)
-        adapter_instance = ABCAdapter.build_adapter(algo)
-        view_model = TestModel()
-        data = {model_burst.RANGE_PARAMETER_1: 'param_5', 'param_5': [1, 2]}
-        # Create Group of operations
-        OperationService().fire_operation(adapter_instance, self.test_user, self.test_project.id,
-                                          view_model=view_model, **data)
+        dt_group = datatype_group_factory(project=self.test_project)
+        model = TestModel()
+        test_adapter_factory()
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
+
+        operations = dao.get_operations_in_group(dt_group.id)
+
+        for op in operations:
+            model.gid = uuid.uuid4()
+            op_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+            op.view_model_gid = model.gid.hex
+            op.algorithm = adapter.stored_adapter
+            h5.store_view_model(model, op_path)
+            dao.store_entity(op)
 
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
-        assert len(all_operations) == 1, "Expected one operation group"
-        assert all_operations[0][2] == 2, "Expected 2 operations in group"
+        assert len(all_operations) == 2, "Expected two operation groups"
+        assert all_operations[0][2] == 6, "Expected 6 operations in one group"
 
         operation_group_id = all_operations[0][3]
         assert operation_group_id != None, "The operation should be part of a group."
 
-        self.operation_service.stop_operation(all_operations[0][0])
-        self.operation_service.stop_operation(all_operations[0][1])
+        self.operation_service.stop_operation(all_operations[1][0])
+        self.operation_service.stop_operation(all_operations[1][1])
         # Make sure operations are executed
-        self.operation_service.launch_operation(all_operations[0][0], False)
-        self.operation_service.launch_operation(all_operations[0][1], False)
+        self.operation_service.launch_operation(all_operations[1][0], False)
+        self.operation_service.launch_operation(all_operations[1][1], False)
 
         resulted_datatypes = dao.get_datatype_in_group(operation_group_id=operation_group_id)
         assert len(resulted_datatypes) >= 2, "Expected at least 2, but: " + str(len(resulted_datatypes))

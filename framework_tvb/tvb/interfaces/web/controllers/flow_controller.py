@@ -37,11 +37,11 @@ given action are described here.
 
 import json
 import sys
-
 import cherrypy
 import formencode
 import numpy
 import six
+
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter

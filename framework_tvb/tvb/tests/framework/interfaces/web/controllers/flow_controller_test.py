@@ -32,22 +32,15 @@
 """
 
 import cherrypy
-import numpy as np
-import uuid
-import json
 
 from tvb.config.algorithm_categories import CreateAlgorithmCategoryConfig
-from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController, BurstService, \
-    AlgorithmService, SimulatorAdapterModel
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestModel
-from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
+from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED, STATUS_STARTED
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
@@ -208,28 +201,6 @@ class TestFlowController(BaseControllersTest):
         self.operation_service._send_to_cluster(operation, adapter)
         return operation
 
-    def _asynch_launch_operation_group(self, range_param, range_param_name):
-        burst_config = BurstConfiguration(self.test_project.id)
-        burst_config.range1 = range_param
-        burst_config = BurstService().prepare_burst_for_pse(burst_config)
-        simulator_service = SimulatorService()
-        simulator_algo = AlgorithmService().get_algorithm_by_module_and_class(
-            IntrospectionRegistry.SIMULATOR_MODULE, IntrospectionRegistry.SIMULATOR_CLASS)
-        model = SimulatorAdapterModel()
-        model.gid = uuid.uuid4()
-        operation_list = []
-
-        for param_value in [np.array([0.]), np.array([2.]), np.array([4.])]:
-            simulator_service._set_simulator_range_parameter(model, range_param_name, param_value)
-            ranges = {range_param_name: simulator_service._set_range_param_in_dict(param_value)}
-            ranges = json.dumps(ranges)
-            operation = self.operation_service.prepare_operation(self.test_user.id, self.test_project.id,
-                                                                 simulator_algo, model.gid,
-                                                                 burst_config.operation_group, ranges)
-            operation_list.append(operation)
-
-        return operation_list
-
     def test_stop_operation(self):
         operation = self._asynch_launch_simple_op()
         operation = dao.get_operation_by_id(operation.id)
@@ -238,10 +209,9 @@ class TestFlowController(BaseControllersTest):
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
 
-    def test_stop_operations_group(self):
-        range_param = '["test1_val1", {"lo": 0, "step": 2.0, "hi": 5.0}]'
-        operations = self._asynch_launch_operation_group(range_param, "test1_val1")
-        assert 3 == len(operations)
+    def test_stop_operations_group(self, test_adapter_factory, datatype_group_factory):
+        group = datatype_group_factory(status=STATUS_STARTED, store_vm=True)
+        operations = dao.get_operations_in_group(group.fk_from_operation)
         operation_group_id = 0
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)

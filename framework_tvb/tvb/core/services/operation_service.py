@@ -43,15 +43,12 @@ import shutil
 import sys
 import uuid
 import zipfile
-from copy import copy
 from inspect import isclass
 
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS, ALGORITHMS
-from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -60,9 +57,8 @@ from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
     BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, OperationGroup, Operation
+from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, Operation
 from tvb.core.entities.storage import dao, transactional
-from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.backend_client_factory import BackendClientFactory
@@ -204,8 +200,7 @@ class OperationService:
         operation = dao.store_entity(operation)
         return operation
 
-    def prepare_operation_with_vm_storage(self, user_id, project, algorithm, category,
-                                          visible=True, view_model=None):
+    def prepare_operation_with_vm_storage(self, user_id, project, algorithm, category, visible=True, view_model=None):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a
         range of values create an operation group and multiple operations for each possible
@@ -225,7 +220,8 @@ class OperationService:
 
         return operation
 
-    def store_view_model(self, operation, project, view_model):
+    @staticmethod
+    def store_view_model(operation, project, view_model):
         storage_path = FilesHelper().get_project_folder(project, str(operation.id))
         h5.store_view_model(view_model, storage_path)
         view_model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)
@@ -363,8 +359,7 @@ class OperationService:
 
     def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None):
         """
-        Launch an operation, specified by AdapterInstance, for CurrentUser,
-        Current Project and a given set of UI Input Data.
+        Launch an operation, specified by AdapterInstance, for current_user and project with project_id.
         """
         operation_name = str(adapter_instance.__class__.__name__)
         try:

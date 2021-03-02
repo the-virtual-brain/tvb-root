@@ -41,7 +41,9 @@ Project, User, Operation, basic imports (e.g. CFF).
 import os
 import random
 import uuid
+import numpy as np
 import tvb_data
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
@@ -57,6 +59,7 @@ from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImpo
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -69,13 +72,16 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
+from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.utils import hash_password
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb_documentation.sim_doc.generate_model_phase_plane_images import TestModel
 
 
 class TestFactory(object):
@@ -274,7 +280,7 @@ class TestFactory(object):
         """
         importer = ABCAdapter.build_adapter_from_class(importer_class)
         if same_process:
-            TestFactory.launch_synchronously(user, project, importer, view_model)
+            TestFactory.launch_synchronously(user.id, project, importer, view_model)
         else:
             OperationService().fire_operation(importer, user, project.id, view_model=view_model)
 
@@ -360,13 +366,13 @@ class TestFactory(object):
         return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
 
     @staticmethod
-    def launch_synchronously(test_user, test_project, adapter_instance, view_model, algo_category=None):
+    def launch_synchronously(test_user_id, test_project, adapter_instance, view_model, algo_category=None):
         # Avoid the scheduled execution, as this is asynch, thus launch it immediately
         service = OperationService()
         algorithm = adapter_instance.stored_adapter
         if algo_category is None:
             algo_category = dao.get_category_by_id(algorithm.fk_category)
-        operation = service.prepare_operation_with_vm_storage(test_user.id, test_project, algorithm, algo_category,
+        operation = service.prepare_operation_with_vm_storage(test_user_id, test_project, algorithm, algo_category,
                                                               True, view_model=view_model)
         service.initiate_prelaunch(operation, adapter_instance)
 

@@ -88,7 +88,7 @@ class TestBCT(TransactionalTestCase):
         algo_category = dao.get_category_by_id(self.bct_adapters[0].stored_adapter.fk_category)
 
         for adapter_instance in self.bct_adapters:
-            results = TestFactory.launch_synchronously(self.test_user, self.test_project, adapter_instance,
+            results = TestFactory.launch_synchronously(self.test_user.id, self.test_project, adapter_instance,
                                                        view_model, algo_category)
             assert len(results) > 0
 
