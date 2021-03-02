@@ -905,7 +905,7 @@ def property_to_fun(property):
     if hasattr(property, "__call__"):
         return property
     else:
-        return lambda *args, **kwargs: property
+        return lambda *args, **kwargs: deepcopy(property)
 
 
 def series_loop_generator(ser, inds_or_keys=None):
