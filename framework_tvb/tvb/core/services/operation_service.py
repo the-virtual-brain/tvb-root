@@ -176,14 +176,14 @@ class OperationService:
         self.store_view_model(metric_operation, sim_operation.project, view_model)
         return metric_operation
 
-    def prepare_operation(self, user_id, project, algorithm, visible=True, view_model=None):
+    def prepare_operation(self, user_id, project, algorithm, visible=True, view_model=None, burst=None):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a
         range of values create an operation group and multiple operations for each possible
         instance from the range.
         """
         algo_category = dao.get_category_by_id(algorithm.fk_category)
-        ga = self.prepare_metadata(algo_category, current_ga=view_model.generic_attributes)
+        ga = self.prepare_metadata(algo_category, current_ga=view_model.generic_attributes, burst=burst)
         ga.visible = visible
         view_model.generic_attributes = ga
 

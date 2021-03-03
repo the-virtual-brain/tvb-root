@@ -38,7 +38,7 @@ import uuid
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.model import model_burst, model_operation
+from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
@@ -295,7 +295,6 @@ class TestOperationService(BaseTestCase):
         view_model = adapter.get_view_model()()
         view_model.test = 5
         algo = adapter.stored_adapter
-        algo_category = dao.get_category_by_id(algo.fk_category)
         operation = self.operation_service.prepare_operation(self.test_user.id, self.test_project, algo,
                                                              view_model=view_model)
 
@@ -315,7 +314,6 @@ class TestOperationService(BaseTestCase):
         view_model.test1_val1 = 5
         view_model.test1_val2 = 5
         algo = adapter.stored_adapter
-        algo_category = dao.get_category_by_id(algo.fk_category)
         operation = self.operation_service.prepare_operation(self.test_user.id, self.test_project, algo,
                                                              view_model=view_model)
         self.operation_service._send_to_cluster(operation, adapter)

@@ -329,12 +329,11 @@ class TestFactory(object):
         return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
 
     @staticmethod
-    def launch_synchronously(test_user_id, test_project, adapter_instance, view_model, algo_category=None):
+    def launch_synchronously(test_user_id, test_project, adapter_instance, view_model):
         # Avoid the scheduled execution, as this is asynch, thus launch it immediately
         service = OperationService()
         algorithm = adapter_instance.stored_adapter
-        if algo_category is None:
-            algo_category = dao.get_category_by_id(algorithm.fk_category)
+
         operation = service.prepare_operation(test_user_id, test_project, algorithm, True, view_model)
         service.initiate_prelaunch(operation, adapter_instance)
 

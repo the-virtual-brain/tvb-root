@@ -195,7 +195,6 @@ class TestFlowController(BaseControllersTest):
         view_model.test1_val1 = 5
         view_model.test1_val2 = 6
         algo = adapter.stored_adapter
-        algo_category = dao.get_category_by_id(algo.fk_category)
         operation = self.operation_service.prepare_operation(self.test_user.id, self.test_project, algo,
                                                              view_model=view_model)
         self.operation_service._send_to_cluster(operation, adapter)
