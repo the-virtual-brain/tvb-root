@@ -99,10 +99,7 @@ class OperationService:
             self.logger.warning("Inconsistent Adapter Class:" + str(adapter_instance.__class__))
             raise LaunchException("Developer Exception!!")
 
-        # Store Operation entity.
         algo = adapter_instance.stored_adapter
-        algo_category = dao.get_category_by_id(algo.fk_category)
-
         operation = self.prepare_operation(current_user.id, project, algo, visible, model_view)
         if adapter_instance.launch_mode == AdapterLaunchModeEnum.SYNC_SAME_MEM:
             return self.initiate_prelaunch(operation, adapter_instance)
@@ -185,7 +182,8 @@ class OperationService:
         range of values create an operation group and multiple operations for each possible
         instance from the range.
         """
-        ga = self.prepare_metadata(algorithm.algorithm_category, current_ga=view_model.generic_attributes)
+        algo_category = dao.get_category_by_id(algorithm.fk_category)
+        ga = self.prepare_metadata(algo_category, current_ga=view_model.generic_attributes)
         ga.visible = visible
         view_model.generic_attributes = ga
 

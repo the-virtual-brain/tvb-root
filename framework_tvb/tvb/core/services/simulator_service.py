@@ -99,7 +99,7 @@ class SimulatorService(object):
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo, simulator):
         try:
             operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
-                                                                 view_model=simulator.gid)
+                                                                 view_model=simulator)
             ga = self.operation_service.prepare_metadata(simulator_algo.algorithm_category, burst_config.gid)
             simulator.generic_attributes = ga
             self.operation_service.store_view_model(operation, project, simulator)
@@ -184,8 +184,9 @@ class SimulatorService(object):
 
                     ranges = json.dumps(ranges)
 
-                    operation = self.operation_service.prepare_operation(user.id, project, simulator_algo, simulator)
-
+                    operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                         view_model=simulator)
+                    operation.fk_operation_group = operation_group.id
                     simulator.range_values = ranges
                     self.operation_service.store_view_model(operation, project, simulator)
                     operations.append(operation)
