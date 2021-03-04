@@ -175,8 +175,8 @@ class SimulatorService(object):
                     ranges = json.dumps(ranges)
 
                     operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
-                                                                         view_model=simulator)
-                    operation.fk_operation_group = operation_group.id
+                                                                         view_model=simulator, ranges=ranges,
+                                                                         burst=burst_config)
                     simulator.range_values = ranges
                     operations.append(operation)
                     if first_simulator is None:

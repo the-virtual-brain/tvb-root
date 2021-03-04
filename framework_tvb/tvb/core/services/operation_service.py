@@ -176,21 +176,23 @@ class OperationService:
         self.store_view_model(metric_operation, sim_operation.project, view_model)
         return metric_operation
 
-    def prepare_operation(self, user_id, project, algorithm, visible=True, view_model=None, burst=None):
+    @transactional
+    def prepare_operation(self, user_id, project, algorithm, visible=True, view_model=None, ranges=None, burst=None):
         """
         Do all the necessary preparations for storing an operation. If it's the case of a
         range of values create an operation group and multiple operations for each possible
         instance from the range.
         """
         algo_category = dao.get_category_by_id(algorithm.fk_category)
-        ga = self.prepare_metadata(algo_category, current_ga=view_model.generic_attributes, burst=burst)
+        ga = self.prepare_metadata(algo_category, current_ga=view_model.generic_attributes, burst=burst.gid)
         ga.visible = visible
         view_model.generic_attributes = ga
 
         self.logger.debug("Saving Operation(userId=" + str(user_id) + ",projectId=" + str(project.id) +
                           ",algorithmId=" + str(algorithm.id) + ")")
 
-        operation = Operation(view_model.gid.hex, user_id, project.id, algorithm.id, user_group=ga.operation_tag)
+        operation = Operation(view_model.gid.hex, user_id, project.id, algorithm.id, user_group=ga.operation_tag,
+                              op_group_id=burst.fk_operation_group, range_values=ranges)
         operation = dao.store_entity(operation)
 
         self.store_view_model(operation, project, view_model)
