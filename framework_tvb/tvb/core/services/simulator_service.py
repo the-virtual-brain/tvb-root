@@ -99,7 +99,7 @@ class SimulatorService(object):
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo, simulator):
         try:
             operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
-                                                                 view_model=simulator, burst=burst_config.gid)
+                                                                 view_model=simulator, burst=burst_config)
             burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id, simulator.gid)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
