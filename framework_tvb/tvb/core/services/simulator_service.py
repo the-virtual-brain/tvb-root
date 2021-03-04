@@ -99,7 +99,8 @@ class SimulatorService(object):
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo, simulator):
         try:
             operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
-                                                                 view_model=simulator, burst=burst_config)
+                                                                 view_model=simulator, burst_gid=burst_config.gid,
+                                                                 op_group_id=burst_config.fk_operation_group)
             burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id, simulator.gid)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
@@ -176,7 +177,8 @@ class SimulatorService(object):
 
                     operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
                                                                          view_model=simulator, ranges=ranges,
-                                                                         burst=burst_config)
+                                                                         burst_gid=burst_config.gid,
+                                                                         op_group_id=burst_config.fk_operation_group)
                     simulator.range_values = ranges
                     operations.append(operation)
                     if first_simulator is None:
