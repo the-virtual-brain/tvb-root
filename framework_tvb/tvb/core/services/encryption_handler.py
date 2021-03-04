@@ -91,7 +91,7 @@ class EncryptionHandler(object):
         password = self.generate_random_password(self.pass_size)
         with open(password_file, 'w') as fd:
             fd.write(password)
-        os.chmod(password_file, 0o440)
+        os.chmod(password_file, TvbProfile.current.ACCESS_MODE_TVB_FILES)
         return password_file
 
     @staticmethod

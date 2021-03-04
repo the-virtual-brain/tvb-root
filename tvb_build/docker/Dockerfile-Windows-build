@@ -27,4 +27,9 @@ ADD https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 C:\\TEMP\\tv
 RUN powershell.exe -NoP -NonI -Command "Expand-Archive 'C:\\TEMP\\tvb_data.zip' 'C:\\tvb_data'"
 RUN activate tvb-run && cd c:\\tvb_data && python setup.py develop
 
+RUN mkdir %userprofile%\\TVB_TEST
+RUN mkdir %userprofile%\\.tvb-temp
+RUN CACLS %userprofile%\\TVB_TEST /e /p %username%:f
+RUN CACLS %userprofile%\\.tvb-temp /e /p %username%:f
+
 CMD ["cmd", "activate tvb-run"]

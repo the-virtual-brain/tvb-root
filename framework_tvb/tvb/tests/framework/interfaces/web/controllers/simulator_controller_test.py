@@ -951,8 +951,9 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['burst_id'] = str(burst[0].id)
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.context.set_burst_config(burst_config)
-            result = self.simulator_controller.export(str(burst[0].id))
+            result = self.simulator_controller.export(burst[0].id)
 
+        result.input.close()
         assert path.exists(result.input.name), "Simulation was not exported!"
 
     def test_upload_overlay(self):
@@ -973,8 +974,9 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['burst_id'] = str(burst[0].id)
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.context.set_burst_config(burst_config)
-            result = self.simulator_controller.export(str(burst[0].id))
+            result = self.simulator_controller.export(burst[0].id)
 
+        result.input.close()
         data = {'uploadedfile': result.input.name}
         self._expect_redirect('/burst/', self.simulator_controller.load_simulator_configuration_from_zip,
                               **data)
