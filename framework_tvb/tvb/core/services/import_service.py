@@ -300,7 +300,7 @@ class ImportService(object):
             view_model2adapter[view_model_class] = algo
         return view_model2adapter
 
-    def _retrieve_operations_in_order(self, project, import_path, importer_operation_id=None):
+    def _retrieve_operations_in_order(self, project, import_path, importer_operation_id=None, linked_group_op_id=None):
         # type: (Project, str, int) -> list[Operation2ImportData]
         retrieved_operations = []
 
@@ -373,6 +373,11 @@ class ImportService(object):
 
                     if importer_operation_id:
                         operation.id = importer_operation_id
+                    elif linked_group_op_id:
+                        operation.id = linked_group_op_id
+                        # Set the create of op to that of the first dt because otherwise the Links operation will be
+                        # older then the operations that need the links since it was just created
+                        operation.create_date = self.load_datatype_from_file(dt_paths[0], linked_group_op_id).create_date
 
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
@@ -404,14 +409,14 @@ class ImportService(object):
         dao.store_entity(operation_entity)
         return view_model
 
-    def import_project_operations(self, project, import_path, is_group=False, importer_operation_id=None):
+    def import_project_operations(self, project, import_path, is_group=False, importer_operation_id=None, linked_group_op_id=None):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
         all_dts_count = 0
         all_stored_dts_count = 0
         imported_operations = []
-        ordered_operations = self._retrieve_operations_in_order(project, import_path, importer_operation_id)
+        ordered_operations = self._retrieve_operations_in_order(project, import_path, importer_operation_id, linked_group_op_id)
 
         for operation_data in ordered_operations:
 
@@ -433,7 +438,7 @@ class ImportService(object):
 
             elif operation_data.main_view_model is not None:
                 do_merge = False
-                if importer_operation_id:
+                if importer_operation_id or (ordered_operations[0] == (operation_data) and linked_group_op_id):
                     do_merge = True
                 operation_entity = dao.store_entity(operation_data.operation, merge=do_merge)
                 dt_group = None

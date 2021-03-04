@@ -319,7 +319,9 @@ class FilesHelper(object):
                     for file_n in files:
                         abs_file_n = os.path.join(root, file_n)
                         zip_file_n = abs_file_n[len(parent_folder) + len(os.sep):]
-                        zip_file_n = folder_prefix + zip_file_n
+                        dir_name = os.path.dirname(zip_file_n)
+                        if dir_name.isdigit():
+                            zip_file_n = folder_prefix + zip_file_n
                         zip_res.write(abs_file_n, zip_file_n)
 
     @staticmethod

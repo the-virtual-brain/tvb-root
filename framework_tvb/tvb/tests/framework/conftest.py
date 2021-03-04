@@ -286,8 +286,9 @@ def surface_factory():
 
 @pytest.fixture()
 def surface_index_factory(surface_factory, operation_factory):
-    def build(data=4, op=None, cortical=False):
-        surface = surface_factory(data, cortical=cortical)
+    def build(data=4, op=None, cortical=False, surface=None):
+        if not surface:
+            surface = surface_factory(data, cortical=cortical)
         if op is None:
             op = operation_factory()
 
@@ -317,8 +318,9 @@ def region_mapping_factory(surface_factory, connectivity_factory):
 
 @pytest.fixture()
 def region_mapping_index_factory(region_mapping_factory, operation_factory):
-    def build(op=None, conn_gid=None, surface_gid=None):
-        region_mapping = region_mapping_factory()
+    def build(op=None, conn_gid=None, surface_gid=None, region_mapping=None):
+        if not region_mapping:
+            region_mapping = region_mapping_factory()
         if op is None:
             op = operation_factory()
 
@@ -440,7 +442,7 @@ def time_series_index_factory(time_series_factory, operation_factory):
 
 @pytest.fixture()
 def time_series_region_index_factory(operation_factory):
-    def build(connectivity, region_mapping, test_user=None, test_project=None):
+    def build(connectivity, region_mapping, test_user=None, test_project=None, op=None):
         time = numpy.linspace(0, 1000, 4000)
         data = numpy.zeros((time.size, 1, 3, 1))
         data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
@@ -451,7 +453,8 @@ def time_series_region_index_factory(operation_factory):
         ts = TimeSeriesRegion(time=time, data=data, sample_period=1.0 / 4000, connectivity=connectivity,
                               region_mapping=region_mapping)
 
-        op = operation_factory(test_user=test_user, test_project=test_project)
+        if not op:
+            op = operation_factory(test_user=test_user, test_project=test_project)
 
         ts_db = TimeSeriesRegionIndex()
         ts_db.fk_from_operation = op.id
@@ -533,8 +536,10 @@ def datatype_measure_factory():
 
 @pytest.fixture()
 def datatype_group_factory(connectivity_factory, time_series_index_factory, datatype_measure_factory,
-                           project_factory, user_factory, operation_factory):
-    def build(project=None, store_vm=False):
+                           project_factory, user_factory, operation_factory, time_series_region_index_factory,
+                           region_mapping_factory, surface_factory, connectivity_index_factory,
+                           region_mapping_index_factory, surface_index_factory):
+    def build(project=None, store_vm=False, use_time_series_region=False):
         # there store the name and the (hi, lo, step) value of the range parameters
         range_1 = ["row1", [1, 2, 6]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
@@ -546,11 +551,24 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
         if project is None:
             project = project_factory(user)
 
+        connectivity = connectivity_factory(4)
+        if use_time_series_region:
+            operation = operation_factory(test_project=project)
+            connectivity_index_factory(op=operation, conn=connectivity)
+
+            operation2 = operation_factory(test_project=project)
+            surface = surface_factory()
+            surface_index_factory(op=operation2, surface=surface)
+
+            operation3 = operation_factory(test_project=project)
+            region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
+            region_mapping_index_factory(op=operation3, conn_gid=connectivity.gid.hex, surface_gid=surface.gid.hex, region_mapping=region_mapping)
+
         algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if store_vm:
             view_model = adapter.get_view_model_class()()
-            view_model.connectivity = connectivity_factory(4).gid
+            view_model.connectivity = connectivity.gid
         else:
             view_model = None
 
@@ -585,7 +603,11 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                                range_values=json.dumps({range_1[0]: range_val1,
                                                         range_2[0]: range_val2}))
                 op = dao.store_entity(op)
-                ts_index = time_series_index_factory(op=op)
+                if use_time_series_region:
+                    ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping,
+                                                                test_user=user, test_project=project, op=op)
+                else:
+                    ts_index = time_series_index_factory(op=op)
                 ts_index.fk_datatype_group = datatype_group.id
                 dao.store_entity(ts_index)
 

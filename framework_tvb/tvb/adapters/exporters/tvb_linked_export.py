@@ -46,8 +46,6 @@ class TVBLinkedExporter(ABCExporter):
     """
     """
 
-    OPERATION_FOLDER_PREFIX = "Operation_"
-
     def get_supported_types(self):
         return [DataType]
 
@@ -60,9 +58,13 @@ class TVBLinkedExporter(ABCExporter):
         1. If data is a normal data type, simply exports storage file (HDF format)
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
-        self.copy_dt_to_export_folder(data, data_export_folder)
-        export_data_zip_path = self.get_export_data_zip_path(data, data_export_folder)
-        return self.export_data_with_references(export_data_zip_path, data_export_folder)
+        if self.is_data_a_group(data):
+            download_file_name = self.get_export_file_name(data)
+            return self.group_export(data, data_export_folder, project, download_file_name, True)
+        else:
+            self.copy_dt_to_export_folder(data, data_export_folder)
+            export_data_zip_path = self.get_export_data_zip_path(data, data_export_folder)
+            return self.export_data_with_references(export_data_zip_path, data_export_folder)
 
     def get_export_data_zip_path(self, data, data_export_folder):
         zip_file_name = self.get_export_file_name(data)
@@ -95,4 +97,4 @@ class TVBLinkedExporter(ABCExporter):
         return "zip"
 
     def skip_group_datatypes(self):
-        return True
+        return False

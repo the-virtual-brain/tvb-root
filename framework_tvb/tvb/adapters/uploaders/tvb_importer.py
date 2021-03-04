@@ -36,6 +36,7 @@ import os
 import shutil
 import zipfile
 
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -83,6 +84,7 @@ class TVBImporter(ABCUploader):
     _ui_name = "TVB HDF5 / ZIP"
     _ui_subsection = "tvb_datatype_importer"
     _ui_description = "Upload H5 file with TVB generic entity"
+    LINKS = "Links"
 
     def get_form_class(self):
         return TVBImporterForm
@@ -113,20 +115,27 @@ class TVBImporter(ABCUploader):
             current_op = dao.get_operation_by_id(self.operation_id)
             if zipfile.is_zipfile(view_model.data_file):
                 # Creates a new TMP folder where to extract data
-                tmp_folder = os.path.join(self.storage_path, "tmp_import")
+                tmp_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, "tmp_import")
                 FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
                 is_group = False
+                linked_group_op_id = None
                 current_op_id = current_op.id
-                for file in os.listdir(tmp_folder):
+                for _, dirs, _ in os.walk(tmp_folder):
                     # In case we import a DatatypeGroup, we want the default import flow
-                    if os.path.isdir(os.path.join(tmp_folder, file)):
+                    if dirs:
                         current_op_id = None
                         is_group = True
-                        break
+                    # We check for 3 folders because in the case of group simulation with links zip the first folder
+                    # contains the links which will need the current op id and the rest are from the normal
+                    # group simulation (a minimum of 2 for PSE) => at least 3 folders in the zip pse with links
+                    if len(dirs) >= 3 and self.LINKS in dirs:
+                        linked_group_op_id = current_op.id
+                    break
                 try:
                     operations, all_dts, stored_dts_count = service.import_project_operations(current_op.project,
                                                                                               tmp_folder, is_group,
-                                                                                              current_op_id)
+                                                                                              current_op_id,
+                                                                                              linked_group_op_id)
                     self.nr_of_datatypes += stored_dts_count
                     if stored_dts_count == 0:
                         current_op.additional_info = 'All chosen datatypes already exist!'
