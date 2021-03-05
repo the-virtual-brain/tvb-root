@@ -40,7 +40,7 @@ import os
 import shutil
 import setuptools
 
-VERSION = "2.1"
+VERSION = "2.1.1"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Popa, Paula Sansz Leon, Marmaduke Woodman"
 
