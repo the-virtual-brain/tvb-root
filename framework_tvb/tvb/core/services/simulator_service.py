@@ -98,10 +98,9 @@ class SimulatorService(object):
 
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo, simulator):
         try:
-            operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo, simulator.gid)
-            ga = self.operation_service.prepare_metadata(simulator_algo.algorithm_category, {}, burst_config.gid)
-            simulator.generic_attributes = ga
-            self.operation_service.store_view_model(operation, project, simulator)
+            operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                 view_model=simulator, burst_gid=burst_config.gid,
+                                                                 op_group_id=burst_config.fk_operation_group)
             burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id, simulator.gid)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
@@ -126,11 +125,7 @@ class SimulatorService(object):
 
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
         simulator_vm = h5.load_view_model_from_file(simulator_file)
-        operation = self.operation_service.prepare_operation(user_id, project.id, algorithm, simulator_vm.gid)
-        ga = self.operation_service.prepare_metadata(algorithm.algorithm_category, {})
-        simulator_vm.generic_attributes = ga
-        storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
-        h5.store_view_model(simulator_vm, storage_operation_path)
+        operation = self.operation_service.prepare_operation(user_id, project, algorithm, view_model=simulator_vm)
         self.async_launch_simulation_on_server(operation, zip_folder_path)
 
         return operation
@@ -165,10 +160,6 @@ class SimulatorService(object):
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
 
-            ga = self.operation_service.prepare_metadata(simulator_algo.algorithm_category, {},
-                                                         burst_config.gid)
-            session_stored_simulator.generic_attributes = ga
-
             for param1_value in range_param1.get_range_values():
                 for param2_value in range_param2_values:
                     # Copy, but generate a new GUID for every Simulator in PSE
@@ -184,11 +175,11 @@ class SimulatorService(object):
 
                     ranges = json.dumps(ranges)
 
-                    operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
-                                                                         simulator.gid, operation_group, ranges)
-
+                    operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                         view_model=simulator, ranges=ranges,
+                                                                         burst_gid=burst_config.gid,
+                                                                         op_group_id=burst_config.fk_operation_group)
                     simulator.range_values = ranges
-                    self.operation_service.store_view_model(operation, project, simulator)
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator
@@ -234,7 +225,8 @@ class SimulatorService(object):
             return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
                                operations=["=="], values=[conn.number_of_regions])
 
-    def validate_first_fragment(self, form, project_id, conn_idx):
+    @staticmethod
+    def validate_first_fragment(form, project_id, conn_idx):
         conn_count = dao.count_datatypes(project_id, conn_idx)
         if conn_count == 0:
             form.connectivity.errors.append("No connectivity in the project! Simulation cannot be started without "

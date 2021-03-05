@@ -91,7 +91,7 @@ class ABCUploader(ABCAdapter, metaclass=ABCMeta):
     LOGGER = get_logger(__name__)
     launch_mode = AdapterLaunchModeEnum.SYNC_DIFF_MEM
 
-    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+    def _prelaunch(self, operation, view_model, available_disk_space=0):
         """
         Before going with the usual prelaunch, get from input parameters the 'subject'.
         """
@@ -102,7 +102,7 @@ class ABCUploader(ABCAdapter, metaclass=ABCMeta):
             for upload_field_name in trait_upload_field_names:
                 self._decrypt_content(view_model, upload_field_name)
 
-        return ABCAdapter._prelaunch(self, operation, view_model, uid, available_disk_space)
+        return ABCAdapter._prelaunch(self, operation, view_model, available_disk_space)
 
     @staticmethod
     def get_path_to_encrypt(input_path):

@@ -32,13 +32,13 @@ import json
 import os
 from datetime import datetime
 
-from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, STATUS_FINISHED, STATUS_PENDING, STATUS_CANCELED
@@ -354,7 +354,9 @@ class BurstService(object):
         burst_config_copy.name = burst_name_format.format(burst_config.name, count + 1)
 
         storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
-        return h5.load_view_model(burst_config.simulator_gid, storage_path), burst_config_copy
+        simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
+        simulator.generic_attributes = GenericAttributes()
+        return simulator, burst_config_copy
 
     @staticmethod
     def store_burst(burst_config):

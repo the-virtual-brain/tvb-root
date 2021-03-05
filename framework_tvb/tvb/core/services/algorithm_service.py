@@ -264,16 +264,6 @@ class AlgorithmService(object):
         datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(datatype_gid,
                                                                                                        categories)
 
-        if isinstance(datatype_instance, DataTypeGroup):
-            # If part of a group, update also with specific analyzers of the child datatype
-            dt_group = dao.get_datatype_group_by_gid(datatype_gid)
-            datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
-            if len(datatypes):
-                datatype = datatypes[-1]
-                analyze_category = dao.get_launchable_categories(True)
-                _, inner_analyzers, _ = self._get_launchable_algorithms(datatype.gid, analyze_category)
-                filtered_adapters.extend(inner_analyzers)
-
         categories_dict = dict()
         for c in categories:
             categories_dict[c.id] = c.displayname
