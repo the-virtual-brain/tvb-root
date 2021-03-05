@@ -16,18 +16,7 @@
 #include <curand.h>
 #include <stdbool.h>
 
-__device__ float wrap_it_PI(float x)
-{
-    bool neg_mask = x < 0.0f;
-    bool pos_mask = !neg_mask;
-    // fmodf diverges 51% of time
-    float pos_val = fmodf(x, PI_2);
-    float neg_val = PI_2 - fmodf(-x, PI_2);
-    return neg_mask * neg_val + pos_mask * pos_val;
-}
-\
 % for state_var in (dynamics.state_variables):
-% if (state_var.exposure != "PI"):
 __device__ float wrap_it_${state_var.name}(float ${state_var.name})
 {
     float ${state_var.name}dim[] = {${state_var.exposure}};
@@ -36,14 +25,13 @@ __device__ float wrap_it_${state_var.name}(float ${state_var.name})
 
     return ${state_var.name};
 }
-% endif /
 % endfor
 
 __global__ void ${modelname}(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
-        float dt, float speed, float * __restrict__ weights, float * __restrict__ lengths,
+        float dt, float * __restrict__ weights, float * __restrict__ lengths,
         float * __restrict__ params_pwi, // pwi: per work item
         // state
         float * __restrict__ state_pwi,
@@ -63,7 +51,7 @@ __global__ void ${modelname}(
     // These are the two parameters which are usually explore in fitting in this model
     ## printing the to be sweeped parameters
     % for paramcounter, par_var in enumerate(params):
-    const ${par_var.dimension} ${par_var.name} = params(${paramcounter});
+    const float ${par_var.name} = params(${paramcounter});
     % endfor
 
     // regular constants

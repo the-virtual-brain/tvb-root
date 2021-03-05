@@ -1,29 +1,41 @@
-name: Build image
+#name: Build image
+#on: [push]
+#jobs:
+#
+#  smoke-test:
+#    runs-on: mrs-ci
+#    steps:
+#
+#      - name: echo test
+#        run: echo test
+#
+#      - name: nvidia-smi test
+#        run: nvidia-smi
+#
+#      - name: pycuda test
+#        run: python -c "import pycuda.autoinit; print('yes')"
+#
+#      - name: ls
+#        run: ls -l
+#
+#
+#  pytests:
+#    runs-on: mrs-ci
+#    steps:
+#      - uses: actions/checkout@v1
+#      - name: debug debug
+#        run: env && pwd && ls -lh
+#      - name: run pytest
+#        run: cd scientific_library && pytest
+
+name: docker-based library testing
 on: [push]
 jobs:
-
-  smoke-test:
-    runs-on: mrs-ci
-    steps:
-
-      - name: echo test
-        run: echo test
-
-      - name: nvidia-smi test
-        run: nvidia-smi
-
-      - name: pycuda test
-        run: python -c "import pycuda.autoinit; print('yes')"
-
-      - name: ls
-        run: ls -l
-
-
-  pytests:
-    runs-on: mrs-ci
+  build:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: debug debug
-        run: env && pwd && ls -lh
-      - name: run pytest
-        run: cd scientific_library && pytest
+      - name: Build image
+        run: docker build -f scientific_library/Dockerfile -t tvb/lib-ci scientific_library
+      - name: Run tests
+        run: docker run --rm -v $PWD:/work -w /work/scientific_library tvb/lib-ci pytest -Wignore -n8

@@ -69,7 +69,14 @@ class RateML:
 
     def __init__(self, model_filename, language='python', XMLfolder=None, GENfolder=None):
         self.model_filename = model_filename
-        self.language = language
+
+        try:
+            assert language in ('cuda', 'python', 'Cuda', 'Python', 'CUDA')
+            self.language = language.lower()
+        except AssertionError as e:
+            logger.error('Please choose between Python or Cuda %s', e)
+            exit()
+
         self.XMLfolder = XMLfolder
         self.GENfolder = GENfolder
 
@@ -78,14 +85,27 @@ class RateML:
         self.xml_location = self.set_XML_model_folder()
 
         # start templating
-        model_str = self.render_model()
+        model_str, driver_str = self.render()
 
         # write model to user submitted location
         self.write_model_file(self.generated_model_location, model_str)
 
+        # write driver file to fixed ./run/ location
+        self.write_model_file(self.set_driver_location(), driver_str)
+
+        # for driver robustness also write XML to default location generatedModels folder for CUDA
+        if self.language == 'cuda'and GENfolder != None:
+            default_save = os.path.join(self.default_generation_folder(), self.model_filename.lower() + '.c')
+            self.write_model_file(default_save, model_str)
+
         # if it is a TVB.py model, it should be familiarized
         if self.language.lower()=='python':
             self.familiarize_TVB(model_str)
+
+    @staticmethod
+    def set_driver_location():
+        here = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(here, 'run', 'model_driver.py')
 
     @staticmethod
     def default_XML_folder():
@@ -95,13 +115,21 @@ class RateML:
 
     def set_XML_model_folder(self):
         folder = self.XMLfolder or self.default_XML_folder()
-        return os.path.join(folder, self.model_filename.lower() + '.xml')
+
+        try:
+            location = os.path.join(folder, self.model_filename.lower() + '.xml')
+            assert os.path.isfile(location)
+        except AssertionError:
+            logger.error('XML folder %s does not contain %s', folder, self.model_filename+'.xml')
+            exit()
+
+        return location
 
     @staticmethod
     def default_generation_folder():
         here = os.path.dirname(os.path.abspath(__file__))
-        xmlpath = os.path.join(here, 'generatedModels')
-        return xmlpath
+        modelpath = os.path.join(here, 'generatedModels')
+        return modelpath
 
     def set_generated_model_location(self):
         folder = self.GENfolder or self.default_generation_folder()
@@ -110,11 +138,19 @@ class RateML:
             ext='.py'
         elif lan=='cuda':
             ext='.c'
+
+        try:
+            location = os.path.join(folder)
+            assert os.path.isdir(location)
+        except AssertionError:
+            logger.error('Generation folder %s does not exist', location)
+            exit()
+
         return os.path.join(folder, self.model_filename.lower() + ext)
 
-    def model_template(self):
+    def set_template(self, name):
         here = os.path.dirname(os.path.abspath(__file__))
-        tmp_filename = os.path.join(here, 'tmpl8_'+ self.language +'.py')
+        tmp_filename = os.path.join(here, 'tmpl8_'+ name +'.py')
         template = Template(filename=tmp_filename)
         return template
 
@@ -244,7 +280,7 @@ class RateML:
 
         return model, svboundaries, couplinglist, noisepresent, nsigpresent
 
-    def render_model(self):
+    def render(self):
         '''
         render_model start the mako templating.
         this function is similar for all languages. its .render arguments are overloaded.
@@ -254,13 +290,21 @@ class RateML:
 
         derivative_list = model.component_types['derivatives']
 
+        model_str = self.render_model(derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent)
+        driver_str = self.render_driver(derivative_list)
+
+        return model_str, driver_str
+
+
+    def render_model(self, derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent):
+
         if self.language == 'python':
             model_class_name = self.model_filename.capitalize() + 'T'
         if self.language == 'cuda':
             model_class_name = self.model_filename
 
         # start templating
-        model_str = self.model_template().render(
+        model_str = self.set_template(self.language).render(
             modelname=model_class_name,                     # all
             const=derivative_list.constants,                # all
             dynamics=derivative_list.dynamics,              # all
@@ -274,6 +318,16 @@ class RateML:
             )
 
         return model_str
+
+
+    def render_driver(self, derivative_list):
+
+        driver_str = self.set_template('driver').render(
+            XML=derivative_list,
+        )
+
+        return driver_str
+
 
     def familiarize_TVB(self, model_str):
         '''
@@ -323,15 +377,16 @@ class RateML:
 if __name__ == "__main__":
 
     # language='python'
-    language='cuda'
+    language='Cuda'
 
     # model_filename = 'montbrio'
-    # model_filename = 'oscillator'
+    model_filename = 'oscillator'
     # model_filename = 'kuramoto'
-    model_filename = 'rwongwang'
+    # model_filename = 'rwongwang'
     # model_filename = 'epileptor'
 
-    RateML(model_filename, language, './XMLmodels/', './generatedModels/')
+    # RateML(model_filename, language, './XMLmodels/', './generatedModels/')
+    RateML(model_filename, language)
 
     # for simulation
     # from run.regular_run import regularRun

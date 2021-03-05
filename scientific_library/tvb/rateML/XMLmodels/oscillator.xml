@@ -3,8 +3,8 @@
     <ComponentType name="derivatives">
 
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='float'/>
-        <Parameter name="global_coupling" dimension='float'/>
+        <Parameter name="global_speed" dimension='0.0, 2.0'/>
+        <Parameter name="global_coupling" dimension='1.6, 3.0'/>
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
         <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
@@ -13,10 +13,10 @@
 
         <Constant name="tau" dimension="" value="1.0"
               description="A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."/>
-        <Constant name="I" dimension="" value="0.0" description="Baseline shift of the cubic nullcline"/>
-        <Constant name="a" dimension="" value="-2.0" description="Vertical shift of the configurable nullcline"/>
-        <Constant name="b" dimension="" value="-10.0" description="Linear slope of the configurable nullcline"/>
-        <Constant name="c" dimension="" value="0" description="Parabolic term of the configurable nullcline"/>
+        <Constant name="I" dimension="" value="0.1" description="Baseline shift of the cubic nullcline"/>
+        <Constant name="a" dimension="" value="0.5" description="Vertical shift of the configurable nullcline"/>
+        <Constant name="b" dimension="" value="0.4" description="Linear slope of the configurable nullcline"/>
+        <Constant name="c" dimension="" value="-4.0" description="Parabolic term of the configurable nullcline"/>
         <Constant name="d" dimension="" value="0.02" description="Temporal scale factor. Warning: do not use it unless you know what you are doing and know about time tides."/>
         <Constant name="e" dimension="" value="3.0" description="Coefficient of the quadratic term of the cubic nullcline."/>
         <Constant name="f" dimension="" value="1.0" description="Coefficient of the cubic term of the cubic nullcline."/>
@@ -32,10 +32,10 @@
         <Exposure name="W" dimension="W"/>
 
         <Dynamics>
-            <StateVariable name="V" dimension="-2.0, 4.0" exposure=""/>
-            <StateVariable name="W" dimension="-6.0, 6.0" exposure=""/>
+            <StateVariable name="V" dimension="0.0" exposure="-2.0, 4.0"/>
+            <StateVariable name="W" dimension="0.0" exposure="-6.0, 6.0"/>
 
-            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * c_pop1 + local_coupling * V)"/>
+            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * c_0 + lc * V)"/>
             <TimeDerivative variable="dW" value="d * (a + b * V + c * {V^2} - beta * W) / tau"/>
         </Dynamics>
 
@@ -61,7 +61,6 @@
 
     </ComponentType>
 
-    <ComponentType name="noise" description="on">
-    </ComponentType>
+<!--    <ComponentType name="noise" description="on"/>-->
 
 </Lems>

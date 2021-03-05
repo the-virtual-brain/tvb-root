@@ -16,18 +16,9 @@
 #include <curand.h>
 #include <stdbool.h>
 
-__device__ float wrap_it_PI(float x)
-{
-    bool neg_mask = x < 0.0f;
-    bool pos_mask = !neg_mask;
-    // fmodf diverges 51% of time
-    float pos_val = fmodf(x, PI_2);
-    float neg_val = PI_2 - fmodf(-x, PI_2);
-    return neg_mask * neg_val + pos_mask * pos_val;
-}
 __device__ float wrap_it_V(float V)
 {
-    float Vdim[] = {};
+    float Vdim[] = {-2.0, 4.0};
     if (V < Vdim[0]) V = Vdim[0];
     else if (V > Vdim[1]) V = Vdim[1];
 
@@ -35,7 +26,7 @@ __device__ float wrap_it_V(float V)
 }
 __device__ float wrap_it_W(float W)
 {
-    float Wdim[] = {};
+    float Wdim[] = {-6.0, 6.0};
     if (W < Wdim[0]) W = Wdim[0];
     else if (W > Wdim[1]) W = Wdim[1];
 
@@ -46,7 +37,7 @@ __global__ void oscillator(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
-        float dt, float speed, float * __restrict__ weights, float * __restrict__ lengths,
+        float dt, float * __restrict__ weights, float * __restrict__ lengths,
         float * __restrict__ params_pwi, // pwi: per work item
         // state
         float * __restrict__ state_pwi,
@@ -69,10 +60,10 @@ __global__ void oscillator(
 
     // regular constants
     const float tau = 1.0;
-    const float I = 0.0;
-    const float a = -2.0;
-    const float b = -10.0;
-    const float c = 0;
+    const float I = 0.1;
+    const float a = 0.5;
+    const float b = 0.4;
+    const float c = -4.0;
     const float d = 0.02;
     const float e = 3.0;
     const float f = 1.0;
@@ -94,8 +85,6 @@ __global__ void oscillator(
     const float lc = 0.0;
 
 
-    curandState crndst;
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float V = 0.0;
     float W = 0.0;
@@ -149,12 +138,12 @@ __global__ void oscillator(
 
 
             // Integrate with stochastic forward euler
-            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_pop1 + local_coupling * V));
+            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V));
             dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
 
-            // Add noise because component_type Noise is present in model
-            V += nsig * curand_normal(&crndst) + dV;
-            W += nsig * curand_normal(&crndst) + dW;
+            // No noise is added because it is not present in model
+            V += dV;
+            W += dW;
 
             // Wrap it within the limits of the model
             V = wrap_it_V(V);
