@@ -380,3 +380,20 @@ class SimulatorAdapterModel(ViewModel, Simulator):
             else:
                 return None
         return self.monitors[0]
+
+    def determine_indexes_for_chosen_vars_of_interest(self):
+        all_variables = self.model.__class__.variables_of_interest.element_choices
+        chosen_variables = self.model.variables_of_interest
+        indexes = self.get_variables_of_interest_indexes(all_variables, chosen_variables)
+        return indexes
+
+    @staticmethod
+    def get_variables_of_interest_indexes(all_variables, chosen_variables):
+        variables_of_interest_indexes = {}
+
+        if not isinstance(chosen_variables, (list, tuple)):
+            chosen_variables = [chosen_variables]
+
+        for variable in chosen_variables:
+            variables_of_interest_indexes[variable] = all_variables.index(variable)
+        return variables_of_interest_indexes
