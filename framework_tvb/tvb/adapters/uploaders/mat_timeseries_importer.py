@@ -128,7 +128,7 @@ class RegionTimeSeriesImporter(ABCUploader):
     """
     Import time series from a .mat file.
     """
-    _ui_name = "Timeseries Region MAT"
+    _ui_name = "TimeSeries Region MAT"
     _ui_subsection = "mat_ts_importer"
     _ui_description = "Import time series from a .mat file."
     tstype = TS_REGION

@@ -58,7 +58,7 @@ class EEGRegionMatTimeSeriesImporterForm(RegionMatTimeSeriesImporterForm):
 
 
 class EEGRegionTimeSeriesImporter(RegionTimeSeriesImporter):
-    _ui_name = "Timeseries EEG MAT"
+    _ui_name = "TimeSeries EEG MAT"
     tstype = TS_EEG
 
     def get_form_class(self):
