@@ -31,6 +31,7 @@
 import json
 import os
 from datetime import datetime
+import uuid
 
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
@@ -39,6 +40,7 @@ from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigu
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.generic_attributes import GenericAttributes
+from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, STATUS_FINISHED, STATUS_PENDING, STATUS_CANCELED
@@ -369,8 +371,24 @@ class BurstService(object):
         simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
         simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
         simulator = h5.load_view_model_from_file(simulator_h5_filepath)
+        simulator.connectivity = self._update_connectivity_at_importing(project.id, simulator.connectivity)
 
         burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
         burst_config_copy = burst_config.clone()
 
         return simulator, burst_config_copy
+
+    @staticmethod
+    def _update_connectivity_at_importing(project_id, connectivity_gid):
+        conn = dao.get_datatype_by_gid(connectivity_gid.hex)
+
+        if conn is None:
+            # The connectivity that was used by the simulation does not exist in the Project anymore so we try
+            # to assign another one
+            conn = get_filtered_datatypes(project_id, "ConnectivityIndex")[0]
+            if len(conn) > 0:
+                return uuid.UUID(conn[0][2])
+
+        return connectivity_gid
+
+
