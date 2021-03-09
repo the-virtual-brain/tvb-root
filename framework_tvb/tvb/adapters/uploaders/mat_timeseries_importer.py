@@ -145,7 +145,7 @@ class RegionTimeSeriesImporter(ABCUploader):
                                   % (data_shape[1], connectivity.number_of_regions))
         ts_idx = TimeSeriesRegionIndex()
         ts_idx.fk_connectivity_gid = connectivity.gid
-        ts_idx.has_surface_mapping = True
+        ts_idx.has_surface_mapping = True if ts_idx.fk_region_mapping_gid is not None else False
 
         ts_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, ts_idx.gid)
         ts_h5 = TimeSeriesRegionH5(ts_h5_path)
