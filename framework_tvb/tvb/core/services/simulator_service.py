@@ -36,8 +36,8 @@ import copy
 import json
 import shutil
 import uuid
-
 import numpy
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import load
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -61,9 +61,9 @@ class SimulatorService(object):
         self.files_helper = FilesHelper()
 
     @staticmethod
-    def _reset_model(session_stored_simulator, form):
+    def _reset_model(session_stored_simulator):
         session_stored_simulator.model = type(session_stored_simulator.model)()
-        vi_indexes = form.determine_indexes_for_chosen_vars_of_interest(session_stored_simulator)
+        vi_indexes = session_stored_simulator.determine_indexes_for_chosen_vars_of_interest()
         vi_indexes = numpy.array(list(vi_indexes.values()))
         for monitor in session_stored_simulator.monitors:
             monitor.variables_of_interest = vi_indexes
@@ -74,7 +74,7 @@ class SimulatorService(object):
         parameters because they might not fit to the new Connectivity's nr of regions.
         """
         if is_simulator_copy and form.connectivity.value != session_stored_simulator.connectivity:
-            self._reset_model(session_stored_simulator, form)
+            self._reset_model(session_stored_simulator)
             if issubclass(type(session_stored_simulator.integrator), IntegratorStochastic):
                 session_stored_simulator.integrator.noise = type(session_stored_simulator.integrator.noise)()
 
@@ -86,7 +86,7 @@ class SimulatorService(object):
         if is_simulator_copy and (session_stored_simulator.surface is None and form.surface.value
                                   or session_stored_simulator.surface and
                                   form.surface.value != session_stored_simulator.surface.surface_gid):
-            self._reset_model(session_stored_simulator, form)
+            self._reset_model(session_stored_simulator)
 
     @staticmethod
     def _set_simulator_range_parameter(simulator, range_parameter_name, range_parameter_value):
