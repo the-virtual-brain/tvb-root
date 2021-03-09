@@ -84,6 +84,16 @@ class CoSimulator(Simulator):
     _cosim_monitors_noncoupling_indices = []
     _cosim_monitors_coupling_indices = []
 
+    def _configure_synchronization_time(self):
+        # the synchronization time should be at least equal to integrator.dt:
+        self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
+        # Compute the number of synchronization time steps:
+        self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
+        # Check if the synchronization time is smaller than the delay of the connectivity
+        # the condition is probably not correct. It will change with usage.
+        if self.synchronization_n_step > numpy.min(self.connectivity.idelays[numpy.nonzero(self.connectivity.weights)]):
+            raise ValueError('the synchronization time is too long')
+
     def _configure_cosimulation(self):
         """This method will
            - set the synchronization time and number of steps,
@@ -92,43 +102,46 @@ class CoSimulator(Simulator):
            - configure the cosimulation monitor
            - zero connectivity weights to/from nodes modelled exclusively by the other cosimulator
            """
-        # the synchronization time should be at least equal to integrator.dt:
-        self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
-        # Compute the number of synchronization time steps:
-        self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
-        # Check if the synchronization time is smaller than the delay of the connectivity
-        # the condition is probably not correct. It will change with usage.
-        if self.synchronization_n_step > numpy.min(self.connectivity.idelays[numpy.nonzero(self.connectivity.idelays)]):
-            raise ValueError('the synchronization time is too long')
+        if self.voi.shape[0] * self.proxy_inds.shape[0] != 0:
+            self._cosimulation_flag = True
 
-        # Check if the couplings variables are in the cosimulation variables of interest
-        for cvar in self.model.cvar:
-            if cvar not in self.voi:
-                raise ValueError('The variables of interest need to contain the coupling variables')
+            self._configure_synchronization_time()
 
-        self.good_cosim_update_values_shape = (self.synchronization_n_step, self.voi.shape[0],
-                                               self.proxy_inds.shape[0], self.model.number_of_modes)
-        # We create a CosimHistory,
-        # for delayed state [synchronization_step+1, n_var, n_node, n_mode],
-        # including, initialization of the delayed state from the simulator's history,
-        # which must be already configured.
-        self.cosim_history = CosimHistory.from_simulator(self)
+            # Check if the couplings variables are in the cosimulation variables of interest
+            for cvar in self.model.cvar:
+                if cvar not in self.voi:
+                    raise ValueError('The variables of interest need to contain the coupling variables')
 
-        # Reconfigure the connectivity for regions modelled by the other cosimulator exclusively:
-        if self.exclusive:
-            self.connectivity.weights[self.proxy_inds][:, self.proxy_inds] = 0.0
-            self.connectivity.configure()
+            self.good_cosim_update_values_shape = (self.synchronization_n_step, self.voi.shape[0],
+                                                   self.proxy_inds.shape[0], self.model.number_of_modes)
+            # We create a CosimHistory,
+            # for delayed state [synchronization_step+1, n_var, n_node, n_mode],
+            # including, initialization of the delayed state from the simulator's history,
+            # which must be already configured.
+            self.cosim_history = CosimHistory.from_simulator(self)
 
-        # Configure the cosimulator monitor
-        self.number_of_cosim_monitors = len(self.cosim_monitors)
-        self._cosim_monitors_noncoupling_indices = list(range(self.number_of_cosim_monitors))
-        self._cosim_monitors_coupling_indices = []
-        for iM, monitor in enumerate(self.cosim_monitors):
-            monitor.configure()
-            monitor.config_for_sim(self)
-            if isinstance(monitor, CosimMonitorFromCoupling):
-                self._cosim_monitors_noncoupling_indices.remove(iM)
-                self._cosim_monitors_coupling_indices.append(iM)
+            # Reconfigure the connectivity for regions modelled by the other cosimulator exclusively:
+            if self.exclusive:
+                self.connectivity.weights[self.proxy_inds][:, self.proxy_inds] = 0.0
+                self.connectivity.configure()
+
+            # Configure the cosimulator monitor
+            self.number_of_cosim_monitors = len(self.cosim_monitors)
+            self._cosim_monitors_noncoupling_indices = list(range(self.number_of_cosim_monitors))
+            self._cosim_monitors_coupling_indices = []
+            for iM, monitor in enumerate(self.cosim_monitors):
+                monitor.configure()
+                monitor.config_for_sim(self)
+                if isinstance(monitor, CosimMonitorFromCoupling):
+                    self._cosim_monitors_noncoupling_indices.remove(iM)
+                    self._cosim_monitors_coupling_indices.append(iM)
+
+        elif self.voi.shape[0] + self.proxy_inds.shape[0] > 0:
+            raise ValueError("One of CoSimulator.voi (size=%i) or simulator.proxy_inds (size=%i) are empty!"
+                             % (self.voi.shape[0], self.proxy_inds.shape[0]))
+        else:
+            self._cosimulation_flag = False
+            self.synchronization_n_step = 0
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
@@ -150,18 +163,10 @@ class CoSimulator(Simulator):
 
         """
         super(CoSimulator, self).configure(full_configure=full_configure)
+        self._configure_cosimulation()
         # (Re)Set his flag after every configuration, so that runtime and storage requirements are recomputed,
         # just in case the simulator has been modified (connectivity size, synchronization time, dt etc)
         self._compute_requirements = True
-        if self.voi.shape[0] * self.proxy_inds.shape[0] != 0:
-            self._cosimulation_flag = True
-            self._configure_cosimulation()
-        elif self.voi.shape[0] + self.proxy_inds.shape[0] > 0:
-            raise ValueError("One of CoSimulator.voi (size=%i) or simulator.proxy_inds (size=%i) are empty!"
-                             % (self.voi.shape[0], self.proxy_inds.shape[0]))
-        else:
-            self._cosimulation_flag = False
-            self.synchronization_n_step = 0
 
     def _loop_update_cosim_history(self, step, state):
         """
@@ -274,7 +279,8 @@ class CoSimulator(Simulator):
         # integration loop
         for step in range(start_step, start_step + n_steps):
             self._loop_update_stimulus(step, stimulus)
-            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
+            state = self.integrate_next_step(state, self.model, node_coupling, local_coupling,
+                                             numpy.where(stimulus is None, 0.0, stimulus))
             state_output = self._loop_update_cosim_history(step, state)
             node_coupling = self._loop_compute_node_coupling(step + 1)
             output = self._loop_monitor_output(step-self.synchronization_n_step, state_output, node_coupling)
