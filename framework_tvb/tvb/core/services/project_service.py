@@ -217,10 +217,11 @@ class ProjectService:
                         result["group"] = result["group"].replace("_", " ")
                         result["operation_group_id"] = operation_group.id
                         datatype_group = dao.get_datatypegroup_by_op_group_id(one_op[3])
-                        result["datatype_group_gid"] = datatype_group.gid
+                        result["datatype_group_gid"] = datatype_group.gid if datatype_group is not None else None
                         result["gid"] = operation_group.gid
                         # Filter only viewers for current DataTypeGroup entity:
-                        result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid)
+                        result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid) \
+                            if datatype_group is not None else None
                     except Exception:
                         self.logger.exception("We will ignore group on entity:" + str(one_op))
                         result["datatype_group_gid"] = None
