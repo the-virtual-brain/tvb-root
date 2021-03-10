@@ -39,6 +39,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_filtered_datatypes
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -51,6 +52,7 @@ from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.import_service import ImportService
 from tvb.core.utils import format_bytes_human, format_timedelta
+from tvb.datatypes.surfaces import CORTICAL
 
 MAX_BURSTS_DISPLAYED = 50
 STATUS_FOR_OPERATION = {
@@ -60,6 +62,10 @@ STATUS_FOR_OPERATION = {
     STATUS_ERROR: BurstConfiguration.BURST_ERROR,
     STATUS_FINISHED: BurstConfiguration.BURST_FINISHED
 }
+
+CONNECTIVITY_INDEX_CLASS_PATH = 'tvb.adapters.datatypes.db.connectivity.ConnectivityIndex'
+SURFACE_INDEX_CLASS_PATH = 'tvb.adapters.datatypes.db.surface.SurfaceIndex'
+REGION_MAPPING_CLASS_PATH = 'tvb.adapters.datatypes.db.region_mapping.RegionMappingIndex'
 
 
 class BurstService(object):
@@ -371,7 +377,21 @@ class BurstService(object):
         simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
         simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
         simulator = h5.load_view_model_from_file(simulator_h5_filepath)
-        simulator.connectivity = self._update_connectivity_at_importing(project.id, simulator.connectivity)
+        simulator.connectivity = self._update_datatype_at_importing(project.id, simulator.connectivity.hex,
+                                                                    CONNECTIVITY_INDEX_CLASS_PATH)
+
+        if simulator.surface is not None:
+            surface_filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'],
+                                         operations=["=="], values=[CORTICAL])
+            simulator.surface.surface_gid = self._update_datatype_at_importing(project.id,
+                                                                               simulator.surface.surface_gid.hex,
+                                                                               SURFACE_INDEX_CLASS_PATH, surface_filter)
+
+            rm_filter = FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid',
+                                            FilterChain.datatype + '.fk_surface_gid'], operations=["==", "=="],
+                                    values=[simulator.connectivity.hex, simulator.surface.surface_gid.hex])
+            simulator.surface.region_mapping_data = self._update_datatype_at_importing(
+                project.id, simulator.surface.region_mapping_data.hex, REGION_MAPPING_CLASS_PATH, rm_filter)
 
         burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
         burst_config_copy = burst_config.clone()
@@ -379,16 +399,14 @@ class BurstService(object):
         return simulator, burst_config_copy
 
     @staticmethod
-    def _update_connectivity_at_importing(project_id, connectivity_gid):
-        conn = dao.get_datatype_by_gid(connectivity_gid.hex)
+    def _update_datatype_at_importing(project_id, gid, class_path, filters=None):
+        datatype = dao.get_datatype_by_gid(gid)
 
-        if conn is None:
+        if datatype is None:
             # The connectivity that was used by the simulation does not exist in the Project anymore so we try
             # to assign another one
-            conn = get_filtered_datatypes(project_id, "ConnectivityIndex")[0]
-            if len(conn) > 0:
-                return uuid.UUID(conn[0][2])
+            datatype = get_filtered_datatypes(project_id, class_path, filters)[0]
+            if len(datatype) > 0:
+                return uuid.UUID(datatype[0][2])
 
-        return connectivity_gid
-
-
+        return gid
