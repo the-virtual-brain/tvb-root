@@ -32,6 +32,8 @@ import threading
 
 from cherrypy.lib.static import serve_file
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
@@ -755,6 +757,21 @@ class SimulatorController(BurstBaseController):
             if upload_param in data and data[upload_param]:
                 simulator, burst_config = self.burst_service.load_simulation_from_zip(data[upload_param],
                                                                                       self.context.project)
+
+                simulator.connectivity = self.burst_service.update_datatype_at_importing(self.context.project.id,
+                                                                                         simulator.connectivity.hex,
+                                                                                         ConnectivityIndex)
+
+                if simulator.surface is not None:
+                    simulator.surface.surface_gid = self.burst_service.update_datatype_at_importing(
+                        self.context.project.id, simulator.surface.surface_gid.hex, SurfaceIndex,
+                        SimulatorSurfaceFragment.get_filters())
+
+                    simulator.surface.region_mapping_data = self.burst_service.update_datatype_at_importing(
+                        self.context.project.id, simulator.surface.region_mapping_data.hex, RegionMappingIndex,
+                        SimulatorRMFragment.get_rm_filters(simulator.surface.surface_gid.hex,
+                                                           simulator.connectivity.hex))
+
                 self.monitors_handler.build_list_of_monitors_from_view_models(simulator)
                 if burst_config.is_pse_burst():
                     last_loaded_form_url = SimulatorWizzardURLs.LAUNCH_PSE_URL

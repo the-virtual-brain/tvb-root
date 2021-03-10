@@ -56,8 +56,12 @@ from tvb.simulator.models.base import Model
 class SimulatorSurfaceFragment(ABCAdapterForm):
     def __init__(self):
         super(SimulatorSurfaceFragment, self).__init__()
-        conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="], values=[CORTICAL])
-        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, name='surface_gid', conditions=conditions)
+        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, name='surface_gid',
+                                                conditions=self.get_filters())
+
+    @staticmethod
+    def get_filters():
+        return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="], values=[CORTICAL])
 
     def fill_trait(self, datatype):
         surface_gid = self.surface.value
@@ -82,10 +86,7 @@ class SimulatorRMFragment(ABCAdapterForm):
         rm_conditions = None
         lc_conditions = None
         if surface_index:
-            rm_conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid',
-                                                FilterChain.datatype + '.fk_connectivity_gid'],
-                                        operations=["==", "=="],
-                                        values=[str(surface_index.gid), str(connectivity_gid.hex)])
+            rm_conditions = self.get_rm_filters(surface_index.gid, connectivity_gid.hex)
             lc_conditions = FilterChain(fields=[rm_conditions.fields[0]], operations=[rm_conditions.operations[0]],
                                         values=[rm_conditions.values[0]])
         self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, name='region_mapping_data',
@@ -94,6 +95,12 @@ class SimulatorRMFragment(ABCAdapterForm):
         self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, name='local_connectivity',
                                            conditions=lc_conditions)
         self.coupling_strength = ArrayField(CortexViewModel.coupling_strength)
+
+    @staticmethod
+    def get_rm_filters(surface_gid, connectivity_gid):
+        return FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid',
+                                   FilterChain.datatype + '.fk_connectivity_gid'], operations=["==", "=="],
+                           values=[str(surface_gid), str(connectivity_gid)])
 
     @staticmethod
     def prepare_cortex_fragment(simulator, rendering_rules, form_action_url, project_id):

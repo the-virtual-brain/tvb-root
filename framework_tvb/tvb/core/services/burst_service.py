@@ -377,21 +377,7 @@ class BurstService(object):
         simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
         simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
         simulator = h5.load_view_model_from_file(simulator_h5_filepath)
-        simulator.connectivity = self._update_datatype_at_importing(project.id, simulator.connectivity.hex,
-                                                                    CONNECTIVITY_INDEX_CLASS_PATH)
 
-        if simulator.surface is not None:
-            surface_filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'],
-                                         operations=["=="], values=[CORTICAL])
-            simulator.surface.surface_gid = self._update_datatype_at_importing(project.id,
-                                                                               simulator.surface.surface_gid.hex,
-                                                                               SURFACE_INDEX_CLASS_PATH, surface_filter)
-
-            rm_filter = FilterChain(fields=[FilterChain.datatype + '.fk_connectivity_gid',
-                                            FilterChain.datatype + '.fk_surface_gid'], operations=["==", "=="],
-                                    values=[simulator.connectivity.hex, simulator.surface.surface_gid.hex])
-            simulator.surface.region_mapping_data = self._update_datatype_at_importing(
-                project.id, simulator.surface.region_mapping_data.hex, REGION_MAPPING_CLASS_PATH, rm_filter)
 
         burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
         burst_config_copy = burst_config.clone()
@@ -399,13 +385,13 @@ class BurstService(object):
         return simulator, burst_config_copy
 
     @staticmethod
-    def _update_datatype_at_importing(project_id, gid, class_path, filters=None):
+    def update_datatype_at_importing(project_id, gid, index_class, filters=None):
         datatype = dao.get_datatype_by_gid(gid)
 
         if datatype is None:
             # The connectivity that was used by the simulation does not exist in the Project anymore so we try
             # to assign another one
-            datatype = get_filtered_datatypes(project_id, class_path, filters)[0]
+            datatype = get_filtered_datatypes(project_id, index_class, filters)[0]
             if len(datatype) > 0:
                 return uuid.UUID(datatype[0][2])
 
