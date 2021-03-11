@@ -42,6 +42,7 @@ from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
+from tvb.adapters.uploaders.tvb_importer import TVBImporter, TVBImporterModel
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
@@ -183,7 +184,7 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(session_stored_simulator.coupling)
 
         surface_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorSurfaceFragment(),
-                                                                       project_id=common.get_current_project().id)
+                                                                       project_id=self.context.project.id)
         surface_fragment.fill_from_trait(session_stored_simulator.surface)
 
         rendering_rules = SimulatorFragmentRenderingRules(
@@ -749,12 +750,20 @@ class SimulatorController(BurstBaseController):
         """Upload Simulator from previously exported ZIP file"""
         self.logger.debug("Uploading ..." + str(data))
         last_loaded_form_url = SimulatorWizzardURLs.SETUP_PSE_URL
+        operation_service = OperationService()
+        adapter_instance = TVBImporter()
 
         try:
             upload_param = "uploadedfile"
             if upload_param in data and data[upload_param]:
-                simulator, burst_config = self.burst_service.load_simulation_from_zip(data[upload_param],
-                                                                                      self.context.project)
+                simulator, burst_config, dt_list = self.burst_service.load_simulation_from_zip(data[upload_param],
+                                                                                               self.context.project)
+                for dt in dt_list:
+                    model = TVBImporterModel()
+                    model.data_file = dt
+                    operation_service.fire_operation(adapter_instance, self.context.logged_user,
+                                                     self.context.project.id, view_model=model)
+
                 self.monitors_handler.build_list_of_monitors_from_view_models(simulator)
                 if burst_config.is_pse_burst():
                     last_loaded_form_url = SimulatorWizzardURLs.LAUNCH_PSE_URL

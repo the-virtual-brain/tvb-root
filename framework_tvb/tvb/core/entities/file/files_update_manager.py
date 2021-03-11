@@ -242,16 +242,24 @@ class FilesUpdateManager(UpdateManager):
                     pass
 
         # Sort all h5 files based on their creation date stored in the files themselves
-        sorted_h5_files = sorted(h5_files, key=lambda h5_path: FilesUpdateManager._get_create_date_for_sorting(
-            h5_path) or datetime.now())
-        return sorted_h5_files
+        return FilesUpdateManager.sort_h5_files(h5_files)
+
+    @staticmethod
+    def sort_h5_files(h5_files, version_5=False):
+        return sorted(h5_files, key=lambda h5_path: FilesUpdateManager._get_create_date_for_sorting(
+            h5_path, version_5) or datetime.now())
 
     @staticmethod
     def _is_empty_file(h5_file):
         return H5File.get_metadata_param(h5_file, 'Create_date') is None
 
     @staticmethod
-    def _get_create_date_for_sorting(h5_file):
-        create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'), 'utf-8')
-        create_date = string2date(create_date_str, date_format='datetime:%Y-%m-%d %H:%M:%S.%f')
+    def _get_create_date_for_sorting(h5_file, version_5):
+        if version_5:
+            create_date_str = H5File.get_metadata_param(h5_file, 'create_date')
+            create_date = string2date(create_date_str, date_format='%Y-%m-%d,%H-%M-%S.%f')
+        else:
+            create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'), 'utf-8')
+            create_date = string2date(create_date_str, date_format='datetime:%Y-%m-%d %H:%M:%S.%f')
+
         return create_date
