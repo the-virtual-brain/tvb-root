@@ -245,9 +245,7 @@ class CoSimulator(Simulator):
             else:
                 n_steps = cosim_updates[0].shape[0]
                 # Now update cosimulation history with the cosimulation inputs:
-                self._update_cosim_history(numpy.array(numpy.around(cosim_updates[0] / self.integrator.dt),
-                                                       dtype=numpy.int),
-                                           cosim_updates[1])
+                self._update_cosim_history(cosim_updates[0], cosim_updates[1])
 
             self.simulation_length = n_steps * self.integrator.dt
         else:
