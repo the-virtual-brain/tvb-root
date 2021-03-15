@@ -103,11 +103,6 @@ class RateML:
             self.familiarize_TVB(model_str)
 
     @staticmethod
-    def set_driver_location():
-        here = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(here, 'run', 'model_driver.py')
-
-    @staticmethod
     def default_XML_folder():
         here = os.path.dirname(os.path.abspath(__file__))
         xmlpath = os.path.join(here, 'XMLmodels')
@@ -147,6 +142,11 @@ class RateML:
             exit()
 
         return os.path.join(folder, self.model_filename.lower() + ext)
+
+    @staticmethod
+    def set_driver_location():
+        here = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(here, 'run', 'model_driver.py')
 
     def set_template(self, name):
         here = os.path.dirname(os.path.abspath(__file__))
@@ -291,7 +291,10 @@ class RateML:
         derivative_list = model.component_types['derivatives']
 
         model_str = self.render_model(derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent)
-        driver_str = self.render_driver(derivative_list)
+
+        # render driver only in case of cuda
+        if self.language == 'cuda':
+            driver_str = self.render_driver(derivative_list)
 
         return model_str, driver_str
 
@@ -323,6 +326,7 @@ class RateML:
     def render_driver(self, derivative_list):
 
         driver_str = self.set_template('driver').render(
+            model=self.model_filename,
             XML=derivative_list,
         )
 
@@ -364,45 +368,28 @@ class RateML:
                     f.writelines(lines)
                 logger.info("model file generated {}".format(model_filename))
         except IOError as e:
-            logger.error('ioerror: %s', e)
+            logger.error('Writing TVB model to file failed: %s', e)
 
     def write_model_file(self, model_location, model_str):
 
         '''Write templated model to file'''
 
-        with open(model_location, "w") as f:
-            f.writelines(model_str)
-
+        try:
+            with open(model_location, "w") as f:
+                f.writelines(model_str)
+        except IOError as e:
+            logger.error('Writing %s model to file failed: %s', self.language, e)
 
 if __name__ == "__main__":
 
     # language='python'
     language='Cuda'
 
-    # model_filename = 'montbrio'
-    model_filename = 'oscillator'
+    model_filename = 'montbrio'
+    # model_filename = 'oscillator'
     # model_filename = 'kuramoto'
     # model_filename = 'rwongwang'
     # model_filename = 'epileptor'
 
-    # RateML(model_filename, language, './XMLmodels/', './generatedModels/')
     RateML(model_filename, language)
-
-    # for simulation
-    # from run.regular_run import regularRun
-    # from matplotlib.pyplot import *
-    #
-    # simtime = 5000
-    # g = 32
-    # s = 32
-    # dt = 1
-    # period = 1.
-    # # modelExec = 'KuramotoT'
-    # modelExec = 'RwongwangT'
-    # # modelExec = 'ReducedWongWang'
-    # (time, data) = regularRun(simtime, g, s, dt, period).simulate_python(modelExec)
-    #
-    # figure()
-    # plot(time, data[:, 0, :, 0], 'k', alpha=0.1)
-    # show()
 

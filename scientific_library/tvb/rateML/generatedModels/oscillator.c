@@ -36,7 +36,7 @@ __device__ float wrap_it_W(float W)
 __global__ void oscillator(
 
         // config
-        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
+        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_work_items,
         float dt, float * __restrict__ weights, float * __restrict__ lengths,
         float * __restrict__ params_pwi, // pwi: per work item
         // state
@@ -47,11 +47,14 @@ __global__ void oscillator(
 {
     // work id & size
     const unsigned int id = (gridDim.x * blockDim.x * threadIdx.y) + threadIdx.x;
-    const unsigned int size = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
+    const unsigned int size = n_work_items;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
 #define state(time, i_node) (state_pwi[((time) * 2 * n_node + (i_node))*size + id])
 #define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
+
+    // only threat those ID that have a corresponding parameters combination
+    if (id >= size) return;
 
     // unpack params
     // These are the two parameters which are usually explore in fitting in this model
