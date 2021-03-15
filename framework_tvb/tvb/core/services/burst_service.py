@@ -368,16 +368,6 @@ class BurstService(object):
         import_service = ImportService()
         simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
 
-        h5_datatype_list = []
-        for file in os.listdir(simulator_folder):
-            file_path = os.path.join(simulator_folder, file)
-            if issubclass(H5File.h5_class_from_file(file_path), ViewModelH5) or \
-                    issubclass(H5File.h5_class_from_file(file_path), BurstConfigurationH5):
-                continue
-            h5_datatype_list.append(file_path)
-
-        h5_datatype_list = FilesUpdateManager.sort_h5_files(h5_datatype_list, version_5=True)
-
         simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
         simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
         simulator = h5.load_view_model_from_file(simulator_h5_filepath)
@@ -385,4 +375,4 @@ class BurstService(object):
         burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
         burst_config_copy = burst_config.clone()
 
-        return simulator, burst_config_copy, h5_datatype_list
+        return simulator, burst_config_copy, simulator_folder
