@@ -4,8 +4,8 @@
 
         <!-- Powers should be entered as {powee^power} -->
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='float'/>
-        <Parameter name="global_coupling" dimension='float'/>
+        <Parameter name="global_speed" dimension='0.0, 2.0'/>
+        <Parameter name="global_coupling" dimension='1.6, 3.0'/>
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
         <!-- The parameters with name 'rec_speed_dt' is conidered to be integral part of tv coupling calculation
@@ -35,20 +35,20 @@
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, i.e. "1.0, None" -->
-            <StateVariable name="r" dimension="" exposure="0.0, INFINITY"/>
-            <StateVariable name="V" dimension="" exposure="-2.0, 1.5"/>
+            <StateVariable name="r" dimension="0.0" exposure="0.0, 2.0"/>
+            <StateVariable name="V" dimension="0.0" exposure="-2.0, 1.5"/>
 
             <!-- Derived variables can be used to simplify the time derivatives, enter the local coupling formulas or any formula -->
             <!-- syntax: [name]=[expression] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
             <DerivedVariable name="Coupling_global" value="alpha * c_pop1"/>
-            <DerivedVariable name="Coupling_local" value="(1-alpha) * rec_n * r"/>
+            <DerivedVariable name="Coupling_local" value="(1-alpha) * r"/>
             <DerivedVariable name="Coupling_Term" value="Coupling_global + Coupling_local"/>
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
             <!-- Conditional used for if statement, syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,) -->
-            <TimeDerivative variable="dx" value="Delta / M_PI + 2 * V * r - k * {r^2} + Gamma * r / M_PI"/>
-            <TimeDerivative variable="dy" value="{V^2} - {M_PI^2} * {r^2} + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
+            <TimeDerivative variable="dr" value="Delta / M_PI_F + 2 * V * r - k * {r^2} + Gamma * r / M_PI_F"/>
+            <TimeDerivative variable="dV" value="{V^2} - {M_PI_F^2} * {r^2} + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
 
         </Dynamics>
 
@@ -75,7 +75,6 @@
     </ComponentType>
 
     <!-- If noise needs to be present, just specify the component type. Detail might be added later -->
-    <ComponentType name="noise" description="on">
-    </ComponentType>
+    <ComponentType name="noise"/>
 
 </Lems>
