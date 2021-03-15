@@ -760,7 +760,7 @@ class SimulatorController(BurstBaseController):
                 simulator, burst_config, sim_folder = self.burst_service.load_simulation_from_zip(data[upload_param],
                                                                                                self.context.project)
 
-                dts_folder = os.path.join(sim_folder, "dt")
+                dts_folder = os.path.join(sim_folder, "datatypes")
                 ImportService().import_project_operations(self.context.project, dts_folder, False, None)
 
                 self.monitors_handler.build_list_of_monitors_from_view_models(simulator)

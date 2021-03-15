@@ -262,7 +262,7 @@ class ExportManager(object):
         if not os.path.exists(tmp_sim_folder):
             os.makedirs(tmp_sim_folder)
 
-        all_view_model_paths = h5.gather_view_model_references(burst.simulator_gid, op_folder)
+        all_view_model_paths, all_datatype_paths = h5.gather_view_model_references(burst.simulator_gid, op_folder)
 
         burst_path = h5.determine_filepath(burst.gid, op_folder)
         all_view_model_paths.append(burst_path)
@@ -270,6 +270,10 @@ class ExportManager(object):
         for vm_path in all_view_model_paths:
             dest = os.path.join(tmp_sim_folder, os.path.basename(vm_path))
             self.files_helper.copy_file(vm_path, dest)
+
+        for dt_path in all_datatype_paths:
+            dest = os.path.join(tmp_sim_folder, "datatypes", os.path.basename(dt_path))
+            self.files_helper.copy_file(dt_path, dest)
 
         main_vm_path = h5.determine_filepath(burst.simulator_gid, tmp_sim_folder)
         H5File.remove_metadata_param(main_vm_path, 'history_gid')
@@ -280,7 +284,7 @@ class ExportManager(object):
 
         result_path = os.path.join(tmp_export_folder, zip_file_name)
         with TvbZip(result_path, "w") as zip_file:
-            for filename in os.listdir(tmp_sim_folder):
-                zip_file.write(os.path.join(tmp_sim_folder, filename), filename)
+            zip_file.write_folder(tmp_sim_folder)
+
         self.files_helper.remove_folder(tmp_sim_folder)
         return result_path

@@ -263,7 +263,8 @@ def gather_view_model_references(gid, base_dir, only_view_models=False):
             gather_all_references_by_index(h5_file, uuid_files)
         ref_files.extend(uuid_files)
 
-    all_refs = []
+    vm_refs = []
+    dt_refs = []
     load_dts_function = None if only_view_models else load_dts
-    ViewModelLoader(base_dir).gather_reference_files(gid, all_refs, load_dts_function)
-    return list(set(all_refs))
+    ViewModelLoader(base_dir).gather_reference_files(gid, vm_refs, dt_refs, load_dts_function)
+    return list(set(vm_refs)), list(set(dt_refs))
