@@ -267,4 +267,4 @@ def gather_view_model_references(gid, base_dir, only_view_models=False):
     dt_refs = []
     load_dts_function = None if only_view_models else load_dts
     ViewModelLoader(base_dir).gather_reference_files(gid, vm_refs, dt_refs, load_dts_function)
-    return list(set(vm_refs)), list(set(dt_refs))
+    return list(set(vm_refs)) if only_view_models else list(set(vm_refs)), list(set(dt_refs))
