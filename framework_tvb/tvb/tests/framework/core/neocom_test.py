@@ -123,7 +123,7 @@ def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_inde
     assert sim_view_model.monitors[0].projection == loaded_sim_view_model.monitors[0].projection
 
 
-def test_gather_view_model_references(connectivity_index_factory, operation_factory):
+def test_gather_view_model_and_datatype_references(connectivity_index_factory, operation_factory):
     conn = connectivity_index_factory()
     sim_view_model = SimulatorAdapterModel()
     sim_view_model.connectivity = conn.gid
@@ -132,14 +132,14 @@ def test_gather_view_model_references(connectivity_index_factory, operation_fact
     storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
     h5.store_view_model(sim_view_model, storage_path)
 
-    only_vm_references = h5.gather_view_model_references(sim_view_model.gid, storage_path, True)
-    all_references = h5.gather_view_model_references(sim_view_model.gid, storage_path)
+    only_vm_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path, True)[0]
+    vm_references, dt_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path)
 
     assert len(only_vm_references) == 5
-    assert len(all_references) == 6
+    assert len(vm_references) + len(dt_references) == 6
 
 
-def test_gather_view_model_references_multiple_monitors(connectivity_index_factory, operation_factory,
+def test_gather_view_model_and_datatype_references_multiple_monitors(connectivity_index_factory, operation_factory,
                                                         sensors_index_factory, surface_index_factory,
                                                         region_mapping_index_factory):
     conn = connectivity_index_factory()
@@ -165,8 +165,8 @@ def test_gather_view_model_references_multiple_monitors(connectivity_index_facto
     storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
     h5.store_view_model(sim_view_model, storage_path)
 
-    only_vm_references = h5.gather_view_model_references(sim_view_model.gid, storage_path, True)
+    only_vm_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path, True)[0]
     assert len(only_vm_references) == 7
 
-    all_references = h5.gather_view_model_references(sim_view_model.gid, storage_path)
-    assert len(all_references) == 12
+    vm_references, dt_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path)
+    assert len(vm_references + dt_references) == 12

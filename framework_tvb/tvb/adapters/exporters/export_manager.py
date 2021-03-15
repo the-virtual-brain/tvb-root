@@ -262,7 +262,7 @@ class ExportManager(object):
         if not os.path.exists(tmp_sim_folder):
             os.makedirs(tmp_sim_folder)
 
-        all_view_model_paths, all_datatype_paths = h5.gather_view_model_references(burst.simulator_gid, op_folder)
+        all_view_model_paths, all_datatype_paths = h5.gather_view_model_and_datatype_references(burst.simulator_gid, op_folder)
 
         burst_path = h5.determine_filepath(burst.gid, op_folder)
         all_view_model_paths.append(burst_path)
