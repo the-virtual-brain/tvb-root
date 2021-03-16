@@ -132,7 +132,7 @@ def test_gather_view_model_and_datatype_references(connectivity_index_factory, o
     storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
     h5.store_view_model(sim_view_model, storage_path)
 
-    only_vm_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path, True)[0]
+    only_vm_references, _ = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path, True)
     vm_references, dt_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path)
 
     assert len(only_vm_references) == 5
@@ -165,7 +165,7 @@ def test_gather_view_model_and_datatype_references_multiple_monitors(connectivit
     storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
     h5.store_view_model(sim_view_model, storage_path)
 
-    only_vm_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path, True)[0]
+    only_vm_references, _ = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path, True)
     assert len(only_vm_references) == 7
 
     vm_references, dt_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path)
