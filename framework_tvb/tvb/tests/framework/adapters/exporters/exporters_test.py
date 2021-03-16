@@ -34,6 +34,7 @@
 import os.path
 import shutil
 import zipfile
+import uuid
 from contextlib import closing
 
 import pytest
@@ -179,11 +180,13 @@ class TestExporters(TransactionalTestCase):
         # Now check if the generated file is a correct ZIP file
         assert zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file"
 
-    def test_export_simulator_configuration(self, operation_factory):
+    def test_export_simulator_configuration(self, operation_factory, connectivity_index_factory):
         """
         Test export of a simulator configuration
         """
-        operation = operation_factory(is_simulation=True, store_vm=True, test_project=self.test_project)
+        conn_gid = uuid.UUID(connectivity_index_factory().gid)
+        operation = operation_factory(is_simulation=True, store_vm=True, test_project=self.test_project,
+                                      conn_gid=conn_gid)
 
         burst_configuration = BurstConfiguration(self.test_project.id)
         burst_configuration.fk_simulation = operation.id

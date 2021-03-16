@@ -348,9 +348,9 @@ class ViewModelLoader(DirLoader):
                 setattr(view_model, trait_attr.field_name, loaded_ref)
         return view_model
 
-    def gather_reference_files(self, gid, ref_files, load_dts=None):
+    def gather_reference_files(self, gid, vm_ref_files, dt_ref_files, load_dts=None):
         vm_path = self.find_file_by_gid(gid)
-        ref_files.append(vm_path)
+        vm_ref_files.append(vm_path)
         view_model_class = H5File.determine_type(vm_path)
         view_model = view_model_class()
 
@@ -362,8 +362,8 @@ class ViewModelLoader(DirLoader):
                     continue
                 if isinstance(gid, (list, tuple)):
                     for list_gid in gid:
-                        self.gather_reference_files(list_gid, ref_files, load_dts)
+                        self.gather_reference_files(list_gid, vm_ref_files, dt_ref_files, load_dts)
                 else:
-                    self.gather_reference_files(gid, ref_files, load_dts)
+                    self.gather_reference_files(gid, vm_ref_files, dt_ref_files, load_dts)
             if load_dts:
-                load_dts(vm_h5, ref_files)
+                load_dts(vm_h5, dt_ref_files)

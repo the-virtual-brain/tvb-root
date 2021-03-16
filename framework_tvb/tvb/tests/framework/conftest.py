@@ -167,7 +167,7 @@ def project_factory():
 @pytest.fixture()
 def operation_factory(user_factory, project_factory, connectivity_factory):
     def build(test_user=None, test_project=None, is_simulation=False, store_vm=False,
-              operation_status=STATUS_FINISHED, range_values=None):
+              operation_status=STATUS_FINISHED, range_values=None, conn_gid=None):
         """
         Create persisted operation with a ViewModel stored
         :return: Operation entity after persistence.
@@ -185,7 +185,7 @@ def operation_factory(user_factory, project_factory, connectivity_factory):
             if store_vm:
                 adapter = ABCAdapter.build_adapter(algorithm)
                 view_model = adapter.get_view_model_class()()
-                view_model.connectivity = connectivity_factory(4).gid
+                view_model.connectivity = connectivity_factory(4).gid if conn_gid is None else conn_gid
                 vm_gid = view_model.gid
 
         else:

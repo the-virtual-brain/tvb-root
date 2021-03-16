@@ -372,5 +372,6 @@ class BurstService(object):
 
         burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
         burst_config_copy = burst_config.clone()
+        simulator.generic_attributes.parent_burst = burst_config_copy.gid
 
-        return simulator, burst_config_copy
+        return simulator, burst_config_copy, simulator_folder

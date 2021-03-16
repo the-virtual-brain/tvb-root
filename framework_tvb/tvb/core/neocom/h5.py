@@ -245,10 +245,10 @@ def gather_all_references_by_index(h5_file, ref_files):
         gather_all_references_by_index(h5_file, ref_files)
 
 
-def gather_view_model_references(gid, base_dir, only_view_models=False):
+def gather_references_of_view_model(gid, base_dir, only_view_models=False):
     """
-    Gather in a list all file paths that are referenced by a ViewModel with the given GID stored in base_dir directory.
-    If only_view_models=True, returns only ViewModelH5 file paths, otherwise, returns all file paths (also datatype H5).
+    Gather in 2 lists all file paths that are referenced by a ViewModel with the given GID stored in base_dir directory.
+    If only_view_models=True, returns only ViewModelH5 file paths, otherwise, returns also datatype H5 file paths.
     """
 
     def load_dts(vm_h5, ref_files):
@@ -263,7 +263,12 @@ def gather_view_model_references(gid, base_dir, only_view_models=False):
             gather_all_references_by_index(h5_file, uuid_files)
         ref_files.extend(uuid_files)
 
-    all_refs = []
+    vm_refs = []
+    dt_refs = []
     load_dts_function = None if only_view_models else load_dts
-    ViewModelLoader(base_dir).gather_reference_files(gid, all_refs, load_dts_function)
-    return list(set(all_refs))
+    ViewModelLoader(base_dir).gather_reference_files(gid, vm_refs, dt_refs, load_dts_function)
+
+    if only_view_models:
+        return list(set(vm_refs)), None
+    else:
+        return list(set(vm_refs)), list(set(dt_refs))
