@@ -16,15 +16,6 @@
 #include <curand.h>
 #include <stdbool.h>
 
-__device__ float wrap_it_PI(float x)
-{
-    bool neg_mask = x < 0.0f;
-    bool pos_mask = !neg_mask;
-    // fmodf diverges 51% of time
-    float pos_val = fmodf(x, PI_2);
-    float neg_val = PI_2 - fmodf(-x, PI_2);
-    return neg_mask * neg_val + pos_mask * pos_val;
-}
 __device__ float wrap_it_x1(float x1)
 {
     float x1dim[] = {-2.0, 1.0};
@@ -77,8 +68,8 @@ __device__ float wrap_it_g(float g)
 __global__ void epileptor(
 
         // config
-        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
-        float dt, float speed, float * __restrict__ weights, float * __restrict__ lengths,
+        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_work_items,
+        float dt, float * __restrict__ weights, float * __restrict__ lengths,
         float * __restrict__ params_pwi, // pwi: per work item
         // state
         float * __restrict__ state_pwi,
@@ -88,11 +79,14 @@ __global__ void epileptor(
 {
     // work id & size
     const unsigned int id = (gridDim.x * blockDim.x * threadIdx.y) + threadIdx.x;
-    const unsigned int size = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
+    const unsigned int size = n_work_items;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
 #define state(time, i_node) (state_pwi[((time) * 6 * n_node + (i_node))*size + id])
 #define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
+
+    // only threat those ID that have a corresponding parameters combination
+    if (id >= size) return;
 
     // unpack params
     // These are the two parameters which are usually explore in fitting in this model

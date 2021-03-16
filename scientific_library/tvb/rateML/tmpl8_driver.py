@@ -308,14 +308,29 @@ class Driver_Execute(Driver_Setup):
 			exit(1)
 
 		# n_sweep_arg0 scales griddim.x, n_sweep_arg1 scales griddim.y
+		# form an optimal grid
 		bx, by = self.args.blockszx, self.args.blockszy
 		s_arg0, s_arg1 = self.args.n_sweep_arg0, self.args.n_sweep_arg1
+		nwi = self.n_work_items
 		gridx = int(np.ceil(s_arg0 / bx))
+		# cut the grid x if already sufficient
+		if (gridx-1) * bx * by > nwi:
+			gridx=gridx-1
 		gridy = 1
-		if gridx * bx * by < self.n_work_items:
+		if gridx * bx * by < nwi:
 			gridy = int(np.ceil(s_arg1 / by))
+		# cut the grid y if already sufficient
+		if gridx * bx * by * (gridy-1) > nwi:
+			gridy=gridy-1
+
+		# cut the grid x|y if already sufficient
+		maxgd, mingd = max(gridx, gridy), min(gridx, gridy)
+		if (maxgd-1) * mingd * bx * by > nwi:
+			final_grid_dim = maxgd-1, mingd
+		else:
+			final_grid_dim = gridx, gridy
+
 		final_block_dim = bx, by, 1
-		final_grid_dim = gridx, gridy
 
 		assert gridx * gridy * bx * by >= self.n_work_items
 
@@ -415,10 +430,9 @@ class Driver_Execute(Driver_Setup):
 
 		self.plot_output(tavg0) if self.args.plot_data else None
 		self.write_output(tavg0) if self.args.write_data else None
-
-		self.logger.info('Output shape %s', tavg0.shape)
+		self.logger.info('Output shape (simsteps, states, bnodes, n_params) %s', tavg0.shape)
 		self.logger.info('Finished CUDA simulation successfully in: {0:.3f}'.format(elapsed))
-		self.logger.info('in {0:.3f} M step/s'.format(
+		self.logger.info('and in {0:.3f} M step/s'.format(
 			1e-6 * self.args.n_time * self.n_inner_steps * self.n_work_items / elapsed))
 
 

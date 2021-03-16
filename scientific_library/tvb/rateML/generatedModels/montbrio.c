@@ -16,18 +16,9 @@
 #include <curand.h>
 #include <stdbool.h>
 
-__device__ float wrap_it_PI(float x)
-{
-    bool neg_mask = x < 0.0f;
-    bool pos_mask = !neg_mask;
-    // fmodf diverges 51% of time
-    float pos_val = fmodf(x, PI_2);
-    float neg_val = PI_2 - fmodf(-x, PI_2);
-    return neg_mask * neg_val + pos_mask * pos_val;
-}
 __device__ float wrap_it_r(float r)
 {
-    float rdim[] = {0.0, INFINITY};
+    float rdim[] = {0.0, 2.0};
     if (r < rdim[0]) r = rdim[0];
     else if (r > rdim[1]) r = rdim[1];
 
@@ -45,8 +36,8 @@ __device__ float wrap_it_V(float V)
 __global__ void montbrio(
 
         // config
-        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
-        float dt, float speed, float * __restrict__ weights, float * __restrict__ lengths,
+        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_work_items,
+        float dt, float * __restrict__ weights, float * __restrict__ lengths,
         float * __restrict__ params_pwi, // pwi: per work item
         // state
         float * __restrict__ state_pwi,
@@ -56,11 +47,14 @@ __global__ void montbrio(
 {
     // work id & size
     const unsigned int id = (gridDim.x * blockDim.x * threadIdx.y) + threadIdx.x;
-    const unsigned int size = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
+    const unsigned int size = n_work_items;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
 #define state(time, i_node) (state_pwi[((time) * 2 * n_node + (i_node))*size + id])
 #define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
+
+    // only threat those ID that have a corresponding parameters combination
+    if (id >= size) return;
 
     // unpack params
     // These are the two parameters which are usually explore in fitting in this model
@@ -100,8 +94,8 @@ __global__ void montbrio(
     float r = 0.0;
     float V = 0.0;
 
-    float dx = 0.0;
-    float dy = 0.0;
+    float dr = 0.0;
+    float dV = 0.0;
 
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
@@ -148,17 +142,17 @@ __global__ void montbrio(
             c_pop1 *= global_coupling * rec_n;
             // the dynamic derived variables
             Coupling_global = alpha * c_pop1;
-            Coupling_local = (1-alpha) * rec_n * r;
+            Coupling_local = (1-alpha) * r;
             Coupling_Term = Coupling_global + Coupling_local;
 
 
             // Integrate with stochastic forward euler
-            dx = dt * (Delta / M_PI + 2 * V * r - k * powf(r, 2) + Gamma * r / M_PI);
-            dy = dt * (powf(V, 2) - powf(M_PI, 2) * powf(r, 2) + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term);
+            dr = dt * (Delta / M_PI_F + 2 * V * r - k * powf(r, 2) + Gamma * r / M_PI_F);
+            dV = dt * (powf(V, 2) - powf(M_PI_F, 2) * powf(r, 2) + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term);
 
             // Add noise because component_type Noise is present in model
-            r += nsig * curand_normal(&crndst) + dx;
-            V += nsig * curand_normal(&crndst) + dy;
+            r += nsig * curand_normal(&crndst) + dr;
+            V += nsig * curand_normal(&crndst) + dV;
 
             // Wrap it within the limits of the model
             r = wrap_it_r(r);

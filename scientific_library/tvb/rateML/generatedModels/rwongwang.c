@@ -16,15 +16,6 @@
 #include <curand.h>
 #include <stdbool.h>
 
-__device__ float wrap_it_PI(float x)
-{
-    bool neg_mask = x < 0.0f;
-    bool pos_mask = !neg_mask;
-    // fmodf diverges 51% of time
-    float pos_val = fmodf(x, PI_2);
-    float neg_val = PI_2 - fmodf(-x, PI_2);
-    return neg_mask * neg_val + pos_mask * pos_val;
-}
 __device__ float wrap_it_V(float V)
 {
     float Vdim[] = {0.0, 1.0};
@@ -45,8 +36,8 @@ __device__ float wrap_it_W(float W)
 __global__ void rwongwang(
 
         // config
-        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
-        float dt, float speed, float * __restrict__ weights, float * __restrict__ lengths,
+        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_work_items,
+        float dt, float * __restrict__ weights, float * __restrict__ lengths,
         float * __restrict__ params_pwi, // pwi: per work item
         // state
         float * __restrict__ state_pwi,
@@ -56,11 +47,14 @@ __global__ void rwongwang(
 {
     // work id & size
     const unsigned int id = (gridDim.x * blockDim.x * threadIdx.y) + threadIdx.x;
-    const unsigned int size = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
+    const unsigned int size = n_work_items;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
 #define state(time, i_node) (state_pwi[((time) * 2 * n_node + (i_node))*size + id])
 #define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
+
+    // only threat those ID that have a corresponding parameters combination
+    if (id >= size) return;
 
     // unpack params
     // These are the two parameters which are usually explore in fitting in this model
@@ -114,8 +108,6 @@ __global__ void rwongwang(
     float tmp_H_I = 0.0;
 
 
-    curandState crndst;
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float V = 0.0;
     float W = 0.0;
@@ -185,9 +177,9 @@ __global__ void rwongwang(
             dV = dt * ((imintau_E* V)+(tmp_H_E*(1-V)*gamma_E));
             dW = dt * ((imintau_I* W)+(tmp_H_I*gamma_I));
 
-            // Add noise because component_type Noise is present in model
-            V += nsig * curand_normal(&crndst) + dV;
-            W += nsig * curand_normal(&crndst) + dW;
+            // No noise is added because it is not present in model
+            V += dV;
+            W += dW;
 
             // Wrap it within the limits of the model
             V = wrap_it_V(V);

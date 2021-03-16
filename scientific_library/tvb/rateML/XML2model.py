@@ -382,14 +382,18 @@ class RateML:
 
 if __name__ == "__main__":
 
+
+    # set the language for your model
     # language='python'
     language='Cuda'
 
-    model_filename = 'montbrio'
-    # model_filename = 'oscillator'
+    # choose an example or your own model
+        # model_filename = 'montbrio'
+    model_filename = 'oscillator'
     # model_filename = 'kuramoto'
     # model_filename = 'rwongwang'
     # model_filename = 'epileptor'
 
+    # start conversion to default model location
     RateML(model_filename, language)
 
