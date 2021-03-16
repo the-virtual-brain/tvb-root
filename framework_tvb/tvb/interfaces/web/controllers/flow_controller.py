@@ -37,11 +37,11 @@ given action are described here.
 
 import json
 import sys
-
 import cherrypy
 import formencode
 import numpy
 import six
+
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -52,7 +52,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
-from tvb.core.neotraits.forms import Form, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
@@ -64,7 +64,7 @@ from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
 from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
@@ -172,7 +172,8 @@ class FlowController(BaseController):
             algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
             algorithm.link = self.get_url_adapter(step_key, algorithm_id)
             adapter_instance = self.algorithm_service.prepare_adapter(algorithm)
-            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project.id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
+                                                                       project_id=project.id)
             algorithm.form = self.render_adapter_form(adapter_form)
             algorithms.append(algorithm)
 
@@ -192,9 +193,8 @@ class FlowController(BaseController):
         Having these generate a range of GID's for all the DataTypes in the group and
         launch a new operation group.
         """
-        prj_service = ProjectService()
-        dt_group = prj_service.get_datatypegroup_by_gid(group_gid)
-        datatypes = prj_service.get_datatypes_from_datatype_group(dt_group.id)
+        dt_group = self.project_service.get_datatypegroup_by_gid(group_gid)
+        datatypes = self.project_service.get_datatypes_from_datatype_group(dt_group.id)
         range_param_name = data.pop('range_param_name')
         data[RANGE_PARAMETER_1] = range_param_name
         data[range_param_name] = ','.join(dt.gid for dt in datatypes)
@@ -260,24 +260,20 @@ class FlowController(BaseController):
         index_class = getattr(sys.modules[dt_module], dt_class)()
         filters_dict = json.loads(filters)
 
-        fields = []
-        operations = []
-        values = []
-
         for idx in range(len(filters_dict['fields'])):
-            fields.append(filters_dict['fields'][idx])
-            operations.append(filters_dict['operations'][idx])
-            values.append(filters_dict['values'][idx])
+            if filters_dict['values'][idx] in ['True', 'False']:
+                filters_dict['values'][idx] = string2bool(filters_dict['values'][idx])
 
-        filter = FilterChain(fields=fields, operations=operations, values=values)
+        filter = FilterChain(fields=filters_dict['fields'], operations=filters_dict['operations'],
+                             values=filters_dict['values'])
         project = common.get_current_project()
 
-        form = Form(project_id=project.id, draw_ranges=True)
         data_type_gid_attr = DataTypeGidAttr(linked_datatype=REGISTRY.get_datatype_for_index(index_class))
         data_type_gid_attr.required = not string2bool(has_none_option)
 
-        select_field = TraitDataTypeSelectField(data_type_gid_attr, form, conditions=filter,
+        select_field = TraitDataTypeSelectField(data_type_gid_attr, conditions=filter,
                                                 has_all_option=string2bool(has_all_option))
+        self.algorithm_service.fill_selectfield_with_datatypes(select_field, project.id)
 
         return {'options': select_field.options()}
 
@@ -287,12 +283,7 @@ class FlowController(BaseController):
         adapter_instance = ABCAdapter.build_adapter(algorithm)
 
         try:
-            form = adapter_instance.get_form()(project_id=project_id)
-            if 'fill_defaults' in data:
-                form.fill_from_post_plus_defaults(data)
-            else:
-                form.fill_from_post(data)
-            view_model = None
+            form = self.algorithm_service.fill_adapter_form(adapter_instance, data, project_id)
             if form.validate():
                 try:
                     view_model = form.get_view_model()()
@@ -318,11 +309,9 @@ class FlowController(BaseController):
                     common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
                 return {}
 
-            result = self.operation_services.fire_operation(adapter_instance, common.get_logged_user(),
-                                                            project_id, view_model=view_model)
-            if isinstance(result, list):
-                result = "Launched %s operations." % len(result)
-            common.set_important_message(str(result))
+            self.operation_services.fire_operation(adapter_instance, common.get_logged_user(), project_id,
+                                                   view_model=view_model)
+            common.set_important_message("Launched an operation.")
 
         except formencode.Invalid as excep:
             errors = excep.unpack_errors()
@@ -353,7 +342,8 @@ class FlowController(BaseController):
 
             adapter_instance = self.algorithm_service.prepare_adapter(stored_adapter)
 
-            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance, project_id)
+            adapter_form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance,
+                                                                       project_id=project_id)
             vm = self.context.get_view_model_from_session()
             if vm and type(vm) == adapter_form.get_view_model():
                 adapter_form.fill_from_trait(vm)
@@ -388,8 +378,7 @@ class FlowController(BaseController):
     def _read_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
 
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + dataset_name + "/" + str(kwargs))
-        entity = load_entity_by_gid(entity_gid)
-        entity_dt = h5.load_from_index(entity)
+        entity_dt = h5.load_from_gid(entity_gid)
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
@@ -417,24 +406,26 @@ class FlowController(BaseController):
             return method(entity_gid, **kwargs)
         return method(entity_gid)
 
-    @expose_json
-    def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
+    def _read_from_h5(self, entity_gid, method_name, datatype_kwargs='null', **kwargs):
         self.logger.debug("Starting to read HDF5: " + entity_gid + "/" + method_name + "/" + str(kwargs))
-        entity = load_entity_by_gid(entity_gid)
-        entity_h5 = h5.h5_file_for_index(entity)
 
         datatype_kwargs = json.loads(datatype_kwargs)
         if datatype_kwargs:
             for key, value in six.iteritems(datatype_kwargs):
                 kwargs[key] = load_entity_by_gid(value)
 
-        result = getattr(entity_h5, method_name)
-        if kwargs:
-            result = result(**kwargs)
-        else:
-            result = result()
+        with h5.h5_file_for_gid(entity_gid) as entity_h5:
+            result = getattr(entity_h5, method_name)
+            if kwargs:
+                result = result(**kwargs)
+            else:
+                result = result()
 
-        entity_h5.close()
+        return result
+
+    @expose_json
+    def read_from_h5_file(self, entity_gid, method_name, flatten=False, datatype_kwargs='null', **kwargs):
+        result = self._read_from_h5(entity_gid, method_name, datatype_kwargs, **kwargs)
         return self._prepare_result(result, flatten)
 
     @expose_json
@@ -465,8 +456,8 @@ class FlowController(BaseController):
             return result
 
     @expose_numpy_array
-    def read_binary_datatype_attribute(self, entity_gid, dataset_name, datatype_kwargs='null', **kwargs):
-        return self._read_datatype_attribute(entity_gid, dataset_name, datatype_kwargs, **kwargs)
+    def read_binary_datatype_attribute(self, entity_gid, method_name, datatype_kwargs='null', **kwargs):
+        return self._read_from_h5(entity_gid, method_name, datatype_kwargs, **kwargs)
 
     @expose_fragment("flow/genericAdapterFormFields")
     def get_simple_adapter_interface(self, algorithm_id, parent_div='', is_uploader=False):
@@ -653,7 +644,7 @@ class FlowController(BaseController):
         range_list = [float(num) for num in val_range.split(",")]
         step_list = [float(num) for num in step.split(",")]
 
-        datatype_group_ob = ProjectService().get_datatypegroup_by_gid(dt_group_guid)
+        datatype_group_ob = self.project_service.get_datatypegroup_by_gid(dt_group_guid)
         operation_grp = datatype_group_ob.parent_operation_group
         operation_obj = OperationService.load_operation(datatype_group_ob.fk_from_operation)
         parameters = {}
@@ -675,6 +666,6 @@ class FlowController(BaseController):
 
         OperationService().group_operation_launch(common.get_logged_user().id, common.get_current_project(),
                                                   operation_obj.algorithm.id, operation_obj.algorithm.fk_category,
-                                                  datatype_group_ob, **parameters)
+                                                  **parameters)
 
         return [True, 'Stored the exploration material successfully']

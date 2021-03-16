@@ -37,6 +37,7 @@ import json
 import math
 import numpy
 from copy import copy
+
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.neotraits.api import Attr
@@ -46,7 +47,6 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -111,32 +111,24 @@ class ConnectivityViewerModel(ViewModel):
 
 class ConnectivityViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityViewerForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(ConnectivityViewerForm, self).__init__()
 
-        # filters_ui = [UIFilter(linked_elem_name="colors",
-        #                        linked_elem_field=FilterChain.datatype + "._connectivity"),
-        #               UIFilter(linked_elem_name="rays",
-        #                        linked_elem_field=FilterChain.datatype + "._connectivity")]
-        # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
-        # KWARG_FILTERS_UI: json_ui_filter
-
-        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, self, name='input_data',
+        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, name='input_data',
                                                      conditions=self.get_filters())
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
-        self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, self, name='surface_data',
+        self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, name='surface_data',
                                                      conditions=surface_conditions)
 
-        self.step = FloatField(ConnectivityViewerModel.step, self, name='step')
+        self.step = FloatField(ConnectivityViewerModel.step, name='step')
 
         colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, self, name='colors',
+        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
                                                conditions=colors_conditions)
 
         rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, self, name='rays',
-                                             conditions=rays_conditions)
+        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions)
 
     @staticmethod
     def get_view_model():
@@ -203,9 +195,8 @@ class ConnectivityViewer(ABCSpaceDisplayer):
 
         global_params, global_pages = self._compute_connectivity_global_params(connectivity)
         if view_model.surface_data is not None:
-            surface_index = load_entity_by_gid(view_model.surface_data.hex)
-            surface_h5 = h5.h5_file_for_index(surface_index)
-            url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
+            with h5.h5_file_for_gid(view_model.surface_data) as surface_h5:
+                url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
         else:
             url_vertices, url_normals, url_triangles = [], [], []
 

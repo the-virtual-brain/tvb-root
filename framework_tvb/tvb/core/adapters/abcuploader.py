@@ -56,16 +56,15 @@ DECRYPTED_DATA_SUFFIX = '_decrypted'
 
 class ABCUploaderForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ABCUploaderForm, self).__init__(prefix, project_id)
-        self.subject_field = StrField(UploaderViewModel.data_subject, self, name='Data_Subject')
+    def __init__(self):
+        super(ABCUploaderForm, self).__init__()
+        self.subject_field = StrField(UploaderViewModel.data_subject, name='Data_Subject')
         # Show Encryption field only when the current TVB installation is capable of decryption
         supports_encrypted_files = (TvbProfile.current.UPLOAD_KEY_PATH is not None
                                     and os.path.exists(TvbProfile.current.UPLOAD_KEY_PATH))
         if supports_encrypted_files:
-            self.encrypted_aes_key = TraitUploadField(UploaderViewModel.encrypted_aes_key, '.pem', self,
-                                                      name='encrypted_aes_key')
-        self.temporary_files = []
+            self.encrypted_aes_key = TraitUploadField(UploaderViewModel.encrypted_aes_key, '.pem',
+                                                      'encrypted_aes_key')
 
     @staticmethod
     def get_required_datatype():
@@ -79,6 +78,11 @@ class ABCUploaderForm(ABCAdapterForm):
     def get_input_name():
         return None
 
+    def get_upload_field_names(self):
+        for field in self.trait_fields:
+            if isinstance(field, TraitUploadField):
+                yield field.trait_attribute.field_name
+
 
 class ABCUploader(ABCAdapter, metaclass=ABCMeta):
     """
@@ -87,7 +91,7 @@ class ABCUploader(ABCAdapter, metaclass=ABCMeta):
     LOGGER = get_logger(__name__)
     launch_mode = AdapterLaunchModeEnum.SYNC_DIFF_MEM
 
-    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+    def _prelaunch(self, operation, view_model, available_disk_space=0):
         """
         Before going with the usual prelaunch, get from input parameters the 'subject'.
         """
@@ -98,7 +102,7 @@ class ABCUploader(ABCAdapter, metaclass=ABCMeta):
             for upload_field_name in trait_upload_field_names:
                 self._decrypt_content(view_model, upload_field_name)
 
-        return ABCAdapter._prelaunch(self, operation, view_model, uid, available_disk_space)
+        return ABCAdapter._prelaunch(self, operation, view_model, available_disk_space)
 
     @staticmethod
     def get_path_to_encrypt(input_path):

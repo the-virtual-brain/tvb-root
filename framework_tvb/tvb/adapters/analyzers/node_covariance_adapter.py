@@ -35,14 +35,12 @@ Adapter that uses the traits module to generate interfaces for FFT Analyzer.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-import json
 import uuid
 
 import numpy
 from tvb.adapters.datatypes.db.graph import CovarianceIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
-from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
@@ -53,18 +51,7 @@ from tvb.datatypes.graph import Covariance
 from tvb.datatypes.time_series import TimeSeries
 
 
-class NodeCovariance(HasTraits):
-    """
-    Model class defining the traited attributes used by the NodeCovarianceAdapter.
-    """
-    time_series = Attr(
-        field_type=TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The timeseries to which the NodeCovariance is to be applied.""")
-
-
-class NodeCovarianceAdapterModel(ViewModel, NodeCovariance):
+class NodeCovarianceAdapterModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
@@ -74,10 +61,9 @@ class NodeCovarianceAdapterModel(ViewModel, NodeCovariance):
 
 
 class NodeCovarianceAdapterForm(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(NodeCovarianceAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(NodeCovarianceAdapterModel.time_series, self,
-                                                    name=self.get_input_name(),
+    def __init__(self):
+        super(NodeCovarianceAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(NodeCovarianceAdapterModel.time_series, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
@@ -142,44 +128,36 @@ class NodeCovarianceAdapter(ABCAdapter):
         # type: (NodeCovarianceAdapterModel) -> [CovarianceIndex]
         """ 
         Launch algorithm and build results.
-
-        :returns: the `CovarianceIndex` built with the given time_series index as source
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the `CovarianceIndex` built with the given time_series index as source
         """
-        # Create an index for the computed covariance.
+        # -------------------- Prepare result entities ---------------------##
         covariance_index = CovarianceIndex()
         covariance_h5_path = h5.path_for(self.storage_path, CovarianceH5, covariance_index.gid)
         covariance_h5 = CovarianceH5(covariance_h5_path)
 
-        # NOTE: Assumes 4D, Simulator timeSeries.
+        # ------------ NOTE: Assumes 4D, Simulator timeSeries -------------##
         node_slice = [slice(self.input_shape[0]), None, slice(self.input_shape[2]), None]
+        ts_h5 = h5.h5_file_for_index(self.input_time_series_index)
 
-        with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
-            for mode in range(self.input_shape[3]):
-                for var in range(self.input_shape[1]):
-                    small_ts = TimeSeries()
-                    node_slice[1] = slice(var, var + 1)
-                    node_slice[3] = slice(mode, mode + 1)
-                    small_ts.data = ts_h5.read_data_slice(tuple(node_slice))
-                    partial_cov = self._compute_node_covariance(small_ts, ts_h5)
-                    covariance_h5.write_data_slice(partial_cov.array_data)
-            array_metadata = covariance_h5.array_data.get_cached_metadata()
+        for mode in range(self.input_shape[3]):
+            for var in range(self.input_shape[1]):
+                small_ts = TimeSeries()
+                node_slice[1] = slice(var, var + 1)
+                node_slice[3] = slice(mode, mode + 1)
+                small_ts.data = ts_h5.read_data_slice(tuple(node_slice))
+                partial_cov = self._compute_node_covariance(small_ts, ts_h5)
+                covariance_h5.write_data_slice(partial_cov.array_data)
 
-        covariance_index.fk_source_gid = self.input_time_series_index.gid
-        covariance_index.subtype = type(covariance_index).__name__
-        covariance_index.array_has_complex = array_metadata.has_complex
+        ts_h5.close()
 
-        if not covariance_index.array_has_complex:
-            covariance_index.array_data_min = float(array_metadata.min)
-            covariance_index.array_data_max = float(array_metadata.max)
-            covariance_index.array_data_mean = float(array_metadata.mean)
+        partial_cov.source.gid = view_model.time_series
+        partial_cov.gid = uuid.UUID(covariance_index.gid)
 
-        covariance_index.array_is_finite = array_metadata.is_finite
-        covariance_index.shape = json.dumps(covariance_h5.array_data.shape)
-        covariance_index.ndim = len(covariance_h5.array_data.shape)
-        # TODO write this part better, by moving into the Model fill_from...
+        covariance_index.fill_from_has_traits(partial_cov)
+        self.fill_index_from_h5(covariance_index, covariance_h5)
 
-        covariance_h5.gid.store(uuid.UUID(covariance_index.gid))
-        covariance_h5.source.store(view_model.time_series)
+        covariance_h5.store(partial_cov, scalars_only=True)
         covariance_h5.close()
         return covariance_index
 

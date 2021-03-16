@@ -55,9 +55,9 @@ class PearsonCorrelationCoefficientVisualizerModel(ViewModel):
 
 class PearsonCorrelationCoefficientVisualizerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(PearsonCorrelationCoefficientVisualizerForm, self).__init__(prefix, project_id)
-        self.datatype = TraitDataTypeSelectField(PearsonCorrelationCoefficientVisualizerModel.datatype, self,
+    def __init__(self):
+        super(PearsonCorrelationCoefficientVisualizerForm, self).__init__()
+        self.datatype = TraitDataTypeSelectField(PearsonCorrelationCoefficientVisualizerModel.datatype,
                                                  name='datatype', conditions=self.get_filters())
 
     @staticmethod
@@ -90,7 +90,7 @@ class PearsonCorrelationCoefficientVisualizer(ABCMappedArraySVGVisualizer):
 
     def launch(self, view_model):
         """Construct data for visualization and launch it."""
-        cc_gid = view_model.datatype.hex
+        cc_gid = view_model.datatype
         cc_index = self.load_entity_by_gid(cc_gid)
         assert isinstance(cc_index, CorrelationCoefficientsIndex)
         matrix_shape = cc_index.parsed_shape[0:2]

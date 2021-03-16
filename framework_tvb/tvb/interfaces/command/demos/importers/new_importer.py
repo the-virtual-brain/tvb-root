@@ -53,9 +53,9 @@ class FooDataImporterModel(UploaderViewModel):
 
 class FooDataImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(FooDataImporterForm, self).__init__(prefix, project_id)
-        self.array_data = TraitUploadField(FooDataImporterModel.array_data, '.npy', self, name='array_data')
+    def __init__(self):
+        super(FooDataImporterForm, self).__init__()
+        self.array_data = TraitUploadField(FooDataImporterModel.array_data, '.npy', 'array_data')
 
     @staticmethod
     def get_view_model():

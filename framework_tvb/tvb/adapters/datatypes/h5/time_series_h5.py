@@ -319,7 +319,7 @@ class TimeSeriesVolumeH5(TimeSeriesH5):
 
         return [slicex, slicey, slicez]
 
-    def get_voxel_time_series(self, x, y, z, **kwargs):
+    def get_voxel_time_series(self, x_plane, y_plane, z_plane, **kwargs):
         """
         Retrieve for a given voxel (x,y,z) the entire timeline.
 
@@ -332,7 +332,8 @@ class TimeSeriesVolumeH5(TimeSeriesH5):
         """
 
         overall_shape = self.data.shape
-        x, y, z = preprocess_space_parameters(x, y, z, overall_shape[1], overall_shape[2], overall_shape[3])
+        x, y, z = preprocess_space_parameters(x_plane, y_plane, z_plane, overall_shape[1], overall_shape[2],
+                                              overall_shape[3])
 
         slices = prepare_time_slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
 

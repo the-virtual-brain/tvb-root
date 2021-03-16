@@ -33,13 +33,13 @@
 """
 
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.basic.neotraits.api import Attr
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
-from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -67,13 +67,12 @@ class ConnectivityMeasureImporterModel(UploaderViewModel):
 
 class ConnectivityMeasureImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityMeasureImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(ConnectivityMeasureImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', self, name='data_file')
-        self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, self, name='dataset_name')
-        self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, self,
-                                                     name='connectivity')
+        self.data_file = TraitUploadField(ConnectivityMeasureImporterModel.data_file, '.mat', 'data_file')
+        self.dataset_name = StrField(ConnectivityMeasureImporterModel.dataset_name, 'dataset_name')
+        self.connectivity = TraitDataTypeSelectField(ConnectivityMeasureImporterModel.connectivity, name='connectivity')
 
     @staticmethod
     def get_view_model():

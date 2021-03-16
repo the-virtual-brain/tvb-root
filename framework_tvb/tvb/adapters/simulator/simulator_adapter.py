@@ -65,17 +65,17 @@ from tvb.simulator.simulator import Simulator
 
 class SimulatorAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorAdapterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(SimulatorAdapterForm, self).__init__()
         self.coupling_choices = get_ui_name_to_coupling_dict()
         default_coupling = list(self.coupling_choices.values())[0]
 
-        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, self,
-                                                     name=self.get_input_name(), conditions=self.get_filters())
+        self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, name=self.get_input_name(),
+                                                     conditions=self.get_filters())
         self.coupling = SelectField(
-            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), self,
-            name='coupling', choices=self.coupling_choices)
-        self.conduction_speed = FloatField(Simulator.conduction_speed, self)
+            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), name='coupling',
+            choices=self.coupling_choices)
+        self.conduction_speed = FloatField(Simulator.conduction_speed)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
 
@@ -109,9 +109,6 @@ class SimulatorAdapterForm(ABCAdapterForm):
     def get_required_datatype():
         return ConnectivityIndex
 
-    def get_traited_datatype(self):
-        return Simulator()
-
     def __str__(self):
         pass
 
@@ -138,9 +135,9 @@ class SimulatorAdapter(ABCAdapter):
 
     def get_adapter_fragments(self, view_model):
         # type (SimulatorAdapterModel) -> dict
-        forms = {None: [SimulatorSurfaceFragment, SimulatorRMFragment, SimulatorStimulusFragment,
+        forms = {None: [SimulatorStimulusFragment,
                         SimulatorModelFragment, SimulatorIntegratorFragment, SimulatorMonitorFragment,
-                        SimulatorFinalFragment]}
+                        SimulatorFinalFragment], "surface": [SimulatorSurfaceFragment, SimulatorRMFragment]}
 
         current_model_class = type(view_model.model)
         all_model_forms = get_model_to_form_dict()

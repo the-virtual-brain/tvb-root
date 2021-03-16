@@ -68,7 +68,7 @@ class BalloonModel(HasTraits):
     object of TVB and returning another TimeSeries object.
 
     The haemodynamic model parameters based on constants for a 1.5 T scanner.
-        
+
     """
 
     # NOTE: a potential problem when the input is a TimeSeriesSurface.

@@ -8,14 +8,14 @@ RUN conda install python=3.7 nomkl numba scipy numpy networkx scikit-learn cytho
 
 RUN apt-get install -y zip
 RUN cd /opt \
- && wget -q https://zenodo.org/record/3688773/files/tvb-data.zip?download=1 -O tvb_data.zip \
+ && wget -q https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip \
  && mkdir tvb_data \
  && unzip tvb_data.zip -d tvb_data \
  && rm tvb_data.zip \
  && cd tvb_data \
  && python3 setup.py develop
 
-RUN pip install h5py>=2.10 tvb-gdist pytest-xdist
+RUN pip install h5py>=2.10 tvb-gdist pytest-xdist sqlalchemy
 
 RUN pip install mako
 

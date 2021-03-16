@@ -1,5 +1,4 @@
 from tvb.simulator.models.base import Model, ModelNumbaDfun
-import numexpr
 import numpy
 from numpy import *
 from numba import guvectorize, float64

@@ -34,12 +34,13 @@
 
 import os
 import random
+import shutil
 import string
 import uuid
+
 import pyAesCrypt
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-
 
 LOGGER = get_logger(__name__)
 
@@ -69,6 +70,14 @@ class EncryptionHandler(object):
             if not os.path.isdir(dirr):
                 os.makedirs(dirr)
 
+    def cleanup(self):
+        for path in [self.get_encrypted_dir(), self.get_password_file()]:
+            if os.path.exists(path):
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
+
     @staticmethod
     def generate_random_password(pass_size):
         chars = string.ascii_letters + string.digits
@@ -82,7 +91,7 @@ class EncryptionHandler(object):
         password = self.generate_random_password(self.pass_size)
         with open(password_file, 'w') as fd:
             fd.write(password)
-        os.chmod(password_file, 0o440)
+        os.chmod(password_file, TvbProfile.current.ACCESS_MODE_TVB_FILES)
         return password_file
 
     @staticmethod

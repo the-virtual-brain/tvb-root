@@ -39,7 +39,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter, ABCAdapterForm
 from tvb.core.entities.model.model_project import User
 from tvb.core.neotraits.forms import ArrayField
 from tvb.interfaces.web.controllers.decorators import using_template
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorFragmentRenderingRules, SimulatorWizzardURLs
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorFragmentRenderingRules, SimulatorWizzardURLs
 from tvb.simulator.models import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase
@@ -56,7 +56,7 @@ class TraitAdapterForm(ABCAdapterForm):
 
     def __init__(self):
         super(TraitAdapterForm, self).__init__()
-        self.test_array = ArrayField(TestTrait.test_array, self, name='test_array')
+        self.test_array = ArrayField(TestTrait.test_array, name='test_array')
 
 
 class TraitAdapter(ABCAdapter):
@@ -123,9 +123,9 @@ class TestJinja2Simulator(Jinja2Test):
         return template_dict
 
     def prepare_simulator_form_for_search(self, mocker, rendering_rules, form=None):
-        # type: (SimulatorFragmentRenderingRules, ABCAdapterForm) -> BeautifulSoup
+        # type: (MockerFixture, SimulatorFragmentRenderingRules, ABCAdapterForm) -> BeautifulSoup
         if form is None:
-            form = SimulatorAdapterForm(project_id=1)
+            form = SimulatorAdapterForm()
             form.fill_from_trait(Simulator())
         rendering_rules.form = form
 

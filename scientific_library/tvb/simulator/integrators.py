@@ -46,6 +46,7 @@ will be consistent with Monitor periods corresponding to any of [4096, 2048, 102
 """
 import abc
 import functools
+import numpy
 import scipy.integrate
 from . import noise
 from .common import get_logger, simple_gen_astr
@@ -97,13 +98,18 @@ class Integrator(HasTraits):
 
     clamped_state_variable_indices = NArray(
         dtype=int,
-        label="indices of the state variables to be clamped by the integrators to the values in the clamped_values array",
+        label="indices of the state variables to be clamped by the integrators "
+              "to the values in the clamped_values array",
         required=False)
 
     clamped_state_variable_values = NArray(
         label="The values of the state variables which are clamped ",
         required=False)
 
+    _bounded_integration_state_variable_indices = None
+    _integration_state_variable_boundaries = None
+    _clamped_integration_state_variable_indices = None
+    _clamped_integration_state_variable_values = None
 
     @abc.abstractmethod
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
@@ -114,17 +120,125 @@ class Integrator(HasTraits):
 
         """
 
-    def bound_state(self, X):
-        for sv_ind, sv_bounds in \
-                zip(self.bounded_state_variable_indices,
-                    self.state_variable_boundaries):
+    def set_random_state(self, random_state):
+        self.log.warn("random_state supplied for non-stochastic integration")
+
+    def configure(self):
+        # Set default configurations:
+        self._clamped_integration_state_variable_indices = self.clamped_state_variable_indices
+        self._clamped_integration_state_variable_values = self.clamped_state_variable_values
+        self._bounded_integration_state_variable_indices = self.bounded_state_variable_indices
+        self._integration_state_variable_boundaries = self.state_variable_boundaries
+        super(Integrator, self).configure()
+
+    def configure_boundaries(self, model):
+        if model.state_variable_boundaries is not None:
+            indices = []
+            boundaries = []
+            for sv, sv_bounds in model.state_variable_boundaries.items():
+                indices.append(model.state_variables.index(sv))
+                boundaries.append(sv_bounds)
+            sort_inds = numpy.argsort(indices)
+            self.bounded_state_variable_indices = numpy.array(indices)[sort_inds]
+            self.state_variable_boundaries = numpy.array(boundaries).astype("float64")[sort_inds]
+            self._bounded_integration_state_variable_indices = numpy.copy(self.bounded_state_variable_indices)
+            self._integration_state_variable_boundaries = numpy.copy(self.state_variable_boundaries)
+
+    def reconfigure_boundaries_and_clamping_for_integration_state_variables(self, model):
+        integration_state_variable_indices = numpy.where(model.state_variable_mask)[0].tolist()
+        if self.state_variable_boundaries is not None:
+            # If there are any state_variable_boundaries...
+            bounded_integration_state_variable_indices = []
+            integration_state_variable_boundaries = []
+            # ...for each one of the bounded state variable indices and boundary values...
+            for bound_sv_ind, bounds in zip(self._bounded_integration_state_variable_indices,
+                                            self.state_variable_boundaries):
+                # ...if the boundary indice corresponds to an integrated state variable...
+                if bound_sv_ind in integration_state_variable_indices:
+                    # ...add its integration state vector indice...
+                    bounded_integration_state_variable_indices.append(
+                        integration_state_variable_indices.index(bound_sv_ind))
+                    # ...and the corresponding boundaries
+                    integration_state_variable_boundaries.append(bounds)
+            self._bounded_integration_state_variable_indices = \
+                numpy.array(bounded_integration_state_variable_indices)
+            self._integration_state_variable_boundaries = \
+                numpy.array(integration_state_variable_boundaries)
+        if self.clamped_state_variable_values is not None:
+            # If there are any clamped values...
+            clamped_integration_state_variable_indices = []
+            clamped_integration_state_variable_values = []
+            # ...for each one of the clamped state variable indices and clamped values...
+            for clamp_sv_ind, clampval in zip(self.clamped_state_variable_indices,
+                                              self.clamped_state_variable_values):
+                # ...if the clamped indice corresponds to an integrated state variable...
+                if clamp_sv_ind in integration_state_variable_indices:
+                    # ...add its integration state vector indice...
+                    clamped_integration_state_variable_indices.append(
+                        integration_state_variable_indices.index(clamp_sv_ind))
+                    # ...and the corresponding clamped value
+                    clamped_integration_state_variable_values.append(clampval)
+            self._clamped_integration_state_variable_indices = \
+                numpy.array(clamped_integration_state_variable_indices)
+            self._clamped_integration_state_variable_values = \
+                numpy.array(clamped_integration_state_variable_values)
+
+    def _bound_state(self, X, indices, boundaries):
+        for sv_ind, sv_bounds in zip(indices, boundaries):
             if sv_bounds[0] is not None:
                 X[sv_ind][X[sv_ind] < sv_bounds[0]] = sv_bounds[0]
             if sv_bounds[1] is not None:
                 X[sv_ind][X[sv_ind] > sv_bounds[1]] = sv_bounds[1]
 
+    def bound_state(self, X):
+        self._bound_state(X, self.bounded_state_variable_indices, self.state_variable_boundaries)
+
+    def bound_integration_state(self, X):
+        self._bound_state(X, self._bounded_integration_state_variable_indices,
+                          self._integration_state_variable_boundaries)
+
     def clamp_state(self, X):
         X[self.clamped_state_variable_indices] = self.clamped_state_variable_values
+
+    def clamp_integration_state(self, X):
+        X[self._clamped_integration_state_variable_indices] = self._clamped_integration_state_variable_values
+
+    def bound_and_clamp(self, state):
+        # If there is a state boundary...
+        if self.state_variable_boundaries is not None:
+            # ...use the integrator's bound_state
+            self.bound_state(state)
+        # If there is a state clamping...
+        if self.clamped_state_variable_values is not None:
+            # ...use the integrator's clamp_state
+            self.clamp_state(state)
+
+    def integration_bound_and_clamp(self, state):
+        # If there is a state boundary...
+        if self._integration_state_variable_boundaries is not None:
+            # ...use the integrator's bound_state
+            self.bound_integration_state(state)
+        # If there is a state clamping...
+        if self._clamped_integration_state_variable_values is not None:
+            # ...use the integrator's clamp_state
+            self.clamp_integration_state(state)
+
+    def integrate_with_update(self, X, model, coupling, local_coupling, stimulus):
+        temp = model.update_state_variables_before_integration(X, coupling, local_coupling, stimulus)
+        if temp is not None:
+            X = temp
+            self.bound_and_clamp(X)
+        X = self.integrate(X, model, coupling, local_coupling, stimulus)
+        temp = model.update_state_variables_after_integration(X)
+        if temp is not None:
+            X = temp
+            self.bound_and_clamp(X)
+        return X
+
+    def integrate(self, X, model, coupling, local_coupling, stimulus):
+        X[model.state_variable_mask] = self.scheme(X[model.state_variable_mask],
+                                                   model.dfun, coupling, local_coupling, stimulus)
+        return X
 
     def __str__(self):
         return simple_gen_astr(self, 'dt')
@@ -164,6 +278,12 @@ class IntegratorStochastic(Integrator):
         doc = """The stochastic integrator's noise source. It incorporates its
         own instance of Numpy's RandomState.""")  # type: noise.Noise
 
+    def set_random_state(self, random_state):
+        if random_state is not None:
+            self.noise.random_stream.set_state(random_state)
+            msg = "random_state supplied with seed %s"
+            self.log.info(msg, self.noise.random_stream.get_state()[1][0])
+
     def __str__(self):
         return simple_gen_astr(self, 'dt noise')
 
@@ -193,18 +313,13 @@ class HeunDeterministic(Integrator):
         #import pdb; pdb.set_trace()
         m_dx_tn = dfun(X, coupling, local_coupling)
         inter = X + self.dt * (m_dx_tn + stimulus)
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter)
+        self.integration_bound_and_clamp(inter)
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
         X_next = X + dX + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+        self.integration_bound_and_clamp(X_next)
+
         return X_next
 
 
@@ -242,18 +357,12 @@ class HeunStochastic(IntegratorStochastic):
         noise *= noise_gfun
 
         inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter)
+        self.integration_bound_and_clamp(inter)
 
         dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
 
         X_next = X + dX + noise + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+        self.integration_bound_and_clamp(X_next)
 
         return X_next
 
@@ -282,10 +391,8 @@ class EulerDeterministic(Integrator):
         self.dX = dfun(X, coupling, local_coupling) 
 
         X_next = X + self.dt * (self.dX + stimulus)
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+        self.integration_bound_and_clamp(X_next)
+
         return X_next
 
 
@@ -319,10 +426,8 @@ class EulerStochastic(IntegratorStochastic):
         dX = dfun(X, coupling, local_coupling) * self.dt 
         noise_gfun = self.noise.gfun(X)
         X_next = X + dX + noise_gfun * noise + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+        self.integration_bound_and_clamp(X_next)
+
         return X_next
 
 
@@ -360,31 +465,23 @@ class RungeKutta4thOrderDeterministic(Integrator):
 
         k1 = dfun(X, coupling, local_coupling)
         inter_k1 = X + dt2 * k1
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter_k1)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter_k1)
+        self.integration_bound_and_clamp(inter_k1)
+
         k2 = dfun(inter_k1, coupling, local_coupling)
         inter_k2 = X + dt2 * k2
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter_k2)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter_k2)
+        self.integration_bound_and_clamp(inter_k2)
+
         k3 = dfun(inter_k2, coupling, local_coupling)
         inter_k3 = X + dt * k3
-        if self.state_variable_boundaries is not None:
-            self.bound_state(inter_k3)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(inter_k3)
+        self.integration_bound_and_clamp(inter_k3)
+
         k4 = dfun(inter_k3, coupling, local_coupling)
 
         dX = dt6 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
         X_next = X + dX + self.dt * stimulus
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+        self.integration_bound_and_clamp(X_next)
+
         return X_next
 
 
@@ -451,10 +548,7 @@ class SciPyODE(SciPyODEBase):
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+        self.integration_bound_and_clamp(X_next)
         return X_next
 
 class SciPySDE(SciPyODEBase):
@@ -462,10 +556,7 @@ class SciPySDE(SciPyODEBase):
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
         X_next += self.noise.gfun(X) * self.noise.generate(X.shape)
-        if self.state_variable_boundaries is not None:
-            self.bound_state(X_next)
-        if self.clamped_state_variable_values is not None:
-            self.clamp_state(X_next)
+        self.integration_bound_and_clamp(X_next)
         return X_next
 
 

@@ -40,8 +40,8 @@ import json
 import os
 import sys
 import uuid
-
 import numpy
+
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -427,8 +427,8 @@ def _migrate_noise(operation_xml_parameters, integrator, integrator_name, noise_
 
 
 def _migrate_common_root_metadata_time_series(metadata, root_metadata, storage_manager):
-    root_metadata.pop(FIELD_SURFACE_MAPPING)
-    root_metadata.pop(FIELD_VOLUME_MAPPING)
+    root_metadata.pop(FIELD_SURFACE_MAPPING, False)
+    root_metadata.pop(FIELD_VOLUME_MAPPING, False)
     _pop_lengths(root_metadata)
 
     root_metadata['sample_period'] = float(root_metadata['sample_period'])
@@ -455,7 +455,7 @@ def _migrate_time_series(operation_xml_parameters):
     operation_xml_parameters['coupling'] = coupling
 
     model_name = operation_xml_parameters['model']
-    model = getattr(sys.modules['tvb.simulator.models'], model_name)()
+    model = getattr(sys.modules['tvb.simulator.models'], model_name[0].upper() + model_name[1:])()
     operation_xml_parameters['model'] = model
 
     integrator_name = operation_xml_parameters['integrator']
@@ -578,8 +578,11 @@ def _migrate_time_series_surface(**kwargs):
         cortical_surface.surface_gid = uuid.UUID(surface_gid)
         cortical_surface.region_mapping_data = uuid.UUID(
             operation_xml_parameters['surface_parameters_region_mapping_data'])
-        cortical_surface.local_connectivity = uuid.UUID(
-            operation_xml_parameters['surface_parameters_local_connectivity'])
+
+        if len(operation_xml_parameters['surface_parameters_local_connectivity']) > 0:
+            cortical_surface.local_connectivity = uuid.UUID(
+                operation_xml_parameters['surface_parameters_local_connectivity'])
+
         cortical_surface.coupling_strength = numpy.asarray(
             eval(operation_xml_parameters['surface_parameters_coupling_strength'].replace(' ', ', ')))
         operation_xml_parameters['surface'] = cortical_surface
@@ -940,6 +943,13 @@ def _migrate_simulation_state(**kwargs):
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
+def _migrate_tracts(**kwargs):
+    root_metadata = kwargs['root_metadata']
+    root_metadata['region_volume_map'] = _parse_gid(root_metadata['region_volume_map'])
+    _migrate_dataset_metadata(['tract_region', 'tract_start_idx', 'vertices'], kwargs['storage_manager'])
+    return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
+
+
 def _migrate_dataset_metadata(dataset_list, storage_manager):
     for dataset in dataset_list:
         metadata = DataSetMetaData.from_array(storage_manager.get_data(dataset)).to_dict()
@@ -990,6 +1000,7 @@ def _migrate_datatype_group(operation_group, burst_gid, generic_attributes):
     dao.store_entity(stored_datatype_group)
 
 
+
 datatypes_to_be_migrated = {
     'Connectivity': _migrate_connectivity,
     'BrainSkull': _migrate_surface,
@@ -1033,7 +1044,8 @@ datatypes_to_be_migrated = {
     'StimuliRegion': _migrate_stimuli_region,
     'StimuliSurface': _migrate_stimuli_surface,
     'ValueWrapper': _migrate_value_wrapper,
-    'SimulationState': _migrate_simulation_state
+    'SimulationState': _migrate_simulation_state,
+    'Tracts': _migrate_tracts
 }
 
 
@@ -1214,7 +1226,7 @@ def update(input_file, burst_match_dict):
             if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname\
                     and time_series_gid is None:
                 burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
-                                                                  TvbProfile.current.db.SELECTED_DB, DATE_FORMAT_V4_DB)
+                                                                  DATE_FORMAT_V4_DB, TvbProfile.current.db.SELECTED_DB)
                 if burst_config:
                     root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
                     burst_config.simulator_gid = vm.gid.hex

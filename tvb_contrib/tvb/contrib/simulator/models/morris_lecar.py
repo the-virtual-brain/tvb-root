@@ -180,12 +180,11 @@ class MorrisLecar(models.Model):
         as keywords will overide their traited default.
         
         """
-        LOG.info('%s: initing...' % str(self))
         super(MorrisLecar, self).__init__(**kwargs)
+        LOG.info('%s: initing...' % str(self))
 
         self._state_variables = ["V", "N"]
         self._nvar = 2
-
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
         LOG.debug('%s: inited.' % repr(self))

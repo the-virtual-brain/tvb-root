@@ -34,20 +34,20 @@
 
 import copy
 import json
-import os
 import shutil
 import uuid
 import numpy
-from tvb.adapters.simulator.monitor_forms import MonitorForm
+
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities import load
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import DirLoader
+from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
-from tvb.core.services.import_service import ImportService
+from tvb.core.services.exceptions import BurstServiceException
 from tvb.core.services.operation_service import OperationService
 from tvb.simulator.integrators import IntegratorStochastic
 
@@ -57,11 +57,13 @@ class SimulatorService(object):
         self.logger = get_logger(self.__class__.__module__)
         self.burst_service = BurstService()
         self.operation_service = OperationService()
+        self.algorithm_service = AlgorithmService()
         self.files_helper = FilesHelper()
 
-    def _reset_model(self, session_stored_simulator):
+    @staticmethod
+    def _reset_model(session_stored_simulator):
         session_stored_simulator.model = type(session_stored_simulator.model)()
-        vi_indexes = MonitorForm.determine_indexes_for_chosen_vars_of_interest(session_stored_simulator)
+        vi_indexes = session_stored_simulator.determine_indexes_for_chosen_vars_of_interest()
         vi_indexes = numpy.array(list(vi_indexes.values()))
         for monitor in session_stored_simulator.monitors:
             monitor.variables_of_interest = vi_indexes
@@ -82,7 +84,8 @@ class SimulatorService(object):
         parameters because they might not fit to the new Surface's nr of vertices.
         """
         if is_simulator_copy and (session_stored_simulator.surface is None and form.surface.value
-                                  or session_stored_simulator.surface and form.surface.value != session_stored_simulator.surface.surface_gid):
+                                  or session_stored_simulator.surface and
+                                  form.surface.value != session_stored_simulator.surface.surface_gid):
             self._reset_model(session_stored_simulator)
 
     @staticmethod
@@ -93,17 +96,12 @@ class SimulatorService(object):
             current_attr = getattr(current_attr, param_name)
         setattr(current_attr, range_param_name_list[-1], range_parameter_value)
 
-    def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo,
-                                            session_stored_simulator):
+    def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo, simulator):
         try:
-            operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
-                                                                 session_stored_simulator.gid)
-            ga = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
-                                                          None, burst_config.gid)
-            session_stored_simulator.generic_attributes = ga
-            self.operation_service.store_view_model(operation, project, session_stored_simulator)
-            burst_config = self.burst_service.update_simulation_fields(burst_config.id, operation.id,
-                                                                       session_stored_simulator.gid)
+            operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                 view_model=simulator, burst_gid=burst_config.gid,
+                                                                 op_group_id=burst_config.fk_operation_group)
+            burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id, simulator.gid)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
 
@@ -127,24 +125,19 @@ class SimulatorService(object):
 
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
         simulator_vm = h5.load_view_model_from_file(simulator_file)
-        operation = self.operation_service.prepare_operation(user_id, project.id, algorithm, simulator_vm.gid)
-        storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
-        self.async_launch_simulation_on_server(operation, zip_folder_path, storage_operation_path)
+        operation = self.operation_service.prepare_operation(user_id, project, algorithm, view_model=simulator_vm)
+        self.async_launch_simulation_on_server(operation, zip_folder_path)
 
         return operation
 
-    def async_launch_simulation_on_server(self, operation, zip_folder_path, storage_operation_path):
+    def async_launch_simulation_on_server(self, operation, zip_folder_path):
         try:
-            for file in os.listdir(zip_folder_path):
-                shutil.move(os.path.join(zip_folder_path, file), storage_operation_path)
-            try:
-                OperationService().launch_operation(operation.id, True)
-                shutil.rmtree(zip_folder_path)
-                return operation
-            except Exception as excep:
-                self.logger.error(excep)
+            OperationService().launch_operation(operation.id, True)
+            return operation
         except Exception as excep:
             self.logger.error(excep)
+        finally:
+            shutil.rmtree(zip_folder_path)
 
     @staticmethod
     def _set_range_param_in_dict(param_value):
@@ -167,10 +160,6 @@ class SimulatorService(object):
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
 
-            ga = self.operation_service._prepare_metadata(simulator_algo.algorithm_category, {},
-                                                          operation_group, burst_config.gid)
-            session_stored_simulator.generic_attributes = ga
-
             for param1_value in range_param1.get_range_values():
                 for param2_value in range_param2_values:
                     # Copy, but generate a new GUID for every Simulator in PSE
@@ -186,18 +175,18 @@ class SimulatorService(object):
 
                     ranges = json.dumps(ranges)
 
-                    operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
-                                                                         simulator.gid, operation_group, ranges)
-
+                    operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                         view_model=simulator, ranges=ranges,
+                                                                         burst_gid=burst_config.gid,
+                                                                         op_group_id=burst_config.fk_operation_group)
                     simulator.range_values = ranges
-                    self.operation_service.store_view_model(operation, project, simulator)
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator
 
             first_operation = operations[0]
             storage_path = self.files_helper.get_project_folder(project, str(first_operation.id))
-            burst_config = self.burst_service.update_simulation_fields(burst_config.id, first_operation.id,
+            burst_config = self.burst_service.update_simulation_fields(burst_config, first_operation.id,
                                                                        first_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)
             datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
@@ -226,13 +215,31 @@ class SimulatorService(object):
             self.logger.error(excep)
             self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
-    def load_from_zip(self, zip_file, project):
-        import_service = ImportService()
-        simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
+    @staticmethod
+    def compute_conn_branch_conditions(is_branch, simulator):
+        if not is_branch:
+            return None
 
-        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
-        simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
-        simulator = h5.load_view_model_from_file(simulator_h5_filepath)
+        conn = load.load_entity_by_gid(simulator.connectivity)
+        if conn.number_of_regions:
+            return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
+                               operations=["=="], values=[conn.number_of_regions])
 
-        burst_config = self.burst_service.load_burst_configuration_from_folder(simulator_folder, project)
-        return simulator, burst_config
+    @staticmethod
+    def validate_first_fragment(form, project_id, conn_idx):
+        conn_count = dao.count_datatypes(project_id, conn_idx)
+        if conn_count == 0:
+            form.connectivity.errors.append("No connectivity in the project! Simulation cannot be started without "
+                                            "a connectivity!")
+
+    def get_simulation_state_index(self, burst_config, simulation_history_class):
+        parent_burst = burst_config.parent_burst_object
+        simulation_state_index = dao.get_generic_entity(simulation_history_class, parent_burst.gid, "fk_parent_burst")
+
+        if simulation_state_index is None or len(simulation_state_index) < 1:
+            exc = BurstServiceException("Simulation State not found for %s, thus we are unable to branch from "
+                                        "it!" % burst_config.name)
+            self.logger.error(exc)
+            raise exc
+
+        return simulation_state_index

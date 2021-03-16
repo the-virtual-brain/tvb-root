@@ -111,8 +111,9 @@ class PSEModel(object):
         KEY_OPERATION_ID = "operationId"
 
         node_info = dict()
-        ts = dao.get_datatype_by_gid(self.datatype_measure.fk_source_gid)
+
         if self.operation.has_finished and self.datatype_measure is not None:
+            ts = dao.get_datatype_by_gid(self.datatype_measure.fk_source_gid)
             node_info[KEY_GID] = ts.gid
             node_info[KEY_NODE_TYPE] = ts.type
             node_info[KEY_OPERATION_ID] = ts.fk_from_operation

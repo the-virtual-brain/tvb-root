@@ -44,6 +44,8 @@ The second phase includes the source code and depends on the zip produced by thi
 """
 import os
 import shutil
+import sys
+
 import tvb_bin
 import tvb_data
 from subprocess import Popen, PIPE
@@ -161,7 +163,7 @@ def _copy_demos_collapsed(to_copy):
                 shutil.copytree(src, dest, ignore=ignore_patters)
 
 
-def ensure_svn_current_version():
+def ensure_tvb_current_revision(branch=None):
     """
     Enforce later revision number is written in 'tvb.version' file
     """
@@ -169,38 +171,35 @@ def ensure_svn_current_version():
     from tvb.basic.config.settings import VersionSettings
     config_folder = os.path.dirname(os.path.abspath(tvb.basic.config.__file__))
 
-    svn_variable = 'SVN_REVISION'
-    if svn_variable in os.environ:
-        real_svn_number = int(os.environ[svn_variable])
-    else:
-        _proc = Popen(["svnversion", "."], stdout=PIPE)
-        real_svn_number = VersionSettings.parse_svn_version(str(_proc.communicate()[0]))
+    if branch is None:
+        branch = "master"
+
+    print('Current branch {}'.format(branch))
+    real_version_number = VersionSettings.fetch_current_revision(branch)
 
     with open(os.path.join(config_folder, 'tvb.version'), 'r') as version_file:
         version_line = version_file.read()
         try:
-            written_svn_number = VersionSettings.parse_svn_version(version_line)
+            written_tvb_number = VersionSettings.parse_revision_number(version_line)
         except ValueError:
-            written_svn_number = 0
+            written_tvb_number = 0
 
-    if written_svn_number == real_svn_number:
+    if written_tvb_number == real_version_number:
         print("We will not change file tvb.version")
         return
 
-    with open(os.path.join(config_folder, 'tvb.version'), 'w') as version_file:
-        new_text = "Revision: " + str(real_svn_number + 1)
-        version_file.write(new_text)
-        print("Updating tvb.version content to: %s because %d != %d" % (new_text, written_svn_number, real_svn_number))
-
-    # Update SVN_REVISION in the current build, as we are creating a new commit
-    os.environ[svn_variable] = str(real_svn_number + 1)
-    _proc = Popen(["svn", "commit", "../scientific_library/tvb/basic/config/tvb.version", "-m",
-                   "Update SVN revision number automatically from Hudson", "--trust-server-cert"], stdout=PIPE)
-    print(_proc.communicate()[0])
+    tvb_version_path = "../scientific_library/tvb/basic/config/tvb.version"
+    print("Tvb version file path: {}".format(tvb_version_path))
+    paths = [tvb_version_path, os.path.join(config_folder, 'tvb.version')]
+    for path in paths:
+        with open(path, 'w') as version_file:
+            new_text = "Revision: " + str(real_version_number + 1)
+            version_file.write(new_text)
+            print("Updating tvb.version content in %s to: %s because %d != %d" % (path, new_text, written_tvb_number, real_version_number))
 
 
 def build_step1():
-    ## Import only after SVN_REVISION has been changed, to get the latest number in generated documentation
+    # Import only after TVB Revision number has been changed, to get the latest number in generated documentation
     from tvb_build.tvb_documentor.doc_generator import DocGenerator
 
     build_folder = os.path.dirname(DIST_FOLDER)
@@ -238,6 +237,10 @@ def build_step1():
 
 
 if __name__ == '__main__':
-    # TODO TVB-2415
-    # ensure_svn_current_version()
+    branch = None
+    if len(sys.argv) > 1:
+        branch = sys.argv[1]
+        if branch.startswith("origin/"):
+            branch = branch.replace("origin/","")
+    ensure_tvb_current_revision(branch)
     build_step1()

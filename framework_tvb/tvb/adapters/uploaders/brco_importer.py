@@ -35,8 +35,8 @@
 from tvb.adapters.datatypes.db.annotation import ConnectivityAnnotationsIndex
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotations
 from tvb.adapters.uploaders.brco.parser import XMLParser
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
@@ -59,11 +59,11 @@ class BRCOImporterModel(UploaderViewModel):
 
 class BRCOImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BRCOImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(BRCOImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', self, name='data_file')
-        self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, self, name='connectivity')
+        self.data_file = TraitUploadField(BRCOImporterModel.data_file, '.xml', 'data_file')
+        self.connectivity = TraitDataTypeSelectField(BRCOImporterModel.connectivity, 'connectivity')
 
     @staticmethod
     def get_view_model():

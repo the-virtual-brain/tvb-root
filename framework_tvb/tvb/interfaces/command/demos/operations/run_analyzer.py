@@ -45,11 +45,10 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.storage import dao
 from time import sleep
+from tvb.interfaces.command.lab import *
 
 
 def run_analyzer():
-    from tvb.interfaces.command.lab import *
-
     log = get_logger(__name__)
 
     # This ID of a project needs to exists in DB, and it can be taken from the WebInterface:
@@ -69,7 +68,7 @@ def run_analyzer():
 
     # launch an operation and have the results stored both in DB and on disk
     launched_operation = OperationService().fire_operation(adapter_instance, project.administrator,
-                                                           project.id, view_model=fourier_model)[0]
+                                                           project.id, view_model=fourier_model)
 
     # wait for the operation to finish
     while not launched_operation.has_finished:

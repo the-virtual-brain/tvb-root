@@ -35,10 +35,12 @@
 
 """
 import json
+
 import numpy
 from tvb.adapters.datatypes.db.spectral import ComplexCoherenceSpectrumIndex
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.spectral import ComplexCoherenceSpectrum
@@ -54,9 +56,9 @@ class ImaginaryCoherenceDisplayModel(ViewModel):
 
 class ImaginaryCoherenceDisplayForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ImaginaryCoherenceDisplayForm, self).__init__(prefix, project_id)
-        self.input_data = TraitDataTypeSelectField(ImaginaryCoherenceDisplayModel.input_data, self, 'input_data',
+    def __init__(self):
+        super(ImaginaryCoherenceDisplayForm, self).__init__()
+        self.input_data = TraitDataTypeSelectField(ImaginaryCoherenceDisplayModel.input_data, 'input_data',
                                                    conditions=self.get_filters())
 
     @staticmethod
@@ -93,9 +95,9 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         """
         Return the required memory to run this algorithm.
         """
-        input_data_h5_class, input_data_h5_path = self._load_h5_of_gid(view_model.input_data.hex)
-        with input_data_h5_class(input_data_h5_path) as input_data_h5:
+        with h5.h5_file_for_gid(view_model.input_data) as input_data_h5:
             required_memory = numpy.prod(input_data_h5.read_data_shape()) * 8
+
         return required_memory
 
     def generate_preview(self, view_model, figure_size=None):
@@ -109,23 +111,21 @@ class ImaginaryCoherenceDisplay(ABCDisplayer):
         """
         self.log.debug("Plot started...")
 
-        input_data_h5_class, input_data_h5_path = self._load_h5_of_gid(view_model.input_data.hex)
-        with input_data_h5_class(input_data_h5_path) as input_data_h5:
+        with h5.h5_file_for_gid(view_model.input_data) as input_data_h5:
             source_gid = input_data_h5.source.load()
+            source_index = self.load_entity_by_gid(source_gid)
 
-        source_index = self.load_entity_by_gid(source_gid)
-
-        params = dict(plotName=source_index.type,
-                      xAxisName="Frequency [kHz]",
-                      yAxisName="CohSpec",
-                      available_xScale=["Linear", "Logarithmic"],
-                      available_spectrum=json.dumps(input_data_h5_class.spectrum_types),
-                      spectrum_list=input_data_h5_class.spectrum_types,
-                      xscale="Linear",
-                      spectrum=input_data_h5_class.spectrum_types[0],
-                      url_base=URLGenerator.build_h5_url(view_model.input_data, 'get_spectrum_data', parameter=""),
-                      # TODO investigate the static xmin and xmax values
-                      xmin=0.02,
-                      xmax=0.8)
+            params = dict(plotName=source_index.type,
+                          xAxisName="Frequency [kHz]",
+                          yAxisName="CohSpec",
+                          available_xScale=["Linear", "Logarithmic"],
+                          available_spectrum=json.dumps(input_data_h5.spectrum_types),
+                          spectrum_list=input_data_h5.spectrum_types,
+                          xscale="Linear",
+                          spectrum=input_data_h5.spectrum_types[0],
+                          url_base=URLGenerator.build_h5_url(view_model.input_data, 'get_spectrum_data', parameter=""),
+                          # TODO investigate the static xmin and xmax values
+                          xmin=0.02,
+                          xmax=0.8)
 
         return self.build_display_result("complex_coherence/view", params)

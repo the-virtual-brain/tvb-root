@@ -49,6 +49,7 @@ from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.authorization import AuthorizationManager
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.texture_to_json import color_texture_to_list
@@ -59,6 +60,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 
 KEY_SERVER_VERSION = "versionInfo"
 KEY_CURRENT_VERSION_FULL = "currentVersionLongText"
@@ -104,7 +106,7 @@ class UserController(BaseController):
                     self.logger.debug("User " + user.username + " has just logged in!")
                     if user.selected_project is not None:
                         prj = user.selected_project
-                        prj = ProjectService().find_project(prj)
+                        prj = self.project_service.find_project(prj)
                         self._mark_selected(prj)
                     raise cherrypy.HTTPRedirect('/user/profile')
                 elif not keycloak_login:
@@ -182,7 +184,10 @@ class UserController(BaseController):
         user = common.remove_from_session(common.KEY_USER)
         if user is not None:
             self.logger.debug("User " + user.username + " is just logging out!")
-        common.clean_project_data_from_session()
+        current_project = common.get_current_project()
+        if current_project is not None and encryption_handler.encryption_enabled():
+            encryption_handler.set_project_inactive(current_project)
+        SimulatorContext().clean_project_data_from_session()
         common.set_info_message("Thank you for using The Virtual Brain!")
 
         common.expire_session()

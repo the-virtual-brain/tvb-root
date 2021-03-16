@@ -28,8 +28,8 @@
 #
 #
 import numpy
-from tvb.analyzers.fft import FFT
 from tvb.adapters.analyzers.fourier_adapter import FourierAdapter
+from tvb.analyzers.fft import compute_fast_fourier_transform
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
@@ -37,8 +37,7 @@ class TestFFT(TransactionalTestCase):
     def test_fourier_analyser(self, time_series_factory):
         two_node_simple_sin_ts = time_series_factory()
 
-        fft = FFT(time_series=two_node_simple_sin_ts, segment_length=4000.0)
-        spectra = fft.evaluate()
+        spectra = compute_fast_fourier_transform(two_node_simple_sin_ts, 4000, None, True)
 
         # a poor man's peak detection, a box low-pass filter
         peak = 40

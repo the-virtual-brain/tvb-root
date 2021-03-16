@@ -94,16 +94,15 @@ class NetworkxImporterModel(UploaderViewModel):
 
 class NetworkxConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(NetworkxConnectivityImporterForm, self).__init__(prefix, project_id)
-        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', self, name='data_file')
-        self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, self, name='key_edge_weight')
-        self.key_edge_tract = StrField(NetworkxImporterModel.key_edge_tract, self, name='key_edge_tract')
-        self.key_node_coordinates = StrField(NetworkxImporterModel.key_node_coordinates, self,
-                                             name='key_node_coordinates')
-        self.key_node_label = StrField(NetworkxImporterModel.key_node_label, self, name='key_node_label')
-        self.key_node_region = StrField(NetworkxImporterModel.key_node_region, self, name='key_node_region')
-        self.key_node_hemisphere = StrField(NetworkxImporterModel.key_node_hemisphere, self, name='key_node_hemisphere')
+    def __init__(self):
+        super(NetworkxConnectivityImporterForm, self).__init__()
+        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', 'data_file')
+        self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, 'key_edge_weight')
+        self.key_edge_tract = StrField(NetworkxImporterModel.key_edge_tract, name='key_edge_tract')
+        self.key_node_coordinates = StrField(NetworkxImporterModel.key_node_coordinates, name='key_node_coordinates')
+        self.key_node_label = StrField(NetworkxImporterModel.key_node_label, name='key_node_label')
+        self.key_node_region = StrField(NetworkxImporterModel.key_node_region, name='key_node_region')
+        self.key_node_hemisphere = StrField(NetworkxImporterModel.key_node_hemisphere, name='key_node_hemisphere')
 
     @staticmethod
     def get_view_model():

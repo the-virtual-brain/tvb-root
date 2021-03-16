@@ -50,7 +50,8 @@ from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.forms import SimpleStrField
+from tvb.core.neotraits.forms import StrField
+from tvb.core.neotraits.view_model import Str
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -109,8 +110,8 @@ class SessionCache(object):
 class _InputTreeFragment(ABCAdapterForm):
     def __init__(self):
         super(_InputTreeFragment, self).__init__()
-        self.dynamic_name = SimpleStrField(self, name='dynamic_name', label="Parameter configuration name",
-                                           doc="""The name of this parameter configuration""")
+        self.dynamic_name = StrField(Str(label='Parameter configuration name',
+                                         doc="""The name of this parameter configuration"""), name='dynamic_name')
 
 
 @traced
@@ -142,8 +143,8 @@ class DynamicModelController(BurstBaseController):
     def index(self):
         dynamic_gid = utils.generate_guid()
         model_name_fragment = _InputTreeFragment()
-        model_fragment = SimulatorModelFragment()
-        integrator_fragment = SimulatorIntegratorFragment()
+        model_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorModelFragment())
+        integrator_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorIntegratorFragment())
         model_description = configure_matjax_doc(self.available_models)
 
         params = {

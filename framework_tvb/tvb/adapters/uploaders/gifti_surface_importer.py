@@ -75,15 +75,14 @@ class GIFTISurfaceImporterModel(UploaderViewModel):
 
 class GIFTISurfaceImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(GIFTISurfaceImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(GIFTISurfaceImporterForm, self).__init__()
 
-        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, self, name='file_type',
+        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, name='file_type',
                                      choices=GIFTISurfaceImporterModel.surface_types)
-        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', self, name='data_file')
-        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', self,
-                                                name='data_file_part2')
-        self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, self, name='should_center')
+        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', 'data_file')
+        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', 'data_file_part2')
+        self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, name='should_center')
 
     @staticmethod
     def get_view_model():

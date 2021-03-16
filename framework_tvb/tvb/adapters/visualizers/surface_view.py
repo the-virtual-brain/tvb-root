@@ -37,6 +37,7 @@ import uuid
 import numpy
 from abc import ABCMeta
 from six import add_metaclass
+
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
@@ -156,15 +157,15 @@ class BaseSurfaceViewerModel(ViewModel):
 @add_metaclass(ABCMeta)
 class BaseSurfaceViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BaseSurfaceViewerForm, self).__init__(prefix, project_id)
-        self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, self, name='region_map')
+    def __init__(self):
+        super(BaseSurfaceViewerForm, self).__init__()
+        self.region_map = TraitDataTypeSelectField(BaseSurfaceViewerModel.region_map, name='region_map')
         conn_filter = FilterChain(
             fields=[FilterChain.datatype + '.ndim', FilterChain.datatype + '.has_surface_mapping'],
             operations=["==", "=="], values=[1, True])
-        self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure, self,
+        self.connectivity_measure = TraitDataTypeSelectField(BaseSurfaceViewerModel.connectivity_measure,
                                                              name='connectivity_measure', conditions=conn_filter)
-        self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, self, name='shell_surface')
+        self.shell_surface = TraitDataTypeSelectField(BaseSurfaceViewerModel.shell_surface, name='shell_surface')
 
     @staticmethod
     def get_filters():
@@ -181,15 +182,9 @@ class SurfaceViewerModel(BaseSurfaceViewerModel):
 
 
 class SurfaceViewerForm(BaseSurfaceViewerForm):
-    def __init__(self, prefix='', project_id=None):
-        # filters_ui = [UIFilter(linked_elem_name="region_map",
-        #                        linked_elem_field=FilterChain.datatype + "._surface"),
-        #               UIFilter(linked_elem_name="connectivity_measure",
-        #                        linked_elem_field=FilterChain.datatype + "._surface")]
-        # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
-
-        super(SurfaceViewerForm, self).__init__(prefix, project_id)
-        self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, self, name='surface')
+    def __init__(self):
+        super(SurfaceViewerForm, self).__init__()
+        self.surface = TraitDataTypeSelectField(SurfaceViewerModel.surface, name='surface')
 
     @staticmethod
     def get_view_model():
@@ -215,13 +210,10 @@ class ABCSurfaceDisplayer(ABCSpaceDisplayer):
         boundary_lines = []
         boundary_normals = []
 
-        surface_index = self.load_entity_by_gid(surface_gid)
-        rm_index = self.load_entity_by_gid(region_mapping_gid)
-
-        with h5.h5_file_for_index(rm_index) as rm_h5:
+        with h5.h5_file_for_gid(region_mapping_gid) as rm_h5:
             array_data = rm_h5.array_data[:]
 
-        with h5.h5_file_for_index(surface_index) as surface_h5:
+        with h5.h5_file_for_gid(surface_gid) as surface_h5:
             for slice_idx in range(surface_h5.get_number_of_split_slices()):
                 # Generate the boundaries sliced for the off case where we might overflow the buffer capacity
                 slice_triangles = surface_h5.get_triangles_slice(slice_idx)
@@ -434,21 +426,14 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
         surface_h5.close()
 
-        params['shelfObject'] = None
+        params['shellObject'] = None
 
         shell_surface_index = None
         if view_model.shell_surface:
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface_index)
-
-        if shell_surface:
-            shell_h5 = h5.h5_file_for_index(shell_surface)
-            assert isinstance(shell_h5, SurfaceH5)
-            shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(shell_h5)
-            params['shelfObject'] = json.dumps([shell_vertices, shell_normals, shell_triangles])
-            shell_h5.close()
-
+        params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
         return self.build_display_result("surface/surface_view", params,
                                          pages={"controlPage": "surface/surface_viewer_controls"})
 
@@ -458,8 +443,8 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
 class RegionMappingViewerForm(BaseSurfaceViewerForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RegionMappingViewerForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(RegionMappingViewerForm, self).__init__()
         self.region_map.required = True
 
     @staticmethod
@@ -502,8 +487,8 @@ class RegionMappingViewer(SurfaceViewer):
 
 class ConnectivityMeasureOnSurfaceViewerForm(BaseSurfaceViewerForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityMeasureOnSurfaceViewerForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(ConnectivityMeasureOnSurfaceViewerForm, self).__init__()
         self.connectivity_measure.required = True
 
     @staticmethod

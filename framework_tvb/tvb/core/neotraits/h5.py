@@ -28,7 +28,7 @@
 #
 #
 
-from ._h5accessors import DataSet, DataSetMetaData
+from ._h5accessors import DataSet, DataSetMetaData, Uuid, JsonRange
 from ._h5accessors import Scalar, Reference, Accessor, ReferenceList
 from ._h5accessors import SparseMatrix, SparseMatrixMetaData
 from ._h5accessors import Json, JsonFinal, EquationScalar

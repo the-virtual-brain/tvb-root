@@ -115,7 +115,9 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-    def get_operations(self, status=[STATUS_PENDING, STATUS_STARTED], algorithm_classname="SimulatorAdapter"):
+    def get_operations(self, status=None, algorithm_classname="SimulatorAdapter"):
+        if status is None:
+            status = [STATUS_PENDING, STATUS_STARTED]
         try:
             result = self.session.query(Operation).join(Algorithm) \
                 .filter(Algorithm.classname == algorithm_classname) \
@@ -422,6 +424,14 @@ class OperationDAO(RootDAO):
     #
     # ALGORITHM RELATED METHODS
     #
+
+    def get_all_algorithms(self):
+        try:
+            result = self.session.query(Algorithm).distinct().all()
+            return result
+        except SQLAlchemyError as ex:
+            self.logger.exception(ex)
+            return None
 
     def get_algorithm_by_id(self, algorithm_id):
         try:

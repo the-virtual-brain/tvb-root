@@ -49,6 +49,7 @@ from tvb.core.entities.model.model_operation import has_finished
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
+from tvb.core.entities.file.data_encryption_handler import FoldersQueueConsumer
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.burst_service import BurstService
 
@@ -82,11 +83,14 @@ def do_operation_launch(operation_id):
             operations_in_group = dao.get_operations_in_group(curent_operation.fk_operation_group)
             if parent_burst.fk_metric_operation_group:
                 operations_in_group.extend(dao.get_operations_in_group(parent_burst.fk_metric_operation_group))
+            burst_finished = True
             for operation in operations_in_group:
                 if not has_finished(operation.status):
+                    burst_finished = False
                     break
-                if parent_burst is not None:
-                    burst_service.mark_burst_finished(parent_burst)
+
+            if burst_finished and parent_burst is not None and parent_burst.status != BurstConfiguration.BURST_ERROR:
+                burst_service.mark_burst_finished(parent_burst)
         else:
             parent_burst = burst_service.get_burst_for_operation_id(operation_id)
             if parent_burst is not None:
@@ -104,4 +108,8 @@ def do_operation_launch(operation_id):
 
 if __name__ == '__main__':
     OPERATION_ID = sys.argv[1]
+    queue_consumer = FoldersQueueConsumer()
+    queue_consumer.start()
     do_operation_launch(OPERATION_ID)
+    queue_consumer.mark_stop()
+    queue_consumer.join()

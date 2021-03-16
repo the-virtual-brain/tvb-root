@@ -76,19 +76,12 @@ class Environment(object):
         except Exception:
             pass
 
-        if os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb_bin.__file__)))),
-                        "externals"):
+        externals_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb_bin.__file__)))),
+            "externals")
+        if os.path.exists(externals_path):
             # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
             return False
-
-        try:
-            _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
-            version = VersionSettings.parse_svn_version(_proc.communicate()[0])
-            if version:
-                # usage from SVN (deprecated)
-                return False
-        except Exception:
-            pass
 
         # We default as usage from TVB_Distribution
         return True

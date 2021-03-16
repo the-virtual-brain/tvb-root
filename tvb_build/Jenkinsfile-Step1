@@ -17,6 +17,13 @@ pipeline {
                 }
             }
         }
+        stage ('Start rest server') {
+            steps {
+                sh 'docker rm -f ${REST_CONTAINER} || true'
+                writeFile file: 'keycloak/keycloak_config.json', text: params.KC_CONFIG
+                sh 'docker run -p 9090:9090 -d -v "/opt/jenkins_home/workspace/$JOB_NAME/keycloak/":/home/tvb_user/keycloak_config --name ${REST_CONTAINER} ${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG} /bin/bash -c "source activate tvb-run && cd tvb_build && /bin/bash install_full_tvb.sh && cd ../tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"'
+            }
+        }
         stage ('Build TVB documentation') {
             agent {
                 docker {
@@ -26,10 +33,16 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     source activate tvb-docs
+                    pip install docutils==0.12
                     cd tvb_build
                     bash install_full_tvb.sh
-                    python build_step1.py
+                    python build_step1.py $GIT_BRANCH
                 '''
+                withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                        sh '''#!/bin/bash
+                            git commit scientific_library/tvb/basic/config/tvb.version -m "Update GIT revision number automatically from Jenkins" && git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/the-virtual-brain/tvb-root.git HEAD:${GIT_BRANCH//origin\\/} || true
+                        '''
+                 }
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
             }
         }
@@ -47,16 +60,6 @@ pipeline {
                     bash package_for_pip.sh
                 '''
                 archiveArtifacts artifacts: 'dist/*'
-            }
-        }
-        stage ('Start rest server') {
-            steps {
-                sh 'docker ps -f name=${REST_CONTAINER} -q | xargs --no-run-if-empty docker container stop'
-                sh 'docker container ls -a -fname=${REST_CONTAINER} -q | true && xargs -r docker container rm '
-                writeFile file: 'keycloak/keycloak_config.json', text: params.KC_CONFIG
-                sh 'docker run -p 9090:9090 -d -v "/opt/jenkins_home/workspace/$JOB_NAME/keycloak/":/home/tvb_user/keycloak_config --name ${REST_CONTAINER} ${FULL_DOCKER_IMAGE_NAME}:${LATEST_TAG} /bin/bash -c "source activate tvb-run && cd tvb_bin && python -m tvb.interfaces.web.run WEB_PROFILE"'
-                //wait for REST server initialization
-                sh 'sleep 60'
             }
         }
         stage ('Run REST client tests') {
@@ -106,8 +109,7 @@ pipeline {
     }
     post {
         always {
-           sh 'docker ps -f name=${REST_CONTAINER} -q | xargs --no-run-if-empty docker container stop'
-           sh 'docker container ls -a -fname=${REST_CONTAINER} -q | xargs -r docker container rm'
+            sh 'docker rm -f ${REST_CONTAINER} || true'
         }
         changed {
             mail to: 'lia.domide@codemart.ro bogdan.valean@codemart.ro',

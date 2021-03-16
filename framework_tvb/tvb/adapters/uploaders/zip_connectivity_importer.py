@@ -43,7 +43,6 @@ from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.connectivity import Connectivity
 
-
 NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
 
 
@@ -62,12 +61,11 @@ class ZIPConnectivityImporterModel(UploaderViewModel):
 
 class ZIPConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ZIPConnectivityImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(ZIPConnectivityImporterForm, self).__init__()
 
-        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', self,
-                                         name='uploaded')
-        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, self, name='normalization',
+        self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', 'uploaded')
+        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, name='normalization',
                                          choices=NORMALIZATION_OPTIONS)
 
     @staticmethod

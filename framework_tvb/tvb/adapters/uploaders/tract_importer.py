@@ -31,19 +31,23 @@
 """
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
-import numpy
 from abc import ABCMeta
+
+import numpy
 from nibabel import trackvis
+from tvb.adapters.datatypes.db.tracts import TractsIndex
+from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.files_helper import TvbZip
-from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.core.entities.storage import transactional
+from tvb.core.neocom import h5
+from tvb.core.neocom.h5 import path_for
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
-from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 
 
 def chunk_iter(iterable, n):
@@ -67,18 +71,18 @@ class TrackImporterModel(UploaderViewModel):
 
     region_volume = DataTypeGidAttr(
         linked_datatype=RegionVolumeMapping,
-        required=False,
+        required=Tracts.region_volume_map.required,
         label='Reference Volume Map'
     )
 
 
 class TrackImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TrackImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(TrackImporterForm, self).__init__()
 
-        self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', self, name='data_file')
-        self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, self, name='region_volume')
+        self.data_file = TraitUploadField(TrackImporterModel.data_file, '.trk', 'data_file')
+        self.region_volume = TraitDataTypeSelectField(TrackImporterModel.region_volume, name='region_volume')
 
     @staticmethod
     def get_view_model():
@@ -93,8 +97,8 @@ class TrackImporterForm(ABCUploaderForm):
 
 class TrackZipImporterForm(TrackImporterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TrackZipImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(TrackZipImporterForm, self).__init__()
 
         self.data_file.required_type = '.zip'
 
@@ -121,7 +125,7 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
         if not (0 <= x_plane < self.region_volume_shape[0] and
                 0 <= y_plane < self.region_volume_shape[1] and
                 0 <= z_plane < self.region_volume_shape[2]):
-            raise IndexError('vertices outside the region volume map cube')
+            raise IndexError('There are vertices outside the region volume map cube!')
 
         # in memory data set
         if self.full_rmap_cache is not None:
@@ -130,7 +134,7 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
 
         # not in memory have to go to disk
         slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
-        region_id = self.region_volume.read_data_slice(slices)[0, 0, 0]
+        region_id = self.region_volume_h5.read_data_slice(slices)[0, 0, 0]
         return region_id
 
     def _attempt_to_cache_regionmap(self, region_volume):
@@ -142,21 +146,20 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
         else:
             self.full_rmap_cache = None
 
-    def _base_before_launch(self, data_file, region_volume):
+    def _base_before_launch(self, data_file, region_volume_gid):
         if data_file is None:
-            raise LaunchException("Please select a file to import")
+            raise LaunchException("Please select a file to import!")
 
-        self.region_volume = region_volume
-
-        if region_volume is not None:
-            self._attempt_to_cache_regionmap(region_volume)
-            # this is called here and not in _get_tract_region because it goes to disk to get this info
-            # which would massively dominate the runtime of the import
-            self.region_volume_shape = region_volume.read_data_shape()
+        if region_volume_gid is not None:
+            rvm_h5 = h5.h5_file_for_gid(region_volume_gid)
+            self._attempt_to_cache_regionmap(rvm_h5)
+            self.region_volume_shape = rvm_h5.read_data_shape()
+            self.region_volume_h5 = rvm_h5
 
         datatype = Tracts()
-        datatype.storage_path = self.storage_path
-        datatype.region_volume_map = region_volume
+        dummy_rvm = RegionVolumeMapping()
+        dummy_rvm.gid = region_volume_gid
+        datatype.region_volume_map = dummy_rvm
         return datatype
 
 
@@ -199,33 +202,42 @@ class TrackvizTractsImporter(_TrackImporterBase):
     """
 
     @transactional
-    def launch(self, data_file, region_volume=None):
-        datatype = self._base_before_launch(data_file, region_volume)
+    def launch(self, view_model):
+        datatype = self._base_before_launch(view_model.data_file, view_model.region_volume)
 
         # note the streaming parsing, we do not load the dataset in memory at once
-        tract_gen, hdr = trackvis.read(data_file, as_generator=True)
+        tract_gen, hdr = trackvis.read(view_model.data_file, as_generator=True)
 
         vox2ras = _SpaceTransform(hdr)
         tract_start_indices = [0]
         tract_region = []
 
-        # we process tracts in bigger chunks to optimize disk write costs
-        for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
-            tract_bundle = [tr[0] for tr in tract_bundle]
+        with TractsH5(path_for(self.storage_path, TractsH5, datatype.gid)) as tracts_h5:
+            # we process tracts in bigger chunks to optimize disk write costs
+            for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
+                tract_bundle = [tr[0] for tr in tract_bundle]
 
-            for tr in tract_bundle:
-                tract_start_indices.append(tract_start_indices[-1] + len(tr))
-                if region_volume is not None:
-                    tract_region.append(self._get_tract_region(tr[0]))
+                for tr in tract_bundle:
+                    tract_start_indices.append(tract_start_indices[-1] + len(tr))
+                    if view_model.region_volume is not None:
+                        tract_region.append(self._get_tract_region(tr[0]))
 
-            vertices = numpy.concatenate(tract_bundle)  # in voxel space
-            vertices = vox2ras.transform(vertices)
+                vertices = numpy.concatenate(tract_bundle)  # in voxel space
+                datatype.vertices = vox2ras.transform(vertices)
+                tracts_h5.write_vertices_slice(datatype.vertices)
 
-            datatype.store_data_chunk("vertices", vertices, grow_dimension=0, close_file=False)
+            datatype.tract_start_idx = numpy.array(tract_start_indices)
+            datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)
 
-        datatype.tract_start_idx = tract_start_indices
-        datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)
-        return datatype
+            tracts_h5.tract_region.store(datatype.tract_region)
+            tracts_h5.tract_start_idx.store(datatype.tract_start_idx)
+            tracts_h5.region_volume_map.store(view_model.region_volume)
+
+        self.region_volume_h5.close()
+
+        tracts_index = TractsIndex()
+        tracts_index.fill_from_has_traits(datatype)
+        return tracts_index
 
 
 class ZipTxtTractsImporter(_TrackImporterBase):
@@ -240,8 +252,8 @@ class ZipTxtTractsImporter(_TrackImporterBase):
     @transactional
     def launch(self, view_model):
         # type: (TrackImporterModel) -> [TractsIndex]
-        region_volume_index = self.load_entity_by_gid(view_model.region_volume)
-        datatype = self._base_before_launch(view_model.data_file, region_volume_index)
+        datatype = self._base_before_launch(view_model.data_file, view_model.region_volume)
+        tracts_h5 = TractsH5(path_for(self.storage_path, TractsH5, datatype.gid))
 
         tract_start_indices = [0]
         tract_region = []
@@ -251,14 +263,17 @@ class ZipTxtTractsImporter(_TrackImporterBase):
                 if not tractf.endswith('.txt'):  # omit directories and other non track files
                     continue
                 vertices_file = zipf.open(tractf)
-                tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
+                datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
 
-                tract_start_indices.append(tract_start_indices[-1] + len(tract_vertices))
-                datatype.store_data_chunk("vertices", tract_vertices, grow_dimension=0, close_file=False)
+                tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
+                tracts_h5.write_vertices_slice(datatype.tract_vertices)
 
-                if region_volume_index is not None:
-                    tract_region.append(self._get_tract_region(tract_vertices[0]))
+                if view_model.region_volume is not None:
+                    tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
                 vertices_file.close()
+
+        tracts_h5.close()
+        self.region_volume_h5.close()
 
         datatype.tract_start_idx = tract_start_indices
         datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)

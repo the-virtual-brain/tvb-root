@@ -40,12 +40,12 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_rest_client.in'
 
-VERSION = "2.0.10"
+VERSION = "2.2"
 
 TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 
-TVB_INSTALL_REQUIREMENTS = ["allensdk", "h5py", "nibabel", "numpy", "Pillow", "psutil", "pyAesCrypt",
-                            "requests", "scipy", "simplejson", "sqlalchemy", "sqlalchemy-migrate",
+TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "h5py", "nibabel", "numpy", "Pillow", "psutil",
+                            "pyAesCrypt", "requests", "scipy", "simplejson", "sqlalchemy",
                             "tvb-data", "tvb-gdist", "tvb-library", "werkzeug"]
 
 # Packaging tvb-rest-client

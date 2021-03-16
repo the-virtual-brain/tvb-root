@@ -28,19 +28,15 @@
 #
 #
 
-import os
 import json
 import uuid
 from collections import namedtuple
-from datetime import datetime
 import numpy
-from tvb.core import utils
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
 from tvb.basic.neotraits.api import List, Attr
+# TODO: remove dependency
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 
@@ -51,20 +47,12 @@ from tvb.core.neotraits.view_model import DataTypeGidAttr
 jinja_env = None
 
 
-def prepare_prefixed_name_for_field(prefix, name):
-    if prefix != "":
-        return '{}_{}'.format(prefix, name)
-    else:
-        return name
-
-
 class Field(object):
     template = None
 
-    def __init__(self, form, name, disabled=False, required=False, label='', doc='', default=None):
-        # type: (Form, str, bool, bool, str, str, object) -> None
-        self.owner = form
-        self.name = prepare_prefixed_name_for_field(form.prefix, name)
+    def __init__(self, name, disabled=False, required=False, label='', doc='', default=None):
+        # type: (str, bool, bool, str, str, object) -> None
+        self.name = name
         self.disabled = disabled
         self.required = required
         self.label = label
@@ -76,7 +64,6 @@ class Field(object):
         # keeps the deserialized data
         self.data = None
         # keeps user input, even if wrong, we have to redisplay it
-        # todo
         self.unvalidated_data = default
         self.errors = []
 
@@ -93,7 +80,7 @@ class Field(object):
         return not self.errors
 
     def _from_post(self):
-        if self.required and self.unvalidated_data is None:
+        if self.required and (self.unvalidated_data is None or len(self.unvalidated_data.strip()) == 0):
             raise ValueError('Field required')
         self.data = self.unvalidated_data
 
@@ -110,47 +97,14 @@ class Field(object):
         return jinja_env.get_template(self.template).render(field=self)
 
 
-class SimpleStrField(Field):
-    template = 'form_fields/str_field.html'
-
-    def _from_post(self):
-        if self.required and (self.unvalidated_data is None or self.unvalidated_data.strip() == ''):
-            raise ValueError('Field required')
-        self.data = self.unvalidated_data
-
-
-class SimpleHiddenField(Field):
-    template = 'form_fields/hidden_field.html'
-
-
-class SimpleFloatField(Field):
-    template = 'form_fields/number_field.html'
-    input_type = "number"
-    min = None
-    max = None
-    step = 'any'
-
-    def _from_post(self):
-        super(SimpleFloatField, self)._from_post()
-        if self.unvalidated_data and len(self.unvalidated_data) == 0:
-            self.unvalidated_data = None
-        if self.unvalidated_data:
-            self.data = float(self.unvalidated_data)
-        else:
-            self.data = None
-
-
 class TraitField(Field):
-    # mhtodo: while this is consistent with the h5 api, it has the same problem
-    #         it couples the system to traited attr declarations
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
-        # type: (Attr, Form, str, bool) -> None
+    def __init__(self, trait_attribute, name=None, disabled=False):
+        # type: (Attr, str, bool) -> None
         self.trait_attribute = trait_attribute  # type: Attr
         name = name or trait_attribute.field_name
         label = trait_attribute.label or name
 
         super(TraitField, self).__init__(
-            form,
             name,
             disabled,
             trait_attribute.required,
@@ -169,47 +123,20 @@ TEMPORARY_PREFIX = ".tmp"
 class TraitUploadField(TraitField):
     template = 'form_fields/upload_field.html'
 
-    def __init__(self, traited_attribute, required_type, form, name, disabled=False):
-        super(TraitUploadField, self).__init__(traited_attribute, form, name, disabled)
+    def __init__(self, traited_attribute, required_type, name, disabled=False):
+        super(TraitUploadField, self).__init__(traited_attribute, name, disabled)
         self.required_type = required_type
-        self.files_helper = FilesHelper()
-
-    def fill_from_post(self, post_data):
-        super(TraitUploadField, self).fill_from_post(post_data)
-
-        if self.data.file is None:
-            self.data = None
-            return
-
-        project = dao.get_project_by_id(self.owner.project_id)
-        temporary_storage = self.files_helper.get_project_folder(project, self.files_helper.TEMP_FOLDER)
-
-        file_name = None
-        try:
-            uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
-            file_name = TEMPORARY_PREFIX + uq_name + '_' + self.data.filename
-            file_name = os.path.join(temporary_storage, file_name)
-
-            with open(file_name, 'wb') as file_obj:
-                file_obj.write(self.data.file.read())
-        except Exception as excep:
-            # TODO: is this handled properly?
-            self.files_helper.remove_files([file_name])
-            excep.message = 'Could not continue: Invalid input files'
-            raise excep
-
-        if file_name:
-            self.data = file_name
-            self.owner.temporary_files.append(file_name)
 
 
 class TraitDataTypeSelectField(TraitField):
     template = 'form_fields/datatype_select_field.html'
     missing_value = 'explicit-None-value'
 
-    def __init__(self, trait_attribute, form, name=None, conditions=None, draw_dynamic_conditions_buttons=True,
-                 dynamic_conditions=None, has_all_option=False, show_only_all_option=False):
-        super(TraitDataTypeSelectField, self).__init__(trait_attribute, form, name)
+    def __init__(self, trait_attribute, name=None, conditions=None,
+                 draw_dynamic_conditions_buttons=True, has_all_option=False,
+                 show_only_all_option=False):
+        super(TraitDataTypeSelectField, self).__init__(trait_attribute, name)
+
         if issubclass(type(trait_attribute), DataTypeGidAttr):
             type_to_query = trait_attribute.linked_datatype
         else:
@@ -221,9 +148,9 @@ class TraitDataTypeSelectField(TraitField):
             self.datatype_index = REGISTRY.get_index_for_datatype(type_to_query)
         self.conditions = conditions
         self.draw_dynamic_conditions_buttons = draw_dynamic_conditions_buttons
-        self.dynamic_conditions = dynamic_conditions
         self.has_all_option = has_all_option
         self.show_only_all_option = show_only_all_option
+        self.datatype_options = []
 
     def from_trait(self, trait, f_name):
         if hasattr(trait, f_name):
@@ -239,21 +166,7 @@ class TraitDataTypeSelectField(TraitField):
     def get_form_filters(self):
         return self.conditions
 
-    def _get_values_from_db(self):
-        all_conditions = FilterChain()
-        all_conditions += self.conditions
-        all_conditions += self.dynamic_conditions
-        filtered_datatypes, count = dao.get_values_of_datatype(self.owner.project_id,
-                                                               self.datatype_index,
-                                                               all_conditions)
-        return filtered_datatypes
-
     def options(self):
-        if not self.owner.project_id:
-            raise ValueError('A project_id is required in order to query the DB')
-
-        filtered_datatypes = self._get_values_from_db()
-
         if not self.required:
             choice = None
             yield Option(
@@ -264,21 +177,19 @@ class TraitDataTypeSelectField(TraitField):
             )
 
         if not self.show_only_all_option:
-            for i, datatype in enumerate(filtered_datatypes):
+            for i, dt_opt in enumerate(self.datatype_options):
                 yield Option(
                     id='{}_{}'.format(self.name, i),
-                    value=datatype[2],
-                    label=self._prepare_display_name(datatype),
-                    checked=self.data == datatype[2]
+                    value=dt_opt[0][2],
+                    label=dt_opt[1],
+                    checked=self.data == dt_opt[0][2]
                 )
 
         if self.has_all_option:
-            if not self.owner.draw_ranges:
-                raise ValueError("The owner form should draw ranges inputs in order to support 'All' option")
 
             all_values = ''
-            for fdt in filtered_datatypes:
-                all_values += str(fdt[2]) + ','
+            for fdt in self.datatype_options:
+                all_values += str(fdt[0][2]) + ','
 
             choice = "All"
             yield Option(
@@ -287,33 +198,6 @@ class TraitDataTypeSelectField(TraitField):
                 label=choice,
                 checked=self.data is choice
             )
-
-    def get_dt_from_db(self):
-        return dao.get_datatype_by_gid(self.data)
-
-    def _prepare_display_name(self, value):
-        """
-        Populate meta-data fields for data_list (list of DataTypes).
-
-        Private method, to be called recursively.
-        It will receive a list of Attributes, and it will populate 'options'
-        entry with data references from DB.
-        """
-        # Here we only populate with DB data, actual
-        # XML check will be done after select and submit.
-        entity_gid = value[2]
-        actual_entity = dao.get_generic_entity(self.datatype_index, entity_gid, "gid")
-        display_name = actual_entity[0].display_name
-        display_name += ' - ' + (value[3] or "None ")  # Subject
-        if value[5]:
-            display_name += ' - From: ' + str(value[5])
-        else:
-            display_name += utils.date2string(value[4])
-        if value[6]:
-            display_name += ' - ' + str(value[6])
-        display_name += ' - ID:' + str(value[0])
-
-        return display_name
 
     def _from_post(self):
         if self.unvalidated_data == self.missing_value:
@@ -335,20 +219,6 @@ class TraitDataTypeSelectField(TraitField):
 class StrField(TraitField):
     template = 'form_fields/str_field.html'
 
-    def _from_post(self):
-        if self.required and (self.unvalidated_data is None or self.unvalidated_data.strip() == ''):
-            raise ValueError('Field required')
-        self.data = self.unvalidated_data
-
-
-class BytesField(StrField):
-    """ StrField for byte strings. """
-    template = 'form_fields/str_field.html'
-
-    def _from_post(self):
-        super(BytesField, self)._from_post()
-        self.data = self.unvalidated_data.encode('utf-8')
-
 
 class BoolField(TraitField):
     template = 'form_fields/bool_field.html'
@@ -364,44 +234,41 @@ class IntField(TraitField):
 
     def _from_post(self):
         super(IntField, self)._from_post()
-        if self.unvalidated_data and len(self.unvalidated_data) == 0:
-            self.unvalidated_data = None
-        if self.unvalidated_data:
-            self.data = int(self.unvalidated_data)
-        else:
+        if len(self.unvalidated_data.strip()) == 0:
             self.data = None
+        else:
+            self.data = int(self.unvalidated_data)
 
 
 class FloatField(TraitField):
     template = 'form_fields/number_field.html'
-    input_type = "number"
     min = None
     max = None
     step = 'any'
 
     def _from_post(self):
         super(FloatField, self)._from_post()
-        if self.unvalidated_data and len(self.unvalidated_data) == 0:
-            self.unvalidated_data = None
-        if self.unvalidated_data:
-            self.data = float(self.unvalidated_data)
-        else:
+        if len(self.unvalidated_data.strip()) == 0:
             self.data = None
+        else:
+            self.data = float(self.unvalidated_data)
 
 
 class ArrayField(TraitField):
     template = 'form_fields/str_field.html'
 
     def _from_post(self):
+        super(ArrayField, self)._from_post()
         self.data = None
-        if self.unvalidated_data is not None:
+        if len(self.unvalidated_data.strip()) == 0:
+            self.data = None
+        else:
             data = json.loads(self.unvalidated_data)
             self.data = numpy.array(data, dtype=self.trait_attribute.dtype)
 
     @property
     def value(self):
         if self.data is None:
-            # todo: maybe we need to distinguish None from missing data
             # this None means self.data is missing, either not set or unset cause of validation error
             return self.unvalidated_data
         try:
@@ -426,9 +293,9 @@ class SelectField(TraitField):
         if len(choices) > 4:
             self.template = 'form_fields/select_field.html'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False, choices=None, display_none_choice=True,
-                 subform=None, display_subform=True):
-        super(SelectField, self).__init__(trait_attribute, form, name, disabled)
+    def __init__(self, trait_attribute, name=None, disabled=False, choices=None, display_none_choice=True,
+                 subform=None, display_subform=True, ui_values=None):
+        super(SelectField, self).__init__(trait_attribute, name, disabled)
         if choices:
             self.choices = choices
         else:
@@ -438,9 +305,10 @@ class SelectField(TraitField):
         self.display_none_choice = display_none_choice
         self.subform_field = None
         if subform:
-            self.subform_field = FormField(subform, form, self.subform_prefix + self.name)
+            self.subform_field = FormField(subform, self.subform_prefix + self.name)
             self.display_subform = display_subform
         self._prepare_template(self.choices)
+        self.ui_values = ui_values
 
     @property
     def value(self):
@@ -460,45 +328,32 @@ class SelectField(TraitField):
                     checked=self.data is None
                 )
 
+        choices = self.ui_values if self.ui_values is not None else list(self.choices.keys())
+
         for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=choice,
-                label=str(choice).title(),
+                label=str(choices[i]).title(),
                 checked=self.value == self.choices.get(choice)
             )
 
-    # def _from_post(self):
-    #     # encode None as a string
-    #     if self.unvalidated_data == self.missing_value:
-    #         self.unvalidated_data = None
-    #
-    #     if self.required and not self.unvalidated_data:
-    #         raise ValueError('Field required')
-    #
-    #     if self.unvalidated_data is not None:
-    #         # todo muliple values
-    #         self.data = self.trait_attribute.field_type(self.unvalidated_data)
-    #     else:
-    #         self.data = None
-    #
-    #     allowed = self.trait_attribute.choices
-    #     if not self.trait_attribute.required:
-    #         allowed = (None,) + allowed
-    #
-    #     if self.data not in allowed:
-    #         raise ValueError('must be one of {}'.format(allowed))
+    def _from_post(self):
+        super(SelectField, self)._from_post()
 
-    def fill_from_post(self, post_data):
-        super(SelectField, self).fill_from_post(post_data)
-        self.data = self.choices.get(self.data)
+        if self.unvalidated_data != self.missing_value and self.choices.get(self.unvalidated_data) is None\
+                and (self.unvalidated_data is not None or self.display_none_choice is False):
+
+            raise ValueError("the entered value is not among the choices for this field!")
+
+        self.data = self.choices.get(self.unvalidated_data)
 
 
 class MultiSelectField(TraitField):
     template = 'form_fields/checkbox_field.html'
 
-    def __init__(self, trait_attribute, form, name=None, disabled=False):
-        super(MultiSelectField, self).__init__(trait_attribute, form, name, disabled)
+    def __init__(self, trait_attribute, name=None, disabled=False):
+        super(MultiSelectField, self).__init__(trait_attribute, name, disabled)
         if not isinstance(trait_attribute, List):
             raise NotImplementedError('only List in multi select for now')
 
@@ -535,36 +390,19 @@ class MultiSelectField(TraitField):
         self.data = data
 
 
-# noinspection PyPep8Naming
-def ScalarField(trait_attribute, form, name=None, disabled=False):
-    # as this makes introspective decisions it has to be moved at a different level
-    field_type_for_trait_type = {
-        # str: BytesField,
-        str: StrField,
-        int: IntField,
-        float: FloatField,
-        bool: BoolField,
-    }
+class HiddenField(TraitField):
+    template = 'form_fields/hidden_field.html'
 
-    if trait_attribute.choices is not None:
-        cls = SelectField
-    else:
-        cls = field_type_for_trait_type.get(trait_attribute.field_type)
-
-    if isinstance(trait_attribute, List) and trait_attribute.element_choices:
-        cls = MultiSelectField
-
-    if cls is None:
-        raise ValueError('can not make a scalar field for trait attribute {}'.format(trait_attribute))
-
-    return cls(trait_attribute, form, name=name, disabled=disabled)
+    def __init__(self, trait_attribute, name=None, disabled=False):
+        super(HiddenField, self).__init__(trait_attribute, name, disabled)
+        self.label = ''
 
 
 class FormField(Field):
     template = 'form_fields/form_field.html'
 
-    def __init__(self, form_class, form, name, label='', doc=''):
-        super(FormField, self).__init__(form, name, False, False, label, doc)
+    def __init__(self, form_class, name, label='', doc=''):
+        super(FormField, self).__init__(name, False, False, label, doc)
         self.form = form_class()
 
     def fill_from_post(self, post_data):
@@ -574,26 +412,14 @@ class FormField(Field):
     def validate(self):
         return self.form.validate()
 
-    @property
-    def prefix_name(self):
-        return self.form.prefix
-
     def __str__(self):
         return jinja_env.get_template(self.template).render(adapter_form=self.form)
 
 
 class Form(object):
-    RANGE_1_NAME = 'range_1'
-    RANGE_2_NAME = 'range_2'
-    range_1 = None
-    range_2 = None
 
-    def __init__(self, prefix='', project_id=None, draw_ranges=True):
-        # TODO: makes sense here?
-        self.project_id = project_id
-        self.prefix = prefix
+    def __init__(self):
         self.errors = []
-        self.draw_ranges = draw_ranges
 
     def get_subform_key(self):
         """
@@ -660,11 +486,11 @@ class Form(object):
                 field.errors.append(ex)
                 raise
 
-    def fill_trait_partially(self, datatype, fields = None):
+    def fill_trait_partially(self, datatype, fields=None):
         for field in self.trait_fields:
             f_name = field.trait_attribute.field_name
             if f_name is None or \
-                    fields is not None and f_name not in fields :
+                    fields is not None and f_name not in fields:
                 # skipp attribute that does not seem to belong to a traited type
                 continue
             try:
@@ -679,8 +505,6 @@ class Form(object):
     def fill_from_post(self, form_data):
         for field in self.fields:
             field.fill_from_post(form_data)
-        self.range_1 = form_data.get(self.RANGE_1_NAME)
-        self.range_2 = form_data.get(self.RANGE_2_NAME)
 
     def fill_from_single_post_param(self, **param):
         param_key = list(param)[0]

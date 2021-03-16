@@ -29,34 +29,35 @@
 #
 
 import uuid
-
 import formencode
 from formencode import validators
+
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
-from tvb.basic.neotraits.api import Attr, Range, List
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict, get_integrator_name_list
+from tvb.basic.neotraits.api import Attr, Range, List, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModel
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, ArrayField, SimpleFloatField, SimpleHiddenField, SelectField, \
-    MultiSelectField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import ArrayField, SelectField, MultiSelectField, \
+    TraitDataTypeSelectField, HiddenField, FloatField, StrField
 from tvb.core.neotraits.view_model import Str
+from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.burst_service import BurstService
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.simulator.models.base import Model
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorSurfaceFragment, self).__init__(prefix, project_id)
-        conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
-                                 values=[CORTICAL])
-        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, self, name='surface',
-                                                conditions=conditions)
+    def __init__(self):
+        super(SimulatorSurfaceFragment, self).__init__()
+        conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="], values=[CORTICAL])
+        self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, name='surface_gid', conditions=conditions)
 
     def fill_trait(self, datatype):
         surface_gid = self.surface.value
@@ -67,37 +68,55 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
         else:
             datatype.surface = None
 
+    @staticmethod
+    def prepare_next_fragment_after_surface(simulator, rendering_rules, project_id, cortex_url, stimulus_url):
+        if simulator.surface:
+            return SimulatorRMFragment.prepare_cortex_fragment(simulator, rendering_rules, cortex_url, project_id)
+        return SimulatorStimulusFragment.prepare_stimulus_fragment(simulator, rendering_rules, False, stimulus_url,
+                                                                   project_id)
+
 
 class SimulatorRMFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None, surface_index=None, connectivity_gid=None):
-        super(SimulatorRMFragment, self).__init__(prefix, project_id)
+    def __init__(self, surface_index=None, connectivity_gid=None):
+        super(SimulatorRMFragment, self).__init__()
         rm_conditions = None
         lc_conditions = None
         if surface_index:
             rm_conditions = FilterChain(fields=[FilterChain.datatype + '.fk_surface_gid',
-                                             FilterChain.datatype + '.fk_connectivity_gid'],
-                                     operations=["==", "=="],
-                                     values=[str(surface_index.gid), str(connectivity_gid.hex)])
+                                                FilterChain.datatype + '.fk_connectivity_gid'],
+                                        operations=["==", "=="],
+                                        values=[str(surface_index.gid), str(connectivity_gid.hex)])
             lc_conditions = FilterChain(fields=[rm_conditions.fields[0]], operations=[rm_conditions.operations[0]],
                                         values=[rm_conditions.values[0]])
-        self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, self, name='region_mapping',
+        self.rm = TraitDataTypeSelectField(CortexViewModel.region_mapping_data, name='region_mapping_data',
                                            conditions=rm_conditions)
 
-        self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, self, name='local_connectivity',
+        self.lc = TraitDataTypeSelectField(CortexViewModel.local_connectivity, name='local_connectivity',
                                            conditions=lc_conditions)
-        self.coupling_strength = ArrayField(CortexViewModel.coupling_strength, self)
+        self.coupling_strength = ArrayField(CortexViewModel.coupling_strength)
+
+    @staticmethod
+    def prepare_cortex_fragment(simulator, rendering_rules, form_action_url, project_id):
+        surface_index = load_entity_by_gid(simulator.surface.surface_gid)
+        form = SimulatorRMFragment(surface_index, simulator.connectivity)
+        rm_fragment = AlgorithmService().prepare_adapter_form(form_instance=form, project_id=project_id)
+        rm_fragment.fill_from_trait(simulator.surface)
+
+        rendering_rules.form = rm_fragment
+        rendering_rules.form_action_url = form_action_url
+        return rendering_rules.to_dict()
 
 
 class SimulatorStimulusFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
-        super(SimulatorStimulusFragment, self).__init__(prefix, project_id)
+    def __init__(self, is_surface_simulation=False):
+        super(SimulatorStimulusFragment, self).__init__()
         stimuli_index_class = StimuliRegionIndex
         if is_surface_simulation:
             stimuli_index_class = SpatioTemporalPatternIndex
         traited_field = Attr(stimuli_index_class, doc=SimulatorAdapterModel.stimulus.doc,
                              label=SimulatorAdapterModel.stimulus.label,
                              required=SimulatorAdapterModel.stimulus.required)
-        self.stimulus = TraitDataTypeSelectField(traited_field, self, name='stimulus')
+        self.stimulus = TraitDataTypeSelectField(traited_field, name='stimulus')
 
     def fill_trait(self, datatype):
         setattr(datatype, self.stimulus.name, self.stimulus.data)
@@ -105,17 +124,26 @@ class SimulatorStimulusFragment(ABCAdapterForm):
     def fill_from_trait(self, trait):
         self.stimulus.from_trait(trait, self.stimulus.name)
 
+    @staticmethod
+    def prepare_stimulus_fragment(simulator, rendering_rules, is_surface_simulation, form_action_url, project_id):
+        form = SimulatorStimulusFragment(is_surface_simulation)
+        stimuli_fragment = AlgorithmService().prepare_adapter_form(form_instance=form, project_id=project_id)
+        stimuli_fragment.fill_from_trait(simulator)
+
+        rendering_rules.form = stimuli_fragment
+        rendering_rules.form_action_url = form_action_url
+        return rendering_rules.to_dict()
+
 
 class SimulatorModelFragment(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorModelFragment, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(SimulatorModelFragment, self).__init__()
         self.model_choices = get_ui_name_to_model()
         default_model = list(self.model_choices.values())[0]
 
         self.model = SelectField(
             Attr(Model, default=default_model, label=SimulatorAdapterModel.model.label,
-                 doc=SimulatorAdapterModel.model.doc), self,
-            choices=self.model_choices, name='model')
+                 doc=SimulatorAdapterModel.model.doc), choices=self.model_choices, name='model')
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None
@@ -128,16 +156,15 @@ class SimulatorModelFragment(ABCAdapterForm):
 
 class SimulatorIntegratorFragment(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SimulatorIntegratorFragment, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(SimulatorIntegratorFragment, self).__init__()
         self.integrator_choices = get_ui_name_to_integrator_dict()
         default_integrator = list(self.integrator_choices.values())[0]
 
         self.integrator = SelectField(
             Attr(IntegratorViewModel, default=default_integrator, label=SimulatorAdapterModel.integrator.label,
-                 doc=SimulatorAdapterModel.integrator.doc), self, name='integrator',
-            choices=self.integrator_choices,
-            subform=get_form_for_integrator(default_integrator))
+                 doc=SimulatorAdapterModel.integrator.doc), name='integrator', choices=self.integrator_choices,
+            subform=get_form_for_integrator(default_integrator), ui_values=get_integrator_name_list())
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None
@@ -150,14 +177,13 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
 
 class SimulatorMonitorFragment(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None, is_surface_simulation=False):
-        super(SimulatorMonitorFragment, self).__init__(prefix, project_id)
+    def __init__(self, is_surface_simulation=False):
+        super(SimulatorMonitorFragment, self).__init__()
         self.monitor_choices = get_ui_name_to_monitor_dict(is_surface_simulation)
         self.is_surface_simulation = is_surface_simulation
 
-        self.monitors = MultiSelectField(List(of=str, label='Monitors',
-                                              choices=tuple(self.monitor_choices.keys())),
-                                         self, name='monitors')
+        self.monitors = MultiSelectField(List(of=str, label='Monitors', choices=tuple(self.monitor_choices.keys())),
+                                         name='monitors')
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None
@@ -168,18 +194,18 @@ class SimulatorMonitorFragment(ABCAdapterForm):
 
 class SimulatorFinalFragment(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None, default_simulation_name="simulation_1"):
-        super(SimulatorFinalFragment, self).__init__(prefix, project_id)
-        self.simulation_length = ScalarField(SimulatorAdapterModel.simulation_length, self)
-        self.simulation_name = ScalarField(Attr(str, doc='Name for the current simulation configuration',
-                                                default=default_simulation_name, label='Simulation name'), self,
-                                           name='input_simulation_name_id')
+    def __init__(self, default_simulation_name="simulation_1"):
+        super(SimulatorFinalFragment, self).__init__()
+        self.simulation_length = FloatField(SimulatorAdapterModel.simulation_length)
+        self.simulation_name = StrField(Attr(str, doc='Name for the current simulation configuration',
+                                             default=default_simulation_name, label='Simulation name'),
+                                        name='input_simulation_name_id')
 
     def fill_from_post(self, form_data):
         super(SimulatorFinalFragment, self).fill_from_post(form_data)
-        valiadation_result = SimulatorFinalFragment.is_burst_name_ok(self.simulation_name.value)
-        if valiadation_result is not True:
-            raise ValueError(valiadation_result)
+        validation_result = SimulatorFinalFragment.is_burst_name_ok(self.simulation_name.value)
+        if validation_result is not True:
+            raise ValueError(validation_result)
 
     @staticmethod
     def is_burst_name_ok(burst_name):
@@ -198,15 +224,27 @@ class SimulatorFinalFragment(ABCAdapterForm):
             validation_error = "Invalid simulation name %s. Please use only letters, numbers, or _ " % str(burst_name)
             return validation_error
 
+    @staticmethod
+    def prepare_final_fragment(simulator, burst_config, project_id, rendering_rules, setup_pse_url):
+        simulation_name, simulation_number = BurstService.prepare_simulation_name(burst_config, project_id)
+        form = SimulatorFinalFragment(default_simulation_name=simulation_name)
+        form.fill_from_trait(simulator)
+
+        rendering_rules.form = form
+        rendering_rules.form_action_url = setup_pse_url
+        rendering_rules.is_launch_fragment = True
+        rendering_rules.is_pse_launch = burst_config.is_pse_burst()
+        return rendering_rules.to_dict()
+
 
 class SimulatorPSEConfigurationFragment(ABCAdapterForm):
 
-    def __init__(self, choices, prefix='', project_id=None):
-        super(SimulatorPSEConfigurationFragment, self).__init__(prefix, project_id)
+    def __init__(self, choices):
+        super(SimulatorPSEConfigurationFragment, self).__init__()
         default_choice = list(choices.values())[0]
-        self.pse_param1 = SelectField(Str(default=default_choice, label="PSE param1"), self, choices=choices,
+        self.pse_param1 = SelectField(Str(default=default_choice, label="PSE param1"), choices=choices,
                                       name='pse_param1')
-        self.pse_param2 = SelectField(Str(label="PSE param2", required=False), self, choices=choices, name='pse_param2')
+        self.pse_param2 = SelectField(Str(label="PSE param2", required=False), choices=choices, name='pse_param2')
 
 
 class SimulatorPSERangeFragment(ABCAdapterForm):
@@ -218,16 +256,16 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
     STEP_FIELD = 'pse_{}_step'
     GID_FIELD = 'pse_{}_guid'
 
-    def __init__(self, pse_param1, pse_param2, prefix='', project_id=None):
-        # type: (RangeParameter, RangeParameter, str, int) -> None
-        super(SimulatorPSERangeFragment, self).__init__(prefix, project_id)
+    def __init__(self, pse_param1, pse_param2):
+        # type: (RangeParameter, RangeParameter) -> None
+        super(SimulatorPSERangeFragment, self).__init__()
         self._add_pse_field(pse_param1)
         if pse_param2:
             self._add_pse_field(pse_param2, self.KEY_PARAM2)
 
     def _add_pse_field(self, param, param_key=KEY_PARAM1):
         # type: (RangeParameter, str) -> None
-        pse_param_name = SimpleHiddenField(self, name=self.NAME_FIELD.format(param_key), default=param.name)
+        pse_param_name = HiddenField(Str(default=param.name, required=False), self.NAME_FIELD.format(param_key))
         self.__setattr__(self.NAME_FIELD.format(param_key), pse_param_name)
         if param.type is float:
             self._add_fields_for_float(param, param_key)
@@ -236,21 +274,21 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
 
     def _add_fields_for_float(self, param, param_key):
         # type: (RangeParameter, str) -> None
-        pse_param_lo = SimpleFloatField(self, name=self.LO_FIELD.format(param_key), required=True,
-                                        label='LO for {}'.format(param.name), default=param.range_definition.lo)
+        pse_param_lo = FloatField(Float(label='LO for {}'.format(param.name), default=param.range_definition.lo,
+                                        required=True), name=self.LO_FIELD.format(param_key))
         self.__setattr__(self.LO_FIELD.format(param_key), pse_param_lo)
-        pse_param_hi = SimpleFloatField(self, name=self.HI_FIELD.format(param_key), required=True,
-                                        label='HI for {}'.format(param.name), default=param.range_definition.hi)
+        pse_param_hi = FloatField(Float(label='HI for {}'.format(param.name), default=param.range_definition.hi,
+                                        required=True), name=self.HI_FIELD.format(param_key))
         self.__setattr__(self.HI_FIELD.format(param_key), pse_param_hi)
-        pse_param_step = SimpleFloatField(self, name=self.STEP_FIELD.format(param_key), required=True,
-                                          label='STEP for {}'.format(param.name), default=param.range_definition.step)
+        pse_param_step = FloatField(Float(label='STEP for {}'.format(param.name), default=param.range_definition.step,
+                                          required=True), name=self.STEP_FIELD.format(param_key))
         self.__setattr__(self.STEP_FIELD.format(param_key), pse_param_step)
 
     def _add_field_for_gid(self, param, param_key):
         # type: (RangeParameter, str) -> None
         traited_attr = Attr(h5.REGISTRY.get_index_for_datatype(param.type), label='Choice for {}'.format(param.name))
-        pse_param_dt = TraitDataTypeSelectField(traited_attr, self, name=self.GID_FIELD.format(param_key),
-                                                dynamic_conditions=param.range_definition, has_all_option=True,
+        pse_param_dt = TraitDataTypeSelectField(traited_attr, name=self.GID_FIELD.format(param_key),
+                                                conditions=param.range_definition, has_all_option=True,
                                                 show_only_all_option=True)
         self.__setattr__(self.GID_FIELD.format(param_key), pse_param_dt)
 

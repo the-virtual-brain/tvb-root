@@ -37,16 +37,16 @@
 import json
 import uuid
 import cherrypy
+
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
-    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -80,10 +80,6 @@ class LocalConnectivityController(SpatioTemporalController):
     def __init__(self):
         SpatioTemporalController.__init__(self)
         self.plotted_equation_prefixes = {}
-        ui_name_to_equation_dict = get_ui_name_to_equation_dict()
-        self.possible_equations = {GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(GAUSSIAN_EQUATION),
-                                   DOUBLE_GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(DOUBLE_GAUSSIAN_EQUATION),
-                                   SIGMOID_EQUATION: ui_name_to_equation_dict.get(SIGMOID_EQUATION)}
 
     @expose_page
     def step_1(self, do_reset=0, **kwargs):
@@ -108,9 +104,12 @@ class LocalConnectivityController(SpatioTemporalController):
             common.add2session(KEY_LCONN, new_lconn)
 
         current_lconn = common.get_from_session(KEY_LCONN)
-        existent_lcon_form = LocalConnectivitySelectorForm(project_id=project_id)
+        existent_lcon_form = self.algorithm_service.prepare_adapter_form(form_instance=LocalConnectivitySelectorForm(),
+                                                                         project_id=common.get_current_project().id)
         existent_lcon_form.existentEntitiesSelect.data = current_lconn.gid.hex
-        configure_lcon_form = LocalConnectivityCreatorForm(self.possible_equations, project_id=project_id)
+        configure_lcon_form = self.algorithm_service.prepare_adapter_form(
+            form_instance=LocalConnectivityCreatorForm(),
+            project_id=common.get_current_project().id)
         configure_lcon_form.fill_from_trait(current_lconn)
         current_lconn.equation = configure_lcon_form.spatial.value()
 
@@ -159,20 +158,20 @@ class LocalConnectivityController(SpatioTemporalController):
     @cherrypy.expose
     def set_cutoff_value(self, **param):
         current_lconn = common.get_from_session(KEY_LCONN)
-        cutoff_form_field = LocalConnectivityCreatorForm(self.possible_equations).cutoff
+        cutoff_form_field = LocalConnectivityCreatorForm().cutoff
         cutoff_form_field.fill_from_post(param)
         current_lconn.cutoff = cutoff_form_field.value
 
     @cherrypy.expose
     def set_surface(self, **param):
         current_lconn = common.get_from_session(KEY_LCONN)
-        surface_form_field = LocalConnectivityCreatorForm(self.possible_equations).surface
+        surface_form_field = LocalConnectivityCreatorForm().surface
         surface_form_field.fill_from_post(param)
         current_lconn.surface = surface_form_field.value
 
     @cherrypy.expose
     def set_display_name(self, **param):
-        display_name_form_field = LocalConnectivityCreatorForm(self.possible_equations).display_name
+        display_name_form_field = LocalConnectivityCreatorForm().display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
             lconn = common.get_from_session(KEY_LCONN)
@@ -186,7 +185,8 @@ class LocalConnectivityController(SpatioTemporalController):
                use the same js function for this.
         """
         current_lconn = common.get_from_session(KEY_LCONN)
-        left_side_form = LocalConnectivitySelectorForm(project_id=common.get_current_project().id)
+        left_side_form = self.algorithm_service.prepare_adapter_form(form_instance=LocalConnectivitySelectorForm(),
+                                                                     project_id=common.get_current_project().id)
         left_side_form.existentEntitiesSelect.data = current_lconn.gid.hex
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step2_main'
@@ -283,15 +283,13 @@ class LocalConnectivityController(SpatioTemporalController):
 
         Returns a json which contains the data needed for drawing a gradient view for the selected vertex.
         """
-        lconn_index = load_entity_by_gid(local_connectivity_gid)
         triangle_index = int(selected_triangle)
+        lconn_h5 = h5.h5_file_for_gid(local_connectivity_gid)
 
-        surface_indx = load_entity_by_gid(lconn_index.fk_surface_gid)
-        surface_h5 = h5.h5_file_for_index(surface_indx)
+        surface_h5 = h5.h5_file_for_gid(lconn_h5.surface.load())
         assert isinstance(surface_h5, SurfaceH5)
         vertex_index = int(surface_h5.triangles[triangle_index][0])
 
-        lconn_h5 = h5.h5_file_for_index(lconn_index)
         assert isinstance(lconn_h5, LocalConnectivityH5)
         lconn_matrix = lconn_h5.matrix.load()
         picked_data = list(lconn_matrix[vertex_index].toarray().squeeze())

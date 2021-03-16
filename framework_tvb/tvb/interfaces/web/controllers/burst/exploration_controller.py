@@ -58,10 +58,6 @@ class ParameterExplorationController(BaseController):
     Controller to handle PSE actions.
     """
 
-    def __init__(self):
-        BaseController.__init__(self)
-        self.project_service = ProjectService()
-
     @cherrypy.expose
     @handle_error(redirect=False)
     def get_default_pse_viewer(self, datatype_group_gid):

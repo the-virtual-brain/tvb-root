@@ -1,6 +1,6 @@
 /* -------------------------------------------- */
 /* The Virtual Brain: DOCS website */
-/* Version: 6 */
+/* Version: 8 */
 /* -------------------------------------------- */
 /* Created by @twotribes, Germany */
 /* -------------------------------------------- */
@@ -862,25 +862,11 @@ body div.document ul {
     padding-left: 0;
 }
 
-/*
-body div.document ol {
-    counter-reset: li;
-}
-*/
-
 body div.document ul li {
     list-style: none;
     position: relative;
     padding-left: 15px;
 }
-
-/*
-body div.document ol li {
-    list-style: none;
-    position: relative;
-    padding-left: 20px;
-}
-*/
 
 body div.document ul li:before {
     content: "";
@@ -894,21 +880,11 @@ body div.document ul li:before {
     background-color: #627986;
 }
 
-/*
-body div.document ol li:before {
-    position: absolute;
-    content: counter(li) ".";
-    counter-increment: li;
-    top: -1px;
-    left: 0px;
-    height: 22px;
-    width: 22px;
-    border: none;
+body div.document ol li::marker {
+    font-family: "StandardCT", Helvetica, Arial, sans-serif;
     font-weight: bold;
-    line-height: 22px;
     color: #627986;
 }
-*/
 
 /* !-------------------------------------------- */
 /* !COMPONENT: Tables */
@@ -939,13 +915,18 @@ body div.document table.indextable td {
 }
 
 /* Modules index */
+body div.document table.indextable.modindextable tr.cap {
+    background: #627986;
+}
+
+
 body div.document table.indextable.modindextable td {
     padding-top: 5px;
 }
 
 body div.document table.indextable.modindextable strong {
     font-size: 18px;
-    color: #627986;
+    color: #fff;
 }
 
 /* Internal dl structures */
@@ -954,6 +935,7 @@ body div.document table.indextable dt {
     background: #f8f8f8;
     border-left: 1px solid #627986;
     margin-bottom: 5px;
+    word-break: break-all;
 }
 
 body div.document table.indextable dd dl dt {
@@ -969,6 +951,7 @@ body div.document table.indextable dd dl dt + dt {
 
 body div.document table.indextable dd {
     margin-bottom: 2em;
+    word-break: break-all;
 }
 
 /* !-------------------------------------------- */

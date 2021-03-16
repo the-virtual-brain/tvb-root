@@ -51,7 +51,7 @@ from tvb.basic.neotraits.api import Float, Int
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, SelectField
+from tvb.core.neotraits.forms import SelectField, FloatField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
@@ -105,12 +105,12 @@ class AllenConnectModel(ViewModel):
 
 class AllenConnectomeBuilderForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(AllenConnectomeBuilderForm, self).__init__(prefix, project_id)
-        self.resolution = SelectField(AllenConnectModel.resolution, self, choices=RESOLUTION_OPTIONS)
-        self.weighting = SelectField(AllenConnectModel.weighting, self, choices=WEIGHTS_OPTIONS)
-        self.inj_f_thresh = ScalarField(AllenConnectModel.inj_f_thresh, self)
-        self.vol_thresh = ScalarField(AllenConnectModel.vol_thresh, self)
+    def __init__(self):
+        super(AllenConnectomeBuilderForm, self).__init__()
+        self.resolution = SelectField(AllenConnectModel.resolution, choices=RESOLUTION_OPTIONS)
+        self.weighting = SelectField(AllenConnectModel.weighting, choices=WEIGHTS_OPTIONS)
+        self.inj_f_thresh = FloatField(AllenConnectModel.inj_f_thresh)
+        self.vol_thresh = FloatField(AllenConnectModel.vol_thresh)
 
     @staticmethod
     def get_view_model():

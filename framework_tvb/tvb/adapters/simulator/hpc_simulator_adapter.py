@@ -35,27 +35,29 @@
 import os
 import uuid
 import typing
-from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel, choices, \
+from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel, \
     TimeseriesMetricsAdapter
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, SimulatorAdapterModel
 from tvb.basic.neotraits.api import HasTraits
+from tvb.config import ALGORITHMS
 from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 
 
 class HPCSimulatorAdapter(SimulatorAdapter):
-    OUTPUT_FOLDER = 'output'
 
     def __init__(self, storage_path, is_group_launch):
         super(HPCSimulatorAdapter, self).__init__()
         self.storage_path = storage_path
         self.is_group_launch = is_group_launch
 
-    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+    def _prelaunch(self, operation, view_model, available_disk_space=0):
         self.available_disk_space = available_disk_space
-        super(HPCSimulatorAdapter, self)._prelaunch(operation, view_model, uid, available_disk_space)
+        super(HPCSimulatorAdapter, self)._prelaunch(operation, view_model, available_disk_space)
 
     def get_output(self):
         return [TimeSeriesIndex, SimulationHistoryIndex, DatatypeMeasureIndex]
@@ -83,7 +85,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         return self.is_group_launch
 
     def _get_output_path(self):
-        output_path = os.path.join(self.storage_path, self.OUTPUT_FOLDER)
+        output_path = os.path.join(self.storage_path, HPCSchedulerClient.OUTPUT_FOLDER)
         if not os.path.isdir(output_path):
             os.mkdir(output_path)
         return output_path
@@ -100,14 +102,21 @@ class HPCSimulatorAdapter(SimulatorAdapter):
 
     def _capture_operation_results(self, result):
         """
+        Update h5 files with generic attributes
         """
+        for file in os.listdir(self._get_output_path()):
+            path = os.path.join(self._get_output_path(), file)
+            if issubclass(H5File.h5_class_from_file(path), ViewModelH5):
+                continue
+            with H5File.from_file(path) as f:
+                f.store_generic_attributes(self.generic_attributes)
         return "", 2
 
     def _ensure_enough_resources(self, available_disk_space, view_model):
         return 0
 
     def launch(self, view_model):
-    # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
+        # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
         simulation_results = super(HPCSimulatorAdapter, self).launch(view_model)
 
         if not self.is_group_launch:
@@ -123,16 +132,16 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         # type: (TimeSeriesIndex) -> [DatatypeMeasureIndex]
         metric_vm = TimeseriesMetricsAdapterModel()
         metric_vm.time_series = time_series_index.gid
-        metric_vm.algorithms = tuple(choices.values())
+        metric_vm.algorithms = tuple(ALGORITHMS.keys())
         h5.store_view_model(metric_vm, self._get_output_path())
         metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
-        metric_adapter._prelaunch(None, metric_vm, None, self.available_disk_space)
+        metric_adapter._prelaunch(None, metric_vm, self.available_disk_space)
 
 
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
 
     def __init__(self, storage_path, input_time_series_index):
-        super(HPCTimeseriesMetricsAdapter,self).__init__()
+        super(HPCTimeseriesMetricsAdapter, self).__init__()
         self.storage_path = storage_path
         self.input_time_series_index = input_time_series_index
 

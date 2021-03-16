@@ -83,13 +83,19 @@ class TimeSeriesIndex(DataType):
         # never to be referenced by any other row or table.
         if hasattr(datatype, 'data'):
             self.data_ndim = datatype.data.ndim
-            self.data_length_1d = datatype.data.shape[0]
-            if self.data_ndim > 1:
-                self.data_length_2d = datatype.data.shape[1]
-                if self.data_ndim > 2:
-                    self.data_length_3d = datatype.data.shape[2]
-                    if self.data_ndim > 3:
-                        self.data_length_4d = datatype.data.shape[3]
+            self.fill_shape(datatype.data.shape)
+
+    def fill_from_h5(self, h5_file):
+        super(TimeSeriesIndex, self).fill_from_h5(h5_file)
+        self.time_series_type = type(h5_file).__name__.replace('H5', '')
+        self.title = h5_file.title.load()
+        self.start_time = h5_file.start_time.load()
+        self.sample_period_unit = h5_file.sample_period_unit.load()
+        self.sample_period = h5_file.sample_period.load()
+        self.sample_rate = h5_file.sample_rate.load()
+        self.labels_ordering = json.dumps(h5_file.labels_ordering.load())
+        self.labels_dimensions = json.dumps(h5_file.labels_dimensions.load())
+        self.fill_shape(h5_file.data.shape)
 
     def fill_shape(self, final_shape):
         self.data_ndim = len(final_shape)
@@ -144,6 +150,11 @@ class TimeSeriesEEGIndex(TimeSeriesIndex):
         # Because we had a ProjectionMatrix in the monitor
         self.has_surface_mapping = True
 
+    def fill_from_h5(self, h5_file):
+        super(TimeSeriesEEGIndex, self).fill_from_h5(h5_file)
+        self.fk_sensors_gid = h5_file.sensors.load().hex
+        self.has_surface_mapping = True
+
 
 class TimeSeriesMEGIndex(TimeSeriesIndex):
     id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
@@ -157,6 +168,11 @@ class TimeSeriesMEGIndex(TimeSeriesIndex):
         self.fk_sensors_gid = datatype.sensors.gid.hex
         self.has_surface_mapping = True
 
+    def fill_from_h5(self, h5_file):
+        super(TimeSeriesMEGIndex, self).fill_from_h5(h5_file)
+        self.fk_sensors_gid = h5_file.sensors.load().hex
+        self.has_surface_mapping = True
+
 
 class TimeSeriesSEEGIndex(TimeSeriesIndex):
     id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
@@ -168,6 +184,11 @@ class TimeSeriesSEEGIndex(TimeSeriesIndex):
         # type: (TimeSeriesSEEG)  -> None
         super(TimeSeriesSEEGIndex, self).fill_from_has_traits(datatype)
         self.fk_sensors_gid = datatype.sensors.gid.hex
+        self.has_surface_mapping = True
+
+    def fill_from_h5(self, h5_file):
+        super(TimeSeriesSEEGIndex, self).fill_from_h5(h5_file)
+        self.fk_sensors_gid = h5_file.sensors.load().hex
         self.has_surface_mapping = True
 
 
@@ -200,6 +221,18 @@ class TimeSeriesRegionIndex(TimeSeriesIndex):
             self.fk_region_mapping_gid = datatype.region_mapping.gid.hex
             self.has_surface_mapping = True
 
+    def fill_from_h5(self, h5_file):
+        super(TimeSeriesRegionIndex, self).fill_from_h5(h5_file)
+        self.fk_connectivity_gid = h5_file.connectivity.load().hex
+        region_mapping_volume = h5_file.region_mapping_volume.load()
+        if region_mapping_volume is not None:
+            self.fk_region_mapping_volume_gid = region_mapping_volume.hex
+            self.has_volume_mapping = True
+        region_mapping = h5_file.region_mapping.load()
+        if region_mapping is not None:
+            self.fk_region_mapping_gid = region_mapping.hex
+            self.has_surface_mapping = True
+
 
 class TimeSeriesSurfaceIndex(TimeSeriesIndex):
     id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
@@ -213,6 +246,11 @@ class TimeSeriesSurfaceIndex(TimeSeriesIndex):
         self.fk_surface_gid = datatype.surface.gid.hex
         self.has_surface_mapping = True
 
+    def fill_from_h5(self, h5_file):
+        super(TimeSeriesSurfaceIndex, self).fill_from_h5(h5_file)
+        self.fk_surface_gid = h5_file.surface.load().hex
+        self.has_surface_mapping = True
+
 
 class TimeSeriesVolumeIndex(TimeSeriesIndex):
     id = Column(Integer, ForeignKey(TimeSeriesIndex.id), primary_key=True)
@@ -223,5 +261,10 @@ class TimeSeriesVolumeIndex(TimeSeriesIndex):
     def fill_from_has_traits(self, datatype):
         # type: (TimeSeriesVolume)  -> None
         super(TimeSeriesVolumeIndex, self).fill_from_has_traits(datatype)
-        self.has_volume_mapping = True
         self.fk_volume_gid = datatype.volume.gid.hex
+        self.has_volume_mapping = True
+
+    def fill_from_h5(self, h5_file):
+        super(TimeSeriesVolumeIndex, self).fill_from_h5(h5_file)
+        self.fk_volume_gid = h5_file.volume.load().hex
+        self.has_volume_mapping = True

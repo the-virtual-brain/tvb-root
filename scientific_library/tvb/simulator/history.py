@@ -40,6 +40,7 @@ Simulator history implementations.
 import numpy
 from tvb.simulator.common import get_logger
 from .descriptors import StaticAttr, Dim, NDArray
+from .backend.ref import ReferenceBackend
 
 LOG = get_logger(__name__)
 
@@ -72,6 +73,83 @@ class BaseHistory(StaticAttr):
 
     def query(self, step, out=None):
         raise NotImplemented
+
+    @classmethod
+    def from_simulator(cls, sim, initial_conditions=None):
+        """
+        Set initial conditions for the simulation using either the provided
+        initial_conditions or, if none are provided, the model's initial()
+        method. This method is called durin the Simulator's __init__().
+
+        Any initial_conditions that are provided as an argument are expected
+        to have dimensions 1, 2, and 3 with shapse corresponding to the number
+        of state_variables, nodes and modes, respectively. If the provided
+        inital_conditions are shorter in time (dim=0) than the required history
+        the model's initial() method is called to make up the difference.
+
+        """
+
+        backend = ReferenceBackend
+        initial_conditions = initial_conditions or sim.initial_conditions
+        if initial_conditions is None:
+            n_time, n_svar, n_node, n_mode = sim.good_history_shape
+            sim.log.info('Preparing initial history of shape %r using model.initial()', sim.good_history_shape)
+            if sim.surface is not None:
+                n_node = sim.number_of_nodes
+            history = sim.model.initial_for_simulator(sim.integrator, (n_time, n_svar, n_node, n_mode))
+        # ICs provided
+        else:
+            # history should be [timepoints, state_variables, nodes, modes]
+            sim.log.info('Using provided initial history of shape %r', initial_conditions.shape)
+            n_time, n_svar, n_node, n_mode = ic_shape = initial_conditions.shape
+            nr = sim.connectivity.number_of_regions
+            if sim.surface is not None and n_node == nr:
+                initial_conditions = initial_conditions[:, :, sim._regmap]
+                return sim._configure_history(initial_conditions)
+            elif sim.surface is None and ic_shape[1:] != sim.good_history_shape[1:]:
+                raise ValueError("Incorrect history sample shape %s, expected %s"
+                                 % (ic_shape[1:], sim.good_history_shape[1:]))
+            else:
+                if ic_shape[0] >= sim.connectivity.horizon:
+                    sim.log.debug("Using last %d time-steps for history.", sim.connectivity.horizon)
+                    history = initial_conditions[-sim.connectivity.horizon:, :, :, :].copy()
+                else:
+                    sim.log.debug('Padding initial conditions with model.initial')
+                    history = sim.model.initial_for_simulator(sim.integrator, sim.good_history_shape)
+                    shift = sim.current_step % sim.connectivity.horizon
+                    history = numpy.roll(history, -shift, axis=0)
+                    if sim.surface is not None:
+                        n_reg = sim.connectivity.number_of_regions
+                        (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
+                        region_initial_conditions = numpy.zeros((nt, ns, n_reg, nm))
+                        backend.add_at(region_initial_conditions.transpose(ax), sim._regmap, initial_conditions.transpose(ax))
+                        region_initial_conditions /= numpy.bincount(sim._regmap).reshape((-1, 1))
+                        history[:region_initial_conditions.shape[0], :, :, :] = region_initial_conditions
+                    else:
+                        history[:ic_shape[0], :, :, :] = initial_conditions
+                    history = numpy.roll(history, shift, axis=0)
+                sim.current_step += ic_shape[0] - 1
+
+        # Make sure that history values are bounded
+        for it in range(history.shape[0]):
+            sim.integrator.bound_and_clamp(history[it])
+        sim.log.info('Final initial history shape is %r', history.shape)
+
+        # create initial state from history
+        sim.current_state = history[sim.current_step % sim.connectivity.horizon].copy()
+        sim.log.debug('initial state has shape %r' % (sim.current_state.shape, ))
+        if sim.surface is not None and history.shape[2] > sim.connectivity.number_of_regions:
+            n_reg = sim.connectivity.number_of_regions
+            (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
+            region_history = numpy.zeros((nt, ns, n_reg, nm))
+            backend.add_at(region_history.transpose(ax), sim._regmap, history.transpose(ax))
+            region_history /= numpy.bincount(sim._regmap).reshape((-1, 1))
+            history = region_history
+
+        inst = cls(sim.connectivity.weights, sim.connectivity.idelays,
+                   sim.model.cvar, sim.model.number_of_modes)
+        inst.initialize(history)
+        return inst
 
 
 class DenseHistory(BaseHistory):

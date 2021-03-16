@@ -33,49 +33,50 @@ Launches the web server and configure the controllers for UI.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-
 import time
+
+from tvb.core.entities.file.data_encryption_handler import encryption_handler, FoldersQueueConsumer, \
+    DataEncryptionHandler
 
 STARTUP_TIC = time.time()
 
 import os
-import sys
-import cherrypy
-import webbrowser
 import importlib
 from subprocess import Popen, PIPE
+import sys
+import webbrowser
+
+import cherrypy
 from cherrypy import Tool
-from tvb.basic.profile import TvbProfile
-
-if __name__ == '__main__':
-    TvbProfile.set_profile(sys.argv[1])
-
+from cherrypy.lib.sessions import RamSession
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
+from tvb.config.init.initializer import initialize, reset
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
-from tvb.config.init.initializer import initialize, reset
+from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.hpc_operation_service import HPCOperationService
-from tvb.interfaces.web.request_handler import RequestHandler
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.users_controller import UserController
-from tvb.interfaces.web.controllers.help.help_controller import HelpController
-from tvb.interfaces.web.controllers.project.project_controller import ProjectController
-from tvb.interfaces.web.controllers.project.figure_controller import FigureController
-from tvb.interfaces.web.controllers.flow_controller import FlowController
-from tvb.interfaces.web.controllers.settings_controller import SettingsController
-from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
-from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 from tvb.interfaces.web.controllers.burst.dynamic_model_controller import DynamicModelController
-from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
-from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
-from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
-from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
-from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
+from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
+from tvb.interfaces.web.controllers.common import KEY_PROJECT
+from tvb.interfaces.web.controllers.flow_controller import FlowController
+from tvb.interfaces.web.controllers.help.help_controller import HelpController
 from tvb.interfaces.web.controllers.hpc_controller import HPCController
-
+from tvb.interfaces.web.controllers.project.figure_controller import FigureController
+from tvb.interfaces.web.controllers.project.project_controller import ProjectController
+from tvb.interfaces.web.controllers.settings_controller import SettingsController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
+from tvb.interfaces.web.controllers.spatial.local_connectivity_controller import LocalConnectivityController
+from tvb.interfaces.web.controllers.spatial.region_stimulus_controller import RegionStimulusController
+from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
+from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
+from tvb.interfaces.web.controllers.users_controller import UserController
+from tvb.interfaces.web.request_handler import RequestHandler
 
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[1])
@@ -86,10 +87,48 @@ PARAM_RESET_DB = "reset"
 LOGGER.info("TVB application will be running using encoding: " + sys.getdefaultencoding())
 
 
+class CleanupSessionHandler(RamSession):
+    def __init__(self, id=None, **kwargs):
+        super(CleanupSessionHandler, self).__init__(id, **kwargs)
+        self.file_helper = FilesHelper()
+
+    def clean_up(self):
+        """Clean up expired sessions."""
+
+        now = self.now()
+        for _id, (data, expiration_time) in self.cache.copy().items():
+            if expiration_time <= now:
+                if KEY_PROJECT in data:
+                    selected_project = data[KEY_PROJECT]
+                    encryption_handler.set_project_inactive(selected_project)
+                try:
+                    del self.cache[_id]
+                except KeyError:
+                    pass
+                try:
+                    if self.locks[_id].acquire(blocking=False):
+                        lock = self.locks.pop(_id)
+                        lock.release()
+                except KeyError:
+                    pass
+
+        # added to remove obsolete lock objects
+        for _id in list(self.locks):
+            locked = (
+                    _id not in self.cache
+                    and self.locks[_id].acquire(blocking=False)
+            )
+            if locked:
+                lock = self.locks.pop(_id)
+                lock.release()
+
+
 def init_cherrypy(arguments=None):
     #### Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
+    if DataEncryptionHandler.encryption_enabled():
+        CONFIGUER["/"]["tools.sessions.storage_class"] = CleanupSessionHandler
     for module in arguments:
         module_inst = importlib.import_module(str(module))
         module_path = os.path.dirname(os.path.abspath(module_inst.__file__))
@@ -137,6 +176,14 @@ def init_cherrypy(arguments=None):
 
 
 def expose_rest_api():
+    if not TvbProfile.current.KEYCLOAK_CONFIG:
+        LOGGER.info("REST server will not start because KEYCLOAK CONFIG path is not set.")
+        return
+
+    if not os.path.exists(TvbProfile.current.KEYCLOAK_CONFIG):
+        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(TvbProfile.current.KEYCLOAK_CONFIG))
+        return
+
     if CONFIG_EXISTS:
         LOGGER.info("Starting Flask server with REST API...")
         run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.interfaces.rest.server.run',
@@ -175,6 +222,10 @@ def start_tvb(arguments, browser=True):
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
+    if DataEncryptionHandler.encryption_enabled():
+        queue_consumer = FoldersQueueConsumer()
+        queue_consumer.start()
+        DataEncryptionHandler.startup_cleanup()
 
     #### Fire a browser page at the end.
     if browser:

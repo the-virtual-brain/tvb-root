@@ -34,6 +34,7 @@
 import json
 import uuid
 import numpy
+from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.adapters.uploaders.mat.parser import read_nested_mat_file
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5, TimeSeriesEEGH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex, TimeSeriesEEGIndex
@@ -42,7 +43,7 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.core.entities.storage import transactional
+from tvb.core.entities.storage import transactional, dao
 from tvb.core.adapters.arguments_serialisation import parse_slice
 from tvb.core.neotraits.forms import TraitUploadField, StrField, BoolField, IntField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
@@ -102,17 +103,16 @@ class RegionMatTimeSeriesImporterModel(UploaderViewModel):
 
 class RegionMatTimeSeriesImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
-        self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', self, name='data_file')
-        self.dataset_name = StrField(RegionMatTimeSeriesImporterModel.dataset_name, self, name='dataset_name')
-        self.structure_path = StrField(RegionMatTimeSeriesImporterModel.structure_path, self, name='structure_path')
-        self.transpose = BoolField(RegionMatTimeSeriesImporterModel.transpose, self, name='transpose')
-        self.slice = StrField(RegionMatTimeSeriesImporterModel.slice, self, name='slice')
-        self.sampling_rate = IntField(RegionMatTimeSeriesImporterModel.sampling_rate, self, name='sampling_rate')
-        self.start_time = IntField(RegionMatTimeSeriesImporterModel.start_time, self, name='start_time')
-        self.datatype = TraitDataTypeSelectField(RegionMatTimeSeriesImporterModel.datatype, self,
-                                                 name='tstype_parameters')
+    def __init__(self):
+        super(RegionMatTimeSeriesImporterForm, self).__init__()
+        self.data_file = TraitUploadField(RegionMatTimeSeriesImporterModel.data_file, '.mat', 'data_file')
+        self.dataset_name = StrField(RegionMatTimeSeriesImporterModel.dataset_name, name='dataset_name')
+        self.structure_path = StrField(RegionMatTimeSeriesImporterModel.structure_path, name='structure_path')
+        self.transpose = BoolField(RegionMatTimeSeriesImporterModel.transpose, name='transpose')
+        self.slice = StrField(RegionMatTimeSeriesImporterModel.slice, name='slice')
+        self.sampling_rate = IntField(RegionMatTimeSeriesImporterModel.sampling_rate, name='sampling_rate')
+        self.start_time = IntField(RegionMatTimeSeriesImporterModel.start_time, name='start_time')
+        self.datatype = TraitDataTypeSelectField(RegionMatTimeSeriesImporterModel.datatype, name='tstype_parameters')
 
     @staticmethod
     def get_view_model():
@@ -129,7 +129,7 @@ class RegionTimeSeriesImporter(ABCUploader):
     """
     Import time series from a .mat file.
     """
-    _ui_name = "Timeseries Region MAT"
+    _ui_name = "TimeSeries Region MAT"
     _ui_subsection = "mat_ts_importer"
     _ui_description = "Import time series from a .mat file."
     tstype = TS_REGION
@@ -146,7 +146,13 @@ class RegionTimeSeriesImporter(ABCUploader):
                                   % (data_shape[1], connectivity.number_of_regions))
         ts_idx = TimeSeriesRegionIndex()
         ts_idx.fk_connectivity_gid = connectivity.gid
-        ts_idx.has_surface_mapping = True
+
+        region_map_indexes = dao.get_generic_entity(RegionMappingIndex, connectivity.gid,
+                                                    'fk_connectivity_gid')
+        ts_idx.has_surface_mapping = False
+        if len(region_map_indexes) > 0:
+            ts_idx.fk_region_mapping_gid = region_map_indexes[0].gid
+            ts_idx.has_surface_mapping = True
 
         ts_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, ts_idx.gid)
         ts_h5 = TimeSeriesRegionH5(ts_h5_path)

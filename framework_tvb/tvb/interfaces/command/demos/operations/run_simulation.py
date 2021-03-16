@@ -46,12 +46,12 @@ from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.services.simulator_service import SimulatorService
+from tvb.interfaces.command.lab import *
+
 
 # Before starting this, we need to have TVB web interface launched at least once
 # (to have a default project, user and connectivity)
 def run_simulation():
-    from tvb.interfaces.command.lab import *
-
     log = get_logger(__name__)
 
     # This ID of a project needs to exists in DB, and it can be taken from the WebInterface:

@@ -45,4 +45,5 @@ class TractsIndex(DataType):
     def fill_from_has_traits(self, datatype):
         # type: (Tracts)  -> None
         super(TractsIndex, self).fill_from_has_traits(datatype)
-        self.fk_region_volume_map_gid = datatype.region_volume_map.gid.hex
+        if datatype.region_volume_map is not None:
+            self.fk_region_volume_map_gid = datatype.region_volume_map.gid.hex

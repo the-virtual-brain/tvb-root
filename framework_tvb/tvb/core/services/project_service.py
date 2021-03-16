@@ -35,26 +35,31 @@ Service Layer for the Project entity.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import os
+
 import formencode
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
+from tvb.core.entities.file.exceptions import FileStructureException
+from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.context_overlay import CommonDetails, DataTypeOverlayDetails, OperationOverlayDetails
-from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.transient.structure_entities import StructureNode, DataTypeMetaData
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.exceptions import FileStructureException
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.removers_factory import get_remover
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.services.exceptions import StructureException, ProjectServiceException
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.services.exceptions import RemoveDataTypeException
+from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
 from tvb.core.utils import string2date, date2string, format_timedelta, format_bytes_human
 
@@ -113,7 +118,16 @@ class ProjectService:
                 self.logger.exception("An error has occurred!")
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
+                project_folder = self.structure_helper.get_project_folder(current_proj)
+                if encryption_handler.encryption_enabled() and not encryption_handler.is_in_usage(project_folder):
+                    raise ProjectServiceException(
+                        "A project can not be renamed while sync encryption operations are running")
                 self.structure_helper.rename_project_structure(current_proj.name, new_name)
+                encrypted_path = encryption_handler.compute_encrypted_folder_path(project_folder)
+                if os.path.exists(encrypted_path):
+                    new_encrypted_path = encryption_handler.compute_encrypted_folder_path(
+                        self.structure_helper.get_project_folder(new_name))
+                    os.rename(encrypted_path, new_encrypted_path)
             current_proj.name = new_name
             current_proj.description = data["description"]
         # Commit to make sure we have a valid ID
@@ -203,10 +217,11 @@ class ProjectService:
                         result["group"] = result["group"].replace("_", " ")
                         result["operation_group_id"] = operation_group.id
                         datatype_group = dao.get_datatypegroup_by_op_group_id(one_op[3])
-                        result["datatype_group_gid"] = datatype_group.gid
+                        result["datatype_group_gid"] = datatype_group.gid if datatype_group is not None else None
                         result["gid"] = operation_group.gid
                         # Filter only viewers for current DataTypeGroup entity:
-                        result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid)
+                        result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid) \
+                            if datatype_group is not None else None
                     except Exception:
                         self.logger.exception("We will ignore group on entity:" + str(one_op))
                         result["datatype_group_gid"] = None
@@ -295,10 +310,6 @@ class ProjectService:
             project2delete = dao.get_project_by_id(project_id)
 
             self.logger.debug("Deleting project: id=" + str(project_id) + ' name=' + project2delete.name)
-            project_bursts = dao.get_bursts_for_project(project_id)
-            for burst in project_bursts:
-                dao.remove_entity(burst.__class__, burst.id)
-
             project_datatypes = dao.get_datatypes_in_project(project_id)
             project_datatypes.sort(key=lambda dt: dt.create_date, reverse=True)
             for one_data in project_datatypes:
@@ -307,8 +318,15 @@ class ProjectService:
             links = dao.get_links_for_project(project_id)
             for one_link in links:
                 dao.remove_entity(Links, one_link.id)
+            project_bursts = dao.get_bursts_for_project(project_id)
+            for burst in project_bursts:
+                dao.remove_entity(burst.__class__, burst.id)
 
+            project_folder = self.structure_helper.get_project_folder(project2delete)
             self.structure_helper.remove_project_structure(project2delete.name)
+            encrypted_path = encryption_handler.compute_encrypted_folder_path(project_folder)
+            if os.path.exists(encrypted_path):
+                self.structure_helper.remove_folder(encrypted_path)
             dao.delete_project(project_id)
             self.logger.debug("Deleted project: id=" + str(project_id) + ' name=' + project2delete.name)
 
@@ -561,15 +579,23 @@ class ProjectService:
                                        datatype.parent_operation.user_group,
                                        datatype.parent_operation.range_values)
                     new_op = dao.store_entity(new_op)
-                    to_project = self.find_project(links[0].fk_to_project).name
+                    to_project = self.find_project(links[0].fk_to_project)
+                    to_project_path = self.structure_helper.get_project_folder(to_project)
+
+                    encryption_handler.set_project_active(to_project)
+                    encryption_handler.sync_folders(to_project_path)
+                    to_project_name = to_project.name
 
                     full_path = h5.path_for_stored_index(datatype)
-                    self.structure_helper.move_datatype(datatype, to_project, str(new_op.id), full_path)
+                    self.structure_helper.move_datatype(datatype, to_project_name, str(new_op.id), full_path)
                     # Move also the ViewModel H5
                     old_folder = self.structure_helper.get_project_folder(project, str(op.id))
                     view_model = adapter.load_view_model(op)
                     vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
-                    self.structure_helper.move_datatype(view_model, to_project, str(new_op.id), vm_full_path)
+                    self.structure_helper.move_datatype(view_model, to_project_name, str(new_op.id), vm_full_path)
+
+                    encryption_handler.sync_folders(to_project_path)
+                    encryption_handler.set_project_inactive(to_project)
 
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
@@ -580,6 +606,7 @@ class ProjectService:
                 specific_remover.remove_datatype(skip_validation)
                 h5_path = h5.path_for_stored_index(datatype)
                 self.structure_helper.remove_datatype_file(h5_path)
+                encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder_from_h5(h5_path))
 
         except RemoveDataTypeException:
             self.logger.exception("Could not execute operation Node Remove!")
@@ -602,7 +629,7 @@ class ProjectService:
             # but we still remove it for the case when no DTs exist
             dao.remove_entity(Operation, operation.id)
             self.structure_helper.remove_operation_data(operation.project.name, operation_id)
-
+            encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder(operation.project))
             self.logger.debug("Finished deleting operation %s " % operation)
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
@@ -619,26 +646,37 @@ class ProjectService:
             return
 
         is_datatype_group = False
+        datatype_group = None
         if dao.is_datatype_group(datatype_gid):
             is_datatype_group = True
+            datatype_group = datatype
         elif datatype.fk_datatype_group is not None:
             is_datatype_group = True
-            datatype = dao.get_datatype_by_id(datatype.fk_datatype_group)
+            datatype_group = dao.get_datatype_by_id(datatype.fk_datatype_group)
 
         operations_set = [datatype.fk_from_operation]
         correct = True
 
         if is_datatype_group:
-            self.logger.debug("Removing datatype group %s" % datatype)
-            data_list = dao.get_datatypes_from_datatype_group(datatype.id)
-            for adata in data_list:
-                self._remove_project_node_files(project_id, adata.gid, skip_validation)
-                if adata.fk_from_operation not in operations_set:
-                    operations_set.append(adata.fk_from_operation)
+            operations_set = [datatype_group.fk_from_operation]
+            self.logger.debug("Removing datatype group %s" % datatype_group)
+            if datatype_group.fk_parent_burst:
+                burst = dao.get_generic_entity(BurstConfiguration, datatype_group.fk_parent_burst, 'gid')[0]
+                dao.remove_entity(BurstConfiguration, burst.id)
+                if burst.fk_metric_operation_group:
+                    correct = correct and self._remove_operation_group(burst.fk_metric_operation_group, project_id,
+                                                                       skip_validation, operations_set)
 
-            datatype_group = dao.get_datatype_group_by_gid(datatype.gid)
-            dao.remove_entity(DataTypeGroup, datatype.id)
-            correct = correct and dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
+                if burst.fk_operation_group:
+                    correct = correct and self._remove_operation_group(burst.fk_operation_group, project_id,
+                                                                       skip_validation, operations_set)
+
+            else:
+                self._remove_datatype_group_dts(project_id, datatype_group.id, skip_validation, operations_set)
+
+                datatype_group = dao.get_datatype_group_by_gid(datatype_group.gid)
+                dao.remove_entity(DataTypeGroup, datatype.id)
+                correct = correct and dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
         else:
             self.logger.debug("Removing datatype %s" % datatype)
             self._remove_project_node_files(project_id, datatype.gid, skip_validation)
@@ -650,12 +688,33 @@ class ProjectService:
             if len(dependent_dt) > 0:
                 # Do not remove Operation in case DataType still exist referring it.
                 continue
+            op_burst = dao.get_burst_for_operation_id(operation_id)
+            if op_burst:
+                correct = correct and dao.remove_entity(BurstConfiguration, op_burst.id)
             correct = correct and dao.remove_entity(Operation, operation_id)
             # Make sure Operation folder is removed
-            self.structure_helper.remove_operation_data(project.name, datatype.fk_from_operation)
+            self.structure_helper.remove_operation_data(project.name, operation_id)
 
+        encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder(project))
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
+
+    def _remove_operation_group(self, operation_group_id, project_id, skip_validation, operations_set):
+        metrics_groups = dao.get_generic_entity(DataTypeGroup, operation_group_id,
+                                                'fk_operation_group')
+        if len(metrics_groups) > 0:
+            metric_datatype_group_id = metrics_groups[0].id
+            self._remove_datatype_group_dts(project_id, metric_datatype_group_id, skip_validation,
+                                            operations_set)
+            dao.remove_entity(DataTypeGroup, metric_datatype_group_id)
+        return dao.remove_entity(OperationGroup, operation_group_id)
+
+    def _remove_datatype_group_dts(self, project_id, dt_group_id, skip_validation, operations_set):
+        data_list = dao.get_datatypes_from_datatype_group(dt_group_id)
+        for adata in data_list:
+            self._remove_project_node_files(project_id, adata.gid, skip_validation)
+            if adata.fk_from_operation not in operations_set:
+                operations_set.append(adata.fk_from_operation)
 
     def update_metadata(self, submit_data):
         """
@@ -870,3 +929,18 @@ class ProjectService:
     def is_datatype_group(datatype_gid):
         """ Used to check if the dataType with the specified GID is a DataTypeGroup. """
         return dao.is_datatype_group(datatype_gid)
+
+    def get_linked_datatypes_storage_path(self, project):
+        """
+        :return: the file paths to the datatypes that are linked in `project`
+        """
+        paths = []
+        for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
+            # get datatype as a mapped type
+            lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
+            path = h5.path_for_stored_index(lnk_dt)
+            if path is not None:
+                paths.append(path)
+            else:
+                self.logger.warning("Problem when trying to retrieve path on %s:%s!" % (lnk_dt.type, lnk_dt.gid))
+        return paths

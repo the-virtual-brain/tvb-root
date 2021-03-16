@@ -30,6 +30,7 @@
 
 import os
 from abc import abstractmethod
+
 from tvb.adapters.analyzers.matlab_worker import MatlabWorker
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
@@ -71,11 +72,10 @@ class BaseBCTModel(ViewModel):
 
 
 class BaseBCTForm(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None, draw_ranges=True):
-        super(BaseBCTForm, self).__init__(prefix, project_id, draw_ranges)
-        self.connectivity = TraitDataTypeSelectField(BaseBCTModel.connectivity, self,
-                                                     name="connectivity", conditions=self.get_filters(),
-                                                     has_all_option=True)
+    def __init__(self):
+        super(BaseBCTForm, self).__init__()
+        self.connectivity = TraitDataTypeSelectField(BaseBCTModel.connectivity, name="connectivity",
+                                                     conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
     def get_required_datatype():
@@ -129,8 +129,7 @@ class BaseBCT(ABCAdapter):
         return 0
 
     def get_connectivity(self, view_model):
-        conn_index = self.load_entity_by_gid(view_model.connectivity)
-        return h5.load_from_index(conn_index)
+        return self.load_traited_by_gid(view_model.connectivity)
 
     def execute_matlab(self, matlab_code, data):
         self.matlab_worker.add_to_path(BCT_PATH)

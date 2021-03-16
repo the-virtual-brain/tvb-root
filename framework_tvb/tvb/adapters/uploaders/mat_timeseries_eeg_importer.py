@@ -28,16 +28,15 @@
 #
 #
 
+from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterForm, TS_EEG, \
+    RegionTimeSeriesImporter, RegionMatTimeSeriesImporterModel
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.uploader_view_model import UploaderViewModel
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.datatypes.sensors import Sensors, SensorTypes
-from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterForm, TS_EEG, \
-    RegionTimeSeriesImporter
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
 
 
-class EEGMatTimeSeriesImporterModel(UploaderViewModel):
+class EEGMatTimeSeriesImporterModel(RegionMatTimeSeriesImporterModel):
     datatype = DataTypeGidAttr(
         linked_datatype=Sensors,
         label='EEG Sensors'
@@ -46,11 +45,11 @@ class EEGMatTimeSeriesImporterModel(UploaderViewModel):
 
 class EEGRegionMatTimeSeriesImporterForm(RegionMatTimeSeriesImporterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(EEGRegionMatTimeSeriesImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(EEGRegionMatTimeSeriesImporterForm, self).__init__()
         eeg_conditions = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=['=='],
                                      values=[SensorTypes.TYPE_EEG.value])
-        self.datatype = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.datatype, self, name='tstype_parameters',
+        self.datatype = TraitDataTypeSelectField(EEGMatTimeSeriesImporterModel.datatype, name='tstype_parameters',
                                                  conditions=eeg_conditions)
 
     @staticmethod
@@ -59,7 +58,7 @@ class EEGRegionMatTimeSeriesImporterForm(RegionMatTimeSeriesImporterForm):
 
 
 class EEGRegionTimeSeriesImporter(RegionTimeSeriesImporter):
-    _ui_name = "Timeseries EEG MAT"
+    _ui_name = "TimeSeries EEG MAT"
     tstype = TS_EEG
 
     def get_form_class(self):

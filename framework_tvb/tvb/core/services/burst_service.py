@@ -32,19 +32,22 @@ import json
 import os
 from datetime import datetime
 
-from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, STATUS_FINISHED, STATUS_PENDING, STATUS_CANCELED
 from tvb.core.entities.model.model_operation import OperationGroup, STATUS_ERROR, STATUS_STARTED, has_finished
 from tvb.core.entities.storage import dao
+from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
+from tvb.core.services.import_service import ImportService
 from tvb.core.utils import format_bytes_human, format_timedelta
 
 MAX_BURSTS_DISPLAYED = 50
@@ -63,7 +66,7 @@ class BurstService(object):
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.file_helper = FilesHelper()
+        self.files_helper = FilesHelper()
 
     def mark_burst_finished(self, burst_entity, burst_status=None, error_message=None):
         """
@@ -140,8 +143,6 @@ class BurstService(object):
         Return all the burst for the current project.
         """
         bursts = dao.get_bursts_for_project(project_id, page_size=MAX_BURSTS_DISPLAYED) or []
-        # for burst in bursts:
-        #     burst.prepare_after_load()
         return bursts
 
     @staticmethod
@@ -156,12 +157,12 @@ class BurstService(object):
 
     def update_history_status(self, id_list):
         """
-        For each burst_id received in the id_list read new status from DB and return a list [id, new_status] pair.
+        For each burst_id received in the id_list read new status from DB and return a list
+        [id, new_status, is_group, message, running_time] tuple.
         """
         result = []
         for b_id in id_list:
             burst = dao.get_burst_by_id(b_id)
-            # burst.prepare_after_load()
             if burst is not None:
                 if burst.status == burst.BURST_RUNNING:
                     running_time = datetime.now() - burst.start_time
@@ -179,8 +180,7 @@ class BurstService(object):
         return result
 
     @staticmethod
-    def update_simulation_fields(burst_id, op_simulation_id, simulation_gid):
-        burst = dao.get_burst_by_id(burst_id)
+    def update_simulation_fields(burst, op_simulation_id, simulation_gid):
         burst.fk_simulation = op_simulation_id
         burst.simulator_gid = simulation_gid.hex
         burst = dao.store_entity(burst)
@@ -189,15 +189,17 @@ class BurstService(object):
     def update_burst_configuration_h5(self, burst_configuration):
         # type: (BurstConfiguration) -> None
         project = dao.get_project_by_id(burst_configuration.fk_project)
-        storage_path = self.file_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
+        storage_path = self.files_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
         self.store_burst_configuration(burst_configuration, storage_path)
 
-    def load_burst_configuration(self, burst_config_id):
+    @staticmethod
+    def load_burst_configuration(burst_config_id):
         # type: (int) -> BurstConfiguration
         burst_config = dao.get_burst_by_id(burst_config_id)
         return burst_config
 
-    def prepare_burst_for_pse(self, burst_config):
+    @staticmethod
+    def prepare_burst_for_pse(burst_config):
         # type: (BurstConfiguration) -> (BurstConfiguration)
         operation_group = OperationGroup(burst_config.fk_project, ranges=burst_config.ranges)
         operation_group = dao.store_entity(operation_group)
@@ -211,12 +213,14 @@ class BurstService(object):
         burst_config.fk_metric_operation_group = metric_operation_group.id
         return dao.store_entity(burst_config)
 
-    def store_burst_configuration(self, burst_config, storage_path):
+    @staticmethod
+    def store_burst_configuration(burst_config, storage_path):
         bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
         with BurstConfigurationH5(bc_path) as bc_h5:
             bc_h5.store(burst_config)
 
-    def load_burst_configuration_from_folder(self, simulator_folder, project):
+    @staticmethod
+    def load_burst_configuration_from_folder(simulator_folder, project):
         bc_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(BurstConfiguration)
         burst_config = BurstConfiguration(project.id)
         with BurstConfigurationH5(os.path.join(simulator_folder, bc_h5_filename)) as bc_h5:
@@ -224,41 +228,53 @@ class BurstService(object):
         return burst_config
 
     @staticmethod
-    def prepare_name(burst, project_id):
+    def prepare_simulation_name(burst, project_id):
         simulation_number = dao.get_number_of_bursts(project_id) + 1
 
         if burst.name is None:
-            default_simulation_name = 'simulation_' + str(simulation_number)
+            simulation_name = 'simulation_' + str(simulation_number)
         else:
-            default_simulation_name = burst.name
+            simulation_name = burst.name
 
-        return default_simulation_name, simulation_number
+        return simulation_name, simulation_number
 
     def prepare_indexes_for_simulation_results(self, operation, result_filenames, burst):
         indexes = list()
         self.logger.debug("Preparing indexes for simulation results in operation {}...".format(operation.id))
         for filename in result_filenames:
-            index = h5.index_for_h5_file(filename)()
-            # TODO: don't load full TS in memory and make this read nicer
-            datatype, ga = h5.load_with_references(filename)
-            index.fill_from_has_traits(datatype)
-            index.fill_from_generic_attributes(ga)
-            index.fk_parent_burst = burst.gid
-            index.fk_from_operation = operation.id
-            if operation.fk_operation_group:
-                datatype_group = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group)
+            try:
+                self.logger.debug("Preparing index for filename: {}".format(filename))
+                index = h5.index_for_h5_file(filename)()
+                h5_class = h5.REGISTRY.get_h5file_for_index(type(index))
+
+                with h5_class(filename) as index_h5:
+                    index.fill_from_h5(index_h5)
+                    index.fill_from_generic_attributes(index_h5.load_generic_attributes())
+
+                index.fk_parent_burst = burst.gid
+                index.fk_from_operation = operation.id
+                if operation.fk_operation_group:
+                    datatype_group = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group)
+                    self.logger.debug(
+                        "Found DatatypeGroup with id {} for operation {}".format(datatype_group.id, operation.id))
+                    index.fk_datatype_group = datatype_group.id
+
+                    # Update the operation group name
+                    operation_group = dao.get_operationgroup_by_id(operation.fk_operation_group)
+                    operation_group.fill_operationgroup_name("TimeSeriesRegionIndex")
+                    dao.store_entity(operation_group)
                 self.logger.debug(
-                    "Found DatatypeGroup with id {} for operation {}".format(datatype_group.id, operation.id))
-                index.fk_datatype_group = datatype_group.id
-            self.logger.debug(
-                "Prepared index {} for file {} in operation {}".format(index.summary_info, filename, operation.id))
-            indexes.append(index)
+                    "Prepared index {} for file {} in operation {}".format(index.summary_info, filename, operation.id))
+                indexes.append(index)
+            except Exception as e:
+                self.logger.debug("Skip preparing index {} because there was an error.".format(filename))
+                self.logger.error(e)
         self.logger.debug("Prepared {} indexes for results in operation {}...".format(len(indexes), operation.id))
         return indexes
 
     def prepare_index_for_metric_result(self, operation, result_filename, burst):
         self.logger.debug("Preparing index for metric result in operation {}...".format(operation.id))
-        index = DatatypeMeasureIndex()
+        index = h5.index_for_h5_file(result_filename)()
         with DatatypeMeasureH5(result_filename) as dti_h5:
             index.gid = dti_h5.gid.load().hex
             index.metrics = json.dumps(dti_h5.metrics.load())
@@ -318,3 +334,44 @@ class BurstService(object):
         metric_operation = dao.store_entity(metric_operation)
         op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
         return op_dir, metric_operation
+
+    @staticmethod
+    def handle_range_params_at_loading(burst_config, all_range_parameters):
+        param1, param2 = None, None
+        if burst_config.range1:
+            param1 = RangeParameter.from_json(burst_config.range1)
+            param1.fill_from_default(all_range_parameters[param1.name])
+            if burst_config.range2 is not None:
+                param2 = RangeParameter.from_json(burst_config.range2)
+                param2.fill_from_default(all_range_parameters[param2.name])
+
+        return param1, param2
+
+    def prepare_data_for_burst_copy(self, burst_config_id, burst_name_format, project):
+        burst_config = self.load_burst_configuration(burst_config_id)
+        burst_config_copy = burst_config.clone()
+        count = dao.count_bursts_with_name(burst_config.name, burst_config.fk_project)
+        burst_config_copy.name = burst_name_format.format(burst_config.name, count + 1)
+
+        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
+        simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
+        simulator.generic_attributes = GenericAttributes()
+        return simulator, burst_config_copy
+
+    @staticmethod
+    def store_burst(burst_config):
+        return dao.store_entity(burst_config)
+
+    def load_simulation_from_zip(self, zip_file, project):
+        import_service = ImportService()
+        simulator_folder = import_service.import_simulator_configuration_zip(zip_file)
+
+        simulator_h5_filename = DirLoader(simulator_folder, None).find_file_for_has_traits_type(SimulatorAdapterModel)
+        simulator_h5_filepath = os.path.join(simulator_folder, simulator_h5_filename)
+        simulator = h5.load_view_model_from_file(simulator_h5_filepath)
+
+        burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
+        burst_config_copy = burst_config.clone()
+        simulator.generic_attributes.parent_burst = burst_config_copy.gid
+
+        return simulator, burst_config_copy, simulator_folder
