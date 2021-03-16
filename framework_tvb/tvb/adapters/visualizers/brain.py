@@ -36,7 +36,7 @@
 
 from tvb.adapters.datatypes.db.time_series import *
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
-from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5, TimeSeriesSurfaceH5
 from tvb.adapters.visualizers.eeg_monitor import EegMonitor
 from tvb.adapters.visualizers.sensors import prepare_mapped_sensors_as_measure_points_params
 from tvb.adapters.visualizers.sensors import prepare_sensors_as_measure_points_params, function_sensors_to_surface
@@ -348,7 +348,7 @@ class BrainViewer(ABCSurfaceDisplayer):
             assert isinstance(time_series_h5, TimeSeriesH5)
             basic_result = time_series_h5.read_data_page(from_idx, to_idx, step, specific_slices)
 
-            if not isinstance(time_series_h5, TimeSeriesSurfaceIndex):
+            if not isinstance(time_series_h5, TimeSeriesSurfaceH5):
                 return basic_result.tolist()
             surface_gid = time_series_h5.surface.load()
 
