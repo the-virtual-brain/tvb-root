@@ -38,6 +38,7 @@ from queue import Queue
 from threading import Lock
 
 from tvb.basic.config.settings import WebSettings
+from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import InvalidSettingsException
 
 try:
@@ -69,6 +70,7 @@ class DataEncryptionHandlerMeta(type):
 class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     ENCRYPTED_FOLDER_SUFFIX = "_encrypted"
     CRYPTO_PASS = "CRYPTO_PASS"
+    NO_OF_KEYS = 20
 
     fie_helper = FilesHelper()
 
@@ -172,12 +174,18 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     def sync_folders(folder):
         if not DataEncryptionHandler.encryption_enabled():
             return
-        encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
-        crypto_pass = os.environ[
-            DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
+        project_name = os.path.basename(folder)
+        project = dao.get_project_by_name(project_name)
+        mod = project.id % DataEncryptionHandler.NO_OF_KEYS
+        key_number = mod if mod != 0 else project.id
+        _pass = DataEncryptionHandler.CRYPTO_PASS + "_{}".format(key_number)
+        crypto_pass = os.environ[_pass] if _pass in os.environ else None
         if crypto_pass is None:
-            raise TVBException("Storage encryption/decryption is not possible because password is not provided.")
+            raise TVBException(
+                "Storage encryption/decryption is not possible for project {} because password {} is not provided.".format(
+                    project.id, _pass))
         crypto = Crypto(crypto_pass)
+        encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
         syncro = Syncrypto(crypto, encrypted_folder, folder)
         syncro.sync_folder()
         trash_path = os.path.join(encrypted_folder, "_syncrypto", "trash")
