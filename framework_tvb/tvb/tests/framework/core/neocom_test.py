@@ -132,8 +132,8 @@ def test_gather_view_model_and_datatype_references(connectivity_index_factory, o
     storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
     h5.store_view_model(sim_view_model, storage_path)
 
-    only_vm_references, _ = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path, True)
-    vm_references, dt_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path)
+    only_vm_references, _ = h5.gather_references_of_view_model(sim_view_model.gid, storage_path, True)
+    vm_references, dt_references = h5.gather_references_of_view_model(sim_view_model.gid, storage_path)
 
     assert len(only_vm_references) == 5
     assert len(vm_references) + len(dt_references) == 6
@@ -165,8 +165,8 @@ def test_gather_view_model_and_datatype_references_multiple_monitors(connectivit
     storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
     h5.store_view_model(sim_view_model, storage_path)
 
-    only_vm_references, _ = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path, True)
+    only_vm_references, _ = h5.gather_references_of_view_model(sim_view_model.gid, storage_path, True)
     assert len(only_vm_references) == 7
 
-    vm_references, dt_references = h5.gather_view_model_and_datatype_references(sim_view_model.gid, storage_path)
+    vm_references, dt_references = h5.gather_references_of_view_model(sim_view_model.gid, storage_path)
     assert len(vm_references + dt_references) == 12

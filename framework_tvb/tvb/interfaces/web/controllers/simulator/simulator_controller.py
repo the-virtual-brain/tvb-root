@@ -42,7 +42,6 @@ from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
-from tvb.adapters.uploaders.tvb_importer import TVBImporter, TVBImporterModel
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
@@ -751,16 +750,14 @@ class SimulatorController(BurstBaseController):
         """Upload Simulator from previously exported ZIP file"""
         self.logger.debug("Uploading ..." + str(data))
         last_loaded_form_url = SimulatorWizzardURLs.SETUP_PSE_URL
-        operation_service = OperationService()
-        adapter_instance = TVBImporter()
 
         try:
             upload_param = "uploadedfile"
             if upload_param in data and data[upload_param]:
                 simulator, burst_config, sim_folder = self.burst_service.load_simulation_from_zip(data[upload_param],
-                                                                                               self.context.project)
+                                                                                                  self.context.project)
 
-                dts_folder = os.path.join(sim_folder, "datatypes")
+                dts_folder = os.path.join(sim_folder, ExportManager.EXPORTED_SIMULATION_DTS_DIR)
                 ImportService().import_project_operations(self.context.project, dts_folder, False, None)
 
                 self.monitors_handler.build_list_of_monitors_from_view_models(simulator)

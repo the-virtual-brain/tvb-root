@@ -35,7 +35,6 @@ from datetime import datetime
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -48,7 +47,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
-from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.services.import_service import ImportService
 from tvb.core.utils import format_bytes_human, format_timedelta
 
@@ -374,5 +372,6 @@ class BurstService(object):
 
         burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
         burst_config_copy = burst_config.clone()
+        simulator.generic_attributes.parent_burst = burst_config_copy.gid
 
         return simulator, burst_config_copy, simulator_folder
