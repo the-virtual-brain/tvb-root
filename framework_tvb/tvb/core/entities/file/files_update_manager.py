@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -76,7 +76,7 @@ class FilesUpdateManager(UpdateManager):
     def get_file_data_version(self, file_path):
         """
         Return the data version for the given file.
-        
+
         :param file_path: the path on disk to the file for which you need the TVB data version
         :returns: a number representing the data version for which the input file was written
         """
@@ -160,7 +160,7 @@ class FilesUpdateManager(UpdateManager):
     def run_all_updates(self):
         """
         Upgrades all the data types from TVB storage to the latest data version.
-        
+
         :returns: a two entry tuple (status, message) where status is a boolean that is True in case
             the upgrade was successfully for all DataTypes and False otherwise, and message is a status
             update message.
@@ -172,7 +172,7 @@ class FilesUpdateManager(UpdateManager):
                 TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
                 TvbProfile.current.version.DATA_VERSION, total_count))
 
-            # Keep track of how many DataTypes were properly updated and how many 
+            # Keep track of how many DataTypes were properly updated and how many
             # were marked as invalid due to missing files or invalid manager.
             start_time = datetime.now()
 
@@ -242,24 +242,16 @@ class FilesUpdateManager(UpdateManager):
                     pass
 
         # Sort all h5 files based on their creation date stored in the files themselves
-        return FilesUpdateManager.sort_h5_files(h5_files)
-
-    @staticmethod
-    def sort_h5_files(h5_files, version_5=False):
-        return sorted(h5_files, key=lambda h5_path: FilesUpdateManager._get_create_date_for_sorting(
-            h5_path, version_5) or datetime.now())
+        sorted_h5_files = sorted(h5_files, key=lambda h5_path: FilesUpdateManager._get_create_date_for_sorting(
+            h5_path) or datetime.now())
+        return sorted_h5_files
 
     @staticmethod
     def _is_empty_file(h5_file):
         return H5File.get_metadata_param(h5_file, 'Create_date') is None
 
     @staticmethod
-    def _get_create_date_for_sorting(h5_file, version_5):
-        if version_5:
-            create_date_str = H5File.get_metadata_param(h5_file, 'create_date')
-            create_date = string2date(create_date_str, date_format='%Y-%m-%d,%H-%M-%S.%f')
-        else:
-            create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'), 'utf-8')
-            create_date = string2date(create_date_str, date_format='datetime:%Y-%m-%d %H:%M:%S.%f')
-
+    def _get_create_date_for_sorting(h5_file):
+        create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'), 'utf-8')
+        create_date = string2date(create_date_str, date_format='datetime:%Y-%m-%d %H:%M:%S.%f')
         return create_date
