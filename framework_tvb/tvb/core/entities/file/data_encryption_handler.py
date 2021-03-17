@@ -34,10 +34,15 @@
 import os
 import shutil
 import threading
+from io import BytesIO
+from os import stat
 from queue import Queue
 from threading import Lock
 
+import pyAesCrypt
 from tvb.basic.config.settings import WebSettings
+from tvb.core.entities.storage import dao
+from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.core.services.exceptions import InvalidSettingsException
 
 try:
@@ -68,6 +73,7 @@ class DataEncryptionHandlerMeta(type):
 
 class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     ENCRYPTED_FOLDER_SUFFIX = "_encrypted"
+    KEYS_FOLDER = ".storage-keys"
     CRYPTO_PASS = "CRYPTO_PASS"
 
     fie_helper = FilesHelper()
@@ -172,12 +178,11 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     def sync_folders(folder):
         if not DataEncryptionHandler.encryption_enabled():
             return
-        encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
-        crypto_pass = os.environ[
-            DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
-        if crypto_pass is None:
-            raise TVBException("Storage encryption/decryption is not possible because password is not provided.")
+        project_name = os.path.basename(folder)
+        project = dao.get_project_by_name(project_name)
+        crypto_pass = DataEncryptionHandler._project_key(project.id)
         crypto = Crypto(crypto_pass)
+        encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
         syncro = Syncrypto(crypto, encrypted_folder, folder)
         syncro.sync_folder()
         trash_path = os.path.join(encrypted_folder, "_syncrypto", "trash")
@@ -249,6 +254,37 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             LOGGER.info("Sync and clean project: {}".format(project))
             DataEncryptionHandler.sync_folders(project)
             shutil.rmtree(project)
+
+    @staticmethod
+    def project_key_path(project_id):
+        return os.path.join(TvbProfile.current.TVB_STORAGE, DataEncryptionHandler.KEYS_FOLDER, str(project_id))
+
+    @staticmethod
+    def _project_key(project_id):
+        password_encryption_key = os.environ[
+            DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
+        if password_encryption_key is None:
+            raise TVBException("Password encryption key is not defined.")
+        project_keys_folder = os.path.join(TvbProfile.current.TVB_STORAGE, DataEncryptionHandler.KEYS_FOLDER)
+        DataEncryptionHandler.fie_helper.check_created(project_keys_folder)
+
+        encrypted_project_key = DataEncryptionHandler.project_key_path(project_id)
+        if os.path.exists(encrypted_project_key):
+            with open(encrypted_project_key, "rb") as fIn:
+                inputFileSize = stat(encrypted_project_key).st_size
+                pass_stream = BytesIO()
+                pyAesCrypt.decryptStream(fIn, pass_stream, password_encryption_key, 64 * 1024, inputFileSize)
+                project_key = pass_stream.getvalue().decode()
+                pass_stream.close()
+
+            return project_key
+
+        project_key = EncryptionHandler.generate_random_password(64)
+        with open(encrypted_project_key, "wb") as fOut:
+            pass_stream = BytesIO(str.encode(project_key))
+            pyAesCrypt.encryptStream(pass_stream, fOut, password_encryption_key, 64 * 1024)
+            pass_stream.close()
+        return project_key
 
 
 class FoldersQueueConsumer(threading.Thread):
