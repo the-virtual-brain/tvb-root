@@ -123,6 +123,7 @@ class Driver_Setup:
 	def setup_params(self, n0, n1):  # {{{
 		# the correctness checks at the end of the simulation
 		# are matched to these parameter values, for the moment
+		# TODO setup for n of parameters to sweep
 		% for pc, par_var in enumerate(XML.parameters):
 		sweeparam${pc} = np.linspace(${par_var.dimension}, n${pc})
 		% endfor
@@ -307,30 +308,29 @@ class Driver_Execute(Driver_Setup):
 						 e, self.args.n_sweep_arg0, self.args.n_sweep_arg1)
 			exit(1)
 
+		# determine optimal grid recursively
+		def dog(fgd):
+			maxgd, mingd = max(fgd), min(fgd)
+			maxpos = fgd.index(max(fgd))
+			if (maxgd - 1) * mingd * bx * by >= nwi:
+				fgd[maxpos] = fgd[maxpos] - 1
+				dog(fgd)
+			else:
+				return fgd
+
 		# n_sweep_arg0 scales griddim.x, n_sweep_arg1 scales griddim.y
-		# form an optimal grid
+		# form an optimal grid recursively
 		bx, by = self.args.blockszx, self.args.blockszy
 		s_arg0, s_arg1 = self.args.n_sweep_arg0, self.args.n_sweep_arg1
 		nwi = self.n_work_items
 		gridx = int(np.ceil(s_arg0 / bx))
-		# cut the grid x if already sufficient
-		if (gridx-1) * bx * by > nwi:
-			gridx=gridx-1
-		gridy = 1
-		if gridx * bx * by < nwi:
-			gridy = int(np.ceil(s_arg1 / by))
-		# cut the grid y if already sufficient
-		if gridx * bx * by * (gridy-1) > nwi:
-			gridy=gridy-1
-
-		# cut the grid x|y if already sufficient
-		maxgd, mingd = max(gridx, gridy), min(gridx, gridy)
-		if (maxgd-1) * mingd * bx * by > nwi:
-			final_grid_dim = maxgd-1, mingd
-		else:
-			final_grid_dim = gridx, gridy
+		gridy = int(np.ceil(s_arg1 / by))
 
 		final_block_dim = bx, by, 1
+
+		fgd = [gridx, gridy]
+		dog(fgd)
+		final_grid_dim = fgd[0], fgd[1]
 
 		assert gridx * gridy * bx * by >= self.n_work_items
 
@@ -410,7 +410,7 @@ class Driver_Execute(Driver_Setup):
 		plt.xlim(0, 400)
 		plt.show()
 
-	def file_output(self, tavg):
+	def write_output(self, tavg):
 		tavg_file = open('tavg_data', 'wb')
 		pickle.dump(tavg, tavg_file)
 		tavg_file.close()
