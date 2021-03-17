@@ -26,7 +26,7 @@ jobs:
       - name: debug debug
         run: env && pwd && ls -lh
       - name: run pytest
-        run: cd scientific_library && pytest
+        run: pip uninstall -y tvb-gdist && cd scientific_library && pytest
 
 #name: docker-based library testing
 #on: [push]
