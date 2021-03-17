@@ -26,10 +26,10 @@ jobs:
       - name: debug debug
         run: env && pwd && ls -lh
       - name: run pytest
-        run: |
-          pip uninstall -y tvb-gdist
-          pin install pylems
-          cd scientific_library
+        run:
+          pip uninstall -y tvb-gdist &&
+          pin install pylems &&
+          cd scientific_library &&
           pytest
 
 #name: docker-based library testing
