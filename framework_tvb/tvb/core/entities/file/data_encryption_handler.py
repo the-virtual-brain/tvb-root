@@ -40,6 +40,7 @@ from queue import Queue
 from threading import Lock
 
 import pyAesCrypt
+from sqlalchemy.orm.exc import NoResultFound
 from tvb.basic.config.settings import WebSettings
 from tvb.core.entities.storage import dao
 from tvb.core.services.encryption_handler import EncryptionHandler
@@ -178,11 +179,21 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     def sync_folders(folder):
         if not DataEncryptionHandler.encryption_enabled():
             return
+
         project_name = os.path.basename(folder)
-        project = dao.get_project_by_name(project_name)
+        encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
+        try:
+            project = dao.get_project_by_name(project_name)
+        except NoResultFound:
+            LOGGER.info("Project {} was deleted".format(project_name))
+            if os.path.exists(encrypted_folder):
+                shutil.rmtree(encrypted_folder)
+            if os.path.exists(folder):
+                shutil.rmtree(folder)
+            return
+
         crypto_pass = DataEncryptionHandler._project_key(project.id)
         crypto = Crypto(crypto_pass)
-        encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
         syncro = Syncrypto(crypto, encrypted_folder, folder)
         syncro.sync_folder()
         trash_path = os.path.join(encrypted_folder, "_syncrypto", "trash")
