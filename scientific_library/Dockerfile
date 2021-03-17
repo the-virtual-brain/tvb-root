@@ -22,3 +22,5 @@ RUN pip install mako
 RUN pip install pylems
 
 RUN pip install lxml
+
+RUN pip uninstall -y tvb-gdist
