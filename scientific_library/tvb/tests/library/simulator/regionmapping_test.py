@@ -11,13 +11,13 @@ from tvb.simulator.lab import *
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.tests.library.base_testcase import BaseTestCase
 
-class SetUpSimulator(object):
-    """
-    Simulator test class for region mapping
-    """
-    def __init__(self, monitors=(monitors.Raw(),)):
+
+class TestRegionMapping(BaseTestCase):
+
+    def setUp(self, monitors=(monitors.Raw(),)):
         """
-        Initialize the structural information, coupling function, integrator, monitors, surface and stimulation.
+        Initialize the structural information, coupling function, integrator, 
+        monitors, surface and stimulation.
         """
         # Connectome
         con = connectivity.Connectivity.from_file("connectivity_192.zip")
@@ -45,12 +45,7 @@ class SetUpSimulator(object):
         )
         self.sim.configure()
 
-    def run_simulation(self):
-        return self.sim.run(simulation_length = 10)
-
-class TestRegionMapping(BaseTestCase):
-
     def test_spatial_average_monitor(self):
-        model = SetUpSimulator(monitors=(monitors.SpatialAverage(period=1.),))
-        result = model.run_simulation()
+        self.setUp(monitors=(monitors.SpatialAverage(period=1.),))
+        result = self.sim.run(simulation_length = 10)
         assert result is not None
