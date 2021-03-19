@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -39,6 +39,7 @@ Module in charge with Launching an operation (creating the Operation entity as w
 
 import json
 import os
+import shutil
 import sys
 import uuid
 import zipfile
@@ -76,7 +77,7 @@ RANGE_PARAMETER_2 = RANGE_PARAMETER_2
 
 class OperationService:
     """
-    Class responsible for preparing an operation launch. 
+    Class responsible for preparing an operation launch.
     It will prepare parameters, and decide if the operation is to be executed
     immediately, or to be sent on the cluster.
     """
@@ -94,7 +95,7 @@ class OperationService:
         """
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
-        
+
         Invoke custom method on an Adapter Instance. Make sure when the
         operation has finished that the correct results are stored into DB.
         """
@@ -120,7 +121,7 @@ class OperationService:
             return self._send_to_cluster(operations, adapter_instance, current_user.username)
 
     @staticmethod
-    def _prepare_metadata(algo_category, submit_data, operation_group=None, burst=None,
+    def prepare_metadata(algo_category, submit_data, burst=None,
                           current_ga=GenericAttributes()):
         """
         Gather generic_metadata from submitted fields and current to be execute algorithm.
@@ -165,7 +166,7 @@ class OperationService:
         metric_algo = dao.get_algorithm_by_module(MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS)
         datatype_index = h5.REGISTRY.get_index_for_datatype(TimeSeries)
         time_series_index = dao.get_generic_entity(datatype_index, sim_operation.id, 'fk_from_operation')[0]
-        ga = self._prepare_metadata(metric_algo.algorithm_category, {}, None, time_series_index.fk_parent_burst)
+        ga = self.prepare_metadata(metric_algo.algorithm_category, {}, time_series_index.fk_parent_burst)
         ga.visible = False
 
         view_model = get_class_by_name("{}.{}".format(MEASURE_METRICS_MODULE, MEASURE_METRICS_MODEL_CLASS))()
@@ -233,7 +234,7 @@ class OperationService:
         group_id = None
         if group is not None:
             group_id = group.id
-        ga = self._prepare_metadata(category, kwargs, group, current_ga=view_model.generic_attributes)
+        ga = self.prepare_metadata(category, kwargs, current_ga=view_model.generic_attributes)
         ga.visible = visible
         view_model.generic_attributes = ga
 
@@ -298,7 +299,7 @@ class OperationService:
                 for upload_field in fields:
                     if hasattr(view_model, upload_field):
                         file = getattr(view_model, upload_field)
-                        if file.startswith(tmp_folder):
+                        if file.startswith(tmp_folder) or file.startswith(TvbProfile.current.TVB_TEMP_FOLDER):
                             temp_files.append(file)
             except AttributeError:
                 # Skip if we don't have upload fields on current form
@@ -383,7 +384,7 @@ class OperationService:
 
     def _remove_files(self, file_list):
         """
-        Remove any files that exist in the file_dictionary. 
+        Remove any files that exist in the file_dictionary.
         Currently used to delete temporary files created during an operation.
         """
         for pth in file_list:
@@ -392,6 +393,8 @@ class OperationService:
                 try:
                     if os.path.exists(pth) and os.path.isfile(pth):
                         os.remove(pth)
+                        if len(os.listdir(os.path.dirname(pth))) == 0:
+                            shutil.rmtree(os.path.dirname(pth))
                         self.logger.debug("We no longer need file:" + pth + " => deleted")
                     else:
                         self.logger.warning("Trying to remove not existent file:" + pth)
@@ -477,7 +480,7 @@ class OperationService:
     @staticmethod
     def __expand_arguments(arguments_list, range_values, range_title):
         """
-        Parse the arguments submitted from UI (flatten form) 
+        Parse the arguments submitted from UI (flatten form)
         If any ranger is found, return a list of arguments for all possible operations.
         """
         if range_values is None:
@@ -543,7 +546,7 @@ class OperationService:
             operations_in_group = ProjectService.get_operations_in_group(op_group)
             for operation in operations_in_group:
                 result = OperationService.stop_operation(operation.id, False, remove_after_stop) or result
-        else:
+        elif dao.try_get_operation_by_id(operation_id) is not None:
             result = BackendClientFactory.stop_operation(operation_id)
             if remove_after_stop:
                 burst_config = dao.get_burst_for_direct_operation_id(operation_id)

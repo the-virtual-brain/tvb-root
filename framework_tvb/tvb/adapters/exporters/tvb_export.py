@@ -38,6 +38,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File
 
 
 class TVBExporter(ABCExporter):
@@ -81,9 +82,17 @@ class TVBExporter(ABCExporter):
             return download_file_name, zip_file, True
 
         else:
-            data_file = h5.path_for_stored_index(data)
-            return download_file_name, data_file, False
+            data_file = self.copy_dt_to_export_folder(data, export_folder)
+            return None, data_file, True
 
+    def copy_dt_to_export_folder(self, data, data_export_folder):
+        data_path = h5.path_for_stored_index(data)
+        file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
+        if not os.path.exists(file_destination):
+            FilesHelper().copy_file(data_path, file_destination)
+        H5File.remove_metadata_param(file_destination, 'parent_burst')
+
+        return file_destination
 
     def get_export_file_extension(self, data):
         if self.is_data_a_group(data):

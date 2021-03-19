@@ -42,8 +42,6 @@ TRACTS_CHUNK_SIZE = 100
 class Tracts(HasTraits):
     """Datatype for results of diffusion imaging tractography."""
 
-    MAX_N_VERTICES = 2 ** 16
-
     vertices = NArray(
         label="Vertex positions",
         doc="""An array specifying coordinates for the tracts vertices."""
@@ -68,7 +66,6 @@ class Tracts(HasTraits):
     region_volume_map = Attr(
         field_type=RegionVolumeMapping,
         label="Region volume Mapping used to create the tract_region index",
-        required=False
     )
 
     @property

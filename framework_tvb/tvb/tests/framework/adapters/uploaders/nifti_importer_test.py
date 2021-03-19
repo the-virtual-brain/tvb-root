@@ -113,10 +113,7 @@ class TestNIFTIImporter(BaseTestCase):
         assert dimension_labels is not None
         assert 4 == len(json.loads(dimension_labels))
 
-        volume_index = load_entity_by_gid(time_series_index.fk_volume_gid)
-        assert volume_index is not None
-
-        volume = h5.load_from_index(volume_index)
+        volume = h5.load_from_gid(time_series_index.fk_volume_gid)
 
         assert numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all()
         assert "mm" == volume.voxel_unit
@@ -136,10 +133,7 @@ class TestNIFTIImporter(BaseTestCase):
         assert 64 == data_shape[1]
         assert 10 == data_shape[2]
 
-        volume_index = load_entity_by_gid(structural_mri_index.fk_volume_gid)
-        assert volume_index is not None
-
-        volume = h5.load_from_index(volume_index)
+        volume = h5.load_from_gid(structural_mri_index.fk_volume_gid)
 
         assert numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all()
         assert numpy.equal([3.0, 3.0, 3.0], volume.voxel_size).all()
@@ -167,10 +161,7 @@ class TestNIFTIImporter(BaseTestCase):
         assert mapping.array_data.max() < to_link_conn.number_of_regions
         assert to_link_conn.gid == mapping_index.fk_connectivity_gid
 
-        volume_index = load_entity_by_gid(mapping_index.fk_volume_gid)
-        assert volume_index is not None
-
-        volume = h5.load_from_index(volume_index)
+        volume = h5.load_from_gid(mapping_index.fk_volume_gid)
         assert numpy.equal(self.DEFAULT_ORIGIN, volume.origin).all()
         assert numpy.equal([3.0, 3.0, 3.0], volume.voxel_size).all()
         assert self.UNKNOWN_STR == volume.voxel_unit

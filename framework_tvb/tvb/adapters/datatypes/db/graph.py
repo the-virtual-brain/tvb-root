@@ -88,6 +88,20 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
 
     has_surface_mapping = Column(Boolean, nullable=False, default=False)
 
+    def fill_from_h5(self, h5_file):
+        super(ConnectivityMeasureIndex, self).fill_from_h5(h5_file)
+        self.fk_connectivity_gid = h5_file.connectivity.load().hex
+        self.title = h5_file.title.load()
+        self.has_volume_mapping = False
+        self.has_surface_mapping = False
+        rm_list = dao.get_generic_entity(RegionMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
+        if rm_list:
+            self.has_surface_mapping = True
+
+        rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
+        if rvm_list:
+            self.has_volume_mapping = True
+
     def fill_from_has_traits(self, datatype):
         # type: (ConnectivityMeasure)  -> None
         super(ConnectivityMeasureIndex, self).fill_from_has_traits(datatype)

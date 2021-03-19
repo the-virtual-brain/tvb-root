@@ -128,12 +128,14 @@ def initialize(skip_import=False, skip_updates=False):
         CodeUpdateManager().run_all_updates()
 
         # In case the H5 version changed, run updates on all DataTypes
+        thread = None
         if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
             thread = threading.Thread(target=FilesUpdateManager().run_all_updates)
             thread.start()
 
         # Clean tvb-first-time-run temporary folder, as we are no longer at the first run:
         shutil.rmtree(TvbProfile.current.FIRST_RUN_STORAGE, True)
+        return thread
 
 
 class Introspector(object):

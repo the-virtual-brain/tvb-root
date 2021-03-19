@@ -34,7 +34,7 @@ var chunks_tract_offsets;
 
 var tracts_loaded = false;
 
-var TRACK_shelfDisplayBuffers = [];
+var TRACK_shellDisplayBuffers = [];
 
 var drawingMode;
 
@@ -215,20 +215,20 @@ function _bindEvents(canvas){
     });
 }
 
-function TRACK_webGLStart(urlTrackStarts, urlTrackVertices, shelfObject) {
+function TRACK_webGLStart(urlTrackStarts, urlTrackVertices, shellObject) {
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
-    shelfObject = $.parseJSON(shelfObject);
+    shellObject = $.parseJSON(shellObject);
 
     _customInitGL(canvas);
     _initShaders();
 
     displayMessage("Start loading surface data!", "infoMessage");
-    downloadBrainGeometry($.toJSON(shelfObject[0]), $.toJSON(shelfObject[2]), $.toJSON(shelfObject[1]),
+    downloadBrainGeometry($.toJSON(shellObject[0]), $.toJSON(shellObject[2]), $.toJSON(shellObject[1]),
         function(drawingBrain){
             displayMessage("Finished loading surface data!", "infoMessage");
-            // Finished downloading buffer data. Initialize TRACK_shelfDisplayBuffers
-            TRACK_shelfDisplayBuffers = drawingBrainUploadGeometryBuffers(drawingBrain);
-            drawingBrainUploadDefaultColorBuffer(drawingBrain.vertices, TRACK_shelfDisplayBuffers);
+            // Finished downloading buffer data. Initialize TRACK_shellDisplayBuffers
+            TRACK_shellDisplayBuffers = drawingBrainUploadGeometryBuffers(drawingBrain);
+            drawingBrainUploadDefaultColorBuffer(drawingBrain.vertices, TRACK_shellDisplayBuffers);
             drawScene();
         }
     );
@@ -257,7 +257,7 @@ function TRACK_webGLStart(urlTrackStarts, urlTrackVertices, shelfObject) {
  * Redraw from buffers.
  */
 function drawScene() {
-    if (TRACK_shelfDisplayBuffers.length === 0) {
+    if (TRACK_shellDisplayBuffers.length === 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }
@@ -284,7 +284,7 @@ function drawScene() {
 
     if (isFaceToDisplay) {
         gl.uniform1i(GL_shaderProgram.useActivity, true);
-        drawBuffers(drawingMode, TRACK_shelfDisplayBuffers, true, gl.FRONT);
+        drawBuffers(drawingMode, TRACK_shellDisplayBuffers, true, gl.FRONT);
     }
 
     mvPopMatrix();

@@ -28,8 +28,8 @@
 #
 
 import numpy
+
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
-from tvb.basic.neotraits.api import List
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
@@ -98,7 +98,7 @@ class MonitorForm(Form):
 
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
                                                            choices=tuple(self.variables_of_interest_indexes.keys())),
-                                                    name='variables_of_interest')
+                                                      name='variables_of_interest')
 
     def fill_from_trait(self, trait):
         super(MonitorForm, self).fill_from_trait(trait)
@@ -237,7 +237,7 @@ class BoldMonitorForm(MonitorForm):
 
         self.period = FloatField(Bold.period)
         self.hrf_kernel = SelectField(Attr(HRFKernelEquation, label='Equation', default=default_hrf_kernel),
-                                    name='hrf_kernel', choices=self.hrf_kernel_choices)
+                                      name='hrf_kernel', choices=self.hrf_kernel_choices)
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)

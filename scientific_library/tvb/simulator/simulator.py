@@ -43,13 +43,13 @@ import math
 import time
 
 import numpy
-import scipy.sparse
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 from tvb.basic.profile import TvbProfile
 from tvb.datatypes import cortex, connectivity, patterns, region_mapping
 from tvb.simulator import models, integrators, monitors, coupling
 from tvb.simulator.models.base import Model
-from .backend import BaseBackend, ReferenceBackend
+
+from .backend import ReferenceBackend
 from .common import psutil
 from .history import SparseHistory
 
@@ -199,9 +199,9 @@ class Simulator(HasTraits):
 
     def configure_integration_for_model(self):
         self.integrator.configure_boundaries(self.model)
-        if self.model.nvar - self.model.nintvar:
+        if self.model.has_nonint_vars:
             self.integrate_next_step = self.integrator.integrate_with_update
-            self.integrator.\
+            self.integrator. \
                 reconfigure_boundaries_and_clamping_for_integration_state_variables(self.model)
         else:
             self.integrate_next_step = self.integrator.integrate
@@ -282,31 +282,6 @@ class Simulator(HasTraits):
         # Allow user to chain configure to another call or assignment.
         return self
 
-    def _spatialize_model_parameters(self):
-        # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
-        # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
-        excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
-                           "noise", "psi_table", "nerf_table", "gid")
-        spatial_reshape = self.model.spatial_param_reshape
-        for param in type(self.model).declarative_attrs:
-            if param in excluded_params:
-                continue
-            region_parameters = getattr(self.model, param)
-            self._map_roi_param_to_surface(param, region_parameters, spatial_reshape)
-            self._reshape_model_param_for_modes(param, spatial_reshape)
-
-    def _reshape_model_param_for_modes(self, param, spatial_reshape):
-        region_parameters = getattr(self.model, param)
-        if region_parameters.size == self.number_of_nodes:
-            new_parameters = region_parameters.reshape(spatial_reshape)
-            setattr(self.model, param, new_parameters)
-
-    def _map_roi_param_to_surface(self, param, region_parameters, spatial_reshape):
-        if self.surface is not None:
-            if region_parameters.size == self.connectivity.number_of_regions:
-                new_parameters = region_parameters[self.surface.region_mapping].reshape(spatial_reshape)
-                setattr(self.model, param, new_parameters)
-
     def _prepare_local_coupling(self):
         if self.surface is None:
             return 0.0
@@ -324,7 +299,7 @@ class Simulator(HasTraits):
             stimulus = 0.0
         else:
             # TODO time grid wrong for continuations
-            time = numpy.r_[0.0 : self.simulation_length : self.integrator.dt]
+            time = numpy.r_[0.0: self.simulation_length: self.integrator.dt]
             self.stimulus.configure_time(time.reshape((1, -1)))
             stimulus = numpy.zeros((self.model.nvar, self.number_of_nodes, 1))
             self.log.debug("stimulus shape is: %s", stimulus.shape)

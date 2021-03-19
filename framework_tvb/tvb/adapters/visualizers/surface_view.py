@@ -37,6 +37,7 @@ import uuid
 import numpy
 from abc import ABCMeta
 from six import add_metaclass
+
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
@@ -209,13 +210,10 @@ class ABCSurfaceDisplayer(ABCSpaceDisplayer):
         boundary_lines = []
         boundary_normals = []
 
-        surface_index = self.load_entity_by_gid(surface_gid)
-        rm_index = self.load_entity_by_gid(region_mapping_gid)
-
-        with h5.h5_file_for_index(rm_index) as rm_h5:
+        with h5.h5_file_for_gid(region_mapping_gid) as rm_h5:
             array_data = rm_h5.array_data[:]
 
-        with h5.h5_file_for_index(surface_index) as surface_h5:
+        with h5.h5_file_for_gid(surface_gid) as surface_h5:
             for slice_idx in range(surface_h5.get_number_of_split_slices()):
                 # Generate the boundaries sliced for the off case where we might overflow the buffer capacity
                 slice_triangles = surface_h5.get_triangles_slice(slice_idx)
@@ -428,21 +426,14 @@ class SurfaceViewer(ABCSurfaceDisplayer):
 
         surface_h5.close()
 
-        params['shelfObject'] = None
+        params['shellObject'] = None
 
         shell_surface_index = None
         if view_model.shell_surface:
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface_index)
-
-        if shell_surface:
-            shell_h5 = h5.h5_file_for_index(shell_surface)
-            assert isinstance(shell_h5, SurfaceH5)
-            shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(shell_h5)
-            params['shelfObject'] = json.dumps([shell_vertices, shell_normals, shell_triangles])
-            shell_h5.close()
-
+        params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
         return self.build_display_result("surface/surface_view", params,
                                          pages={"controlPage": "surface/surface_viewer_controls"})
 

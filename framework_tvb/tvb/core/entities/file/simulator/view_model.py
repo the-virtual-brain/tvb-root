@@ -176,6 +176,10 @@ class RawViewModel(MonitorViewModel, Raw):
     def linked_has_traits(self):
         return Raw
 
+    def __str__(self):
+        clsname = self.__class__.__name__
+        return '%s(period=%f)' % (clsname, self.period)
+
 
 class SubSampleViewModel(MonitorViewModel, SubSample):
     @property
@@ -367,3 +371,12 @@ class SimulatorAdapterModel(ViewModel, Simulator):
         self.model = type(self.model)()
         self.integrator = type(self.integrator)()
         self.monitors = (type(self.monitors[0])(),)
+
+    @property
+    def first_monitor(self):
+        if isinstance(self.monitors[0], RawViewModel):
+            if len(self.monitors) > 1:
+                return self.monitors[1]
+            else:
+                return None
+        return self.monitors[0]

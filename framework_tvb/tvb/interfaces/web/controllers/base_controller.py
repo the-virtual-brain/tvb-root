@@ -38,14 +38,18 @@ This is the main UI entry point.
 """
 
 import os
+
 import cherrypy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import using_template
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.structure import WebStructure
 
 # Constants used be the mechanism that deletes files on disk
@@ -61,8 +65,8 @@ class BaseController(object):
         self.logger = get_logger(self.__class__.__module__)
 
         self.user_service = UserService()
+        self.project_service = ProjectService()
         self.algorithm_service = AlgorithmService()
-
         self.analyze_category_link = '/flow/step_analyzers'
         self.analyze_adapters = None
 
@@ -131,7 +135,7 @@ class BaseController(object):
 
         if previous_project is None or previous_project.id != project.id:
             # Clean Burst selection from session in case of a different project.
-            common.clean_project_data_from_session()
+            SimulatorContext().clean_project_data_from_session()
             # Store in DB new project selection
             user = common.get_from_session(common.KEY_USER)
             if user is not None:
@@ -139,6 +143,10 @@ class BaseController(object):
             # Display info message about project change
             self.logger.debug("Selected project is now " + project.name)
             common.set_info_message("Your current working project is: " + str(project.name))
+            linked_dt = self.project_service.get_linked_datatypes_storage_path(project)
+            encryption_handler.set_project_active(project, linked_dt)
+            if previous_project is not None:
+                encryption_handler.set_project_inactive(previous_project)
 
         # Add the project entity to session every time, as it might be changed (e.g. after edit)
         common.add2session(common.KEY_PROJECT, project)

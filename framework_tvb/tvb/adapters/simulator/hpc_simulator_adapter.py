@@ -44,10 +44,11 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, Simulator
 from tvb.basic.neotraits.api import HasTraits
 from tvb.config import ALGORITHMS
 from tvb.core.neocom import h5
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 
 
 class HPCSimulatorAdapter(SimulatorAdapter):
-    OUTPUT_FOLDER = 'output'
 
     def __init__(self, storage_path, is_group_launch):
         super(HPCSimulatorAdapter, self).__init__()
@@ -84,7 +85,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         return self.is_group_launch
 
     def _get_output_path(self):
-        output_path = os.path.join(self.storage_path, self.OUTPUT_FOLDER)
+        output_path = os.path.join(self.storage_path, HPCSchedulerClient.OUTPUT_FOLDER)
         if not os.path.isdir(output_path):
             os.mkdir(output_path)
         return output_path
@@ -101,14 +102,21 @@ class HPCSimulatorAdapter(SimulatorAdapter):
 
     def _capture_operation_results(self, result):
         """
+        Update h5 files with generic attributes
         """
+        for file in os.listdir(self._get_output_path()):
+            path = os.path.join(self._get_output_path(), file)
+            if issubclass(H5File.h5_class_from_file(path), ViewModelH5):
+                continue
+            with H5File.from_file(path) as f:
+                f.store_generic_attributes(self.generic_attributes)
         return "", 2
 
     def _ensure_enough_resources(self, available_disk_space, view_model):
         return 0
 
     def launch(self, view_model):
-    # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
+        # type: (SimulatorAdapterModel) -> [TimeSeriesIndex, SimulationHistoryIndex]
         simulation_results = super(HPCSimulatorAdapter, self).launch(view_model)
 
         if not self.is_group_launch:
@@ -133,7 +141,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
 
     def __init__(self, storage_path, input_time_series_index):
-        super(HPCTimeseriesMetricsAdapter,self).__init__()
+        super(HPCTimeseriesMetricsAdapter, self).__init__()
         self.storage_path = storage_path
         self.input_time_series_index = input_time_series_index
 

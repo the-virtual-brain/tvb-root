@@ -35,7 +35,6 @@ import os
 import shutil
 import numpy
 import pytest
-from tvb.adapters.simulator.hpc_simulator_adapter import HPCSimulatorAdapter
 from tvb.basic.config.settings import HPCSettings
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
@@ -131,7 +130,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         plain_dir = self.files_helper.get_project_folder(self.test_project, 'plain')
         do_operation_launch(sim_gid.hex, 1000, is_pse, '', op.id, plain_dir)
         assert len(os.listdir(encrypted_dir)) == 7
-        output_path = os.path.join(encrypted_dir, HPCSimulatorAdapter.OUTPUT_FOLDER)
+        output_path = os.path.join(encrypted_dir, HPCSchedulerClient.OUTPUT_FOLDER)
         assert os.path.exists(output_path)
         expected_files = 2
         if is_pse:

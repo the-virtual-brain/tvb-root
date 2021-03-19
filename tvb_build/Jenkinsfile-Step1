@@ -36,8 +36,13 @@ pipeline {
                     pip install docutils==0.12
                     cd tvb_build
                     bash install_full_tvb.sh
-                    python build_step1.py
+                    python build_step1.py $GIT_BRANCH
                 '''
+                withCredentials([usernamePassword(credentialsId: 'tvb-revision', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                        sh '''#!/bin/bash
+                            git commit scientific_library/tvb/basic/config/tvb.version -m "Update GIT revision number automatically from Jenkins" && git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/the-virtual-brain/tvb-root.git HEAD:${GIT_BRANCH//origin\\/} || true
+                        '''
+                 }
                 archiveArtifacts artifacts: 'tvb_build/build/*.zip'
             }
         }

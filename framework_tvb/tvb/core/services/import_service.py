@@ -50,6 +50,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
 from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities import load
 from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
 from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
 from tvb.core.entities.file.files_helper import FilesHelper
@@ -66,6 +67,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
+from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
 
@@ -168,7 +170,7 @@ class ImportService(object):
             # Removing from DB is not necessary because in transactional env a simple exception throw
             # will erase everything to be inserted.
             for project in self.created_projects:
-                project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project.name)
+                project_path = self.files_helper.get_project_folder(project)
                 shutil.rmtree(project_path)
             raise ImportException(str(excep))
 
@@ -202,6 +204,10 @@ class ImportService(object):
             self.import_project_operations(project, temp_project_path)
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
+            if DataEncryptionHandler.encryption_enabled():
+                DataEncryptionHandler.sync_folders(project_path)
+                shutil.rmtree(project_path)
+
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """
@@ -234,7 +240,7 @@ class ImportService(object):
             if not reference_gid:
                 continue
 
-            ref_index = dao.get_datatype_by_gid(reference_gid.hex)
+            ref_index = load.load_entity_by_gid(reference_gid)
             if ref_index is None:
                 os.remove(file_path)
                 dao.remove_entity(datatype.__class__, datatype.id)
@@ -252,7 +258,7 @@ class ImportService(object):
     def store_or_link_datatype(self, datatype, dt_path, project_id):
         self.check_import_references(dt_path, datatype)
         stored_dt_count = 0
-        datatype_already_in_tvb = dao.get_datatype_by_gid(datatype.gid)
+        datatype_already_in_tvb = load.load_entity_by_gid(datatype.gid)
         if not datatype_already_in_tvb:
             self.store_datatype(datatype, dt_path)
             stored_dt_count = 1
@@ -580,7 +586,7 @@ class ImportService(object):
                 final_path = h5.path_for_stored_index(datatype)
                 if final_path != current_file:
                     shutil.move(current_file, final_path)
-            stored_entry = dao.get_datatype_by_gid(datatype.gid)
+            stored_entry = load.load_entity_by_gid(datatype.gid)
             if not stored_entry:
                 stored_entry = dao.store_entity(datatype)
 
