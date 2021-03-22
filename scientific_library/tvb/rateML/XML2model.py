@@ -179,7 +179,7 @@ class RateML:
 
         return target, powf
 
-    def preprocess_model(self, model):
+    def pp_bound(self, model):
 
         ''' Do some preprocessing on the template to easify rendering '''
 
@@ -191,6 +191,10 @@ class RateML:
                 svboundaries = True
                 continue
 
+        return svboundaries
+
+    def pp_cplist(self, model):
+
         # check for component_types containing coupling in name and gather data.
         # multiple coupling functions could be defined in xml
         # cuda only
@@ -199,12 +203,17 @@ class RateML:
             if 'coupling' in cplists.name:
                 couplinglist.append(cplists)
 
+        return couplinglist
+
+    def pp_noise(self, model):
+
         # only check whether noise is there, if so then activate it
         # cuda only
         noisepresent=False
         for ct in (model.component_types):
             if ct.name == 'noise':
                 noisepresent=True
+
 
         # see if nsig derived parameter is present for noise
         # cuda only
@@ -214,6 +223,10 @@ class RateML:
             for dprm in (modellist.derived_parameters):
                 if (dprm.name == 'nsig' or dprm.name == 'NSIG'):
                      nsigpresent=True
+
+        return noisepresent, nsigpresent
+
+    def pp_pow(self, model):
 
         # check for power symbol and parse to python (**) or c power (powf(x, y))
         # there are 5 locations where they can occur: Derivedvariable.value, ConditionalDerivedVariable.Case.condition
@@ -264,7 +277,6 @@ class RateML:
                                 target, powf = self.powerswap(power)
                                 powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace(target, powf)
 
-        return svboundaries, couplinglist, noisepresent, nsigpresent
 
     def load_model(self):
         "Load model from filename"
@@ -275,8 +287,11 @@ class RateML:
 
         self.XSD_validate_XML()
 
-        # do some inventory. check if boundaries are set for any sv to print the boundaries section in template
-        svboundaries, couplinglist, noisepresent, nsigpresent = self.preprocess_model(model)
+        # start inventory check
+        self.pp_pow(model)
+        noisepresent, nsigpresent = self.pp_noise(model)
+        couplinglist = self.pp_cplist(model)
+        svboundaries = self.pp_bound(model)
 
         return model, svboundaries, couplinglist, noisepresent, nsigpresent
 
