@@ -438,7 +438,7 @@ class TimeSeries(HasTraits):
             data = kwargs.pop("data", None)
             if data is None:
                 # ...either from self._data
-                _data = xr.DataArray(self._data)
+                _data = self._data.copy()
             else:
                 # ...or from a potential numpy/list/tuple input
                 _data = xr.DataArray(np.array(data))
@@ -620,7 +620,7 @@ class TimeSeries(HasTraits):
                     raise
                 # For label indices
                 # xrarray.DataArray.loc slices along labels
-                out = self.duplicate(_data=self._data.loc[slice_tuple], **kwargs)
+                out = self.duplicate(_data=self._data.loc[slice_tuple].copy(), **kwargs)
                 return out
             except:
                 # Still, for a conflicting mixture that has to be resolved
@@ -943,7 +943,7 @@ class TimeSeries(HasTraits):
                 figname = figname + ": %s" % labels_dimensions[col][0]
             except:
                 pass
-        data = xr.DataArray(self._data)
+        data = self._data.copy()
         for i_var, var in enumerate(labels_dimensions[labels_ordering[1]]):
             # Remove mean
             data[:, i_var] -= data[:, i_var].mean()
