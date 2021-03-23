@@ -5,11 +5,12 @@
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
         <Parameter name="global_speed" dimension='0.0, 2.0'/>
         <Parameter name="global_coupling" dimension='1.6, 3.0'/>
+        <Parameter name="global_test" dimension='606, 666'/>
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
         <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
         <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-3)"/>
-        <DerivedParameter name="lc" value="0.0"/>
+        <DerivedParameter name="local_coupling" value="0.0"/>
 
         <Constant name="tau" dimension="" value="1.0"
               description="A time-scale hierarchy can be introduced for the state variables :math:`V` and :math:`W`. Default parameter is 1, which means no time-scale hierarchy."/>
@@ -35,7 +36,7 @@
             <StateVariable name="V" dimension="0.0" exposure="-2.0, 4.0"/>
             <StateVariable name="W" dimension="0.0" exposure="-6.0, 6.0"/>
 
-            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * c_0 + lc * V)"/>
+            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * c_pop1 + local_coupling * V)"/>
             <TimeDerivative variable="dW" value="d * (a + b * V + c * {V^2} - beta * W) / tau"/>
         </Dynamics>
 
@@ -47,7 +48,7 @@
         <Parameter name="V_j" dimension='0'/>
 
         <!-- Handle local coupling result, full expression is 'name' *= 'expression'-->
-        <DerivedParameter name="c_0" value="global_coupling"/>
+        <DerivedParameter name="c_pop1" value="global_coupling"/>
 
         <!-- Used in coupling -->
         <Constant name="c_a" dimension="" value="1" description="Rescales the connection strength."/>

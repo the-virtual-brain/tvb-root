@@ -1,5 +1,4 @@
 from tvb.simulator.models.base import Model, ModelNumbaDfun
-import numexpr
 import numpy
 from numpy import *
 from numba import guvectorize, float64
@@ -15,25 +14,25 @@ class OscillatorT(ModelNumbaDfun):
         
     I = NArray(
         label=":math:`I`",
-        default=numpy.array([0.0]),
+        default=numpy.array([0.1]),
         doc=""""""
     )    
         
     a = NArray(
         label=":math:`a`",
-        default=numpy.array([-2.0]),
+        default=numpy.array([0.5]),
         doc=""""""
     )    
         
     b = NArray(
         label=":math:`b`",
-        default=numpy.array([-10.0]),
+        default=numpy.array([0.4]),
         doc=""""""
     )    
         
     c = NArray(
         label=":math:`c`",
-        default=numpy.array([0]),
+        default=numpy.array([-4.0]),
         doc=""""""
     )    
         
@@ -81,8 +80,8 @@ class OscillatorT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"V": numpy.array([-2.0, 4.0]), 
-				 "W": numpy.array([-6.0, 6.0])},
+        default={"V": numpy.array([0.0, 1]), 
+				 "W": numpy.array([0.0, 1])},
         doc="""state variables"""
     )
 

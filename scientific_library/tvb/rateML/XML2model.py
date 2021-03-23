@@ -90,13 +90,13 @@ class RateML:
         # write model to user submitted location
         self.write_model_file(self.generated_model_location, model_str)
 
-        # write driver file to fixed ./run/ location
-        self.write_model_file(self.set_driver_location(), driver_str)
-
-        # for driver robustness also write XML to default location generatedModels folder for CUDA
-        if self.language == 'cuda'and GENfolder != None:
-            default_save = os.path.join(self.default_generation_folder(), self.model_filename.lower() + '.c')
-            self.write_model_file(default_save, model_str)
+        if self.language == 'cuda':
+            # write driver file to fixed ./run/ location
+            self.write_model_file(self.set_driver_location(), driver_str)
+            # for driver robustness also write XML to default location generatedModels folder for CUDA
+            if GENfolder != None:
+                default_save = os.path.join(self.default_generation_folder(), self.model_filename.lower() + '.c')
+                self.write_model_file(default_save, model_str)
 
         # if it is a TVB.py model, it should be familiarized
         if self.language.lower()=='python':
@@ -310,6 +310,8 @@ class RateML:
         # render driver only in case of cuda
         if self.language == 'cuda':
             driver_str = self.render_driver(derivative_list)
+        else:
+            driver_str = None
 
         return model_str, driver_str
 

@@ -60,6 +60,7 @@ __global__ void oscillator(
     // These are the two parameters which are usually explore in fitting in this model
     const float global_speed = params(0);
     const float global_coupling = params(1);
+    const float global_test = params(2);
 
     // regular constants
     const float tau = 1.0;
@@ -79,13 +80,13 @@ __global__ void oscillator(
     const float c_a = 1;
 
     // coupling parameters
-    float c_0 = 0.0;
+    float c_pop1 = 0.0;
 
     // derived parameters
     const float rec_n = 1 / n_node;
     const float rec_speed_dt = 1.0f / global_speed / (dt);
     const float nsig = sqrt(dt) * sqrt(2.0 * 1e-3);
-    const float lc = 0.0;
+    const float local_coupling = 0.0;
 
 
 
@@ -110,7 +111,7 @@ __global__ void oscillator(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            c_0 = 0.0f;
+            c_pop1 = 0.0f;
 
             V = state((t) % nh, i_node + 0 * n_node);
             W = state((t) % nh, i_node + 1 * n_node);
@@ -132,16 +133,16 @@ __global__ void oscillator(
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_0 += wij * c_a * sin(V_j - V);
+                c_pop1 += wij * c_a * sin(V_j - V);
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_0 *= global_coupling;
+            c_pop1 *= global_coupling;
 
 
             // Integrate with stochastic forward euler
-            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_0 + lc * V));
+            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_pop1 + local_coupling * V));
             dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
 
             // No noise is added because it is not present in model
