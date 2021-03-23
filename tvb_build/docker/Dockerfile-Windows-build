@@ -32,4 +32,7 @@ RUN mkdir %userprofile%\\.tvb-temp
 RUN CACLS %userprofile%\\TVB_TEST /e /p %username%:f
 RUN CACLS %userprofile%\\.tvb-temp /e /p %username%:f
 
+RUN powershell.exe rm C:\miniconda\envs\tvb-run\share\jupyter\kernels\python3\kernel.json
+RUN echo {"argv": ["python.exe", "-m", ""ipykernel_launcher", "-f", "{connection_file}"], "display_name": "Python 3", "language": "python"} >> C:\miniconda\envs\tvb-run\share\jupyter\kernels\python3\kernel.json
+
 CMD ["cmd", "activate tvb-run"]
