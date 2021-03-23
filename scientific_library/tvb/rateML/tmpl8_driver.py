@@ -38,10 +38,16 @@ class Driver_Setup:
 		self.lengths = self.connectivity.tract_lengths
 		self.tavg_period = 10.0
 		self.n_inner_steps = int(self.tavg_period / self.dt)
-		self.params, self.speeds, self.couplings = self.setup_params(self.args.n_sweep_arg0, self.args.n_sweep_arg1)
+
+		# bufferlength is based on the minimum of the first swept parameter (speed for many tvb models)
+		self.params, buf_par = self.setup_params(
+		% for pc in range(len(XML.parameters)):
+		self.args.n_sweep_arg${pc},
+		% endfor
+		)
 		self.n_work_items, self.n_params = self.params.shape
-		speedsmin = 0.1 if self.speeds.min() <= 0.0 else self.speeds.min()
-		self.buf_len_ = ((self.lengths / speedsmin / self.dt).astype('i').max() + 1)
+		par_min = 0.1 if buf_par.min() <= 0.0 else buf_par.min()
+		self.buf_len_ = ((self.lengths / par_min / self.dt).astype('i').max() + 1)
 		self.buf_len = 2 ** np.argwhere(2 ** np.r_[:30] > self.buf_len_)[0][0]  # use next power of
 		self.states = ${XML.dynamics.state_variables.__len__()}
 		self.exposures = ${XML.exposures.__len__()}
@@ -50,7 +56,7 @@ class Driver_Setup:
 
 	def logdata(self):
 
-		self.logger.info('dt %f', self.dt, exc_info=1)
+		self.logger.info('dt %f', self.dt)
 		self.logger.info('n_nodes %d', self.args.n_tvb_brainnodes)
 		self.logger.info('weights.shape %s', self.weights.shape)
 		self.logger.info('lengths.shape %s', self.lengths.shape)
@@ -61,7 +67,7 @@ class Driver_Setup:
 		self.logger.info('nstep %d', self.args.n_time)
 		self.logger.info('n_inner_steps %f', self.n_inner_steps)
 
-		self.logger.info('single connectome, %d x %d parameter space', self.args.n_sweep_arg0, self.args.n_sweep_arg1)
+		# self.logger.info('single connectome, %d x %d parameter space', self.args.n_sweep_arg0, self.args.n_sweep_arg1)
 		self.logger.info('real buf_len %d, using power of 2 %d', self.buf_len_, self.buf_len)
 		self.logger.info('number of states %d', self.states)
 		self.logger.info('model %s', self.args.model)
@@ -69,15 +75,11 @@ class Driver_Setup:
 	def checkargbounds(self):
 
 		try:
-			assert self.args.n_sweep_arg0 > 0 and self.args.n_sweep_arg1 > 0, \
-				"Min value for [-c|-s N_SWEEP_ARG(0|1)] is 1"
+			assert self.args.n_sweep_arg0 > 0, "Min value for [N_SWEEP_ARG0] is 1"
 			assert self.args.n_time > 0, "Minimum number for [-n N_TIME] is 1"
-			assert self.args.n_tvb_brainnodes > 0, \
-				"Min value for  [-tvbn N_TVB_BRAINNODES] for default data set is 68"
-			assert self.args.blockszx > 0 and self.args.blockszx <= 32,	\
-				"Bounds for [-bx BLOCKSZX] are 0 < value <= 32"
-			assert self.args.blockszy > 0 and self.args.blockszy <= 32, \
-				"Bounds for [-by BLOCKSZY] are 0 < value <= 32"
+			assert self.args.n_tvb_brainnodes > 0, "Min value for  [-tvbn N_TVB_BRAINNODES] for default data set is 68"
+			assert self.args.blockszx > 0 and self.args.blockszx <= 32,	"Bounds for [-bx BLOCKSZX] are 0 < value <= 32"
+			assert self.args.blockszy > 0 and self.args.blockszy <= 32, "Bounds for [-by BLOCKSZY] are 0 < value <= 32"
 		except AssertionError as e:
 			self.logger.error('%s', e)
 			raise
@@ -87,17 +89,17 @@ class Driver_Setup:
 		white_matter.configure()
 		return white_matter
 
-	def check_bounds(self):
-		print('thisworks')
-
 	def parse_args(self):  # {{{
 		parser = argparse.ArgumentParser(description='Run parameter sweep.')
-		parser.add_argument('-c', '--n_sweep_arg0', help='num grid points for 1st parameter (ie. coupling)',
-							default=8, type=int)
-		parser.add_argument('-s', '--n_sweep_arg1', help='num grid points for 2nd parameter (ie. speed)',
-							default=8, type=int)
+
+		# for every parameter that needs to be swept, the size can be set
+		% for pc in range(len(XML.parameters)):
+		parser.add_argument('-s${pc}', '--n_sweep_arg${pc}', help='num grid points for ${pc+1}st parameter',
+							default=4, type=int)
+		% endfor
+
 		parser.add_argument('-n', '--n_time', help='number of time steps to do (default 400)',
-							type=int, default=4)
+							type=int, default=400)
 		parser.add_argument('-v', '--verbose', help='increase logging verbosity', action='store_true', default='')
 		parser.add_argument('--model',
 							help="neural mass model to be used during the simulation",
@@ -120,16 +122,24 @@ class Driver_Setup:
 		return args
 
 
-	def setup_params(self, n0, n1):  # {{{
-		# the correctness checks at the end of the simulation
-		# are matched to these parameter values, for the moment
-		# TODO setup for n of parameters to sweep
+	def setup_params(self,
+		% for pc in range(len(XML.parameters)):
+		n${pc},
+		% endfor
+		):
+		'''
+		This code generates the parameters ranges that need to be set
+		'''
 		% for pc, par_var in enumerate(XML.parameters):
 		sweeparam${pc} = np.linspace(${par_var.dimension}, n${pc})
 		% endfor
-		params = itertools.product(sweeparam0, sweeparam1)
+		params = itertools.product(
+		% for pc in range(len(XML.parameters)):
+		sweeparam${pc},
+		% endfor
+		)
 		params = np.array([vals for vals in params], np.float32)
-		return params, sweeparam0, sweeparam1  # }}}
+		return params, sweeparam0
 
 
 class Driver_Execute(Driver_Setup):
@@ -215,8 +225,9 @@ class Driver_Execute(Driver_Setup):
 				gpu_data[name] = gpuarray.to_gpu(self.cf(array))
 			except drv.MemoryError as e:
 				self.gpu_mem_info()
-				self.logger.error('%s.\n\t Please check the parameter dimensions %d x %d, they are to large for this GPU',
-							 e, self.args.n_sweep_arg0, self.args.n_sweep_arg1)
+				self.logger.error(
+					'%s.\n\t Please check the parameter dimensions, %d parameters are too large for this GPU',
+					e, self.params.size)
 				exit(1)
 		return gpu_data#}}}
 
@@ -304,8 +315,9 @@ class Driver_Execute(Driver_Setup):
 		try:
 			tavg = drv.pagelocked_zeros((n_streams,) + data['tavg0'].shape, dtype=np.float32)
 		except drv.MemoryError as e:
-			self.logger.error('%s.\n\t Please check the parameter dimensions %d x %d, they are to large for this GPU',
-						 e, self.args.n_sweep_arg0, self.args.n_sweep_arg1)
+			self.logger.error(
+				'%s.\n\t Please check the parameter dimensions, %d parameters are too large for this GPU',
+				e, self.params.size)
 			exit(1)
 
 		# determine optimal grid recursively
@@ -321,10 +333,10 @@ class Driver_Execute(Driver_Setup):
 		# n_sweep_arg0 scales griddim.x, n_sweep_arg1 scales griddim.y
 		# form an optimal grid recursively
 		bx, by = self.args.blockszx, self.args.blockszy
-		s_arg0, s_arg1 = self.args.n_sweep_arg0, self.args.n_sweep_arg1
 		nwi = self.n_work_items
-		gridx = int(np.ceil(s_arg0 / bx))
-		gridy = int(np.ceil(s_arg1 / by))
+		rootnwi = int(np.ceil(np.sqrt(nwi)))
+		gridx = int(np.ceil(rootnwi / bx))
+		gridy = int(np.ceil(rootnwi / by))
 
 		final_block_dim = bx, by, 1
 
@@ -332,7 +344,7 @@ class Driver_Execute(Driver_Setup):
 		dog(fgd)
 		final_grid_dim = fgd[0], fgd[1]
 
-		assert gridx * gridy * bx * by >= self.n_work_items
+		assert gridx * gridy * bx * by >= nwi
 
 		self.logger.info('history shape %r', gpu_data['state'].shape)
 		self.logger.info('gpu_data %s', gpu_data['tavg0'].shape)
