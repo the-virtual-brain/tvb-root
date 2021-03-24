@@ -48,10 +48,10 @@ const float alpha = 1.0;
 const float gam = 1.0;
 
 
-__global__ void Oscillatorref(
+__global__ void oscillatorref(
         // config
-        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_params,
-        float dt, float speed,
+        unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_work_items,
+        float dt,
         float * weights,
         float * lengths,
         float * params_pwi, // pwi: per work item
@@ -63,18 +63,18 @@ __global__ void Oscillatorref(
 {
     // work id & size
     const unsigned int id = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
-    const unsigned int size = blockDim.x * gridDim.x * gridDim.y;
+    const unsigned int size = n_work_items;
 
     // ND array accessors (TODO autogen from py shape info)
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
 #define state(time, i_node) (state_pwi[((time) *2 * n_node + (i_node))*(size) + id])
 #define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
 
-    // unpack params
-    
+    // only threat those ID that have a corresponding parameters combination
+    if (id >= size) return;
 
     // derived
-    const float sig = 0.0001; //params(0);//0.001;//sqrt(dt) * sqrt(2.0 * 1e-3);
+//    const float sig = 0.0001; //params(0);//0.001;//sqrt(dt) * sqrt(2.0 * 1e-3);
     const float sig = sqrt(dt) * sqrt(2.0 * 1e-3);
     const float rec_speed_dt = params(0);
     const float G = params(1);
