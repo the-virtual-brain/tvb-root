@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -53,7 +53,8 @@ def initialize_startup():
     is_db_empty = False
     session = SA_SESSIONMAKER()
     inspector = reflection.Inspector.from_engine(session.connection())
-    if len(inspector.get_table_names()) < 1:
+    table_names = inspector.get_table_names()
+    if len(table_names) < 1:
         LOGGER.debug("Database access exception, maybe DB is empty")
         is_db_empty = True
     session.close()
@@ -78,6 +79,12 @@ def initialize_startup():
         LOGGER.info("Database Default Tables created successfully!")
     else:
         _update_sql_scripts()
+
+        if 'migrate_version' in table_names:
+            command.stamp(alembic_cfg, 'head')
+            session.execute(text("""DROP TABLE "migrate_version";"""))
+            return is_db_empty
+
         with session.connection() as connection:
             alembic_cfg.attributes['connection'] = connection
             command.upgrade(alembic_cfg, TvbProfile.current.version.DB_STRUCTURE_VERSION)
