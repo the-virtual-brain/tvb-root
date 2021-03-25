@@ -71,7 +71,7 @@ class PearsonEdgeBundle(ABCSpaceDisplayer):
         state_list = ts_index.get_labels_for_dimension(1)
         mode_list = list(range(ts_index.data_length_4d))
 
-        with h5.h5_file_for_gid(ts_index.gid) as ts_h5:
+        with h5.h5_file_for_index(ts_index) as ts_h5:
             labels = self.get_space_labels(ts_h5)
 
         if not labels:
