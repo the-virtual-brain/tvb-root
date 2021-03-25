@@ -80,10 +80,17 @@ def initialize_startup():
     else:
         _update_sql_scripts()
 
-        if 'migrate_version' in table_names:
-            command.stamp(alembic_cfg, 'head')
-            session.execute(text("""DROP TABLE "migrate_version";"""))
-            return is_db_empty
+        try:
+            db_version = session.execute(text("""SELECT version from migrate_version""")).fetchone()[0]
+
+            if db_version == 18:
+                command.stamp(alembic_cfg, 'head')
+                session.execute(text("""DROP TABLE "migrate_version";"""))
+
+                return is_db_empty
+
+        except Exception:
+            pass
 
         with session.connection() as connection:
             alembic_cfg.attributes['connection'] = connection
