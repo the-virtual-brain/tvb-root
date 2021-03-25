@@ -130,7 +130,7 @@ __global__ void oscillator(
                 unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
 
                 //***// Get the state of node j which is delayed by dij
-                float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
+                float V_j = state(((t - dij + nh) % nh), j_node + 1 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
                 c_pop1 += wij * c_a * sin(V_j - V);

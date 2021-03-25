@@ -45,7 +45,7 @@
     <ComponentType name="coupling_function">
 
 <!--        variables for pre synaptic function-->
-        <Parameter name="V_j" dimension='0'/>
+        <Parameter name="V_j" dimension='1'/>
 
         <!-- Handle local coupling result, full expression is 'name' *= 'expression'-->
         <DerivedParameter name="c_pop1" value="global_coupling"/>
@@ -62,6 +62,6 @@
 
     </ComponentType>
 
-<!--    <ComponentType name="noise" description="on"/>-->
+<!--    <ComponentType name="noise"/>-->
 
 </Lems>

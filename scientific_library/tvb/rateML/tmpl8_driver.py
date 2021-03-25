@@ -52,6 +52,11 @@ class Driver_Setup:
 		self.states = ${XML.dynamics.state_variables.__len__()}
 		self.exposures = ${XML.exposures.__len__()}
 
+		if self.args.gpu_info:
+			self.logger.setLevel(level='INFO')
+			self.gpu_device_info()
+			exit(1)
+
 		self.logdata()
 
 	def logdata(self):
@@ -94,29 +99,19 @@ class Driver_Setup:
 
 		# for every parameter that needs to be swept, the size can be set
 		% for pc in range(len(XML.parameters)):
-		parser.add_argument('-s${pc}', '--n_sweep_arg${pc}', help='num grid points for ${pc+1}st parameter',
-							default=4, type=int)
+		parser.add_argument('-s${pc}', '--n_sweep_arg${pc}', default=4, help='num grid points for ${pc+1}st parameter', type=int)
 		% endfor
-
-		parser.add_argument('-n', '--n_time', help='number of time steps to do (default 400)',
-							type=int, default=400)
-		parser.add_argument('-v', '--verbose', help='increase logging verbosity', action='store_true', default='')
-		parser.add_argument('--model',
-							help="neural mass model to be used during the simulation",
-							default='${model}'
-							)
-		parser.add_argument('--lineinfo', default=True, action='store_true')
-
-		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="Enter block size x")
-		parser.add_argument('-by', '--blockszy', default=8, type=int, help="Enter block size y")
-
+		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do (default 400)', type=int)
+		parser.add_argument('-v', '--verbose', default=False, help='increase logging verbosity', action='store_true')
+		parser.add_argument('-m', '--model', default='${model}', help="neural mass model to be used during the simulation")
+		parser.add_argument('-l', '--lineinfo', default=True, help='Generate line-number information for device code.', action='store_true')
+		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="GPU block size x")
+		parser.add_argument('-by', '--blockszy', default=8, type=int, help="GPU block size y")
 		parser.add_argument('-val', '--validate', default=False, help="Enable validation to refmodels", action='store_true')
-
 		parser.add_argument('-tvbn', '--n_tvb_brainnodes', default="68", type=int, help="Number of tvb nodes")
-
-		parser.add_argument('-p', '--plot_data', default="", help="Plot output data", action='store_true')
-
-		parser.add_argument('-w', '--write_data', default="", help="Write output data to file: 'tavg_data", action='store_true')
+		parser.add_argument('-p', '--plot_data', default=False, help="Plot output data", action='store_true')
+		parser.add_argument('-w', '--write_data', default=False, help="Write output data to file: 'tavg_data", action='store_true')
+		parser.add_argument('-g', '--gpu_info', default=False, help="Show GPU info", action='store_true')
 
 		args = parser.parse_args()
 		return args
@@ -141,6 +136,41 @@ class Driver_Setup:
 		params = np.array([vals for vals in params], np.float32)
 		return params, sweeparam0
 
+
+	def gpu_device_info(self):
+		'''
+		Get GPU device information
+		TODO use this information to give user GPU setting suggestions
+		'''
+		dev = drv.Device(0)
+		print('\n')
+		self.logger.info('GPU = %s', dev.name())
+		self.logger.info('TOTAL AVAIL MEMORY: %d MiB', dev.total_memory()/1024/1024)
+
+		# get device information
+		att = {'MAX_THREADS_PER_BLOCK': [],
+			   'MAX_BLOCK_DIM_X': [],
+			   'MAX_BLOCK_DIM_Y': [],
+			   'MAX_BLOCK_DIM_Z': [],
+			   'MAX_GRID_DIM_X': [],
+			   'MAX_GRID_DIM_Y': [],
+			   'MAX_GRID_DIM_Z': [],
+			   'TOTAL_CONSTANT_MEMORY': [],
+			   'WARP_SIZE': [],
+			   # 'MAX_PITCH': [],
+			   'CLOCK_RATE': [],
+			   'TEXTURE_ALIGNMENT': [],
+			   # 'GPU_OVERLAP': [],
+			   'MULTIPROCESSOR_COUNT': [],
+			   'SHARED_MEMORY_PER_BLOCK': [],
+			   'MAX_SHARED_MEMORY_PER_BLOCK': [],
+			   'REGISTERS_PER_BLOCK': [],
+			   'MAX_REGISTERS_PER_BLOCK': []}
+
+		for key in att:
+			getstring = 'drv.device_attribute.' + key
+			# att[key].append(eval(getstring))
+			self.logger.info(key + ': %s', dev.get_attribute(eval(getstring)))
 
 class Driver_Execute(Driver_Setup):
 
@@ -238,33 +268,6 @@ class Driver_Execute(Driver_Setup):
 			except drv.MemoryError as e:
 				self.logger.error('%s.\n\t Freeing mem error', e)
 				exit(1)
-
-	def gpu_device_info(self):
-		dev = drv.Device(0)
-		# get device information
-		att = {'MAX_THREADS_PER_BLOCK':[],
-			   'MAX_BLOCK_DIM_X':[],
-			   'MAX_BLOCK_DIM_Y':[],
-			   'MAX_BLOCK_DIM_Z':[],
-			   'MAX_GRID_DIM_X':[],
-			   'MAX_GRID_DIM_Y':[],
-			   'MAX_GRID_DIM_Z':[],
-			   'TOTAL_CONSTANT_MEMORY':[],
-			   'WARP_SIZE':[],
-			   'MAX_PITCH':[],
-			   'CLOCK_RATE':[],
-			   'TEXTURE_ALIGNMENT':[],
-			   'GPU_OVERLAP':[],
-			   'MULTIPROCESSOR_COUNT':[],
-			   'SHARED_MEMORY_PER_BLOCK':[],
-			   'MAX_SHARED_MEMORY_PER_BLOCK':[],
-			   'REGISTERS_PER_BLOCK':[],
-			   'MAX_REGISTERS_PER_BLOCK':[]}
-
-		for key in att:
-			getstring = 'drv.device_attribute.' + key
-			att[key].append(eval(getstring))
-			self.logger.info(key, dev.get_attribute(eval(getstring)))
 
 	def gpu_mem_info(self):
 

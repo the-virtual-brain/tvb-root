@@ -59,3 +59,15 @@ class regularRun:
 		(time, data) = sim.run(simulation_length=self.sim_length)[0]
 
 		return (time, data)
+
+if __name__ == '__main__':
+
+	simtime = 5e2
+	g = 0.1
+	g = 0.0042
+	s = 4.0
+	dt = 1
+	period = 1
+	# model='Generic2dOscillator'
+	model='OscillatorT'
+	regularRun(simtime, g, s, dt, period).simulate_python(model)

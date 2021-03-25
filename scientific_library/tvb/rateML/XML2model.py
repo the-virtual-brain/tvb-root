@@ -181,8 +181,6 @@ class RateML:
 
     def pp_bound(self, model):
 
-        ''' Do some preprocessing on the template to easify rendering '''
-
         # check if boundaries for state variables are present. contruct is not necessary in pymodels
         # python only
         svboundaries = False
@@ -287,7 +285,7 @@ class RateML:
 
         self.XSD_validate_XML()
 
-        # start inventory check
+        # Do some preprocessing on the template to easify rendering
         self.pp_pow(model)
         noisepresent, nsigpresent = self.pp_noise(model)
         couplinglist = self.pp_cplist(model)
