@@ -36,6 +36,7 @@ import os
 import shutil
 from sqlalchemy.sql import text
 from sqlalchemy.engine import reflection
+from sqlalchemy.exc import SQLAlchemyError
 from alembic.config import Config
 from alembic import command
 
@@ -89,7 +90,7 @@ def initialize_startup():
 
                 return is_db_empty
 
-        except Exception:
+        except SQLAlchemyError:
             pass
 
         with session.connection() as connection:
