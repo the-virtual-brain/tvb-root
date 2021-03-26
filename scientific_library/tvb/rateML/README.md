@@ -114,7 +114,7 @@ See the section on the intepreter which operations are permitted.
 The **StateVariable** construct is used to define the state variables of the model. 
 The state variables in a Python TVB model are initialized with a numpy.array with the values entered in the dimension 
 field. For the Python state variables a range need to be entered (ie. [0, 2]). For the CUDA models the state variables 
-are initialized with a single value the dimension field. 
+are initialized with a single value in the dimension field. 
 The exposure field sets the state variables' upper and lower boundaries, for both languages. 
 These boundaries ensure that the values of state variables stay within the set boundaries and resets the state 
 if the boundaries are exceeded.
@@ -161,7 +161,7 @@ The **TimeDerivative** construct defines the model dynamics in terms of  derivat
 </Dynamics>
 ```
 
-### Coupling
+### Coupling for CUDA models
 To define **coupling functions**, which is only applicable for CUDA models, the user can create a coupling 
 component type. To identify this coupling component type, the name field should include the phrase coupling. 
 It will construct a double for loop in which for every node, every other node's state is fetched according 
@@ -262,7 +262,7 @@ _<c_pop1>_ *= _<global_coupling>_;
 ```
 *Listing 1. Generated CUDA code for the coupling functionality*
 
-### Noise
+### Noise for CUDA models
 To specify **noise addition** to the model dynamics, a component type with the name 'noise' can be defined, 
 which is only applicable for CUDA models. The CUDA models make use of the Curand library to add a random value 
 to the calculated derivatives, which is comparable to Gaussian noise (curand_normal).
@@ -278,7 +278,7 @@ the numerical solution step of the derivatives:
 V += nsig * curand_normal(&crndst) + dV;
 ```
 
-### Numba and Python coupling
+### Numba and Python coupling for regular TVB models
 In RateML the dynamics of the Python rate models are integrated using Numba vectorization (Lam et al., 2015). 
 They are mapped to a generalized universal function (gufuncs) using Numba's guvectorize decorator to compile 
 a pure Python function directly into machine code that operates over NumPy arrays, as fast as a C implementation (Numba, “Creating NumPy universal functions.”, https://numba.pydata.org/numba-doc/latest/user/vectorize.html). An example of a Numba generated guvectorize function is displayed in Listing 2. In this example the gufunc *_numba_dfun_Epileptor* accepts two n and m sized float64 arrays and 19 scalars as input and returns a n sized float64 array. The benefit of writing Numpy gufuncs with Numba's decorators, is that it automatically uses features such as reduction, accumulation and broadcasting to efficiently implement the algorithm in question.
@@ -300,20 +300,20 @@ def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope,
 *Listing 2. Generated CUDA code for the coupling functionality*
 
 
-## Running an example from ~/rateML/run folder
+## Simulating an CUDA model
 In the folder '~/rateML/run/' the model_driver.py file can be found which enables the user to run the generated 
 CUDA-model. Running rateML not only results in a generated model file but also set the driver for the specific model 
 such that it can be easily simulated. The fields that are dynamically set and link the model to the driver are 
 the number of parameters and their ranges for the sweeps, the number of states and exposures, entered by the users 
 in the XML model. The number of parameters entered for sweeping together with their sizes determine automatically what 
 the optimal size for the thread grid is. 
-The generated model is automatically picked up from the output folder (~rateML/generatedModels).
+The generated model is automatically picked up from the output folder (~rateML/generatedModels) after a model conversion
+has taken place.
 
-To run the model_driver on a locally installed GPU or HPC the following 
-command should be issued:
+To run the model_driver on a locally installed GPU or HPC the following command line optinos can be issued:
 ```c
 python model_driver.py [-h] [-s0 N_SWEEP_ARG0] [-s1 N_SWEEP_ARG1] [-s2 N_SWEEP_ARG2] [-n N_TIME] [-v] [--model MODEL]
- [--lineinfo] [-bx BLOCKSZX] [-by BLOCKSZY] [-val] [-tvbn N_TVB_BRAINNODES] [-p] [-w]
+[-st STATES] [-ex EXPOSURES] [--lineinfo] [-bx BLOCKSZX] [-by BLOCKSZY] [-val] [-tvbn N_TVB_BRAINNODES] [-p] [-w] [-g]
 ```
 In which the arguments are:
 * -h,               --help:             show this help message and exit
@@ -322,16 +322,17 @@ In which the arguments are:
 * -s2 N_SWEEP_ARG2, --n_sweep_arg2:     num grid points for 3st parameter (default 4)
 * -n N_TIME,        --n_time N_TIME:    number of time steps (default 400)
 * -v,               --verbose:          increase logging verbosity (default False)
-* -m,               --model:            neural mass model to be used during the simulation
-* -l,               --lineinfo:         Generate line-number information for device code. (default True)
-* -bx,              --blockszx:         GPU block size x
-* -by,              --blockszy          GPU block size y
-* -val,             --validate          Enable validation to refmodels
-* -tvbn,            --n_tvb_brainnodes: Number of tvb nodes
-* -p,               --plot_data:        Plot output data
-* -w,               --write_data:       Write output data to file: 'tavg_data'
-* -g,               --gpu_info:         Show GPU info
-
+* -m,               --model:            neural mass model to be used during the simulation (default last RML generation)
+* -st,              --states            number of states for model (default last RML generation)
+* -ex,              --exposures         number of exposures for model (default last RML generation)
+* -l,               --lineinfo:         generate line-number information for device code. (default False)
+* -bx,              --blockszx:         gpu block size x (default 8)
+* -by,              --blockszy          gpu block size y (default 8)
+* -val,             --validate          enable validation to refmodels (default False)
+* -tvbn,            --n_tvb_brainnodes: number of tvb nodes (default 68)
+* -p,               --plot_data:        plot output data (default False)
+* -w,               --write_data:       write output data to file: 'tavg_data' (default False)
+* -g,               --gpu_info:         show GPU info (default False)
 
 The arguments -s0..-sn set the range of the parameters to sweep and thus the number these arguments correspond to the 
 number parameters that the user entered in the XML file for sweeping. Because the example from the top is used there 
@@ -341,10 +342,27 @@ The --verbose argument is used to display information about the simulation such 
 
 The --model argument defaults to the model for which rateML has been used. Generating a model for the Oscillator 
 for instance, means that the model argument is set to Oscillator and that the driver can directly be run for the 
-desired model. The model argument can always be overruled from command line. 
+desired model. The model argument can always be overruled from command line. However when the default generated model
+is overruled the user must set the states and exposures (see next to options) according manually! This will most likely 
+lead to segfaults if not set or not set properly.
 
-The --write_data argument writes the resulting time series of the simulation to a binary file in the rateML/run/ folder.
+The --states and --exposures argument needs to be set when the default model argument is overruled. 
+Whenever rateML is executed the states and exposures are set for that particular generated model, indirectly setting
+the memory allocation for the GPU. Using the model_driver for another model requires these arguments to be set manually.
+
+The --write_data argument writes the resulting time series of the simulation to a binary file in the ~/rateML/run/ folder.
 The pickle library can be used to unpickle this file.
 
 The --gpu_info argument print a various information about the GPU to be used to assist the user in 
 setting the right parameters for optimal CUDA model execution. 
+
+Example for Oscillator simulation:
+```c
+python model_driver.py -s0 4 -s1 4-s2 4 -n 150 -v -bx 32 -by 32 -p
+```
+
+## Simulating a generated python model
+In the ~/rateML/run folder a file named regular_run.py can be found which instantiates a RateML model conversion and 
+directly simulates the result with the regular Python TVB simulator and plots the output. Be aware that an important
+difference between Python and CUDA XMl is the fact that the dimension field of state variables for a Python model
+expects a range and the CUDA models expect a single value. 

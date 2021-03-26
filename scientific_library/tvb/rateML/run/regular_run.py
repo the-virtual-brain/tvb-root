@@ -1,13 +1,11 @@
-import tvb_bin
 from tvb.simulator.lab import *
 
 import numpy as np
-import numpy.random as rgn
-import matplotlib.pyplot as plt
 import math
 
-from numpy import corrcoef
-import seaborn as sns
+import matplotlib.pyplot as plt
+
+from tvb.rateML.XML2model import RateML
 
 class regularRun:
 
@@ -58,9 +56,18 @@ class regularRun:
 		sim.configure()
 		(time, data) = sim.run(simulation_length=self.sim_length)[0]
 
+		print(data.shape)
+		plt.plot((data[:, 0, :, 0]), 'k', alpha=.2)
+		plt.show()
+
 		return (time, data)
 
 if __name__ == '__main__':
+
+	model_filename = 'Oscillator'
+	language='python'
+
+	RateML(model_filename, language)
 
 	simtime = 5e2
 	g = 0.1
@@ -68,6 +75,7 @@ if __name__ == '__main__':
 	s = 4.0
 	dt = 1
 	period = 1
+
+	model = 'OscillatorT'
 	# model='Generic2dOscillator'
-	model='OscillatorT'
 	regularRun(simtime, g, s, dt, period).simulate_python(model)

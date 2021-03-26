@@ -43,14 +43,13 @@ class Driver_Setup:
 		self.params, buf_par = self.setup_params(
 		self.args.n_sweep_arg0,
 		self.args.n_sweep_arg1,
-		self.args.n_sweep_arg2,
 		)
 		self.n_work_items, self.n_params = self.params.shape
 		par_min = 0.1 if buf_par.min() <= 0.0 else buf_par.min()
 		self.buf_len_ = ((self.lengths / par_min / self.dt).astype('i').max() + 1)
 		self.buf_len = 2 ** np.argwhere(2 ** np.r_[:30] > self.buf_len_)[0][0]  # use next power of
-		self.states = 2
-		self.exposures = 2
+		self.states = self.args.states
+		self.exposures = self.args.exposures
 
 		if self.args.gpu_info:
 			self.logger.setLevel(level='INFO')
@@ -100,18 +99,19 @@ class Driver_Setup:
 		# for every parameter that needs to be swept, the size can be set
 		parser.add_argument('-s0', '--n_sweep_arg0', default=4, help='num grid points for 1st parameter', type=int)
 		parser.add_argument('-s1', '--n_sweep_arg1', default=4, help='num grid points for 2st parameter', type=int)
-		parser.add_argument('-s2', '--n_sweep_arg2', default=4, help='num grid points for 3st parameter', type=int)
-		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do (default 400)', type=int)
+		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do', type=int)
 		parser.add_argument('-v', '--verbose', default=False, help='increase logging verbosity', action='store_true')
-		parser.add_argument('-m', '--model', default='oscillator', help="neural mass model to be used during the simulation")
-		parser.add_argument('-l', '--lineinfo', default=True, help='Generate line-number information for device code.', action='store_true')
-		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="GPU block size x")
-		parser.add_argument('-by', '--blockszy', default=8, type=int, help="GPU block size y")
-		parser.add_argument('-val', '--validate', default=False, help="Enable validation to refmodels", action='store_true')
-		parser.add_argument('-tvbn', '--n_tvb_brainnodes', default="68", type=int, help="Number of tvb nodes")
-		parser.add_argument('-p', '--plot_data', default=False, help="Plot output data", action='store_true')
-		parser.add_argument('-w', '--write_data', default=False, help="Write output data to file: 'tavg_data", action='store_true')
-		parser.add_argument('-g', '--gpu_info', default=False, help="Show GPU info", action='store_true')
+		parser.add_argument('-m', '--model', default='montbrio', help="neural mass model to be used during the simulation")
+		parser.add_argument('-st', '--states', default=2, type=int, help="number of states for model")
+		parser.add_argument('-ex', '--exposures', default=2, type=int, help="number of exposures for model")
+		parser.add_argument('-l', '--lineinfo', default=False, help='generate line-number information for device code.', action='store_true')
+		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="gpu block size x")
+		parser.add_argument('-by', '--blockszy', default=8, type=int, help="gpu block size y")
+		parser.add_argument('-val', '--validate', default=False, help="enable validation to refmodels", action='store_true')
+		parser.add_argument('-tvbn', '--n_tvb_brainnodes', default="68", type=int, help="number of tvb nodes")
+		parser.add_argument('-p', '--plot_data', default=False, help="plot output data", action='store_true')
+		parser.add_argument('-w', '--write_data', default=False, help="write output data to file: 'tavg_data", action='store_true')
+		parser.add_argument('-g', '--gpu_info', default=False, help="show gpu info", action='store_true')
 
 		args = parser.parse_args()
 		return args
@@ -120,26 +120,27 @@ class Driver_Setup:
 	def setup_params(self,
 		n0,
 		n1,
-		n2,
 		):
 		'''
 		This code generates the parameters ranges that need to be set
 		'''
 		sweeparam0 = np.linspace(0.0, 2.0, n0)
 		sweeparam1 = np.linspace(1.6, 3.0, n1)
-		sweeparam2 = np.linspace(606, 666, n2)
 		params = itertools.product(
 		sweeparam0,
 		sweeparam1,
-		sweeparam2,
 		)
 		params = np.array([vals for vals in params], np.float32)
 		return params, sweeparam0
 
 
 	def gpu_device_info(self):
+		'''
+		Get GPU device information
+		TODO use this information to give user GPU setting suggestions
+		'''
 		dev = drv.Device(0)
-		# print('\n')
+		print('\n')
 		self.logger.info('GPU = %s', dev.name())
 		self.logger.info('TOTAL AVAIL MEMORY: %d MiB', dev.total_memory()/1024/1024)
 
@@ -418,7 +419,6 @@ class Driver_Execute(Driver_Setup):
 
 	def plot_output(self, tavg):
 		plt.plot((tavg[:, 0, :, 1]), 'k', alpha=.2)
-		plt.xlim(0, 400)
 		plt.show()
 
 	def write_output(self, tavg):

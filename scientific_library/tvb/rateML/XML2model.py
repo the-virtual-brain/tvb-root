@@ -51,15 +51,11 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 
 """
 
-import os, sys
+import os
 import tvb.simulator.models
 from mako.template import Template
 import re
 from tvb.basic.logger.builder import get_logger
-
-# not ideal but avoids modifying  the vendored LEMS itself
-# sys.path.append(os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir))))
-# from lems.model.model import Model
 
 from lems.model.model import Model
 
@@ -403,8 +399,8 @@ if __name__ == "__main__":
     language='Cuda'
 
     # choose an example or your own model
-        # model_filename = 'montbrio'
-    model_filename = 'oscillator'
+    model_filename = 'montbrio'
+    # model_filename = 'oscillator'
     # model_filename = 'kuramoto'
     # model_filename = 'rwongwang'
     # model_filename = 'epileptor'

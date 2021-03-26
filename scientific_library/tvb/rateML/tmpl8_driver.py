@@ -49,8 +49,8 @@ class Driver_Setup:
 		par_min = 0.1 if buf_par.min() <= 0.0 else buf_par.min()
 		self.buf_len_ = ((self.lengths / par_min / self.dt).astype('i').max() + 1)
 		self.buf_len = 2 ** np.argwhere(2 ** np.r_[:30] > self.buf_len_)[0][0]  # use next power of
-		self.states = ${XML.dynamics.state_variables.__len__()}
-		self.exposures = ${XML.exposures.__len__()}
+		self.states = self.args.states
+		self.exposures = self.args.exposures
 
 		if self.args.gpu_info:
 			self.logger.setLevel(level='INFO')
@@ -101,17 +101,19 @@ class Driver_Setup:
 		% for pc in range(len(XML.parameters)):
 		parser.add_argument('-s${pc}', '--n_sweep_arg${pc}', default=4, help='num grid points for ${pc+1}st parameter', type=int)
 		% endfor
-		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do (default 400)', type=int)
+		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do', type=int)
 		parser.add_argument('-v', '--verbose', default=False, help='increase logging verbosity', action='store_true')
 		parser.add_argument('-m', '--model', default='${model}', help="neural mass model to be used during the simulation")
-		parser.add_argument('-l', '--lineinfo', default=True, help='Generate line-number information for device code.', action='store_true')
-		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="GPU block size x")
-		parser.add_argument('-by', '--blockszy', default=8, type=int, help="GPU block size y")
-		parser.add_argument('-val', '--validate', default=False, help="Enable validation to refmodels", action='store_true')
-		parser.add_argument('-tvbn', '--n_tvb_brainnodes', default="68", type=int, help="Number of tvb nodes")
-		parser.add_argument('-p', '--plot_data', default=False, help="Plot output data", action='store_true')
-		parser.add_argument('-w', '--write_data', default=False, help="Write output data to file: 'tavg_data", action='store_true')
-		parser.add_argument('-g', '--gpu_info', default=False, help="Show GPU info", action='store_true')
+		parser.add_argument('-st', '--states', default=${XML.dynamics.state_variables.__len__()}, type=int, help="number of states for model")
+		parser.add_argument('-ex', '--exposures', default=${XML.exposures.__len__()}, type=int, help="number of exposures for model")
+		parser.add_argument('-l', '--lineinfo', default=False, help='generate line-number information for device code.', action='store_true')
+		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="gpu block size x")
+		parser.add_argument('-by', '--blockszy', default=8, type=int, help="gpu block size y")
+		parser.add_argument('-val', '--validate', default=False, help="enable validation to refmodels", action='store_true')
+		parser.add_argument('-tvbn', '--n_tvb_brainnodes', default="68", type=int, help="number of tvb nodes")
+		parser.add_argument('-p', '--plot_data', default=False, help="plot output data", action='store_true')
+		parser.add_argument('-w', '--write_data', default=False, help="write output data to file: 'tavg_data", action='store_true')
+		parser.add_argument('-g', '--gpu_info', default=False, help="show gpu info", action='store_true')
 
 		args = parser.parse_args()
 		return args
@@ -422,7 +424,6 @@ class Driver_Execute(Driver_Setup):
 
 	def plot_output(self, tavg):
 		plt.plot((tavg[:, 0, :, 1]), 'k', alpha=.2)
-		plt.xlim(0, 400)
 		plt.show()
 
 	def write_output(self, tavg):

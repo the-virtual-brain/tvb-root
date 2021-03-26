@@ -80,11 +80,16 @@ class OscillatorT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"V": numpy.array([0.0, 1]), 
-				 "W": numpy.array([0.0, 1])},
+        default={"V": numpy.array([-2.0, 4.0]), 
+				 "W": numpy.array([-6.0, 6.0])},
         doc="""state variables"""
     )
 
+    state_variable_boundaries = Final(
+        label="State Variable boundaries [lo, hi]",
+        default={"V": numpy.array([-2.0, 4.0]), 
+				 "W": numpy.array([-6.0, 6.0])},
+    )
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
