@@ -34,11 +34,11 @@
 
         <Dynamics>
             <!-- For python models a dimension range is required -->
-            <StateVariable name="V" dimension="-2.0, 4.0" exposure="-2.0, 4.0"/>
-            <StateVariable name="W" dimension="-6.0, 6.0" exposure="-6.0, 6.0"/>
+<!--            <StateVariable name="V" dimension="-2.0, 4.0" exposure="-2.0, 4.0"/>-->
+<!--            <StateVariable name="W" dimension="-6.0, 6.0" exposure="-6.0, 6.0"/>-->
             <!-- For CUDA models a single value for dimension is required -->
-<!--            <StateVariable name="V" dimension="0.0" exposure="-2.0, 4.0"/>-->
-<!--            <StateVariable name="W" dimension="0.0" exposure="-6.0, 6.0"/>-->
+            <StateVariable name="V" dimension="0.0" exposure="-2.0, 4.0"/>
+            <StateVariable name="W" dimension="0.0" exposure="-6.0, 6.0"/>
 
             <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * c_pop1 + local_coupling * V)"/>
             <TimeDerivative variable="dW" value="d * (a + b * V + c * {V^2} - beta * W) / tau"/>

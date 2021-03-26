@@ -16,16 +16,56 @@
 #include <curand.h>
 #include <stdbool.h>
 
-__device__ float wrap_it_V(float V)
+__device__ float wrap_it_x1(float x1)
 {
-    float Vdim[] = {-2, 1};
-    if (V < Vdim[0]) V = Vdim[0];
-    else if (V > Vdim[1]) V = Vdim[1];
+    float x1dim[] = {-2.0, 1.0};
+    if (x1 < x1dim[0]) x1 = x1dim[0];
+    else if (x1 > x1dim[1]) x1 = x1dim[1];
 
-    return V;
+    return x1;
+}
+__device__ float wrap_it_y1(float y1)
+{
+    float y1dim[] = {-20.0, 2.0};
+    if (y1 < y1dim[0]) y1 = y1dim[0];
+    else if (y1 > y1dim[1]) y1 = y1dim[1];
+
+    return y1;
+}
+__device__ float wrap_it_z(float z)
+{
+    float zdim[] = {-2.0, 5.0};
+    if (z < zdim[0]) z = zdim[0];
+    else if (z > zdim[1]) z = zdim[1];
+
+    return z;
+}
+__device__ float wrap_it_x2(float x2)
+{
+    float x2dim[] = {-2.0, 0.0};
+    if (x2 < x2dim[0]) x2 = x2dim[0];
+    else if (x2 > x2dim[1]) x2 = x2dim[1];
+
+    return x2;
+}
+__device__ float wrap_it_y2(float y2)
+{
+    float y2dim[] = {0.0, 2.0};
+    if (y2 < y2dim[0]) y2 = y2dim[0];
+    else if (y2 > y2dim[1]) y2 = y2dim[1];
+
+    return y2;
+}
+__device__ float wrap_it_g(float g)
+{
+    float gdim[] = {-1.0, 1.0};
+    if (g < gdim[0]) g = gdim[0];
+    else if (g > gdim[1]) g = gdim[1];
+
+    return g;
 }
 
-__global__ void kuramotoref(
+__global__ void epileptorref(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_work_items,
@@ -42,7 +82,7 @@ __global__ void kuramotoref(
     const unsigned int size = n_work_items;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
-#define state(time, i_node) (state_pwi[((time) * 1 * n_node + (i_node))*size + id])
+#define state(time, i_node) (state_pwi[((time) * 6 * n_node + (i_node))*size + id])
 #define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
 
     // only threat those ID that have a corresponding parameters combination
@@ -54,26 +94,58 @@ __global__ void kuramotoref(
     const float global_coupling = params(1);
 
     // regular constants
-    const float omega = 60.0 * 2.0 * 3.1415927 / 1e3;
+    const float a = 1.0;
+    const float b = 3.0;
+    const float c = 1.0;
+    const float d = 5.0;
+    const float r = 0.00035;
+    const float s = 4.0;
+    const float x0 = -1.6;
+    const float Iext = 3.1;
+    const float slope = 0.;
+    const float Iext2 = 0.45;
+    const float tau = 10.0;
+    const float aa = 6.0;
+    const float bb = 2.0;
+    const float Kvf = 0.0;
+    const float Kf = 0.0;
+    const float Ks = 0.0;
+    const float tt = 1.0;
+    const float modification = 0;
 
     // coupling constants, coupling itself is hardcoded in kernel
-    const float a = 1;
 
     // coupling parameters
     float c_pop1 = 0.0;
+    float c_pop2 = 0.0;
 
     // derived parameters
-    const float rec_n = 1.0f / n_node;
-    const float rec_speed_dt = 1.0f / global_speed / (dt);
+    const float rec_n = 1 / n_node;
+    const float rec_speed_dt = powf(2.0f, global_speed) / dt;
     const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
 
+    // conditional_derived variable declaration
+    float ydot0 = 0.0;
+    float ydot2 = 0.0;
+    float h = 0.0;
+    float ydot4 = 0.0;
 
     curandState crndst;
     curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
-    float V = 0.0;
+    float x1 = 0.0;
+    float y1 = 0.0;
+    float z = 0.0;
+    float x2 = 0.0;
+    float y2 = 0.0;
+    float g = 0.0;
 
-    float dV = 0.0;
+    float dx1 = 0.0;
+    float dy1 = 0.0;
+    float dz = 0.0;
+    float dx2 = 0.0;
+    float dy2 = 0.0;
+    float dg = 0.0;
 
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
@@ -91,8 +163,14 @@ __global__ void kuramotoref(
         for (int i_node = 0; i_node < n_node; i_node++)
         {
             c_pop1 = 0.0f;
+            c_pop2 = 0.0f;
 
-            V = state((t) % nh, i_node + 0 * n_node);
+            x1 = state((t) % nh, i_node + 0 * n_node);
+            y1 = state((t) % nh, i_node + 1 * n_node);
+            z = state((t) % nh, i_node + 2 * n_node);
+            x2 = state((t) % nh, i_node + 3 * n_node);
+            y2 = state((t) % nh, i_node + 4 * n_node);
+            g = state((t) % nh, i_node + 5 * n_node);
 
             // This variable is used to traverse the weights and lengths matrix, which is really just a vector. It is just a displacement. /
             unsigned int i_n = i_node * n_node;
@@ -108,32 +186,75 @@ __global__ void kuramotoref(
                 unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
 
                 //***// Get the state of node j which is delayed by dij
-                float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
+                float x1_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_pop1 += wij * a * sin(V_j - V);
+                c_pop1 += wij * 1.0 * sin(x1_j - x1);
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_pop1 *= global_coupling * rec_n;
+            c_pop1 *= global_coupling;
+            c_pop2 *= g;
 
+            // The conditional variables
+            if (x1 < 0.0) {
+                ydot0 = -a * powf(x1, 2) + b * x1;
+            } else {
+                ydot0 = slope - x2 + 0.6 * powf(z-4, 2);
+            }
+            if (z < 0.0) {
+                ydot2 = - 0.1 * powf(z, 7);
+            } else {
+                ydot2 = 0;
+            }
+            if (modification) {
+                h = x0 + 3. / (1. + exp(-(x1 + 0.5) / 0.1));
+            } else {
+                h = 4 * (x1 - x0) + ydot2;
+            }
+            if (x2 < -0.25) {
+                ydot4 = 0.0;
+            } else {
+                ydot4 = aa * (x2 + 0.25);
+            }
 
             // Integrate with stochastic forward euler
-            dV = dt * (omega + c_pop1);
+            dx1 = dt * (tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 ));
+            dy1 = dt * (tt * (c - d * powf(x1, 2) - y1));
+            dz = dt * (tt * (r * (h - z + Ks * c_pop1)));
+            dx2 = dt * (tt * (-y2 + x2 - powf(x2, 3) + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2));
+            dy2 = dt * (tt * (-y2 + ydot4) / tau);
+            dg = dt * (tt * (-0.01 * (g - 0.1 * x1) ));
 
             // Add noise because component_type Noise is present in model
-            V += nsig * curand_normal(&crndst) + dV;
+            x1 += nsig * curand_normal(&crndst) + dx1;
+            y1 += nsig * curand_normal(&crndst) + dy1;
+            z += nsig * curand_normal(&crndst) + dz;
+            x2 += nsig * curand_normal(&crndst) + dx2;
+            y2 += nsig * curand_normal(&crndst) + dy2;
+            g += nsig * curand_normal(&crndst) + dg;
 
             // Wrap it within the limits of the model
-            V = wrap_it_V(V);
+            x1 = wrap_it_x1(x1);
+            y1 = wrap_it_y1(y1);
+            z = wrap_it_z(z);
+            x2 = wrap_it_x2(x2);
+            y2 = wrap_it_y2(y2);
+            g = wrap_it_g(g);
 
             // Update the state
-            state((t + 1) % nh, i_node + 0 * n_node) = V;
+            state((t + 1) % nh, i_node + 0 * n_node) = x1;
+            state((t + 1) % nh, i_node + 1 * n_node) = y1;
+            state((t + 1) % nh, i_node + 2 * n_node) = z;
+            state((t + 1) % nh, i_node + 3 * n_node) = x2;
+            state((t + 1) % nh, i_node + 4 * n_node) = y2;
+            state((t + 1) % nh, i_node + 5 * n_node) = g;
 
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = V;
+                tavg(i_node + 0 * n_node) = powf(x1, x2);
+                tavg(i_node + 1 * n_node) = x2;
             }
 
             // sync across warps executing nodes for single sim, before going on to next time step

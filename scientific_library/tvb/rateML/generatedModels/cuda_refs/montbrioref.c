@@ -16,16 +16,24 @@
 #include <curand.h>
 #include <stdbool.h>
 
+__device__ float wrap_it_r(float r)
+{
+    float rdim[] = {0.0, 2.0};
+    if (r < rdim[0]) r = rdim[0];
+    else if (r > rdim[1]) r = rdim[1];
+
+    return r;
+}
 __device__ float wrap_it_V(float V)
 {
-    float Vdim[] = {-2, 1};
+    float Vdim[] = {-2.0, 1.5};
     if (V < Vdim[0]) V = Vdim[0];
     else if (V > Vdim[1]) V = Vdim[1];
 
     return V;
 }
 
-__global__ void kuramotoref(
+__global__ void montbrioref(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_work_items,
@@ -42,7 +50,7 @@ __global__ void kuramotoref(
     const unsigned int size = n_work_items;
 
 #define params(i_par) (params_pwi[(size * (i_par)) + id])
-#define state(time, i_node) (state_pwi[((time) * 1 * n_node + (i_node))*size + id])
+#define state(time, i_node) (state_pwi[((time) * 2 * n_node + (i_node))*size + id])
 #define tavg(i_node) (tavg_pwi[((i_node) * size) + id])
 
     // only threat those ID that have a corresponding parameters combination
@@ -54,7 +62,15 @@ __global__ void kuramotoref(
     const float global_coupling = params(1);
 
     // regular constants
-    const float omega = 60.0 * 2.0 * 3.1415927 / 1e3;
+    const float I = 0.0;
+    const float Delta = 1.0;
+    const float alpha = 1.0;
+    const float s = 0.0;
+    const float k = 0.0;
+    const float J = 15.0;
+    const float eta = -5.0;
+    const float Gamma = 0.0;
+    const float gamma = 1.0;
 
     // coupling constants, coupling itself is hardcoded in kernel
     const float a = 1;
@@ -63,16 +79,22 @@ __global__ void kuramotoref(
     float c_pop1 = 0.0;
 
     // derived parameters
-    const float rec_n = 1.0f / n_node;
+    const float nsig = 1;
+    const float rec_n = 1 / n_node;
     const float rec_speed_dt = 1.0f / global_speed / (dt);
-    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
+    // the dynamic derived variables declarations
+    float Coupling_global = 0.0;
+    float Coupling_local = 0.0;
+    float Coupling_Term = 0.0;
 
 
     curandState crndst;
     curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
+    float r = 0.0;
     float V = 0.0;
 
+    float dr = 0.0;
     float dV = 0.0;
 
     //***// This is only initialization of the observable
@@ -92,7 +114,8 @@ __global__ void kuramotoref(
         {
             c_pop1 = 0.0f;
 
-            V = state((t) % nh, i_node + 0 * n_node);
+            r = state((t) % nh, i_node + 0 * n_node);
+            V = state((t) % nh, i_node + 1 * n_node);
 
             // This variable is used to traverse the weights and lengths matrix, which is really just a vector. It is just a displacement. /
             unsigned int i_n = i_node * n_node;
@@ -117,23 +140,32 @@ __global__ void kuramotoref(
 
             // rec_n is used for the scaling over nodes
             c_pop1 *= global_coupling * rec_n;
+            // the dynamic derived variables
+            Coupling_global = alpha * c_pop1;
+            Coupling_local = (1-alpha) * r;
+            Coupling_Term = Coupling_global + Coupling_local;
 
 
             // Integrate with stochastic forward euler
-            dV = dt * (omega + c_pop1);
+            dr = dt * (Delta / M_PI_F + 2 * V * r - k * powf(r, 2) + Gamma * r / M_PI_F);
+            dV = dt * (powf(V, 2) - powf(M_PI_F, 2) * powf(r, 2) + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term);
 
             // Add noise because component_type Noise is present in model
+            r += nsig * curand_normal(&crndst) + dr;
             V += nsig * curand_normal(&crndst) + dV;
 
             // Wrap it within the limits of the model
+            r = wrap_it_r(r);
             V = wrap_it_V(V);
 
             // Update the state
-            state((t + 1) % nh, i_node + 0 * n_node) = V;
+            state((t + 1) % nh, i_node + 0 * n_node) = r;
+            state((t + 1) % nh, i_node + 1 * n_node) = V;
 
             // Update the observable only for the last timestep
             if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = V;
+                tavg(i_node + 0 * n_node) = r;
+                tavg(i_node + 1 * n_node) = V;
             }
 
             // sync across warps executing nodes for single sim, before going on to next time step
