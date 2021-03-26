@@ -57,10 +57,10 @@ def integrate(state, weights, parmat, dX, cX
     next_state = state[:,0] + dt / 2 * (dX[0] + dX[1]) + z
 % endif
 % if isinstance(sim.integrator, Identity):
-    state[:,0] = dX[0]
+    next_state = dX[0]
 % endif
 % if isinstance(sim.integrator, IdentityStochastic):
-    state[:,0] = dX[0] + noise(nsig)
+    next_state = dX[0] + noise(nsig)
 % endif
 % if isinstance(sim.integrator, RungeKutta4thOrderDeterministic):
     dfuns(dX[1], state[:,0] + dt / 2 * dX[0], cX, parmat)

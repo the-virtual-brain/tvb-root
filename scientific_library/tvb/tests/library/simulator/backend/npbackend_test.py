@@ -130,7 +130,8 @@ class TestNpDfun(BaseTestDfun):
         state = np.random.rand(2, 1, 128)
         parmat = sim.model.spatial_parameter_matrix
         kernel(dX, state, cX, parmat)
-        np.testing.assert_allclose(dX, sim.model.dfun(state, cX))
+        np.testing.assert_allclose(dX,
+                                   sim.model.dfun(state, cX)[:, 0])
 
     def test_py_mpr_symmetric(self):
         "Test symmetric MPR model"
@@ -186,10 +187,11 @@ def dfuns(dX, state, cX, parmat):
             integrator.noise.dt = integrator.dt
         else:
             integrator = Integrator(dt=0.1)
-        state = np.random.randn(2, 1, 64)
-        weights = np.random.randn(64, 64)
+        nn = 76
+        state = np.random.randn(2, 1, nn)
+        weights = np.random.randn(nn, nn)
         cx = weights.dot(state[:,0].T).T
-        assert cx.shape == (2, 64)
+        assert cx.shape == (2, nn)
         expected = integrator.scheme(state[:,0], self._test_dfun, cx, 0, 0)
         actual = state.copy()
         np.random.seed(42)

@@ -55,7 +55,8 @@ class BaseTestSim(unittest.TestCase):
         print('maxtol 1st step:', maxtol)
         for t in range(1, len(actual)):
             print(t, 'tol:', np.max(np.abs(actual[t] - expected[t,:,:,0])))
-            np.testing.assert_allclose(actual[t], expected[t, :, :, 0], 2e-5*t*2, 1e-5*t*2)
+            np.testing.assert_allclose(actual[t, :, 0],
+                                       expected[t, :, :, 0], 2e-5*t*2, 1e-5*t*2)
 
 
 class BaseTestCoupling(unittest.TestCase):
