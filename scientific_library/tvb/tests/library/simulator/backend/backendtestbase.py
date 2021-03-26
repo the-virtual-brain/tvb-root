@@ -9,9 +9,11 @@ import unittest
 import numpy as np
 
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+from tvb.simulator.models.linear import Linear as LinearModel
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.datatypes.connectivity import Connectivity
-from tvb.simulator.integrators import EulerDeterministic, IntegratorStochastic
+from tvb.simulator.integrators import (EulerDeterministic, IntegratorStochastic,
+    Identity)
 from tvb.simulator.monitors import Raw
 from tvb.simulator.simulator import Simulator
 
@@ -59,11 +61,26 @@ class BaseTestSim(unittest.TestCase):
 class BaseTestCoupling(unittest.TestCase):
     "Unit tests for coupling function implementations."    
 
-    def _eval_cfun_no_delay(self, cfun, weights, X):
-        nsvar, nnode = X.shape
-        x_i, x_j = X.reshape((nsvar, 1, nnode)), X.reshape((nsvar, nnode, 1))
-        gx = (weights * cfun.pre(x_i+x_j*0, x_j+x_i*0)).sum(axis=1)
-        return cfun.post(gx)
+    def _prep_sim(self, coupling) -> Simulator:
+        "Prepare simulator for testing a coupling function."
+        con = Connectivity.from_file()
+        con.weights[:] = 1.0
+        # con = Connectivity(
+        #     region_labels=np.array(['']),
+        #     weights=con.weights[:5][:,:5],
+        #     tract_lengths=con.tract_lengths[:5][:,:5],
+        #     speed=np.array([10.0]),
+        #     centres=np.array([0.0]))
+        sim = Simulator(
+            connectivity=con,
+            model=LinearModel(gamma=np.r_[0.0]),
+            coupling=coupling,
+            integrator=Identity(dt=1.0),
+            monitors=[Raw()],
+            simulation_length=0.5
+            )
+        sim.configure()
+        return sim
 
 
 class BaseTestDfun(unittest.TestCase):
