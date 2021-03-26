@@ -22,13 +22,13 @@ class BaseTestSim(unittest.TestCase):
     "Integration tests of ODE cases against TVB builtins."
 
 
-    def _create_sim(self, integrator=None, inhom_mmpr=False):
+    def _create_sim(self, integrator=None, inhom_mmpr=False, delays=False):
         mpr = MontbrioPazoRoxin()
         conn = Connectivity.from_file()
         if inhom_mmpr:
             dispersion = 1 + np.random.randn(conn.weights.shape[0])*0.1
             mpr = MontbrioPazoRoxin(eta=mpr.eta*dispersion)
-        conn.speed = np.r_[np.inf]
+        conn.speed = np.r_[3.0 if delays else np.inf]
         if integrator is None:
             dt = 0.01
             integrator = EulerDeterministic(dt=dt)
@@ -38,10 +38,14 @@ class BaseTestSim(unittest.TestCase):
             monitors=[Raw()],
             simulation_length=0.1)  # 10 steps
         sim.configure()
-        self.assertTrue((conn.idelays == 0).all())
-        state = sim.current_state.copy()[:,:,0].astype('f')
+        if not delays:
+            self.assertTrue((conn.idelays == 0).all())
+        buf = sim.history.buffer[...,0]
+        # kernel has history in reverse order except 1st element 🤕
+        rbuf = np.concatenate((buf[0:1], buf[1:][::-1]), axis=0)
+        state = np.transpose(rbuf, (1, 0, 2)).astype('f')
         self.assertEqual(state.shape[0], 2)
-        self.assertEqual(state.shape[1], conn.weights.shape[0])
+        self.assertEqual(state.shape[2], conn.weights.shape[0])
         if isinstance(sim.integrator, IntegratorStochastic):
             sim.integrator.noise.reset_random_stream()
         (t,y), = sim.run()
@@ -51,11 +55,11 @@ class BaseTestSim(unittest.TestCase):
         # check we don't have numerical errors
         self.assertTrue(np.isfinite(actual).all())
         # check tolerances
-        maxtol = np.max(np.abs(actual[0] - expected[0,:,:,0]))
+        maxtol = np.max(np.abs(actual[0,0] - expected[0,:,:,0]))
         print('maxtol 1st step:', maxtol)
         for t in range(1, len(actual)):
             print(t, 'tol:', np.max(np.abs(actual[t] - expected[t,:,:,0])))
-            np.testing.assert_allclose(actual[t, :, 0],
+            np.testing.assert_allclose(actual[t, :],
                                        expected[t, :, :, 0], 2e-5*t*2, 1e-5*t*2)
 
 

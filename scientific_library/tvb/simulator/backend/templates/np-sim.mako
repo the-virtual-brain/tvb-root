@@ -35,4 +35,4 @@ def kernel(state, weights, trace, parmat
     , delay_indices
 % endif
 )
-        trace[t] = state.copy()
+        trace[t] = state[:,0].copy()

@@ -23,19 +23,22 @@ from .backendtestbase import (BaseTestSim, BaseTestCoupling, BaseTestDfun,
 
 class TestNpSim(BaseTestSim):
 
-    def _test_mpr(self, integrator):
+    def _test_mpr(self, integrator, delays=False):
         sim, state, t, y = self._create_sim(
             integrator,
-            inhom_mmpr=True)
+            inhom_mmpr=True,
+            delays=delays
+        )
         template = '<%include file="np-sim.mako"/>'
         content = dict(sim=sim, np=np)
         kernel = NpBackend().build_py_func(template, content, print_source=True)
         dX = state.copy()
-        n_svar, n_node = state.shape
-        self.assertEqual(sim.connectivity.horizon, 1)  # for now
+        n_svar, _, n_node = state.shape
+        if not delays:
+            self.assertEqual(sim.connectivity.horizon, 1)  # for now
         state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
         weights = sim.connectivity.weights.copy()
-        yh = np.empty((len(t),)+state.shape)
+        yh = np.empty((len(t),)+state[:,0].shape)
         parmat = sim.model.spatial_parameter_matrix
         self.assertEqual(parmat.shape[0], 1)
         self.assertEqual(parmat.shape[1], weights.shape[1])
@@ -43,13 +46,15 @@ class TestNpSim(BaseTestSim):
         args = state, weights, yh, parmat
         if isinstance(integrator, IntegratorStochastic):
             args = args + (integrator.noise.nsig,)
+        if delays:
+            args = args + (sim.connectivity.delay_indices,)
         kernel(*args)
         self._check_match(y, yh)
 
     def _test_mvar(self, integrator):
         pass # TODO
 
-    def _test_integrator(self, Integrator):
+    def _test_integrator(self, Integrator, delays=False):
         dt = 0.01
         if issubclass(Integrator, IntegratorStochastic):
             integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
@@ -57,9 +62,9 @@ class TestNpSim(BaseTestSim):
         else:
             integrator = Integrator(dt=dt)
         if isinstance(integrator, (Identity, IdentityStochastic)):
-            self._test_mvar(integrator)
+            self._test_mvar(integrator, delays=delays)
         else:
-            self._test_mpr(integrator)
+            self._test_mpr(integrator, delays=delays)
 
     # TODO move to BaseTestSim to avoid duplicating all the methods
 
@@ -68,8 +73,29 @@ class TestNpSim(BaseTestSim):
     def test_heun(self): self._test_integrator(HeunDeterministic)
     def test_heuns(self): self._test_integrator(HeunStochastic)
     def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
-    def test_id(self): self._test_integrator(Identity)
-    def test_ids(self): self._test_integrator(IdentityStochastic)
+    # def test_id(self): self._test_integrator(Identity)
+    # def test_ids(self): self._test_integrator(IdentityStochastic)
+
+    def test_deuler(self): self._test_integrator(EulerDeterministic,
+                                                 delays=True)
+
+    def test_deulers(self): self._test_integrator(EulerStochastic,
+                                                  delays=True)
+
+    def test_dheun(self): self._test_integrator(HeunDeterministic,
+                                                delays=True)
+
+    def test_dheuns(self): self._test_integrator(HeunStochastic,
+                                                 delays=True)
+
+    def test_drk4(self): self._test_integrator(RungeKutta4thOrderDeterministic,
+                                               delays=True)
+
+    # def test_did(self): self._test_integrator(Identity,
+    #                                           delays=True)
+    #
+    # def test_dids(self): self._test_integrator(IdentityStochastic,
+    #                                            delays=True)
 
     def test_scipy_int_notimpl(self):
         with self.assertRaises(NotImplementedError):
