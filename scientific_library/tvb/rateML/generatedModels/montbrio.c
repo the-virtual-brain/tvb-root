@@ -18,7 +18,7 @@
 
 __device__ float wrap_it_r(float r)
 {
-    float rdim[] = {0.0, 2.0};
+    float rdim[] = {-0.0, 100.0};
     if (r < rdim[0]) r = rdim[0];
     else if (r > rdim[1]) r = rdim[1];
 
@@ -26,7 +26,7 @@ __device__ float wrap_it_r(float r)
 }
 __device__ float wrap_it_V(float V)
 {
-    float Vdim[] = {-2.0, 1.5};
+    float Vdim[] = {-100.0, 100.0};
     if (V < Vdim[0]) V = Vdim[0];
     else if (V > Vdim[1]) V = Vdim[1];
 
@@ -62,30 +62,22 @@ __global__ void montbrio(
     const float global_coupling = params(1);
 
     // regular constants
+    const float tau = 1.0;
     const float I = 0.0;
-    const float Delta = 1.0;
-    const float alpha = 1.0;
-    const float s = 0.0;
-    const float k = 0.0;
-    const float J = 15.0;
-    const float eta = -5.0;
-    const float Gamma = 0.0;
-    const float gamma = 1.0;
+    const float Delta = 0.7;
+    const float J = 14.5;
+    const float eta = -4.6;
+    const float Gamma = 5.0;
 
     // coupling constants, coupling itself is hardcoded in kernel
-    const float a = 1;
 
     // coupling parameters
-    float c_pop1 = 0.0;
+    float r_c = 0.0;
 
     // derived parameters
-    const float nsig = 1;
     const float rec_n = 1 / n_node;
-    const float rec_speed_dt = 1.0f / global_speed / (dt);
-    // the dynamic derived variables declarations
-    float Coupling_global = 0.0;
-    float Coupling_local = 0.0;
-    float Coupling_Term = 0.0;
+    const float rec_speed_dt = global_speed;
+    const float nsig = 0.01;
 
 
     curandState crndst;
@@ -112,7 +104,7 @@ __global__ void montbrio(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            c_pop1 = 0.0f;
+            r_c = 0.0f;
 
             r = state((t) % nh, i_node + 0 * n_node);
             V = state((t) % nh, i_node + 1 * n_node);
@@ -134,21 +126,17 @@ __global__ void montbrio(
                 float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_pop1 += wij * a * sin(V_j - V);
+                r_c += wij * 1 * V_j;
 
             } // j_node */
 
             // rec_n is used for the scaling over nodes
-            c_pop1 *= global_coupling * rec_n;
-            // the dynamic derived variables
-            Coupling_global = alpha * c_pop1;
-            Coupling_local = (1-alpha) * r;
-            Coupling_Term = Coupling_global + Coupling_local;
+            r_c *= global_coupling;
 
 
             // Integrate with stochastic forward euler
-            dr = dt * (Delta / M_PI_F + 2 * V * r - k * powf(r, 2) + Gamma * r / M_PI_F);
-            dV = dt * (powf(V, 2) - powf(M_PI_F, 2) * powf(r, 2) + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term);
+            dr = dt * (1/tau * (Delta / (M_PI_F * tau) + 2 * V * r));
+            dV = dt * (1/tau * (powf(V, 2) - powf(M_PI_F, 2) * powf(tau, 2) * powf(r, 2) + eta + J * tau * r + I + r_c));
 
             // Add noise because component_type Noise is present in model
             r += nsig * curand_normal(&crndst) + dr;

@@ -63,12 +63,12 @@ __global__ void montbrioref(
 
     // regular constants
     const float I = 0.0;
-    const float Delta = 1.0;
+    const float Delta = 0.7;
     const float alpha = 1.0;
     const float s = 0.0;
     const float k = 0.0;
-    const float J = 15.0;
-    const float eta = -5.0;
+    const float J = 14.5;
+    const float eta = -4.6;
     const float Gamma = 0.0;
     const float gamma = 1.0;
 
@@ -79,17 +79,15 @@ __global__ void montbrioref(
     float c_pop1 = 0.0;
 
     // derived parameters
-    const float nsig = 1;
     const float rec_n = 1 / n_node;
     const float rec_speed_dt = 1.0f / global_speed / (dt);
+    const float nsig = 0.01;
     // the dynamic derived variables declarations
     float Coupling_global = 0.0;
     float Coupling_local = 0.0;
     float Coupling_Term = 0.0;
 
 
-    curandState crndst;
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float r = 0.0;
     float V = 0.0;
@@ -150,9 +148,9 @@ __global__ void montbrioref(
             dr = dt * (Delta / M_PI_F + 2 * V * r - k * powf(r, 2) + Gamma * r / M_PI_F);
             dV = dt * (powf(V, 2) - powf(M_PI_F, 2) * powf(r, 2) + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term);
 
-            // Add noise because component_type Noise is present in model
-            r += nsig * curand_normal(&crndst) + dr;
-            V += nsig * curand_normal(&crndst) + dV;
+            // No noise is added because it is not present in model
+            r += dr;
+            V += dV;
 
             // Wrap it within the limits of the model
             r = wrap_it_r(r);

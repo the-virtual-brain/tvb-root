@@ -130,8 +130,6 @@ __global__ void epileptorref(
     float h = 0.0;
     float ydot4 = 0.0;
 
-    curandState crndst;
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float x1 = 0.0;
     float y1 = 0.0;
@@ -227,13 +225,13 @@ __global__ void epileptorref(
             dy2 = dt * (tt * (-y2 + ydot4) / tau);
             dg = dt * (tt * (-0.01 * (g - 0.1 * x1) ));
 
-            // Add noise because component_type Noise is present in model
-            x1 += nsig * curand_normal(&crndst) + dx1;
-            y1 += nsig * curand_normal(&crndst) + dy1;
-            z += nsig * curand_normal(&crndst) + dz;
-            x2 += nsig * curand_normal(&crndst) + dx2;
-            y2 += nsig * curand_normal(&crndst) + dy2;
-            g += nsig * curand_normal(&crndst) + dg;
+            // No noise is added because it is not present in model
+            x1 += dx1;
+            y1 += dy1;
+            z += dz;
+            x2 += dx2;
+            y2 += dy2;
+            g += dg;
 
             // Wrap it within the limits of the model
             x1 = wrap_it_x1(x1);

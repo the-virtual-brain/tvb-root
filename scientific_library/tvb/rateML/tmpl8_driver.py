@@ -32,7 +32,7 @@ class Driver_Setup:
 
 		self.checkargbounds()
 
-		self.dt = 0.1
+		self.dt = self.args.delta_time
 		self.connectivity = self.tvb_connectivity(self.args.n_tvb_brainnodes)
 		self.weights = self.connectivity.weights
 		self.lengths = self.connectivity.tract_lengths
@@ -111,9 +111,10 @@ class Driver_Setup:
 		parser.add_argument('-by', '--blockszy', default=8, type=int, help="gpu block size y")
 		parser.add_argument('-val', '--validate', default=False, help="enable validation to refmodels", action='store_true')
 		parser.add_argument('-tvbn', '--n_tvb_brainnodes', default="68", type=int, help="number of tvb nodes")
-		parser.add_argument('-p', '--plot_data', default=False, help="plot output data", action='store_true')
+		parser.add_argument('-p', '--plot_data', type=int, help="plot output data")
 		parser.add_argument('-w', '--write_data', default=False, help="write output data to file: 'tavg_data", action='store_true')
 		parser.add_argument('-g', '--gpu_info', default=False, help="show gpu info", action='store_true')
+		parser.add_argument('-dt', '--delta_time', default=0.1, type=float, help="plot output data")
 
 		args = parser.parse_args()
 		return args
@@ -423,7 +424,7 @@ class Driver_Execute(Driver_Setup):
 		return tavg
 
 	def plot_output(self, tavg):
-		plt.plot((tavg[:, 0, :, 1]), 'k', alpha=.2)
+		plt.plot((tavg[:, self.args.plot_data, :, 0]), 'k', alpha=.2)
 		plt.show()
 
 	def write_output(self, tavg):
@@ -444,7 +445,7 @@ class Driver_Execute(Driver_Setup):
 		if (self.args.validate == True):
 			self.compare_with_ref(tavg0)
 
-		self.plot_output(tavg0) if self.args.plot_data else None
+		self.plot_output(tavg0) if self.args.plot_data is not None else None
 		self.write_output(tavg0) if self.args.write_data else None
 		self.logger.info('Output shape (simsteps, states, bnodes, n_params) %s', tavg0.shape)
 		self.logger.info('Finished CUDA simulation successfully in: {0:.3f}'.format(elapsed))

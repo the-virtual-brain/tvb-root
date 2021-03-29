@@ -4,26 +4,25 @@
 
         <!-- Powers should be entered as {powee^power} -->
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='0.0, 2.0'/>
-        <Parameter name="global_coupling" dimension='1.6, 3.0'/>
+        <Parameter name="global_speed" dimension='2.0, 2.0'/>
+        <Parameter name="global_coupling" dimension='0.1, 0.1'/>
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
         <!-- The parameters with name 'rec_speed_dt' is conidered to be integral part of tv coupling calculation
          if not present, the delay part of coupling will be 0 for each node -->
-        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
+        <DerivedParameter name="rec_speed_dt" value="global_speed"/>
         <!-- nsig is the default variable for noise amplitude. Is equal to 1 if not defined -->
-<!--        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>-->
+        <DerivedParameter name="nsig" value="0.01"/>
 
         <!-- If empty then none -->
+        <Constant name="tau" dimension="lo=-10.0, hi=10.0, step=0.01" value="1.0" description="???"/>
         <Constant name="I" dimension="lo=-10.0, hi=10.0, step=0.01" value="0.0" description="???"/>
-        <Constant name="Delta" dimension="lo=0.0, hi=10.0, step=0.01" value="1.0" description="Vertical shift of the configurable nullcline."/>
-        <Constant name="alpha" dimension="lo=0.0, hi=1.0, step=0.1" value="1.0" description=":math:`\alpha` ratio of effect between long-range and local connectivity."/>
-        <Constant name="s" dimension="lo=-15.0, hi=15.0, step=0.01" value="0.0" description="QIF membrane reversal potential."/>
-        <Constant name="k" dimension="lo=-15.0, hi=15.0, step=0.01" value="0.0" description="Switch for the terms specific to Coombes model."/>
-        <Constant name="J" dimension="lo=-25.0, hi=25.0, step=0.0001" value="15.0" description="Constant parameter to scale the rate of feedback from the slow variable to the firing rate variable."/>
-        <Constant name="eta" dimension="lo=-10.0, hi=10.0, step=0.0001" value="-5.0" description="Constant parameter to scale the rate of feedback from the firing rate variable to itself"/>
-        <Constant name="Gamma" dimension="lo=0., hi=10.0, step=0.1" value="0.0" description="Derived from eterogeneous currents and synaptic weights (see Montbrio p.12)."/>
-        <Constant name="gamma" dimension="lo=-2.0, hi=2.0, step=0.1" value="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative. It scales both I and the long range coupling term."/>
+        <Constant name="Delta" dimension="lo=0.0, hi=10.0, step=0.01" value="0.7" description="Vertical shift of the configurable nullcline."/>
+        <Constant name="J" dimension="lo=-25.0, hi=25.0, step=0.0001" value="14.5" description="Constant parameter to scale the rate of feedback from the slow variable to the firing rate variable."/>
+        <Constant name="eta" dimension="lo=-10.0, hi=10.0, step=0.0001" value="-4.6" description="Constant parameter to scale the rate of feedback from the firing rate variable to itself"/>
+        <Constant name="Gamma" dimension="lo=0., hi=10.0, step=0.1" value="5.0" description="Derived from eterogeneous currents and synaptic weights (see Montbrio p.12)."/>
+<!--        <Constant name="cr" dimension="lo=0., hi=1, step=0.1" value="0.0" description="It is the weight on Coupling through variable r."/>-->
+<!--        <Constant name="cv" dimension="lo=0., hi=1, step=0.1" value="0.0" description="It is the weight on Coupling through variable V."/>-->
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
@@ -35,20 +34,21 @@
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, i.e. "1.0, None" -->
-            <StateVariable name="r" dimension="0.0" exposure="0.0, 2.0"/>
-            <StateVariable name="V" dimension="0.0" exposure="-2.0, 1.5"/>
+            <StateVariable name="r" dimension="0.0" exposure="-0.0, 100.0"/>
+            <StateVariable name="V" dimension="0.0" exposure="-100.0, 100.0"/>
 
             <!-- Derived variables can be used to simplify the time derivatives, enter the local coupling formulas or any formula -->
             <!-- syntax: [name]=[expression] -->
             <!-- Define for ex. global and local coupling: c_0 = coupling[0, ] and lc_0 = local_coupling -->
-            <DerivedVariable name="Coupling_global" value="alpha * c_pop1"/>
-            <DerivedVariable name="Coupling_local" value="(1-alpha) * r"/>
-            <DerivedVariable name="Coupling_Term" value="Coupling_global + Coupling_local"/>
+<!--            <DerivedVariable name="Coupling_global" value="alpha * c_pop1"/>-->
+<!--            <DerivedVariable name="Coupling_local" value="(1-alpha) * r"/>-->
+<!--            <DerivedVariable name="Coupling_Term_r" value="Coupling_global + Coupling_local"/>-->
+<!--            <DerivedVariable name="Coupling_Term_V" value="Coupling_global + Coupling_local"/>-->
 
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
             <!-- Conditional used for if statement, syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,) -->
-            <TimeDerivative variable="dr" value="Delta / M_PI_F + 2 * V * r - k * {r^2} + Gamma * r / M_PI_F"/>
-            <TimeDerivative variable="dV" value="{V^2} - {M_PI_F^2} * {r^2} + eta + (k * s + J) * r - k * V * r + gamma * I + Coupling_Term"/>
+            <TimeDerivative variable="dr" value="1/tau * (Delta / (M_PI_F * tau) + 2 * V * r)"/>
+            <TimeDerivative variable="dV" value="1/tau * ({V^2} - {M_PI_F^2} * {tau^2} * {r^2} + eta + J * tau * r + I + r_c)"/>
 
         </Dynamics>
 
@@ -58,15 +58,11 @@
 
 <!--        variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
-        <DerivedParameter name="c_pop1" value="global_coupling * rec_n"/>
+        <DerivedParameter name="r_c" value="global_coupling"/>
 
-        <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
-
-<!--        variables for post synaptic function-->
-<!--        <Requirement name="wij" dimension=''/>-->
         <Dynamics>
-            <DerivedVariable name="pre" value="sin(V_j - V)"/>
-            <DerivedVariable name="post" value="a"/>
+            <DerivedVariable name="pre" value="V_j"/>
+            <DerivedVariable name="post" value="1"/>
         </Dynamics>
 
         <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
