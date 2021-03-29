@@ -73,6 +73,9 @@ RUN cd tvb-root; \
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
 RUN chown $TVB_USER:$TVB_USER $USER_HOME
 
+RUN rm /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
+RUN echo '{"argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"], "display_name": "Python 3", "language": "python"}' >> /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
+
 USER $TVB_USER
 
 RUN mkdir $USER_HOME/.tvb-temp; mkdir $USER_HOME/.tvb-temp/logs; mkdir -m777 $TVB_STORAGE $NUMBA_CACHE $KEYCLOAK_CONFIG
