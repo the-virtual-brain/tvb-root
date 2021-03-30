@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import numba as nb
-
 sin, cos, exp = math.sin, math.cos, math.exp
 
 % for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):

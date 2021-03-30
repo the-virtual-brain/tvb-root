@@ -10,7 +10,7 @@ import numpy as np
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.backend.nb import NbBackend
 
-from .backendtestbase import BaseTestCoupling
+from .backendtestbase import BaseTestCoupling, BaseTestDfun
 
 
 class TestNbCoupling(BaseTestCoupling):
@@ -77,3 +77,44 @@ def kernel(t, cx, weights, state, di):
 
     def test_nb_linear2(self): self._test_cfun2(Linear())
     def test_nb_sigmoidal2(self): self._test_cfun2(Sigmoidal())
+
+
+class TestNbDfun(BaseTestDfun):
+
+    def _test_dfun(self, model_):
+        "Test a Numba cfun template."
+        class sim:  # dummy sim
+            model = model_
+        template = '''import numpy as np
+<%include file="nb-dfuns.mako"/>
+def kernel(dx, state, cx, parmat):
+    for i in range(state.shape[1]):
+% for svar in sim.model.state_variables:
+        dx[${loop.index},i] = dx_${svar}(state[:,i], cx[:,i], 
+            parmat[:,i] if parmat.size else None)
+% endfor
+'''
+        kernel = NbBackend().build_py_func(template, dict(sim=sim, np=np),
+            print_source=True)
+        cX = np.random.rand(2, 128) / 10.0
+        dX = np.zeros_like(cX)
+        state = np.random.rand(2, 128)
+        parmat = sim.model.spatial_parameter_matrix
+        kernel(dX, state, cX, parmat)
+        drh, dVh = dX
+        dr, dV = sim.model.dfun(state, cX)
+        np.testing.assert_allclose(drh, dr)
+        np.testing.assert_allclose(dVh, dV)
+
+    def test_py_mpr_symmetric(self):
+        "Test symmetric MPR model"
+        self._test_dfun(self._prep_model())
+
+    def test_py_mpr_spatial1(self):
+        "Test MPR w/ 1 spatial parameter."
+        self._test_dfun(self._prep_model(1))
+
+    def test_py_mpr_spatial2(self):
+        "Test MPR w/ 2 spatial parameters."
+        self._test_dfun(self._prep_model(2))
+
