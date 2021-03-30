@@ -6,14 +6,16 @@ def run_sim(sim, nstep):
     buf_len = horizon + nstep
     N = sim.connectivity.number_of_regions
     gf = sim.integrator.noise.gfun(None)
+
     r, V = sim.integrator.noise.generate( shape=(2,N,buf_len) ) * gf
-    r[:,:horizon] = sim.history.buffer[:,0,:,0].T
-    V[:,:horizon] = sim.history.buffer[:,1,:,0].T
+    r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
+    V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
+
     r, V = _mpr_integrate(
         N = N,
         dt = sim.integrator.dt,
         nstep = nstep,
-        i0 = sim.connectivity.horizon -1,
+        i0 = sim.connectivity.horizon,
         r=r,
         V=V,
         weights = sim.connectivity.weights, 
