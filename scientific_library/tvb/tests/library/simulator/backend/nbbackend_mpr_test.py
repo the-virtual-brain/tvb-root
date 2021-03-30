@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as ss
 
 from .backendtestbase import BaseTestSim
-from tvb.simulator.backend.nb import NbBackend
+from tvb.simulator.backend.nb_mpr import NbMPRBackend
 from tvb.simulator.lab import *
 
 
@@ -12,7 +12,7 @@ class TestNbSim(BaseTestSim):
         template = '<%include file="nb-montbrio.mako"/>'
         content = dict(foo='bar')
 
-        return NbBackend().build_py_func(template, content, name='run_sim', print_source=print_source)
+        return NbMPRBackend().build_py_func(template, content, name='run_sim', print_source=print_source)
 
     def _random_network(self, N=500, density=0.1, low=5, high=250, speed=np.inf):
         weights = ss.random(N,N, density=density, format='lil')

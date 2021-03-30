@@ -44,7 +44,7 @@ import autopep8
 from .templates import MakoUtilMix
 
 
-class NbBackend(MakoUtilMix):
+class NbMPRBackend(MakoUtilMix):
 
     def build_py_func(self, template_source, content, name='kernel', print_source=False,
             modname=None):
