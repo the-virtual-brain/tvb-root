@@ -4,7 +4,7 @@ import numba as nb
 
 sin, cos, exp = math.sin, math.cos, math.exp
 
-nb.jit(boundscheck=True)
+@nb.jit
 def coupling(cX, weights, state, di):
     
     n_svar = state.shape[0]
@@ -28,7 +28,7 @@ def coupling(cX, weights, state, di):
                 continue
 
 % for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
-            x_i = state[0, ${cvar}, i]
+            x_i = state[${cvar}, 0, i]
 	    x_j = state[${cvar}, di[i, j], j]
             cX[${loop.index}, i] += wij * ${sim.coupling.pre_expr}
 % endfor
