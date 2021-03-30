@@ -4,13 +4,13 @@ import numba as nb
 
 sin, cos, exp = math.sin, math.cos, math.exp
 
-@nb.njit
-def coupling(cX, weights, state):
+@nb.jit
+def coupling(cX, weights, state, di):
     
     n_svar = state.shape[0]
     n_cvar = cX.shape[0]
     n_node = cX.shape[1]
-    assert cX.shape[1] == weights.shape[0] == weights.shape[1] == state.shape[1]
+    assert cX.shape[1] == weights.shape[0] == weights.shape[1] == state.shape[2]
 
 % for par in sim.coupling.parameter_names:
     ${par} = nb.float32(${getattr(sim.coupling, par)[0]})
@@ -28,8 +28,8 @@ def coupling(cX, weights, state):
                 continue
 
 % for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
-            x_i = state[${cvar}, i]
-            x_j = state[${cvar}, j]
+            x_i = state[${cvar}, 0, i]
+	    x_j = state[${cvar}, di[i, j], j]
             cX[${loop.index}, i] += wij * ${sim.coupling.pre_expr}
 % endfor
 

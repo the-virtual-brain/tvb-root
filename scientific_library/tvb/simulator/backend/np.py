@@ -47,12 +47,15 @@ from .templates import MakoUtilMix
 class NpBackend(MakoUtilMix):
 
     def build_py_func(self, template_source, content, name='kernel', print_source=False,
-            modname=None):
+            modname=None, fname=None):
         "Build and retrieve one or more Python functions from template."
         source = self.render_template(template_source, content)
         source = autopep8.fix_code(source)
         if print_source:
             print(self.insert_line_numbers(source))
+        if fname is not None:
+            with open(fname, 'w') as fd:
+                fd.write(source)
         if modname is not None:
             return self.eval_module(source, name, modname)
         else:

@@ -109,12 +109,12 @@ class TestNpSim(BaseTestSim):
 
 class TestNpCoupling(BaseTestCoupling):
 
-    def _test_cfun(self, mode, cfun):
+    def _test_cfun(self, cfun):
         "Test a Python cfun template."
         sim = self._prep_sim(cfun)
         # prep & invoke kernel
         template = f'''import numpy as np
-<%include file="{mode}-coupling.mako"/>
+<%include file="np-coupling.mako"/>
 '''
         kernel = NpBackend().build_py_func(template, dict(sim=sim, np=np), 
             name='coupling', print_source=True)
@@ -133,11 +133,8 @@ class TestNpCoupling(BaseTestCoupling):
         (t, y), = sim.run()
         np.testing.assert_allclose(cX, y[0,:,:,0], 1e-5, 1e-6)
 
-    # def test_nb_linear(self): self._test_cfun('nb', Linear())
-    # def test_nb_sigmoidal(self): self._test_cfun('nb', Sigmoidal())
-
-    def test_np_linear(self): self._test_cfun('np', Linear())
-    def test_np_sigmoidal(self): self._test_cfun('np', Sigmoidal())
+    def test_np_linear(self): self._test_cfun(Linear())
+    def test_np_sigmoidal(self): self._test_cfun(Sigmoidal())
 
 
 class TestNpDfun(BaseTestDfun):

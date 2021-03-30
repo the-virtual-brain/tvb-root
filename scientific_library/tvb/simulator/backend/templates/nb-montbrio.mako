@@ -107,7 +107,7 @@ if __name__ == "__main__":
     Delta = 0.7
     tau = 1
 
-    nstep = 100000
+    nstep = 100000 # 1000 ms
 
     conn = connectivity.Connectivity.from_file() # default 76 regions
     conn.speed = np.array([conn_speed])
