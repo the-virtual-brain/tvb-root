@@ -6,8 +6,9 @@ Tests for the CUDA backend.
 """
 
 import unittest
+import numpy as np
 
-from tvb.simulator.backend.cu import CuBackend, pycuda_available
+from tvb.simulator.backend.cu import CuBackend, pycuda_available, Out, In, InOut
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 
@@ -29,7 +30,7 @@ class TestCUSim(BaseTestSim):
         kernel(
             In(state), In(weights), Out(yh), In(parmat),
             grid=(1,1), block=(128,1,1))
-        self._check_match(y, yh)
+        self._check_match(y, yh[:,:,0])
 
 
 class TestCUCoupling(BaseTestCoupling):
@@ -46,7 +47,7 @@ __global__ void kernel(float *state, float *weights, float *cX) {
 }
 '''
         content = dict(n_node=128, sim=sim)
-        kernel = self._build_cu_func(template, content)
+        kernel = CuBackend().build_cu_func(template, content)
         state = np.random.rand(2, content['n_node']).astype('f')
         weights = np.random.randn(state.shape[1], state.shape[1]).astype('f')
         cX = np.empty_like(state)
@@ -80,7 +81,7 @@ __global__ void kernel(float *dX, float *state, float *cX, float *parmat) {
 }
 '''
         content = dict(n_node=128, sim=sim)
-        kernel = self._build_cu_func(template, content, print_source=True)
+        kernel = CuBackend().build_cu_func(template, content, print_source=True)
         dX, state, cX = np.random.rand(3, 2, content['n_node']).astype('f')
         parmat = sim.model.spatial_parameter_matrix.astype('f')
         if parmat.size == 0:

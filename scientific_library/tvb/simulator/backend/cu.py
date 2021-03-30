@@ -54,13 +54,13 @@ class CuBackend(MakoUtilMix):
 
     def build_cu_func(self, template_source, content, name='kernel', print_source=False):
         "Build and retrieve a Python function from template."
-        source = self._render_template(template_source, content)
+        source = self.render_template(template_source, content)
         if print_source:
             print(source)
         try:
             module = SourceModule(source)
         except pycuda.driver.CompileError as exc:
-            print(self._insert_line_numbers(source))
+            print(self.insert_line_numbers(source))
             raise exc
         func = module.get_function(name)
         return func

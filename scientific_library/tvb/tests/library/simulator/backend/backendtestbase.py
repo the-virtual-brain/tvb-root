@@ -66,6 +66,12 @@ class BaseTestSim(unittest.TestCase):
 class BaseTestCoupling(unittest.TestCase):
     "Unit tests for coupling function implementations."    
 
+    def _eval_cfun_no_delay(self, cfun, weights, X):
+        nsvar, nnode = X.shape
+        x_i, x_j = X.reshape((nsvar, 1, nnode)), X.reshape((nsvar, nnode, 1))
+        gx = (weights * cfun.pre(x_i+x_j*0, x_j+x_i*0)).sum(axis=1)
+        return cfun.post(gx)
+
     def _prep_sim(self, coupling) -> Simulator:
         "Prepare simulator for testing a coupling function."
         con = Connectivity.from_file()
