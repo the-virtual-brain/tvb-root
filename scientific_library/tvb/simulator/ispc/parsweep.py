@@ -50,9 +50,9 @@ def make_kernel(): #{{{
     cxx = os.environ.get('CXX', 'g++')
     cxxflags = os.environ.get('CXXFLAGS', '')
     # cmd(cxx + ' -fPIC ' + cxxflags + ' -O3 -c network.ispc.cpp -o network.ispc.o')
-    #cmd('ispc --pic network.ispc -o network.ispc.o')
-    #cmd(cxx + ' -fPIC ' + cxxflags + ' -O3 -c tasksys.cpp -o tasksys.cpp.o')
-    #cmd(cxx + ' -shared tasksys.cpp.o network.ispc.o -o network.so')
+    cmd('ispc --pic network.ispc -o network.ispc.o')
+    cmd(cxx + ' -fPIC ' + cxxflags + ' -O3 -c tasksys.cpp -o tasksys.cpp.o')
+    cmd(cxx + ' -shared tasksys.cpp.o network.ispc.o -o network.so')
 
     # need to break out the CMake build examples to figure out the right link
     # flags. Even without multicore, it looks a lot slower (8 it/s for 8 cores?)
@@ -62,7 +62,7 @@ def make_kernel(): #{{{
     #cmd('ispc --dllexport --math-lib=fast network.ispc -o network.obj')
     #cmd('lib /OUT:networkall.obj tasksys.obj network.obj')
     #cmd('link /DLL /NOENTRY /DEFAULTLIB:MSVCRT /export:integrate /OUT:networkall.dll networkall.obj')
-    dll = ctypes.CDLL('./networkall.dll')
+    dll = ctypes.CDLL('./network.so')
     fn = getattr(dll, 'integrate')
     fn.restype = ctypes.c_void_p
     uint = ctypes.c_uint

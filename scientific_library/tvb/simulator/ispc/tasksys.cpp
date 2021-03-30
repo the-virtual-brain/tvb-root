@@ -134,7 +134,7 @@
   #include <sys/types.h>
   #include <sys/stat.h>
   #include <sys/param.h>
-  #include <sys/sysctl.h>
+//  #include <sys/sysctl.h>
   #include <vector>
   #include <algorithm>
 #endif // ISPC_USE_PTHREADS
