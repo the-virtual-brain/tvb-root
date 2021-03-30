@@ -80,8 +80,6 @@ __global__ void montbrio(
     const float nsig = 0.01;
 
 
-    curandState crndst;
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float r = 0.0;
     float V = 0.0;
@@ -138,9 +136,9 @@ __global__ void montbrio(
             dr = dt * (1/tau * (Delta / (M_PI_F * tau) + 2 * V * r));
             dV = dt * (1/tau * (powf(V, 2) - powf(M_PI_F, 2) * powf(tau, 2) * powf(r, 2) + eta + J * tau * r + I + r_c));
 
-            // Add noise because component_type Noise is present in model
-            r += nsig * curand_normal(&crndst) + dr;
-            V += nsig * curand_normal(&crndst) + dV;
+            // No noise is added because it is not present in model
+            r += dr;
+            V += dV;
 
             // Wrap it within the limits of the model
             r = wrap_it_r(r);

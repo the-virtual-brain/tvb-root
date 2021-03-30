@@ -71,6 +71,6 @@
     </ComponentType>
 
     <!-- If noise needs to be present, just specify the component type. Detail might be added later -->
-    <ComponentType name="noise"/>
+<!--    <ComponentType name="noise"/>-->
 
 </Lems>
