@@ -3,9 +3,15 @@ import numpy as np
 import numba as nb
 sin, cos, exp = math.sin, math.cos, math.exp
 
+<%
+    svars = ', '.join(sim.model.state_variables)
+    any_delays = sim.connectivity.idelays.any()
+%>
+
 % for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
 @nb.jit(boundscheck=True, inline='always')
-def cx_${cterm}(t, i, weights, state, di):
+def cx_${cterm}(t, i, weights, cvar
+                ${', di' if any_delays else ''}):
 % for par in sim.coupling.parameter_names:
     ${par} = nb.float32(${getattr(sim.coupling, par)[0]})
 % endfor
@@ -14,8 +20,9 @@ def cx_${cterm}(t, i, weights, state, di):
         wij = nb.float32(weights[i, j])
         if (wij == nb.float32(0.0)):
             continue
-        x_i = state[${cvar}, i, t]
-        x_j = state[${cvar}, j, t - di[i, j]]
-	gx += wij * ${sim.coupling.pre_expr}
+        x_i = cvar[i, t]
+        dij = ${'di[i, j]' if any_delays else 'nb.float32(0.0)'}
+        x_j = cvar[j, t - dij]
+        gx += wij * ${sim.coupling.pre_expr}
     return ${sim.coupling.post_expr}
 % endfor

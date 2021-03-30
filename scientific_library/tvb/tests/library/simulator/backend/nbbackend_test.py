@@ -8,9 +8,17 @@ Tests for the Numba backend.
 import numpy as np
 
 from tvb.simulator.coupling import Sigmoidal, Linear
+from tvb.simulator.noise import Additive, Multiplicative
+from tvb.datatypes.connectivity import Connectivity
+from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
+from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
+    HeunDeterministic, HeunStochastic, IntegratorStochastic, 
+    RungeKutta4thOrderDeterministic, Identity, IdentityStochastic,
+    VODEStochastic)
 from tvb.simulator.backend.nb import NbBackend
 
-from .backendtestbase import BaseTestCoupling, BaseTestDfun
+from .backendtestbase import (BaseTestCoupling, BaseTestDfun,
+    BaseTestIntegrate)
 
 
 class TestNbCoupling(BaseTestCoupling):
@@ -52,7 +60,7 @@ class TestNbCoupling(BaseTestCoupling):
 def kernel(t, cx, weights, state, di):
     for i in range(weights.shape[0]):
 % for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
-        cx[${loop.index},i] = cx_${cterm}(t, i, weights, state, di)
+        cx[${loop.index},i] = cx_${cterm}(t, i, weights, state[${cvar}], di)
 % endfor
 '''
         kernel = NbBackend().build_py_func(template, dict(sim=sim, np=np), 
@@ -86,11 +94,19 @@ class TestNbDfun(BaseTestDfun):
         class sim:  # dummy sim
             model = model_
         template = '''import numpy as np
+<%
+    svars = ', '.join(sim.model.state_variables)
+    cvars = ', '.join(sim.model.coupling_terms)
+%>
 <%include file="nb-dfuns.mako"/>
 def kernel(dx, state, cx, parmat):
     for i in range(state.shape[1]):
+        ${svars} = state[:, i]
+% for cvar in sim.model.coupling_terms:
+        ${cvar} = cx[${loop.index}, i]
+% endfor
 % for svar in sim.model.state_variables:
-        dx[${loop.index},i] = dx_${svar}(state[:,i], cx[:,i], 
+        dx[${loop.index},i] = dx_${svar}(${svars}, ${cvars},
             parmat[:,i] if parmat.size else None)
 % endfor
 '''
@@ -118,3 +134,65 @@ def kernel(dx, state, cx, parmat):
         "Test MPR w/ 2 spatial parameters."
         self._test_dfun(self._prep_model(2))
 
+
+class TestNbIntegrate(BaseTestIntegrate):
+
+    def _test_dfun(self, state, cX, lc):
+        return -state*cX**2/state.shape[1]
+
+    def _eval_cg(self, integrator_, state, weights_):
+        class sim:
+            integrator = integrator_
+            connectivity = Connectivity.from_file()
+            model = MontbrioPazoRoxin()
+        sim.connectivity.speed = np.r_[np.inf]
+        sim.connectivity.configure()
+        sim.integrator.configure()
+        sim.connectivity.set_idelays(sim.integrator.dt)
+        template = '''
+import numpy as np
+import numba as nb
+@nb.njit
+def cx_Coupling_Term_r(t, i, w, r): np.dot(w[i],r[:,t])
+@nb.njit
+def cx_Coupling_Term_V(t, i, w, V): np.dot(w[i],V[:,t])
+@nb.njit
+def dfuns(dX, state, cX, parmat):
+    d = -state*cX**2/state.shape[1]
+    dX[:] = d
+<%include file="nb-integrate.mako" />
+'''
+        integrate = NbBackend().build_py_func(template, dict(sim=sim, np=np),
+            name='integrate', print_source=True)
+        parmat = np.zeros(0)
+        np.random.seed(42)
+        args = state, weights_, parmat
+        if isinstance(sim.integrator, IntegratorStochastic):
+            args = args + (sim.integrator.noise.nsig, )
+        integrate(0, *args)
+        return state
+
+    def _test_integrator(self, Integrator):
+        if issubclass(Integrator, IntegratorStochastic):
+            integrator = Integrator(dt=0.1, noise=Additive(nsig=np.r_[0.01]))
+            integrator.noise.dt = integrator.dt
+        else:
+            integrator = Integrator(dt=0.1)
+        nn = 76
+        state = np.random.randn(2, nn, 2)
+        weights = np.random.randn(nn, nn)
+        cx = weights.dot(state[...,0].T).T
+        assert cx.shape == (2, nn)
+        expected = integrator.scheme(state[...,0], self._test_dfun, cx, 0, 0)
+        actual = state.copy()
+        np.random.seed(42)
+        self._eval_cg(integrator, actual, weights)
+        np.testing.assert_allclose(actual[:,0], expected)
+
+    def test_euler(self): self._test_integrator(EulerDeterministic)
+    def test_eulers(self): self._test_integrator(EulerStochastic)
+    def test_heun(self): self._test_integrator(HeunDeterministic)
+    def test_heuns(self): self._test_integrator(HeunStochastic)
+    def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
+    def test_id(self): self._test_integrator(Identity)
+    def test_ids(self): self._test_integrator(IdentityStochastic)

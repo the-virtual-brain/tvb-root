@@ -14,6 +14,7 @@
             raise NotImplementedError
 %>
 
+## TODO handle multiplicative noise
 % if isinstance(sim.integrator, IntegratorStochastic):
 def noise(nsig):
     n_node = ${sim.connectivity.weights.shape[0]}

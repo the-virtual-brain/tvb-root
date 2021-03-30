@@ -59,9 +59,9 @@ class NpBackend(MakoUtilMix):
         if modname is not None:
             return self.eval_module(source, name, modname)
         else:
-            return self.eval_source(source, name)
+            return self.eval_source(source, name, print_source)
 
-    def eval_source(self, source, name):
+    def eval_source(self, source, name, print_source):
         globals_ = {}
         try:
             exec(source, globals_)
