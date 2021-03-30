@@ -152,14 +152,10 @@ class TestNbIntegrate(BaseTestIntegrate):
         template = '''
 import numpy as np
 import numba as nb
-@nb.njit
-def cx_Coupling_Term_r(t, i, w, r): np.dot(w[i],r[:,t])
-@nb.njit
-def cx_Coupling_Term_V(t, i, w, V): np.dot(w[i],V[:,t])
-@nb.njit
-def dfuns(dX, state, cX, parmat):
-    d = -state*cX**2/state.shape[1]
-    dX[:] = d
+cx_Coupling_Term_r = nb.njit(lambda t, i, w, r: np.dot(w[i],r[:,t]))
+cx_Coupling_Term_V = nb.njit(lambda t, i, w, V: np.dot(w[i],V[:,t]))
+dx_r = nb.njit(lambda r,V,Coupling_Term_r,Coupling_Term_V,parmat: -r*Coupling_Term_r**2/76)
+dx_V = nb.njit(lambda r,V,Coupling_Term_r,Coupling_Term_V,parmat: -V*Coupling_Term_V**2/76)
 <%include file="nb-integrate.mako" />
 '''
         integrate = NbBackend().build_py_func(template, dict(sim=sim, np=np),
@@ -168,6 +164,7 @@ def dfuns(dX, state, cX, parmat):
         np.random.seed(42)
         args = state, weights_, parmat
         if isinstance(sim.integrator, IntegratorStochastic):
+            print(sim.integrator.noise.nsig.shape)
             args = args + (sim.integrator.noise.nsig, )
         integrate(0, *args)
         return state
@@ -186,8 +183,9 @@ def dfuns(dX, state, cX, parmat):
         expected = integrator.scheme(state[...,0], self._test_dfun, cx, 0, 0)
         actual = state.copy()
         np.random.seed(42)
+        actual[...,1] = np.random.randn(*actual[...,1].shape)
         self._eval_cg(integrator, actual, weights)
-        np.testing.assert_allclose(actual[:,0], expected)
+        np.testing.assert_allclose(actual[...,1], expected)
 
     def test_euler(self): self._test_integrator(EulerDeterministic)
     def test_eulers(self): self._test_integrator(EulerStochastic)

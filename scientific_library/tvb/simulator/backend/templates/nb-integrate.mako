@@ -24,12 +24,14 @@ import numba as nb
 ## TODO multiplicative noise
 % if stochastic:
 @nb.njit(inline='always', boundscheck=False)
-def noise(isvar, nsig):
-    n_node = ${sim.connectivity.weights.shape[0]}
-    n_svar = ${len(sim.model.state_variables)}
+def noise(t, i, isvar, nsig, state):
     sqrt_dt = ${np.sqrt(sim.integrator.dt)}
-    dWt = np.random.randn(n_svar, n_node)
-    D = np.sqrt(2 * nsig)
+    dWt = state[isvar, i, t + 1]
+% if sim.integrator.noise.nsig.size == 1:
+    D = ${np.sqrt(2 * sim.integrator.noise.nsig.item())}
+% else:
+    D = np.sqrt(2 * nsig[isvar])
+% endif
     return sqrt_dt * D * dWt
 % else:
 # no noise function rendered for integrator ${type(sim.integrator)}
@@ -59,6 +61,12 @@ def integrate(t, state, weights, parmat
         d0${svar} = dx_${svar}(${svars}, ${cvars}, parmat)
 % endfor
 
+% if stochastic:
+% for svar in sim.model.state_variables:
+        z${svar} = noise(t, i, ${loop.index}, nsig, state)
+% endfor
+% endif
+
 ## Euler
 % if isinstance(sim.integrator, EulerDeterministic):
 % for svar in sim.model.state_variables:
@@ -68,7 +76,7 @@ def integrate(t, state, weights, parmat
 
 % if isinstance(sim.integrator, EulerStochastic):
 % for svar in sim.model.state_variables:
-        n${svar} = ${svar} + dt * d0${svar} + noise(${loop.index}, nsig)
+        n${svar} = ${svar} + dt * d0${svar} + z${svar}
 % endfor
 % endif
 
@@ -90,9 +98,6 @@ def integrate(t, state, weights, parmat
 
 % if isinstance(sim.integrator, HeunStochastic):
 % for svar in sim.model.state_variables:
-        z${svar} = noise(${loop.index}, nsig)
-% endfor
-% for svar in sim.model.state_variables:
         i1${svar} = ${svar} + dt * d0${svar} + z${svar}
 % endfor
 % for svar in sim.model.state_variables:
@@ -112,7 +117,7 @@ def integrate(t, state, weights, parmat
 
 % if isinstance(sim.integrator, IdentityStochastic):
 % for svar in sim.model.state_variables:
-        n${svar} = d0${svar} + noise(${loop.index}, nsig)
+        n${svar} = d0${svar} + z${svar}
 % endfor
 % endif
 
@@ -147,5 +152,5 @@ def integrate(t, state, weights, parmat
 
 ## Update buffer
 % for svar in sim.model.state_variables:
-        state[${loop.index},i,t+1] = next_state
+        state[${loop.index},i,t+1] = n${svar}
 % endfor
