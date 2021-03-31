@@ -94,6 +94,7 @@ class SettingsController(UserController):
         """
         Restart CherryPy Backend.
         """
+        sleep(1)
         cherrypy.engine.exit()
 
         self.logger.info("Waiting for CherryPy to shut down ... ")

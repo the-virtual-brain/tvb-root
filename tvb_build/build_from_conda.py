@@ -112,8 +112,8 @@ class Config:
             'bin\\tvb_start.bat': 'distribution start',
             'bin\\tvb_clean.bat': 'distribution clean',
             'bin\\tvb_stop.bat': 'distribution stop',
-            'bin\\jupyter_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\ipython notebook ..\\demo_scripts',
-            'demo_scripts\\jupyter_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\ipython notebook'
+            'bin\\jupyter_notebook.bat': set_path + 'cd ..\\bin\n..\\tvb_data\\Scripts\\jupyter notebook ..\\demo_scripts',
+            'demo_scripts\\jupyter_notebook.bat': set_path + 'cd ..\\demo_scripts\n..\\tvb_data\\Scripts\\jupyter notebook'
         }
 
         return Config("Windows", "C:\\miniconda\\envs\\tvb-run",

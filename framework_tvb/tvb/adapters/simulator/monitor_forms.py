@@ -93,8 +93,7 @@ class MonitorForm(Form):
         self.variables_of_interest_indexes = {}
 
         if session_stored_simulator is not None:
-            self.variables_of_interest_indexes = self.determine_indexes_for_chosen_vars_of_interest(
-                session_stored_simulator)
+            self.variables_of_interest_indexes = session_stored_simulator.determine_indexes_for_chosen_vars_of_interest()
 
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
                                                            choices=tuple(self.variables_of_interest_indexes.keys())),
@@ -117,25 +116,8 @@ class MonitorForm(Form):
         super(MonitorForm, self).fill_from_post(form_data)
         all_variables = self.session_stored_simulator.model.variables_of_interest
         chosen_variables = form_data['variables_of_interest']
-        self.variables_of_interest_indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
-
-    @staticmethod
-    def determine_indexes_for_chosen_vars_of_interest(session_stored_simulator):
-        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
-        chosen_variables = session_stored_simulator.model.variables_of_interest
-        indexes = MonitorForm._get_variables_of_interest_indexes(all_variables, chosen_variables)
-        return indexes
-
-    @staticmethod
-    def _get_variables_of_interest_indexes(all_variables, chosen_variables):
-        variables_of_interest_indexes = {}
-
-        if not isinstance(chosen_variables, (list, tuple)):
-            chosen_variables = [chosen_variables]
-
-        for variable in chosen_variables:
-            variables_of_interest_indexes[variable] = all_variables.index(variable)
-        return variables_of_interest_indexes
+        self.variables_of_interest_indexes = self.session_stored_simulator.\
+            get_variables_of_interest_indexes(all_variables, chosen_variables)
 
 
 class SpatialAverageMonitorForm(MonitorForm):

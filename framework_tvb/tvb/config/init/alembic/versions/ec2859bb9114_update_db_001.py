@@ -1,7 +1,7 @@
 """Generate migration script
 
 Revision ID: ec2859bb9114
-Revises: 
+Revises:
 Create Date: 2021-01-29 11:08:56.258864
 
 """
@@ -178,8 +178,7 @@ def upgrade():
         op.alter_column('BurstConfiguration', '_simulator_configuration', new_column_name='simulator_gid')
         conn.execute(burst_config_table.delete().where(burst_config_table.c.status == 'error'))
 
-        # Take only values with odd id numbers, otherwise each range value will be processed twice
-        ranges = conn.execute("""SELECT OG.id, OG.range1, OG.range2 from "OPERATION_GROUPS" OG """).fetchall()[::2]
+        ranges = conn.execute("""SELECT OG.id, OG.range1, OG.range2 from "OPERATION_GROUPS" OG """).fetchall()
 
         ranges_1 = []
         ranges_2 = []
@@ -212,7 +211,6 @@ def upgrade():
             range1 = str(new_ranges_1[i]).replace('\'', '')
             range2 = str(new_ranges_2[i]).replace('\'', '')
             _update_range_parameters(burst_config_table, operation_groups_table, range1, range2, ranges[i][0])
-            _update_range_parameters(burst_config_table, operation_groups_table, range1, range2, ranges[i][0] + 1)
 
         conn.execute('COMMIT')
     except Exception as excep:

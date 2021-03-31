@@ -31,7 +31,8 @@ import os
 
 import numpy
 from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel, HeunStochasticViewModel
+from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel, HeunStochasticViewModel, \
+    TemporalAverageViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import load, store, load_from_dir, store_to_dir
@@ -120,3 +121,52 @@ def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_inde
     assert isinstance(sim_view_model, SimulatorAdapterModel)
     assert isinstance(loaded_sim_view_model, SimulatorAdapterModel)
     assert sim_view_model.monitors[0].projection == loaded_sim_view_model.monitors[0].projection
+
+
+def test_gather_view_model_and_datatype_references(connectivity_index_factory, operation_factory):
+    conn = connectivity_index_factory()
+    sim_view_model = SimulatorAdapterModel()
+    sim_view_model.connectivity = conn.gid
+
+    op = operation_factory()
+    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+    h5.store_view_model(sim_view_model, storage_path)
+
+    only_vm_references, _ = h5.gather_references_of_view_model(sim_view_model.gid, storage_path, True)
+    vm_references, dt_references = h5.gather_references_of_view_model(sim_view_model.gid, storage_path)
+
+    assert len(only_vm_references) == 5
+    assert len(vm_references) + len(dt_references) == 6
+
+
+def test_gather_view_model_and_datatype_references_multiple_monitors(connectivity_index_factory, operation_factory,
+                                                        sensors_index_factory, surface_index_factory,
+                                                        region_mapping_index_factory):
+    conn = connectivity_index_factory()
+    _, surface = surface_index_factory(cortical=True)
+    region_mapping_idx = region_mapping_index_factory(conn_gid=conn.gid, surface_gid=surface.gid.hex)
+    sensors_idx, sensors = sensors_index_factory()
+    proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
+
+    op = operation_factory()
+    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+    prj_db = h5.store_complete(proj, storage_path)
+    prj_db.fk_from_operation = op.id
+    dao.store_entity(prj_db)
+
+    seeg_monitor = EEGViewModel(projection=proj.gid, sensors=sensors.gid)
+    seeg_monitor.region_mapping = region_mapping_idx.gid
+
+    sim_view_model = SimulatorAdapterModel()
+    sim_view_model.connectivity = conn.gid
+    sim_view_model.monitors = [TemporalAverageViewModel(), seeg_monitor]
+
+    op = operation_factory()
+    storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+    h5.store_view_model(sim_view_model, storage_path)
+
+    only_vm_references, _ = h5.gather_references_of_view_model(sim_view_model.gid, storage_path, True)
+    assert len(only_vm_references) == 7
+
+    vm_references, dt_references = h5.gather_references_of_view_model(sim_view_model.gid, storage_path)
+    assert len(vm_references + dt_references) == 12

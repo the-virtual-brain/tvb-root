@@ -66,7 +66,7 @@ import tvb.datatypes.equations as equations
 from tvb.simulator.common import numpy_add_at
 from tvb.simulator.backend.ref import ReferenceBackend
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
-
+from .backend import ReferenceBackend
 
 class Monitor(HasTraits):
     """
@@ -268,7 +268,9 @@ class SpatialAverage(Monitor):
         doc=("Fallback in case spatial mask is none and no surface provided" 
              "to use either connectivity hemispheres or cortical attributes."))
         # order = -1)
-
+    
+    backend = ReferenceBackend()
+    
     def _support_bool_mask(self, mask):
         """
         Ensure we support also the case of a boolean mask (eg: connectivity.cortical) with all values being 1,
@@ -291,8 +293,8 @@ class SpatialAverage(Monitor):
         # setup given spatial mask or default to region mapping
         if self.spatial_mask is None:
             self.is_default_special_mask = True
-            if not (simulator.surface is None):
-                self.spatial_mask = simulator.surface.region_mapping
+            if simulator.surface is not None:
+                self.spatial_mask, _, _ = self.backend.full_region_map(simulator.surface, simulator.connectivity)
             else:
                 conn = simulator.connectivity
                 if self.default_mask == self.CORTICAL:
@@ -805,7 +807,7 @@ class iEEG(Projection):
         return Projection.from_file.__func__(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
-        """Compute the projection matrix -- simple distance weight for now.
+        r"""Compute the projection matrix -- simple distance weight for now.
         Equation 12 from sarvas1987basic (point dipole in homogeneous space):
           V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
         """

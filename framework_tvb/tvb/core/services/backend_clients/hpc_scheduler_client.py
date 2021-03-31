@@ -39,11 +39,13 @@ import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
+
 from requests import HTTPError
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import MEASURE_METRICS_MODEL_CLASS
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR, OperationProcessIdentifier
@@ -117,10 +119,9 @@ class HPCSchedulerClient(BackendClient):
     def _prepare_input(operation, simulator_gid):
         # type: (Operation, str) -> list
         storage_path = FilesHelper().get_project_folder(operation.project, str(operation.id))
-        input_files = []
-        h5.gather_all_references_of_view_model(simulator_gid, storage_path, input_files)
-        input_files = list(set(input_files))
-        return input_files
+        vm_files, dt_files = h5.gather_references_of_view_model(simulator_gid, storage_path)
+        vm_files.extend(dt_files)
+        return vm_files
 
     @staticmethod
     def _configure_job(simulator_gid, available_space, is_group_launch, operation_id):
@@ -128,7 +129,8 @@ class HPCSchedulerClient(BackendClient):
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
-        inputs_in_container = os.path.join(HPCSchedulerClient.CONTAINER_INPUT_FOLDER, EncryptionHandler(simulator_gid).current_enc_dirname)
+        inputs_in_container = os.path.join(HPCSchedulerClient.CONTAINER_INPUT_FOLDER,
+                                           EncryptionHandler(simulator_gid).current_enc_dirname)
 
         # Build job configuration JSON
         my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
@@ -364,6 +366,8 @@ class HPCSchedulerClient(BackendClient):
     def _run_hpc_job(operation_identifier):
         # type: (int) -> None
         operation = dao.get_operation_by_id(operation_identifier)
+        project_folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
+        encryption_handler.inc_running_op_count(project_folder)
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = operation.view_model_gid
         try:
@@ -373,6 +377,8 @@ class HPCSchedulerClient(BackendClient):
             operation.mark_complete(STATUS_ERROR,
                                     exception.response.text if isinstance(exception, HTTPError) else repr(exception))
             dao.store_entity(operation)
+        encryption_handler.dec_running_op_count(project_folder)
+        encryption_handler.check_and_delete(project_folder)
 
     @staticmethod
     def _stage_out_outputs(encrypted_dir_path, output_list):

@@ -145,6 +145,6 @@ class RegionsModelParametersController(BurstBaseController):
         burst_config.dynamic_ids = json.dumps(dynamic_ids)
 
         # Update in session the simulator configuration and the current form URL in wizzard for burst-page.
-        self.simulator_context.add_burst_config_to_session(burst_config)
+        self.simulator_context.set_burst_config(burst_config)
         self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
         raise cherrypy.HTTPRedirect("/burst/")
