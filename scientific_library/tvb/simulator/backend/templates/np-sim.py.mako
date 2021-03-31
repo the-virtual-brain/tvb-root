@@ -3,18 +3,11 @@ import numpy as np
 <%include file="np-coupling.mako" />
 <%include file="np-dfuns.mako" />
 <%include file="np-integrate.mako" />
-<%
-    from tvb.simulator.integrators import IntegratorStochastic
-%>
 
 def kernel(state, weights, trace, parmat
-% if isinstance(sim.integrator, IntegratorStochastic):
-    , nsig
-% endif
-% if sim.connectivity.idelays.any():
-    , delay_indices
-% endif
-):
+           ${', nsig' if stochastic else ''}
+           ${', idelays' if any_delays else ''}
+           ):
 
     # problem dimensions
     n_node = ${sim.connectivity.weights.shape[0]}
@@ -28,11 +21,7 @@ def kernel(state, weights, trace, parmat
 
     for t in range(nt):
         integrate(state, weights, parmat, dX, cX
-% if isinstance(sim.integrator, IntegratorStochastic):
-                  , nsig
-% endif
-% if sim.connectivity.idelays.any():
-    , delay_indices
-% endif
-)
+           ${', nsig' if stochastic else ''}
+           ${', idelays' if any_delays else ''}
+           )
         trace[t] = state[:,0].copy()

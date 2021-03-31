@@ -18,7 +18,7 @@ from tvb.simulator.integrators import (EulerDeterministic, EulerStochastic,
 from tvb.simulator.backend.nb import NbBackend
 
 from .backendtestbase import (BaseTestCoupling, BaseTestDfun,
-    BaseTestIntegrate)
+    BaseTestIntegrate, BaseTestSim)
 
 
 class TestNbCoupling(BaseTestCoupling):
@@ -194,3 +194,68 @@ dx_V = nb.njit(lambda r,V,Coupling_Term_r,Coupling_Term_V,parmat: -V*Coupling_Te
     def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
     def test_id(self): self._test_integrator(Identity)
     def test_ids(self): self._test_integrator(IdentityStochastic)
+
+
+class TestNbSim(BaseTestSim):
+
+    def _test_mpr(self, integrator, delays=False):
+        sim, state, t, y = self._create_sim(
+            integrator,
+            inhom_mmpr=True,
+            delays=delays
+        )
+        template = '<%include file="nb-sim.py.mako"/>'
+        content = dict(sim=sim, np=np)
+        kernel = NbBackend().build_py_func(template, content, print_source=True)
+        n_svar, _, n_node = state.shape
+        if not delays:
+            self.assertEqual(sim.connectivity.horizon, 1)  # for now
+        state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
+        weights = sim.connectivity.weights.copy()
+        yh = np.empty((len(t),)+state[:,0].shape)
+        np.random.seed(42)
+        args = sim, state, weights, yh
+        kernel(*args)
+        self._check_match(y, yh)
+
+    def _test_mvar(self, integrator):
+        pass # TODO
+
+    def _test_integrator(self, Integrator, delays=False):
+        dt = 0.01
+        if issubclass(Integrator, IntegratorStochastic):
+            integrator = Integrator(dt=dt, noise=Additive(nsig=np.r_[dt]))
+            integrator.noise.dt = integrator.dt
+        else:
+            integrator = Integrator(dt=dt)
+        if isinstance(integrator, (Identity, IdentityStochastic)):
+            self._test_mvar(integrator, delays=delays)
+        else:
+            self._test_mpr(integrator, delays=delays)
+
+    def test_euler(self): self._test_integrator(EulerDeterministic)
+    def test_eulers(self): self._test_integrator(EulerStochastic)
+    def test_heun(self): self._test_integrator(HeunDeterministic)
+    def test_heuns(self): self._test_integrator(HeunStochastic)
+    def test_rk4(self): self._test_integrator(RungeKutta4thOrderDeterministic)
+
+    @unittest.skip('TODO')
+    def test_id(self): self._test_integrator(Identity)
+
+    @unittest.skip('TODO')
+    def test_ids(self): self._test_integrator(IdentityStochastic)
+
+    def test_deuler(self): self._test_integrator(EulerDeterministic,
+                                                 delays=True)
+
+    def test_deulers(self): self._test_integrator(EulerStochastic,
+                                                  delays=True)
+
+    def test_dheun(self): self._test_integrator(HeunDeterministic,
+                                                delays=True)
+
+    def test_dheuns(self): self._test_integrator(HeunStochastic,
+                                                 delays=True)
+
+    def test_drk4(self): self._test_integrator(RungeKutta4thOrderDeterministic,
+                                               delays=True)
