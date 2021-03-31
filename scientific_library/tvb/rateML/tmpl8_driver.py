@@ -47,8 +47,8 @@ class Driver_Setup:
 		)
 		self.n_work_items, self.n_params = self.params.shape
 		par_min = 0.1 if buf_par.min() <= 0.0 else buf_par.min()
-		buf_len_ = ((self.lengths / par_min / self.dt).astype('i').max() + 1)
-		self.buf_len = 2 ** np.argwhere(2 ** np.r_[:30] > buf_len_)[0][0]  # use next power of
+		self.buf_len_ = ((self.lengths / par_min / self.dt).astype('i').max() + 1)
+		self.buf_len = 2 ** np.argwhere(2 ** np.r_[:30] > self.buf_len_)[0][0]  # use next power of
 
 		self.states = self.args.states
 		self.exposures = self.args.exposures
