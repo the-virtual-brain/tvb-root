@@ -1,0 +1,632 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+    v0.7.4 supporting new LEMS elements required for recording events: EventWriter, EventRecord;
+    added Assign as possible child of Tunnel
+
+    v0.7.3 supporting new LEMS elements required for GapJunctions & new connection specifications:
+    Tunnel, InstanceRequirement, IndexParameter, ComponentRequirement
+
+    v0.7.2 added the ability to validate LEMS files containing Simulation elements, as the form of this element
+    is reasonably stable now
+
+    v0.7.1 was a minor update, re adding the DerivedParameter element in ComponentType, and fully specifying the
+    Simulation element so Simulation.xml can be validated
+
+    v0.6 & v0.7 were updates prompted by the refactored Java LEMS implementation (https://github.com/robertcannon/jLEMS)
+    and pylems (https://github.com/lisphacker/pylems)
+-->
+<!--<xs:schema targetNamespace="file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd"-->
+<!--    xmlns="file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd"-->
+<!--    xmlns:xs="http://www.w3.org/2001/XMLSchema"-->
+<!--    elementFormDefault="qualified"-->
+<!--    attributeFormDefault="unqualified">-->
+
+<xs:schema
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified">
+
+    <xs:element name="Lems">
+        <xs:annotation>
+            <xs:documentation>The root Lems element.</xs:documentation>
+        </xs:annotation>
+
+        <xs:complexType>
+
+            <xs:sequence>
+                <xs:element name="Target" type="Target" minOccurs="0" maxOccurs="1"/>
+                <xs:element name="Include" type="Include" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Dimension" type="Dimension" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Unit" type="Unit" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Constant" type="Constant" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="ComponentType" type="ComponentType" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="Component" type="Component" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+
+            <xs:attribute name="description" type="xs:string" use="optional"/>
+
+        </xs:complexType>
+
+        <!--<xs:unique name="dimension_uniqueness">
+    		<xs:selector xpath="Dimension"></xs:selector>
+    		<xs:field xpath="@name"></xs:field>
+        </xs:unique>-->
+
+    </xs:element>
+
+
+
+    <xs:complexType name="Target">
+        <xs:attribute name="component" type="xs:string" use="required"/>
+        <xs:attribute name="reportFile" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>jLEMS only optional attribute to also write a short report with simulation duration, version, etc.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="timesFile" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>jLEMS only optional attribute to also write a file containing actual times used in the simulation.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="Include">
+        <xs:attribute name="file" type="xs:string" use="required"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="Dimension">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="m" type="xs:integer" use="optional" default="0"/>
+        <xs:attribute name="l" type="xs:integer" use="optional" default="0"/>
+        <xs:attribute name="t" type="xs:integer" use="optional" default="0"/>
+        <xs:attribute name="i" type="xs:integer" use="optional" default="0"/>
+        <xs:attribute name="k" type="xs:integer" use="optional" default="0"/>
+        <xs:attribute name="n" type="xs:integer" use="optional" default="0"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="Unit">
+        <xs:attribute name="symbol" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="required"/>
+        <xs:attribute name="power" type="xs:integer" use="optional" default="0">
+                <xs:annotation>
+                        <xs:documentation>Some have asked whether fractional dimensions should be allowed. Disallowing it until needed...</xs:documentation>
+                </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="scale" type="xs:float" use="optional" default="1"/>
+        <xs:attribute name="offset" type="xs:float" use="optional" default="0"/>
+
+    </xs:complexType>
+
+
+
+
+    <xs:complexType name="DerivedParameter">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+    <xs:simpleType name="PhysicalQuantity">
+        <xs:annotation>
+            <xs:documentation>A value for a physical quantity in LEMS, e.g. 20, -60.0mV, .05 per_ms or 5nA</xs:documentation>
+        </xs:annotation>
+
+        <xs:restriction base="xs:string">
+            <xs:pattern value="-?([0-9]*(\.[0-9]+)?)([eE]-?[0-9]+)?[\s]*([_a-zA-Z0-9])*"/>
+        </xs:restriction>
+
+    </xs:simpleType>
+
+    <xs:complexType name="Constant">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+<!--        <xs:attribute name="value" type="PhysicalQuantity" use="required"/>-->
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="ComponentReference">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="local" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="Child">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="Attachments">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="EventPort">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="direction" type="xs:string" use="required"/> <!-- Should be enumeration... -->
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="Fixed">
+
+        <xs:attribute name="parameter" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="PhysicalQuantity" use="required"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="Link">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="Children">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="optional"/>
+        <xs:attribute name="min" type="xs:integer" use="optional"/>
+        <xs:attribute name="max" type="xs:integer" use="optional"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="Path">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="Text">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+
+
+    <xs:complexType name="StateVariable">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="exposure" type="xs:string" use="optional"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+
+    <xs:complexType name="DerivedVariable">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="exposure" type="xs:string" use="optional"/>
+
+        <xs:attribute name="select" type="xs:string" use="optional"/>  <!-- only one of these... -->
+        <xs:attribute name="value" type="xs:string" use="optional"/>   <!-- only one of these... -->
+
+        <xs:attribute name="reduce" type="xs:string" use="optional"/>     <!-- only if select present... -->
+        <xs:attribute name="required" type="xs:string" use="optional"/>     <!-- only if reduce present... -->
+
+    </xs:complexType>
+
+    <xs:complexType name="ConditionalDerivedVariable">
+
+        <xs:sequence>
+            <xs:element name="Case" type="Case" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="exposure" type="xs:string" use="optional"/>
+
+
+    </xs:complexType>
+
+
+    <xs:complexType name="Case">
+
+        <xs:attribute name="condition" type="xs:string" use="optional"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="TimeDerivative">
+
+        <xs:attribute name="variable" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="OnStart">
+
+        <xs:sequence>
+            <xs:element name="StateAssignment" type="StateAssignment" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+
+    </xs:complexType>
+
+    <xs:complexType name="OnEntry">
+
+        <xs:sequence>
+            <xs:element name="StateAssignment" type="StateAssignment" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+
+    </xs:complexType>
+
+    <xs:complexType name="OnEvent">
+
+        <xs:sequence>
+            <xs:element name="StateAssignment" type="StateAssignment" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="EventOut" type="EventOut" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+
+        <xs:attribute name="port" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="OnCondition">
+
+        <xs:sequence>
+            <xs:element name="StateAssignment" type="StateAssignment" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="EventOut" type="EventOut" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Transition" type="Transition" minOccurs="0" maxOccurs="1"/>   <!-- only on OnCondition inside Regime... -->
+        </xs:sequence>
+
+        <xs:attribute name="test" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+    <xs:complexType name="EventOut">
+
+        <xs:attribute name="port" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+    <xs:complexType name="StateAssignment">
+
+        <xs:attribute name="variable" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+
+    <xs:complexType name="Regime">
+
+        <xs:sequence>
+            <xs:element name="TimeDerivative" type="TimeDerivative" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="OnEntry" type="OnStart" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="OnCondition" type="OnCondition" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="initial" type="TrueOrFalse" use="optional"/>
+
+    </xs:complexType>
+
+
+    <xs:simpleType name="TrueOrFalse">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="true"/>
+            <xs:enumeration value="false"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+
+    <xs:complexType name="Transition">
+
+        <xs:attribute name="regime" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+
+    <xs:complexType name="Component">
+        <xs:sequence>
+            <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+        </xs:sequence>
+        <xs:anyAttribute processContents="skip"/>
+    </xs:complexType>
+
+    <!-- ComponentType is used for component definitions containing parts which are currently specific to LEMS, e.g. Build/MultiInstantiate -->
+    <xs:complexType name="ComponentType">
+        <xs:sequence>
+            <xs:element name="Property" type="Property" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Parameter" type="Parameter" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="DerivedParameter" type="DerivedParameter" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="IndexParameter" type="IndexParameter" minOccurs="0" maxOccurs="unbounded"/>
+
+            <xs:element name="Constant" type="Constant" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Child" type="Child" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Children" type="Children" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Fixed" type="Fixed" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Link" type="Link" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="ComponentReference" type="ComponentReference" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Attachments" type="Attachments" minOccurs="0" maxOccurs="unbounded"/>
+
+            <xs:element name="EventPort" type="EventPort" minOccurs="0" maxOccurs="unbounded"/>
+
+            <xs:element name="Exposure" type="Exposure" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded"/>
+
+            <xs:element name="ComponentRequirement" type="ComponentRequirement" minOccurs="0" maxOccurs="unbounded"/>
+
+            <xs:element name="InstanceRequirement" type="InstanceRequirement" minOccurs="0" maxOccurs="unbounded"/>
+
+            <xs:element name="Path" type="Path" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Text" type="Text" minOccurs="0" maxOccurs="unbounded"/>
+
+            <xs:element name="Dynamics" type="Dynamics" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Structure" type="Structure" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="Simulation" type="Simulation" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="extends" type="xs:string" use="optional"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+
+    <!-- for Parameter, StateVariable etc. -->
+    <xs:complexType name="NamedDimensionalType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+
+    <xs:complexType name="Property">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="dimension" type="xs:string" use="optional" default="none"/>
+        <xs:attribute name="description" type="xs:string" use="optional"/>
+        <xs:attribute name="defaultValue" type="xs:double" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="Parameter"> <!-- For language binding generators, so there will be a class of this name... -->
+        <xs:complexContent>
+            <xs:extension base="NamedDimensionalType"/>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="IndexParameter">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="Requirement"> <!-- For language binding generators, so there will be a class of this name... -->
+        <xs:complexContent>
+            <xs:extension base="NamedDimensionalType"/>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="Exposure"> <!-- For language binding generators, so there will be a class of this name... -->
+        <xs:complexContent>
+            <xs:extension base="NamedDimensionalType"/>
+        </xs:complexContent>
+    </xs:complexType>
+
+
+    <xs:complexType name="ComponentRequirement">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="InstanceRequirement">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="xs:string" use="required"/>
+    </xs:complexType>
+
+
+
+
+    <xs:complexType name="Dynamics">
+
+        <xs:sequence>
+            <xs:element name="StateVariable" type="StateVariable" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="DerivedVariable" type="DerivedVariable" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="ConditionalDerivedVariable" type="ConditionalDerivedVariable" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="TimeDerivative" type="TimeDerivative" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="OnStart" type="OnStart" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="OnEvent" type="OnEvent" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="OnCondition" type="OnCondition" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Regime" type="Regime" minOccurs="0" maxOccurs="unbounded"/>
+
+            <xs:element name="KineticScheme" type="KineticScheme" minOccurs="0" maxOccurs="1"/>
+
+        </xs:sequence>
+
+    </xs:complexType>
+
+    <xs:complexType name="Structure">
+
+        <xs:sequence>
+            <xs:element name="ChildInstance" type="ChildInstance" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="MultiInstantiate" type="MultiInstantiate" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="ForEach" type="ForEach" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="With" type="With" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Tunnel" type="Tunnel" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="EventConnection" type="EventConnection" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+
+    </xs:complexType>
+
+
+
+    <xs:complexType name="ChildInstance">
+
+        <xs:attribute name="component" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="MultiInstantiate">
+
+        <xs:attribute name="component" type="xs:string" use="required"/>
+        <xs:attribute name="number" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+    <xs:complexType name="ForEach">
+
+        <xs:sequence>
+            <xs:element name="MultiInstantiate" type="MultiInstantiate" minOccurs="0" maxOccurs="1"/>
+            <!--<xs:element name="ForEach" type="ForEach" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="EventConnection" type="EventConnection" minOccurs="0" maxOccurs="1"/>-->
+        </xs:sequence>
+
+        <xs:attribute name="instances" type="xs:string" use="required"/>
+        <xs:attribute name="as" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="With">
+
+        <!-- EITHER instance OR list & index shoulf be used!!-->
+        <xs:attribute name="instance" type="xs:string" use="optional"/>
+        <xs:attribute name="list" type="xs:string" use="optional"/>
+        <!-- EITHER instance OR list & index shoulf be used!!-->
+        <xs:attribute name="index" type="xs:string" use="optional"/>
+
+
+        <xs:attribute name="as" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+    <xs:complexType name="Tunnel">
+
+        <xs:sequence>
+            <xs:element name="Assign" type="Assign" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="endA" type="xs:string" use="required"/>
+        <xs:attribute name="endB" type="xs:string" use="required"/>
+        <xs:attribute name="componentA" type="xs:string" use="required"/>
+        <xs:attribute name="componentB" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+    <xs:complexType name="EventConnection">
+
+        <xs:sequence>
+            <xs:element name="Assign" type="Assign" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+
+        <xs:attribute name="from" type="xs:string" use="required"/>
+        <xs:attribute name="to" type="xs:string" use="required"/>
+        <xs:attribute name="sourcePort" type="xs:string" use="optional"/>
+        <xs:attribute name="targetPort" type="xs:string" use="optional"/>
+        <xs:attribute name="receiver" type="xs:string" use="optional"/>
+        <xs:attribute name="receiverContainer" type="xs:string" use="optional"/>
+        <xs:attribute name="delay" type="xs:string" use="optional"/>
+
+    </xs:complexType>
+
+
+    <xs:complexType name="Assign">
+
+        <xs:attribute name="property" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+
+    <!--<xs:complexType name="OnCondition">
+
+        <xs:sequence>
+            <xs:element name="StateAssignment" type="StateAssignment" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="EventOut" type="EventOut" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Transition" type="Transition" minOccurs="0" maxOccurs="1"/>
+        </xs:sequence>
+
+        <xs:attribute name="test" type="xs:string" use="required"/>
+
+    </xs:complexType>-->
+
+
+    <xs:complexType name="KineticScheme">
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="nodes" type="xs:string" use="required"/>
+        <xs:attribute name="stateVariable" type="xs:string" use="required"/>
+        <xs:attribute name="edges" type="xs:string" use="required"/>
+        <xs:attribute name="edgeSource" type="xs:string" use="required"/>
+        <xs:attribute name="edgeTarget" type="xs:string" use="required"/>
+        <xs:attribute name="forwardRate" type="xs:string" use="required"/>
+        <xs:attribute name="reverseRate" type="xs:string" use="required"/>
+
+    </xs:complexType>
+
+
+    <xs:complexType name="Simulation">
+
+        <xs:sequence>
+            <xs:element name="DataDisplay" type="DataDisplay" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Record" type="Record" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="EventRecord" type="EventRecord" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="Run" type="Run" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="DataWriter" type="DataWriter" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="EventWriter" type="EventWriter" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+
+    </xs:complexType>
+
+    <xs:complexType name="DataDisplay">
+        <xs:attribute name="title" type="xs:string" use="required"/>
+        <xs:attribute name="dataRegion" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="Record">
+        <xs:attribute name="quantity" type="xs:string" use="required"/>
+        <xs:attribute name="timeScale" type="xs:string" use="optional"/>
+        <xs:attribute name="scale" type="xs:string" use="optional"/>
+        <xs:attribute name="color" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="EventRecord">
+        <xs:attribute name="quantity" type="xs:string" use="required"/>
+        <xs:attribute name="eventPort" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="Run">
+        <xs:attribute name="component" type="xs:string" use="required"/>
+        <xs:attribute name="variable" type="xs:string" use="required"/>
+        <xs:attribute name="increment" type="xs:string" use="required"/>
+        <xs:attribute name="total" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="DataWriter">
+        <xs:attribute name="path" type="xs:string" use="required"/>
+        <xs:attribute name="fileName" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="EventWriter">
+        <xs:attribute name="path" type="xs:string" use="required"/>
+        <xs:attribute name="fileName" type="xs:string" use="required"/>
+        <xs:attribute name="format" type="xs:string" use="required"/>
+    </xs:complexType>
+
+
+</xs:schema>

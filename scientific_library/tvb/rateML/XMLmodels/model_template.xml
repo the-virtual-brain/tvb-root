@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Lems description="Rate based generic template">
+
+    <ComponentType name="derivatives">
+        
+        <!-- Parameters to be swept in cuda model. Only for CUDA models.
+            rateML/run/__main__.py holds an example of coupling and speed exploration.
+            [p_name0] = np.logspace(1.6, 3.0, coupling runtime dimension)
+            [p_name1] = np.logspace(1.6, 3.0, speed runtime dimension) -->
+        <Parameter name="[p_name0]" dimension='[type=float]'/>
+        <Parameter name="[p_name1]" dimension='[type=float]'/>
+        
+        <!-- For constructing expressions with parameters. 
+            Only for CUDA models. [name] = [expression] -->
+        <DerivedParameter name="[name]" expression="[expression]"/>
+        
+        <!-- Constant definition. 
+            domain field is mandatory for Python models, should be omitted for CUDA models.
+            default field is initial value for constant-->
+        <Constant name="[name]" domain="lo=[value], hi=[value], step=[value]" default="[value]" description="[optional]"/>
+
+        <!-- Exposures are observable (state) variables -->
+        <Exposure name="[name]" dimension="[Expression]"/>
+
+        <Dynamics>
+            <!-- Dimension is a range for Python numpy array initialization. 
+                Exposure generates lower and upper boundaries for both  -->
+            <StateVariable name="[name]" dimension="[range]" exposure="[lower_bound], [upper_bound]"/>
+            
+            <!-- Construct for conditional statements
+                Use &lt(=); or &gt(=); for less (>(=))- or greater then (equal to) (<(=)). 
+                    1 condition: if, 
+                    2 conditions: if else (leave 2nd condition blank), 
+                    3 or more conditions: if, else if, else 
+                if [condition]: [name] = [expression1]
+                else if [condition]: [name] = [expression2] 
+                else: [expression3] -->
+            <ConditionalDerivedVariable name="[name]">
+                <Case condition="[variable] [conditional operator] [value]" value="[expression1]"/>
+                <Case condition="[variable] [conditional operator] [value]" value="[expression2]"/>
+                <Case condition="" value="[expression3]"/>
+            </ConditionalDerivedVariable>
+
+            <!-- [variable] = [expression] -->
+            <TimeDerivative variable="[name]" value="[expression]"/>
+        </Dynamics>
+    </ComponentType>
+
+    <!-- Component type to construct a coupling function.
+        Make sure to add the word 'coupling' in the name. Only for CUDA models
+        It will construct a double for loop in which 
+        for every node, every other node's state is fetched according to connection delay, multiplied by connection weight -->
+    <ComponentType name="coupling_[name]">
+
+        <!-- Variable for pre synaptic function, only 1 param is allowed (and should be sufficient)) .
+             the dimension param indicates the nth defined statevariable of which values are fetched from memory.
+             param name appears in the pre or post coupling function, if user want temporal model aspects -->
+        <Parameter name="[name]" dimension='[0-n]'/>
+        
+        <!-- Name of the variable which eventually export the coupling value out of the for loops.
+             This value should be used in time derivative definition 
+            [name] *= [expression] -->
+        <DerivedParameter name="[dp_name]" value="[expression]"/>
+
+        <Dynamics>
+            <!-- Construct to define the pre and post coupling function
+                Name should always be 'pre' and 'post'
+                [dp_name] += node_weight * [pre.expression] * [post.expression] -->
+            <DerivedVariable name="[pre]" value="[expression]"/>
+            <DerivedVariable name="[post]" value="[expression]"/>
+        </Dynamics>
+    </ComponentType>
+
+    <!-- It is possible to decribe a 2nd coupling funtion, with the same as the syntax as previous. -->
+    <ComponentType name="coupling_function_pop2">
+            
+        <!-- etc... -->
+    </ComponentType>
+
+    <!--Type noise for noise. Only for CUDA models. 
+        Will add curand noise to state variable and amplify with constant 'nsig' if defined.
+        [state_var_name] += nsig * curand_normal(&crndst) + [time_der_var] -->
+    <ComponentType name="noise"/>
+
+
+</Lems>
