@@ -23,7 +23,7 @@ import numba as nb
 
 ## TODO multiplicative noise
 % if stochastic:
-@nb.njit(inline='always', boundscheck=False)
+${'' if debug_nojit else '@nb.njit(inline="always")'}
 def noise(t, i, isvar, nsig, state):
     sqrt_dt = ${np.sqrt(sim.integrator.dt)}
     dWt = state[isvar, i, t + 1]
@@ -37,7 +37,7 @@ def noise(t, i, isvar, nsig, state):
 # no noise function rendered for integrator ${type(sim.integrator)}
 % endif
 
-@nb.njit
+${'' if debug_nojit else '@nb.njit'}
 def integrate(t, state, weights, parmat
     ${', nsig' if stochastic else ''}
     ${', idelays' if any_delays else ''}
@@ -58,7 +58,7 @@ def integrate(t, state, weights, parmat
 
         # compute derivatives and next states
 % for svar in sim.model.state_variables:
-        d0${svar} = dx_${svar}(${svars}, ${cvars}, parmat)
+        d0${svar} = dx_${svar}(${svars}, ${cvars}, parmat[i])
 % endfor
 
 % if stochastic:
@@ -89,7 +89,7 @@ def integrate(t, state, weights, parmat
         i1${svar} = ${svar} + dt * d0${svar}
 % endfor
 % for svar in sim.model.state_variables:
-        d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat)
+        d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat[i])
 % endfor
 % for svar in sim.model.state_variables:
         n${svar} = ${svar} + dt / 2 * (d0${svar} + d1${svar})
@@ -101,7 +101,7 @@ def integrate(t, state, weights, parmat
         i1${svar} = ${svar} + dt * d0${svar} + z${svar}
 % endfor
 % for svar in sim.model.state_variables:
-        d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat)
+        d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat[i])
 % endfor
 % for svar in sim.model.state_variables:
         n${svar} = ${svar} + dt / 2 * (d0${svar} + d1${svar}) + z${svar}
@@ -131,19 +131,19 @@ def integrate(t, state, weights, parmat
         i1${svar} = ${svar} + dt / 2 * d0${svar}
 % endfor
 % for svar in sim.model.state_variables:
-        d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat)
+        d1${svar} = dx_${svar}(${i1svars}, ${cvars}, parmat[i])
 % endfor
 % for svar in sim.model.state_variables:
         i2${svar} = ${svar} + dt / 2 * d1${svar}
 % endfor
 % for svar in sim.model.state_variables:
-        d2${svar} = dx_${svar}(${i2svars}, ${cvars}, parmat)
+        d2${svar} = dx_${svar}(${i2svars}, ${cvars}, parmat[i])
 % endfor
 % for svar in sim.model.state_variables:
         i3${svar} = ${svar} + dt * d2${svar}
 % endfor
 % for svar in sim.model.state_variables:
-        d3${svar} = dx_${svar}(${i3svars}, ${cvars}, parmat)
+        d3${svar} = dx_${svar}(${i3svars}, ${cvars}, parmat[i])
 % endfor
 % for svar in sim.model.state_variables:
         n${svar} = ${svar} + dt / 6 * (d0${svar} + 2*(d1${svar} + d2${svar}) + d3${svar})
@@ -152,5 +152,5 @@ def integrate(t, state, weights, parmat
 
 ## Update buffer
 % for svar in sim.model.state_variables:
-        state[${loop.index},i,t+1] = n${svar}
+        state[nb.int64(${loop.index}),i,t+1] = n${svar}
 % endfor
