@@ -8,7 +8,9 @@ Tests for the CUDA backend.
 import unittest
 import numpy as np
 
-from tvb.simulator.backend.cu import CuBackend, pycuda_available, Out, In, InOut
+from tvb.simulator.backend.cu import CuBackend, pycuda_available
+if pycuda_available:  # quickfix
+    from tvb.simulator.backend.cu import Out, In, InOut
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 
