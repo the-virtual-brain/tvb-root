@@ -35,12 +35,17 @@ def run_sim(sim, nstep=None, sim_time=None):
     idelays = sim.connectivity.idelays.astype(np.uint32)
     # allocate buffers
     state = np.zeros((nsvar, nnode, horizon + nstep), np.float32)
-    state[:,:,:horizon] = np.transpose(sim.history.buffer[...,0], (1,2,0))
+    assert sim.current_step == 0, 'requires an un-run simulator'
+    state[:,:,:horizon-1] = np.transpose(sim.history.buffer[1:,:,:,0], (1,2,0))
+    state[:,:, horizon-1] = sim.history.buffer[0,:,:,0]
 % if stochastic:
     nsig = sim.integrator.noise.nsig
     # TODO use newer RNG infra in NumPy
     # TODO pre-apply sqrt(2*nsig*dt)
-    state[...,horizon:] = np.random.randn(*state[...,horizon:].shape)
+    # draw samples in same order as tvb sim for tests:
+    state[...,horizon:] = np.transpose(
+        np.random.randn(nstep, state.shape[0], state.shape[1]),
+        (1, 2, 0))
 % endif
     # run
     loop(horizon, nstep, state, weights, parmat

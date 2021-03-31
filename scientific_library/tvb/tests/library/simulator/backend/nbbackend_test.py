@@ -29,7 +29,7 @@ class TestNbCoupling(BaseTestCoupling):
         sim = self._prep_sim(cfun)
         # prep & invoke kernel
         template = f'''import numpy as np
-<%include file="nb-coupling.mako"/>
+<%include file="nb-coupling.py.mako"/>
 '''
         kernel = NbBackend().build_py_func(template, dict(sim=sim, np=np), 
             name='coupling', print_source=True)
@@ -210,7 +210,7 @@ class TestNbSim(BaseTestSim):
         content = dict(sim=sim, np=np, debug_nojit=True)
         kernel = NbBackend().build_py_func(
                 template, content, print_source=True, name='run_sim',
-                modname='TestNbSim_test_mpr')
+                )
         np.random.seed(42)
         state = kernel(sim)  # (nsvar, nnode, horizon + nstep)
         yh = np.transpose(state[:,:,sim.connectivity.horizon:], (2,0,1))
