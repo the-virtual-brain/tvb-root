@@ -30,6 +30,11 @@ def run_sim(sim, nstep):
     )
     return r, V
 
+def time_average(ts, dt, period):
+    N, T = ts.shape
+    istep = np.iround(period / dt)
+    return np.mean(ts.reshape(N,np.iround(T/istep),istep),1) # length of ts better be multiple of istep 
+
 @numba.njit
 def _mpr_integrate(
         N,       # number of regions

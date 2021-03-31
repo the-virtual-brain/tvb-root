@@ -9,7 +9,7 @@ from tvb.simulator.lab import *
 class TestNbSim(BaseTestSim):
 
     def _get_run_sim(self, print_source=False):
-        template = '<%include file="nb-montbrio.mako"/>'
+        template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(foo='bar')
 
         return NbMPRBackend().build_py_func(template, content, name='run_sim', print_source=print_source)
