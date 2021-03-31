@@ -14,7 +14,13 @@ class TestNbSim(BaseTestSim):
 
         return NbMPRBackend().build_py_func(template, content, name='run_sim', print_source=print_source)
 
-    def _random_network(self, N=500, density=0.1, low=5, high=250, speed=np.inf):
+    def _get_run_sim_chunked(self, print_source=False):
+        template = '<%include file="nb-montbrio.py.mako"/>'
+        content = dict(foo='bar')
+
+        return NbMPRBackend().build_py_func(template, content, name='run_sim_tavg_chunked', print_source=print_source)
+
+    def _random_network(self, N=300, density=0.1, low=5, high=250, speed=np.inf):
         weights = ss.random(N,N, density=density, format='lil')
         weights.setdiag(0)
         weights = weights.tocsr()
@@ -210,3 +216,40 @@ class TestNbSim(BaseTestSim):
 
         np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-4)
         np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4)
+
+    def test_tavg_chunking(self):
+        run_sim = self._get_run_sim_chunked(print_source=False)
+        dt = 0.01
+        G = 0.
+        speed=2.
+
+        sim = simulator.Simulator(
+            model=models.MontbrioPazoRoxin(),
+            coupling=coupling.Scaling(a=np.array([G])),
+            connectivity=self._random_network(speed=speed),
+            conduction_speed=speed,
+            monitors=[
+                monitors.TemporalAverage(period=1)
+            ],
+            integrator=integrators.HeunStochastic( 
+                dt=dt, 
+                noise=noise.Additive(
+                    nsig=np.array([0.0, 0.0]),
+                    noise_seed=42
+                )
+            )
+        ).configure()
+
+        r_pdq, V_pdq = run_sim(sim, nstep=2000, chunksize=2000)
+
+        (raw_t, raw_d), = sim.run(simulation_length=20)
+        r_tvb = raw_d[:,0,:,0]
+        V_tvb = raw_d[:,1,:,0]
+
+        np.testing.assert_allclose(r_tvb, r_pdq.T, rtol=1e-3) # think a bit about the tolerances...
+        np.testing.assert_allclose(V_tvb, V_pdq.T, rtol=1e-3)
+
+        r_pdq, V_pdq = run_sim(sim, nstep=2000, chunksize=500)
+
+        np.testing.assert_allclose(r_tvb, r_pdq.T, rtol=1e-3)
+        np.testing.assert_allclose(V_tvb, V_pdq.T, rtol=1e-3)

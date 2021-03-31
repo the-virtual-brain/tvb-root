@@ -1,6 +1,7 @@
 import numpy as np
 import numba
 
+
 def run_sim(sim, nstep):
     horizon = sim.connectivity.horizon
     buf_len = horizon + nstep
@@ -11,11 +12,12 @@ def run_sim(sim, nstep):
     r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
     V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
 
+
     r, V = _mpr_integrate(
         N = N,
         dt = sim.integrator.dt,
         nstep = nstep,
-        i0 = sim.connectivity.horizon,
+        i0 = horizon,
         r=r,
         V=V,
         weights = sim.connectivity.weights, 
@@ -29,11 +31,62 @@ def run_sim(sim, nstep):
         J = sim.model.J.item(),       # end of model params
     )
     return r, V
+        
 
-def time_average(ts, dt, period):
+def run_sim_tavg_chunked(sim, nstep, chunksize=100000):
+    # chunksize in number of steps 
+    horizon = sim.connectivity.horizon
+    N = sim.connectivity.number_of_regions
+    gf = sim.integrator.noise.gfun(None)
+    tavg_steps=100 # to be determined from the monitor
+    assert tavg_steps < chunksize
+    assert chunksize % tavg_steps == 0
+    tavg_chunksize = chunksize // tavg_steps
+
+
+    assert nstep % tavg_steps == 0
+    r_out, V_out = np.zeros((2,N,nstep//tavg_steps))
+
+    r, V = sim.integrator.noise.generate( shape=(2,N,chunksize+horizon) ) * gf
+    r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
+    V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
+
+    for chunk, _ in enumerate(range(horizon, nstep+horizon, chunksize)):
+        r, V = _mpr_integrate(
+            N = N,
+            dt = sim.integrator.dt,
+            nstep = chunksize,
+            i0 = horizon,
+            r=r,
+            V=V,
+            weights = sim.connectivity.weights, 
+            idelays = sim.connectivity.idelays,
+            G = sim.coupling.a.item(),
+            I = sim.model.I.item(),
+            Delta = sim.model.Delta.item(), 
+            Gamma = sim.model.Gamma.item(),
+            eta = sim.model.eta.item(),
+            tau = sim.model.tau.item(),
+            J = sim.model.J.item(),       # end of model params
+        )
+
+        tavg_chunk = chunk * tavg_chunksize
+        r_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = _time_average(r[:, horizon:], tavg_steps)
+        V_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = _time_average(V[:, horizon:], tavg_steps)
+
+        r[:,:horizon] = r[:,-horizon:]
+        V[:,:horizon] = V[:,-horizon:]
+
+        r_noise, V_noise = sim.integrator.noise.generate( shape=(2,N,chunksize) ) * gf
+        r[:,horizon:] = r_noise
+        V[:,horizon:] = V_noise
+
+    return r_out, V_out
+
+def _time_average(ts, istep):
     N, T = ts.shape
-    istep = np.iround(period / dt)
-    return np.mean(ts.reshape(N,np.iround(T/istep),istep),1) # length of ts better be multiple of istep 
+    return np.mean(ts.reshape(N,T//istep,istep),-1) # length of ts better be multiple of istep 
+
 
 @numba.njit
 def _mpr_integrate(
