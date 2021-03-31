@@ -35,6 +35,7 @@
 import pytest
 import os
 import tvb_data
+
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -88,8 +89,8 @@ class TestBCT(TransactionalTestCase):
         algo_category = dao.get_category_by_id(self.bct_adapters[0].stored_adapter.fk_category)
 
         for adapter_instance in self.bct_adapters:
-            results = TestFactory.launch_synchronously(self.test_user, self.test_project, adapter_instance,
-                                                       view_model, algo_category)
+            results = TestFactory.launch_synchronously(self.test_user.id, self.test_project, adapter_instance,
+                                                        view_model)
             assert len(results) > 0
 
     @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")

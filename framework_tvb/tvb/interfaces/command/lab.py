@@ -101,7 +101,7 @@ def import_conn_zip(project_id, zip_path):
     view_model = ZIPConnectivityImporterModel()
     view_model.uploaded = zip_path
 
-    return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)[0]
+    return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)
 
 
 def import_conn_h5(project_id, h5_path):
@@ -118,7 +118,7 @@ def import_conn_h5(project_id, h5_path):
     importer = ABCAdapter.build_adapter_from_class(TVBImporter)
     view_model = importer.get_view_model_class()()
     view_model.data_file = new_path
-    return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)[0]
+    return OperationService().fire_operation(importer, project.administrator, project_id, view_model=view_model)
 
 
 def fire_simulation(project_id, simulator_model):
@@ -150,7 +150,7 @@ def fire_operation(project_id, adapter_instance, view_model):
 
     # launch an operation and have the results stored both in DB and on disk
     launched_operation = OperationService().fire_operation(adapter_instance, project.administrator,
-                                                           project.id, view_model=view_model)[0]
+                                                           project.id, view_model=view_model)
     LOG.info("Operation launched....")
     return launched_operation
 

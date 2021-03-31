@@ -276,7 +276,7 @@ class TestProjectStructure(TransactionalTestCase):
 
         conn.visible = False
         dao.store_entity(conn)
-        operation = dao.get_operation_by_id(result[0].id)
+        operation = dao.get_operation_by_id(result.id)
 
         inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
                                                                                           self.relevant_filter)

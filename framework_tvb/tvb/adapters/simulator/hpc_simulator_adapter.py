@@ -55,9 +55,9 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         self.storage_path = storage_path
         self.is_group_launch = is_group_launch
 
-    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+    def _prelaunch(self, operation, view_model, available_disk_space=0):
         self.available_disk_space = available_disk_space
-        super(HPCSimulatorAdapter, self)._prelaunch(operation, view_model, uid, available_disk_space)
+        super(HPCSimulatorAdapter, self)._prelaunch(operation, view_model, available_disk_space)
 
     def get_output(self):
         return [TimeSeriesIndex, SimulationHistoryIndex, DatatypeMeasureIndex]
@@ -135,7 +135,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         metric_vm.algorithms = tuple(ALGORITHMS.keys())
         h5.store_view_model(metric_vm, self._get_output_path())
         metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
-        metric_adapter._prelaunch(None, metric_vm, None, self.available_disk_space)
+        metric_adapter._prelaunch(None, metric_vm, self.available_disk_space)
 
 
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):

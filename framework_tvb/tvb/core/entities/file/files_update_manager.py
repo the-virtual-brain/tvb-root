@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -42,8 +42,6 @@ from datetime import datetime
 
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
-from tvb.basic.config.stored import KEY_ADMIN_DISPLAY_NAME, KEY_ENABLE_KC_LOGIN, KEY_KC_WEB_CONFIGURATION, \
-    KEY_KC_CONFIGURATION
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
@@ -78,7 +76,7 @@ class FilesUpdateManager(UpdateManager):
     def get_file_data_version(self, file_path):
         """
         Return the data version for the given file.
-        
+
         :param file_path: the path on disk to the file for which you need the TVB data version
         :returns: a number representing the data version for which the input file was written
         """
@@ -126,7 +124,7 @@ class FilesUpdateManager(UpdateManager):
             except FileMigrationException as excep:
                 self.files_helper.copy_file(temp_file_path, input_file_name)
                 os.remove(temp_file_path)
-                self.log.info(excep)
+                self.log.error(excep)
                 return False
 
         if datatype:
@@ -162,7 +160,7 @@ class FilesUpdateManager(UpdateManager):
     def run_all_updates(self):
         """
         Upgrades all the data types from TVB storage to the latest data version.
-        
+
         :returns: a two entry tuple (status, message) where status is a boolean that is True in case
             the upgrade was successfully for all DataTypes and False otherwise, and message is a status
             update message.
@@ -174,11 +172,11 @@ class FilesUpdateManager(UpdateManager):
                 TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
                 TvbProfile.current.version.DATA_VERSION, total_count))
 
-            # Keep track of how many DataTypes were properly updated and how many 
+            # Keep track of how many DataTypes were properly updated and how many
             # were marked as invalid due to missing files or invalid manager.
             start_time = datetime.now()
 
-            file_paths = self._get_all_h5_paths()
+            file_paths = self.get_all_h5_paths()
             total_count = len(file_paths)
             no_ok, no_error = self.__upgrade_h5_list(file_paths)
 
@@ -216,7 +214,7 @@ class FilesUpdateManager(UpdateManager):
         return HDF5StorageManager(folder, file_name)
 
     @staticmethod
-    def _get_all_h5_paths():
+    def get_all_h5_paths():
         """
         This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
         The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).

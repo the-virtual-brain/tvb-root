@@ -31,17 +31,15 @@
 import os
 import typing
 import uuid
-from datetime import datetime
 
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader
+from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader, ViewModelLoader
 from tvb.core.neocom._registry import Registry
-from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import ViewModel
-from tvb.core.utils import date2string, string2date
 
 REGISTRY = Registry()
 
@@ -171,8 +169,7 @@ def load_from_dir(base_dir, gid, recursive=False):
 def load_with_links_from_dir(base_dir, gid):
     # type: (str, typing.Union[uuid.UUID, str]) -> HasTraits
     dir_loader = DirLoader(base_dir, REGISTRY, False)
-    fname = dir_loader.find_file_name(gid)
-    fname = os.path.join(base_dir, fname)
+    fname = dir_loader.find_file_by_gid(gid)
     tvb_loader = TVBLoader(REGISTRY)
     return tvb_loader.load_with_links(fname)
 
@@ -180,8 +177,7 @@ def load_with_links_from_dir(base_dir, gid):
 def load_with_references_from_dir(base_dir, gid):
     # type: (str, typing.Union[uuid.UUID, str]) -> HasTraits
     dir_loader = DirLoader(base_dir, REGISTRY, False)
-    fname = dir_loader.find_file_name(gid)
-    fname = os.path.join(base_dir, fname)
+    fname = dir_loader.find_file_by_gid(gid)
     tvb_loader = TVBLoader(REGISTRY)
 
     def load_ht_function(sub_gid, traited_attr):
@@ -201,49 +197,22 @@ def store_to_dir(datatype, base_dir, recursive=False):
     loader.store(datatype)
 
 
-def get_full_class_name(class_entity):
-    # type: (typing.Type[HasTraits]) -> str
+def determine_filepath(gid, base_dir):
     """
-    Prepare the full class as a str to be stored in H5.
+    Find the file path containing a datatype with the given GID within the directory specified by base_dir
     """
-    return class_entity.__module__ + '.' + class_entity.__name__
+    dir_loader = DirLoader(base_dir, REGISTRY, False)
+    fname = dir_loader.find_file_by_gid(gid)
+    return fname
 
 
 def store_view_model(view_model, base_dir):
     # type: (ViewModel, str) -> str
     """
     Completely store any ViewModel object to the directory specified by base_dir.
-    It works recursively because there are view models that are serialized in multiple files (eg. SimulatorAdapterModel)
     """
-    h5_path = path_for(base_dir, ViewModelH5, view_model.gid, type(view_model).__name__)
-    with ViewModelH5(h5_path, view_model) as h5_file:
-        h5_file.store(view_model)
-        h5_file.type.store(get_full_class_name(type(view_model)))
-        h5_file.create_date.store(date2string(datetime.now()))
-        if hasattr(view_model, "generic_attributes"):
-            h5_file.store_generic_attributes(view_model.generic_attributes)
-        else:
-            # For HasTraits not inheriting from ViewModel (e.g. Linear)
-            h5_file.store_generic_attributes(GenericAttributes())
-
-        references = h5_file.gather_references()
-        for trait_attr, gid in references:
-            if not gid:
-                continue
-            model_attr = getattr(view_model, trait_attr.field_name)
-            if isinstance(gid, list):
-                for idx, sub_gid in enumerate(gid):
-                    store_view_model(model_attr[idx], base_dir)
-            else:
-                store_view_model(model_attr, base_dir)
-    return h5_path
-
-
-def determine_filepath(gid, base_dir):
-    dir_loader = DirLoader(base_dir, REGISTRY, False)
-    fname = dir_loader.find_file_name(gid)
-    h5_path = os.path.join(base_dir, fname)
-    return h5_path
+    vm_loader = ViewModelLoader(base_dir)
+    return vm_loader.store(view_model)
 
 
 def load_view_model(gid, base_dir):
@@ -251,8 +220,8 @@ def load_view_model(gid, base_dir):
     """
     Load a ViewModel object by reading the H5 file with the given GID, from the directory specified by base_dir.
     """
-    h5_path = determine_filepath(gid, base_dir)
-    return load_view_model_from_file(h5_path)
+    vm_loader = ViewModelLoader(base_dir)
+    return vm_loader.load(gid)
 
 
 def load_view_model_from_file(filepath):
@@ -261,26 +230,8 @@ def load_view_model_from_file(filepath):
     Load a ViewModel object by reading the H5 file specified by filepath.
     """
     base_dir = os.path.dirname(filepath)
-    view_model_class = H5File.determine_type(filepath)
-    view_model = view_model_class()
-
-    with ViewModelH5(filepath, view_model) as h5_file:
-        h5_file.load_into(view_model)
-        references = h5_file.gather_references()
-        view_model.create_date = string2date(h5_file.create_date.load())
-        view_model.generic_attributes = h5_file.load_generic_attributes()
-        for trait_attr, gid in references:
-            if not gid:
-                continue
-            if isinstance(gid, list):
-                loaded_ref = []
-                for idx, sub_gid in enumerate(gid):
-                    ref = load_view_model(sub_gid, base_dir)
-                    loaded_ref.append(ref)
-            else:
-                loaded_ref = load_view_model(gid, base_dir)
-            setattr(view_model, trait_attr.field_name, loaded_ref)
-    return view_model
+    fname = os.path.basename(filepath)
+    return ViewModelLoader(base_dir).load(fname=fname)
 
 
 def gather_all_references_by_index(h5_file, ref_files):
@@ -294,25 +245,14 @@ def gather_all_references_by_index(h5_file, ref_files):
         gather_all_references_by_index(h5_file, ref_files)
 
 
-def gather_all_references_of_view_model(gid, base_dir, ref_files):
-    vm_path = determine_filepath(gid, base_dir)
-    ref_files.append(vm_path)
-    view_model_class = H5File.determine_type(vm_path)
-    view_model = view_model_class()
+def gather_references_of_view_model(gid, base_dir, only_view_models=False):
+    """
+    Gather in 2 lists all file paths that are referenced by a ViewModel with the given GID stored in base_dir directory.
+    If only_view_models=True, returns only ViewModelH5 file paths, otherwise, returns also datatype H5 file paths.
+    """
 
-    with ViewModelH5(vm_path, view_model) as vm_h5:
-        references = vm_h5.gather_references()
+    def load_dts(vm_h5, ref_files):
         uuids = vm_h5.gather_datatypes_references()
-
-        for _, gid in references:
-            if not gid:
-                continue
-            if isinstance(gid, (list, tuple)):
-                for list_gid in gid:
-                    gather_all_references_of_view_model(list_gid, base_dir, ref_files)
-            else:
-                gather_all_references_of_view_model(gid, base_dir, ref_files)
-
         uuid_files = []
         for _, gid in uuids:
             if not gid:
@@ -322,3 +262,13 @@ def gather_all_references_of_view_model(gid, base_dir, ref_files):
             uuid_files.append(h5_file.path)
             gather_all_references_by_index(h5_file, uuid_files)
         ref_files.extend(uuid_files)
+
+    vm_refs = []
+    dt_refs = []
+    load_dts_function = None if only_view_models else load_dts
+    ViewModelLoader(base_dir).gather_reference_files(gid, vm_refs, dt_refs, load_dts_function)
+
+    if only_view_models:
+        return list(set(vm_refs)), None
+    else:
+        return list(set(vm_refs)), list(set(dt_refs))

@@ -32,14 +32,15 @@
 """
 
 import cherrypy
+
 from tvb.config.algorithm_categories import CreateAlgorithmCategoryConfig
 from tvb.core.entities.storage import dao
-from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
+from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestModel
-from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
+from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED, STATUS_STARTED
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
@@ -188,30 +189,28 @@ class TestFlowController(BaseControllersTest):
             operation = dao.try_get_operation_by_id(operation.id)
             assert operation is None
 
-    def _asynch_launch_simple_op(self, **data):
+    def _asynch_launch_simple_op(self):
         adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
         view_model = TestModel()
         view_model.test1_val1 = 5
         view_model.test1_val2 = 6
         algo = adapter.stored_adapter
-        algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, view_model=view_model, **data)
-        self.operation_service._send_to_cluster(operations, adapter)
-        return operations
+        operation = self.operation_service.prepare_operation(self.test_user.id, self.test_project, algo,
+                                                             view_model=view_model)
+        self.operation_service._send_to_cluster(operation, adapter)
+        return operation
 
-    def test_stop_operations(self):
-        operations = self._asynch_launch_simple_op()
-        operation = dao.get_operation_by_id(operations[0].id)
+    def test_stop_operation(self):
+        operation = self._asynch_launch_simple_op()
+        operation = dao.get_operation_by_id(operation.id)
         assert not operation.has_finished
         self.flow_c.cancel_or_remove_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
 
-    def test_stop_operations_group(self):
-        range_param = {RANGE_PARAMETER_1: "test1_val1", 'test1_val1': {"lo": 0, "step": 2.0, "hi": 5.0}}
-        operations = self._asynch_launch_simple_op(**range_param)
-        assert 3 == len(operations)
+    def test_stop_operations_group(self, test_adapter_factory, datatype_group_factory):
+        group = datatype_group_factory(status=STATUS_STARTED, store_vm=True)
+        operations = dao.get_operations_in_group(group.fk_from_operation)
         operation_group_id = 0
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)

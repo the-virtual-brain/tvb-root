@@ -36,6 +36,8 @@
 import os
 from functools import partial
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
@@ -73,6 +75,13 @@ class HPCOperationService(object):
         # TODO: Handle login
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
+
+        operation = dao.get_operation_by_id(operation.id)
+        folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
+        if encryption_handler.encryption_enabled():
+            encryption_handler.inc_project_usage_count(folder)
+            encryption_handler.sync_folders(folder)
+
         try:
             sim_h5_filenames, metric_op, metric_h5_filename = \
                 HPCSchedulerClient.stage_out_to_operation_folder(job.working_dir, operation, simulator_gid)
@@ -84,6 +93,11 @@ class HPCOperationService(object):
         except OperationException as exception:
             HPCOperationService.LOGGER.error(exception)
             HPCOperationService._operation_error(operation)
+
+        finally:
+            if encryption_handler.encryption_enabled():
+                encryption_handler.sync_folders(folder)
+                encryption_handler.set_project_inactive(operation.project)
 
     @staticmethod
     def handle_hpc_status_changed(operation, simulator_gid, new_status):
@@ -102,10 +116,10 @@ class HPCOperationService(object):
     def check_operations_job():
         operations = dao.get_operations()
         if operations is None or len(operations) == 0:
-            HPCOperationService.LOGGER.info("There aren't any simulations in status PENDING or RUNNING")
             return
 
         for operation in operations:
+            HPCOperationService.LOGGER.info("Start processing operation {}".format(operation.id))
             try:
                 op_ident = dao.get_operation_process_for_operation(operation.id)
                 if op_ident is not None:

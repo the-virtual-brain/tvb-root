@@ -169,7 +169,7 @@ class BaseTestCase(object):
         for folder in [os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME),
                        os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.TEMP_FOLDER)]:
             if os.path.exists(folder):
-                shutil.rmtree(folder, ignore_errors=True)
+                shutil.rmtree(folder)
             os.makedirs(folder)
 
     def count_all_entities(self, entity_type):
@@ -247,7 +247,7 @@ def transactional_test(func, callback=None):
                         LOGGER.debug(args[0].__class__.__name__ + "->" + func.__name__
                                      + "- Transactional TEARDOWN starting...")
                         args[0].transactional_teardown_method_TVB()
-                        args[0].delete_project_folders()
+                    args[0].delete_project_folders()
             finally:
                 session_maker.rollback_transaction()
                 session_maker.close_transaction()

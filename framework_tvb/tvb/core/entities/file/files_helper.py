@@ -50,7 +50,7 @@ LOCK_CREATE_FOLDER = Lock()
 class FilesHelper(object):
     """
     This class manages all Structure related operations, using File storage.
-    It will handle creating meaning-full entities and retrieving existent ones. 
+    It will handle creating meaning-full entities and retrieving existent ones.
     """
     TEMP_FOLDER = "TEMP"
     IMAGES_FOLDER = "IMAGES"
@@ -84,12 +84,17 @@ class FilesHelper(object):
             self.logger.exception("COULD NOT CREATE FOLDER! CHECK ACCESS ON IT!")
             raise FileStructureException("Could not create Folder" + str(path))
 
-    def get_projects_folder(self):
-        return os.path.join(TvbProfile.current.TVB_STORAGE, self.PROJECTS_FOLDER)
+    @staticmethod
+    def get_projects_folder():
+        base_path = TvbProfile.current.TVB_STORAGE
+        if TvbProfile.current.web.ENCRYPT_STORAGE and TvbProfile.current.web.CAN_ENCRYPT_STORAGE and TvbProfile.current.web.DECRYPT_PATH:
+            base_path = TvbProfile.current.web.DECRYPT_PATH
+
+        return os.path.join(base_path, FilesHelper.PROJECTS_FOLDER)
 
     def get_project_folder(self, project, *sub_folders):
         """
-        Retrieve the root path for the given project. 
+        Retrieve the root path for the given project.
         If root folder is not created yet, will create it.
         """
         if hasattr(project, 'name'):
@@ -101,6 +106,11 @@ class FilesHelper(object):
             self.check_created(complete_path)
         return complete_path
 
+    @staticmethod
+    def get_project_folder_from_h5(h5_file):
+        op_folder = os.path.dirname(h5_file)
+        return os.path.dirname(op_folder)
+
     def rename_project_structure(self, project_name, new_name):
         """ Rename Project folder or THROW FileStructureException. """
         try:
@@ -110,7 +120,6 @@ class FilesHelper(object):
 
             if os.path.exists(new_full_name):
                 raise IOError("Path exists %s " % new_full_name)
-
             os.rename(path, new_full_name)
             return path, new_full_name
         except Exception:
@@ -126,6 +135,7 @@ class FilesHelper(object):
                     shutil.rmtree(complete_path)
                 else:
                     os.remove(complete_path)
+
             self.logger.debug("Project folders were removed for " + project_name)
         except OSError:
             self.logger.exception("A problem occurred while removing folder.")

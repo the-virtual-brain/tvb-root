@@ -38,6 +38,7 @@ from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, STATUS_FINISHED, STATUS_PENDING, STATUS_CANCELED
@@ -334,19 +335,6 @@ class BurstService(object):
         op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
         return op_dir, metric_operation
 
-    def cancel_or_remove_burst(self, burst_id):
-        burst_configuration = self.load_burst_configuration(burst_id)
-        remove_after_stop = burst_configuration.status != burst_configuration.BURST_RUNNING
-
-        if burst_configuration.fk_operation_group is None:
-            op_id = burst_configuration.fk_simulation
-            is_group = 0
-        else:
-            op_id = burst_configuration.fk_operation_group
-            is_group = 1
-
-        return op_id, is_group, remove_after_stop
-
     @staticmethod
     def handle_range_params_at_loading(burst_config, all_range_parameters):
         param1, param2 = None, None
@@ -366,7 +354,9 @@ class BurstService(object):
         burst_config_copy.name = burst_name_format.format(burst_config.name, count + 1)
 
         storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
-        return h5.load_view_model(burst_config.simulator_gid, storage_path), burst_config_copy
+        simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
+        simulator.generic_attributes = GenericAttributes()
+        return simulator, burst_config_copy
 
     @staticmethod
     def store_burst(burst_config):
@@ -382,5 +372,6 @@ class BurstService(object):
 
         burst_config = self.load_burst_configuration_from_folder(simulator_folder, project)
         burst_config_copy = burst_config.clone()
+        simulator.generic_attributes.parent_burst = burst_config_copy.gid
 
-        return simulator, burst_config_copy
+        return simulator, burst_config_copy, simulator_folder

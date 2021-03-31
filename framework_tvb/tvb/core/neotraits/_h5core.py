@@ -37,7 +37,8 @@ from datetime import datetime
 import numpy
 import scipy.sparse
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Final, HasTraits, Attr, List, NArray, Range
+from tvb.basic.neotraits.api import Final
+from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager

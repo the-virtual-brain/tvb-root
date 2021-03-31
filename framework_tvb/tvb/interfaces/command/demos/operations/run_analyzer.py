@@ -68,7 +68,7 @@ def run_analyzer():
 
     # launch an operation and have the results stored both in DB and on disk
     launched_operation = OperationService().fire_operation(adapter_instance, project.administrator,
-                                                           project.id, view_model=fourier_model)[0]
+                                                           project.id, view_model=fourier_model)
 
     # wait for the operation to finish
     while not launched_operation.has_finished:
