@@ -52,7 +52,7 @@ from .templates import MakoUtilMix
 
 class CuBackend(MakoUtilMix):
 
-    def build_cu_func(self, template_source, content, name='kernel', print_source=False):
+    def build_func(self, template_source, content, name='kernel', print_source=False):
         "Build and retrieve a Python function from template."
         source = self.render_template(template_source, content)
         if print_source:
