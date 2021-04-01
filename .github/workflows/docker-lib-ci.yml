@@ -1,4 +1,4 @@
-name: Build image
+name: gputests
 on: [push]
 jobs:
 
@@ -6,20 +6,17 @@ jobs:
     runs-on: mrs-ci
     steps:
 
-      - name: echo test
-        run: echo test
-
       - name: nvidia-smi test
         run: nvidia-smi
 
       - name: pycuda test
         run: python -c "import pycuda.autoinit; print('yes')"
 
-      - name: ls
-        run: ls -l
+      - name: pwd
+        run: pwd
 
 
-  pytests:
+  gputest:
     runs-on: mrs-ci
     steps:
       - uses: actions/checkout@v1
@@ -30,7 +27,7 @@ jobs:
           pip uninstall -y tvb-gdist &&
           pin install pylems &&
           cd scientific_library &&
-          pytest
+          pytest scientific_library/tvb/tests/library/simulator/rateml_test.py
 
 #name: docker-based library testing
 #on: [push]
