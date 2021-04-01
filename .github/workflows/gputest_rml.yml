@@ -26,8 +26,8 @@ jobs:
         run:
           pip uninstall -y tvb-gdist &&
           pip install pylems &&
-          cd scientific_library &&
-          pytest /tvb/tests/library/simulator/rateml_test.py
+          cd scientific_library/tvb/tests/library/simulator/ &&
+          pytest rateml_test.py
 
 #name: docker-based library testing
 #on: [push]
