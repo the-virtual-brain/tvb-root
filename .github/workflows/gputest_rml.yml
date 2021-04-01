@@ -24,7 +24,8 @@ jobs:
         run: env && pwd && ls -lh
       - name: uninstall gdist
         run: pip uninstall -y tvb-gdist
-      - name: pip install pylems
+      - name: install pylems
+        run: pip install pylems
       - name: run pytest
         run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py
 
