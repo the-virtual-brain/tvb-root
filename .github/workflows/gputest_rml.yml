@@ -1,4 +1,4 @@
-name: gputests
+name: Build image
 on: [push]
 jobs:
 
