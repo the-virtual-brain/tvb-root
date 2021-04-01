@@ -36,7 +36,6 @@ import os
 import shutil
 from sqlalchemy.sql import text
 from sqlalchemy.engine import reflection
-from sqlalchemy.exc import SQLAlchemyError
 from alembic.config import Config
 from alembic import command
 
@@ -81,17 +80,15 @@ def initialize_startup():
     else:
         _update_sql_scripts()
 
-        try:
+        if 'migrate_version' in table_names:
             db_version = session.execute(text("""SELECT version from migrate_version""")).fetchone()[0]
 
             if db_version == 18:
                 command.stamp(alembic_cfg, 'head')
                 session.execute(text("""DROP TABLE "migrate_version";"""))
+                session.commit()
 
                 return is_db_empty
-
-        except SQLAlchemyError:
-            pass
 
         if 'alembic_version' in table_names:
             db_version = session.execute(text("""SELECT version_num from alembic_version""")).fetchone()
