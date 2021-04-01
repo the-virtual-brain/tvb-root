@@ -18,6 +18,12 @@ When using The Virtual Brain for scientific publications, please cite it as foll
 Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide, Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
 The Virtual Brain: a simulator of primate brain network dynamics. Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 
+Brain simulation as a Service: The Virtual Brain on the European Research Platform EBRAINS.
+Schirner M, Domide L, Perdikis D, Triebkorn P, Stefanovski L, Pai R, Prodan P, Valean B, Palmer J, Langford C, Blickensdörfer A,
+van der Vlag M, Diaz-Pier S, Peyser A, Woodman M, Zehl L, Fousek J, Petkoski S, Kusch L, Hashemi M, Marinazzo D, Mangin JF, Flöel A,
+Akintoye S, Stahl C, Deco G, McIntosh, Hilgetag C, Morgan M, Schuller B, Upton A, McMurtrie C, Dickscheid T, Bjaalie J, Amunts K,
+Mersmann J, Jirsa V, Ritter P. https://arxiv.org/abs/2102.05888
+
 ---------------
 
 GPL_LICENSE.TXT

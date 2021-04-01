@@ -8,7 +8,9 @@ Tests for the CUDA backend.
 import unittest
 import numpy as np
 
-from tvb.simulator.backend.cu import CuBackend, pycuda_available, Out, In, InOut
+from tvb.simulator.backend.cu import CuBackend, pycuda_available
+if pycuda_available:  # quickfix
+    from tvb.simulator.backend.cu import Out, In, InOut
 from tvb.simulator.coupling import Sigmoidal, Linear
 from tvb.simulator.models.infinite_theta import MontbrioPazoRoxin
 
@@ -21,7 +23,7 @@ class TestCUSim(BaseTestSim):
     def test_mpr(self):
         "Test generated CUDA kernel directly from Simulator instance."
         sim, state, t, y = self._create_sim(inhom_mmpr=True)
-        template = '<%include file="cu-sim-ode.mako"/>'
+        template = '<%include file="cu-sim-ode.cu.mako"/>'
         kernel = CuBackend().build_func(template, dict(sim=sim, pi=np.pi))
         dX = state.copy()
         weights = sim.connectivity.weights.T.copy().astype('f')
@@ -41,7 +43,7 @@ class TestCUCoupling(BaseTestCoupling):
             model = MontbrioPazoRoxin()
             coupling = cfun
         template = '''
-<%include file="cu-coupling.mako"/>
+<%include file="cu-coupling.cu.mako"/>
 __global__ void kernel(float *state, float *weights, float *cX) {
     coupling(threadIdx.x, ${n_node}, cX, weights, state);
 }
@@ -75,7 +77,7 @@ class TestCUDfun(BaseTestDfun):
 
 #define M_PI_F 3.14159265358979f
 
-<%include file="cu-dfuns.mako"/>
+<%include file="cu-dfuns.cu.mako"/>
 __global__ void kernel(float *dX, float *state, float *cX, float *parmat) {
     dfuns(threadIdx.x, ${n_node}, dX, state, cX, parmat);
 }

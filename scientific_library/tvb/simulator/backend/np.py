@@ -37,14 +37,20 @@ code.
 """
 
 import os
+import sys
 import importlib
 import numpy as np
 import autopep8
+import tempfile
 
 from .templates import MakoUtilMix
 
 
 class NpBackend(MakoUtilMix):
+
+    def __init__(self):
+        self.cgdir = tempfile.TemporaryDirectory()
+        sys.path.append(self.cgdir.name)
 
     def build_py_func(self, template_source, content, name='kernel', print_source=False,
             modname=None, fname=None):
@@ -54,7 +60,8 @@ class NpBackend(MakoUtilMix):
         if print_source:
             print(self.insert_line_numbers(source))
         if fname is not None:
-            with open(fname, 'w') as fd:
+            fullfname = os.path.join(self.cgdir.name, fname)
+            with open(fullfname, 'w') as fd:
                 fd.write(source)
         if modname is not None:
             return self.eval_module(source, name, modname)

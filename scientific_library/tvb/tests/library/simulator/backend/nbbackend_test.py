@@ -5,6 +5,7 @@ Tests for the Numba backend.
 
 """
 
+import unittest
 import numpy as np
 
 from tvb.simulator.coupling import Sigmoidal, Linear
@@ -28,7 +29,7 @@ class TestNbCoupling(BaseTestCoupling):
         sim = self._prep_sim(cfun)
         # prep & invoke kernel
         template = f'''import numpy as np
-<%include file="nb-coupling.mako"/>
+<%include file="nb-coupling.py.mako"/>
 '''
         kernel = NbBackend().build_py_func(template, dict(sim=sim, np=np), 
             name='coupling', print_source=True)
@@ -56,7 +57,7 @@ class TestNbCoupling(BaseTestCoupling):
         sim = self._prep_sim(cfun)
         # prep & invoke kernel
         template = '''import numpy as np
-<%include file="nb-coupling2.mako"/>
+<%include file="nb-coupling2.py.mako"/>
 def kernel(t, cx, weights, state, di):
     for i in range(weights.shape[0]):
 % for cvar, cterm in zip(sim.model.cvar, sim.model.coupling_terms):
@@ -98,7 +99,7 @@ class TestNbDfun(BaseTestDfun):
     svars = ', '.join(sim.model.state_variables)
     cvars = ', '.join(sim.model.coupling_terms)
 %>
-<%include file="nb-dfuns.mako"/>
+<%include file="nb-dfuns.py.mako"/>
 def kernel(dx, state, cx, parmat):
     for i in range(state.shape[1]):
         ${svars} = state[:, i]
@@ -156,7 +157,7 @@ cx_Coupling_Term_r = nb.njit(lambda t, i, w, r: np.dot(w[i],r[:,t]))
 cx_Coupling_Term_V = nb.njit(lambda t, i, w, V: np.dot(w[i],V[:,t]))
 dx_r = nb.njit(lambda r,V,Coupling_Term_r,Coupling_Term_V,parmat: -r*Coupling_Term_r**2/76)
 dx_V = nb.njit(lambda r,V,Coupling_Term_r,Coupling_Term_V,parmat: -V*Coupling_Term_V**2/76)
-<%include file="nb-integrate.mako" />
+<%include file="nb-integrate.py.mako" />
 '''
         integrate = NbBackend().build_py_func(template, dict(sim=sim, np=np),
             name='integrate', print_source=True)
@@ -199,23 +200,21 @@ dx_V = nb.njit(lambda r,V,Coupling_Term_r,Coupling_Term_V,parmat: -V*Coupling_Te
 class TestNbSim(BaseTestSim):
 
     def _test_mpr(self, integrator, delays=False):
-        sim, state, t, y = self._create_sim(
+        sim = self._create_sim(
             integrator,
             inhom_mmpr=True,
-            delays=delays
+            delays=delays,
+            run_sim=False
         )
         template = '<%include file="nb-sim.py.mako"/>'
-        content = dict(sim=sim, np=np)
-        kernel = NbBackend().build_py_func(template, content, print_source=True)
-        n_svar, _, n_node = state.shape
-        if not delays:
-            self.assertEqual(sim.connectivity.horizon, 1)  # for now
-        state = state.reshape((n_svar, sim.connectivity.horizon, n_node))
-        weights = sim.connectivity.weights.copy()
-        yh = np.empty((len(t),)+state[:,0].shape)
+        content = dict(sim=sim, np=np, debug_nojit=True)
+        kernel = NbBackend().build_py_func(
+                template, content, print_source=True, name='run_sim',
+                )
         np.random.seed(42)
-        args = sim, state, weights, yh
-        kernel(*args)
+        state = kernel(sim)  # (nsvar, nnode, horizon + nstep)
+        yh = np.transpose(state[:,:,sim.connectivity.horizon:], (2,0,1))
+        (_, y), = sim.run()
         self._check_match(y, yh)
 
     def _test_mvar(self, integrator):

@@ -1,8 +1,14 @@
 import numpy as np
 
-<%include file="np-coupling.mako" />
-<%include file="np-dfuns.mako" />
-<%include file="np-integrate.mako" />
+<%include file="np-coupling.py.mako" />
+<%include file="np-dfuns.py.mako" />
+<%include file="np-integrate.py.mako" />
+
+<%
+    from tvb.simulator.integrators import IntegratorStochastic
+    stochastic = isinstance(sim.integrator, IntegratorStochastic)
+    any_delays = sim.connectivity.idelays.any()
+%>
 
 def kernel(state, weights, trace, parmat
            ${', nsig' if stochastic else ''}

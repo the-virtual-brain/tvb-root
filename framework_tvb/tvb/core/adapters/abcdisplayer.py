@@ -130,7 +130,7 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         """
         raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
 
-    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+    def _prelaunch(self, operation, view_model, available_disk_space=0):
         """
         Shortcut in case of visualization calls.
         """

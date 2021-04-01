@@ -343,7 +343,7 @@ class ABCAdapter(object):
         dao.store_entity(operation)
 
     @nan_not_allowed()
-    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+    def _prelaunch(self, operation, view_model, available_disk_space=0):
         """
         Method to wrap LAUNCH.
         Will prepare data, and store results on return.
@@ -353,11 +353,6 @@ class ABCAdapter(object):
         self.configure(view_model)
         required_disk_size = self._ensure_enough_resources(available_disk_space, view_model)
         self._update_operation_entity(operation, required_disk_size)
-
-        if not self.generic_attributes.user_tag_1:
-            self.generic_attributes.user_tag_1 = uid
-        else:
-            self.generic_attributes.user_tag_2 = uid
 
         result = self.launch(view_model)
 
@@ -547,7 +542,8 @@ class ABCAdapter(object):
         input_gid = operation.view_model_gid
         return h5.load_view_model(input_gid, storage_path)
 
-    def array_size2kb(self, size):
+    @staticmethod
+    def array_size2kb(size):
         """
         :param size: size in bytes
         :return: size in kB

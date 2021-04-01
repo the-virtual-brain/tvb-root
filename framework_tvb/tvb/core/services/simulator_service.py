@@ -36,10 +36,9 @@ import copy
 import json
 import shutil
 import uuid
-
 import numpy
+
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
@@ -62,9 +61,9 @@ class SimulatorService(object):
         self.files_helper = FilesHelper()
 
     @staticmethod
-    def _reset_model(session_stored_simulator, form):
+    def _reset_model(session_stored_simulator):
         session_stored_simulator.model = type(session_stored_simulator.model)()
-        vi_indexes = form.determine_indexes_for_chosen_vars_of_interest(session_stored_simulator)
+        vi_indexes = session_stored_simulator.determine_indexes_for_chosen_vars_of_interest()
         vi_indexes = numpy.array(list(vi_indexes.values()))
         for monitor in session_stored_simulator.monitors:
             monitor.variables_of_interest = vi_indexes
@@ -75,7 +74,7 @@ class SimulatorService(object):
         parameters because they might not fit to the new Connectivity's nr of regions.
         """
         if is_simulator_copy and form.connectivity.value != session_stored_simulator.connectivity:
-            self._reset_model(session_stored_simulator, form)
+            self._reset_model(session_stored_simulator)
             if issubclass(type(session_stored_simulator.integrator), IntegratorStochastic):
                 session_stored_simulator.integrator.noise = type(session_stored_simulator.integrator.noise)()
 
@@ -87,7 +86,7 @@ class SimulatorService(object):
         if is_simulator_copy and (session_stored_simulator.surface is None and form.surface.value
                                   or session_stored_simulator.surface and
                                   form.surface.value != session_stored_simulator.surface.surface_gid):
-            self._reset_model(session_stored_simulator, form)
+            self._reset_model(session_stored_simulator)
 
     @staticmethod
     def _set_simulator_range_parameter(simulator, range_parameter_name, range_parameter_value):
@@ -99,10 +98,9 @@ class SimulatorService(object):
 
     def async_launch_and_prepare_simulation(self, burst_config, user, project, simulator_algo, simulator):
         try:
-            operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo, simulator.gid)
-            ga = self.operation_service.prepare_metadata(simulator_algo.algorithm_category, {}, burst_config.gid)
-            simulator.generic_attributes = ga
-            self.operation_service.store_view_model(operation, project, simulator)
+            operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                 view_model=simulator, burst_gid=burst_config.gid,
+                                                                 op_group_id=burst_config.fk_operation_group)
             burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id, simulator.gid)
             storage_path = self.files_helper.get_project_folder(project, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
@@ -127,11 +125,7 @@ class SimulatorService(object):
 
     def prepare_simulation_on_server(self, user_id, project, algorithm, zip_folder_path, simulator_file):
         simulator_vm = h5.load_view_model_from_file(simulator_file)
-        operation = self.operation_service.prepare_operation(user_id, project.id, algorithm, simulator_vm.gid)
-        ga = self.operation_service.prepare_metadata(algorithm.algorithm_category, {})
-        simulator_vm.generic_attributes = ga
-        storage_operation_path = self.files_helper.get_project_folder(project, str(operation.id))
-        h5.store_view_model(simulator_vm, storage_operation_path)
+        operation = self.operation_service.prepare_operation(user_id, project, algorithm, view_model=simulator_vm)
         self.async_launch_simulation_on_server(operation, zip_folder_path)
 
         return operation
@@ -166,10 +160,6 @@ class SimulatorService(object):
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
 
-            ga = self.operation_service.prepare_metadata(simulator_algo.algorithm_category, {},
-                                                         burst_config.gid)
-            session_stored_simulator.generic_attributes = ga
-
             for param1_value in range_param1.get_range_values():
                 for param2_value in range_param2_values:
                     # Copy, but generate a new GUID for every Simulator in PSE
@@ -185,11 +175,11 @@ class SimulatorService(object):
 
                     ranges = json.dumps(ranges)
 
-                    operation = self.operation_service.prepare_operation(user.id, project.id, simulator_algo,
-                                                                         simulator.gid, operation_group, ranges)
-
+                    operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                         view_model=simulator, ranges=ranges,
+                                                                         burst_gid=burst_config.gid,
+                                                                         op_group_id=burst_config.fk_operation_group)
                     simulator.range_values = ranges
-                    self.operation_service.store_view_model(operation, project, simulator)
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator
@@ -225,27 +215,22 @@ class SimulatorService(object):
             self.logger.error(excep)
             self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
 
-    def prepare_first_simulation_fragment(self, simulator_algorithm, project_id, is_branch, simulator,
-                                          connectivity_index_class):
-        adapter_instance = ABCAdapter.build_adapter(simulator_algorithm)
-        branch_conditions = self._compute_conn_branch_conditions(is_branch, simulator)
-        form = self.algorithm_service.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id,
-                                                           extra_conditions=branch_conditions)
+    @staticmethod
+    def compute_conn_branch_conditions(is_branch, simulator):
+        if not is_branch:
+            return None
 
-        conn_count = dao.count_datatypes(project_id, connectivity_index_class)
+        conn = load.load_entity_by_gid(simulator.connectivity)
+        if conn.number_of_regions:
+            return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
+                               operations=["=="], values=[conn.number_of_regions])
+
+    @staticmethod
+    def validate_first_fragment(form, project_id, conn_idx):
+        conn_count = dao.count_datatypes(project_id, conn_idx)
         if conn_count == 0:
             form.connectivity.errors.append("No connectivity in the project! Simulation cannot be started without "
                                             "a connectivity!")
-        return form
-
-    @staticmethod
-    def _compute_conn_branch_conditions(is_branch, simulator):
-        if is_branch:
-            conn = load.load_entity_by_gid(simulator.connectivity)
-            if conn.number_of_regions:
-                return FilterChain(fields=[FilterChain.datatype + '.number_of_regions'],
-                                   operations=["=="], values=[conn.number_of_regions])
-        return None
 
     def get_simulation_state_index(self, burst_config, simulation_history_class):
         parent_burst = burst_config.parent_burst_object

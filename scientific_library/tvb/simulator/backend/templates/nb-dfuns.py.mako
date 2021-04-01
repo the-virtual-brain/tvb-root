@@ -9,7 +9,7 @@ sin, cos, exp = math.sin, math.cos, math.exp
 %>
 
 % for svar in sim.model.state_variables:
-@nb.njit(boundscheck=False, inline='always')
+${'' if debug_nojit else '@nb.njit(inline="always")'}
 def dx_${svar}(${svars}, ${cvars}, parmat):
     ## unpack global parameters
 % for par in sim.model.global_parameter_names:

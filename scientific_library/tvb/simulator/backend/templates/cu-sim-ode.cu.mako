@@ -2,8 +2,8 @@
 
 #define M_PI_F 3.14159265358979f
 
-<%include file="cu-coupling.mako" />
-<%include file="cu-dfuns.mako" />
+<%include file="cu-coupling.cu.mako" />
+<%include file="cu-dfuns.cu.mako" />
 
 
 __global__ void kernel(

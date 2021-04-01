@@ -22,7 +22,8 @@ class BaseTestSim(unittest.TestCase):
     "Integration tests of ODE cases against TVB builtins."
 
 
-    def _create_sim(self, integrator=None, inhom_mmpr=False, delays=False):
+    def _create_sim(self, integrator=None, inhom_mmpr=False, delays=False,
+            run_sim=True):
         mpr = MontbrioPazoRoxin()
         conn = Connectivity.from_file()
         if inhom_mmpr:
@@ -48,8 +49,11 @@ class BaseTestSim(unittest.TestCase):
         self.assertEqual(state.shape[2], conn.weights.shape[0])
         if isinstance(sim.integrator, IntegratorStochastic):
             sim.integrator.noise.reset_random_stream()
-        (t,y), = sim.run()
-        return sim, state, t, y
+        if run_sim:
+            (t,y), = sim.run()
+            return sim, state, t, y
+        else:
+            return sim
 
     def _check_match(self, expected, actual):
         # check we don't have numerical errors

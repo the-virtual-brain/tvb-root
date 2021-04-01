@@ -29,7 +29,7 @@ class TestNpSim(BaseTestSim):
             inhom_mmpr=True,
             delays=delays
         )
-        template = '<%include file="np-sim.mako"/>'
+        template = '<%include file="np-sim.py.mako"/>'
         content = dict(sim=sim, np=np)
         kernel = NpBackend().build_py_func(template, content, print_source=True)
         dX = state.copy()
@@ -114,7 +114,7 @@ class TestNpCoupling(BaseTestCoupling):
         sim = self._prep_sim(cfun)
         # prep & invoke kernel
         template = f'''import numpy as np
-<%include file="np-coupling.mako"/>
+<%include file="np-coupling.py.mako"/>
 '''
         kernel = NpBackend().build_py_func(template, dict(sim=sim, np=np), 
             name='coupling', print_source=True)
@@ -144,7 +144,7 @@ class TestNpDfun(BaseTestDfun):
         class sim:  # dummy sim
             model = model_
         template = '''import numpy as np
-<%include file="np-dfuns.mako"/>
+<%include file="np-dfuns.py.mako"/>
 '''
         kernel = NpBackend().build_py_func(template, dict(sim=sim, np=np),
             name='dfuns', print_source=True)
@@ -190,7 +190,7 @@ def coupling(cX, weights, state): cX[:] = weights.dot(state[:,0].T).T
 def dfuns(dX, state, cX, parmat):
     d = -state*cX**2/state.shape[1]
     dX[:] = d
-<%include file="np-integrate.mako" />
+<%include file="np-integrate.py.mako" />
 '''
         integrate = NpBackend().build_py_func(template, dict(sim=sim, np=np),
             name='integrate', print_source=True)
