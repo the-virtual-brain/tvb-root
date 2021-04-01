@@ -1,4 +1,4 @@
-name: Build image
+name: gputests
 on: [push]
 jobs:
 
@@ -25,7 +25,7 @@ jobs:
       - name: run pytest
         run:
           pip uninstall -y tvb-gdist &&
-          pin install pylems &&
+          pip install pylems &&
           cd scientific_library &&
           pytest /tvb/tests/library/simulator/rateml_test.py
 
