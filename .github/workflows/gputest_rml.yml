@@ -22,12 +22,11 @@ jobs:
       - uses: actions/checkout@v1
       - name: debug debug
         run: env && pwd && ls -lh
+      - name: uninstall gdist
+        run: pip uninstall -y tvb-gdist
+      - name: pip install pylems
       - name: run pytest
-        run:
-          pip uninstall -y tvb-gdist &&
-          pip install pylems &&
-          cd scientific_library/tvb/tests/library/simulator/ &&
-          pytest rateml_test.py
+        run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py
 
 #name: docker-based library testing
 #on: [push]
