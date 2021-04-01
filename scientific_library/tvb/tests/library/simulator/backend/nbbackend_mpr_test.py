@@ -184,7 +184,7 @@ class TestNbSim(BaseTestSim):
     def test_network_deterministic_delay(self):
         run_sim = self._get_run_sim(print_source=True)
         dt = 0.01
-        G = 0.
+        G = 0.8
         speed=2.
 
         sim = simulator.Simulator(
@@ -220,7 +220,7 @@ class TestNbSim(BaseTestSim):
     def test_tavg_chunking(self):
         run_sim = self._get_run_sim_chunked(print_source=False)
         dt = 0.01
-        G = 0.
+        G = 0.1
         speed=2.
 
         sim = simulator.Simulator(
@@ -241,15 +241,16 @@ class TestNbSim(BaseTestSim):
         ).configure()
 
         r_pdq, V_pdq = run_sim(sim, nstep=2000, chunksize=2000)
+        r_pdq_chu, V_pdq_chu = run_sim(sim, nstep=2000, chunksize=500)
 
         (raw_t, raw_d), = sim.run(simulation_length=20)
         r_tvb = raw_d[:,0,:,0]
         V_tvb = raw_d[:,1,:,0]
 
-        np.testing.assert_allclose(r_tvb, r_pdq.T, rtol=1e-3) # think a bit about the tolerances...
-        np.testing.assert_allclose(V_tvb, V_pdq.T, rtol=1e-3)
-
-        r_pdq, V_pdq = run_sim(sim, nstep=2000, chunksize=500)
-
         np.testing.assert_allclose(r_tvb, r_pdq.T, rtol=1e-3)
         np.testing.assert_allclose(V_tvb, V_pdq.T, rtol=1e-3)
+        # think a bit about the tolerances...  TVB stores in floats, so that 
+        # can accumulate. Might be a good idea to test agains history with 
+        # double typed buffer.
+        np.testing.assert_allclose(r_tvb, r_pdq_chu.T, rtol=1e-3)
+        np.testing.assert_allclose(V_tvb, V_pdq_chu.T, rtol=1e-3)

@@ -1,5 +1,6 @@
 import numpy as np
 import numba
+from tvb.simulator.lab import *
 
 
 def run_sim(sim, nstep):
@@ -38,7 +39,10 @@ def run_sim_tavg_chunked(sim, nstep, chunksize=100000):
     horizon = sim.connectivity.horizon
     N = sim.connectivity.number_of_regions
     gf = sim.integrator.noise.gfun(None)
-    tavg_steps=100 # to be determined from the monitor
+    assert len(sim.monitors) == 1
+    assert isinstance(sim.monitors[0], monitors.TemporalAverage)
+
+    tavg_steps=sim.monitors[0].istep
     assert tavg_steps < chunksize
     assert chunksize % tavg_steps == 0
     tavg_chunksize = chunksize // tavg_steps
