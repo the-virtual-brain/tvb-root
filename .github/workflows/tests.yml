@@ -1,4 +1,4 @@
-name: gpu tests
+name: pytests
 on: [push]
 jobs:
   pytest:
