@@ -1,11 +1,8 @@
 name: gputests
 on: [push]
 jobs:
-  pytest:
+  gputests:
     runs-on: self-hosted
-    strategy:
-      matrix:
-        python-version: [3.7]
 
     steps:
       - uses: actions/checkout@v1
@@ -14,4 +11,4 @@ jobs:
         run: cd scientific_library && docker build -t tvb/lib .
 
       - name: run library tests
-        run: docker run --rm -it --gpus all -v $PWD:/tvb -w /tvb
+        run: docker run --rm -it --gpus all -v $PWD:/tvb -w /tvb tvb/lib
