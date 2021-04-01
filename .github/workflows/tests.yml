@@ -1,7 +1,19 @@
 name: pytests
 on: [push]
 jobs:
-  pytest:
+
+  # runs in a container based on library Dockerfile
+  library-tests:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v1
+      - name: setup
+        run: cd tvb_bin; python3 setup.py develop --no-deps; cd ../scientific_library; python3 setup.py develop --no-deps
+      - name: run library tests
+        run: cd scientific_library && python -m pytest -n6
+
+  framework-tests:
+    needs: library-tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -59,9 +71,6 @@ jobs:
         run: |
           cd tvb_data
           python3 setup.py develop
-
-      - name: run library tests
-        run: cd scientific_library && python -m pytest -n4
 
       - name: run framework tests
         run: cd framework_tvb && python -m pytest
