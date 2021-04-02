@@ -24,6 +24,13 @@ RUN pip install --no-build-isolation tvb-gdist
 #  && conda install -c conda-forge cudatoolkit-dev \
 #  && pip install pycuda
 
+# TODO make this also conditional
+# TODO version should be buildarg
+RUN cd /opt \
+ && wget -q https://github.com/ispc/ispc/releases/download/v1.15.0/ispc-v1.15.0-linux.tar.gz \
+ && tar xzf ispc-v1.15.0-linux.tar.gz \
+ && ln -s /opt/ispc-v1.15.0-linux/bin/ispc /usr/local/bin/ispc
+
 # docker run --rm -it -v $PWD:/tvb -w /tvb tvb/lib 
 # add --gpus all for testing CUDA
 CMD ["/bin/bash", "-c", "cd tvb_bin; python3 setup.py develop --no-deps; cd ../scientific_library; python3 setup.py develop --no-deps; python3 -m pytest -n12"]
