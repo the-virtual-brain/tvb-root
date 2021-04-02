@@ -8,12 +8,6 @@ from tvb.simulator.lab import *
 
 class TestNbSim(BaseTestSim):
 
-    def _get_run_sim(self, print_source=False):
-        template = '<%include file="nb-montbrio.py.mako"/>'
-        content = dict(foo='bar')
-
-        return NbMPRBackend().build_py_func(template, content, name='run_sim', print_source=print_source)
-
     def _get_run_sim_chunked(self, print_source=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(foo='bar')
@@ -37,11 +31,7 @@ class TestNbSim(BaseTestSim):
         )
         return conn
 
-    def test_import(self):
-        run_sim = self._get_run_sim(print_source=True)
-
     def test_local_deterministic(self):
-        run_sim = self._get_run_sim(print_source=True)
         dt = 0.01
         G = 0.
 
@@ -62,7 +52,7 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = run_sim(sim, nstep=1)
+        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=1)
 
         # check initial conditions
         np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,0])
@@ -78,7 +68,7 @@ class TestNbSim(BaseTestSim):
 
 
     def test_local_stochastic(self):
-        run_sim = self._get_run_sim(print_source=True)
+        #run_sim = self._get_run_sim(print_source=True)
         dt = 0.01
         G = 0.
 
@@ -112,7 +102,7 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = run_sim(sim, nstep=200)
+        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=200)
 
         # check initial conditions
         np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,0])
@@ -147,7 +137,7 @@ class TestNbSim(BaseTestSim):
         )
 
     def test_network_deterministic_nodelay(self):
-        run_sim = self._get_run_sim(print_source=True)
+        #run_sim = self._get_run_sim(print_source=True)
         dt = 0.01
         G = 0.8
 
@@ -168,7 +158,7 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = run_sim(sim, nstep=1)
+        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=1)
 
         np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,0])
         np.testing.assert_allclose(sim.current_state[1,:,0], V_pdq[:,0])
@@ -182,7 +172,6 @@ class TestNbSim(BaseTestSim):
         np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4)
         
     def test_network_deterministic_delay(self):
-        run_sim = self._get_run_sim(print_source=True)
         dt = 0.01
         G = 0.8
         speed=2.
@@ -204,7 +193,7 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = run_sim(sim, nstep=1)
+        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=1)
 
         np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,sim.connectivity.horizon-1])
         np.testing.assert_allclose(sim.current_state[1,:,0], V_pdq[:,sim.connectivity.horizon-1])
@@ -218,7 +207,6 @@ class TestNbSim(BaseTestSim):
         np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4)
 
     def test_tavg_chunking(self):
-        run_sim = self._get_run_sim_chunked(print_source=False)
         dt = 0.01
         G = 0.1
         speed=2.
@@ -240,8 +228,8 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = run_sim(sim, nstep=2000, chunksize=2000)
-        r_pdq_chu, V_pdq_chu = run_sim(sim, nstep=2000, chunksize=500)
+        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=2000)
+        r_pdq_chu, V_pdq_chu = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=500)
 
         (raw_t, raw_d), = sim.run(simulation_length=20)
         r_tvb = raw_d[:,0,:,0]

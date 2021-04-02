@@ -42,6 +42,7 @@ import numpy as np
 import autopep8
 
 from .templates import MakoUtilMix
+from tvb.simulator.lab import *
 
 
 class NbMPRBackend(MakoUtilMix):
@@ -79,4 +80,107 @@ class NbMPRBackend(MakoUtilMix):
         fns = [getattr(mod,n) for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
 
+    def run_sim(self, sim, nstep=None, sim_time=None, chunksize=100000):
+        assert nstep is not None or sim_time is not None
+        # TODO sim time to nstep
 
+        assert len(sim.monitors) == 1, "Configure with exatly one monitor."
+        if isinstance(sim.monitors[0], monitors.Raw):
+            r, V = self._run_sim_plain(sim, nstep)
+        elif isinstance(sim.monitors[0], monitors.TemporalAverage):
+            r, V = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize)
+        else:
+            raise NotImplementedError("Only Raw or TemporalAverage monitors supported.")
+        return r, V  
+
+    def _run_sim_plain(self, sim, nstep=None):
+        template = '<%include file="nb-montbrio.py.mako"/>'
+        content = dict(foo='bar') 
+        integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=False)
+
+        horizon = sim.connectivity.horizon
+        buf_len = horizon + nstep
+        N = sim.connectivity.number_of_regions
+        gf = sim.integrator.noise.gfun(None)
+
+        r, V = sim.integrator.noise.generate( shape=(2,N,buf_len) ) * gf
+        r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
+        V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
+
+
+        r, V = integrate(
+            N = N,
+            dt = sim.integrator.dt,
+            nstep = nstep,
+            i0 = horizon,
+            r=r,
+            V=V,
+            weights = sim.connectivity.weights, 
+            idelays = sim.connectivity.idelays,
+            G = sim.coupling.a.item(),
+            I = sim.model.I.item(),
+            Delta = sim.model.Delta.item(), 
+            Gamma = sim.model.Gamma.item(),
+            eta = sim.model.eta.item(),
+            tau = sim.model.tau.item(),
+            J = sim.model.J.item(),       # end of model params
+        )
+        return r, V
+
+    def _time_average(self, ts, istep):
+        N, T = ts.shape
+        return np.mean(ts.reshape(N,T//istep,istep),-1) # length of ts better be multiple of istep 
+
+    def _run_sim_tavg_chunked(self, sim, nstep, chunksize):
+        template = '<%include file="nb-montbrio.py.mako"/>'
+        content = dict(foo='bar') 
+        integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=False)
+        # chunksize in number of steps 
+        horizon = sim.connectivity.horizon
+        N = sim.connectivity.number_of_regions
+        gf = sim.integrator.noise.gfun(None)
+
+        tavg_steps=sim.monitors[0].istep
+        assert tavg_steps < chunksize
+        assert chunksize % tavg_steps == 0
+        tavg_chunksize = chunksize // tavg_steps
+
+
+        assert nstep % tavg_steps == 0
+        r_out, V_out = np.zeros((2,N,nstep//tavg_steps))
+
+        r, V = sim.integrator.noise.generate( shape=(2,N,chunksize+horizon) ) * gf
+        r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
+        V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
+
+        for chunk, _ in enumerate(range(horizon, nstep+horizon, chunksize)):
+            r, V = integrate(
+                N = N,
+                dt = sim.integrator.dt,
+                nstep = chunksize,
+                i0 = horizon,
+                r=r,
+                V=V,
+                weights = sim.connectivity.weights, 
+                idelays = sim.connectivity.idelays,
+                G = sim.coupling.a.item(),
+                I = sim.model.I.item(),
+                Delta = sim.model.Delta.item(), 
+                Gamma = sim.model.Gamma.item(),
+                eta = sim.model.eta.item(),
+                tau = sim.model.tau.item(),
+                J = sim.model.J.item(),       # end of model params
+            )
+
+            tavg_chunk = chunk * tavg_chunksize
+            r_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = self._time_average(r[:, horizon:], tavg_steps)
+            V_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = self._time_average(V[:, horizon:], tavg_steps)
+
+            r[:,:horizon] = r[:,-horizon:]
+            V[:,:horizon] = V[:,-horizon:]
+
+            r_noise, V_noise = sim.integrator.noise.generate( shape=(2,N,chunksize) ) * gf
+            r[:,horizon:] = r_noise
+            V[:,horizon:] = V_noise
+
+        return r_out, V_out
