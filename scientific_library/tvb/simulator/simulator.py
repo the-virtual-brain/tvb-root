@@ -344,13 +344,16 @@ class Simulator(HasTraits):
         return numpy.array(limits)
 
     def _loop_update_history(self, step, state):
-        if not self._regmap_info_cached:
-            # cache regmap limits & bincounts
-            self._regmap_bincount = numpy.bincount(self._regmap)
-            self._regmap_limits = self._compute_regmap_limits()
-            self._regmap_info_cached = True
-        target, cvars = self.history.update_buffer(step) # cvar, node, mode
-        self._history_updater(target, cvars, state, self._regmap_limits, self._regmap_bincount)
+        if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
+            if not self._regmap_info_cached:
+                # cache regmap limits & bincounts
+                self._regmap_bincount = numpy.bincount(self._regmap)
+                self._regmap_limits = self._compute_regmap_limits()
+                self._regmap_info_cached = True
+            target, cvars = self.history.update_buffer(step) # cvar, node, mode
+            self._history_updater(target, cvars, state, self._regmap_limits, self._regmap_bincount)
+        else:
+            self.history.update(step, state)
 
     def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)
