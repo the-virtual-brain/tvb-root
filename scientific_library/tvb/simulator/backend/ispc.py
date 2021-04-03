@@ -1,47 +1,94 @@
-#!/usr/bin/env python3
-
-from __future__ import print_function
-import sys
-import numpy as np
-import os.path
 import os
-import numpy as np
-import tqdm
-import itertools
-import pytools
-import time
-import argparse
-import subprocess
-import logging
-import ctypes
+import numpy
+from numpy.ctypeslib import ndpointer
+import ctypes as ct
+from dataclasses import dataclass
+from enum import Enum
 
-here = os.path.dirname(os.path.abspath(__file__))
+from .templates import MakoUtilMix
 
-def load_connectome():#{{{
-    # load connectome & normalize
-    hcp100 = np.load('hcp-100.npz')
-    nn = 34 # 34 one hemi, 84 all
-    weights = hcp100['weights'][0][:nn][:,:nn].astype(np.float32)
-    lengths = hcp100['lengths'][0][:nn][:,:nn].astype(np.float32)
-    # weights, lengths = np.tile(weights,(10,10)), np.tile(lengths,(10,10))
-    # weights /= {'N':2e3, 'Nfa': 1e3, 'FA': 1.0}[mattype]
-    weights /= weights.max()
-    assert (weights <= 1.0).all()
-    return weights, lengths#}}}
 
-def expand_params(couplings, speeds):#{{{
-    ns = speeds.size
-    nc = couplings.size
-    params = itertools.product(speeds, couplings)
-    params_matrix = np.array([vals for vals in params])
-    return params_matrix#}}}
+class mathlib(Enum):
+    default = 'default'
+    fast = 'fast'
+    svml = 'svml'
+    system = 'system'
 
-def setup_params(nc, ns):#{{{
-    # the correctness checks at the end of the simulation
-    # are matched to these parameter values, for the moment
-    couplings = np.logspace(1.6, 3.0, nc)
-    speeds = np.logspace(0.0, 2.0, ns)
-    return couplings, speeds#}}}
+
+class target(Enum):
+    sse2_i32x4 = 'sse2-i32x4'
+    sse2_i32x8 = 'sse2-i32x8'
+    sse4_i8x16 = 'sse4-i8x16'
+    sse4_i16x8 = 'sse4-i16x8'
+    sse4_i32x4 = 'sse4-i32x4'
+    sse4_i32x8 = 'sse4-i32x8'
+    avx1_i32x4 = 'avx1-i32x4'
+    avx1_i32x8 = 'avx1-i32x8'
+    avx1_i32x16 = 'avx1-i32x16'
+    avx1_i64x4 = 'avx1-i64x4'
+    avx2_i8x32 = 'avx2-i8x32'
+    avx2_i16x16 = 'avx2-i16x16'
+    avx2_i32x4 = 'avx2-i32x4'
+    avx2_i32x8 = 'avx2-i32x8'
+    avx2_i32x16 = 'avx2-i32x16'
+    avx2_i64x4 = 'avx2-i64x4'
+    avx512knl_i32x16 = 'avx512knl-i32x16'
+    avx512skx_i32x8 = 'avx512skx-i32x8'
+    avx512skx_i32x16 = 'avx512skx-i32x16'
+    avx512skx_i8x64 = 'avx512skx-i8x64'
+    avx512skx_i16x32 = 'avx512skx-i16x32'
+    neon_i8x16 = 'neon-i8x16'
+    neon_i16x8 = 'neon-i16x8'
+    neon_i32x4 = 'neon-i32x4'
+    neon_i32x8 = 'neon-i32x8'
+
+
+@dataclass
+class Options:
+    "Options for the ISPC compiler."
+    math_lib: mathlib = mathlib.default
+    target: target = target.avx2_i32x8
+    # TODO other options as required
+
+
+class ISPCBackend(MakoUtilMix):
+
+    @property
+    def here(self) -> str:
+        "Returns full path to current file."
+        return os.path.dirname(os.path.abspath(__file__))
+
+    _ispc = None
+    @property
+    def ispc(self) -> str:
+        "Returns full to the ISPC compiler."
+        if self._ispc is None:
+            self._ispc = self.find_ispc()
+        return self._ispc
+
+    def find_ispc(self) -> str:
+        "Returns the first ISPC compiler found on $PATH."
+        for path in os.environ['PATH'].split(os.path.pathsep):
+            for item in os.listdir(path):
+                if item == 'ispc':
+                    ispc = os.path.join(path, item)
+                    logger.info('found ispc at %r', ispc)
+                    return ispc
+
+    def compile(self, fname: src, options: Options):
+        "Compile a source file and return name of object file."
+
+    
+
+def _find_ispc():
+
+
+
+
+def create_ispc_object(fname=None):
+    cmd = f"{where_ispc()}
+    subprocess.check_call(cmd)
+
 
 def cmd(str):# {{{
     subprocess.check_call([_ for _ in str.split(' ') if _])# }}}
