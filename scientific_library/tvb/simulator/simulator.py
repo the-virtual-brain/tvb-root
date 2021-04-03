@@ -43,6 +43,7 @@ import math
 import time
 
 import numpy
+import numba as nb
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 from tvb.basic.profile import TvbProfile
 from tvb.datatypes import cortex, connectivity, patterns, region_mapping
@@ -317,6 +318,39 @@ class Simulator(HasTraits):
         if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
             state = self.backend.surface_state_to_rois(self._regmap, self.connectivity.number_of_regions, state)
         self.history.update(step, state)
+
+    _regmap_info_cached = False
+    _regmap_bincount = None
+    _regmap_limits = None
+    @staticmethod
+    @nb.njit(parallel=True, boundscheck=False)
+    def _history_updater(target, cvar, state, limits, bincount):
+        assert target.shape[0] == cvar.size
+        assert target.shape[1] == limits.shape[0]
+        for i in range(target.shape[0]):
+            ci = cvar[i]
+            for j in nb.prange(target.shape[1]):
+                acc = nb.float32(0.0)
+                for k in range(limits[j,0], limits[j,1]):
+                    acc += state[ci, k, 0]
+                acc /= bincount[j]
+                target[ci,j,0]
+
+    def _compute_regmap_limits(self):
+        limits = []
+        for i in numpy.unique(self._regmap):
+            vals = numpy.argwhere(i==self._regmap)
+            limits.append([vals.min(), vals.max()])
+        return numpy.array(limits)
+
+    def _loop_update_history(self, step, state):
+        if not self._regmap_info_cached:
+            # cache regmap limits & bincounts
+            self._regmap_bincount = numpy.bincount(self._regmap)
+            self._regmap_limits = self._compute_regmap_limits()
+            self._regmap_info_cached = True
+        target, cvars = self.history.update_buffer(step) # cvar, node, mode
+        self._history_updater(target, cvars, state, self._regmap_limits, self._regmap_bincount)
 
     def _loop_monitor_output(self, step, state, node_coupling):
         observed = self.model.observe(state)

@@ -197,6 +197,11 @@ class DenseHistory(BaseHistory):
     def update(self, step, new_state):
         self.buffer[step % self.n_time] = new_state[self.cvars]
 
+    def update_buffer(self, step):
+        target = self.buffer[step % self.n_time]
+        assert target.base is self.buffer
+        return target, self.cvars
+
 
 class SparseHistory(DenseHistory):
     "History implementation which stores data only for non-zero weights."
