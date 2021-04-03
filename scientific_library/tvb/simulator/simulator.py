@@ -327,14 +327,14 @@ class Simulator(HasTraits):
     def _history_updater(target, cvar, state, limits, bincount):
         assert target.shape[0] == cvar.size
         assert target.shape[1] == limits.shape[0]
-        for i in range(target.shape[0]):
-            ci = cvar[i]
-            for j in nb.prange(target.shape[1]):
-                acc = nb.float32(0.0)
-                for k in range(limits[j,0], limits[j,1]):
-                    acc += state[ci, k, 0]
-                acc /= bincount[j]
-                target[ci,j,0]
+        for i in nb.prange(target.shape[0] * target.shape[1]):
+            ci = cvar[i//target.shape[1]]
+            j = i % target.shape[1]
+            acc = nb.float64(0.0)
+            for k in range(limits[j,0], limits[j,1]):
+                acc += state[ci, k, 0]
+            acc /= bincount[j]
+            target[ci,j,0] = acc
 
     def _compute_regmap_limits(self):
         limits = []
