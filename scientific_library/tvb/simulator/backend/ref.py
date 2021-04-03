@@ -39,18 +39,10 @@ class RefBase:
             dest[i] += src[i == map].sum(axis=0)
         return dest
 
-    @njit(parallel=True, boundscheck=False)
-    def _nb_add_at(dest, map, src):
-        for i in prange(map.size):
-            dest[map[i]] += src[i]
-        return dest
-
     try:
         add_at = staticmethod(numpy.add.at)
     except AttributeError:
         add_at = staticmethod(_add_at)
-
-    add_at = staticmethod(_nb_add_at)
 
     @staticmethod
     def linear_interp1d(start_time, end_time, start_value, end_value, interp_point):
