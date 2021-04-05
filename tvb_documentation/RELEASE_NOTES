@@ -1,7 +1,15 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 2.2 - build 10***
- Release Date: * March 2021
+ Version: 2.2.1 - build 161**
+ Release Date: 5 April 2021
+ Description: Bug fixing related to alembic migration
+======================================================================================================================================
+    * Fix second startup with SQLite after migrating data from 1.5.8
+    * Fix second startup with PostgreSQL with clean storage
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.2 - build 16145
+ Release Date: 30 March 2021
  Description: TVB_Distribution with Python 3, REST API, encryption mechanisms
 ======================================================================================================================================
     * Make code compatible with Python 3
