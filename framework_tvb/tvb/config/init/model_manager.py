@@ -93,6 +93,11 @@ def initialize_startup():
         except SQLAlchemyError:
             pass
 
+        if 'alembic_version' in table_names:
+            db_version = session.execute(text("""SELECT version_num from alembic_version""")).fetchone()
+            if not db_version:
+                command.stamp(alembic_cfg, 'head')
+
         with session.connection() as connection:
             alembic_cfg.attributes['connection'] = connection
             command.upgrade(alembic_cfg, TvbProfile.current.version.DB_STRUCTURE_VERSION)
