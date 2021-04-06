@@ -143,7 +143,7 @@ class TestRateML():
     def test_time_serie(self, model_name, language):
         RateML(model_filename=model_name, language=language)
         driver = Driver_Execute(Driver_Setup())
-        driver.args.n_time = 100
+        # driver.args.n_time = 100
         driver.args.verbose = True
         tavg0 = driver.run_simulation()
         assert pytest.approx(driver.compare_with_ref(tavg0), 0.001) == 1
