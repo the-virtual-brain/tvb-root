@@ -146,7 +146,8 @@ class TestRateML():
         # driver.args.n_time = 100
         driver.args.verbose = True
         tavg0 = driver.run_simulation()
-        assert pytest.approx(driver.compare_with_ref(tavg0), 0.001) == 1
+        assert np.allclose(driver.compare_with_ref(tavg0), 1, 1e-6, 1e-6)
+        # assert pytest.approx(driver.compare_with_ref(tavg0), 0.001) == 1
 
     @pytest.mark.slow
     @pytest.mark.parametrize('model_name, language', itertools.product(models, languages))
