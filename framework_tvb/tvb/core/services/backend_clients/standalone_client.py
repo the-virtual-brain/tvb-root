@@ -44,8 +44,8 @@ from threading import Thread, Event
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
-from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapter
+from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED, Operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
@@ -74,8 +74,6 @@ class OperationExecutor(Thread):
         """
         Get the required data from the operation queue and launch the operation.
         """
-        # Try to get a spot to launch own operation.
-        LOCKS_QUEUE.get(True)
         operation_id = self.operation_id
         run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.core.operation_async_launcher',
                       str(operation_id), TvbProfile.CURRENT_PROFILE_NAME]
@@ -83,7 +81,10 @@ class OperationExecutor(Thread):
         current_operation = dao.get_operation_by_id(operation_id)
         storage_interface = StorageInterface()
         project_folder = storage_interface.get_project_folder(current_operation.project.name)
+        in_usage = storage_interface.is_in_usage(project_folder)
         storage_interface.inc_running_op_count(project_folder)
+        if not in_usage:
+            storage_interface.sync_folders(project_folder)
         # In the exceptional case where the user pressed stop while the Thread startup is done,
         # We should no longer launch the operation.
         if self.stopped() is False:
@@ -164,10 +165,36 @@ class StandAloneClient(BackendClient):
     """
 
     @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
-        """Start asynchronous operation locally"""
+    def process_queued_operations():
+        if LOCKS_QUEUE.qsize() == 0:
+            LOGGER.info("Queue is still full. Cannot process operations.")
+            return
+
+        operations = dao.get_generic_entity(Operation, True, "queue_full")
+        if len(operations) == 0:
+            LOGGER.info("Empty operations list.")
+            return
+
+        operations.sort(key=lambda l_operation: l_operation.id)
+        for operation in operations:
+            if LOCKS_QUEUE.qsize() == 0:
+                continue
+            StandAloneClient.start_operation(operation.id)
+
+    @staticmethod
+    def start_operation(operation_id):
+        # Try to get a spot to launch own operation.
+        LOCKS_QUEUE.get(True)
+        LOGGER.info("Start processing operation id:{}".format(operation_id))
+
+        operation = dao.get_operation_by_id(operation_id)
+        operation.queue_full = False
+        dao.store_entity(operation)
+
         thread = OperationExecutor(operation_id)
         CURRENT_ACTIVE_THREADS.append(thread)
+
+        adapter_instance = ABCAdapter.build_adapter(operation.algorithm)
         if adapter_instance.launch_mode is AdapterLaunchModeEnum.SYNC_DIFF_MEM:
             thread.run()
             operation = dao.get_operation_by_id(operation_id)
@@ -175,6 +202,17 @@ class StandAloneClient(BackendClient):
                 raise TVBException(operation.additional_info)
         else:
             thread.start()
+
+    @staticmethod
+    def execute(operation_id, user_name_label, adapter_instance):
+        """Start asynchronous operation locally"""
+        if LOCKS_QUEUE.qsize() == 0:
+            operation = dao.get_operation_by_id(operation_id)
+            operation.queue_full = True
+            dao.store_entity(operation)
+            return
+
+        StandAloneClient.start_operation(operation_id)
 
     @staticmethod
     def stop_operation(operation_id):

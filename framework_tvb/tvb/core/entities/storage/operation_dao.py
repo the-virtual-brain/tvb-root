@@ -127,6 +127,21 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
+    def get_operations_for_hpc_job(self):
+        status = [STATUS_PENDING, STATUS_STARTED]
+        algorithm_classname = "SimulatorAdapter"
+        queue_full = False
+        try:
+            result = self.session.query(Operation).join(Algorithm) \
+                .filter(Algorithm.classname == algorithm_classname) \
+                .filter(Operation.status.in_(status)) \
+                .filter(Operation.queue_full == queue_full).all()
+            return result
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+            return None
+
+
     def is_upload_operation(self, operation_gid):
         """
         Returns True only if the operation with the given gid is an upload operation.

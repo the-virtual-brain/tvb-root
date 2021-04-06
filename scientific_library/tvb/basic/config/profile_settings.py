@@ -95,6 +95,7 @@ class BaseSettingsProfile(object):
         self.MAX_RANGE_NUMBER = self.manager.get_attribute(stored.KEY_MAX_RANGE_NR, 2000, int)
         # Max number of threads in the pool of ops running in parallel. TO be correlated with CPU cores
         self.MAX_THREADS_NUMBER = self.manager.get_attribute(stored.KEY_MAX_THREAD_NR, 4, int)
+        self.OPERATIONS_BACKGROUND_JOB_INTERVAL = self.manager.get_attribute(stored.KEY_OP_BACKGROUND_INTERVAL, 60, int)
         # The maximum disk space that can be used by one single user, in KB.
         self.MAX_DISK_SPACE = self.manager.get_attribute(stored.KEY_MAX_DISK_SPACE_USR, 5 * 1024 * 1024, int)
 

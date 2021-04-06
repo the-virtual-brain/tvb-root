@@ -252,6 +252,7 @@ class Operation(Base, Exportable):
     range_values = Column(String, default=None)
     estimated_disk_size = Column(Integer)
     view_model_disk_size = Column(Integer, default=0)
+    queue_full = Column(Boolean, default=False)
 
     algorithm = relationship(Algorithm)
     project = relationship(Project, backref=backref('OPERATIONS', order_by=id, cascade="all,delete"))
