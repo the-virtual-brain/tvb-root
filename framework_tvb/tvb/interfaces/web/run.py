@@ -37,6 +37,7 @@ import time
 
 from tvb.core.entities.file.data_encryption_handler import encryption_handler, FoldersQueueConsumer, \
     DataEncryptionHandler
+from tvb.core.services.backend_clients.standalone_client import StandAloneClient
 
 STARTUP_TIC = time.time()
 
@@ -171,6 +172,10 @@ def init_cherrypy(arguments=None):
             TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
         cherrypy.engine.housekeeper.start()
 
+    cherrypy.engine.operations_job = cherrypy.process.plugins.BackgroundTask(
+        TvbProfile.current.OPERATIONS_BACKGROUND_JOB_INTERVAL, StandAloneClient.process_queued_operations)
+    cherrypy.engine.operations_job.start()
+
     # HTTP Server is fired now ######
     cherrypy.engine.start()
 
@@ -181,7 +186,8 @@ def expose_rest_api():
         return
 
     if not os.path.exists(TvbProfile.current.KEYCLOAK_CONFIG):
-        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(TvbProfile.current.KEYCLOAK_CONFIG))
+        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(
+            TvbProfile.current.KEYCLOAK_CONFIG))
         return
 
     if CONFIG_EXISTS:
