@@ -174,7 +174,6 @@ class StandAloneClient(BackendClient):
 
         operations = dao.get_generic_entity(Operation, True, "queue_full")
         if len(operations) == 0:
-            LOGGER.info("Empty operations list.")
             return
 
         operations.sort(key=lambda l_operation: l_operation.id)
