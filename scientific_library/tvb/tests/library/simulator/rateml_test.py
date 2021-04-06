@@ -142,8 +142,8 @@ class TestRateML():
     @pytest.mark.parametrize('model_name, language', itertools.product(["oscillator"], ["cuda"]))
     def test_time_serie(self, model_name, language):
         driver = Driver_Execute(Driver_Setup())
-        driver.args.n_time = 100
-        driver.args.verbose = True
+        # driver.args.n_time = 100
+        # driver.args.verbose = True
         tavg0 = driver.run_simulation()
         assert np.allclose(driver.compare_with_ref(tavg0), 1, 1e-6, 1e-6)
 
