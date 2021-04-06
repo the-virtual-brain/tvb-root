@@ -124,30 +124,28 @@ class TestRateML():
         _, svboundaries, _, _, _ = RateML(model_name, language=language).load_model()
         assert svboundaries
 
+    # @pytest.mark.slow
+    # @pytest.mark.parametrize('model_name, language', itertools.product(["kuramoto"], ["cuda"]))
+    # def test_prep_model_noise(self, model_name, language):
+    #     # cuda only
+    #     _, _, _, noise, nsig = RateML(model_name, language=language).load_model()
+    #     assert noise and nsig
+
     @pytest.mark.slow
-    @pytest.mark.parametrize('model_name, language', itertools.product(["kuramoto"], ["cuda"]))
+    @pytest.mark.parametrize('model_name, language', itertools.product(["oscillator"], ["cuda"]))
     def test_prep_model_coupling(self, model_name, language):
         # cuda only
         _, _, couplinglist, _, _ = RateML(model_name, language=language).load_model()
         assert len(couplinglist) > 0
 
     @pytest.mark.slow
-    @pytest.mark.parametrize('model_name, language', itertools.product(["kuramoto"], ["cuda"]))
-    def test_prep_model_noise(self, model_name, language):
-        # cuda only
-        _, _, _, noise, nsig = RateML(model_name, language=language).load_model()
-        assert noise and nsig
-
-    @pytest.mark.slow
     @pytest.mark.parametrize('model_name, language', itertools.product(["oscillator"], ["cuda"]))
     def test_time_serie(self, model_name, language):
-        RateML(model_filename=model_name, language=language)
         driver = Driver_Execute(Driver_Setup())
-        # driver.args.n_time = 100
+        driver.args.n_time = 100
         driver.args.verbose = True
         tavg0 = driver.run_simulation()
         assert np.allclose(driver.compare_with_ref(tavg0), 1, 1e-6, 1e-6)
-        # assert pytest.approx(driver.compare_with_ref(tavg0), 0.001) == 1
 
     @pytest.mark.slow
     @pytest.mark.parametrize('model_name, language', itertools.product(models, languages))
