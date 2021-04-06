@@ -33,7 +33,7 @@ class Driver_Setup:
 		self.checkargbounds()
 
 		self.dt = self.args.delta_time
-		self.connectivity = self.tvb_connectivity(self.args.n_tvb_brainnodes)
+		self.connectivity = self.tvb_connectivity(self.args.n_regions)
 		self.weights = self.connectivity.weights
 		self.lengths = self.connectivity.tract_lengths
 		self.tavg_period = 10.0
@@ -48,6 +48,7 @@ class Driver_Setup:
 		par_min = 0.1 if buf_par.min() <= 0.0 else buf_par.min()
 		self.buf_len_ = ((self.lengths / par_min / self.dt).astype('i').max() + 1)
 		self.buf_len = 2 ** np.argwhere(2 ** np.r_[:30] > self.buf_len_)[0][0]  # use next power of
+
 		self.states = self.args.states
 		self.exposures = self.args.exposures
 
@@ -61,7 +62,7 @@ class Driver_Setup:
 	def logdata(self):
 
 		self.logger.info('dt %f', self.dt)
-		self.logger.info('n_nodes %d', self.args.n_tvb_brainnodes)
+		self.logger.info('n_nodes %d', self.args.n_regions)
 		self.logger.info('weights.shape %s', self.weights.shape)
 		self.logger.info('lengths.shape %s', self.lengths.shape)
 		self.logger.info('tavg period %s', self.tavg_period)
@@ -81,7 +82,7 @@ class Driver_Setup:
 		try:
 			assert self.args.n_sweep_arg0 > 0, "Min value for [N_SWEEP_ARG0] is 1"
 			assert self.args.n_time > 0, "Minimum number for [-n N_TIME] is 1"
-			assert self.args.n_tvb_brainnodes > 0, "Min value for  [-tvbn N_TVB_BRAINNODES] for default data set is 68"
+			assert self.args.n_regions > 0, "Min value for  [-tvbn n_regions] for default data set is 68"
 			assert self.args.blockszx > 0 and self.args.blockszx <= 32,	"Bounds for [-bx BLOCKSZX] are 0 < value <= 32"
 			assert self.args.blockszy > 0 and self.args.blockszy <= 32, "Bounds for [-by BLOCKSZY] are 0 < value <= 32"
 		except AssertionError as e:
@@ -101,18 +102,18 @@ class Driver_Setup:
 		parser.add_argument('-s1', '--n_sweep_arg1', default=4, help='num grid points for 2st parameter', type=int)
 		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do', type=int)
 		parser.add_argument('-v', '--verbose', default=False, help='increase logging verbosity', action='store_true')
-		parser.add_argument('-m', '--model', default='montbrio', help="neural mass model to be used during the simulation")
-		parser.add_argument('-st', '--states', default=2, type=int, help="number of states for model")
-		parser.add_argument('-ex', '--exposures', default=2, type=int, help="number of exposures for model")
+		parser.add_argument('-m', '--model', default='oscillator', help="neural mass model to be used during the simulation")
+		parser.add_argument('-s', '--states', default=2, type=int, help="number of states for model")
+		parser.add_argument('-x', '--exposures', default=2, type=int, help="number of exposures for model")
 		parser.add_argument('-l', '--lineinfo', default=False, help='generate line-number information for device code.', action='store_true')
 		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="gpu block size x")
 		parser.add_argument('-by', '--blockszy', default=8, type=int, help="gpu block size y")
-		parser.add_argument('-val', '--validate', default=False, help="enable validation to refmodels", action='store_true')
-		parser.add_argument('-tvbn', '--n_tvb_brainnodes', default="68", type=int, help="number of tvb nodes")
-		parser.add_argument('-p', '--plot_data', type=int, help="plot output data")
+		parser.add_argument('-val', '--validate', default=False, help="enable validation with refmodels", action='store_true')
+		parser.add_argument('-r', '--n_regions', default="68", type=int, help="number of tvb nodes")
+		parser.add_argument('-p', '--plot_data', type=int, help="plot res data for selected state")
 		parser.add_argument('-w', '--write_data', default=False, help="write output data to file: 'tavg_data", action='store_true')
 		parser.add_argument('-g', '--gpu_info', default=False, help="show gpu info", action='store_true')
-		parser.add_argument('-dt', '--delta_time', default=0.1, type=float, help="plot output data")
+		parser.add_argument('-dt', '--delta_time', default=0.1, type=float, help="set dt for simulation")
 
 		args = parser.parse_args()
 		return args
@@ -125,8 +126,8 @@ class Driver_Setup:
 		'''
 		This code generates the parameters ranges that need to be set
 		'''
-		sweeparam0 = np.linspace(2.0, 2.0, n0)
-		sweeparam1 = np.linspace(0.1, 0.1, n1)
+		sweeparam0 = np.linspace(0.0, 2.0, n0)
+		sweeparam1 = np.linspace(1.6, 3.0, n1)
 		params = itertools.product(
 		sweeparam0,
 		sweeparam1,
@@ -198,6 +199,8 @@ class Driver_Execute(Driver_Setup):
 		# self.logger.info('Templated version is similar to original %d:', comparison.all())
 		self.logger.info('Corr.coef. of model with %s is: %f', self.args.model,
 						 np.corrcoef(tavg0.ravel(), tavg1.ravel())[0, 1])
+
+		return np.corrcoef(tavg0.ravel(), tavg1.ravel())[0, 1]
 
 	def make_kernel(self, source_file, warp_size, args, lineinfo=False, nh='nh'):
 
@@ -278,9 +281,9 @@ class Driver_Execute(Driver_Setup):
 		data = { 'weights': self.weights, 'lengths': self.lengths, 'params': self.params.T }
 		base_shape = self.n_work_items,
 		for name, shape in dict(
-			tavg0=(self.exposures, self.args.n_tvb_brainnodes,),
-			tavg1=(self.exposures, self.args.n_tvb_brainnodes,),
-			state=(self.buf_len, self.states * self.args.n_tvb_brainnodes),
+			tavg0=(self.exposures, self.args.n_regions,),
+			tavg1=(self.exposures, self.args.n_regions,),
+			state=(self.buf_len, self.states * self.args.n_regions),
 			).items():
 			# memory error exception for compute device
 			try:
@@ -368,7 +371,7 @@ class Driver_Execute(Driver_Setup):
 					if i > 0:
 						stream.wait_for_event(events[(i - 1) % n_streams])
 
-					step_fn(np.uintc(i * self.n_inner_steps), np.uintc(self.args.n_tvb_brainnodes), np.uintc(self.buf_len),
+					step_fn(np.uintc(i * self.n_inner_steps), np.uintc(self.args.n_regions), np.uintc(self.buf_len),
 							np.uintc(self.n_inner_steps), np.uintc(self.n_work_items), np.float32(self.dt),
 							gpu_data['weights'], gpu_data['lengths'], gpu_data['params'], gpu_data['state'],
 							gpu_data['tavg%d' % (i%2,)],
