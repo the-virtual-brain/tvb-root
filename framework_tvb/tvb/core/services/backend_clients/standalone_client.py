@@ -51,6 +51,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.core.services.cache_service import cache
 
 LOGGER = get_logger(__name__)
 
@@ -123,6 +124,7 @@ class OperationExecutor(Thread):
         encryption_handler.check_and_delete(project_folder)
 
         # Give back empty spot now that you finished your operation
+        cache.clear_cache()
         CURRENT_ACTIVE_THREADS.remove(self)
         LOCKS_QUEUE.put(1)
 
@@ -208,5 +210,5 @@ class StandAloneClient(BackendClient):
 
         # Mark operation as canceled in DB and on disk
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
-
+        cache.clear_cache()
         return stopped
