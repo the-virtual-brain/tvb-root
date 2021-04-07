@@ -323,16 +323,19 @@ In which the arguments are:
 * -n N_TIME,        --n_time N_TIME:    number of time steps (default 400)
 * -v,               --verbose:          increase logging verbosity (default False)
 * -m,               --model:            neural mass model to be used during the simulation (default last RML generation)
-* -st,              --states            number of states for model (default last RML generation)
-* -ex,              --exposures         number of exposures for model (default last RML generation)
+* -s,               --states            number of states for model (default last RML generation)
+* -x,               --exposures         number of exposures for model (default last RML generation)
 * -l,               --lineinfo:         generate line-number information for device code. (default False)
 * -bx,              --blockszx:         gpu block size x (default 8)
-* -by,              --blockszy          gpu block size y (default 8)
-* -val,             --validate          enable validation to refmodels (default False)
-* -tvbn,            --n_tvb_brainnodes: number of tvb nodes (default 68)
+* -by,              --blockszy:         gpu block size y (default 8)
+* -val,             --validate:         enable validation to refmodels (default False)
+* -r,               --n_regios:         number of tvb nodes (default 68)
 * -p,               --plot_data:        plot output data (default False)
 * -w,               --write_data:       write output data to file: 'tavg_data' (default False)
 * -g,               --gpu_info:         show GPU info (default False)
+* -dt,              --delta_time        plot output data (default 0.1)
+* -sm               --speeds_min        min speed for temporal buffer
+
 
 The arguments -s0..-sn set the range of the parameters to sweep and thus the number these arguments correspond to the 
 number parameters that the user entered in the XML file for sweeping. Because the example from the top is used there 
@@ -355,6 +358,11 @@ The pickle library can be used to unpickle this file.
 
 The --gpu_info argument print a various information about the GPU to be used to assist the user in 
 setting the right parameters for optimal CUDA model execution. 
+
+The --speeds_min argument sets the minimum value for the speed to be use in the TVB simulation. The temporal buffer
+is set accordingly: max(lengths / speeds_min / dt) + 1) from which the next power of 2 is taken to be the size of 
+the temporal buffer. This buffer will take the largest chunk of data on the GPU, which can be calculated as:
+(buf_len * n_work_items * states * n_regions) * (4 / 1024 ** 2) MiB.
 
 Example for Oscillator simulation:
 ```c

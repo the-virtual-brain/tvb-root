@@ -40,13 +40,12 @@ class Driver_Setup:
 		self.n_inner_steps = int(self.tavg_period / self.dt)
 
 		# bufferlength is based on the minimum of the first swept parameter (speed for many tvb models)
-		self.params, buf_par = self.setup_params(
+		self.params = self.setup_params(
 		self.args.n_sweep_arg0,
 		self.args.n_sweep_arg1,
 		)
 		self.n_work_items, self.n_params = self.params.shape
-		par_min = 0.1 if buf_par.min() <= 0.0 else buf_par.min()
-		self.buf_len_ = ((self.lengths / par_min / self.dt).astype('i').max() + 1)
+		self.buf_len_ = ((self.lengths / self.args.speeds_min / self.dt).astype('i').max() + 1)
 		self.buf_len = 2 ** np.argwhere(2 ** np.r_[:30] > self.buf_len_)[0][0]  # use next power of
 
 		self.states = self.args.states
@@ -76,6 +75,9 @@ class Driver_Setup:
 		self.logger.info('real buf_len %d, using power of 2 %d', self.buf_len_, self.buf_len)
 		self.logger.info('number of states %d', self.states)
 		self.logger.info('model %s', self.args.model)
+		self.logger.info('real buf_len %d, using power of 2 %d', self.buf_len_, self.buf_len)
+		self.logger.info('memory for states array on GPU %d MiB',
+						 (self.buf_len * self.n_work_items * self.states * self.args.n_regions * 4) / 1024 ** 2)
 
 	def checkargbounds(self):
 
@@ -85,6 +87,10 @@ class Driver_Setup:
 			assert self.args.n_regions > 0, "Min value for  [-tvbn n_regions] for default data set is 68"
 			assert self.args.blockszx > 0 and self.args.blockszx <= 32,	"Bounds for [-bx BLOCKSZX] are 0 < value <= 32"
 			assert self.args.blockszy > 0 and self.args.blockszy <= 32, "Bounds for [-by BLOCKSZY] are 0 < value <= 32"
+			assert self.args.delta_time > 0.0, "Min value for [-dt delta_time] is > 0.0, default is 0.1"
+			assert self.args.speeds_min > 0.0, "Min value for [-sm speeds_min] is > 0.0, default is 3e-3"
+			assert self.args.exposures > 0, "Min value for [-x exposures] is 1"
+			assert self.args.states > 0, "Min value for [-s states] is 1"
 		except AssertionError as e:
 			self.logger.error('%s', e)
 			raise
@@ -113,7 +119,8 @@ class Driver_Setup:
 		parser.add_argument('-p', '--plot_data', type=int, help="plot res data for selected state")
 		parser.add_argument('-w', '--write_data', default=False, help="write output data to file: 'tavg_data", action='store_true')
 		parser.add_argument('-g', '--gpu_info', default=False, help="show gpu info", action='store_true')
-		parser.add_argument('-dt', '--delta_time', default=0.1, type=float, help="set dt for simulation")
+		parser.add_argument('-dt', '--delta_time', default=0.1, type=float, help="dt for simulation")
+		parser.add_argument('-sm', '--speeds_min', default=3e-1, type=float, help="min speed for temporal buffer")
 
 		args = parser.parse_args()
 		return args
@@ -133,7 +140,7 @@ class Driver_Setup:
 		sweeparam1,
 		)
 		params = np.array([vals for vals in params], np.float32)
-		return params, sweeparam0
+		return params
 
 
 	def gpu_device_info(self):
