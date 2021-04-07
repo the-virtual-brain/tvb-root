@@ -168,24 +168,20 @@ class StandAloneClient(BackendClient):
 
     @staticmethod
     def process_queued_operations():
-        if LOCKS_QUEUE.qsize() == 0:
-            LOGGER.info("Queue is still full. Cannot process operations.")
-            return
-
         operations = dao.get_generic_entity(Operation, True, "queue_full")
         if len(operations) == 0:
             return
 
         operations.sort(key=lambda l_operation: l_operation.id)
         for operation in operations:
-            if LOCKS_QUEUE.qsize() == 0:
-                continue
-            StandAloneClient.start_operation(operation.id)
+            try:
+                LOCKS_QUEUE.get(True)
+                StandAloneClient.start_operation(operation.id)
+            except Exception as e:
+                LOGGER.error("Starting operation error", e)
 
     @staticmethod
     def start_operation(operation_id):
-        # Try to get a spot to launch own operation.
-        LOCKS_QUEUE.get(True)
         LOGGER.info("Start processing operation id:{}".format(operation_id))
 
         operation = dao.get_operation_by_id(operation_id)
@@ -213,6 +209,7 @@ class StandAloneClient(BackendClient):
             dao.store_entity(operation)
             return
 
+        LOCKS_QUEUE.get(True)
         StandAloneClient.start_operation(operation_id)
 
     @staticmethod
