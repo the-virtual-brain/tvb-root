@@ -2,21 +2,14 @@
 Test for RateML module
 
 .. moduleauthor:: Aaron Perez Martin <a.perez.martin@fz-juelich.de>
+.. moduleauthor:: Michiel van der Vlag <m.van.der.vlag@fz-juelich.de>
 
 """
 
-import pytest, os, glob, itertools, numpy as np, re, argparse, subprocess, pickle, sys
-from tvb.tests.library.base_testcase import BaseTestCase
+import pytest, os, itertools, numpy as np, re, sys
 from tvb.rateML import XML2model
 from tvb.rateML.XML2model import RateML
-
-from pathlib import Path
-import tvb.simulator.models
-
-from lems.model.model import Model
-
-from importlib import reload
-# reload(tvb.rateML.run.model_driver)
+from tvb.simulator.models.base import Model
 
 
 xmlModelTesting = "kuramoto.xml"
@@ -150,12 +143,13 @@ class TestRateML():
 		_, svboundaries, _, _, _ = RateML("kuramoto", language="cuda").load_model()
 		assert svboundaries
 
-	# @pytest.mark.slow
-	# @pytest.mark.parametrize('model_name, language', itertools.product(["kuramoto"], ["cuda"]))
-	# def test_prep_model_noise(self, model_name, language):
-	#     # cuda only
-	#     _, _, _, noise, nsig = RateML(model_name, language=language).load_model()
-	#     assert noise and nsig
+	@pytest.mark.slow
+	def test_prep_model_noise(self):
+		# works for xml models which have noise enabled and nsig defined.
+		# cuda only
+		_, _, _, noise, nsig = RateML('kuramoto', 'cuda').load_model()
+		assert noise
+		assert nsig
 
 	@pytest.mark.slow
 	def test_prep_model_coupling(self):
@@ -166,8 +160,7 @@ class TestRateML():
 	@pytest.mark.slow
 	def test_time_serie(self):
 		driver = setup_namespace('oscillator')
-		driver.args.n_time = 100
-		driver.args.verbose = True
+		driver.args.n_time = 150
 		tavg0 = driver.run_simulation()
 		assert np.allclose(driver.compare_with_ref(tavg0), 1, 1e-6, 1e-6)
 
@@ -209,34 +202,65 @@ class TestRateML():
 	# ----------------
 	@pytest.mark.slow
 	def test_simulation_cuda_model_osc(self):
+		# simulate with different properties to check if output shape is related
 
 		driver = setup_namespace('oscillator')
 		driver.args.n_time = 4
+		driver.exposures = 2
+		driver.n_regions = 68
+		driver.n_work_items = 8
 		tavg_data = driver.run_simulation()
 
 		# a = n_steps, b = n_expos, c = n_regions, d = n_workitems
 		a, b, c, d = tavg_data.shape
-		assert (a, b, c, d) == (4, 2, 68, 16)
+		assert (a, b, c, d) == (4, 2, 68, 8)
 
 	@pytest.mark.slow
 	def test_simulation_cuda_model_kur(self):
+		# simulate with different properties to check if output shape is related
 
 		driver = setup_namespace('kuramoto')
 		driver.args.n_time = 8
+		driver.exposures = 1
 		driver.args.n_regions = 76
+		driver.n_work_items = 12
 		tavg_data = driver.run_simulation()
 
 		# a = n_steps, b = n_expos, c = n_regions, d = n_workitems
 		a, b, c, d = tavg_data.shape
-		assert (a, b, c, d) == (8, 2, 76, 16)
+		assert (a, b, c, d) == (8, 1, 76, 12)
 
 	@pytest.mark.slow
 	def test_simulation_cuda_model_epi(self):
+		# simulate with different properties to check if output shape is related
+
 		driver = setup_namespace('epileptor')
-		driver.args.n_time = 7
+		driver.args.n_time = 12
+		driver.exposures = 6
+		driver.args.n_regions = 96
+		driver.n_work_items = 18
 		tavg_data = driver.run_simulation()
 
 		# a = n_steps, b = n_expos, c = n_regions, d = n_workitems
 		a, b, c, d = tavg_data.shape
-		assert (a, b, c, d) == (7, 2, 68, 16)
+		assert (a, b, c, d) == (12, 6, 96, 18)
+
+	def test_load_model(self):
+		name = 'epileptor'
+		model, _, _, _, _ = RateML(name).load_model()
+		assert model is not None
+
+	def test_render_model(self):
+		name = 'epileptor'
+		model_str, _ = RateML(name).render()
+		assert '_numba_dfun_EpileptorT' in model_str
+
+	def test_eval_model_str(self):
+		filename = 'epileptor'
+		classname = 'EpileptorT'
+		module = {}
+		exec(RateML(filename).render()[0], module)
+		assert issubclass(module[classname], Model)
+		model = module[classname]()
+		assert isinstance(model, Model)
 

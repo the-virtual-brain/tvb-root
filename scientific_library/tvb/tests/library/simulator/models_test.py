@@ -342,25 +342,3 @@ class TestModels(BaseTestCase):
 
         model = models.DumontGutkin()
         self._validate_initialization(model, 8)
-
-
-class TestDSLModels(BaseTestCase):
-
-    def test_load_model(self):
-        name = 'epileptor'
-        model, _, _, _, _ = RateML(name).load_model()
-        assert model is not None
-
-    def test_render_model(self):
-        name = 'epileptor'
-        model_str = RateML(name).render_model()
-        assert '_numba_dfun_EpileptorT' in model_str
-
-    def test_eval_model_str(self):
-        filename = 'epileptor'
-        classname = 'EpileptorT'
-        module = {}
-        exec(RateML(filename).render_model(), module)
-        assert issubclass(module[classname], Model)
-        model = module[classname]()
-        assert isinstance(model, Model)

@@ -1,4 +1,4 @@
-name: gputests
+name: rateml_tests
 on: [push]
 jobs:
 
@@ -8,13 +8,8 @@ jobs:
 
       - name: nvidia-smi test
         run: nvidia-smi
-
       - name: pycuda test
         run: python -c "import pycuda.autoinit; print('yes')"
-
-      - name: pwd
-        run: pwd
-
 
   gputest:
     runs-on: self-hosted
@@ -28,6 +23,7 @@ jobs:
         run: pip install pylems
       - name: run pytest
         run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py
+
 
 #name: docker-based library testing
 #on: [push]
