@@ -2,26 +2,27 @@ pipeline {
     agent any
 
     environment{
-        FULL_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-migrate'
+        FULL_SQLITE_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-migrate-sqlite'
+        FULL_POSTGRES_DOCKER_IMAGE_NAME = 'docker-repository.codemart.ro/tvb-migrate-postgres'
         LATEST_TAG = 'latest'
     }
 
     stages {
-        stage ('Build docker image') {
+        stage ('Build sqlite docker image') {
             steps {
                 script {
                     LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
-                    def dockerImage = docker.build("${FULL_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-migrate tvb_build/docker")
+                    def dockerImage = docker.build("${FULL_SQLITE_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-migrate-sqlite tvb_build/docker")
                     dockerImage.push('${LATEST_TAG}')
                 }
             }
         }
 
-        stage ('Test Migration'){
+        stage ('Test Migration for Sqlite'){
             agent {
                 docker {
                     alwaysPull true
-                    image '${FULL_DOCKER_IMAGE_NAME}'
+                    image '${FULL_SQLITE_DOCKER_IMAGE_NAME}'
                 }
             }
             steps {
@@ -37,6 +38,44 @@ pipeline {
                     }catch(Exception e){
                         archiveArtifacts artifacts: 'logs/*', onlyIfSuccessful: false
                         exit -1
+                    }
+                }
+            }
+        }
+
+        stage ('Build postgres docker image') {
+            steps {
+                script {
+                    LAST_SHA = sh (script: "curl -s 'https://api.github.com/repos/the-virtual-brain/tvb-root/commits' | grep sha | head -1 | tr '\"' '_'", returnStdout: true).trim()
+                    def dockerImage = docker.build("${FULL_POSTGRES_DOCKER_IMAGE_NAME}", "--build-arg LAST_SHA='${LAST_SHA}' -f tvb_build/docker/Dockerfile-migrate-postgres tvb_build/docker")
+                    dockerImage.push('${LATEST_TAG}')
+                }
+            }
+        }
+
+        stage('Test Migration for Postgres'){
+            agent{
+                docker{
+                    alwaysPull true
+                    image '${FULL_POSTGRES_DOCKER_IMAGE_NAME}'
+                }
+            }
+            steps{
+                script{
+                    try{
+                        sh '''#!/bin/bash
+                            source activate tvb-run
+                            cd tvb_build
+                            bash install_full_tvb.sh
+                            service postgresql start
+                            createdb -U postgres tvb
+                            pg_restore -U postgres -d tvb /home/tvb_user/TVB_STORAGE/tvb-backup
+                            cd ../tvb_bin
+                            python -m run_migration
+                        '''
+                    }catch(Exception e){
+                        archiveArtifacts artifacts: 'logs/*', onlyIfSuccesful: false
+                        exit - 1
                     }
                 }
             }
