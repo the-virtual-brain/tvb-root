@@ -52,19 +52,10 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=1)
-
-        # check initial conditions
-        np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,0])
-        np.testing.assert_allclose(sim.current_state[1,:,0], V_pdq[:,0])
-
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1)
         (raw_t, raw_d), = sim.run(simulation_length=1)
-        r_tvb, V_tvb = raw_d[0,:,:,0]
-        r_pdq = r_pdq[:,1] # we include initial state, TVB doesn't
-        V_pdq = V_pdq[:,1]
 
-        np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-5)
-        np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-5)
+        np.testing.assert_allclose(raw_d[0,:], pdq_d[0,:], rtol=1e-5)
 
 
     def test_local_stochastic(self):
@@ -102,18 +93,13 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=200)
-
-        # check initial conditions
-        np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,0])
-        np.testing.assert_allclose(sim.current_state[1,:,0], V_pdq[:,0])
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=200)
 
         (raw_t, raw_d), = sim.run(simulation_length=1)
         (raw_t_det, raw_d_det), = sim_det.run(simulation_length=1)
         r_tvb, V_tvb = raw_d[0,:,:,0]
         r_tvb_det, V_tvb_det = raw_d_det[0,:,:,0]
-        r_pdq = r_pdq[:,1] # we include initial state, TVB doesn't
-        V_pdq = V_pdq[:,1]
+        r_pdq, V_pdq = pdq_d[0,:,:,0] 
 
         np.testing.assert_allclose(
                 np.mean(r_tvb_det - r_tvb),
@@ -158,12 +144,8 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=1)
-
-        np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,0])
-        np.testing.assert_allclose(sim.current_state[1,:,0], V_pdq[:,0])
-        r_pdq = r_pdq[:,1] # we include initial state, TVB doesn't
-        V_pdq = V_pdq[:,1]
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1)
+        r_pdq, V_pdq = pdq_d[0,:,:,0] 
 
         (raw_t, raw_d), = sim.run(simulation_length=1)
         r_tvb, V_tvb = raw_d[0,:,:,0]
@@ -193,12 +175,8 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=1)
-
-        np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,sim.connectivity.horizon-1])
-        np.testing.assert_allclose(sim.current_state[1,:,0], V_pdq[:,sim.connectivity.horizon-1])
-        r_pdq = r_pdq[:,-1] # we include initial state, TVB doesn't
-        V_pdq = V_pdq[:,-1]
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1)
+        r_pdq, V_pdq = pdq_d[0,:,:,0] 
 
         (raw_t, raw_d), = sim.run(simulation_length=1)
         r_tvb, V_tvb = raw_d[0,:,:,0]
@@ -228,17 +206,24 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=2000)
-        r_pdq_chu, V_pdq_chu = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=500)
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=2000)
+        r_pdq = pdq_d[:,0,:,0]
+        V_pdq = pdq_d[:,1,:,0]
+        (pdq_chu_t, pdq_chu_d), = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=500)
+        r_pdq_chu = pdq_d[:,0,:,0]
+        V_pdq_chu = pdq_d[:,1,:,0]
 
         (raw_t, raw_d), = sim.run(simulation_length=20)
         r_tvb = raw_d[:,0,:,0]
         V_tvb = raw_d[:,1,:,0]
 
-        np.testing.assert_allclose(r_tvb, r_pdq.T, rtol=1e-3)
-        np.testing.assert_allclose(V_tvb, V_pdq.T, rtol=1e-3)
+        np.testing.assert_allclose(pdq_t,raw_t)
+        np.testing.assert_allclose(pdq_chu_t,raw_t)
+
+        np.testing.assert_allclose(r_pdq, r_tvb, rtol=1e-3)
+        np.testing.assert_allclose(V_pdq, V_tvb, rtol=1e-3)
         # think a bit about the tolerances...  TVB stores in floats, so that 
         # can accumulate. Might be a good idea to test agains history with 
         # double typed buffer.
-        np.testing.assert_allclose(r_tvb, r_pdq_chu.T, rtol=1e-3)
-        np.testing.assert_allclose(V_tvb, V_pdq_chu.T, rtol=1e-3)
+        np.testing.assert_allclose(r_pdq_chu, r_tvb, rtol=1e-3)
+        np.testing.assert_allclose(V_pdq_chu, V_tvb, rtol=1e-3)

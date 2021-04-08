@@ -80,18 +80,28 @@ class NbMPRBackend(MakoUtilMix):
         fns = [getattr(mod,n) for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
 
-    def run_sim(self, sim, nstep=None, sim_time=None, chunksize=100000):
-        assert nstep is not None or sim_time is not None
-        # TODO sim time to nstep
+    def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000):
+        assert nstep is not None or simulation_length is not None or sim.simulation_length is not None
+        if nstep is None:
+            if simulation_length is None:
+                simulation_length = sim.simulation_length
+            nstep = int(np.ceil(simulation_length/sim.integrator.dt))
 
         assert len(sim.monitors) == 1, "Configure with exatly one monitor."
         if isinstance(sim.monitors[0], monitors.Raw):
             r, V = self._run_sim_plain(sim, nstep)
+            time = np.arange(r.shape[1]) * sim.integrator.dt
         elif isinstance(sim.monitors[0], monitors.TemporalAverage):
             r, V = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize)
+            T = sim.monitors[0].period
+            time = np.arange(r.shape[1]) * T + 0.5 * T
         else:
             raise NotImplementedError("Only Raw or TemporalAverage monitors supported.")
-        return r, V  
+        data = np.concatenate(
+                (r.T[:,np.newaxis,:, np.newaxis], V.T[:,np.newaxis,:, np.newaxis]),
+                axis=1
+        )
+        return (time, data),   
 
     def _run_sim_plain(self, sim, nstep=None):
         template = '<%include file="nb-montbrio.py.mako"/>'
@@ -125,7 +135,7 @@ class NbMPRBackend(MakoUtilMix):
             tau = sim.model.tau.item(),
             J = sim.model.J.item(),       # end of model params
         )
-        return r, V
+        return r[:,horizon:], V[:,horizon:]
 
     def _time_average(self, ts, istep):
         N, T = ts.shape
