@@ -34,6 +34,7 @@
 """
 
 from tvb.core.entities.storage import dao
+from tvb.core.services.cache_service import cache
 from tvb.storage.storage_interface import StorageInterface
 
 
@@ -42,9 +43,10 @@ class ABCRemover(object):
     def __init__(self, handled_datatype):
         self.storage_interface = StorageInterface()
         self.handled_datatype = handled_datatype
-        
+
     def remove_datatype(self, skip_validation=False):
         """
         Perform basic operation, should overwrite in specific implementations.
         """
         dao.remove_entity(self.handled_datatype.__class__, self.handled_datatype.id)
+        cache.clear_cache()

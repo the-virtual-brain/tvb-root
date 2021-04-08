@@ -599,6 +599,7 @@ class ProjectService:
             self.storage_interface.remove_operation_data(operation.project.name, operation_id)
             self.storage_interface.push_folder_to_sync(operation.project.name)
             self.logger.debug("Finished deleting operation %s " % operation)
+            cache.clear_cache()
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
 
@@ -666,6 +667,7 @@ class ProjectService:
         self.storage_interface.push_folder_to_sync(project.name)
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
+        cache.clear_cache()
 
     def _remove_operation_group(self, operation_group_id, project_id, skip_validation, operations_set):
         metrics_groups = dao.get_generic_entity(DataTypeGroup, operation_group_id,

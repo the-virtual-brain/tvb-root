@@ -77,5 +77,13 @@ class CacheService:
     def cached_operation_results(self, op_id):
         return dao.get_results_for_operation(op_id)
 
+    def clear_cache(self):
+        self.cached_operation_group.cache_clear()
+        self.cached_dt_group.cache_clear()
+        self.cached_visualizers_for_group.cache_clear()
+        self.cached_algorithm.cache_clear()
+        self.cached_user.cache_clear()
+        self.cached_operation_results.cache_clear()
+
 
 cache = CacheService()
