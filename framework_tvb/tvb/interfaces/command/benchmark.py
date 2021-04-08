@@ -35,7 +35,7 @@ Some standardized simulations are run and a report is generated in the console o
 
 from os import path
 from numba import jit
-import memory_profiler
+import cProfile, pstats
 
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -104,7 +104,7 @@ class Bench(object):
         self.sim_lengths = sim_lengths
         self.running_times = []
         self.coupling = coupling
-    @profile
+        
     def run(self, project_id):
         for model in self.models:
             for conn in self.connectivities:
@@ -123,7 +123,7 @@ class Bench(object):
 
                             operation = _fire_simulation(project_id, simulator_vm)
                             self.running_times.append(operation.completion_date - operation.start_date)
-    @profile
+    
     def report(self):
         i = 0
         print(HEADER)
@@ -175,3 +175,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+    profiler = cProfile.Profile()
+    profiler.enable()
+    main()
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats()
