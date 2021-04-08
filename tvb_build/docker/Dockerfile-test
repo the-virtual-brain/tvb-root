@@ -32,6 +32,7 @@ RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
 RUN /opt/conda/envs/tvb-run/bin/pip install typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN /opt/conda/envs/tvb-run/bin/pip install lockfile
 RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
+RUN /opt/conda/envs/tvb-run/bin/pip install autopep8
 
 # Jupyther notebook configurations: set password
 # tvb42
