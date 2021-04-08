@@ -51,6 +51,7 @@ from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
+from tvb.core.services.cache_service import cache
 from tvb.core.services.exceptions import OperationException
 from tvb.storage.storage_interface import StorageInterface
 
@@ -435,4 +436,5 @@ class HPCSchedulerClient(BackendClient):
             while not operation_thread.stopped():
                 LOGGER.info("Thread for operation {} is stopping".format(operation_id))
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
+        cache.clear_cache()
         return True
