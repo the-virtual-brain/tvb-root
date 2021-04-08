@@ -35,6 +35,7 @@
 
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
+from tvb.core.services.cache_service import cache
 
 
 class ABCRemover(object):
@@ -49,3 +50,4 @@ class ABCRemover(object):
         Perform basic operation, should overwrite in specific implementations.
         """
         dao.remove_entity(self.handled_datatype.__class__, self.handled_datatype.id)
+        cache.clear_cache()
