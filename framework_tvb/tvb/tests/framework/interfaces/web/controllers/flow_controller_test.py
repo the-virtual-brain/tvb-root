@@ -30,11 +30,16 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
+from datetime import time
+from time import sleep
 
 import cherrypy
+from tvb.basic.profile import TvbProfile
 
 from tvb.config.algorithm_categories import CreateAlgorithmCategoryConfig
+from tvb.core.entities.model.model_operation import Operation, STATUS_PENDING, STATUS_FINISHED
 from tvb.core.entities.storage import dao
+from tvb.core.services.backend_clients.standalone_client import LOCKS_QUEUE, StandAloneClient
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
@@ -178,6 +183,26 @@ class TestFlowController(BaseControllersTest):
         self.flow_c.cancel_or_remove_operation(operation.id, 0, True)
         operation = dao.try_get_operation_by_id(operation.id)
         assert operation is None
+
+    def test_launch_multiple_operations(self, simulation_launch):
+        operations = []
+        for i in range(LOCKS_QUEUE.qsize() + 1):
+            operations.append(simulation_launch(self.test_user, self.test_project, 1000))
+        sleep(10)
+        for i, operation in enumerate(operations):
+            op = dao.get_operation_by_id(operation.id)
+            if i == len(operations) - 1:
+                assert op.status == STATUS_PENDING
+            else:
+                assert op.status == STATUS_STARTED
+        while dao.get_operation_by_id(operations[0].id).status != STATUS_FINISHED:
+            pass
+
+        StandAloneClient.process_queued_operations()
+        sleep(10)
+        op = operations[len(operations) -1]
+        op = dao.get_operation_by_id(op.id)
+        assert op.status == STATUS_STARTED
 
     def test_remove_burst_operation_group(self, simulation_launch):
         first_op = simulation_launch(self.test_user, self.test_project, 1000, True)
