@@ -42,7 +42,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_CANCELED
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.utils import parse_json_parameters

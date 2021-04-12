@@ -44,7 +44,7 @@ from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceU
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
 from tvb.datatypes.surfaces import CORTICAL, EEG_CAP, Surface

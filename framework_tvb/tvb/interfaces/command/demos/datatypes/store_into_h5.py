@@ -34,7 +34,7 @@ Demo script on how to use tvb-framework default read/write capabilities
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.datatypes.connectivity import Connectivity
 

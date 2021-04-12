@@ -47,7 +47,7 @@ from tvb.core.adapters.arguments_serialisation import parse_slice, slice_str
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, StrField
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 
 

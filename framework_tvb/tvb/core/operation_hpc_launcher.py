@@ -39,7 +39,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.datatypes_registry import populate_datatypes_registry
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINISHED, STATUS_ERROR
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.encryption_handler import EncryptionHandler

@@ -50,7 +50,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Float, Int
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import SelectField, FloatField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.datatypes.connectivity import Connectivity

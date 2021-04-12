@@ -43,7 +43,7 @@ from tvb.analyzers.fmri_balloon import BalloonModel
 from tvb.basic.neotraits.api import Float, Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.db import prepare_array_shape_meta
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField, StrField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr

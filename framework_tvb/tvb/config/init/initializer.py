@@ -49,7 +49,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.constants import ELEM_INPUTS, ATT_TYPE, ATT_NAME
 from tvb.core.adapters.exceptions import XmlParserException
 from tvb.core.code_versions.code_update_manager import CodeUpdateManager
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+from tvb.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR
 from tvb.core.entities.model.model_workflow import Portlet

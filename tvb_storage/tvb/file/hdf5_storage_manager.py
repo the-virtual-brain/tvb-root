@@ -39,17 +39,17 @@ import copy
 import os
 import threading
 from datetime import datetime
-
 import h5py as hdf5
 import numpy as numpy
+
 import tvb.core.utils as utils
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataFileException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.exceptions import FileStructureException, MissingDataSetException
+from tvb.file.exceptions import IncompatibleFileManagerException, MissingDataFileException
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.transient.structure_entities import GenericMetaData
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.file.data_encryption_handler import encryption_handler
 
 # Create logger for this module
 LOG = get_logger(__name__)

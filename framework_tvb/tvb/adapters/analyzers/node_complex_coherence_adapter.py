@@ -44,7 +44,7 @@ from tvb.analyzers.node_complex_coherence import calculate_complex_cross_coheren
 from tvb.basic.neotraits.api import Attr, Int, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries

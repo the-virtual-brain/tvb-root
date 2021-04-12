@@ -40,7 +40,7 @@ import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.core.entities.file.files_helper import TvbZip, FilesHelper
+from tvb.file.files_helper import TvbZip, FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.algorithm_service import AlgorithmService

@@ -44,7 +44,7 @@ from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import Covariance

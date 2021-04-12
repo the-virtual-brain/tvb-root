@@ -37,7 +37,7 @@ import tvb_data.regionMapping
 from os import path
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
+from tvb.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import initialize_storage

@@ -32,8 +32,8 @@ import os
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import ViewModelH5
+from tvb.neocom import h5
+from tvb.neotraits.h5 import ViewModelH5
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.operation_service import OperationService

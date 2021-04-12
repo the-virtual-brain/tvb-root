@@ -51,7 +51,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS, ALGORITHMS
 from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
@@ -59,8 +59,8 @@ from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAME
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, STATUS_ERROR, Operation
 from tvb.core.entities.storage import dao, transactional
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import ViewModelH5
+from tvb.neocom import h5
+from tvb.neotraits.h5 import ViewModelH5
 from tvb.core.services.backend_client_factory import BackendClientFactory
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException

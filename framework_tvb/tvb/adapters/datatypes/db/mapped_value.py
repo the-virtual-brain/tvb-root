@@ -38,7 +38,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure
+from tvb.file.simulator.datatype_measure_h5 import DatatypeMeasure
 from tvb.core.entities.model.model_datatype import DataType
 
 

@@ -32,7 +32,7 @@ import os
 import pytest
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.utils import no_matlab
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \

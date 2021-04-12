@@ -30,11 +30,11 @@
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_noise_dict
 from tvb.basic.neotraits.api import Attr
-from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
+from tvb.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
     EulerDeterministicViewModel, EulerStochasticViewModel, RungeKutta4thOrderDeterministicViewModel, IdentityViewModel, \
     VODEViewModel, VODEStochasticViewModel, Dopri5ViewModel, Dopri5StochasticViewModel, Dop853ViewModel, \
     Dop853StochasticViewModel, IntegratorViewModel, NoiseViewModel
-from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
+from tvb.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.neotraits.forms import Form, SelectField, FloatField
 
 

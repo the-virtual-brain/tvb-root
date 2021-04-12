@@ -30,7 +30,7 @@
 
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
-from tvb.core.neocom.h5 import h5_file_for_index
+from tvb.neocom.h5 import h5_file_for_index
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto, DataTypeDto
 

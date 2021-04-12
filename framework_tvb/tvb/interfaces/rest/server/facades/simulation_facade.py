@@ -31,7 +31,7 @@ import os
 
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter
 from tvb.basic.logger.builder import get_logger
-from tvb.core.neocom.h5 import DirLoader
+from tvb.neocom.h5 import DirLoader
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService

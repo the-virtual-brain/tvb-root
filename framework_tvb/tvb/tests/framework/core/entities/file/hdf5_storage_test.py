@@ -37,10 +37,10 @@ import os
 import numpy
 import shutil
 import pytest
-import tvb.core.entities.file.hdf5_storage_manager as hdf5
+import tvb.file.hdf5_storage_manager as hdf5
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
+from tvb.file.exceptions import FileStructureException, MissingDataSetException
+from tvb.file.exceptions import IncompatibleFileManagerException
 
 # Some constants used by tests
 STORAGE_FILE_NAME = "test_data.h5"

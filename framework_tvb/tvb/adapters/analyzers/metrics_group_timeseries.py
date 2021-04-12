@@ -45,9 +45,9 @@ from tvb.basic.neotraits.api import Int, Float
 from tvb.basic.neotraits.api import List
 from tvb.config import ALGORITHMS
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure
+from tvb.file.simulator.datatype_measure_h5 import DatatypeMeasure
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, MultiSelectField, FloatField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries

@@ -29,7 +29,7 @@
 #
 
 from tvb.basic.neotraits.api import Attr, HasTraits
-from tvb.core.neotraits.h5 import H5File, Scalar
+from tvb.neotraits.h5 import H5File, Scalar
 
 
 class ValueWrapper(HasTraits):

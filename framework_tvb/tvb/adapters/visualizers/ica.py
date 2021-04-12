@@ -41,7 +41,7 @@ from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.arguments_serialisation import slice_str
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.mode_decompositions import IndependentComponents

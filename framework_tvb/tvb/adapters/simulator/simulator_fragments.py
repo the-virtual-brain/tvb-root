@@ -39,11 +39,11 @@ from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, ge
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict, get_integrator_name_list
 from tvb.basic.neotraits.api import Attr, Range, List, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModel
+from tvb.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModel
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.transient.range_parameter import RangeParameter
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import ArrayField, SelectField, MultiSelectField, \
     TraitDataTypeSelectField, HiddenField, FloatField, StrField
 from tvb.core.neotraits.view_model import Str

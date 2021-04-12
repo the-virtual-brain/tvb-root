@@ -28,10 +28,15 @@
 #
 #
 
+"""
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+"""
+
 import uuid
 from tvb.basic.neotraits.api import Attr
-from tvb.core.entities.file.exceptions import MissingDataSetException
-from tvb.core.neotraits.h5 import H5File, Scalar, Reference
+from tvb.file.exceptions import MissingDataSetException
+from tvb.neotraits.h5 import H5File, Scalar, Reference
 from tvb.core.utils import date2string, string2date
 
 

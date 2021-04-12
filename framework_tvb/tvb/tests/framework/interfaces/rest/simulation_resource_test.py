@@ -33,10 +33,10 @@ from io import BytesIO
 
 import flask
 import pytest
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.file.files_helper import FilesHelper
+from tvb.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_operation import Operation
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.commons.strings import RequestFileKey

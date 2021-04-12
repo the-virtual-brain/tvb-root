@@ -33,7 +33,7 @@ import uuid
 from collections import namedtuple
 import numpy
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neocom.h5 import REGISTRY
+from tvb.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
 from tvb.basic.neotraits.api import List, Attr
 # TODO: remove dependency

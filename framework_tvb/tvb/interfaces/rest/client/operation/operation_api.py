@@ -32,8 +32,8 @@ import os
 
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import ViewModelH5
+from tvb.neocom import h5
+from tvb.neotraits.h5 import ViewModelH5
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder

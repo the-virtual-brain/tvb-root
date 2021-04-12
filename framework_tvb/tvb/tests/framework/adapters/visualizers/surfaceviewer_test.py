@@ -38,7 +38,7 @@ import tvb_data.regionMapping as demo_data
 from uuid import UUID
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory

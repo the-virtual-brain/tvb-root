@@ -47,7 +47,7 @@ from tvb.analyzers.fft import compute_fast_fourier_transform, SUPPORTED_WINDOWIN
 from tvb.basic.neotraits.api import Attr, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField, FloatField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries

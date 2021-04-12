@@ -40,7 +40,7 @@ from uuid import UUID
 from six import add_metaclass
 from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel
 
 LOCK_CREATE_FIGURE = Lock()

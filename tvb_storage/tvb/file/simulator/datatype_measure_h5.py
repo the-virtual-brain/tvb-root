@@ -28,8 +28,13 @@
 #
 #
 
+"""
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Adrian Dordea <adrian.dordea@codemart.ro>
+"""
+
 from tvb.basic.neotraits.api import HasTraits, Attr
-from tvb.core.neotraits.h5 import Json, Reference, H5File
+from tvb.neotraits.h5 import Json, Reference, H5File
 from tvb.datatypes.time_series import TimeSeries
 
 

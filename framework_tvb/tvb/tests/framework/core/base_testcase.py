@@ -41,7 +41,7 @@ from functools import wraps
 from types import FunctionType
 from tvb.config.init.model_manager import reset_database
 from tvb.config.init.initializer import initialize
-from tvb.core.neocom.h5 import REGISTRY
+from tvb.neocom.h5 import REGISTRY
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
@@ -79,9 +79,9 @@ if "TEST_INITIALIZATION_DONE" not in globals():
     init_test_env()
     TEST_INITIALIZATION_DONE = True
 
-from tvb.adapters.exporters.export_manager import ExportManager
+from tvb_storage import ExportManager
 from tvb.core.services.operation_service import OperationService
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb_storage import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities.model.model_project import *

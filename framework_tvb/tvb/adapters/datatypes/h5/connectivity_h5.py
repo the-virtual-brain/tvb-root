@@ -29,7 +29,7 @@
 #
 
 from tvb.basic.neotraits.api import NArray
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Json, STORE_STRING, MEMORY_STRING
+from tvb.neotraits.h5 import H5File, DataSet, Scalar, Json, STORE_STRING, MEMORY_STRING
 from tvb.datatypes.connectivity import Connectivity
 
 

@@ -44,7 +44,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
 

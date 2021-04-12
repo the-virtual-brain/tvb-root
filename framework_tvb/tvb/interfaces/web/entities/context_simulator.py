@@ -32,7 +32,7 @@
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.interfaces.web.controllers import common
 

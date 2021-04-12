@@ -37,7 +37,7 @@ import json
 
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.logger.builder import get_logger
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced

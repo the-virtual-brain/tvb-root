@@ -54,10 +54,10 @@ from tvb.adapters.simulator.simulator_fragments import *
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException, InvalidParameterException
-from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.file.simulator.simulation_history_h5 import SimulationHistory
+from tvb.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import FloatField, SelectField
 from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator

@@ -37,7 +37,7 @@ import json
 from tvb.basic.neotraits.api import Int
 from tvb.core.adapters.arguments_serialisation import *
 from tvb.core.utils import prepare_time_slice
-from tvb.core.neotraits.h5 import H5File, Scalar, DataSet, Reference, Json
+from tvb.neotraits.h5 import H5File, Scalar, DataSet, Reference, Json
 from tvb.datatypes.time_series import *
 
 NO_OF_DEFAULT_SELECTED_CHANNELS = 20

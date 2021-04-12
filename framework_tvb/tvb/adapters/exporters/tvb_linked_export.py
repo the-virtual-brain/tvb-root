@@ -36,10 +36,10 @@ import os
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.core.entities import load
-from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
+from tvb.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
+from tvb.neocom import h5
+from tvb.neotraits.h5 import H5File
 
 
 class TVBLinkedExporter(ABCExporter):

@@ -41,11 +41,11 @@ from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDir
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService

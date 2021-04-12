@@ -36,9 +36,9 @@ from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
-from tvb.core.neotraits.h5 import MEMORY_STRING
+from tvb.neotraits.h5 import MEMORY_STRING
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal

@@ -38,12 +38,12 @@ import zipfile
 
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.file.files_helper import FilesHelper
+from tvb.file.files_update_manager import FilesUpdateManager
+from tvb.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str

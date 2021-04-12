@@ -42,7 +42,7 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
 from tvb.datatypes.surfaces import make_surface, center_vertices
 from tvb.core.neotraits.forms import BoolField, TraitUploadField, SelectField
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 
 
 class ObjSurfaceImporterModel(UploaderViewModel):

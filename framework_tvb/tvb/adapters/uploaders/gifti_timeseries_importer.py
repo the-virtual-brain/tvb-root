@@ -42,7 +42,7 @@ from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesSurfaceH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesSurfaceIndex
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.surfaces import Surface

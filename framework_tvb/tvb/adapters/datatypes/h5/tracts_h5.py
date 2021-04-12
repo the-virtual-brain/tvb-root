@@ -28,7 +28,7 @@
 #
 #
 import numpy
-from tvb.core.neotraits.h5 import H5File, DataSet, Reference
+from tvb.neotraits.h5 import H5File, DataSet, Reference
 from tvb.datatypes.tracts import Tracts
 
 

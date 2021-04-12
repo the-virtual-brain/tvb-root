@@ -36,12 +36,12 @@ import os
 
 import pytest
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import FileStructureException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader
+from tvb.file.exceptions import FileStructureException
+from tvb.file.files_helper import FilesHelper
+from tvb.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.model import model_project, model_operation
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -50,7 +50,7 @@ root_storage = TvbProfile.current.TVB_STORAGE
 
 class TestFilesHelper(TransactionalTestCase):
     """
-    This class contains tests for the tvb.core.entities.file.files_helper module.
+    This class contains tests for the tvb.file.files_helper module.
     """
     PROJECT_NAME = "test_proj"
 

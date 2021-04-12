@@ -30,7 +30,7 @@
 
 import numpy
 from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
-from tvb.core.neotraits.h5 import H5File, Reference, DataSet, Scalar
+from tvb.neotraits.h5 import H5File, Reference, DataSet, Scalar
 
 
 class PrincipalComponentsH5(H5File):

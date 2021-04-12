@@ -40,7 +40,7 @@ from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str

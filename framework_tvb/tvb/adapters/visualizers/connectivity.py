@@ -48,7 +48,7 @@ from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.datatypes.connectivity import Connectivity

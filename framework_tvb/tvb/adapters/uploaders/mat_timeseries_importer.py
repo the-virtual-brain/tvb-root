@@ -47,7 +47,7 @@ from tvb.core.entities.storage import transactional, dao
 from tvb.core.adapters.arguments_serialisation import parse_slice
 from tvb.core.neotraits.forms import TraitUploadField, StrField, BoolField, IntField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeriesEEG
 

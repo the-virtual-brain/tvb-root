@@ -44,7 +44,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.command.lab import *
 

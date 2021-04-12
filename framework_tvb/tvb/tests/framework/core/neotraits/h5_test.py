@@ -31,7 +31,7 @@
 import numpy
 from tvb.basic.neotraits.api import Attr, NArray
 from .data import FooDatatype, BarDatatype, BazDataType, PropsDataType
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
+from tvb.neotraits.h5 import H5File, DataSet, Scalar, Reference
 
 
 

@@ -30,12 +30,12 @@
 import os
 
 import numpy
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel, HeunStochasticViewModel, \
+from tvb.file.files_helper import FilesHelper
+from tvb.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel, HeunStochasticViewModel, \
     TemporalAverageViewModel
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import load, store, load_from_dir, store_to_dir
+from tvb.neocom import h5
+from tvb.neocom.h5 import load, store, load_from_dir, store_to_dir
 from tvb.datatypes.projections import ProjectionSurfaceEEG
 
 

@@ -40,7 +40,7 @@ from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.datatypes.sensors import SensorTypes
 from tvb.datatypes.surfaces import EEG_CAP
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase

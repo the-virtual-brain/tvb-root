@@ -54,15 +54,15 @@ from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
+from tvb.file.files_helper import FilesHelper
+from tvb.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED, Operation, Algorithm
 from tvb.core.entities.model.model_project import User, Project
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.connectivity import Connectivity

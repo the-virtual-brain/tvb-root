@@ -40,7 +40,7 @@ A visualizer for cross correlation.
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.temporal_correlations import CrossCorrelation

@@ -44,12 +44,12 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import command_initializer
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.file.files_helper import FilesHelper
+from tvb.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService

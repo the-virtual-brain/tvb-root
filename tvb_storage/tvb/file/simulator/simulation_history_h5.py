@@ -28,8 +28,12 @@
 #
 #
 
+"""
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+"""
+
 from tvb.basic.neotraits.api import HasTraits, NArray, Int, List, Attr, Float
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Json
+from tvb.neotraits.h5 import H5File, DataSet, Scalar, Json
 from tvb.simulator.integrators import IntegratorStochastic
 
 

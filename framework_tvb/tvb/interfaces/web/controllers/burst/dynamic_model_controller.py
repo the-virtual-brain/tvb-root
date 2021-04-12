@@ -48,7 +48,7 @@ from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
+from tvb.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import StrField
 from tvb.core.neotraits.view_model import Str

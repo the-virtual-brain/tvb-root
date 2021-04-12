@@ -33,8 +33,8 @@ import json
 import os
 
 from tvb.basic.neotraits.api import HasTraits
-from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import REGISTRY, TVBLoader
+from tvb.neocom import h5
+from tvb.neocom.h5 import REGISTRY, TVBLoader
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.dtos import AlgorithmDto

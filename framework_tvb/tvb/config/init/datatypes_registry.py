@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.fcd import Fcd
@@ -46,14 +46,14 @@ from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion, TimeSeriesSu
 from tvb.datatypes.time_series import TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG
 from tvb.datatypes.tracts import Tracts
 from tvb.datatypes.volumes import Volume
-from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
+from tvb.file.simulator.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
 from tvb.adapters.datatypes.h5.annotation_h5 import ConnectivityAnnotationsH5, ConnectivityAnnotations
 from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
 from tvb.adapters.datatypes.h5.graph_h5 import ConnectivityMeasureH5, CorrelationCoefficientsH5, CovarianceH5
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapperH5, ValueWrapper
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5, DatatypeMeasure
+from tvb.file.simulator.datatype_measure_h5 import DatatypeMeasureH5, DatatypeMeasure
 from tvb.adapters.datatypes.h5.mode_decompositions_h5 import PrincipalComponentsH5, IndependentComponentsH5
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5, StimuliSurfaceH5
 from tvb.adapters.datatypes.h5.projections_h5 import ProjectionMatrixH5
@@ -93,7 +93,7 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesSEEGIndex
 from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 
-from tvb.core.neocom.h5 import REGISTRY
+from tvb.neocom.h5 import REGISTRY
 
 
 # an alternative approach is to make each h5file declare if it has a corresponding datatype

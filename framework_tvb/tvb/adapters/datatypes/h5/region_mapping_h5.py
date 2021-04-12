@@ -30,7 +30,7 @@
 
 from tvb.adapters.datatypes.h5.spectral_h5 import DataTypeMatrixH5
 from tvb.adapters.datatypes.h5.structural_h5 import VolumetricDataMixin
-from tvb.core.neotraits.h5 import H5File, DataSet, Reference
+from tvb.neotraits.h5 import H5File, DataSet, Reference
 from tvb.datatypes.region_mapping import RegionMapping, RegionVolumeMapping
 
 

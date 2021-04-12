@@ -34,7 +34,7 @@
 
 from copy import deepcopy
 from tvb.basic.logger.builder import get_logger
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.datatypes.surfaces import CorticalSurface
 
 KEY_EQUATION = "equation"

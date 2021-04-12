@@ -29,7 +29,7 @@
 #
 from tvb.basic.neotraits.api import NArray
 from tvb.datatypes.patterns import StimuliRegion, StimuliSurface
-from tvb.core.neotraits.h5 import H5File, Reference, DataSet, EquationScalar
+from tvb.neotraits.h5 import H5File, Reference, DataSet, EquationScalar
 
 
 class StimuliRegionH5(H5File):

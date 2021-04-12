@@ -40,16 +40,16 @@ Manager for the file storage version updates.
 import os
 from datetime import datetime
 
-import tvb.core.entities.file.file_update_scripts as file_update_scripts
+import tvb.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
-from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
+from tvb.file.files_helper import FilesHelper
+from tvb.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.h5 import H5File
+from tvb.neotraits.h5 import H5File
 from tvb.core.utils import string2date
 
 FILE_STORAGE_VALID = 'valid'

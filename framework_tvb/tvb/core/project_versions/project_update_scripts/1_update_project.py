@@ -37,8 +37,8 @@ When executed on a project already stored, an update in DB references might also
 
 import os
 import shutil
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
+from tvb.file.files_helper import FilesHelper
+from tvb.file.xml_metadata_handlers import XMLReader, XMLWriter
 
 
 def _rewrite_img_meta(pth, op_id):

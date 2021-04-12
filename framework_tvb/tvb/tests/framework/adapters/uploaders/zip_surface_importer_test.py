@@ -35,7 +35,7 @@
 import os
 
 import tvb_data.surfaceData
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory

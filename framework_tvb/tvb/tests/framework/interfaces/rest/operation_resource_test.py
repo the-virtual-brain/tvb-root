@@ -37,8 +37,8 @@ import pytest
 import tvb_data
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, SUPPORTED_WINDOWING_FUNCTIONS
 from tvb.basic.exceptions import TVBException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.neocom import h5
+from tvb.file.files_helper import FilesHelper
+from tvb.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.strings import Strings, RequestFileKey

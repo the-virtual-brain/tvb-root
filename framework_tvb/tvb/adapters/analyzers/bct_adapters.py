@@ -40,7 +40,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.core.utils import extract_matlab_doc_string

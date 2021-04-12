@@ -36,7 +36,7 @@ from tvb.adapters.visualizers.pearson_cross_correlation import PearsonCorrelatio
     PearsonCorrelationCoefficientVisualizerModel
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcdisplayer import URLGenerator
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.datatypes.graph import CorrelationCoefficients
 
 

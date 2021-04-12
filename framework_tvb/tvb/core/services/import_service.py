@@ -51,23 +51,23 @@ from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLA
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
-from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
-from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader
+from tvb.file.exceptions import FileStructureException, MissingDataSetException
+from tvb.file.exceptions import IncompatibleFileManagerException
+from tvb.file.files_helper import FilesHelper
+from tvb.file.files_update_manager import FilesUpdateManager
+from tvb.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED, STATUS_ERROR, \
     OperationGroup
 from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.db import HasTraitsIndex
-from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
-from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
+from tvb.file.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
 

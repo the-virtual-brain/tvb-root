@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar
+from tvb.neotraits.h5 import H5File, DataSet, Scalar
 from tvb.datatypes.volumes import Volume
 
 

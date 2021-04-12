@@ -40,11 +40,11 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Final
 from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
-from tvb.core.entities.file.exceptions import MissingDataSetException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.file.exceptions import MissingDataSetException
+from tvb.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
-from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
+from tvb.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
+from tvb.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import date2string, string2date
 from tvb.datatypes.equations import Equation

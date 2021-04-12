@@ -177,31 +177,31 @@ if flattened.
 Reference
 ---------
 
-.. autoclass:: tvb.core.neotraits.h5.H5File
+.. autoclass:: tvb.neotraits.h5.H5File
     :members:
     :undoc-members:
 
-.. autoclass:: tvb.core.neotraits.h5.DataSet
+.. autoclass:: tvb.neotraits.h5.DataSet
     :members: append, store, load
     :undoc-members:
     :inherited-members:
 
-.. autoclass:: tvb.core.neotraits.h5.Scalar
+.. autoclass:: tvb.neotraits.h5.Scalar
     :members:
     :undoc-members:
     :inherited-members:
 
-.. autoclass:: tvb.core.neotraits.h5.Reference
+.. autoclass:: tvb.neotraits.h5.Reference
     :members:
     :undoc-members:
     :inherited-members:
 
-.. autoclass:: tvb.core.neotraits.h5.Json
+.. autoclass:: tvb.neotraits.h5.Json
     :members:
     :undoc-members:
     :inherited-members:
 
-.. autoclass:: tvb.core.neotraits.h5.SparseMatrix
+.. autoclass:: tvb.neotraits.h5.SparseMatrix
     :members:
     :undoc-members:
     :inherited-members:

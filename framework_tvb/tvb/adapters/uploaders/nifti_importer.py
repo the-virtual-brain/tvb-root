@@ -51,7 +51,7 @@ from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.storage import transactional
 from tvb.core.neotraits.forms import TraitUploadField, BoolField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.structural import StructuralMRI

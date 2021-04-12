@@ -38,7 +38,7 @@ from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.basic.neotraits.api import Attr, NArray
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.forms import ArrayField, BoolField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity

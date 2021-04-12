@@ -45,12 +45,12 @@ from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import MEASURE_METRICS_MODEL_CLASS
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.file.data_encryption_handler import encryption_handler
+from tvb.file.files_helper import FilesHelper
+from tvb.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR, OperationProcessIdentifier
 from tvb.core.entities.storage import dao, OperationDAO
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.encryption_handler import EncryptionHandler

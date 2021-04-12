@@ -27,8 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+"""
+.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+"""
+
 from tvb.basic.neotraits.api import Attr, List
-from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
+from tvb.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex

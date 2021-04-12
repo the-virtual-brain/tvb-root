@@ -39,7 +39,7 @@ import json
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr

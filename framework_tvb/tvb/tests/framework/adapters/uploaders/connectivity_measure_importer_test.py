@@ -40,7 +40,7 @@ import tvb_data
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporter
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterModel
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
 from tvb.tests.framework.adapters.uploaders import test_data
 from tvb.tests.framework.core.base_testcase import BaseTestCase

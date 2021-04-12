@@ -31,8 +31,8 @@
 import os
 import shutil
 
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.neocom import h5
+from tvb.file.files_helper import FilesHelper
+from tvb.neocom import h5
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.strings import RequestFileKey

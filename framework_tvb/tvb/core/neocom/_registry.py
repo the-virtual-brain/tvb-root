@@ -33,7 +33,7 @@ import typing
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neotraits.db import HasTraitsIndex
-from tvb.core.neotraits.h5 import H5File
+from tvb.neotraits.h5 import H5File
 
 
 class Registry(object):

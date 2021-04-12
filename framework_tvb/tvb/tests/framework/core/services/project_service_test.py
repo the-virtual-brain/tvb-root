@@ -37,12 +37,12 @@ import shutil
 import pytest
 import tvb_data
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE

@@ -30,7 +30,7 @@
 import numpy
 
 from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
-from tvb.core.entities.file.simulator.view_model import *
+from tvb.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField, FloatField, StrField

@@ -42,8 +42,8 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
-from tvb.core.entities.file.exceptions import FileStructureException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.exceptions import FileStructureException
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -53,11 +53,11 @@ from tvb.core.entities.model.model_project import Project
 from tvb.core.entities.storage import dao, transactional
 from tvb.core.entities.transient.context_overlay import CommonDetails, DataTypeOverlayDetails, OperationOverlayDetails
 from tvb.core.entities.transient.structure_entities import StructureNode, DataTypeMetaData
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.neocom import h5
+from tvb.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.removers_factory import get_remover
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.file.data_encryption_handler import encryption_handler
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE

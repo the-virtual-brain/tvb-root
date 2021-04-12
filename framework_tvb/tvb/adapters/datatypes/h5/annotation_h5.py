@@ -34,7 +34,7 @@
 
 import numpy
 from tvb.basic.neotraits.api import NArray, Attr, HasTraits
-from tvb.core.neotraits.h5 import H5File, DataSet, Reference, STORE_STRING
+from tvb.neotraits.h5 import H5File, DataSet, Reference, STORE_STRING
 from tvb.datatypes.connectivity import Connectivity
 
 ANNOTATION_DTYPE = numpy.dtype([('id', 'i'),

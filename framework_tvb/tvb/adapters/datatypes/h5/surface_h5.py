@@ -31,7 +31,7 @@
 import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import NArray, Int, Attr
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Json
+from tvb.neotraits.h5 import H5File, DataSet, Scalar, Json
 from tvb.datatypes.surfaces import Surface
 
 LOG = get_logger(__name__)

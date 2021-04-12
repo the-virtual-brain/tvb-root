@@ -35,8 +35,8 @@
 import os
 
 import tvb_data.obj
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.neocom import h5
+from tvb.file.files_helper import FilesHelper
+from tvb.neocom import h5
 from tvb.datatypes.surfaces import FACE
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory

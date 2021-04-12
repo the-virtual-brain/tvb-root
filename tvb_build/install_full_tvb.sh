@@ -13,6 +13,9 @@ cd scientific_library
 python setup.py develop --user
 cd ..
 
+cd tvb_storage
+python setup.py develop --user
+
 cd tvb_contrib
 python setup.py develop --no-deps --user
 cd ..

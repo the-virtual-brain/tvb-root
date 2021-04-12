@@ -50,7 +50,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionMapping

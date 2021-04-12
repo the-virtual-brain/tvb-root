@@ -40,7 +40,7 @@ import pytest
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.load import get_filtered_datatypes, load_entity_by_gid
 from tvb.core.services.exceptions import OperationException
 from tvb.tests.framework.core.base_testcase import BaseTestCase

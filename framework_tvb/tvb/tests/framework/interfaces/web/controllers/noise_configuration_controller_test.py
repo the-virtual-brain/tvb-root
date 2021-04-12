@@ -34,7 +34,7 @@
 
 import json
 
-from tvb.core.entities.file.simulator.view_model import HeunStochasticViewModel
+from tvb.file.simulator.view_model import HeunStochasticViewModel
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController

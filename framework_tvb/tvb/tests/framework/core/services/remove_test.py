@@ -44,7 +44,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import try_get_last_datatype, get_filtered_datatypes
 from tvb.core.entities.storage import dao
 from tvb.core.entities.model.model_datatype import DataType, Project
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.datatypes.surfaces import CORTICAL

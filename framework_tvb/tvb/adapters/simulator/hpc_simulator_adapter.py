@@ -43,8 +43,8 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, SimulatorAdapterModel
 from tvb.basic.neotraits.api import HasTraits
 from tvb.config import ALGORITHMS
-from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.neocom import h5
+from tvb.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 
 

@@ -36,12 +36,12 @@ import os
 
 from uuid import UUID
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.services.burst_service import BurstService
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.algorithm_service import AlgorithmService, GenericAttributes
 from tvb.core.services.project_service import ProjectService
 from tvb.tests.framework.core.base_testcase import BaseTestCase

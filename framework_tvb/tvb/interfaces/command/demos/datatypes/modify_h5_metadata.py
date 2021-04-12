@@ -38,7 +38,7 @@ import os
 from uuid import UUID
 
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
-from tvb.core.neotraits.h5 import H5File
+from tvb.neotraits.h5 import H5File
 from tvb.core.utils import date2string
 
 
@@ -71,7 +71,7 @@ def update_written_by(folder):
                 full_path = os.path.join(root, file_name)
                 with H5File(full_path) as f:
                     prev_h5_path = f.written_by.load()
-                    new_h5_path = prev_h5_path.replace("tvb.core.entities.file.datatypes", "tvb.adapters.datatypes.h5")
+                    new_h5_path = prev_h5_path.replace("tvb.file.datatypes", "tvb.adapters.datatypes.h5")
                     f.written_by.store(new_h5_path)
 
 

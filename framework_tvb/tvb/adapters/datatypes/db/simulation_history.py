@@ -28,7 +28,7 @@
 #
 #
 from sqlalchemy import ForeignKey, Integer, Column
-from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
+from tvb.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.model_datatype import DataType
 
 

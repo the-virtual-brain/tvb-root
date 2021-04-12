@@ -35,7 +35,7 @@ import numpy
 import scipy.sparse
 import typing
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
-from tvb.core.entities.file.exceptions import MissingDataSetException
+from tvb.file.exceptions import MissingDataSetException
 from tvb.datatypes import equations
 
 

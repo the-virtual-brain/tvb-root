@@ -34,10 +34,10 @@ from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
-from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.file.files_helper import FilesHelper
+from tvb.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
@@ -45,8 +45,8 @@ from tvb.core.entities.model.model_operation import Operation, STATUS_FINISHED, 
 from tvb.core.entities.model.model_operation import OperationGroup, STATUS_ERROR, STATUS_STARTED, has_finished
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.range_parameter import RangeParameter
-from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import DirLoader
+from tvb.neocom import h5
+from tvb.neocom.h5 import DirLoader
 from tvb.core.services.import_service import ImportService
 from tvb.core.utils import format_bytes_human, format_timedelta
 

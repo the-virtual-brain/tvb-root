@@ -36,12 +36,12 @@ from tvb.adapters.datatypes.db.mode_decompositions import IndependentComponentsI
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationIndex
 from tvb.adapters.datatypes.h5.graph_h5 import CovarianceH5
-from tvb.adapters.datatypes.h5.mode_decompositions_h5 import IndependentComponentsH5
+from tvb.adapters.datatypes.h5.decompositions_h5 import IndependentComponentsH5
 from tvb.adapters.datatypes.h5.spectral_h5 import CoherenceSpectrumH5
 from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.core.entities.storage import dao
 from tvb.datatypes import spectral, temporal_correlations
-from tvb.core.neocom import h5
+from tvb.neocom import h5
 from tvb.adapters.datatypes.db import mode_decompositions
 
 USER_FULL_NAME = "Datatype Factory User"

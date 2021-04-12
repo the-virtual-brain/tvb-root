@@ -40,7 +40,7 @@ from tvb.adapters.datatypes.h5.connectivity_h5 import ConnectivityH5
 from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionMappingH5
 from tvb.adapters.datatypes.h5.sensors_h5 import SensorsH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
-from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
+from tvb.file.simulator.simulation_history_h5 import SimulationHistoryH5, SimulationHistory
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.connectivity import Connectivity

@@ -29,7 +29,7 @@
 #
 import numpy
 import json
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
+from tvb.neotraits.h5 import H5File, DataSet, Scalar, Reference
 from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
 
 

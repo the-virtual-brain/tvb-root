@@ -46,19 +46,19 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexVie
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataSetException, \
+from tvb.file.exceptions import IncompatibleFileManagerException, MissingDataSetException, \
     FileMigrationException, MissingMatlabOctavePathException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
+from tvb.file.files_helper import FilesHelper
+from tvb.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.file.simulator.burst_configuration_h5 import SimulationHistory
 from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
-from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import REGISTRY
-from tvb.core.neotraits.h5 import H5File, STORE_STRING, DataSetMetaData
+from tvb.neocom import h5
+from tvb.neocom import REGISTRY
+from tvb.neocom import H5File, STORE_STRING, DataSetMetaData
 from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
 from tvb.core.utils import date2string, string2date
 from tvb.datatypes.sensors import SensorTypes

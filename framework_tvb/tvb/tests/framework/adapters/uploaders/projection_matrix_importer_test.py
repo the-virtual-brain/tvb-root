@@ -40,7 +40,7 @@ import tvb_data.sensors
 import tvb_data.surfaceData
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.tests.framework.core.base_testcase import BaseTestCase

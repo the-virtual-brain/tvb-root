@@ -37,8 +37,8 @@ Upgrade script from H5 version 2 to version 3
 
 import os
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import FileVersioningException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.file.exceptions import FileVersioningException
+from tvb.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
 

@@ -46,8 +46,8 @@ from tvb.adapters.datatypes.h5.spectral_h5 import WaveletCoefficientsH5, Coheren
     ComplexCoherenceSpectrumH5
 from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
-from tvb.core.neocom import h5
+from tvb.file.simulator import DatatypeMeasureH5
+from tvb.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
