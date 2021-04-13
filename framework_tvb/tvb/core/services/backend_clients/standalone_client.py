@@ -170,17 +170,23 @@ class StandAloneClient(BackendClient):
 
     @staticmethod
     def process_queued_operations():
-        operations = dao.get_generic_entity(Operation, True, "queue_full")
-        if len(operations) == 0:
-            return
+        try:
+            operations = dao.get_generic_entity(Operation, True, "queue_full")
+            if len(operations) == 0:
+                return
 
-        operations.sort(key=lambda l_operation: l_operation.id)
-        for operation in operations:
-            try:
-                LOCKS_QUEUE.get(True)
-                StandAloneClient.start_operation(operation.id)
-            except Exception as e:
-                LOGGER.error("Starting operation error", e)
+            operations.sort(key=lambda l_operation: l_operation.id)
+            for operation in operations:
+                try:
+                    LOCKS_QUEUE.get(True)
+                    op = dao.get_operation_by_id(operation.id)
+                    if not op.queue_full:
+                        continue
+                    StandAloneClient.start_operation(operation.id)
+                except Exception as e:
+                    LOGGER.error("Starting operation error", e)
+        except Exception as e:
+            LOGGER.error("Error", e)
 
     @staticmethod
     def start_operation(operation_id):
