@@ -35,7 +35,7 @@
 from PIL import Image
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core import utils
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.figure_service import FigureService
 from tvb.tests.framework.core.factory import TestFactory
 

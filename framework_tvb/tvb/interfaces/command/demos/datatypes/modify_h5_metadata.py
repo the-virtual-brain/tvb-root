@@ -39,7 +39,7 @@ from uuid import UUID
 
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.core.neotraits.h5 import H5File
-from tvb.core.utils import date2string
+from tvb.utils import date2string
 
 
 def update_local_connectivity_metadata(file_path):

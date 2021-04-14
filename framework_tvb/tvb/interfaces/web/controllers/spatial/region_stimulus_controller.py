@@ -44,7 +44,7 @@ from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5

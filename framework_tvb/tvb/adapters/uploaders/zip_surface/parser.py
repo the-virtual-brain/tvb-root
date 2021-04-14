@@ -34,7 +34,7 @@
 import os
 import re
 import numpy
-from tvb.core.entities.file.files_helper import TvbZip
+from tvb.file.files_helper import TvbZip
 
 
 class ZipSurfaceParser(object):

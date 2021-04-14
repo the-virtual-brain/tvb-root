@@ -36,16 +36,15 @@ import shutil
 import numpy
 import pytest
 from tvb.basic.config.settings import HPCSettings
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
-from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
+from tvb.file.lab import *
 
 
 def _update_operation_status(status, simulator_gid, op_id, base_url):

@@ -41,7 +41,7 @@ import pytest
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_service import BurstService

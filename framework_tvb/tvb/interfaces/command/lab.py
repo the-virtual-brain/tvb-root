@@ -44,7 +44,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import command_initializer
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED

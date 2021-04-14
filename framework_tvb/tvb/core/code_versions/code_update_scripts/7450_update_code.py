@@ -36,7 +36,7 @@ Change for TVB version 1.4.1.
 
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 
 

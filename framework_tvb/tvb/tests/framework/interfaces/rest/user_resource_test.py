@@ -28,10 +28,8 @@
 #
 #
 
-import flask
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.interfaces.rest.server.resources.user.user_resource import GetProjectsListResource
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 

@@ -36,7 +36,7 @@ import os
 import json
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.core.entities.transient.structure_entities import GenericMetaData
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
+from tvb.file.xml_metadata_handlers import XMLReader, XMLWriter
 
 
 class TestMetaDataReadXML():

@@ -46,8 +46,8 @@ from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_project import Project, User
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neotraits.db import Base
-from tvb.core.utils import string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
-from tvb.core.utils import string2date, generate_guid
+from tvb.utils import string2bool, date2string, string2date, LESS_COMPLEX_TIME_FORMAT
+from tvb.core.utils import generate_guid
 
 LOG = get_logger(__name__)
 

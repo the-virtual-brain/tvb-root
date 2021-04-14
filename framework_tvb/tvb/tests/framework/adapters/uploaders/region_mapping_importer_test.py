@@ -39,7 +39,7 @@ import tvb_data.surfaceData
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5

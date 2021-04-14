@@ -36,6 +36,7 @@ Upgrade script from H5 version 2 to version 3
 """
 
 import os
+
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.exceptions import FileVersioningException
 from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
@@ -70,7 +71,8 @@ def update(input_file, burst_match_dict=None):
                                       "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
-    storage_manager = HDF5StorageManager(folder, file_name)
+    logger = get_logger(HDF5StorageManager.__module__)
+    storage_manager = HDF5StorageManager(folder, file_name, logger)
 
     root_metadata = storage_manager.get_metadata()
     class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]

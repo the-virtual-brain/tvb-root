@@ -33,7 +33,7 @@ import os
 import flask
 import pytest
 import tvb_data
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource, \

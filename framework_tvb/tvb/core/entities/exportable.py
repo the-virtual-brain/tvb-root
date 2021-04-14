@@ -33,7 +33,7 @@
 """
 
 import datetime
-from tvb.core.utils import date2string
+from tvb.utils import date2string
 
 
 class Exportable(object):

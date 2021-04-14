@@ -37,7 +37,7 @@ import uuid
 
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData

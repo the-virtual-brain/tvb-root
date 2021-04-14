@@ -40,8 +40,7 @@ import h5py
 import numpy
 from datetime import datetime
 from tvb.basic.profile import TvbProfile
-from tvb.core.utils import string2date, date2string, string2bool
-from tvb.core.entities.file.exceptions import FileVersioningException
+from tvb.file.lab import *
 
 PYTHON_EXE_PATH = TvbProfile.current.PYTHON_INTERPRETER_PATH
 DATA_BUFFER_SIZE = 50000000 / 8  # 500 MB maximum read at once (just assume worst case float64)
@@ -225,7 +224,3 @@ if __name__ == '__main__':
     input_file = sys.argv[1]
     output_file = sys.argv[2]
     __upgrade_file(input_file, output_file)
-    
-    
-    
-    

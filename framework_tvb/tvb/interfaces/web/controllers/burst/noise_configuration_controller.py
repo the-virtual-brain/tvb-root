@@ -36,7 +36,7 @@ import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.entities import load
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced

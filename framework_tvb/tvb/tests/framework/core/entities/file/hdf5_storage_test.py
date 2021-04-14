@@ -37,10 +37,8 @@ import os
 import numpy
 import shutil
 import pytest
-import tvb.core.entities.file.hdf5_storage_manager as hdf5
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
+from tvb.file.lab import *
 
 # Some constants used by tests
 STORAGE_FILE_NAME = "test_data.h5"
@@ -68,7 +66,7 @@ class TestHDF5Storage(object):
         os.makedirs(self.storage_folder)
 
         # Now create HDF5 storage instance
-        self.storage = hdf5.HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
+        self.storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
 
         self.test_2D_array = numpy.random.random((10, 10))
         self.test_3D_array = numpy.random.random((3, 3, 3))
@@ -102,11 +100,11 @@ class TestHDF5Storage(object):
         """
         # Test if folder name is None
         with pytest.raises(FileStructureException):
-            hdf5.HDF5StorageManager(None, STORAGE_FILE_NAME)
+            HDF5StorageManager(None, STORAGE_FILE_NAME)
 
         # Test if file name is None
         with pytest.raises(FileStructureException):
-            hdf5.HDF5StorageManager(self.storage_folder, None)
+            HDF5StorageManager(self.storage_folder, None)
 
     def test_simple_data_storage(self):
         """
@@ -390,7 +388,7 @@ class TestHDF5Storage(object):
         """
         This method tests scenario when HDF5 file is opened concurrent for read & write
         """
-        new_storage = hdf5.HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
+        new_storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME, self.hdf5_logger)
         new_storage.store_data(DATASET_NAME_2, self.test_2D_array)
 
         for index in range(self.test_3D_array.shape[-1]):

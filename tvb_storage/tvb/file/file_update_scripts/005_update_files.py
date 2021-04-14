@@ -60,8 +60,8 @@ from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.h5 import H5File, STORE_STRING, DataSetMetaData
 from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
-from tvb.core.utils import date2string, string2date
 from tvb.datatypes.sensors import SensorTypes
+from tvb.file.lab import *
 
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
@@ -866,7 +866,8 @@ def _migrate_connectivity_measure(**kwargs):
     folder_name = os.path.dirname(kwargs['input_file'])
     for file_name in os.listdir(folder_name):
         if file_name != OPERATION_XML and file_name not in kwargs['input_file']:
-            storage_manager = HDF5StorageManager(folder_name, file_name)
+            logger = get_logger(HDF5StorageManager.__module__)
+            storage_manager = HDF5StorageManager(folder_name, file_name, logger)
             root_metadata = storage_manager.get_metadata()
             _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_manager, True)
 
@@ -1059,7 +1060,8 @@ datatypes_to_be_migrated = {
 
 def _migrate_general_part(folder, file_name):
     # Obtain storage manager and metadata
-    storage_manager = HDF5StorageManager(folder, file_name)
+    logger = get_logger(HDF5StorageManager.__module__)
+    storage_manager = HDF5StorageManager(folder, file_name, logger)
     root_metadata = storage_manager.get_metadata()
 
     if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:

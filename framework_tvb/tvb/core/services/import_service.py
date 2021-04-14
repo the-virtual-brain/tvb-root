@@ -51,12 +51,10 @@ from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLA
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
-from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.lab import *
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader
+from tvb.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED, STATUS_ERROR, \

@@ -32,10 +32,8 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import json
 import pytest
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.neocom import h5
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_operation import Operation, STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import NoMemoryAvailableException

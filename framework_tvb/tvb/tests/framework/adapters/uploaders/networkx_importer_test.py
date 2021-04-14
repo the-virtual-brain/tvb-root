@@ -37,7 +37,7 @@ import os
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.uploaders.networkx_importer import NetworkxImporterModel, NetworkxConnectivityImporter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

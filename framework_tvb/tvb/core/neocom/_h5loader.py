@@ -35,14 +35,13 @@ from uuid import UUID
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.neotraits.view_model import ViewModel
-from tvb.core.utils import date2string, string2date
+from tvb.file.lab import *
 
 H5_EXTENSION = '.h5'
 H5_FILE_NAME_STRUCTURE = '{}_{}.h5'

@@ -39,7 +39,7 @@ import os
 import tvb_data
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterModel, RegionTimeSeriesImporter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

@@ -37,7 +37,7 @@ import shutil
 import pytest
 import tvb_data
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails

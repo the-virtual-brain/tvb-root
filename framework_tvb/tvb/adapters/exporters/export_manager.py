@@ -43,7 +43,7 @@ from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
-from tvb.core.entities.file.files_helper import FilesHelper, TvbZip
+from tvb.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5

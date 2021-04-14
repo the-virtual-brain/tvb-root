@@ -40,17 +40,15 @@ Manager for the file storage version updates.
 import os
 from datetime import datetime
 
-import tvb.core.entities.file.file_update_scripts as file_update_scripts
+import tvb.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
-from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.file.lab import *
 from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.h5 import H5File
-from tvb.core.utils import string2date
+
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
@@ -81,7 +79,8 @@ class FilesUpdateManager(UpdateManager):
         :returns: a number representing the data version for which the input file was written
         """
         manager = self._get_manager(file_path)
-        return manager.get_file_data_version()
+        data_version = TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
+        return manager.get_file_data_version(data_version)
 
     def is_file_up_to_date(self, file_path):
         """
@@ -211,7 +210,8 @@ class FilesUpdateManager(UpdateManager):
         Returns a storage manager.
         """
         folder, file_name = os.path.split(file_path)
-        return HDF5StorageManager(folder, file_name)
+        logger = get_logger(HDF5StorageManager.__module__)
+        return HDF5StorageManager(folder, file_name, logger)
 
     @staticmethod
     def get_all_h5_paths():

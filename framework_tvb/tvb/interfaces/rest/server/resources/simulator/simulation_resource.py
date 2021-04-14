@@ -31,7 +31,7 @@
 import os
 
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
 from tvb.interfaces.rest.commons.files_helper import save_temporary_file
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED

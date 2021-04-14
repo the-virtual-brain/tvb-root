@@ -45,7 +45,7 @@ from tvb.core.neocom import h5
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService

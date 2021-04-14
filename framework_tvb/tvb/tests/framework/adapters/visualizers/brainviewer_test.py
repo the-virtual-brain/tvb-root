@@ -37,7 +37,7 @@ import tvb_data.surfaceData
 import tvb_data.regionMapping
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex
 from tvb.tests.framework.core.factory import TestFactory

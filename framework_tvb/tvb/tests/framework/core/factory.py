@@ -59,7 +59,7 @@ from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPS
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataType

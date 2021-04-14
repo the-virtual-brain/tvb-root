@@ -39,7 +39,7 @@ from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import TvbZip
+from tvb.file.files_helper import TvbZip
 from tvb.core.entities.storage import transactional
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import path_for

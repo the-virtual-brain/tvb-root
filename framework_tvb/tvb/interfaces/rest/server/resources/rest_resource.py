@@ -30,7 +30,7 @@
 
 import flask
 from flask_restplus import Resource
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import BadRequestException, InvalidInputException
 from tvb.interfaces.rest.commons.strings import RequestFileKey, Strings
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, secured

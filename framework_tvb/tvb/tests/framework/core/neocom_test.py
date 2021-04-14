@@ -30,7 +30,7 @@
 import os
 
 import numpy
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel, HeunStochasticViewModel, \
     TemporalAverageViewModel
 from tvb.core.entities.storage import dao

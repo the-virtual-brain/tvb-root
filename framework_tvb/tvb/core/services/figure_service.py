@@ -46,7 +46,7 @@ from tvb.core import utils
 from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.model.model_operation import ResultFigure
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 
 
 class FigureService:

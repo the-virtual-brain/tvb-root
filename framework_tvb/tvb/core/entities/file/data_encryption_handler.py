@@ -43,7 +43,7 @@ import pyAesCrypt
 from sqlalchemy.orm.exc import NoResultFound
 from tvb.basic.config.settings import WebSettings
 from tvb.core.entities.storage import dao
-from tvb.core.services.encryption_handler import EncryptionHandler
+from tvb.file.lab import *
 from tvb.core.services.exceptions import InvalidSettingsException
 
 try:
@@ -54,7 +54,7 @@ from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.decorators import synchronized
-from tvb.core.entities.file.files_helper import FilesHelper
+
 
 LOGGER = get_logger(__name__)
 

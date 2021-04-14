@@ -43,7 +43,7 @@ from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcuploader import ABCUploaderForm
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup

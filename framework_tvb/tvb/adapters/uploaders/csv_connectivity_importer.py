@@ -39,7 +39,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel

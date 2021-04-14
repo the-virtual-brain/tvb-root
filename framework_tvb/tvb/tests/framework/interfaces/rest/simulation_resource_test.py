@@ -33,7 +33,7 @@ from io import BytesIO
 
 import flask
 import pytest
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.neocom import h5
@@ -41,7 +41,6 @@ from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
-from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 from werkzeug.datastructures import FileStorage

@@ -111,3 +111,13 @@ class MissingMatlabOctavePathException(FileMigrationException):
 
     def __init__(self, message):
         super().__init__(message)
+
+
+class UnsupportedFileStorageException(TVBException):
+    """
+    Exception to be thrown in case of an unsupported file storage is chosen.
+    Currently only H5 Storage is supported.
+    """
+
+    def __init__(self, message):
+        super().__init__(message)

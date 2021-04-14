@@ -38,9 +38,9 @@ import zipfile
 
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities.file.file_storage_factory import FileStorageFactory
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -147,7 +147,7 @@ class TVBImporter(ABCUploader):
                 file_update_manager.upgrade_file(view_model.data_file)
 
                 folder, h5file = os.path.split(view_model.data_file)
-                manager = HDF5StorageManager(folder, h5file)
+                manager = FileStorageFactory.get_file_storage(folder, h5file)
                 if manager.is_valid_hdf5_file():
                     datatype = None
                     try:

@@ -54,7 +54,7 @@ from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype

@@ -38,7 +38,7 @@ from sqlalchemy import text
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import SA_SESSIONMAKER, dao
-from tvb.core.utils import string2date
+from tvb.utils import string2date
 
 LOGGER = get_logger(__name__)
 

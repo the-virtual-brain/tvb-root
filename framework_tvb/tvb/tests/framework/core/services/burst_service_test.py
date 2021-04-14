@@ -41,7 +41,7 @@ from tvb.core.services.burst_service import BurstService
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.algorithm_service import AlgorithmService, GenericAttributes
 from tvb.core.services.project_service import ProjectService
 from tvb.tests.framework.core.base_testcase import BaseTestCase

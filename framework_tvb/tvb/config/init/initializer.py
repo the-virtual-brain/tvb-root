@@ -85,6 +85,7 @@ def command_initializer(persist_settings=True, skip_import=False):
     # Initialize application
     initialize(skip_import)
 
+
 def initialize(skip_import=False, skip_updates=False):
     """
     Initialize when Application is starting.

@@ -42,7 +42,7 @@ from cryptography.hazmat.backends import default_backend
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.core.adapters.abcuploader import ABCUploader, ENCRYPTED_PASSWORD_NAME, ENCRYPTED_DATA_SUFFIX, \
     DECRYPTED_DATA_SUFFIX
-from tvb.core.services.encryption_handler import EncryptionHandler
+from tvb.encryption.encryption_handler import EncryptionHandler
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
 

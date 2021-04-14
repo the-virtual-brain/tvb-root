@@ -34,7 +34,7 @@ import numpy
 import pytest
 import tvb_data
 from tvb.basic.neotraits.api import Attr, Float, Int, NArray, List
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitUploadField, StrField, FloatField, IntField, TraitDataTypeSelectField, \

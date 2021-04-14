@@ -43,7 +43,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import OperationPossibleStatus
 from tvb.core.entities.storage import dao
 from tvb.core.operation_hpc_launcher import UPDATE_STATUS_KEY
-from tvb.core.services.encryption_handler import EncryptionHandler
+from tvb.encryption.encryption_handler import EncryptionHandler
 from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import expose_endpoint

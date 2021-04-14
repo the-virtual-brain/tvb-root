@@ -47,7 +47,7 @@ from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
@@ -57,7 +57,8 @@ from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import url2path, string2bool
+from tvb.core.utils import url2path
+from tvb.utils import string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController

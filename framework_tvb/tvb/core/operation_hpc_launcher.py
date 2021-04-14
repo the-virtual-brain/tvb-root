@@ -28,7 +28,6 @@
 #
 #
 
-import cgi
 import json
 import os
 import sys
@@ -42,7 +41,7 @@ from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINIS
 from tvb.core.neocom import h5
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
-from tvb.core.services.encryption_handler import EncryptionHandler
+from tvb.encryption.encryption_handler import EncryptionHandler
 
 log = get_logger(__name__)
 

@@ -40,7 +40,7 @@ from tvb.basic.logger.builder import get_logger
 # from tvb.basic.traits.types_basic import MapAsJson
 from tvb.core.entities import model
 from tvb.core.entities.storage import SA_SESSIONMAKER, dao, transactional
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.utils import parse_json_parameters
 from tvb.datatypes.region_mapping import RegionMapping
 

@@ -43,7 +43,7 @@ from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration

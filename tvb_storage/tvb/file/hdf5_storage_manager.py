@@ -39,17 +39,16 @@ import copy
 import os
 import threading
 from datetime import datetime
-
 import h5py as hdf5
 import numpy as numpy
-import tvb.core.utils as utils
+
+from tvb import utils
+from tvb.encryption import encryption_handler
+from tvb.file.exceptions import IncompatibleFileManagerException, FileStructureException, MissingDataSetException, \
+    MissingDataFileException
+from tvb.file.files_helper import FilesHelper
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import FileStructureException, MissingDataSetException
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataFileException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.transient.structure_entities import GenericMetaData
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
 
 # Create logger for this module
 LOG = get_logger(__name__)
@@ -77,10 +76,6 @@ class HDF5StorageManager(object):
         Creates a new storage manager instance.
         :param buffer_size: the size in Bytes of the amount of data that will be buffered before writing to file.
         """
-        if storage_folder is None:
-            raise FileStructureException("Please provide the folder where to store data")
-        if file_name is None:
-            raise FileStructureException("Please provide the file name where to store data")
         self.__storage_full_name = os.path.join(storage_folder, file_name)
         self.__buffer_size = buffer_size
         self.__buffer_array = None
@@ -415,7 +410,7 @@ class HDF5StorageManager(object):
         finally:
             self.close_file()
 
-    def get_file_data_version(self):
+    def get_file_data_version(self, data_version):
         """
         Checks the data version for the current file.
         """
@@ -424,27 +419,11 @@ class HDF5StorageManager(object):
 
         if self.is_valid_hdf5_file():
             metadata = self.get_metadata()
-            data_version = TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
             if data_version in metadata:
                 return metadata[data_version]
             else:
                 raise IncompatibleFileManagerException("Could not find TVB specific data version attribute %s in file: "
                                                        "%s." % (data_version, self.__storage_full_name))
-        raise IncompatibleFileManagerException("File %s is not a hdf5 format file. Are you using the correct "
-                                               "manager for this file?" % (self.__storage_full_name,))
-
-    def get_gid_attribute(self):
-        """
-        Used for obtaining the gid of the DataType of
-        which data are stored in the current file.
-        """
-        if self.is_valid_hdf5_file():
-            metadata = self.get_metadata()
-            if GenericMetaData.KEY_GID in metadata:
-                return metadata[GenericMetaData.KEY_GID]
-            else:
-                raise IncompatibleFileManagerException("Could not find the Gid attribute in the "
-                                                       "input file %s." % self.__storage_full_name)
         raise IncompatibleFileManagerException("File %s is not a hdf5 format file. Are you using the correct "
                                                "manager for this file?" % (self.__storage_full_name,))
 

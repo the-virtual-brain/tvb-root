@@ -34,7 +34,7 @@
 
 import os
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5

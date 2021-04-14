@@ -36,7 +36,7 @@ import os
 
 import tvb_data.gifti as demo_data
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory

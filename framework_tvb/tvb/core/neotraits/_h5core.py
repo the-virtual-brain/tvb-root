@@ -40,13 +40,12 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Final
 from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
-from tvb.core.entities.file.exceptions import MissingDataSetException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.core.entities.file.file_storage_factory import FileStorageFactory
+from tvb.file.lab import *
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
 from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
 from tvb.core.neotraits.view_model import DataTypeGidAttr
-from tvb.core.utils import date2string, string2date
 from tvb.datatypes.equations import Equation
 
 LOGGER = get_logger(__name__)
@@ -65,7 +64,7 @@ class H5File(object):
         # type: (str) -> None
         self.path = path
         storage_path, file_name = os.path.split(path)
-        self.storage_manager = HDF5StorageManager(storage_path, file_name)
+        self.storage_manager = FileStorageFactory.get_file_storage(storage_path, file_name)
         # would be nice to have an opened state for the chunked api instead of the close_file=False
 
         # common scalar headers
@@ -256,7 +255,7 @@ class H5File(object):
     @staticmethod
     def get_metadata_param(path, param):
         base_dir, fname = os.path.split(path)
-        storage_manager = HDF5StorageManager(base_dir, fname)
+        storage_manager = FileStorageFactory.get_file_storage(base_dir, fname)
         meta = storage_manager.get_metadata()
         return meta.get(param)
 
@@ -266,7 +265,7 @@ class H5File(object):
     @staticmethod
     def remove_metadata_param(file_path, param, dataset_name='', where=HDF5StorageManager.ROOT_NODE_PATH):
         base_dir, fname = os.path.split(file_path)
-        storage_manager = HDF5StorageManager(base_dir, fname)
+        storage_manager = FileStorageFactory.get_file_storage(base_dir, fname)
         if param in storage_manager.get_metadata(dataset_name=dataset_name, where=where):
             storage_manager.remove_metadata(param, dataset_name=dataset_name, where=where)
 

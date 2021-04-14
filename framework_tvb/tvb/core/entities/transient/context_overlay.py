@@ -37,7 +37,7 @@ import numpy
 import six
 from tvb.basic.config.utils import EnhancedDictionary
 from tvb.core.entities.model.model_datatype import DataTypeGroup
-from tvb.core.utils import date2string
+from tvb.utils import date2string
 
 
 class CommonDetails(EnhancedDictionary):

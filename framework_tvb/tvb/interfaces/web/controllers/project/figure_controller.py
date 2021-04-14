@@ -41,7 +41,7 @@ import formencode
 from formencode import validators
 from cherrypy.lib.static import serve_file
 from tvb.core import utils
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.figure_service import FigureService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced

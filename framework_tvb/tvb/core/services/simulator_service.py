@@ -40,7 +40,7 @@ import numpy
 
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import load
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao

@@ -54,7 +54,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize, reset
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.controllers.base_controller import BaseController

@@ -42,7 +42,7 @@ from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesVolumeIndex
 from tvb.adapters.uploaders.nifti_importer import NIFTIImporterModel, NIFTIImporter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5

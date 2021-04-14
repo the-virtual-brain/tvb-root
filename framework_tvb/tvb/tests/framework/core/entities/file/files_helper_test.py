@@ -36,11 +36,9 @@ import os
 
 import pytest
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import FileStructureException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader
-from tvb.core.entities.model import model_project, model_operation
-from tvb.core.entities.storage import dao
+from tvb.file.lab import *
+from tvb.file.xml_metadata_handlers import XMLReader
+from tvb.core.entities.model import model_project
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
