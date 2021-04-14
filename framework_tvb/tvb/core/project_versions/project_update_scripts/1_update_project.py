@@ -37,12 +37,14 @@ When executed on a project already stored, an update in DB references might also
 
 import os
 import shutil
+
+from tvb.core.entities.transient.structure_entities import GenericMetaData
 from tvb.file.files_helper import FilesHelper
 from tvb.file.xml_metadata_handlers import XMLReader, XMLWriter
 
 
 def _rewrite_img_meta(pth, op_id):
-    figure_dict = XMLReader(pth).read_metadata()
+    figure_dict = GenericMetaData(XMLReader(pth).read_metadata())
     figure_dict['file_path'] = op_id + '-' + figure_dict['file_path']
     XMLWriter(figure_dict).write(pth)
 

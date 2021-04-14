@@ -53,7 +53,7 @@ except ImportError:
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.decorators import synchronized
+from tvb.decorators import synchronized
 
 
 LOGGER = get_logger(__name__)

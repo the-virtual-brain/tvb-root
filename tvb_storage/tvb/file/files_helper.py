@@ -39,9 +39,9 @@ from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.decorators import synchronized
-from tvb.core.entities.file.exceptions import FileStructureException
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
+from tvb.decorators import synchronized
+from tvb.file.exceptions import FileStructureException
+from tvb.file.xml_metadata_handlers import XMLReader, XMLWriter
 from tvb.core.entities.transient.structure_entities import GenericMetaData
 
 LOCK_CREATE_FOLDER = Lock()

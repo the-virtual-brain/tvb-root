@@ -36,6 +36,7 @@ Main controller for the updates related to the Project entity.
 
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
+from tvb.core.entities.transient.structure_entities import GenericMetaData
 from tvb.file.files_helper import FilesHelper
 from tvb.core.project_versions import project_update_scripts
 
@@ -52,6 +53,7 @@ class ProjectUpdateManager(UpdateManager):
         self.files_helper = FilesHelper()
         # This assumes that old project metadata file can be parsed by current version.
         self.project_meta = self.files_helper.read_project_metadata(project_path)
+        self.project_meta = GenericMetaData(self.project_meta)
         from_version = int(self.project_meta.get('version', 0))
 
         super(ProjectUpdateManager, self).__init__(project_update_scripts, from_version,

@@ -51,6 +51,7 @@ from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLA
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
+from tvb.core.entities.transient.structure_entities import GenericMetaData
 from tvb.file.lab import *
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
@@ -519,6 +520,7 @@ class ImportService(object):
         Create and store a image entity.
         """
         figure_dict = XMLReader(os.path.join(src_folder, metadata_file)).read_metadata()
+        figure_dict = GenericMetaData(figure_dict)
         actual_figure = os.path.join(src_folder, os.path.split(figure_dict['file_path'])[1])
         if not os.path.exists(actual_figure):
             self.logger.warning("Expected to find image path %s .Skipping" % actual_figure)
@@ -605,6 +607,7 @@ class ImportService(object):
         """
         self.logger.debug("Creating project from path: %s" % project_path)
         project_dict = self.files_helper.read_project_metadata(project_path)
+        project_dict = GenericMetaData(project_dict)
 
         project_entity = manager_of_class(Project).new_instance()
         project_entity = project_entity.from_dict(project_dict, self.user_id)
@@ -622,7 +625,7 @@ class ImportService(object):
         """
         Create Operation entity from metadata file.
         """
-        operation_dict = XMLReader(operation_file).read_metadata()
+        operation_dict = GenericMetaData(XMLReader(operation_file).read_metadata())
         operation_entity = manager_of_class(Operation).new_instance()
         return operation_entity.from_dict(operation_dict, dao, self.user_id, project.gid)
 

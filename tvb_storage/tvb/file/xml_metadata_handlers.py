@@ -41,7 +41,7 @@ More specific: it contains XML Reader/Writer Utility, for GenericMetaData.
 import json
 import xml.dom.minidom
 from xml.dom.minidom import Node, Document
-from tvb.core.entities.transient.structure_entities import GenericMetaData
+
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 
@@ -50,12 +50,10 @@ class XMLReader(object):
     """
     Reader for XML with meta-data on generic entities (e.g. Project, Operation).
     """
-    
-    
+
     def __init__(self, xml_path):
         self.logger = get_logger(self.__class__.__module__)
         self.xml_path = xml_path
-
 
     def read_metadata(self):
         """
@@ -65,9 +63,8 @@ class XMLReader(object):
         root_node = self._find_root()
         # Parse all nodes, and read text content.    
         result_data = self._parse_xml_node_to_dict(root_node)
-        return GenericMetaData(result_data)        
-    
-    
+        return result_data
+
     def read_only_element(self, tag_name):
         """
         From XML file, read only an element specified by tag-name.
@@ -79,8 +76,7 @@ class XMLReader(object):
             self.logger.warning("Invalid XML, missing " + tag_name + " tag!!!")
             return None
         return self.get_node_text(gid_node[0])
-    
-    
+
     @staticmethod       
     def get_node_text(node):
         """
@@ -91,9 +87,7 @@ class XMLReader(object):
                 return str(text_child.data).lstrip().rstrip()
         
         return ''
-            
-            
-    
+
     def parse_xml_content_to_dict(self, xml_data):
         """
         :param xml_data: String representing an XML root.
@@ -102,10 +96,9 @@ class XMLReader(object):
         root = xml.dom.minidom.parseString(xml_data)
         root = root.childNodes[-1]
         return self._parse_xml_node_to_dict(root)
-    
-    
+
     ####### PRIVATE METHODS Start Here #######################################
-        
+
     def _find_root(self):
         """
         From given file path, get XML root node.
@@ -115,8 +108,7 @@ class XMLReader(object):
             if child_node.nodeType == Node.ELEMENT_NODE:
                 return child_node
         return None
-    
-    
+
     def _parse_xml_node_to_dict(self, root_node):
         """
         Parse a given input XML node, and return the dictionary of text attributes.
@@ -132,25 +124,21 @@ class XMLReader(object):
                     result[node.nodeName] = result_meta
         return result
     
-    
-    
-    
+
 class XMLWriter(object):
     """
     Writer for XML with meta-data on generic entities (e.g. Project, Operation).
     """
     ELEM_ROOT = "tvb_data"
     FILE_EXTENSION = ".xml"
-    
-    
+
     def __init__(self, entity):
         """
         :param entity:  GenericMetaData instance to be written
         """
         self.entity = entity
         self.logger = get_logger(self.__class__.__module__) 
-    
-    
+
     def write(self, final_path):
         """
         From a meta-data dictionary for an entity, create the XML file.
@@ -174,4 +162,3 @@ class XMLWriter(object):
         # Now dump the XML content into a file.
         with open(final_path, 'wt') as file_obj:
             doc.writexml(file_obj, addindent="\t", newl="\n")
-

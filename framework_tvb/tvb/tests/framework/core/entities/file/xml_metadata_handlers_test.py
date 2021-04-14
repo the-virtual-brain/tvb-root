@@ -66,7 +66,6 @@ class TestMetaDataReadXML():
         actual content of the XML.
         """
         meta_data = self.meta_reader.read_metadata()
-        assert isinstance(meta_data, GenericMetaData)
         for key, value in self.EXPECTED_DICTIONARY.items():
             found_value = meta_data[key]
             assert value == found_value
@@ -80,7 +79,7 @@ class TestMetaDataReadXML():
         assert read_value == self.EXPECTED_DICTIONARY['gid']
 
      
-class TestMetaDataWriteXML():
+class TestMetaDataWriteXML:
     """
     Tests for XMLWriter.
     """ 
