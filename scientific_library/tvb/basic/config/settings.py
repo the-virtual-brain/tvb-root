@@ -335,13 +335,6 @@ class WebAdminSettings(object):
 
 
 class DBSettings(object):
-    # Overwrite number of connections to the DB.
-    # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
-    # MAX_CONNECTION default value will be used for WEB
-    # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
-    MAX_CONNECTIONS = 20
-    MAX_ASYNC_CONNECTIONS = 2
-
     # Nested transactions are not supported by all databases and not really necessary in TVB so far so
     # we don't support them yet. However when running tests we can use them to out advantage to rollback
     # any database changes between tests.
@@ -363,3 +356,11 @@ class DBSettings(object):
 
         # Upgrade/Downgrade repository
         self.DB_VERSIONING_REPO = os.path.join(current_storage, 'db_repo')
+
+        # Overwrite number of connections to the DB.
+        # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
+        # MAX_CONNECTION default value will be used for WEB
+        # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
+        self.MAX_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_CONNECTIONS, 20, int)
+        self.MAX_ASYNC_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_ASYNC_CONNECTIONS, 2, int)
+        self.BOUNCER_IN_FRONT = manager.get_attribute(stored.KEY_BOUNCER, False, eval)
