@@ -36,8 +36,7 @@
 import os
 from functools import partial
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.encryption.data_encryption_handler import encryption_handler
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao

@@ -36,8 +36,9 @@ Service Layer for the Project entity.
 """
 
 import os
-
 import formencode
+import shutil
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
@@ -54,11 +55,11 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.removers_factory import get_remover
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.encryption.data_encryption_handler import encryption_handler, DataEncryptionHandler
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
-from tvb.core.utils import format_timedelta, format_bytes_human
+from tvb.core.utils import format_timedelta, format_bytes_human, to_generic_metadata_dict
 from tvb.file.lab import *
 
 
@@ -130,7 +131,8 @@ class ProjectService:
             current_proj.description = data["description"]
         # Commit to make sure we have a valid ID
         current_proj.refresh_update_date()
-        self.structure_helper.write_project_metadata(current_proj)
+        metadata_proj = to_generic_metadata_dict(current_proj)
+        self.structure_helper.write_project_metadata(metadata_proj)
         current_proj = dao.store_entity(current_proj)
 
         # Retrieve, to initialize lazy attributes

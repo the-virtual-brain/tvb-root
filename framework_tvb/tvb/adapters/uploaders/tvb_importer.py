@@ -40,7 +40,7 @@ from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.file.file_storage_factory import FileStorageFactory
 from tvb.file.files_helper import FilesHelper
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+from tvb.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5

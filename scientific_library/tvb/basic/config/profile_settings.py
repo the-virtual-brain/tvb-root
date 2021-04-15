@@ -77,7 +77,7 @@ class BaseSettingsProfile(object):
         self.web = WebSettings(self.manager)
         self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
-        self.file_storage = self.manager.get_attribute(stored.KEY_FILE_STORAGE, None, str)
+        self.file_storage = self.manager.get_attribute(stored.KEY_FILE_STORAGE, 'h5', str)
 
         self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.BIN_FOLDER)
         if not self.env.is_distribution():

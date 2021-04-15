@@ -59,7 +59,6 @@ class ProjectUpdateManager(UpdateManager):
         super(ProjectUpdateManager, self).__init__(project_update_scripts, from_version,
                                                    TvbProfile.current.version.PROJECT_VERSION)
 
-
     def run_all_updates(self):
         """
         Upgrade the project to the latest structure
@@ -69,5 +68,5 @@ class ProjectUpdateManager(UpdateManager):
 
         # update project version in metadata
         self.project_meta['version'] = self.current_version
-        self.files_helper.write_project_metadata_from_dict(self.project_path, self.project_meta)
+        self.files_helper.write_project_metadata_from_dict(self.project_path, GenericMetaData(self.project_meta))
 

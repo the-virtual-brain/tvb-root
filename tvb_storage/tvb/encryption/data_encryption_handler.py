@@ -38,18 +38,12 @@ from io import BytesIO
 from os import stat
 from queue import Queue
 from threading import Lock
-
 import pyAesCrypt
+
 from sqlalchemy.orm.exc import NoResultFound
-from tvb.basic.config.settings import WebSettings
 from tvb.core.entities.storage import dao
 from tvb.file.lab import *
 from tvb.core.services.exceptions import InvalidSettingsException
-
-try:
-    from syncrypto import Crypto, Syncrypto
-except ImportError:
-    WebSettings.CAN_ENCRYPT_STORAGE = False
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile

@@ -40,8 +40,7 @@ import json
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.file.lab import *
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
 from tvb.datatypes.projections import ProjectionsType

@@ -39,17 +39,16 @@ import os
 from inspect import getmro
 
 from tvb.basic.logger.builder import get_logger
-from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcuploader import ABCUploaderForm
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX
 from tvb.core.services.exceptions import OperationException
+from tvb.file.lab import *
 
 
 class AlgorithmService(object):
@@ -100,7 +99,7 @@ class AlgorithmService(object):
         if dt[5]:
             display_name += ' - From: ' + str(dt[5])
         else:
-            display_name += utils.date2string(dt[4])
+            display_name += date2string(dt[4])
         if dt[6]:
             display_name += ' - ' + str(dt[6])
         display_name += ' - ID:' + str(dt[0])
@@ -148,7 +147,7 @@ class AlgorithmService(object):
                     project = dao.get_project_by_id(project_id)
                     temporary_storage = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
                     try:
-                        uq_name = utils.date2string(datetime.now(), True) + '_' + str(0)
+                        uq_name = date2string(datetime.now(), True) + '_' + str(0)
                         file_name = TEMPORARY_PREFIX + uq_name + '_' + field.filename
                         file_name = os.path.join(temporary_storage, file_name)
 

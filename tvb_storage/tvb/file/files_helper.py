@@ -42,7 +42,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.decorators import synchronized
 from tvb.file.exceptions import FileStructureException
 from tvb.file.xml_metadata_handlers import XMLReader, XMLWriter
-from tvb.core.entities.transient.structure_entities import GenericMetaData
+
 
 LOCK_CREATE_FOLDER = Lock()
 
@@ -157,18 +157,16 @@ class FilesHelper(object):
         project_cfg_file = os.path.join(project_path, self.TVB_PROJECT_FILE)
         return XMLReader(project_cfg_file).read_metadata()
 
-    def write_project_metadata_from_dict(self, project_path, meta_dictionary):
+    def write_project_metadata_from_dict(self, project_path, meta_entity):
         project_cfg_file = os.path.join(project_path, self.TVB_PROJECT_FILE)
-        meta_entity = GenericMetaData(meta_dictionary)
         XMLWriter(meta_entity).write(project_cfg_file)
         os.chmod(project_path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
 
-    def write_project_metadata(self, project):
+    def write_project_metadata(self, meta_dictionary):
         """
-        :param project: Project instance, to get metadata from it.
+        :param meta_dictionary: Project metadata
         """
-        proj_path = self.get_project_folder(project.name)
-        _, meta_dictionary = project.to_dict()
+        proj_path = self.get_project_folder(meta_dictionary.name)
         self.write_project_metadata_from_dict(proj_path, meta_dictionary)
 
     ############# OPERATION related METHODS Start Here #########################
@@ -232,12 +230,11 @@ class FilesHelper(object):
         self.check_created(images_folder)
         return images_folder
 
-    def write_image_metadata(self, figure):
+    def write_image_metadata(self, figure, meta_entity):
         """
         Writes figure meta-data into XML file
         """
         _, dict_data = figure.to_dict()
-        meta_entity = GenericMetaData(dict_data)
         XMLWriter(meta_entity).write(self._compute_image_metadata_file(figure))
 
     def remove_image_metadata(self, figure):

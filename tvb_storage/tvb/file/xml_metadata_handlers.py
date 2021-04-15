@@ -57,7 +57,7 @@ class XMLReader(object):
 
     def read_metadata(self):
         """
-        Return one instance of GenericMetaData, filled with data read from XML file.
+        Return a dictionary, filled with data read from XML file.
         """
         self.logger.debug("Starting to parse XML file " + self.xml_path)
         root_node = self._find_root()

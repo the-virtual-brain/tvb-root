@@ -40,10 +40,10 @@ import shutil
 import uuid
 from cgi import FieldStorage
 from datetime import datetime
-
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm.attributes import manager_of_class
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.ex import TraitTypeError
 from tvb.basic.profile import TvbProfile
@@ -52,10 +52,10 @@ from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAU
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
 from tvb.core.entities.transient.structure_entities import GenericMetaData
+from tvb.core.utils import to_generic_metadata_dict
 from tvb.file.lab import *
-from tvb.core.entities.file.files_update_manager import FilesUpdateManager
+from tvb.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
-from tvb.file.xml_metadata_handlers import XMLReader
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.model.model_operation import ResultFigure, Operation, STATUS_FINISHED, STATUS_ERROR, \
@@ -66,7 +66,6 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
-from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
 
@@ -206,7 +205,6 @@ class ImportService(object):
             if DataEncryptionHandler.encryption_enabled():
                 DataEncryptionHandler.sync_folders(project_path)
                 shutil.rmtree(project_path)
-
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """
@@ -535,7 +533,8 @@ class ImportService(object):
         figure = dao.load_figure(stored_entity.id)
         shutil.move(actual_figure, target_images_path)
         self.logger.debug("Store imported figure")
-        self.files_helper.write_image_metadata(figure)
+        meta_data = to_generic_metadata_dict(figure)
+        self.files_helper.write_image_metadata(figure, meta_data)
 
     def load_datatype_from_file(self, current_file, op_id, datatype_group=None, current_project_id=None):
         # type: (str, int, DataTypeGroup, int) -> HasTraitsIndex
@@ -671,14 +670,16 @@ class ImportService(object):
         except FileStructureException as excep:
             raise ServicesBaseException("Could not process the given ZIP file..." + str(excep))
 
-    def _update_burst_metric(self, operation_entity):
+    @staticmethod
+    def _update_burst_metric(operation_entity):
         burst_config = dao.get_burst_for_operation_id(operation_entity.id)
         if burst_config and burst_config.ranges:
             if burst_config.fk_metric_operation_group is None:
                 burst_config.fk_metric_operation_group = operation_entity.fk_operation_group
             dao.store_entity(burst_config)
 
-    def _update_dt_groups(self, project_id):
+    @staticmethod
+    def _update_dt_groups(project_id):
         dt_groups = dao.get_datatypegroup_for_project(project_id)
         for dt_group in dt_groups:
             dt_group.count_results = dao.count_datatypes_in_group(dt_group.id)
@@ -687,8 +688,10 @@ class ImportService(object):
                 dt_group.fk_parent_burst = dts_in_group[0].fk_parent_burst
             dao.store_entity(dt_group)
 
-    def _update_burst_configurations(self, project_id):
+    @staticmethod
+    def _update_burst_configurations(project_id):
         burst_configs = dao.get_bursts_for_project(project_id)
         for burst_config in burst_configs:
             burst_config.datatypes_number = dao.count_datatypes_in_burst(burst_config.gid)
             dao.store_entity(burst_config)
+

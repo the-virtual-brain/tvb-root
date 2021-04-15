@@ -14,8 +14,7 @@ class FileStorageFactory(object):
             raise FileStructureException("Please provide the file name where to store data")
 
         if TvbProfile.current.file_storage == 'h5':
-            logger = get_logger(HDF5StorageManager.__module__)
-            return HDF5StorageManager(storage_folder, file_name, logger, buffer_size)
+            return HDF5StorageManager(storage_folder, file_name, buffer_size)
 
         raise UnsupportedFileStorageException("Unsupported file storage was chosen! Currently only H5 storage is "
                                               "supported!")

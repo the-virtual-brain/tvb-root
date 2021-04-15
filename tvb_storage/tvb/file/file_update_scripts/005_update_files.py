@@ -46,10 +46,6 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexVie
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException, MissingDataSetException, \
-    FileMigrationException, MissingMatlabOctavePathException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration

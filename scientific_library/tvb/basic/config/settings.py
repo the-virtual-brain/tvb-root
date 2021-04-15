@@ -238,6 +238,10 @@ class WebSettings(object):
     CAN_ENCRYPT_STORAGE = True
 
     def __init__(self, manager):
+        try:
+            from syncrypto import Crypto, Syncrypto
+        except ImportError:
+            WebSettings.CAN_ENCRYPT_STORAGE = False
 
         self.admin = WebAdminSettings(manager)
 

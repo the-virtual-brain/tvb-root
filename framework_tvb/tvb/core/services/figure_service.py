@@ -43,9 +43,10 @@ import xml.dom.minidom
 from io import BytesIO
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.encryption.data_encryption_handler import encryption_handler
 from tvb.core.entities.model.model_operation import ResultFigure
 from tvb.core.entities.storage import dao
+from tvb.core.utils import to_generic_metadata_dict
 from tvb.file.files_helper import FilesHelper
 
 
@@ -137,8 +138,9 @@ class FigureService:
 
         # Load instance from DB to have lazy fields loaded
         figure = dao.load_figure(entity.id)
-        # Write image meta data to disk  
-        self.file_helper.write_image_metadata(figure)
+        # Write image meta data to disk
+        meta_data = to_generic_metadata_dict(figure)
+        self.file_helper.write_image_metadata(figure, meta_data)
         encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(project))
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
@@ -174,7 +176,8 @@ class FigureService:
         # Load instance from DB to have lazy fields loaded.
         figure = dao.load_figure(figure_id)
         # Store figure meta data in an XML attached to the image.
-        self.file_helper.write_image_metadata(figure)
+        meta_data = to_generic_metadata_dict(figure)
+        self.file_helper.write_image_metadata(figure, meta_data)
         encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(figure.project.name))
 
     def remove_result_figure(self, figure_id):
