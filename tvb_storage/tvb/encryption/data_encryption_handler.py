@@ -40,17 +40,23 @@ from queue import Queue
 from threading import Lock
 import pyAesCrypt
 
-from sqlalchemy.orm.exc import NoResultFound
-from tvb.core.entities.storage import dao
-from tvb.file.lab import *
-from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.decorators import synchronized
-
+from tvb.encryption.encryption_handler import EncryptionHandler
+from tvb.file.files_helper import FilesHelper
 
 LOGGER = get_logger(__name__)
+
+
+class InvalidStorageEncryptionException(TVBException):
+    """
+    Exception thrown when encryption storage cannot be allowed.
+    """
+
+    def __init__(self, message):
+        TVBException.__init__(self, message)
 
 
 class DataEncryptionHandlerMeta(type):
@@ -71,7 +77,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     KEYS_FOLDER = ".storage-keys"
     CRYPTO_PASS = "CRYPTO_PASS"
 
-    fie_helper = FilesHelper()
+    file_helper = FilesHelper()
 
     # Queue used to push projects which need synchronisation
     sync_project_queue = Queue()
@@ -176,33 +182,31 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
         project_name = os.path.basename(folder)
         encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
-        try:
-            project = dao.get_project_by_name(project_name)
-        except NoResultFound:
+
+        if os.path.exists(encrypted_folder) and os.path.joins(folder):
+            crypto_pass = DataEncryptionHandler._project_key(project_name)
+            crypto = Crypto(crypto_pass)
+            syncro = Syncrypto(crypto, encrypted_folder, folder)
+            syncro.sync_folder()
+            trash_path = os.path.join(encrypted_folder, "_syncrypto", "trash")
+            if os.path.exists(trash_path):
+                shutil.rmtree(trash_path)
+        else:
             LOGGER.info("Project {} was deleted".format(project_name))
             if os.path.exists(encrypted_folder):
                 shutil.rmtree(encrypted_folder)
             if os.path.exists(folder):
                 shutil.rmtree(folder)
-            return
-
-        crypto_pass = DataEncryptionHandler._project_key(project.id)
-        crypto = Crypto(crypto_pass)
-        syncro = Syncrypto(crypto, encrypted_folder, folder)
-        syncro.sync_folder()
-        trash_path = os.path.join(encrypted_folder, "_syncrypto", "trash")
-        if os.path.exists(trash_path):
-            shutil.rmtree(trash_path)
 
     def set_project_active(self, project, linked_dt=None):
         if not self.encryption_enabled():
             return
-        project_folder = self.fie_helper.get_project_folder(project)
+        project_folder = self.file_helper.get_project_folder(project)
         projects = set()
         if linked_dt is None:
             linked_dt = []
         for dt_path in linked_dt:
-            project_path = self.fie_helper.get_project_folder_from_h5(dt_path)
+            project_path = self.file_helper.get_project_folder_from_h5(dt_path)
             projects.add(project_path)
         if len(linked_dt) > 0:
             self.linked_projects[project_folder] = projects
@@ -215,7 +219,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     def set_project_inactive(self, project):
         if not self.encryption_enabled():
             return
-        project_folder = self.fie_helper.get_project_folder(project)
+        project_folder = self.file_helper.get_project_folder(project)
         projects = self.linked_projects.pop(project_folder) if project_folder in self.linked_projects else set()
         projects.add(project_folder)
         for project_folder in projects:
@@ -240,7 +244,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         if not TvbProfile.current.web.ENCRYPT_STORAGE:
             return False
         if not TvbProfile.current.web.CAN_ENCRYPT_STORAGE:
-            raise InvalidSettingsException(
+            raise InvalidStorageEncryptionException(
                 "We can not enable STORAGE ENCRYPTION. Most probably syncrypto is not installed!")
         return True
 
@@ -261,19 +265,19 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             shutil.rmtree(project)
 
     @staticmethod
-    def project_key_path(project_id):
-        return os.path.join(TvbProfile.current.TVB_STORAGE, DataEncryptionHandler.KEYS_FOLDER, str(project_id))
+    def project_key_path(project_name):
+        return os.path.join(TvbProfile.current.TVB_STORAGE, DataEncryptionHandler.KEYS_FOLDER, str(project_name))
 
     @staticmethod
-    def _project_key(project_id):
+    def _project_key(project_name):
         password_encryption_key = os.environ[
             DataEncryptionHandler.CRYPTO_PASS] if DataEncryptionHandler.CRYPTO_PASS in os.environ else None
         if password_encryption_key is None:
             raise TVBException("Password encryption key is not defined.")
         project_keys_folder = os.path.join(TvbProfile.current.TVB_STORAGE, DataEncryptionHandler.KEYS_FOLDER)
-        DataEncryptionHandler.fie_helper.check_created(project_keys_folder)
+        DataEncryptionHandler.file_helper.check_created(project_keys_folder)
 
-        encrypted_project_key = DataEncryptionHandler.project_key_path(project_id)
+        encrypted_project_key = DataEncryptionHandler.project_key_path(project_name)
         if os.path.exists(encrypted_project_key):
             with open(encrypted_project_key, "rb") as fIn:
                 inputFileSize = stat(encrypted_project_key).st_size
