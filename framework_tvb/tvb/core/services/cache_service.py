@@ -34,11 +34,17 @@ Service layer for Caching mechanism.
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 from functools import lru_cache
+from subprocess import Popen, PIPE
 
+import requests
 from sqlalchemy.exc import SQLAlchemyError
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import OperationGroup
 from tvb.core.entities.storage import dao
 from tvb.core.services.algorithm_service import AlgorithmService
+
+LOGGER = get_logger(__name__)
 
 
 class CacheService:
@@ -77,13 +83,29 @@ class CacheService:
     def cached_operation_results(self, op_id):
         return dao.get_results_for_operation(op_id)
 
-    def clear_cache(self):
-        self.cached_operation_group.cache_clear()
-        self.cached_dt_group.cache_clear()
-        self.cached_visualizers_for_group.cache_clear()
-        self.cached_algorithm.cache_clear()
-        self.cached_user.cache_clear()
-        self.cached_operation_results.cache_clear()
+    def clear_cache(self, notify_others=True):
+        if notify_others and TvbProfile.current.web.OPENSHIFT_DEPLOY:
+            LOGGER.info("Notify all pods for clearing cache.")
+            sa_token = Popen(['cat', '/var/run/secrets/kubernetes.io/serviceaccount/token'], stdout=PIPE,
+                             stderr=PIPE).stdout.read().decode()
+            response = requests.get(
+                url='https://kubernetes.default.svc/api/v1/namespaces/{}/endpoints/{}'.format(
+                    TvbProfile.current.web.OPENSHIFT_NAMESPACE, TvbProfile.current.web.OPENSHIFT_APPLICATION),
+                verify=False, headers={"Authorization": "Bearer {}".format(sa_token)})
+            response.raise_for_status()
+            openshift_pods = response.json()['subsets'][0]['addresses']
+            url_pattern = "http://{}:8080/user/clear_cache"
+            for pod in openshift_pods:
+                pod_ip = pod['ip']
+                LOGGER.info("Notify pod: {}".format(pod_ip))
+                requests.get(url=url_pattern.format(pod_ip))
+        else:
+            self.cached_operation_group.cache_clear()
+            self.cached_dt_group.cache_clear()
+            self.cached_visualizers_for_group.cache_clear()
+            self.cached_algorithm.cache_clear()
+            self.cached_user.cache_clear()
+            self.cached_operation_results.cache_clear()
 
 
 cache = CacheService()

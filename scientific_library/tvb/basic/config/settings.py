@@ -258,6 +258,9 @@ class WebSettings(object):
 
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
 
+        self.OPENSHIFT_DELOY = manager.get_attribute(stored.KEY_OPENSHIFT_DEPLOY, False, eval)
+        self.OPENSHIFT_NAMESPACE = manager.get_attribute(stored.KEY_OPENSHIFT_NAMESPACE, "")
+        self.OPENSHIFT_APPLICATION = manager.get_attribute(stored.KEY_OPENSHIFT_APPLICATION, "")
         # Compute reference towards the current web application, valid FROM localhost
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))

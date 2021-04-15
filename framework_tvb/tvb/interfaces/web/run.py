@@ -169,9 +169,9 @@ def init_cherrypy(arguments=None):
             TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
         cherrypy.engine.housekeeper.start()
 
-    cherrypy.engine.operations_job = cherrypy.process.plugins.BackgroundTask(
-        TvbProfile.current.OPERATIONS_BACKGROUND_JOB_INTERVAL, StandAloneClient.process_queued_operations)
-    cherrypy.engine.operations_job.start()
+    operations_job = cherrypy.process.plugins.BackgroundTask(
+        TvbProfile.current.OPERATIONS_BACKGROUND_JOB_INTERVAL, StandAloneClient.process_queued_operations, bus=cherrypy.engine)
+    operations_job.start()
 
     # HTTP Server is fired now ######
     cherrypy.engine.start()
