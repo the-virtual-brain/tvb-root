@@ -216,16 +216,20 @@ class Model(HasTraits):
         "Returns reshape argument for a spatialized parameter."
         return -1, 1
 
-    def _spatialize_model_parameters(self, sim):
-        # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
+    def model_param_names(self, sim):
         # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
         excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
                            "noise", "psi_table", "nerf_table", "gid", "state_variable_dfuns",
                            "parameter_names", "coupling_terms")
-        spatial_reshape = self.spatial_param_reshape
         for param in type(self).declarative_attrs:
             if param in excluded_params:
                 continue
+            yield param
+
+    def _spatialize_model_parameters(self, sim):
+        # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
+        spatial_reshape = self.spatial_param_reshape
+        for param in self.model_param_names(sim):
             region_parameters = getattr(self, param)
             self._map_roi_param_to_surface(sim, param, region_parameters, spatial_reshape)
             self._reshape_model_param_for_modes(sim, param, spatial_reshape)
@@ -251,7 +255,7 @@ class Model(HasTraits):
     @property
     def spatial_parameter_names(self):
         return [_ for _ in self.parameter_names if getattr(self, _).size != 1]
-    
+
     @property
     def global_parameter_names(self):
         return [_ for _ in self.parameter_names if getattr(self, _).size == 1]
@@ -261,7 +265,7 @@ class Model(HasTraits):
         names = self.spatial_parameter_names
         matrix = numpy.array([getattr(self,_).reshape((-1,)) for _ in names])
         return matrix
-    
+
 
 
 class ModelNumbaDfun(Model):
