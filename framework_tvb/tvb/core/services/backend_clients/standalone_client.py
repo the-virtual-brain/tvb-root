@@ -170,11 +170,12 @@ class StandAloneClient(BackendClient):
 
     @staticmethod
     def process_queued_operations():
+        LOGGER.info("Start Queued operations job")
         try:
             operations = dao.get_generic_entity(Operation, True, "queue_full")
             if len(operations) == 0:
                 return
-
+            LOGGER.info("Found {} operations with the queue full flag set.".format(len(operations)))
             operations.sort(key=lambda l_operation: l_operation.id)
             for operation in operations:
                 try:

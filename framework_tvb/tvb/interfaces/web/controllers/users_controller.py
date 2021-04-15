@@ -50,6 +50,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.core.services.cache_service import cache
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.texture_to_json import color_texture_to_list
@@ -173,6 +174,11 @@ class UserController(BaseController):
     @using_template('user/silent_check_sso')
     def check_sso(self):
         return {}
+
+    @cherrypy.expose
+    def clear_cache(self):
+        self.logger.info("Received a request to clear cache.")
+        cache.clear_cache(False)
 
     @cherrypy.expose
     @handle_error(redirect=True)
