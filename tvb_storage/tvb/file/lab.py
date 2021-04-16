@@ -33,5 +33,6 @@ from tvb.file.files_helper import FilesHelper
 from tvb.file.exceptions import *
 from tvb.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.encryption.encryption_handler import EncryptionHandler
+from tvb.encryption.data_encryption_handler import DataEncryptionHandler
 from tvb.decorators import synchronized
 

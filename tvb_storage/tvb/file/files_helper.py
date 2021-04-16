@@ -166,7 +166,7 @@ class FilesHelper(object):
         """
         :param meta_dictionary: Project metadata
         """
-        proj_path = self.get_project_folder(meta_dictionary.name)
+        proj_path = self.get_project_folder(meta_dictionary['name'])
         self.write_project_metadata_from_dict(proj_path, meta_dictionary)
 
     ############# OPERATION related METHODS Start Here #########################

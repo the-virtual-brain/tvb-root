@@ -39,7 +39,7 @@ from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.utils import date2string
 
 
-class CommonDetails(dict:
+class CommonDetails(dict):
     """
     Enhanced dictionary holding details about an entity.
     It also contains metadata on how this details will be displayed in UI (disabled/readonly/hidden input field).

@@ -59,7 +59,7 @@ from tvb.encryption.data_encryption_handler import encryption_handler, DataEncry
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
-from tvb.core.utils import format_timedelta, format_bytes_human, to_generic_metadata_dict
+from tvb.core.utils import format_timedelta, format_bytes_human
 from tvb.file.lab import *
 
 
@@ -131,7 +131,7 @@ class ProjectService:
             current_proj.description = data["description"]
         # Commit to make sure we have a valid ID
         current_proj.refresh_update_date()
-        metadata_proj = to_generic_metadata_dict(current_proj)
+        _, metadata_proj = current_proj.to_dict()
         self.structure_helper.write_project_metadata(metadata_proj)
         current_proj = dao.store_entity(current_proj)
 

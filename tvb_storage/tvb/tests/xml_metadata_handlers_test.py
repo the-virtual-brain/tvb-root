@@ -35,7 +35,6 @@
 import os
 import json
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
-from tvb.core.entities.transient.structure_entities import GenericMetaData
 from tvb.file.xml_metadata_handlers import XMLReader, XMLWriter
 
 
@@ -89,8 +88,7 @@ class TestMetaDataWriteXML:
         """
         Sets up necessary files for the tests.
         """
-        meta_data_entity = GenericMetaData(self.WRITABLE_METADATA)
-        self.meta_writer = XMLWriter(meta_data_entity)
+        self.meta_writer = XMLWriter(self.WRITABLE_METADATA)
         self.result_path = os.path.join(os.path.dirname(__file__), "Operation.xml")
       
     def teardown_method(self):

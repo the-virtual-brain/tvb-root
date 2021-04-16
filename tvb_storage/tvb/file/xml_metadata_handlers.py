@@ -31,7 +31,7 @@
 This module contains logic for meta-data handling.
 
 It handles read/write operations in XML files for retrieving/storing meta-data.
-More specific: it contains XML Reader/Writer Utility, for GenericMetaData.
+More specific: it contains XML Reader/Writer Utility, for generic metadata dictionary.
 
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
@@ -134,7 +134,7 @@ class XMLWriter(object):
 
     def __init__(self, entity):
         """
-        :param entity:  GenericMetaData instance to be written
+        :param entity:  a dictionary that contains generic metadata to be written
         """
         self.entity = entity
         self.logger = get_logger(self.__class__.__module__) 
@@ -150,7 +150,7 @@ class XMLWriter(object):
         root_node.setAttribute(TvbProfile.current.version.DATA_VERSION_ATTRIBUTE,
                                str(TvbProfile.current.version.DATA_VERSION))
         
-        # Add each attribute GenericMetaData, as XML node-elements.
+        # Add each generic metadata attribute as XML node-elements.
         for att_name, att_value in self.entity.items():
             node = doc.createElement(att_name)
             if isinstance(att_value, list):

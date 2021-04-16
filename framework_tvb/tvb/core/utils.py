@@ -44,7 +44,6 @@ import six
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.decorators import user_environment_execution
-from tvb.core.entities.transient.structure_entities import GenericMetaData
 
 MATLAB = "matlab"
 OCTAVE = "octave"
@@ -331,7 +330,3 @@ def prepare_time_slice(total_time_length, max_length=10 ** 4):
 
 def hash_password(pass_string):
     return md5(pass_string.encode('utf-8')).hexdigest()
-
-
-def to_generic_metadata_dict(metadata):
-    return GenericMetaData(metadata.to_dict()[1])
