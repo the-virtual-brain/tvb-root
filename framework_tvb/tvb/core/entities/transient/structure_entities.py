@@ -34,7 +34,6 @@
 """
 
 import json
-from tvb.basic.config.utils import EnhancedDictionary
 
 
 class StructureNode:
@@ -236,7 +235,7 @@ class StructureNode:
         return result
 
 
-class GenericMetaData(EnhancedDictionary):
+class GenericMetaData(dict):
     """
     Wrap a dictionary of meta-data for generic entities 
     - Operations, Project, or DataType.
