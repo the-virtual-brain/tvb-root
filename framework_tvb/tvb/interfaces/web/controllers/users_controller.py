@@ -47,7 +47,7 @@ import formencode
 import tvb.interfaces.web
 from formencode import validators
 from tvb.basic.profile import TvbProfile
-from tvb.file.files_update_manager import FilesUpdateManager
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.encryption.data_encryption_handler import encryption_handler
 from tvb.core.services.exceptions import UsernameException

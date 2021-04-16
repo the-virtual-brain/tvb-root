@@ -4,7 +4,7 @@ import sys
 
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize
-from tvb.file.files_update_manager import FilesUpdateManager
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 
 
 if __name__ == '__main__':

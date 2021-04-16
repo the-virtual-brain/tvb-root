@@ -51,7 +51,7 @@ from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAU
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
 from tvb.file.lab import *
-from tvb.file.files_update_manager import FilesUpdateManager
+from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup

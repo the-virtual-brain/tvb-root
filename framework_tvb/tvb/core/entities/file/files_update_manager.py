@@ -39,7 +39,7 @@ Manager for the file storage version updates.
 
 import os
 
-import tvb.file.file_update_scripts as file_update_scripts
+import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
