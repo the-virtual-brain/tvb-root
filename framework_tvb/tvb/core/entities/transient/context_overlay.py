@@ -35,11 +35,12 @@ Entities to be used with an overlay on Operation or DataType, are defined here.
 
 import numpy
 import six
+from tvb.basic.config.utils import EnhancedDictionary
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.utils import date2string
 
 
-class CommonDetails(dict):
+class CommonDetails(EnhancedDictionary):
     """
     Enhanced dictionary holding details about an entity.
     It also contains metadata on how this details will be displayed in UI (disabled/readonly/hidden input field).
@@ -51,6 +52,7 @@ class CommonDetails(dict):
     CODE_OPERATION_GROUP_NAME = 'operation_group_name'
 
     def __init__(self):
+        super(CommonDetails, self).__init__()
         self.metadata = dict()
         self.scientific_details = dict()
 
@@ -78,12 +80,6 @@ class CommonDetails(dict):
         self.burst_name = None
         self.metadata['burst_name'] = {"name": "Simulation", "disabled": "True"}
 
-    def __getattr__(self, key):
-        return self[key]
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
     def add_scientific_fields(self, extra_fields_dict):
         """
         :param extra_fields_dict a dictionary of fields to be added in a distinct category.
@@ -95,7 +91,6 @@ class CommonDetails(dict):
             elif value is not None and isinstance(value, list) and len(value) > 0 and isinstance(value[0], str):
                 value = [str(v) for v in value]
             self.scientific_details[key] = {"name": key, "value": str(value), "disabled": "True"}
-
 
     @property
     def meta_attributes_list(self):
@@ -201,7 +196,6 @@ class DataTypeOverlayDetails(CommonDetails):
     DATA_TAG_5 = "datatype_tag_5"
 
     def __init__(self):
-
         super(DataTypeOverlayDetails, self).__init__()
 
         self.data_state = None

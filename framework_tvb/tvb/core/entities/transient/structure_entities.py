@@ -34,6 +34,7 @@
 """
 
 import json
+from tvb.basic.config.utils import EnhancedDictionary
 
 
 class StructureNode:

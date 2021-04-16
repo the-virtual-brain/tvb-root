@@ -41,6 +41,7 @@ import json
 import math
 import numpy
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.basic.config.utils import EnhancedDictionary
 from tvb.core.entities.storage import dao
 
 KEY_GID = "Gid"
@@ -229,7 +230,7 @@ class PSEGroupModel(object):
         return list(self.pse_model_list[0].metrics)
 
 
-class DiscretePSE(dict):
+class DiscretePSE(EnhancedDictionary):
     def __init__(self, datatype_group_gid, color_metric, size_metric, back_page):
         super(DiscretePSE, self).__init__()
         self.datatype_group_gid = datatype_group_gid
