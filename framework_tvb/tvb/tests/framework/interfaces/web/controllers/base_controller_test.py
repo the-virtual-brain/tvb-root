@@ -33,7 +33,6 @@ import cherrypy
 from tvb.tests.framework.core.base_testcase import BaseTestCase, TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.basic.profile import TvbProfile
-from tvb.basic.config.utils import EnhancedDictionary
 from tvb.interfaces.web.controllers.common import KEY_PROJECT, KEY_USER
 
 
@@ -42,7 +41,7 @@ class BaseControllersTest(BaseTestCase):
     """
     Mock CherryPy session
     """
-    class CherrypySession(EnhancedDictionary):
+    class CherrypySession(dict):
 
         def acquire_lock(self):
             pass
