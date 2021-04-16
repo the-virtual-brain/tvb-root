@@ -37,6 +37,7 @@ Upgrade script from H5 version 3 to version 4 (for tvb release 1.4.1)
 
 import os
 import json
+
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao

@@ -39,8 +39,8 @@ import uuid
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
-
 from requests import HTTPError
+
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile

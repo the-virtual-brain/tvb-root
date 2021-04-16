@@ -38,10 +38,10 @@ Manager for the file storage version updates.
 """
 
 import os
-from datetime import datetime
 
 import tvb.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
+from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.file.lab import *
@@ -173,14 +173,14 @@ class FilesUpdateManager(UpdateManager):
 
             # Keep track of how many DataTypes were properly updated and how many
             # were marked as invalid due to missing files or invalid manager.
-            start_time = datetime.now()
+            start_time = datetime.datetime.now()
 
             file_paths = self.get_all_h5_paths()
             total_count = len(file_paths)
             no_ok, no_error = self.__upgrade_h5_list(file_paths)
 
             self.log.info("Updated H5 files in total: %d [fine:%d, failed:%d in: %s min]" % (
-                total_count, no_ok, no_error, int((datetime.now() - start_time).seconds / 60)))
+                total_count, no_ok, no_error, int((datetime.datetime.now() - start_time).seconds / 60)))
             delete_old_burst_table_after_migration()
 
             # Now update the configuration file since update was done
@@ -249,7 +249,7 @@ class FilesUpdateManager(UpdateManager):
 
         # Sort all h5 files based on their creation date stored in the files themselves
         sorted_h5_files = sorted(h5_files, key=lambda h5_path: FilesUpdateManager._get_create_date_for_sorting(
-            h5_path) or datetime.now())
+            h5_path) or datetime.datetime.now())
         return sorted_h5_files
 
     @staticmethod

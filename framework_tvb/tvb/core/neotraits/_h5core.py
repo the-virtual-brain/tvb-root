@@ -32,10 +32,9 @@ import importlib
 import os.path
 import typing
 import uuid
-from datetime import datetime
-
 import numpy
 import scipy.sparse
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Final
 from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
@@ -176,7 +175,7 @@ class H5File(object):
         # type: (GenericAttributes, bool) -> None
         # write_metadata  creation time, serializer class name, etc
         if create:
-            self.create_date.store(date2string(datetime.now()))
+            self.create_date.store(date2string(datetime.datetime.now()))
 
         self.generic_attributes.fill_from(generic_attributes)
         self.invalid.store(self.generic_attributes.invalid)

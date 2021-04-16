@@ -147,7 +147,7 @@ class AlgorithmService(object):
                     project = dao.get_project_by_id(project_id)
                     temporary_storage = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
                     try:
-                        uq_name = date2string(datetime.now(), True) + '_' + str(0)
+                        uq_name = date2string(datetime.datetime.now(), True) + '_' + str(0)
                         file_name = TEMPORARY_PREFIX + uq_name + '_' + field.filename
                         file_name = os.path.join(temporary_storage, file_name)
 

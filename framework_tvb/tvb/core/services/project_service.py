@@ -37,7 +37,6 @@ Service Layer for the Project entity.
 
 import os
 import formencode
-import shutil
 
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter

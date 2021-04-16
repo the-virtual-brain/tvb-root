@@ -30,7 +30,6 @@
 import os
 import typing
 import uuid
-from datetime import datetime
 from uuid import UUID
 
 from tvb.basic.logger.builder import get_logger
@@ -295,7 +294,7 @@ class ViewModelLoader(DirLoader):
         with ViewModelH5(h5_path, view_model) as h5_file:
             h5_file.store(view_model)
             h5_file.type.store(self.get_class_path(view_model))
-            h5_file.create_date.store(date2string(datetime.now()))
+            h5_file.create_date.store(date2string(datetime.datetime.now()))
             if hasattr(view_model, "generic_attributes"):
                 h5_file.store_generic_attributes(view_model.generic_attributes)
             else:

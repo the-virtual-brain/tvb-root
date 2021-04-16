@@ -38,7 +38,6 @@ import importlib
 import tables
 import h5py
 import numpy
-from datetime import datetime
 from tvb.basic.profile import TvbProfile
 from tvb.file.lab import *
 
@@ -76,7 +75,7 @@ def _serialize_value(value):
     if isinstance(value, bool):
         return BOOL_VALUE_PREFIX + str(value)
     # Transform date to string and append prefix
-    elif isinstance(value, datetime):
+    elif isinstance(value, datetime.datetime):
         return DATETIME_VALUE_PREFIX + date2string(value, date_format=DATE_TIME_FORMAT)
     else:
         return value

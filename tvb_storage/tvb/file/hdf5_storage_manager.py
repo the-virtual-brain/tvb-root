@@ -43,7 +43,7 @@ import h5py as hdf5
 import numpy as numpy
 
 from tvb import utils
-from tvb.encryption import encryption_handler
+from tvb.encryption.data_encryption_handler import encryption_handler
 from tvb.file.exceptions import IncompatibleFileManagerException, FileStructureException, MissingDataSetException, \
     MissingDataFileException
 from tvb.file.files_helper import FilesHelper

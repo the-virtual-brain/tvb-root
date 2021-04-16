@@ -41,13 +41,12 @@ import os
 import typing
 import uuid
 from abc import ABCMeta, abstractmethod
-from datetime import datetime
 from enum import Enum
 from functools import wraps
-
 import numpy
 import psutil
 from six import add_metaclass
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, HasTraits, List
 from tvb.basic.profile import TvbProfile
@@ -368,7 +367,7 @@ class ABCAdapter(object):
         data_type_group_id = None
         operation = dao.get_operation_by_id(self.operation_id)
         if operation.user_group is None or len(operation.user_group) == 0:
-            operation.user_group = date2string(datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
+            operation.user_group = date2string(datetime.datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
             operation = dao.store_entity(operation)
         if self._is_group_launch():
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id

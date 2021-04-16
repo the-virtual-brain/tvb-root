@@ -280,6 +280,18 @@ class DataTypeMetaData(dict):
     def __init__(self, data=None, invalid=False):
         self.invalid = invalid
 
+        if data is not None:
+            self.update(data)
+
+    @property
+    def gid(self):
+        """
+        :returns: current Global Identifier or None.
+        """
+        if self.KEY_GID in list(self):
+            return self[self.KEY_GID]
+        return None
+
     @property
     def subject(self):
         """

@@ -58,7 +58,6 @@ class Portlet(Base):
     name = Column(String)
     last_introspection_check = Column(DateTime)
 
-
     def __init__(self, algorithm_identifier, xml_path, name="TVB Portlet"):
         self.algorithm_identifier = algorithm_identifier
         self.xml_path = xml_path
