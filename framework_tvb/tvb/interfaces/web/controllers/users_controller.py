@@ -184,7 +184,7 @@ class UserController(BaseController):
     @check_kube_user
     def stop_operation_process(self, operation_id):
         self.logger.info("Received a request to stop process for operation {}".format(operation_id))
-        StandAloneClient.stop_operation_process(operation_id)
+        StandAloneClient.stop_operation_process(int(operation_id))
 
     @cherrypy.expose
     @handle_error(redirect=True)
