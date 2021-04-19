@@ -266,7 +266,7 @@ class StandAloneClient(BackendClient):
             return True
         try:
             LOGGER.info("Notify pods to stop operation process for {}".format(operation_id))
-            KubeService.notify_pods("/flow/stop_operation_process/{}".format(operation_id))
+            KubeService.notify_pods("/user/stop_operation_process/{}".format(operation_id))
         except Exception as e:
             LOGGER.error("Stop operation notify error", e)
             return False

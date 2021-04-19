@@ -47,7 +47,7 @@ class KubeService:
         if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
             return
 
-        LOGGER.info("Notify all pods for clearing cache.")
+        LOGGER.info("Notify all pods with url {}".format(url))
         sa_token = Popen(['cat', '/var/run/secrets/kubernetes.io/serviceaccount/token'], stdout=PIPE,
                          stderr=PIPE).stdout.read().decode()
 
