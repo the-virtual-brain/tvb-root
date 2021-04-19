@@ -35,9 +35,9 @@
 import os
 import cherrypy
 from tvb.core.utils import hash_password
+from tvb.utils import string2bool
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.core import utils
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.users_controller import UserController
 from tvb.basic.profile import TvbProfile
@@ -122,7 +122,7 @@ class TestUsersController(BaseTransactionalControllerTest):
         Test the switch_online_help method and make sure it adds corresponding entry to UserPreferences.
         """
         self._expect_redirect('/user/profile', self.user_c.switch_online_help)
-        assert not utils.string2bool(self.test_user.preferences[UserPreferences.ONLINE_HELP_ACTIVE]), \
+        assert not string2bool(self.test_user.preferences[UserPreferences.ONLINE_HELP_ACTIVE]), \
             "Online help should be switched to False."
 
     def test_register_cancel(self):
