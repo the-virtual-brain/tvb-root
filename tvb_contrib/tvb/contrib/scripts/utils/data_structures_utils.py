@@ -31,7 +31,7 @@
 """
 
 import re
-from collections import OrderedDict
+from collections import OrderedDict, Hashable
 import itertools
 from copy import deepcopy
 import numpy as np
@@ -796,12 +796,12 @@ def copy_object_attributes(obj1, obj2, attr1, attr2=None, deep_copy=False, check
 
 
 def sort_events_by_x_and_y(events, x="senders", y="times",
-                           filter_x=None, filter_y=None, exclude_x=[], exclude_y=[]):
+                           filter_x=None, filter_y=None, exclude_x=[], exclude_y=[], hashfun=str):
     xs = np.array(flatten_list(events[x]))
     if filter_x is None:
-        xlabels = np.unique(xs).tolist()
+        xlabels = np.unique(xs, axis=0).tolist()
     else:
-        xlabels = np.unique(flatten_list(filter_x)).tolist()
+        xlabels = np.unique(flatten_list(filter_x), axis=0).tolist()
     for xlbl in exclude_x:
         try:
             xlabels.remove(xlbl)
@@ -818,7 +818,11 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
     ys = np.array(ys)
     sorted_events = OrderedDict()
     for xlbl in xlabels:
-        sorted_events[xlbl] = np.sort(ys[xs == xlbl])
+        if not isinstance(xlbl, Hashable):
+            key = hashfun(xlbl)
+        else:
+            key = xlbl
+        sorted_events[key] = np.sort(ys[np.where((xs == xlbl).all(axis=1))])
     return sorted_events
 
 
