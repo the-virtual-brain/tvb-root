@@ -59,7 +59,7 @@ from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL,
 from tvb.core.utils import format_bytes_human, hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
+from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin, check_kube_user
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 
@@ -176,6 +176,7 @@ class UserController(BaseController):
         return {}
 
     @cherrypy.expose
+    @check_kube_user
     def clear_cache(self):
         self.logger.info("Received a request to clear cache.")
         cache.clear_cache(False)

@@ -45,13 +45,14 @@ from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapter
+from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED, Operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.services.cache_service import cache
+from tvb.core.services.kube_service import KubeService
 
 LOGGER = get_logger(__name__)
 
@@ -232,25 +233,42 @@ class StandAloneClient(BackendClient):
             return True
 
         LOGGER.debug("Stopping operation: %s" % str(operation_id))
-
-        # Set the thread stop flag to true
-        for thread in CURRENT_ACTIVE_THREADS:
-            if int(thread.operation_id) == operation_id:
-                thread._stop()
-                LOGGER.debug("Found running thread for operation: %d" % operation_id)
-
-        # Kill Thread
-        stopped = True
-        operation_process = dao.get_operation_process_for_operation(operation_id)
-        if operation_process is not None:
-            # Now try to kill the operation if it exists
-            stopped = OperationExecutor.stop_pid(operation_process.pid)
-            if not stopped:
-                LOGGER.debug("Operation %d was probably killed from it's specific thread." % operation_id)
-            else:
-                LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
-
+        stopped = StandAloneClient.stop_operation_process(operation_id, True)
         # Mark operation as canceled in DB and on disk
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
         cache.clear_cache()
         return stopped
+
+    @staticmethod
+    def stop_operation_process(operation_id, notify_pods=False):
+        # Set the thread stop flag to true
+        operation_thread = None
+        for thread in CURRENT_ACTIVE_THREADS:
+            if int(thread.operation_id) == operation_id:
+                operation_thread = thread
+                break
+
+        if operation_thread:
+            operation_thread._stop()
+            LOGGER.info("Found running thread for operation: %d" % operation_id)
+            # Kill Thread
+            stopped = True
+            operation_process = dao.get_operation_process_for_operation(operation_id)
+            if operation_process is not None:
+                # Now try to kill the operation if it exists
+                stopped = OperationExecutor.stop_pid(operation_process.pid)
+                if not stopped:
+                    LOGGER.debug("Operation %d was probably killed from it's specific thread." % operation_id)
+                else:
+                    LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
+            return stopped
+
+        LOGGER.info("Running thread was not found for operation {}".format(operation_id))
+        if not notify_pods or not TvbProfile.current.web.OPENSHIFT_DEPLOY:
+            return True
+        try:
+            LOGGER.info("Notify pods to stop operation process for {}".format(operation_id))
+            KubeService.notify_pods("/flow/stop_operation_process/{}".format(operation_id))
+        except Exception as e:
+            LOGGER.error("Stop operation notify error", e)
+            return False

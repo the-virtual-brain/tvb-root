@@ -48,6 +48,7 @@ from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, 
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
+from tvb.core.services.backend_clients.standalone_client import StandAloneClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException, ServicesBaseException
 from tvb.core.services.import_service import ImportService
@@ -107,6 +108,12 @@ class SimulatorController(BurstBaseController):
                      (current_burst.fk_operation_group == operation_id and is_group))):
                 self.reset_simulator_configuration()
         return result
+
+    @cherrypy.expose
+    @check_kube_user
+    def stop_operation_process(self, operation_id):
+        self.logger.info("Received a request to stop process for operation {}".format(operation_id))
+        StandAloneClient.stop_operation_process(operation_id)
 
     @expose_page
     @settings
