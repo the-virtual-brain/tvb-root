@@ -50,6 +50,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.core.services.backend_clients.standalone_client import StandAloneClient
 from tvb.core.services.cache_service import cache
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.project_service import ProjectService
@@ -180,6 +181,12 @@ class UserController(BaseController):
     def clear_cache(self):
         self.logger.info("Received a request to clear cache.")
         cache.clear_cache(False)
+
+    @cherrypy.expose
+    @check_kube_user
+    def stop_operation_process(self, operation_id):
+        self.logger.info("Received a request to stop process for operation {}".format(operation_id))
+        StandAloneClient.stop_operation_process(operation_id)
 
     @cherrypy.expose
     @handle_error(redirect=True)
