@@ -479,7 +479,7 @@ def _migrate_time_series(operation_xml_parameters):
     for xml_param in operation_xml_parameters:
         if 'coupling_parameters' in xml_param:
             new_param = xml_param.replace('coupling_parameters_option_' + coupling_name + '_', '')
-            coupling_param = numpy.asarray(eval(operation_xml_parameters[xml_param]),
+            coupling_param = numpy.asarray(eval(str(operation_xml_parameters[xml_param])),
                                            dtype=getattr(coupling, new_param).dtype)
             additional_params.append(['coupling', new_param, coupling_param])
 
@@ -524,7 +524,6 @@ def _migrate_time_series_simple(**kwargs):
 
 
 def _parse_fmri_ballon_adapter_operation(operation_xml_parameters):
-    _, operation_xml_parameters['RBM'] = _parse_bool(operation_xml_parameters['RBM'])
     operation_xml_parameters['dt'] = float(operation_xml_parameters['dt'])
     return operation_xml_parameters, None
 
@@ -1144,22 +1143,23 @@ def update(input_file, burst_match_dict):
     additional_params = None  # params that can't be jsonified with json.dumps
     has_vm = False
     operation = None
-    # Take information out from the Operation.xml file
-    if OPERATION_XML in files_in_folder:
-        operation_file_path = os.path.join(folder, OPERATION_XML)
-        project = dao.get_project_by_name(split_path[-3])
-        xml_operation, operation_xml_parameters, algorithm = \
-            import_service.build_operation_from_file(project, operation_file_path)
-        operation = dao.get_operation_by_id(op_id)
-        try:
-            operation_xml_parameters = json.loads(operation_xml_parameters)
-        except NameError:
-            operation_xml_parameters = operation_xml_parameters.replace('null', '\"null\"')
-            operation_xml_parameters = json.load(operation_xml_parameters)
-    else:
-        has_vm = True
 
     try:
+        # Take information out from the Operation.xml file
+        if OPERATION_XML in files_in_folder:
+            operation_file_path = os.path.join(folder, OPERATION_XML)
+            project = dao.get_project_by_name(split_path[-3])
+            xml_operation, operation_xml_parameters, algorithm = \
+                import_service.build_operation_from_file(project, operation_file_path)
+            operation = dao.get_operation_by_id(op_id)
+            try:
+                operation_xml_parameters = json.loads(operation_xml_parameters)
+            except NameError:
+                operation_xml_parameters = operation_xml_parameters.replace('null', '\"null\"')
+                operation_xml_parameters = json.load(operation_xml_parameters)
+        else:
+            has_vm = True
+
         # Calls the specific method for the current h5 class
         params = datatypes_to_be_migrated[class_name](root_metadata=root_metadata,
                                                       storage_manager=storage_manager,
