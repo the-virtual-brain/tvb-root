@@ -187,6 +187,16 @@ class UserController(BaseController):
         StandAloneClient.stop_operation_process(int(operation_id))
 
     @cherrypy.expose
+    @check_kube_user
+    def start_operation_pod(self, operation_id):
+        self.logger.info("Received a request to start operation {}".format(operation_id))
+        if LOCKS_QUEUE.qsize() == 0:
+            self.logger.info("Cannot start operation {} because queue is full.".format(operation_id))
+            return
+        LOCKS_QUEUE.get()
+        StandAloneClient.start_operation(operation_id)
+
+    @cherrypy.expose
     @handle_error(redirect=True)
     @check_user
     def logout(self):

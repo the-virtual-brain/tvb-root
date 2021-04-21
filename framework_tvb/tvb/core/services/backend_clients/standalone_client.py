@@ -178,10 +178,11 @@ class StandAloneClient(BackendClient):
             operations.sort(key=lambda l_operation: l_operation.id)
             for operation in operations:
                 try:
-                    LOCKS_QUEUE.get(True)
                     op = dao.get_operation_by_id(operation.id)
-                    if not op.queue_full:
+                    operation_process = dao.get_operation_process_for_operation(operation.id)
+                    if operation_process is not None or not op.queue_full or LOCKS_QUEUE.qsize() == 0:
                         continue
+                    LOCKS_QUEUE.get()
                     StandAloneClient.start_operation(operation.id)
                 except Exception as e:
                     LOGGER.error("Starting operation error", e)
@@ -211,7 +212,7 @@ class StandAloneClient(BackendClient):
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
         """Start asynchronous operation locally"""
-        if LOCKS_QUEUE.qsize() == 0:
+        if TvbProfile.current.web.OPENSHIFT_DEPLOY or LOCKS_QUEUE.qsize() == 0:
             operation = dao.get_operation_by_id(operation_id)
             operation.queue_full = True
             dao.store_entity(operation)
@@ -239,34 +240,36 @@ class StandAloneClient(BackendClient):
 
     @staticmethod
     def stop_operation_process(operation_id, notify_pods=False):
-        # Set the thread stop flag to true
-        operation_thread = None
-        for thread in CURRENT_ACTIVE_THREADS:
-            if int(thread.operation_id) == operation_id:
-                operation_thread = thread
-                break
+        if notify_pods and TvbProfile.current.web.OPENSHIFT_DEPLOY:
+            try:
+                LOGGER.info("Notify pods to stop operation process for {}".format(operation_id))
+                KubeService.notify_pods("/user/stop_operation_process/{}".format(operation_id),
+                                        TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
+                return True
+            except Exception as e:
+                LOGGER.error("Stop operation notify error", e)
+                return False
+        else:
+            # Set the thread stop flag to true
+            operation_thread = None
+            for thread in CURRENT_ACTIVE_THREADS:
+                if int(thread.operation_id) == operation_id:
+                    operation_thread = thread
+                    break
 
-        if operation_thread:
-            operation_thread._stop()
-            LOGGER.info("Found running thread for operation: %d" % operation_id)
-            # Kill Thread
-            stopped = True
-            operation_process = dao.get_operation_process_for_operation(operation_id)
-            if operation_process is not None:
-                # Now try to kill the operation if it exists
-                stopped = OperationExecutor.stop_pid(operation_process.pid)
-                if not stopped:
-                    LOGGER.debug("Operation %d was probably killed from it's specific thread." % operation_id)
-                else:
-                    LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
-            return stopped
+            if operation_thread:
+                operation_thread._stop()
+                LOGGER.info("Found running thread for operation: %d" % operation_id)
+                # Kill Thread
+                stopped = True
+                operation_process = dao.get_operation_process_for_operation(operation_id)
+                if operation_process is not None:
+                    # Now try to kill the operation if it exists
+                    stopped = OperationExecutor.stop_pid(operation_process.pid)
+                    if not stopped:
+                        LOGGER.debug("Operation %d was probably killed from it's specific thread." % operation_id)
+                    else:
+                        LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
+                return stopped
 
-        LOGGER.info("Running thread was not found for operation {}".format(operation_id))
-        if not notify_pods or not TvbProfile.current.web.OPENSHIFT_DEPLOY:
-            return True
-        try:
-            LOGGER.info("Notify pods to stop operation process for {}".format(operation_id))
-            KubeService.notify_pods("/user/stop_operation_process/{}".format(operation_id))
-        except Exception as e:
-            LOGGER.error("Stop operation notify error", e)
-            return False
+            LOGGER.info("Running thread was not found for operation {}".format(operation_id))
