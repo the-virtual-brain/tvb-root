@@ -225,7 +225,10 @@ class FilesUpdateManager(UpdateManager):
         for project_path in os.listdir(projects_folder):
             # Getting operation folders inside the current project
             project_full_path = os.path.join(projects_folder, project_path)
-            project_operations = os.listdir(project_full_path)
+            try:
+                project_operations = os.listdir(project_full_path)
+            except NotADirectoryError:
+                continue
             project_operations_base_names = [os.path.basename(op) for op in project_operations]
 
             for op_folder in project_operations_base_names:
@@ -235,9 +238,12 @@ class FilesUpdateManager(UpdateManager):
                     for file in os.listdir(op_folder_path):
                         if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
                             h5_file = os.path.join(op_folder_path, file)
-                            if FilesUpdateManager._is_empty_file(h5_file):
+                            try:
+                                if FilesUpdateManager._is_empty_file(h5_file):
+                                    continue
+                                h5_files.append(h5_file)
+                            except FileStructureException:
                                 continue
-                            h5_files.append(h5_file)
                 except ValueError:
                     pass
 
