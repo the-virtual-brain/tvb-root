@@ -399,7 +399,7 @@ class FlowController(BaseController):
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algo_id)
         adapter_instance = ABCAdapter.build_adapter(algorithm)
         entity = load_entity_by_gid(entity_gid)
-        storage_path = self.files_helper.get_project_folder(entity.parent_operation.project,
+        storage_path = self.files_helper.get_project_folder(entity.parent_operation.project.name,
                                                             str(entity.fk_from_operation))
         adapter_instance.storage_path = storage_path
         method = getattr(adapter_instance, method_name)

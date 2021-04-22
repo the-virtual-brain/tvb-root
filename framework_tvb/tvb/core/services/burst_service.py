@@ -189,7 +189,7 @@ class BurstService(object):
     def update_burst_configuration_h5(self, burst_configuration):
         # type: (BurstConfiguration) -> None
         project = dao.get_project_by_id(burst_configuration.fk_project)
-        storage_path = self.files_helper.get_project_folder(project, str(burst_configuration.fk_simulation))
+        storage_path = self.files_helper.get_project_folder(project.name, str(burst_configuration.fk_simulation))
         self.store_burst_configuration(burst_configuration, storage_path)
 
     @staticmethod
@@ -332,7 +332,7 @@ class BurstService(object):
                                      range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
-        op_dir = FilesHelper().get_project_folder(operation.project, str(metric_operation.id))
+        op_dir = FilesHelper().get_project_folder(operation.project.name, str(metric_operation.id))
         return op_dir, metric_operation
 
     @staticmethod
@@ -353,7 +353,7 @@ class BurstService(object):
         count = dao.count_bursts_with_name(burst_config.name, burst_config.fk_project)
         burst_config_copy.name = burst_name_format.format(burst_config.name, count + 1)
 
-        storage_path = self.files_helper.get_project_folder(project, str(burst_config.fk_simulation))
+        storage_path = self.files_helper.get_project_folder(project.name, str(burst_config.fk_simulation))
         simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
         simulator.generic_attributes = GenericAttributes()
         return simulator, burst_config_copy

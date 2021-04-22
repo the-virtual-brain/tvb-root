@@ -76,7 +76,7 @@ class HPCOperationService(object):
                   op_ident.job_id)
 
         operation = dao.get_operation_by_id(operation.id)
-        folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
+        folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project.name)
         if encryption_handler.encryption_enabled():
             encryption_handler.inc_project_usage_count(folder)
             encryption_handler.sync_folders(folder)

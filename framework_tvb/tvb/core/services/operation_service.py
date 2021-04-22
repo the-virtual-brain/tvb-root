@@ -202,7 +202,7 @@ class OperationService:
 
     @staticmethod
     def store_view_model(operation, project, view_model):
-        storage_path = FilesHelper().get_project_folder(project, str(operation.id))
+        storage_path = FilesHelper().get_project_folder(project.name, str(operation.id))
         h5.store_view_model(view_model, storage_path)
         view_model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)
         operation.view_model_disk_size = view_model_size_on_disk
@@ -229,7 +229,7 @@ class OperationService:
                 form = form() if isclass(form) else form
                 fields = form.get_upload_field_names()
                 project = dao.get_project_by_id(operation.fk_launched_in)
-                tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
+                tmp_folder = self.file_helper.get_project_folder(project.name, self.file_helper.TEMP_FOLDER)
                 for upload_field in fields:
                     if hasattr(view_model, upload_field):
                         file = getattr(view_model, upload_field)
@@ -278,7 +278,7 @@ class OperationService:
     @staticmethod
     def _update_vm_generic_operation_tag(view_model, operation):
         project = dao.get_project_by_id(operation.fk_launched_in)
-        storage_path = FilesHelper().get_project_folder(project, str(operation.id))
+        storage_path = FilesHelper().get_project_folder(project.name, str(operation.id))
         h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid, type(view_model).__name__)
         with ViewModelH5(h5_path, view_model) as vm_h5:
             vm_h5.operation_tag.store(operation.user_group)

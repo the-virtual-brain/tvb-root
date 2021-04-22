@@ -102,7 +102,7 @@ class SimulatorService(object):
                                                                  view_model=simulator, burst_gid=burst_config.gid,
                                                                  op_group_id=burst_config.fk_operation_group)
             burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id, simulator.gid)
-            storage_path = self.files_helper.get_project_folder(project, str(operation.id))
+            storage_path = self.files_helper.get_project_folder(project.name, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
 
             wf_errs = 0
@@ -185,7 +185,7 @@ class SimulatorService(object):
                         first_simulator = simulator
 
             first_operation = operations[0]
-            storage_path = self.files_helper.get_project_folder(project, str(first_operation.id))
+            storage_path = self.files_helper.get_project_folder(project.name, str(first_operation.id))
             burst_config = self.burst_service.update_simulation_fields(burst_config, first_operation.id,
                                                                        first_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)

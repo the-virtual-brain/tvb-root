@@ -101,7 +101,7 @@ class TestOperationService(BaseTestCase):
 
         for op in operations:
             model.gid = uuid.uuid4()
-            op_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+            op_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
             op.view_model_gid = model.gid.hex
             op.algorithm = adapter.stored_adapter
             h5.store_view_model(model, op_path)

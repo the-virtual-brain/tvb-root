@@ -648,7 +648,8 @@ class SimulatorController(BurstBaseController):
     def load_burst_read_only(self, burst_config_id):
         try:
             burst_config = self.burst_service.load_burst_configuration(burst_config_id)
-            storage_path = self.files_helper.get_project_folder(self.context.project, str(burst_config.fk_simulation))
+            storage_path = self.files_helper.get_project_folder(self.context.project.name,
+                                                                str(burst_config.fk_simulation))
             simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
             last_loaded_form_url = self.get_url_for_final_fragment(burst_config)
             self.context.init_session_at_burst_loading(burst_config, simulator, last_loaded_form_url)

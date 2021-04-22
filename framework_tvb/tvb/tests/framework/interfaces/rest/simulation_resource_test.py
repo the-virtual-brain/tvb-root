@@ -83,7 +83,7 @@ class TestSimulationResource(RestResourceTest):
 
     def test_server_fire_simulation(self, mocker, connectivity_factory):
         self._mock_user(mocker)
-        input_folder = self.files_helper.get_project_folder(self.test_project)
+        input_folder = self.files_helper.get_project_folder(self.test_project.name)
         sim_dir = os.path.join(input_folder, 'test_sim')
         if not os.path.isdir(sim_dir):
             os.makedirs(sim_dir)

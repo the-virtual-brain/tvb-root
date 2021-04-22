@@ -255,7 +255,7 @@ class RegionStimulusController(SpatioTemporalController):
         if connectivity is None:
             raise MissingDataException(RegionStimulusController.MSG_MISSING_CONNECTIVITY + "!!")
         current_project = common.get_current_project()
-        conn_path = FilesHelper().get_project_folder(current_project, str(connectivity.fk_from_operation))
+        conn_path = FilesHelper().get_project_folder(current_project.name, str(connectivity.fk_from_operation))
         connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
 
         template_specification = dict()

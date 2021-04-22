@@ -81,7 +81,7 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         operation = dao.store_entity(operation)
 
         # Store ViewModel in H5
-        parent_folder = FilesHelper().get_project_folder(self.test_project, str(operation.id))
+        parent_folder = FilesHelper().get_project_folder(self.test_project.name, str(operation.id))
         h5.store_view_model(view_model, parent_folder)
 
         # Launch operation

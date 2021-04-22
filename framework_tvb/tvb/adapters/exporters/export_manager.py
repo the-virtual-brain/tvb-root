@@ -181,7 +181,7 @@ class ExportManager(object):
         if project is None:
             raise ExportException("Please provide project to be exported")
 
-        project_folder = self.files_helper.get_project_folder(project)
+        project_folder = self.files_helper.get_project_folder(project.name)
         project_datatypes = dao.get_datatypes_in_project(project.id, only_visible=optimize_size)
         to_be_exported_folders = []
         considered_op_ids = []
@@ -192,7 +192,8 @@ class ExportManager(object):
             for dt in project_datatypes:
                 op_id = dt.fk_from_operation
                 if op_id not in considered_op_ids:
-                    to_be_exported_folders.append({'folder': self.files_helper.get_project_folder(project, str(op_id)),
+                    to_be_exported_folders.append({'folder': self.files_helper.get_project_folder(project.name,
+                                                                                                  str(op_id)),
                                                    'archive_path_prefix': str(op_id) + os.sep,
                                                    'exclude': folders_to_exclude})
                     considered_op_ids.append(op_id)
@@ -257,7 +258,7 @@ class ExportManager(object):
         if burst is None:
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
-        op_folder = self.files_helper.get_project_folder(burst.project, str(burst.fk_simulation))
+        op_folder = self.files_helper.get_project_folder(burst.project.name, str(burst.fk_simulation))
         tmp_export_folder = self._build_data_export_folder(burst)
         tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
 

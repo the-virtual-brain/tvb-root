@@ -165,7 +165,7 @@ class ImportService(object):
             # Removing from DB is not necessary because in transactional env a simple exception throw
             # will erase everything to be inserted.
             for project in self.created_projects:
-                project_path = self.files_helper.get_project_folder(project)
+                project_path = self.files_helper.get_project_folder(project.name)
                 shutil.rmtree(project_path)
             raise ImportException(str(excep))
 
@@ -193,7 +193,7 @@ class ImportService(object):
             # Populate the internal list of create projects so far, for cleaning up folders, in case of failure
             self.created_projects.append(project)
             # Ensure project final folder exists on disk
-            project_path = self.files_helper.get_project_folder(project)
+            project_path = self.files_helper.get_project_folder(project.name)
             shutil.move(os.path.join(temp_project_path, FilesHelper.TVB_PROJECT_FILE), project_path)
             # Now import project operations with their results
             self.import_project_operations(project, temp_project_path)
@@ -411,7 +411,7 @@ class ImportService(object):
 
             if operation_data.is_old_form:
                 operation_entity, datatype_group = self.import_operation(operation_data.operation)
-                new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
+                new_op_folder = self.files_helper.get_project_folder(project.name, str(operation_entity.id))
 
                 try:
                     operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
@@ -463,7 +463,7 @@ class ImportService(object):
                     #TODO: TVB-2849 to reveiw these flags and simplify condition
                     if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group) or importer_operation_id is not None:
                         imported_operations.append(operation_entity)
-                        new_op_folder = self.files_helper.get_project_folder(project, str(operation_entity.id))
+                        new_op_folder = self.files_helper.get_project_folder(project.name, str(operation_entity.id))
                         view_model_disk_size = 0
                         for h5_file in operation_data.all_view_model_files:
                             view_model_disk_size += FilesHelper.compute_size_on_disk(h5_file)

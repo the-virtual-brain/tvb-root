@@ -126,7 +126,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         mocker.patch('tvb.core.operation_hpc_launcher._update_operation_status', _update_operation_status)
 
         # Call do_operation_launch similarly to CSCS env
-        plain_dir = self.files_helper.get_project_folder(self.test_project, 'plain')
+        plain_dir = self.files_helper.get_project_folder(self.test_project.name, 'plain')
         do_operation_launch(sim_gid.hex, 1000, is_pse, '', op.id, plain_dir)
         assert len(os.listdir(encrypted_dir)) == 7
         output_path = os.path.join(encrypted_dir, HPCSchedulerClient.OUTPUT_FOLDER)
@@ -164,7 +164,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
         op = operation_factory()
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
         prj_db_db = h5.store_complete(proj, storage_path)
         prj_db_db.fk_from_operation = op.id
         dao.store_entity(prj_db_db)

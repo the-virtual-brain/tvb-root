@@ -117,7 +117,7 @@ class HPCSchedulerClient(BackendClient):
     @staticmethod
     def _prepare_input(operation, simulator_gid):
         # type: (Operation, str) -> list
-        storage_path = FilesHelper().get_project_folder(operation.project, str(operation.id))
+        storage_path = FilesHelper().get_project_folder(operation.project.name, str(operation.id))
         vm_files, dt_files = h5.gather_references_of_view_model(simulator_gid, storage_path)
         vm_files.extend(dt_files)
         return vm_files
@@ -352,7 +352,7 @@ class HPCSchedulerClient(BackendClient):
                                                                            metric_vm_encrypted_file, operation,
                                                                            encryption_handler)
         project = dao.get_project_by_id(operation.fk_launched_in)
-        operation_dir = HPCSchedulerClient.file_handler.get_project_folder(project, str(operation.id))
+        operation_dir = HPCSchedulerClient.file_handler.get_project_folder(project.name, str(operation.id))
         h5_filenames = encryption_handler.decrypt_files_to_dir(simulation_results, operation_dir)
         encryption_handler.cleanup()
         LOGGER.info("Decrypted h5: {}".format(h5_filenames))
@@ -365,7 +365,7 @@ class HPCSchedulerClient(BackendClient):
     def _run_hpc_job(operation_identifier):
         # type: (int) -> None
         operation = dao.get_operation_by_id(operation_identifier)
-        project_folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
+        project_folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project.name)
         encryption_handler.inc_running_op_count(project_folder)
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = operation.view_model_gid

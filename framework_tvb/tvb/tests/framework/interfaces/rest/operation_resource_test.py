@@ -169,7 +169,7 @@ class TestOperationResource(RestResourceTest):
         fft_model.time_series = UUID(input_ts_index.gid)
         fft_model.window_function = list(SUPPORTED_WINDOWING_FUNCTIONS)[0]
 
-        input_folder = self.files_helper.get_project_folder(self.test_project)
+        input_folder = self.files_helper.get_project_folder(self.test_project.name)
         view_model_h5_path = h5.store_view_model(fft_model, input_folder)
 
         # Mock flask.request.files to return a dictionary

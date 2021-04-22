@@ -188,7 +188,7 @@ class ProjectController(BaseController):
                 data = EditForm().to_python(data)
                 saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
                 if DataEncryptionHandler.encryption_enabled() and is_create:
-                    project_folder = self.file_helper.get_project_folder(saved_project)
+                    project_folder = self.file_helper.get_project_folder(saved_project.name)
                     DataEncryptionHandler.sync_folders(project_folder)
                     shutil.rmtree(project_folder)
                 self._mark_selected(saved_project)

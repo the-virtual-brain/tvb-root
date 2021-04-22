@@ -305,7 +305,7 @@ class ABCAdapter(object):
     def extract_operation_data(self, operation):
         operation = dao.get_operation_by_id(operation.id)
         project = dao.get_project_by_id(operation.fk_launched_in)
-        self.storage_path = self.file_handler.get_project_folder(project, str(operation.id))
+        self.storage_path = self.file_handler.get_project_folder(project.name, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
@@ -536,7 +536,7 @@ class ABCAdapter(object):
             raise IntrospectionException(msg)
 
     def load_view_model(self, operation):
-        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        storage_path = self.file_handler.get_project_folder(operation.project.name, str(operation.id))
         input_gid = operation.view_model_gid
         return h5.load_view_model(input_gid, storage_path)
 

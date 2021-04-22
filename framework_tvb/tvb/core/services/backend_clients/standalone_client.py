@@ -82,7 +82,7 @@ class OperationExecutor(Thread):
                       str(operation_id), TvbProfile.CURRENT_PROFILE_NAME]
 
         current_operation = dao.get_operation_by_id(operation_id)
-        project_folder = FilesHelper().get_project_folder(current_operation.project)
+        project_folder = FilesHelper().get_project_folder(current_operation.project.name)
         encryption_handler.inc_running_op_count(project_folder)
         # In the exceptional case where the user pressed stop while the Thread startup is done,
         # We should no longer launch the operation.

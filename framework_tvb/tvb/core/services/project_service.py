@@ -108,7 +108,7 @@ class ProjectService:
             raise ProjectServiceException("A project can not be renamed while operations are still running!")
         if is_create:
             current_proj = Project(new_name, current_user.id, data["description"])
-            self.structure_helper.get_project_folder(current_proj)
+            self.structure_helper.get_project_folder(current_proj.name)
         else:
             try:
                 current_proj = dao.get_project_by_id(selected_id)
@@ -116,7 +116,7 @@ class ProjectService:
                 self.logger.exception("An error has occurred!")
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
-                project_folder = self.structure_helper.get_project_folder(current_proj)
+                project_folder = self.structure_helper.get_project_folder(current_proj.name)
                 if encryption_handler.encryption_enabled() and not encryption_handler.is_in_usage(project_folder):
                     raise ProjectServiceException(
                         "A project can not be renamed while sync encryption operations are running")
@@ -321,7 +321,7 @@ class ProjectService:
             for burst in project_bursts:
                 dao.remove_entity(burst.__class__, burst.id)
 
-            project_folder = self.structure_helper.get_project_folder(project2delete)
+            project_folder = self.structure_helper.get_project_folder(project2delete.name)
             self.structure_helper.remove_project_structure(project2delete.name)
             encrypted_path = encryption_handler.compute_encrypted_folder_path(project_folder)
             if os.path.exists(encrypted_path):
@@ -581,7 +581,7 @@ class ProjectService:
                                        datatype.parent_operation.range_values)
                     new_op = dao.store_entity(new_op)
                     to_project = self.find_project(links[0].fk_to_project)
-                    to_project_path = self.structure_helper.get_project_folder(to_project)
+                    to_project_path = self.structure_helper.get_project_folder(to_project.name)
 
                     encryption_handler.set_project_active(to_project)
                     encryption_handler.sync_folders(to_project_path)
@@ -590,7 +590,7 @@ class ProjectService:
                     full_path = h5.path_for_stored_index(datatype)
                     self.structure_helper.move_datatype(to_project_name, str(new_op.id), full_path)
                     # Move also the ViewModel H5
-                    old_folder = self.structure_helper.get_project_folder(project, str(op.id))
+                    old_folder = self.structure_helper.get_project_folder(project.name, str(op.id))
                     view_model = adapter.load_view_model(op)
                     vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
                     self.structure_helper.move_datatype(to_project_name, str(new_op.id), vm_full_path)
@@ -630,7 +630,7 @@ class ProjectService:
             # but we still remove it for the case when no DTs exist
             dao.remove_entity(Operation, operation.id)
             self.structure_helper.remove_operation_data(operation.project.name, operation_id)
-            encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder(operation.project))
+            encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder(operation.project.name))
             self.logger.debug("Finished deleting operation %s " % operation)
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
@@ -696,7 +696,7 @@ class ProjectService:
             # Make sure Operation folder is removed
             self.structure_helper.remove_operation_data(project.name, operation_id)
 
-        encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder(project))
+        encryption_handler.push_folder_to_sync(self.structure_helper.get_project_folder(project.name))
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
 
@@ -779,7 +779,7 @@ class ProjectService:
             operation = dao.get_operation_by_id(datatype.fk_from_operation)
             operation.user_group = new_group_name
             dao.store_entity(operation)
-            op_folder = self.structure_helper.get_project_folder(operation.project, str(operation.id))
+            op_folder = self.structure_helper.get_project_folder(operation.project.name, str(operation.id))
             vm_gid = operation.view_model_gid
             view_model_file = h5.determine_filepath(vm_gid, op_folder)
             if view_model_file:

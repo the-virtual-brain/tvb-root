@@ -204,7 +204,7 @@ class TVBLoader(object):
         else:
             op_id = dt_index_instance.fk_from_operation
         operation = dao.get_operation_by_id(op_id)
-        operation_folder = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        operation_folder = self.file_handler.get_project_folder(operation.project.name, str(operation.id))
 
         gid = uuid.UUID(dt_index_instance.gid)
         h5_file_class = self.registry.get_h5file_for_index(dt_index_instance.__class__)

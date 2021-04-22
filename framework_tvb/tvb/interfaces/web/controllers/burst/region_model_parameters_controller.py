@@ -100,7 +100,7 @@ class RegionsModelParametersController(BurstBaseController):
         current_project = common.get_current_project()
         file_handler = FilesHelper()
         conn_idx = load.load_entity_by_gid(connectivity)
-        conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
+        conn_path = file_handler.get_project_folder(current_project.name, str(conn_idx.fk_from_operation))
 
         params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
         burst_config = self.simulator_context.burst_config

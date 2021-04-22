@@ -362,7 +362,7 @@ class TestProjectStructure(TransactionalTestCase):
 
             op = operation_factory(test_project=project)
             conn = connectivity_index_factory(op=op)
-            storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+            storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
 
             count = _create_measure(conn, op, storage_path, project.id)
             assert count == 1

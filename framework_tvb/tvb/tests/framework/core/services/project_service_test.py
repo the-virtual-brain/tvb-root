@@ -112,14 +112,14 @@ class TestProjectService(TransactionalTestCase):
         Standard flow for editing an existing project.
         """
         selected_project = TestFactory.create_project(self.test_user, 'test_proj')
-        proj_root = self.structure_helper.get_project_folder(selected_project)
+        proj_root = self.structure_helper.get_project_folder(selected_project.name)
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 1, "Database initialization probably failed!"
 
         edited_data = dict(name="test_project", description="test_description", users=[])
         edited_project = self.project_service.store_project(self.test_user, False, selected_project.id, **edited_data)
         assert not os.path.exists(proj_root), "Previous folder not deleted"
-        proj_root = self.structure_helper.get_project_folder(edited_project)
+        proj_root = self.structure_helper.get_project_folder(edited_project.name)
         assert os.path.exists(proj_root), "New folder not created!"
         assert selected_project.name != edited_project.name, "Project was no changed!"
 
@@ -128,7 +128,7 @@ class TestProjectService(TransactionalTestCase):
         Trying to edit an un-existing project.
         """
         selected_project = TestFactory.create_project(self.test_user, 'test_proj')
-        self.structure_helper.get_project_folder(selected_project)
+        self.structure_helper.get_project_folder(selected_project.name)
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 1, "Database initialization probably failed!"
         data = dict(name="test_project", description="test_description", users=[])
@@ -295,7 +295,7 @@ class TestProjectService(TransactionalTestCase):
             assert 0 != project.disk_size
             assert '0.0 KiB' != project.disk_size_human
 
-            prj_folder = self.structure_helper.get_project_folder(project)
+            prj_folder = self.structure_helper.get_project_folder(project.name)
             actual_disk_size = FilesHelper.compute_recursive_h5_disk_usage(prj_folder)
 
             ratio = float(actual_disk_size) / project.disk_size
@@ -329,7 +329,7 @@ class TestProjectService(TransactionalTestCase):
         Standard flow for deleting a project.
         """
         inserted_project = TestFactory.create_project(self.test_user, 'test_proj')
-        project_root = self.structure_helper.get_project_folder(inserted_project)
+        project_root = self.structure_helper.get_project_folder(inserted_project.name)
         projects = dao.get_projects_for_user(self.test_user.id)
         assert len(projects) == 1, "Initializations failed!"
         assert os.path.exists(project_root), "Something failed at insert time!"

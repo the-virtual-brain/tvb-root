@@ -140,7 +140,7 @@ class FigureService:
         # Write image meta data to disk
         _, meta_data = figure.to_dict()
         self.file_helper.write_image_metadata(figure, meta_data)
-        encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(project))
+        encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(project.name))
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
         """

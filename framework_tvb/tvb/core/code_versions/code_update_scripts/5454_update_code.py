@@ -72,7 +72,7 @@ def update():
 
             dao.store_entities(figures)
 
-            project_path = FilesHelper().get_project_folder(project)
+            project_path = FilesHelper().get_project_folder(project.name)
             update_manager = ProjectUpdateManager(project_path)
             update_manager.run_all_updates()
 

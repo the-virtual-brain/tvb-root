@@ -768,7 +768,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
-        storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -802,7 +802,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
-        storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -855,7 +855,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.set_simulator(self.session_stored_simulator)
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
 
-        storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -932,7 +932,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
     def _prepare_burst_for_export(self):
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
-        storage_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
 
         burst_service = BurstService()

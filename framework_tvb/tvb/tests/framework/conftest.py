@@ -201,7 +201,7 @@ def operation_factory(user_factory, project_factory, connectivity_factory):
         dao.store_entity(operation)
 
         if store_vm:
-            op_folder = FilesHelper().get_project_folder(test_project, str(operation.id))
+            op_folder = FilesHelper().get_project_folder(test_project.name, str(operation.id))
             h5.store_view_model(view_model, op_folder)
 
         # Make sure lazy attributes are correctly loaded.
@@ -239,7 +239,7 @@ def connectivity_index_factory(connectivity_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
         conn_db = h5.store_complete(conn, storage_path)
         conn_db.fk_from_operation = op.id
         return dao.store_entity(conn_db)
@@ -291,7 +291,7 @@ def surface_index_factory(surface_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
         surface_db = h5.store_complete(surface, storage_path)
         surface_db.fk_from_operation = op.id
         return dao.store_entity(surface_db), surface
@@ -322,7 +322,7 @@ def region_mapping_index_factory(region_mapping_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
         if not surface_gid:
             surface_db = h5.store_complete(region_mapping.surface, storage_path)
             surface_db.fk_from_operation = op.id
@@ -375,7 +375,7 @@ def sensors_index_factory(sensors_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
         sensors_db = h5.store_complete(sensors, storage_path)
         sensors_db.fk_from_operation = op.id
         return dao.store_entity(sensors_db), sensors
@@ -599,13 +599,13 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                 if store_vm:
                     view_model = copy.deepcopy(view_model)
                     view_model.gid = view_model_gid
-                    op_path = FilesHelper().get_project_folder(project, str(op.id))
+                    op_path = FilesHelper().get_project_folder(project.name, str(op.id))
                     h5.store_view_model(view_model, op_path)
 
                     view_model_ms = copy.deepcopy(view_model_ms)
                     view_model_ms.gid = view_model_ms_gid
                     view_model_ms.time_series = ts_index.gid
-                    op_ms_path = FilesHelper().get_project_folder(project, str(op_ms.id))
+                    op_ms_path = FilesHelper().get_project_folder(project.name, str(op_ms.id))
                     h5.store_view_model(view_model_ms, op_ms_path)
 
                 if not datatype_group.fk_from_operation:
@@ -664,7 +664,7 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
         surface_db = h5.store_complete(surface, storage_path)
         surface_db.fk_from_operation = op.id
         dao.store_entity(surface_db)
@@ -696,7 +696,7 @@ def simulator_factory(connectivity_index_factory, operation_factory, region_mapp
             model.surface.surface_gid = rm_idx.fk_surface_gid
             model.surface.region_mapping_data = rm_idx.gid
             model.simulation_length = 10
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
         h5.store_view_model(model, storage_path)
 
         return storage_path, model.gid
