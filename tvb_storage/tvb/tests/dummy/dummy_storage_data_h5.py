@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -29,15 +29,20 @@
 #
 
 """
-We want tvb package to extend over at least 2 folders:
-tvb_storage and simulator_library.
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
-from pkgutil import extend_path
+import h5py
 
-try:
-    __path__ = extend_path(__path__, __name__)
 
-except NameError:
-    ## Ignore __path__ not defined when called from sphinx
-    __path__ = [__name__]
+class DummyStorageDataH5(object):
+    def __init__(self, path):
+        self.row1 = "row1_attribute"
+        self.row2 = "row2_attribute"
+        self.dataset = (10, 10, 10)
+
+        f = h5py.File(path, 'w')
+        f.create_dataset("Dummy_Dataset", self.dataset, "f")
+        f["Dummy_Dataset"].attrs["row1"] = self.row1
+        f["Dummy_Dataset"].attrs["row2"] = self.row2
+        f.close()

@@ -588,12 +588,12 @@ class ProjectService:
                     to_project_name = to_project.name
 
                     full_path = h5.path_for_stored_index(datatype)
-                    self.structure_helper.move_datatype(datatype, to_project_name, str(new_op.id), full_path)
+                    self.structure_helper.move_datatype(to_project_name, str(new_op.id), full_path)
                     # Move also the ViewModel H5
                     old_folder = self.structure_helper.get_project_folder(project, str(op.id))
                     view_model = adapter.load_view_model(op)
                     vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
-                    self.structure_helper.move_datatype(view_model, to_project_name, str(new_op.id), vm_full_path)
+                    self.structure_helper.move_datatype(to_project_name, str(new_op.id), vm_full_path)
 
                     encryption_handler.sync_folders(to_project_path)
                     encryption_handler.set_project_inactive(to_project)

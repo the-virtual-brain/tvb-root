@@ -95,18 +95,6 @@ class TestHDF5Storage(object):
         full_path = os.path.join(self.storage_folder, STORAGE_FILE_NAME)
         assert os.path.exists(full_path), "Storage file not created."
 
-    def test_invalid_storage_path(self):
-        """
-        This method will test scenarios where no storage path or storage file is provided
-        """
-        # Test if folder name is None
-        with pytest.raises(FileStructureException):
-            HDF5StorageManager(None, STORAGE_FILE_NAME)
-
-        # Test if file name is None
-        with pytest.raises(FileStructureException):
-            HDF5StorageManager(self.storage_folder, None)
-
     def test_simple_data_storage(self):
         """
         Test if simple array data is stored
@@ -389,7 +377,7 @@ class TestHDF5Storage(object):
         """
         This method tests scenario when HDF5 file is opened concurrent for read & write
         """
-        new_storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME, self.hdf5_logger)
+        new_storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
         new_storage.store_data(DATASET_NAME_2, self.test_2D_array)
 
         for index in range(self.test_3D_array.shape[-1]):

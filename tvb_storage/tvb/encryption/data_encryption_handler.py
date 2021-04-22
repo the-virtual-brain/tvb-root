@@ -183,7 +183,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         project_name = os.path.basename(folder)
         encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
 
-        if os.path.exists(encrypted_folder) and os.path.joins(folder):
+        if os.path.exists(encrypted_folder) and os.path.exists(folder):
             crypto_pass = DataEncryptionHandler._project_key(project_name)
             crypto = Crypto(crypto_pass)
             syncro = Syncrypto(crypto, encrypted_folder, folder)

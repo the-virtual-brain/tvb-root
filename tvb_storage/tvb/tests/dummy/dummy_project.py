@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
 # (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
@@ -29,15 +29,31 @@
 #
 
 """
-We want tvb package to extend over at least 2 folders:
-tvb_storage and simulator_library.
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
-from pkgutil import extend_path
+from datetime import datetime
+import uuid
 
-try:
-    __path__ = extend_path(__path__, __name__)
 
-except NameError:
-    ## Ignore __path__ not defined when called from sphinx
-    __path__ = [__name__]
+class DummyProject:
+
+    def __init__(self, name, description, version, fk_admin):
+        self.name = name
+        self.description = description
+        self.last_updated = datetime.now()
+        self.gid = uuid.uuid4().hex
+        self.version = version
+        self.fk_admin = fk_admin
+
+    def to_dict(self):
+        return {"name": self.name, "description": self.description, "last_updated": self.last_updated,
+                "gid": self.gid, "version": self.version}
+
+    def from_dict(self, dict, user_id):
+        self.name = dict["name"]
+        self.description = dict["description"]
+        self.last_updated = dict["last_updated"]
+        self.gid = dict["gid"]
+        self.version = dict["version"]
+        self.fk_admin = user_id

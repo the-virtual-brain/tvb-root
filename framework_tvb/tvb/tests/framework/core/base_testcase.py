@@ -46,6 +46,7 @@ from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
+from tvb.tests.storage_test import BaseStorageTestCase
 
 
 def init_test_env():
@@ -154,17 +155,13 @@ class BaseTestCase(object):
                 # Ignore potential wrongly written operations by other unit-tests
                 pass
 
-    def delete_project_folders(self):
+    @staticmethod
+    def delete_project_folders():
         """
         This method deletes folders for all projects from TVB folder.
         This is done without any check on database. You might get projects in DB but no folder for them on disk.
         """
-        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
-        if os.path.exists(projects_folder):
-            for current_file in os.listdir(projects_folder):
-                full_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, current_file)
-                if os.path.isdir(full_path):
-                    shutil.rmtree(full_path, ignore_errors=True)
+        BaseStorageTestCase.delete_projects_folders()
 
         for folder in [os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME),
                        os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.TEMP_FOLDER)]:

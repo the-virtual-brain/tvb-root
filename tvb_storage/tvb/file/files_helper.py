@@ -92,14 +92,12 @@ class FilesHelper(object):
 
         return os.path.join(base_path, FilesHelper.PROJECTS_FOLDER)
 
-    def get_project_folder(self, project, *sub_folders):
+    def get_project_folder(self, project_name, *sub_folders):
         """
         Retrieve the root path for the given project.
         If root folder is not created yet, will create it.
         """
-        if hasattr(project, 'name'):
-            project = project.name
-        complete_path = os.path.join(self.get_projects_folder(), project)
+        complete_path = os.path.join(self.get_projects_folder(), project_name)
         if sub_folders is not None:
             complete_path = os.path.join(complete_path, *sub_folders)
         if not os.path.exists(complete_path):
@@ -208,7 +206,7 @@ class FilesHelper(object):
             self.logger.exception("Could not remove file")
             raise FileStructureException("Could not remove " + str(h5_file))
 
-    def move_datatype(self, datatype, new_project_name, new_op_id, full_path):
+    def move_datatype(self, new_project_name, new_op_id, full_path):
         """
         Move H5 storage into a new location
         """
@@ -218,7 +216,7 @@ class FilesHelper(object):
             os.rename(full_path, full_new_file)
         except Exception:
             self.logger.exception("Could not move file")
-            raise FileStructureException("Could not move " + str(datatype))
+            raise FileStructureException("Could not move " + full_path)
 
     ######################## IMAGES METHODS Start Here #######################    
     def get_images_folder(self, project_name):

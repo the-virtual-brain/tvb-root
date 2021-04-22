@@ -27,42 +27,38 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
 import os
-
 import pytest
+
 from tvb.basic.profile import TvbProfile
-from tvb.file.lab import *
+from tvb.file.exceptions import FileStructureException
+from tvb.file.files_helper import FilesHelper
 from tvb.file.xml_metadata_handlers import XMLReader
-from tvb.core.entities.model import model_project
-from tvb.core.neocom import h5
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.tests.framework.core.factory import TestFactory
+from tvb.tests.dummy.dummy_project import DummyProject
+from tvb.tests.dummy.dummy_storage_data_h5 import DummyStorageDataH5
+from tvb.tests.storage_test import StorageTestCase
 
 root_storage = TvbProfile.current.TVB_STORAGE
 
 
-class TestFilesHelper(TransactionalTestCase):
+class TestFilesHelper(StorageTestCase):
     """
-    This class contains tests for the tvb.core.entities.file.files_helper module.
+    This class contains tests for the tvb.file.files_helper module.
     """
-    PROJECT_NAME = "test_proj"
 
-    def transactional_setup_method(self):
-        """
-        Set up the context needed by the tests.
-        """
+    def storage_setup_method(self):
         self.files_helper = FilesHelper()
-        self.test_user = TestFactory.create_user()
-        self.test_project = TestFactory.create_project(self.test_user, self.PROJECT_NAME)
+        self.project_name = "test_proj"
 
-    def transactional_teardown_method(self):
-        """ Remove generated project during tests. """
-        self.delete_project_folders()
+    def storage_teardown_method(self):
+        self.delete_projects_folders()
 
     def test_check_created(self):
         """ Test standard flows for check created. """
@@ -78,87 +74,90 @@ class TestFilesHelper(TransactionalTestCase):
         Test the get_project_folder method which should create a folder in case
         it doesn't already exist.
         """
-        project_path = self.files_helper.get_project_folder(self.test_project)
+        project_path = self.files_helper.get_project_folder(self.project_name)
         assert os.path.exists(project_path), "Folder doesn't exist"
 
-        folder_path = self.files_helper.get_project_folder(self.test_project, "43")
+        folder_path = self.files_helper.get_project_folder(self.project_name, "43")
         assert os.path.exists(project_path), "Folder doesn't exist"
         assert os.path.exists(folder_path), "Folder doesn't exist"
 
     def test_rename_project_structure(self):
         """ Try to rename the folder structure of a project. Standard flow. """
-        self.files_helper.get_project_folder(self.test_project)
-        path, name = self.files_helper.rename_project_structure(self.test_project.name, "new_name")
+        self.files_helper.get_project_folder(self.project_name)
+        path, name = self.files_helper.rename_project_structure(self.project_name, "new_name")
         assert path != name, "Rename didn't take effect."
 
     def test_rename_structure_same_name(self):
         """ Try to rename the folder structure of a project. Same name. """
-        self.files_helper.get_project_folder(self.test_project)
+        self.files_helper.get_project_folder(self.project_name)
 
         with pytest.raises(FileStructureException):
-            self.files_helper.rename_project_structure(self.test_project.name, self.PROJECT_NAME)
+            self.files_helper.rename_project_structure(self.project_name, self.project_name)
 
     def test_remove_project_structure(self):
         """ Check that remove project structure deletes the corresponding folder. Standard flow. """
-        full_path = self.files_helper.get_project_folder(self.test_project)
+        full_path = self.files_helper.get_project_folder(self.project_name)
         assert os.path.exists(full_path), "Folder was not created."
 
-        self.files_helper.remove_project_structure(self.test_project.name)
+        self.files_helper.remove_project_structure(self.project_name)
         assert not os.path.exists(full_path), "Project folder not deleted."
 
     def test_write_project_metadata(self):
         """  Write XML for test-project. """
-        self.files_helper.write_project_metadata(self.test_project)
-        expected_file = self.files_helper.get_project_meta_file_path(self.PROJECT_NAME)
+        user_id = 1
+        dummy_project = DummyProject(self.project_name, "description", 3, user_id)
+        self.files_helper.write_project_metadata(dummy_project.to_dict())
+        expected_file = self.files_helper.get_project_meta_file_path(self.project_name)
         assert os.path.exists(expected_file)
         project_meta = XMLReader(expected_file).read_metadata()
-        loaded_project = model_project.Project(None, None)
-        loaded_project.from_dict(project_meta, self.test_user.id)
-        assert self.test_project.name == loaded_project.name
-        assert self.test_project.description == loaded_project.description
-        assert self.test_project.gid == loaded_project.gid
-        expected_dict = self.test_project.to_dict()[1]
+        loaded_project = DummyProject(None, None, None, None)
+        loaded_project.from_dict(project_meta, user_id)
+        assert dummy_project.name == loaded_project.name
+        assert dummy_project.description == loaded_project.description
+        assert dummy_project.gid == loaded_project.gid
+        expected_dict = dummy_project.to_dict()
         del expected_dict['last_updated']
-        found_dict = loaded_project.to_dict()[1]
+        found_dict = loaded_project.to_dict()
         del found_dict['last_updated']
         self._dictContainsSubset(expected_dict, found_dict)
         self._dictContainsSubset(found_dict, expected_dict)
 
-    def test_remove_dt_happy_flow(self, dummy_datatype_index_factory):
+    def test_remove_dt_happy_flow(self):
         """
         Happy flow for removing a file related to a DataType.
         """
-        datatype = dummy_datatype_index_factory()
-        h5_path = h5.path_for_stored_index(datatype)
+        path = self.files_helper.get_project_folder(self.project_name)
+        h5_path = os.path.join(path, "dummy_datatype.h5")
+        DummyStorageDataH5(h5_path)
         assert os.path.exists(h5_path), "Test file was not created!"
         self.files_helper.remove_datatype_file(h5_path)
         assert not os.path.exists(h5_path), "Test file was not deleted!"
 
-    def test_remove_dt_non_existent(self, dummy_datatype_index_factory):
+    def test_remove_dt_non_existent(self):
         """
         Try to call remove on a dataType with no H5 file.
         Should work.
         """
-        datatype = dummy_datatype_index_factory()
-        h5_path = h5.path_for_stored_index(datatype)
+        path = self.files_helper.get_project_folder(self.project_name)
+        h5_path = os.path.join(path, "dummy_datatype.h5")
+        DummyStorageDataH5(h5_path)
         wrong_path = os.path.join(h5_path, "WRONG_PATH")
         assert not os.path.exists(wrong_path)
         self.files_helper.remove_datatype_file(wrong_path)
 
-    def test_move_datatype(self, dummy_datatype_index_factory):
+    def test_move_datatype(self):
         """
         Make sure associated H5 file is moved to a correct new location.
         """
-        datatype = dummy_datatype_index_factory(project=self.test_project)
-        old_file_path = h5.path_for_stored_index(datatype)
-        assert os.path.exists(old_file_path), "Test file was not created!"
-        full_path = h5.path_for_stored_index(datatype)
-        self.files_helper.move_datatype(datatype, self.PROJECT_NAME + '2', "1", full_path)
+        path = self.files_helper.get_project_folder(self.project_name)
+        old_h5_path = os.path.join(path, "dummy_datatype.h5")
+        DummyStorageDataH5(old_h5_path)
+        assert os.path.exists(old_h5_path), "Test file was not created!"
+        self.files_helper.move_datatype(self.project_name + '2', "1", old_h5_path)
 
-        assert not os.path.exists(old_file_path), "Test file was not moved!"
-        datatype.fk_from_operation = 43
-        new_file_path = os.path.join(self.files_helper.get_project_folder(self.PROJECT_NAME + '2', "1"),
-                                     os.path.basename(old_file_path))
+        assert not os.path.exists(old_h5_path), "Test file was not moved!"
+        new_file_path = os.path.join(self.files_helper.get_project_folder(self.project_name + '2', "1"),
+                                     os.path.basename(old_h5_path))
         assert os.path.exists(new_file_path), "Test file was not created!"
 
     def test_find_relative_path(self):

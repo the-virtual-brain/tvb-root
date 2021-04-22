@@ -34,17 +34,16 @@
 
 import os
 import json
-from tvb.core.entities.model.model_operation import STATUS_FINISHED
 from tvb.file.xml_metadata_handlers import XMLReader, XMLWriter
 
 
-class TestMetaDataReadXML():
+class TestMetaDataReadXML:
     """
     Tests for tvb.core.entities.file.metadatahandler.XMLReader class.
     """   
     TO_BE_READ_FILE = "test_read.xml"
     #Values expected to be read from file
-    EXPECTED_DICTIONARY = {'status': STATUS_FINISHED,
+    EXPECTED_DICTIONARY = {'status': "5-FINISHED",
                            'gid': '497b3d59-b3c1-11e1-b2e4-68a86d1bd4fa',
                            'user_group': 'cff_74',
                            'fk_from_algo': json.dumps({'classname': 'CFF_Importer', 'identifier': None,
