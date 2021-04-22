@@ -41,9 +41,9 @@ import os
 
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
-from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
+from tvb.core.entities.file.file_storage_factory import FileStorageFactory
 from tvb.file.lab import *
 from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
@@ -210,8 +210,7 @@ class FilesUpdateManager(UpdateManager):
         Returns a storage manager.
         """
         folder, file_name = os.path.split(file_path)
-        logger = get_logger(HDF5StorageManager.__module__)
-        return HDF5StorageManager(folder, file_name, logger)
+        return FileStorageFactory.get_file_storage(folder, file_name)
 
     @staticmethod
     def get_all_h5_paths():

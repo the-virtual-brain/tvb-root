@@ -46,6 +46,7 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexVie
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.file.file_storage_factory import FileStorageFactory
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration
@@ -1056,8 +1057,7 @@ datatypes_to_be_migrated = {
 
 def _migrate_general_part(folder, file_name):
     # Obtain storage manager and metadata
-    logger = get_logger(HDF5StorageManager.__module__)
-    storage_manager = HDF5StorageManager(folder, file_name, logger)
+    storage_manager = FileStorageFactory.get_file_storage(folder, file_name)
     root_metadata = storage_manager.get_metadata()
 
     if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
