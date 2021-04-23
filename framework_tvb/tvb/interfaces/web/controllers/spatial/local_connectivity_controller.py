@@ -36,15 +36,14 @@
 
 import json
 import uuid
-
 import cherrypy
+
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
-    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
@@ -284,15 +283,13 @@ class LocalConnectivityController(SpatioTemporalController):
 
         Returns a json which contains the data needed for drawing a gradient view for the selected vertex.
         """
-        lconn_index = load_entity_by_gid(local_connectivity_gid)
         triangle_index = int(selected_triangle)
+        lconn_h5 = h5.h5_file_for_gid(local_connectivity_gid)
 
-        surface_indx = load_entity_by_gid(lconn_index.fk_surface_gid)
-        surface_h5 = h5.h5_file_for_index(surface_indx)
+        surface_h5 = h5.h5_file_for_gid(lconn_h5.surface.load())
         assert isinstance(surface_h5, SurfaceH5)
         vertex_index = int(surface_h5.triangles[triangle_index][0])
 
-        lconn_h5 = h5.h5_file_for_index(lconn_index)
         assert isinstance(lconn_h5, LocalConnectivityH5)
         lconn_matrix = lconn_h5.matrix.load()
         picked_data = list(lconn_matrix[vertex_index].toarray().squeeze())

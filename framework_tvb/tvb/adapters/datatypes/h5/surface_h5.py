@@ -276,7 +276,7 @@ class SurfaceH5(H5File):
             return self.triangles.load()
         slice_number = int(slice_number)
         start_idx, end_idx = self._get_slice_triangle_boundaries(slice_number)
-        return self.triangles[start_idx: end_idx: 1]
+        return self._split_triangles[start_idx: end_idx: 1]
 
     def get_lines_slice(self, slice_number=0):
         """

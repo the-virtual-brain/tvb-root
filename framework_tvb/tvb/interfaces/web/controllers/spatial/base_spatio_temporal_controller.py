@@ -34,9 +34,9 @@
 """
 
 import json
+
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
@@ -79,11 +79,11 @@ class SpatioTemporalController(BaseController):
         """
         Generates the HTML for displaying the surface with the given ID.
         """
-        surface = load_entity_by_gid(surface_gid)
-        if surface is None:
+        surface_h5 = h5.h5_file_for_gid(surface_gid)
+        if surface_h5 is None:
             raise MissingDataException(SpatioTemporalController.MSG_MISSING_SURFACE + "!!")
         common.add2session(PARAM_SURFACE, surface_gid)
-        surface_h5 = h5.h5_file_for_index(surface)
+
         url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(
             surface_h5)
         url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5,

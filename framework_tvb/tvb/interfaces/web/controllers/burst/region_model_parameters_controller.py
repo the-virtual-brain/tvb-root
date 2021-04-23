@@ -36,9 +36,10 @@
 """
 
 import json
-import cherrypy
 
+import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
+from tvb.core.entities import load
 from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
@@ -68,7 +69,7 @@ class RegionsModelParametersController(BurstBaseController):
             ret[d.id] = {
                 'id': d.id,
                 'name': d.name,
-                'model_class' : d.model_class
+                'model_class': d.model_class
             }
         return json.dumps(ret)
 
@@ -98,7 +99,7 @@ class RegionsModelParametersController(BurstBaseController):
 
         current_project = common.get_current_project()
         file_handler = FilesHelper()
-        conn_idx = dao.get_datatype_by_gid(connectivity.hex)
+        conn_idx = load.load_entity_by_gid(connectivity)
         conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
 
         params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
@@ -115,7 +116,6 @@ class RegionsModelParametersController(BurstBaseController):
         })
 
         return self.fill_default_attributes(params, 'regionmodel')
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -145,6 +145,6 @@ class RegionsModelParametersController(BurstBaseController):
         burst_config.dynamic_ids = json.dumps(dynamic_ids)
 
         # Update in session the simulator configuration and the current form URL in wizzard for burst-page.
-        self.simulator_context.add_burst_config_to_session(burst_config)
+        self.simulator_context.set_burst_config(burst_config)
         self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
         raise cherrypy.HTTPRedirect("/burst/")

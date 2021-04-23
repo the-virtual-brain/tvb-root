@@ -15,4 +15,15 @@ RUN cd /opt \
  && cd tvb_data \
  && python3 setup.py develop
 
-RUN pip install h5py==2.10 tvb-gdist pytest-xdist sqlalchemy mako
+RUN pip install h5py==2.10 pytest-xdist sqlalchemy mako requests autopep8
+
+RUN pip install --no-build-isolation tvb-gdist
+
+# TODO make this conditional since it adds a lot
+RUN conda install cudatoolkit \
+ && conda install -c conda-forge cudatoolkit-dev \
+ && pip install pycuda
+
+# docker run --rm -it -v $PWD:/tvb -w /tvb tvb/lib 
+# add --gpus all for testing CUDA
+CMD ["/bin/bash", "-c", "cd tvb_bin; python3 setup.py develop --no-deps; cd ../scientific_library; python3 setup.py develop --no-deps; python3 -m pytest -n12"]

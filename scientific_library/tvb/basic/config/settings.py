@@ -49,7 +49,7 @@ class VersionSettings(object):
     SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
-    BASE_VERSION = "2.1a1"
+    BASE_VERSION = "2.2.2"
 
     # Current DB version. Create a new migration script from command line and copy its gid here
     DB_STRUCTURE_VERSION = 'ec2859bb9114'
@@ -206,6 +206,7 @@ class HPCSettings(object):
     UNICORE_RESOURCER_KEY = 'Resources'
     UNICORE_ARGS_KEY = 'Arguments'
     UNICORE_EXE_KEY = 'Executable'
+    UNICORE_PROJECT_KEY = 'Project'
 
     JOB_STATUS_KEY = 'status'
     JOB_MOUNT_POINT_KEY = 'mountPoint'
@@ -234,10 +235,14 @@ class WebSettings(object):
     LOCALHOST = "localhost"
     RENDER_HTML = True
     VISUALIZERS_ROOT = "tvb.interfaces.web.templates.jinja2.visualizers"
+    CAN_ENCRYPT_STORAGE = True
 
     def __init__(self, manager):
 
         self.admin = WebAdminSettings(manager)
+
+        self.ENCRYPT_STORAGE = manager.get_attribute(stored.KEY_ENCRYPT_STORAGE, False, eval)
+        self.DECRYPT_PATH = manager.get_attribute(stored.KEY_DECRYPT_PATH)
 
         self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -275,7 +280,6 @@ class WebSettings(object):
                                                                        'text/javascript', 'text/css',
                                                                        'application/x.ndarray'],
                                              'tools.sessions.on': True,
-                                             'tools.sessions.storage_type': 'ram',
                                              'tools.sessions.timeout': 600,  # 10 hours
                                              'response.timeout': 1000000,
                                              'tools.sessions.locking': 'explicit',

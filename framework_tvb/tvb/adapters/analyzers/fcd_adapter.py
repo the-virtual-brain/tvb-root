@@ -37,6 +37,7 @@ Adapter that uses the traits model to generate interfaces for FCD Analyzer.
 """
 import json
 import uuid
+
 import numpy as np
 from scipy import linalg
 from scipy.spatial.distance import pdist
@@ -46,7 +47,7 @@ from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.api import Float
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException

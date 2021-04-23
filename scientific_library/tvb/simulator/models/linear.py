@@ -55,6 +55,24 @@ class Linear(Model):
         choices=("x",),
         default=("x",), )
 
+    coupling_terms = Final(
+        label="Coupling terms",
+        # how to unpack coupling array
+        default=["c"]
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions",
+        default={
+            "x": "gamma * x + c",
+        }
+    )
+
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default=tuple('gamma'.split()))
+
     state_variables = ('x',)
     _nvar = 1
     cvar = numpy.array([0], dtype=numpy.int32)

@@ -411,12 +411,13 @@ class TestProjectService(TransactionalTestCase):
         new_datatype_h5 = h5.h5_file_for_index(new_datatype)
         assert new_datatype_h5.subject.load() == 'new subject', 'UserGroup not updated!'
 
-    def test_update_meta_data_group(self, test_adapter_factory):
+    def test_update_meta_data_group(self, test_adapter_factory, datatype_group_factory):
         """
         Test the new update metaData for a group of dataTypes.
         """
         test_adapter_factory(adapter_class=TestAdapter3)
-        op_group_id = TestFactory.create_group(test_user=self.test_user)[1]
+        group = datatype_group_factory()
+        op_group_id = group.fk_operation_group
 
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
                          DataTypeOverlayDetails.DATA_STATE: "updated_state",

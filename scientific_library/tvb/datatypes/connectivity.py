@@ -316,6 +316,11 @@ class Connectivity(HasTraits):
         """
         # Express delays in integration steps
         self.idelays = numpy.rint(self.delays / dt).astype(numpy.int32)
+        self.has_delays = self.idelays.any()
+        self._horizon = self.idelays.max() + 1
+        nn = self.idelays.shape[0]
+        self.inodes = numpy.tile(numpy.r_[:nn], (nn, 1))
+        self.delay_indices = self.idelays * nn + self.inodes
 
     def compute_tract_lengths(self):
         """
@@ -729,4 +734,4 @@ class Connectivity(HasTraits):
     @property
     def horizon(self):
         "The horizon is the maximum number of steps required in memory for simulation."
-        return self.idelays.max() + 1
+        return self._horizon

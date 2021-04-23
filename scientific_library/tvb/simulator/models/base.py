@@ -220,7 +220,8 @@ class Model(HasTraits):
         # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
         # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
         excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
-                           "noise", "psi_table", "nerf_table", "gid")
+                           "noise", "psi_table", "nerf_table", "gid", "state_variable_dfuns",
+                           "parameter_names", "coupling_terms")
         spatial_reshape = self.spatial_param_reshape
         for param in type(self).declarative_attrs:
             if param in excluded_params:
@@ -246,6 +247,21 @@ class Model(HasTraits):
 
     def update_state_variables_after_integration(self, state_variables):
         return state_variables
+
+    @property
+    def spatial_parameter_names(self):
+        return [_ for _ in self.parameter_names if getattr(self, _).size != 1]
+    
+    @property
+    def global_parameter_names(self):
+        return [_ for _ in self.parameter_names if getattr(self, _).size == 1]
+
+    @property
+    def spatial_parameter_matrix(self):
+        names = self.spatial_parameter_names
+        matrix = numpy.array([getattr(self,_).reshape((-1,)) for _ in names])
+        return matrix
+    
 
 
 class ModelNumbaDfun(Model):
