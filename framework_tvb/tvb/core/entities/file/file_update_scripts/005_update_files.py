@@ -40,8 +40,8 @@ import json
 import os
 import sys
 import uuid
-import numpy
 
+import numpy
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -139,6 +139,16 @@ def _migrate_connectivity(**kwargs):
     extra_metadata = ['orientations', 'areas', 'cortical', 'hemispheres', 'orientations']
     storage_manager = kwargs['storage_manager']
     _bytes_ds_to_string_ds(storage_manager, 'region_labels')
+
+    try:
+        storage_manager.get_data('hemispheres')
+    except MissingDataSetException:
+        # In case the Connectivity file does not hold a hemispheres dataset, write one by splitting regions in half
+        all_regions = root_metadata['number_of_regions']
+        right_regions = all_regions / 2
+        left_regions = all_regions - right_regions
+        hemispheres = int(right_regions) * [True] + int(left_regions) * [False]
+        storage_manager.store_data('hemispheres', numpy.array(hemispheres))
 
     for mt in extra_metadata:
         try:
@@ -999,7 +1009,6 @@ def _migrate_datatype_group(operation_group, burst_gid, generic_attributes):
     dao.store_entity(stored_datatype_group)
 
 
-
 datatypes_to_be_migrated = {
     'Connectivity': _migrate_connectivity,
     'BrainSkull': _migrate_surface,
@@ -1223,7 +1232,7 @@ def update(input_file, burst_match_dict):
             vm = import_service.create_view_model(operation, operation_data, folder,
                                                   generic_attributes, additional_params)
 
-            if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname\
+            if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname \
                     and time_series_gid is None:
                 burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
                                                                   DATE_FORMAT_V4_DB, TvbProfile.current.db.SELECTED_DB)
