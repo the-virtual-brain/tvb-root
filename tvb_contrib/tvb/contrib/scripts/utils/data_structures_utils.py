@@ -822,7 +822,7 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
             key = hashfun(xlbl)
         else:
             key = xlbl
-        sorted_events[key] = np.sort(ys[np.where((xs == xlbl).all(axis=1))])
+        sorted_events[key] = np.sort(ys[np.where([np.all(xsi == xlbl) for xsi in xs])])
     return sorted_events
 
 
