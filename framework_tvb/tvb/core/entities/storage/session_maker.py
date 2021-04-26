@@ -54,7 +54,7 @@ LOGGER = get_logger(__name__)
 
 def build_db_engine():
     if TvbProfile.current.db.SELECTED_DB == 'postgres':
-        if TvbProfile.current.db.BOUNCER_IN_FRONT:
+        if TvbProfile.current.db.MAX_CONNECTIONS == 0:
             DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, poolclass=NullPool)
         else:
             ### Control the pool size for PostgreSQL, otherwise we might end with multiple
@@ -404,4 +404,3 @@ SESSION_META_CLASS = MetaClassFactory([add_session], {'session': SessionMaker()}
 
 
 
-      

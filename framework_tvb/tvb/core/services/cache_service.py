@@ -82,7 +82,7 @@ class CacheService:
 
     def clear_cache(self, notify_others=True):
         if notify_others:
-            KubeService.notify_pods("/user/clear_cache")
+            KubeService.notify_pods("/kube/clear_cache")
         else:
             self.cached_operation_group.cache_clear()
             self.cached_dt_group.cache_clear()

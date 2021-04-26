@@ -367,4 +367,3 @@ class DBSettings(object):
         # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
         self.MAX_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_CONNECTIONS, 20, int)
         self.MAX_ASYNC_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_ASYNC_CONNECTIONS, 2, int)
-        self.BOUNCER_IN_FRONT = manager.get_attribute(stored.KEY_BOUNCER, False, eval)

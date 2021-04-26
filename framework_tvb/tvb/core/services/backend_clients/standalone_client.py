@@ -243,7 +243,7 @@ class StandAloneClient(BackendClient):
         if notify_pods and TvbProfile.current.web.OPENSHIFT_DEPLOY:
             try:
                 LOGGER.info("Notify pods to stop operation process for {}".format(operation_id))
-                KubeService.notify_pods("/user/stop_operation_process/{}".format(operation_id),
+                KubeService.notify_pods("/kube/stop_operation_process/{}".format(operation_id),
                                         TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
                 return True
             except Exception as e:

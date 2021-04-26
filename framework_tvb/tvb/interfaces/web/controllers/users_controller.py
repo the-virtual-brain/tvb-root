@@ -57,7 +57,7 @@ from tvb.core.services.user_service import UserService, KEY_PASSWORD, KEY_EMAIL,
 from tvb.core.utils import format_bytes_human, hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.base_controller import BaseController
-from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin, check_kube_user
+from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.storage.storage_interface import StorageInterface
@@ -173,28 +173,6 @@ class UserController(BaseController):
     @using_template('user/silent_check_sso')
     def check_sso(self):
         return {}
-
-    @cherrypy.expose
-    @check_kube_user
-    def clear_cache(self):
-        self.logger.info("Received a request to clear cache.")
-        cache.clear_cache(False)
-
-    @cherrypy.expose
-    @check_kube_user
-    def stop_operation_process(self, operation_id):
-        self.logger.info("Received a request to stop process for operation {}".format(operation_id))
-        StandAloneClient.stop_operation_process(int(operation_id))
-
-    @cherrypy.expose
-    @check_kube_user
-    def start_operation_pod(self, operation_id):
-        self.logger.info("Received a request to start operation {}".format(operation_id))
-        if LOCKS_QUEUE.qsize() == 0:
-            self.logger.info("Cannot start operation {} because queue is full.".format(operation_id))
-            return
-        LOCKS_QUEUE.get()
-        StandAloneClient.start_operation(operation_id)
 
     @cherrypy.expose
     @handle_error(redirect=True)
