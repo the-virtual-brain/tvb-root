@@ -64,7 +64,7 @@ class KubeService:
 
         LOGGER.info("Notify all pods with url {}".format(url))
         openshift_pods, auth_header = KubeService.get_pods(target_application)
-        url_pattern = "http://{}:" + TvbProfile.current.web.SERVER_PORT + url
+        url_pattern = "http://{}:" + str(TvbProfile.current.web.SERVER_PORT) + url
         with ThreadPoolExecutor(max_workers=len(openshift_pods)) as executor:
             for pod in openshift_pods:
                 pod_ip = pod['ip']
