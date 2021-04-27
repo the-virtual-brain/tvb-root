@@ -56,12 +56,11 @@ if __name__ == '__main__':
             if pods:
                 pods_no = len(pods)
                 operations.sort(key=lambda l_operation: l_operation.id)
-                with ThreadPoolExecutor(max_workers=len(operations)) as executor:
-                    for index, operation in enumerate(operations):
-                        pod_ip = pods[index % pods_no]['ip']
-                        log.info("Notify pod: {}".format(pod_ip))
-                        url_pattern = "http://{}:{}/kube/start_operation_pod/{}"
-                        executor.submit(requests.get, url=url_pattern.format(pod_ip, TvbProfile.current.web.SERVER_PORT,
-                                                                             operation.id), headers=auth_header)
+                for index, operation in enumerate(operations):
+                    pod_ip = pods[index % pods_no]['ip']
+                    log.info("Notify pod: {}".format(pod_ip))
+                    url_pattern = "http://{}:{}/kube/start_operation_pod/{}"
+                    requests.get(url=url_pattern.format(pod_ip, TvbProfile.current.web.SERVER_PORT, operation.id),
+                                 headers=auth_header)
     else:
         log.info("Openshift deploy is not enabled.")
