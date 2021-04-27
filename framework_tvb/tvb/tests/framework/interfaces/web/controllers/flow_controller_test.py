@@ -197,9 +197,9 @@ class TestFlowController(BaseControllersTest):
                 assert op.status == STATUS_STARTED
         while dao.get_operation_by_id(operations[0].id).status != STATUS_FINISHED:
             pass
-
+        sleep(20)
         StandAloneClient.process_queued_operations()
-        sleep(10)
+        sleep(20)
         op = operations[len(operations) -1]
         op = dao.get_operation_by_id(op.id)
         assert op.status == STATUS_STARTED
