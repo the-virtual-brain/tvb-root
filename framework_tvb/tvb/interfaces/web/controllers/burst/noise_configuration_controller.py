@@ -32,8 +32,8 @@
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
 import json
-
 import cherrypy
+
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.entities import load
 from tvb.core.services.burst_config_serialization import SerializationManager

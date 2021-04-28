@@ -253,7 +253,26 @@ class FilesHelper(object):
             ######################## GENERIC METHODS Start Here #######################
 
     @staticmethod
-    def zip_folders(zip_full_path, folders, folder_prefix):
+    def parse_xml_content(xml_content):
+        """
+        Delegate reading of some XML content.
+        Will parse the XMl and return a dictionary of elements with max 2 levels.
+        """
+        return XMLReader(None).parse_xml_content_to_dict(xml_content)
+
+    @staticmethod
+    def zip_files(zip_full_path, files):
+        """
+        This method creates a ZIP file with all files provided as parameters
+        :param zip_full_path: full path and name of the result ZIP file
+        :param files: array with the FULL names/path of the files to add into ZIP 
+        """
+        with ZipFile(zip_full_path, "w", ZIP_DEFLATED, True) as zip_file:
+            for file_to_include in files:
+                zip_file.write(file_to_include, os.path.basename(file_to_include))
+
+    @staticmethod
+    def zip_folders(zip_full_path, folders, folder_prefix=""):
         """
         This method creates a ZIP file with all folders provided as parameters
         :param zip_full_path: full path and name of the result ZIP file

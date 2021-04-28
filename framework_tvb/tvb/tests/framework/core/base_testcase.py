@@ -39,6 +39,7 @@ import shutil
 import sys
 from functools import wraps
 from types import FunctionType
+
 from tvb.config.init.model_manager import reset_database
 from tvb.config.init.initializer import initialize
 from tvb.core.neocom.h5 import REGISTRY

@@ -34,6 +34,7 @@
 """
 
 import pytest
+
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import get_filtered_datatypes
