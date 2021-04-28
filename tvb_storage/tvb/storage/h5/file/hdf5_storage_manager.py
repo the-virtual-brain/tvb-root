@@ -75,6 +75,11 @@ class HDF5StorageManager(object):
         Creates a new storage manager instance.
         :param buffer_size: the size in Bytes of the amount of data that will be buffered before writing to file.
         """
+        if storage_folder is None:
+            raise FileStructureException("Please provide the folder where to store data")
+        if file_name is None:
+            raise FileStructureException("Please provide the file name where to store data")
+
         self.__storage_full_name = os.path.join(storage_folder, file_name)
         self.__buffer_size = buffer_size
         self.__buffer_array = None

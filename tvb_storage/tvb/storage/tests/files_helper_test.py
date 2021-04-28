@@ -200,7 +200,7 @@ class TestFilesHelper(StorageTestCase):
         folder_name = "test_folder"
         assert not os.path.isdir(folder_name), "Folder should not exist before call."
         with pytest.raises(FileStructureException):
-            self.files_helper.remove_folder(folder_name, False)
+            self.files_helper.remove_folder(folder_name, ignore_errors=False)
 
     def _dictContainsSubset(self, expected, actual, msg=None):
         """Checks whether actual is a superset of expected."""

@@ -94,7 +94,7 @@ class TestMetaDataWriteXML:
         Test that an XML file is created and correct data is written in it.
         """
         assert not os.path.exists(self.result_path)
-        self.meta_writer.write(self.result_path)
+        self.meta_writer.write_metadata(self.result_path)
         assert os.path.exists(self.result_path)
         reader = XMLReader(self.result_path)
         meta_data = reader.read_metadata()
