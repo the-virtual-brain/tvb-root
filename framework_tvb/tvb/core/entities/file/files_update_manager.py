@@ -36,19 +36,19 @@ Manager for the file storage version updates.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-
+import datetime
 import os
 
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
-from tvb.core.entities.file.file_storage_factory import FileStorageFactory
-from tvb.file.lab import *
 from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.h5 import H5File
-
+from tvb.core.utils import string2date
+from tvb.storage.h5.file.exceptions import FileStructureException, MissingDataFileException, FileMigrationException
+from tvb.storage.h5.storage_interface import StorageInterface
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
@@ -69,18 +69,20 @@ class FilesUpdateManager(UpdateManager):
         super(FilesUpdateManager, self).__init__(file_update_scripts,
                                                  TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
                                                  TvbProfile.current.version.DATA_VERSION)
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
-    def get_file_data_version(self, file_path):
+    @staticmethod
+    def get_file_data_version(file_path):
         """
         Return the data version for the given file.
 
         :param file_path: the path on disk to the file for which you need the TVB data version
         :returns: a number representing the data version for which the input file was written
         """
-        manager = self._get_manager(file_path)
+        storage_interface = StorageInterface()
+        folder, file_name = os.path.split(file_path)
         data_version = TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
-        return manager.get_file_data_version(data_version)
+        return storage_interface.get_file_data_version(folder, file_name, data_version)
 
     def is_file_up_to_date(self, file_path):
         """
@@ -117,18 +119,18 @@ class FilesUpdateManager(UpdateManager):
         for script_name in self.get_update_scripts(file_version):
             temp_file_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
                                           os.path.basename(input_file_name) + '.tmp')
-            self.files_helper.copy_file(input_file_name, temp_file_path)
+            self.storage_interface.copy_file(input_file_name, temp_file_path)
             try:
                 self.run_update_script(script_name, input_file=input_file_name, burst_match_dict=burst_match_dict)
             except FileMigrationException as excep:
-                self.files_helper.copy_file(temp_file_path, input_file_name)
+                self.storage_interface.copy_file(temp_file_path, input_file_name)
                 os.remove(temp_file_path)
                 self.log.error(excep)
                 return False
 
         if datatype:
             # Compute and update the disk_size attribute of the DataType in DB:
-            datatype.disk_size = self.files_helper.compute_size_on_disk(input_file_name)
+            datatype.disk_size = self.storage_interface.compute_size_on_disk(input_file_name)
             dao.store_entity(datatype)
 
         return True
@@ -205,21 +207,13 @@ class FilesUpdateManager(UpdateManager):
             TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
 
     @staticmethod
-    def _get_manager(file_path):
-        """
-        Returns a storage manager.
-        """
-        folder, file_name = os.path.split(file_path)
-        return FileStorageFactory.get_file_storage(folder, file_name)
-
-    @staticmethod
     def get_all_h5_paths():
         """
         This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
         The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).
         """
         h5_files = []
-        projects_folder = FilesHelper().get_projects_folder()
+        projects_folder = StorageInterface().get_projects_folder()
 
         for project_path in os.listdir(projects_folder):
             # Getting operation folders inside the current project
@@ -235,7 +229,7 @@ class FilesUpdateManager(UpdateManager):
                     int(op_folder)
                     op_folder_path = os.path.join(project_full_path, op_folder)
                     for file in os.listdir(op_folder_path):
-                        if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+                        if file.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
                             h5_file = os.path.join(op_folder_path, file)
                             try:
                                 if FilesUpdateManager._is_empty_file(h5_file):

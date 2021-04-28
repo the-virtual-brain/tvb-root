@@ -34,8 +34,8 @@
 import os
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.file.files_helper import FilesHelper
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -64,7 +64,7 @@ class TestConnectivityViewer(TransactionalTestCase):
         """
         Clean-up tests data
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch(self):
         """

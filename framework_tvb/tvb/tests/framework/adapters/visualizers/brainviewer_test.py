@@ -35,9 +35,10 @@
 import os
 import tvb_data.surfaceData
 import tvb_data.regionMapping
+
 from tvb.core.neocom import h5
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex
 from tvb.tests.framework.core.factory import TestFactory
@@ -83,7 +84,7 @@ class TestBrainViewer(TransactionalTestCase):
         """
         Clean-up tests data
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch(self, time_series_region_index_factory):
         """

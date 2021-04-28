@@ -59,7 +59,6 @@ from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPS
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataType
@@ -75,6 +74,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import hash_password
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class TestFactory(object):
@@ -157,7 +157,7 @@ class TestFactory(object):
         operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status)
         dao.store_entity(operation)
-        op_dir = FilesHelper().get_project_folder(test_project.name, str(operation.id))
+        op_dir = StorageInterface().get_project_folder(test_project.name, str(operation.id))
         h5.store_view_model(view_model, op_dir)
         return dao.get_operation_by_id(operation.id)
 
@@ -171,7 +171,7 @@ class TestFactory(object):
             test_project = TestFactory.create_project(test_user, 'test_proj')
         operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
         value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
-        op_dir = FilesHelper().get_project_folder(test_project.name, str(operation.id))
+        op_dir = StorageInterface().get_project_folder(test_project.name, str(operation.id))
         vw_idx = h5.store_complete(value_wrapper, op_dir)
         vw_idx.fk_from_operation = operation.id
         vw_idx = dao.store_entity(vw_idx)
@@ -181,7 +181,7 @@ class TestFactory(object):
     def create_local_connectivity(user, project, surface_gid):
 
         op = TestFactory.create_operation(test_user=user, test_project=project)
-        op_folder = FilesHelper().get_project_folder(project.name, str(op.id))
+        op_folder = StorageInterface().get_project_folder(project.name, str(op.id))
 
         wrapper_surf = CorticalSurface()
         wrapper_surf.gid = uuid.UUID(surface_gid)

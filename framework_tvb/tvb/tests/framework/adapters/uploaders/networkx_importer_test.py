@@ -37,7 +37,7 @@ import os
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.uploaders.networkx_importer import NetworkxImporterModel, NetworkxConnectivityImporter
-from tvb.file.files_helper import FilesHelper
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -55,7 +55,7 @@ class TestNetworkxImporter(BaseTestCase):
 
     def teardown_method(self):
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_import(self):
         count_before = self.count_all_entities(ConnectivityIndex)

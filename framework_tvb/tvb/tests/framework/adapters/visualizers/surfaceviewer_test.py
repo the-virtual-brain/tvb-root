@@ -38,8 +38,8 @@ import tvb_data.regionMapping as demo_data
 from uuid import UUID
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
-from tvb.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -81,7 +81,7 @@ class TestSurfaceViewers(TransactionalTestCase):
         """
         Clean-up tests data
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch_surface(self):
         """

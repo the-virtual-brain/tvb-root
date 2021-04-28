@@ -33,11 +33,11 @@
 """
 
 import pytest
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_operation import Operation, STATUS_STARTED
 from tvb.core.entities.storage import dao
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
 from tvb.core.services.operation_service import OperationService
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.adapters.testadapter3 import *
@@ -81,7 +81,7 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         operation = dao.store_entity(operation)
 
         # Store ViewModel in H5
-        parent_folder = FilesHelper().get_project_folder(self.test_project.name, str(operation.id))
+        parent_folder = StorageInterface().get_project_folder(self.test_project.name, str(operation.id))
         h5.store_view_model(view_model, parent_folder)
 
         # Launch operation

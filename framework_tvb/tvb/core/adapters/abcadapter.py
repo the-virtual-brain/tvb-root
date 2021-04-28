@@ -34,7 +34,7 @@ Root classes for adding custom functionality to the code.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
-
+import datetime
 import importlib
 import json
 import os
@@ -62,7 +62,8 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import Form
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
-from tvb.file.lab import *
+from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
+from tvb.storage.h5.storage_interface import StorageInterface
 
 LOGGER = get_logger("ABCAdapter")
 
@@ -177,7 +178,7 @@ class ABCAdapter(object):
     def __init__(self):
         self.generic_attributes = GenericAttributes()
         self.generic_attributes.subject = DataTypeMetaData.DEFAULT_SUBJECT
-        self.file_handler = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.storage_path = '.'
         # Will be populate with current running operation's identifier
         self.operation_id = None
@@ -305,7 +306,7 @@ class ABCAdapter(object):
     def extract_operation_data(self, operation):
         operation = dao.get_operation_by_id(operation.id)
         project = dao.get_project_by_id(operation.fk_launched_in)
-        self.storage_path = self.file_handler.get_project_folder(project.name, str(operation.id))
+        self.storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
@@ -391,7 +392,7 @@ class ABCAdapter(object):
                     with H5File.from_file(associated_file) as f:
                         f.store_generic_attributes(self.generic_attributes)
                 # Compute size-on disk, in case file-storage is used
-                res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
+                res.disk_size = self.storage_interface.compute_size_on_disk(associated_file)
 
             dao.store_entity(res)
             res.after_store()
@@ -536,7 +537,7 @@ class ABCAdapter(object):
             raise IntrospectionException(msg)
 
     def load_view_model(self, operation):
-        storage_path = self.file_handler.get_project_folder(operation.project.name, str(operation.id))
+        storage_path = self.storage_interface.get_project_folder(operation.project.name, str(operation.id))
         input_gid = operation.view_model_gid
         return h5.load_view_model(input_gid, storage_path)
 

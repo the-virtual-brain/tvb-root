@@ -34,7 +34,6 @@ from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -49,6 +48,7 @@ from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.import_service import ImportService
 from tvb.core.utils import format_bytes_human, format_timedelta
+from tvb.storage.h5.storage_interface import StorageInterface
 
 MAX_BURSTS_DISPLAYED = 50
 STATUS_FOR_OPERATION = {
@@ -66,7 +66,7 @@ class BurstService(object):
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def mark_burst_finished(self, burst_entity, burst_status=None, error_message=None):
         """
@@ -189,7 +189,7 @@ class BurstService(object):
     def update_burst_configuration_h5(self, burst_configuration):
         # type: (BurstConfiguration) -> None
         project = dao.get_project_by_id(burst_configuration.fk_project)
-        storage_path = self.files_helper.get_project_folder(project.name, str(burst_configuration.fk_simulation))
+        storage_path = self.storage_interface.get_project_folder(project.name, str(burst_configuration.fk_simulation))
         self.store_burst_configuration(burst_configuration, storage_path)
 
     @staticmethod
@@ -332,7 +332,7 @@ class BurstService(object):
                                      range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
-        op_dir = FilesHelper().get_project_folder(operation.project.name, str(metric_operation.id))
+        op_dir = StorageInterface().get_project_folder(operation.project.name, str(metric_operation.id))
         return op_dir, metric_operation
 
     @staticmethod
@@ -353,7 +353,7 @@ class BurstService(object):
         count = dao.count_bursts_with_name(burst_config.name, burst_config.fk_project)
         burst_config_copy.name = burst_name_format.format(burst_config.name, count + 1)
 
-        storage_path = self.files_helper.get_project_folder(project.name, str(burst_config.fk_simulation))
+        storage_path = self.storage_interface.get_project_folder(project.name, str(burst_config.fk_simulation))
         simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
         simulator.generic_attributes = GenericAttributes()
         return simulator, burst_config_copy

@@ -43,10 +43,9 @@ import xml.dom.minidom
 from io import BytesIO
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
-from tvb.encryption.data_encryption_handler import encryption_handler
 from tvb.core.entities.model.model_operation import ResultFigure
 from tvb.core.entities.storage import dao
-from tvb.file.files_helper import FilesHelper
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class FigureService:
@@ -64,7 +63,7 @@ class FigureService:
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.file_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def _write_png(self, store_path, export_data):
         img_data = base64.b64decode(export_data)                        # decode the image
@@ -106,7 +105,7 @@ class FigureService:
 
     def _image_path(self, project_name, img_type):
         "Generate path where to store image"
-        images_folder = self.file_helper.get_images_folder(project_name)
+        images_folder = self.storage_interface.get_images_folder(project_name)
         file_name = FigureService._DEFAULT_IMAGE_FILE_NAME + img_type
         return utils.get_unique_file_name(images_folder, file_name)
 
@@ -139,8 +138,8 @@ class FigureService:
         figure = dao.load_figure(entity.id)
         # Write image meta data to disk
         _, meta_data = figure.to_dict()
-        self.file_helper.write_image_metadata(figure, meta_data)
-        encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(project.name))
+        self.storage_interface.write_image_metadata(figure, meta_data, StorageInterface.IMAGES_FOLDER)
+        self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(project.name))
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
         """
@@ -150,7 +149,7 @@ class FigureService:
         result, previews_info = dao.get_previews(project.id, user.id, selected_session_name)
         for name in result:
             for figure in result[name]:
-                figures_folder = self.file_helper.get_images_folder(project.name)
+                figures_folder = self.storage_interface.get_images_folder(project.name)
                 figure_full_path = os.path.join(figures_folder, figure.file_path)
                 # Compute the path 
                 figure.file_path = utils.path2url_part(figure_full_path)
@@ -176,8 +175,8 @@ class FigureService:
         figure = dao.load_figure(figure_id)
         # Store figure meta data in an XML attached to the image.
         _, meta_data = figure.to_dict()
-        self.file_helper.write_image_metadata(figure, meta_data)
-        encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(figure.project.name))
+        self.storage_interface.write_image_metadata(figure, meta_data, StorageInterface.IMAGES_FOLDER)
+        self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(figure.project.name))
 
     def remove_result_figure(self, figure_id):
         """
@@ -186,12 +185,12 @@ class FigureService:
         figure = dao.load_figure(figure_id)
 
         # Delete all figure related files from disk.
-        figures_folder = self.file_helper.get_images_folder(figure.project.name)
+        figures_folder = self.storage_interface.get_images_folder(figure.project.name)
         path2figure = os.path.join(figures_folder, figure.file_path)
         if os.path.exists(path2figure):
             os.remove(path2figure)
-            self.file_helper.remove_image_metadata(figure)
-            encryption_handler.push_folder_to_sync(self.file_helper.get_project_folder(figure.project.name))
+            self.storage_interface.remove_image_metadata(figure, StorageInterface.IMAGES_FOLDER)
+            self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(figure.project.name))
         # Remove figure reference from DB.
         result = dao.remove_entity(ResultFigure, figure_id)
         return result

@@ -29,18 +29,18 @@
 #
 import os
 import uuid
-
 import numpy
 import pytest
 import tvb_data
+
 from tvb.basic.neotraits.api import Attr, Float, Int, NArray, List
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitUploadField, StrField, FloatField, IntField, TraitDataTypeSelectField, \
     BoolField, ArrayField, SelectField, HiddenField, MultiSelectField, FormField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -57,7 +57,7 @@ class TestForms(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_upload_field(self):
         connectivity_file = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')

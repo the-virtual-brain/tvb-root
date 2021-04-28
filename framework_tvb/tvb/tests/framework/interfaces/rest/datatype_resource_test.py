@@ -31,13 +31,14 @@
 import os
 import pytest
 import tvb_data
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.file.files_helper import FilesHelper
 from tvb.core.utils import no_matlab
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
@@ -93,4 +94,4 @@ class TestDatatypeResource(RestResourceTest):
         assert len(result) > 3
 
     def transactional_teardown_method(self):
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)

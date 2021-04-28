@@ -136,7 +136,7 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         """
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
-        self.storage_path = self.file_handler.get_project_folder(operation.project.name, str(operation.id))
+        self.storage_path = self.storage_interface.get_project_folder(operation.project.name, str(operation.id))
         return self.launch(view_model=view_model), 0
 
     def get_required_disk_size(self, view_model):

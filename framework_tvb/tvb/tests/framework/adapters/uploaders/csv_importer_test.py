@@ -39,10 +39,10 @@ import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityImporter
 from tvb.adapters.uploaders.csv_connectivity_importer import CSVConnectivityParser, CSVConnectivityImporterModel
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -71,14 +71,14 @@ class TestCSVConnectivityImporter(BaseTestCase):
     def setup_method(self):
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
-        self.helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def teardown_method(self):
         """
         Clean-up tests data
         """
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
+        self.storage_interface.remove_project_structure(self.test_project.name)
 
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
         ### First prepare input data:
@@ -89,8 +89,8 @@ class TestCSVConnectivityImporter(BaseTestCase):
         tracts = path.join(toronto_dir, 'output_ConnectionDistanceMatrix.csv')
         weights_tmp = weights + '.tmp'
         tracts_tmp = tracts + '.tmp'
-        self.helper.copy_file(weights, weights_tmp)
-        self.helper.copy_file(tracts, tracts_tmp)
+        self.storage_interface.copy_file(weights, weights_tmp)
+        self.storage_interface.copy_file(tracts, tracts_tmp)
 
         view_model = CSVConnectivityImporterModel()
         view_model.weights = weights_tmp

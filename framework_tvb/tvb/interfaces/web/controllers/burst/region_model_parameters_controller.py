@@ -40,7 +40,6 @@ import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.entities import load
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
@@ -49,6 +48,7 @@ from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseContro
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorWizzardURLs
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 @traced
@@ -98,9 +98,9 @@ class RegionsModelParametersController(BurstBaseController):
             raise ValueError(msg)
 
         current_project = common.get_current_project()
-        file_handler = FilesHelper()
+        storage_interface = StorageInterface()
         conn_idx = load.load_entity_by_gid(connectivity)
-        conn_path = file_handler.get_project_folder(current_project.name, str(conn_idx.fk_from_operation))
+        conn_path = storage_interface.get_project_folder(current_project.name, str(conn_idx.fk_from_operation))
 
         params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
         burst_config = self.simulator_context.burst_config

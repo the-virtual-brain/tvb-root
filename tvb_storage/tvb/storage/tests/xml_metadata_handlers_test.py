@@ -34,7 +34,8 @@
 
 import os
 import json
-from tvb.file.xml_metadata_handlers import XMLReader, XMLWriter
+
+from tvb.storage.h5.file.xml_metadata_handlers import XMLReader, XMLWriter
 
 
 class TestMetaDataReadXML:
@@ -68,15 +69,7 @@ class TestMetaDataReadXML:
             found_value = meta_data[key]
             assert value == found_value
         
-    def test_read_gid(self):
-        """
-        Test that value returned by read_only_element matches the actual value from the XML file.
-        """
-        read_value = self.meta_reader.read_only_element('gid')
-        assert isinstance(read_value, str)
-        assert read_value == self.EXPECTED_DICTIONARY['gid']
 
-     
 class TestMetaDataWriteXML:
     """
     Tests for XMLWriter.

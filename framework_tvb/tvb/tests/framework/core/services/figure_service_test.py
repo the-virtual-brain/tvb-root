@@ -35,7 +35,6 @@
 from PIL import Image
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core import utils
-from tvb.file.files_helper import FilesHelper
 from tvb.core.services.figure_service import FigureService
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -52,7 +51,6 @@ class TestFigureService(TransactionalTestCase):
         self.figure_service = FigureService()
         self.user = TestFactory.create_user()
         self.project = TestFactory.create_project(admin=self.user)
-        self.files_helper = FilesHelper()
 
     def transactional_teardown_method(self):
         self.delete_project_folders()

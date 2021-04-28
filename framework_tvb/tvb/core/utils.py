@@ -53,6 +53,12 @@ CHAR_SPACE = "--"
 CHAR_DRIVE = "-DriVe-"
 DRIVE_SEP = ":"
 
+COMPLEX_TIME_FORMAT = '%Y-%m-%d,%H-%M-%S.%f'
+# LESS_COMPLEX_TIME_FORMAT is also compatible with data exported from TVB 1.0.
+# This is only used as a fallback in the string to date conversion.
+LESS_COMPLEX_TIME_FORMAT = '%Y-%m-%d,%H-%M-%S'
+SIMPLE_TIME_FORMAT = "%m-%d-%Y"
+
 
 ################## PATH related methods start here ###############
 
@@ -96,6 +102,40 @@ def get_unique_file_name(storage_folder, file_name, try_number=0):
 ################## PATH related methods end here ###############
 
 ################## CONVERT related methods start here ###############
+
+def string2date(string_input, complex_format=True, date_format=None):
+    """Read date from string, after internal format"""
+    if string_input == 'None':
+        return None
+    if date_format is not None:
+        return datetime.datetime.strptime(string_input, date_format)
+    if complex_format:
+        try:
+            return datetime.datetime.strptime(string_input, COMPLEX_TIME_FORMAT)
+        except ValueError:
+            # For backwards compatibility with TVB 1.0
+            return datetime.datetime.strptime(string_input, LESS_COMPLEX_TIME_FORMAT)
+    return datetime.datetime.strptime(string_input, SIMPLE_TIME_FORMAT)
+
+
+def date2string(date_input, complex_format=True, date_format=None):
+    """Convert date into string, after internal format"""
+    if date_input is None:
+        return "None"
+
+    if date_format is not None:
+        return date_input.strftime(date_format)
+
+    if complex_format:
+        return date_input.strftime(COMPLEX_TIME_FORMAT)
+    return date_input.strftime(SIMPLE_TIME_FORMAT)
+
+
+def string2bool(string_input):
+    """ Convert given string into boolean value."""
+    string_input = str(string_input).lower()
+    return string_input in ("yes", "true", "t", "1")
+
 
 def parse_json_parameters(parameters):
     """

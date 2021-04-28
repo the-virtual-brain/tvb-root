@@ -148,7 +148,7 @@ class AllenConnectomeBuilder(ABCAdapter):
         vol_thresh = view_model.vol_thresh
 
         project = dao.get_project_by_id(self.current_project_id)
-        manifest_file = self.file_handler.get_allen_mouse_cache_folder(project.name)
+        manifest_file = self.storage_interface.get_allen_mouse_cache_folder(project.name)
         manifest_file = os.path.join(manifest_file, 'mouse_connectivity_manifest.json')
         cache = MouseConnectivityCache(resolution=resolution, manifest_file=manifest_file)
 

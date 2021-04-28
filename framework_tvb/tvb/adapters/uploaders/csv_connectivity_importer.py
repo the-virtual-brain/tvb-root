@@ -39,12 +39,12 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class CSVConnectivityParser(object):
@@ -206,7 +206,7 @@ class CSVConnectivityImporter(ABCUploader):
         """
         weights_matrix = self._read_csv_file(view_model.weights, view_model.weights_delimiter)
         tract_matrix = self._read_csv_file(view_model.tracts, view_model.tracts_delimiter)
-        FilesHelper.remove_files([view_model.weights, view_model.tracts])
+        StorageInterface.remove_files([view_model.weights, view_model.tracts])
         conn_index = self.load_entity_by_gid(view_model.input_data)
         if weights_matrix.shape[0] != conn_index.number_of_regions:
             raise LaunchException("The csv files define %s nodes but the connectivity you selected as reference "

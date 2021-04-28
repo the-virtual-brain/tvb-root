@@ -38,8 +38,7 @@ import os
 import pytest
 import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.utils import path2url_part, get_unique_file_name
-from tvb.utils import string2date, date2string, string2bool
+from tvb.core.utils import path2url_part, get_unique_file_name, string2date, date2string, string2bool
 
 
 class TestUtils(TransactionalTestCase):

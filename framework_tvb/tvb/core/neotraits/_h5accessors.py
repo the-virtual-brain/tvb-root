@@ -34,9 +34,11 @@ import uuid
 import numpy
 import scipy.sparse
 import typing
+import os
+
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
-from tvb.file.exceptions import MissingDataSetException
 from tvb.datatypes import equations
+from tvb.storage.h5.file.exceptions import MissingDataSetException
 
 
 class Accessor(object, metaclass=abc.ABCMeta):
@@ -87,14 +89,16 @@ class Scalar(Accessor):
         # noinspection PyProtectedMember
         val = self.trait_attribute._validate_set(None, val)
         if val is not None:
-            self.owner.storage_manager.set_metadata({self.field_name: val})
+            self.owner.storage_interface.set_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                      {self.field_name: val})
 
     def load(self):
         # type: () -> typing.Union[str, int, float]
         # assuming here that the h5 will return the type we stored.
         # if paranoid do self.trait_attribute.field_type(value)
         if self.owner.metadata_cache is None:
-            self.owner.metadata_cache = self.owner.storage_manager.get_metadata()
+            self.owner.metadata_cache = self.owner.storage_interface.get_metadata(self.owner.storage_folder,
+                                                                                  self.owner.file_name)
         if self.field_name in self.owner.metadata_cache:
             return self.owner.metadata_cache[self.field_name]
         else:
@@ -112,12 +116,13 @@ class Uuid(Scalar):
             raise TypeError("expected uuid.UUID got {}".format(type(val)))
         # urn is a standard encoding, that is obvious an uuid
         # str(gid) is more ambiguous
-        self.owner.storage_manager.set_metadata({self.field_name: val.urn})
+        self.owner.storage_interface.set_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                  {self.field_name: val.urn})
 
     def load(self):
         # type: () -> uuid.UUID
         # TODO: handle inexistent field?
-        metadata = self.owner.storage_manager.get_metadata()
+        metadata = self.owner.storage_interface.get_metadata(self.owner.storage_folder, self.owner.file_name)
         if self.field_name in metadata:
             return uuid.UUID(metadata[self.field_name])
         return None
@@ -186,7 +191,9 @@ class DataSet(Accessor):
         # type: (numpy.ndarray, bool, int) -> None
         if not grow_dimension:
             grow_dimension = self.expand_dimension
-        self.owner.storage_manager.append_data(
+        self.owner.storage_interface.append_data(
+            self.owner.storage_folder,
+            self.owner.file_name,
             self.field_name,
             data,
             grow_dimension=grow_dimension,
@@ -194,14 +201,16 @@ class DataSet(Accessor):
         )
         # update the cached array min max metadata values
         new_meta = DataSetMetaData.from_array(numpy.array(data))
-        meta_dict = self.owner.storage_manager.get_metadata(self.field_name)
+        meta_dict = self.owner.storage_interface.get_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                              dataset_name=self.field_name)
         if meta_dict:
             meta = DataSetMetaData.from_dict(meta_dict)
             meta.merge(new_meta)
         else:
             # this must be a new file, nothing to merge, set the new meta
             meta = new_meta
-        self.owner.storage_manager.set_metadata(meta.to_dict(), self.field_name)
+        self.owner.storage_interface.set_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                  meta.to_dict(), self.field_name)
 
     def store(self, data):
         # type: (numpy.ndarray) -> None
@@ -210,9 +219,11 @@ class DataSet(Accessor):
         if data is None:
             return
 
-        self.owner.storage_manager.store_data(self.field_name, data)
+        self.owner.storage_interface.store_data(self.owner.storage_folder, self.owner.file_name, self.field_name, data)
         # cache some array information
-        self.owner.storage_manager.set_metadata(
+        self.owner.storage_interface.set_metadata(
+            self.owner.storage_folder,
+            self.owner.file_name,
             DataSetMetaData.from_array(data).to_dict(),
             self.field_name
         )
@@ -220,17 +231,21 @@ class DataSet(Accessor):
     def load(self):
         # type: () -> numpy.ndarray
         if not self.trait_attribute.required:
-            return self.owner.storage_manager.get_data(self.field_name, ignore_errors=True)
-        return self.owner.storage_manager.get_data(self.field_name)
+            return self.owner.storage_interface.get_data(self.owner.storage_folder, self.owner.file_name,
+                                                         self.field_name, ignore_errors=True)
+        return self.owner.storage_interface.get_data(self.owner.storage_folder, self.owner.file_name,
+                                                     self.field_name)
 
     def __getitem__(self, data_slice):
         # type: (typing.Tuple[slice, ...]) -> numpy.ndarray
-        return self.owner.storage_manager.get_data(self.field_name, data_slice)
+        return self.owner.storage_interface.get_data(self.owner.storage_folder, self.owner.file_name, self.field_name,
+                                                     data_slice=data_slice)
 
     @property
     def shape(self):
         # type: () -> typing.Tuple[int]
-        return self.owner.storage_manager.get_data_shape(self.field_name)
+        return self.owner.storage_interface.get_data_shape(self.owner.storage_folder, self.owner.file_name,
+                                                           self.field_name)
 
     def get_cached_metadata(self):
         """
@@ -238,7 +253,8 @@ class DataSet(Accessor):
         This cache is useful for large, expanding datasets,
         when we want to avoid loading the whole dataset just to compute a max.
         """
-        meta = self.owner.storage_manager.get_metadata(self.field_name)
+        meta = self.owner.storage_interface.get_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                         self.field_name)
         return DataSetMetaData.from_dict(meta)
 
 
@@ -268,11 +284,13 @@ class EquationScalar(Accessor):
         eq_meta_dict = {self.KEY_TYPE: str(type(data).__name__),
                         self.KEY_PARAMETERS: data.parameters}
 
-        self.owner.storage_manager.set_metadata({self.field_name: json.dumps(eq_meta_dict)})
+        self.owner.storage_interface.set_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                  {self.field_name: json.dumps(eq_meta_dict)})
 
     def load(self):
         # type: () -> Equation
-        eq_meta_dict = json.loads(self.owner.storage_manager.get_metadata()[self.field_name])
+        eq_meta_dict = json.loads(self.owner.storage_interface.get_metadata(self.owner.storage_folder,
+                                                                            self.owner.file_name)[self.field_name])
 
         if eq_meta_dict is None:
             return eq_meta_dict
@@ -358,7 +376,6 @@ class SparseMatrixMetaData(DataSetMetaData):
         }
 
 
-
 class SparseMatrix(Accessor):
     """
     Stores and loads a scipy.sparse csc or csr matrix in h5.
@@ -377,28 +394,37 @@ class SparseMatrix(Accessor):
         if not isinstance(mtx, scipy.sparse.spmatrix):
             raise TypeError("expected scipy.sparse.spmatrix, got {}".format(type(mtx)))
 
-        self.owner.storage_manager.store_data(
+        self.owner.storage_interface.store_data(
+            self.owner.storage_folder,
+            self.owner.file_name,
             'data',
             mtx.data,
             where=self.field_name
         )
-        self.owner.storage_manager.store_data(
+        self.owner.storage_interface.store_data(
+            self.owner.storage_folder,
+            self.owner.file_name,
             'indptr',
             mtx.indptr,
             where=self.field_name
         )
-        self.owner.storage_manager.store_data(
+        self.owner.storage_interface.store_data(
+            self.owner.storage_folder,
+            self.owner.file_name,
             'indices',
             mtx.indices,
             where=self.field_name
         )
-        self.owner.storage_manager.set_metadata(
+        self.owner.storage_interface.set_metadata(
+            self.owner.storage_folder,
+            self.owner.file_name,
             SparseMatrixMetaData.from_array(mtx).to_dict(),
             where=self.field_name
         )
 
     def get_metadata(self):
-        meta = self.owner.storage_manager.get_metadata(self.field_name)
+        meta = self.owner.storage_interface.get_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                         self.field_name)
         return SparseMatrixMetaData.from_dict(meta)
 
     def load(self):
@@ -406,22 +432,27 @@ class SparseMatrix(Accessor):
         if meta.format not in self.constructors:
             raise ValueError('sparse format {} not supported'.format(meta.format))
         constructor = self.constructors[meta.format]
-        data = self.owner.storage_manager.get_data(
+        data = self.owner.storage_interface.get_data(
+            self.owner.storage_folder,
+            self.owner.file_name,
             'data',
             where=self.field_name,
         )
-        indptr = self.owner.storage_manager.get_data(
+        indptr = self.owner.storage_interface.get_data(
+            self.owner.storage_folder,
+            self.owner.file_name,
             'indptr',
             where=self.field_name,
         )
-        indices = self.owner.storage_manager.get_data(
+        indices = self.owner.storage_interface.get_data(
+            self.owner.storage_folder,
+            self.owner.file_name,
             'indices',
             where=self.field_name,
         )
         mtx = constructor((data, indices, indptr), shape=meta.shape, dtype=meta.dtype)
         mtx.sort_indices()
         return mtx
-
 
 
 class Json(Scalar):
@@ -440,10 +471,12 @@ class Json(Scalar):
         stores a json in the h5 metadata
         """
         val = json.dumps(val, cls=self.json_encoder)
-        self.owner.storage_manager.set_metadata({self.field_name: val})
+        self.owner.storage_interface.set_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                  {self.field_name: val})
 
     def load(self):
-        val = self.owner.storage_manager.get_metadata()[self.field_name]
+        val = self.owner.storage_interface.get_metadata(self.owner.storage_folder,
+                                                        self.owner.file_name)[self.field_name]
         if self.json_decoder:
             return self.json_decoder().decode(val)
         return json.loads(val)
@@ -456,10 +489,12 @@ class JsonRange(Scalar):
 
     def store(self, val):
         val = json.dumps(val.__dict__)
-        self.owner.storage_manager.set_metadata({self.field_name: val})
+        self.owner.storage_interface.set_metadata(self.owner.storage_folder, self.owner.file_name,
+                                                  {self.field_name: val})
 
     def load(self):
-        val = self.owner.storage_manager.get_metadata()[self.field_name]
+        val = self.owner.storage_interface.get_metadata(self.owner.storage_folder,
+                                                        self.owner.file_name)[self.field_name]
         loaded_val = json.loads(val)
         range_items = list(loaded_val.values())
         return Range(range_items[0], range_items[1], range_items[2])

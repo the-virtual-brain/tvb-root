@@ -33,7 +33,8 @@
 """
 
 import datetime
-from tvb.utils import date2string
+
+from tvb.core.utils import date2string
 
 
 class Exportable(object):
@@ -53,7 +54,6 @@ class Exportable(object):
                 else:
                     dict_equivalent[key] = self.__dict__[key]
         return self.__class__.__name__, dict_equivalent
-
 
     def from_dict(self, dictionary):
         pass

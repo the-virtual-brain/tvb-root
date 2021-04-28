@@ -33,16 +33,15 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class ABCRemover(object):
     
     def __init__(self, handled_datatype):
-        self.structure_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.handled_datatype = handled_datatype
-        
         
     def remove_datatype(self, skip_validation=False):
         """

@@ -33,11 +33,11 @@
 """
 
 import os
-
 import tvb_data.obj
-from tvb.file.files_helper import FilesHelper
+
 from tvb.core.neocom import h5
 from tvb.datatypes.surfaces import FACE
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -56,7 +56,7 @@ class TestObjSurfaceImporter(BaseTestCase):
 
     def teardown_method(self):
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_import_quads_no_normals(self):
         """

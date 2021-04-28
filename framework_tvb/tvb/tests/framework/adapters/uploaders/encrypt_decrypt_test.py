@@ -42,7 +42,7 @@ from cryptography.hazmat.backends import default_backend
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.core.adapters.abcuploader import ABCUploader, ENCRYPTED_PASSWORD_NAME, ENCRYPTED_DATA_SUFFIX, \
     DECRYPTED_DATA_SUFFIX
-from tvb.encryption.encryption_handler import EncryptionHandler
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.basic.profile import TvbProfile
 
@@ -83,7 +83,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
 
         # Generate password
         pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
-        password = EncryptionHandler.generate_random_password(pass_size)
+        password = StorageInterface.generate_random_password(pass_size)
 
         # Encrypt files using an AES symmetric key
         encrypted_file_path = ABCUploader.get_path_to_encrypt(path_to_file)

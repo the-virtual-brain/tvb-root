@@ -41,7 +41,7 @@ from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINIS
 from tvb.core.neocom import h5
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
-from tvb.encryption.encryption_handler import EncryptionHandler
+from tvb.storage.h5.storage_interface import StorageInterface
 
 log = get_logger(__name__)
 
@@ -52,12 +52,12 @@ if __name__ == '__main__':
     TvbProfile.current.hpc.IS_HPC_RUN = True
 
 
-def _encrypt_results(adapter_instance, encryption_handler):
+def _encrypt_results(adapter_instance, storage_interface, dir_gid):
     output_plain_dir = adapter_instance._get_output_path()
     output_plain_files = os.listdir(output_plain_dir)
     output_plain_files = [os.path.join(output_plain_dir, plain_file) for plain_file in output_plain_files]
     log.info("Encrypt files: {}".format(output_plain_files))
-    encryption_handler.encrypt_inputs(output_plain_files, HPCSchedulerClient.OUTPUT_FOLDER)
+    storage_interface.encrypt_inputs(dir_gid, output_plain_files, HPCSchedulerClient.OUTPUT_FOLDER)
 
 
 def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, base_url, operation_id, plain_dir='/root/plain'):
@@ -65,15 +65,15 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         log.info("Preparing HPC launch for simulation with id={}".format(simulator_gid))
         populate_datatypes_registry()
         log.info("Current TVB profile has HPC run=: {}".format(TvbProfile.current.hpc.IS_HPC_RUN))
-        encyrption_handler = EncryptionHandler(simulator_gid)
-        _request_passfile(simulator_gid, operation_id, base_url, encyrption_handler.get_password_file())
-        encyrption_handler.decrypt_results_to_dir(plain_dir)
+        storage_interface = StorageInterface()
+        _request_passfile(simulator_gid, operation_id, base_url, storage_interface.get_password_file(simulator_gid))
+        storage_interface.decrypt_results_to_dir(simulator_gid, plain_dir)
         log.info("Current wdir is: {}".format(plain_dir))
         view_model = h5.load_view_model(simulator_gid, plain_dir)
         adapter_instance = HPCSimulatorAdapter(plain_dir, is_group_launch)
         _update_operation_status(STATUS_STARTED, simulator_gid, operation_id, base_url)
         adapter_instance._prelaunch(None, view_model, available_disk_space)
-        _encrypt_results(adapter_instance, encyrption_handler)
+        _encrypt_results(adapter_instance, storage_interface, simulator_gid)
         _update_operation_status(STATUS_FINISHED, simulator_gid, operation_id, base_url)
 
     except Exception as excep:

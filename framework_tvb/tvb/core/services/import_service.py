@@ -38,6 +38,7 @@ import json
 import os
 import shutil
 import uuid
+import datetime
 from cgi import FieldStorage
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -50,7 +51,6 @@ from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLA
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities import load
-from tvb.file.lab import *
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -65,6 +65,9 @@ from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
+from tvb.storage.h5.file.exceptions import MissingDataSetException, FileStructureException, \
+    IncompatibleFileManagerException
+from tvb.storage.h5.storage_interface import StorageInterface
 
 OPERATION_XML = "Operation.xml"
 
@@ -101,7 +104,7 @@ class ImportService(object):
     def __init__(self):
         self.logger = get_logger(__name__)
         self.user_id = None
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.created_projects = []
         self.view_model2adapter = self._populate_view_model2adapter()
 
@@ -111,12 +114,12 @@ class ImportService(object):
             if not uploaded.file:
                 raise ImportException("Please select the archive which contains the project structure.")
             with open(uq_file_name, 'wb') as file_obj:
-                self.files_helper.copy_file(uploaded.file, file_obj)
+                self.storage_interface.copy_file(uploaded.file, file_obj)
         else:
             shutil.copy2(uploaded, uq_file_name)
 
         try:
-            self.files_helper.unpack_zip(uq_file_name, temp_folder)
+            self.storage_interface.unpack_zip(uq_file_name, temp_folder)
         except FileStructureException as excep:
             self.logger.exception(excep)
             raise ImportException("Bad ZIP archive provided. A TVB exported project is expected!")
@@ -165,7 +168,7 @@ class ImportService(object):
             # Removing from DB is not necessary because in transactional env a simple exception throw
             # will erase everything to be inserted.
             for project in self.created_projects:
-                project_path = self.files_helper.get_project_folder(project.name)
+                project_path = self.storage_interface.get_project_folder(project.name)
                 shutil.rmtree(project_path)
             raise ImportException(str(excep))
 
@@ -183,7 +186,7 @@ class ImportService(object):
         """
         project_roots = []
         for root, _, files in os.walk(temp_folder):
-            if FilesHelper.TVB_PROJECT_FILE in files:
+            if StorageInterface.TVB_PROJECT_FILE in files:
                 project_roots.append(root)
 
         for temp_project_path in project_roots:
@@ -193,14 +196,14 @@ class ImportService(object):
             # Populate the internal list of create projects so far, for cleaning up folders, in case of failure
             self.created_projects.append(project)
             # Ensure project final folder exists on disk
-            project_path = self.files_helper.get_project_folder(project.name)
-            shutil.move(os.path.join(temp_project_path, FilesHelper.TVB_PROJECT_FILE), project_path)
+            project_path = self.storage_interface.get_project_folder(project.name)
+            shutil.move(os.path.join(temp_project_path, StorageInterface.TVB_PROJECT_FILE), project_path)
             # Now import project operations with their results
             self.import_project_operations(project, temp_project_path)
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
-            if DataEncryptionHandler.encryption_enabled():
-                DataEncryptionHandler.sync_folders(project_path)
+            if StorageInterface.encryption_enabled():
+                StorageInterface.sync_folders(project_path)
                 shutil.rmtree(project_path)
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
@@ -210,7 +213,7 @@ class ImportService(object):
         """
         all_datatypes = {}
         for file_name in os.listdir(src_op_path):
-            if file_name.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+            if file_name.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
                 h5_file = os.path.join(src_op_path, file_name)
                 try:
                     file_update_manager = FilesUpdateManager()
@@ -275,11 +278,11 @@ class ImportService(object):
         """
         Import all images from project
         """
-        images_root = os.path.join(temp_project_path, FilesHelper.IMAGES_FOLDER)
-        target_images_path = self.files_helper.get_images_folder(project_name)
+        images_root = os.path.join(temp_project_path, StorageInterface.IMAGES_FOLDER)
+        target_images_path = self.storage_interface.get_images_folder(project_name)
         for root, _, files in os.walk(images_root):
             for metadata_file in files:
-                if metadata_file.endswith(FilesHelper.TVB_FILE_EXTENSION):
+                if metadata_file.endswith(StorageInterface.TVB_FILE_EXTENSION):
                     self._import_image(root, metadata_file, project.id, target_images_path)
 
     @staticmethod
@@ -314,7 +317,7 @@ class ImportService(object):
                 dt_paths = []
                 all_view_model_files = []
                 for file in files:
-                    if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+                    if file.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
                         h5_file = os.path.join(root, file)
                         try:
                             h5_class = H5File.h5_class_from_file(h5_file)
@@ -392,7 +395,7 @@ class ImportService(object):
         view_model.generic_attributes.operation_tag = operation_entity.user_group
 
         h5.store_view_model(view_model, new_op_folder)
-        view_model_disk_size = FilesHelper.compute_recursive_h5_disk_usage(new_op_folder)
+        view_model_disk_size = StorageInterface.compute_recursive_h5_disk_usage(new_op_folder)
         operation_entity.view_model_disk_size = view_model_disk_size
         operation_entity.view_model_gid = view_model.gid.hex
         dao.store_entity(operation_entity)
@@ -411,7 +414,7 @@ class ImportService(object):
 
             if operation_data.is_old_form:
                 operation_entity, datatype_group = self.import_operation(operation_data.operation)
-                new_op_folder = self.files_helper.get_project_folder(project.name, str(operation_entity.id))
+                new_op_folder = self.storage_interface.get_project_folder(project.name, str(operation_entity.id))
 
                 try:
                     operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
@@ -463,10 +466,10 @@ class ImportService(object):
                     #TODO: TVB-2849 to reveiw these flags and simplify condition
                     if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group) or importer_operation_id is not None:
                         imported_operations.append(operation_entity)
-                        new_op_folder = self.files_helper.get_project_folder(project.name, str(operation_entity.id))
+                        new_op_folder = self.storage_interface.get_project_folder(project.name, str(operation_entity.id))
                         view_model_disk_size = 0
                         for h5_file in operation_data.all_view_model_files:
-                            view_model_disk_size += FilesHelper.compute_size_on_disk(h5_file)
+                            view_model_disk_size += StorageInterface.compute_size_on_disk(h5_file)
                             shutil.move(h5_file, new_op_folder)
                         operation_entity.view_model_disk_size = view_model_disk_size
                         dao.store_entity(operation_entity)
@@ -474,10 +477,10 @@ class ImportService(object):
                         # In case all Dts under the current operation were Links and the ViewModel is dummy,
                         # don't keep the Operation empty in DB
                         dao.remove_entity(Operation, operation_entity.id)
-                        self.files_helper.remove_operation_data(project.name, operation_entity.id)
+                        self.storage_interface.remove_operation_data(project.name, operation_entity.id)
                 except MissingReferenceException as excep:
                     dao.remove_entity(Operation, operation_entity.id)
-                    self.files_helper.remove_operation_data(project.name, operation_entity.id)
+                    self.storage_interface.remove_operation_data(project.name, operation_entity.id)
                     raise excep
             else:
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
@@ -514,7 +517,7 @@ class ImportService(object):
         """
         Create and store a image entity.
         """
-        figure_dict = XMLReader(os.path.join(src_folder, metadata_file)).read_metadata()
+        figure_dict = StorageInterface().read_metadata(os.path.join(src_folder, metadata_file))
         actual_figure = os.path.join(src_folder, os.path.split(figure_dict['file_path'])[1])
         if not os.path.exists(actual_figure):
             self.logger.warning("Expected to find image path %s .Skipping" % actual_figure)
@@ -530,7 +533,7 @@ class ImportService(object):
         shutil.move(actual_figure, target_images_path)
         self.logger.debug("Store imported figure")
         _, meta_data = figure.to_dict()
-        self.files_helper.write_image_metadata(figure, meta_data)
+        self.storage_interface.write_image_metadata(figure, meta_data, StorageInterface.IMAGES_FOLDER)
 
     def load_datatype_from_file(self, current_file, op_id, datatype_group=None, current_project_id=None):
         # type: (str, int, DataTypeGroup, int) -> HasTraitsIndex
@@ -567,7 +570,7 @@ class ImportService(object):
 
             associated_file = h5.path_for_stored_index(datatype_index)
             if os.path.exists(associated_file):
-                datatype_index.disk_size = FilesHelper.compute_size_on_disk(associated_file)
+                datatype_index.disk_size = StorageInterface.compute_size_on_disk(associated_file)
             result = datatype_index
 
         return result
@@ -601,7 +604,7 @@ class ImportService(object):
         Create and store a Project entity.
         """
         self.logger.debug("Creating project from path: %s" % project_path)
-        project_dict = self.files_helper.read_project_metadata(project_path)
+        project_dict = self.storage_interface.read_project_metadata(project_path)
 
         project_entity = manager_of_class(Project).new_instance()
         project_entity = project_entity.from_dict(project_dict, self.user_id)
@@ -619,7 +622,7 @@ class ImportService(object):
         """
         Create Operation entity from metadata file.
         """
-        operation_dict = XMLReader(operation_file).read_metadata()
+        operation_dict = StorageInterface().read_metadata(operation_file)
         operation_entity = manager_of_class(Operation).new_instance()
         return operation_entity.from_dict(operation_dict, dao, self.user_id, project.gid)
 
@@ -655,12 +658,12 @@ class ImportService(object):
                 raise ServicesBaseException("Could not process the given ZIP file...")
 
             with open(uq_file_name, 'wb') as file_obj:
-                self.files_helper.copy_file(zip_file.file, file_obj)
+                self.storage_interface.copy_file(zip_file.file, file_obj)
         else:
             shutil.copy2(zip_file, uq_file_name)
 
         try:
-            self.files_helper.unpack_zip(uq_file_name, temp_folder)
+            self.storage_interface.unpack_zip(uq_file_name, temp_folder)
             return temp_folder
         except FileStructureException as excep:
             raise ServicesBaseException("Could not process the given ZIP file..." + str(excep))

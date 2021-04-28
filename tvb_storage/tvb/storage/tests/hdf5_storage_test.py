@@ -39,7 +39,9 @@ import shutil
 import pytest
 
 from tvb.basic.profile import TvbProfile
-from tvb.file.lab import *
+from tvb.storage.h5.file.exceptions import MissingDataSetException, IncompatibleFileManagerException, \
+    FileStructureException
+from tvb.storage.h5.file.hdf5_storage_manager import HDF5StorageManager
 
 # Some constants used by tests
 STORAGE_FILE_NAME = "test_data.h5"
@@ -87,6 +89,19 @@ class TestHDF5Storage(object):
         numpy.testing.assert_array_equal(expected_arr, current_arr, message)
 
     # -------------- TESTS ---------------------
+    def test_invalid_storage_path(self):
+        """
+        This method will test scenarios where no storage path or storage file is provided
+        """
+        self.storage_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, "test_hdf5")
+        # Test if folder name is None
+        with pytest.raises(FileStructureException):
+            HDF5StorageManager(None, "test_data.h5")
+
+        # Test if file name is None
+        with pytest.raises(FileStructureException):
+            HDF5StorageManager(self.storage_folder, None)
+
     def test_file_creation(self):
         """
         Test if the storage file is created on disk.

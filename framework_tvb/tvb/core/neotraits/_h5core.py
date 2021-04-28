@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import datetime
 import importlib
 import os.path
 import typing
@@ -39,13 +39,14 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Final
 from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
-from tvb.core.entities.file.file_storage_factory import FileStorageFactory
-from tvb.file.lab import *
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
 from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
 from tvb.core.neotraits.view_model import DataTypeGidAttr
+from tvb.core.utils import string2date, date2string
 from tvb.datatypes.equations import Equation
+from tvb.storage.h5.file.exceptions import MissingDataSetException
+from tvb.storage.h5.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 
@@ -62,8 +63,8 @@ class H5File(object):
     def __init__(self, path):
         # type: (str) -> None
         self.path = path
-        storage_path, file_name = os.path.split(path)
-        self.storage_manager = FileStorageFactory.get_file_storage(storage_path, file_name)
+        self.storage_folder, self.file_name = os.path.split(path)
+        self.storage_interface = StorageInterface()
         # would be nice to have an opened state for the chunked api instead of the close_file=False
 
         # common scalar headers
@@ -88,7 +89,7 @@ class H5File(object):
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
 
-        if not self.storage_manager.is_valid_hdf5_file():
+        if not self.storage_interface.is_valid_hdf5_file(self.storage_folder, self.file_name):
             self.written_by.store(self.get_class_path())
             self.is_new_file = True
 
@@ -120,7 +121,7 @@ class H5File(object):
         self.close()
 
     def close(self):
-        self.storage_manager.close_file()
+        self.storage_interface.close_file(self.storage_folder, self.file_name)
 
     def store(self, datatype, scalars_only=False, store_references=True):
         # type: (HasTraits, bool, bool) -> None
@@ -254,19 +255,19 @@ class H5File(object):
     @staticmethod
     def get_metadata_param(path, param):
         base_dir, fname = os.path.split(path)
-        storage_manager = FileStorageFactory.get_file_storage(base_dir, fname)
-        meta = storage_manager.get_metadata()
+        storage_interface = StorageInterface()
+        meta = storage_interface.get_metadata(base_dir, fname)
         return meta.get(param)
 
     def store_metadata_param(self, key, value):
-        self.storage_manager.set_metadata({key: value})
+        self.storage_interface.set_metadata(self.storage_folder, self.file_name, {key: value})
 
     @staticmethod
-    def remove_metadata_param(file_path, param, dataset_name='', where=HDF5StorageManager.ROOT_NODE_PATH):
+    def remove_metadata_param(file_path, param, dataset_name='', where=StorageInterface.ROOT_NODE_PATH):
         base_dir, fname = os.path.split(file_path)
-        storage_manager = FileStorageFactory.get_file_storage(base_dir, fname)
-        if param in storage_manager.get_metadata(dataset_name=dataset_name, where=where):
-            storage_manager.remove_metadata(param, dataset_name=dataset_name, where=where)
+        storage_interface = StorageInterface()
+        if param in storage_interface.get_metadata(base_dir, fname, dataset_name=dataset_name, where=where):
+            storage_interface.remove_metadata(base_dir, fname, param, dataset_name=dataset_name, where=where)
 
     @staticmethod
     def h5_class_from_file(path):

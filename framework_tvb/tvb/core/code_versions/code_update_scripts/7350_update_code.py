@@ -37,16 +37,13 @@ Populate Surface fields after 1.3.1, in version 1.4.
 import json
 from sqlalchemy.sql import text
 from tvb.basic.logger.builder import get_logger
-# from tvb.basic.traits.types_basic import MapAsJson
 from tvb.core.entities import model
 from tvb.core.entities.storage import SA_SESSIONMAKER, dao, transactional
-from tvb.file.files_helper import FilesHelper
 from tvb.core.utils import parse_json_parameters
 from tvb.datatypes.region_mapping import RegionMapping
-
+from tvb.storage.h5.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
-
 
 
 def update():
@@ -60,7 +57,6 @@ def update():
     _adapt_simulation_monitor_params()
 
     _transfer_projection_matrices()
-
 
 
 @transactional
@@ -78,7 +74,7 @@ def _adapt_epileptor_simulations():
     try:
         all_ep_ops = session.query(model.Operation).filter(
             model.Operation.parameters.ilike('%"' + epileptor_old + '"%')).all()
-        files_helper = FilesHelper()
+        storage_interface = StorageInterface()
         all_bursts = dict()
 
         for ep_op in all_ep_ops:
@@ -92,7 +88,7 @@ def _adapt_epileptor_simulations():
                 op_params[param_model] = epileptor_new
                 ep_op.parameters = json.dumps(op_params, cls=MapAsJson.MapAsJsonEncoder)
                 LOGGER.debug("New params:" + ep_op.parameters)
-                files_helper.write_operation_metadata(ep_op)
+                storage_interface.write_operation_metadata(ep_op)
 
                 burst = dao.get_burst_for_operation_id(ep_op.id)
                 if burst is not None:
@@ -134,7 +130,6 @@ def _adapt_simulation_monitor_params():
     try:
         all_eeg_ops = session.query(model.Operation).filter(
             model.Operation.parameters.ilike('%"' + param_eeg_proj_old + '"%')).all()
-        files_helper = FilesHelper()
         all_bursts = dict()
 
         for eeg_op in all_eeg_ops:

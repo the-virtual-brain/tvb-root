@@ -31,7 +31,6 @@
 import os
 
 from tvb.basic.logger.builder import get_logger
-from tvb.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
 from tvb.interfaces.rest.commons.files_helper import save_temporary_file
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED
@@ -41,6 +40,7 @@ from tvb.interfaces.rest.server.decorators.rest_decorators import check_permissi
 from tvb.interfaces.rest.server.facades.simulation_facade import SimulationFacade
 from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class FireSimulationResource(RestResource):
@@ -56,9 +56,9 @@ class FireSimulationResource(RestResource):
         :start a simulation using a project id and a zip archive with the simulator data serialized
         """
         file = self.extract_file_from_request(request_file_key=RequestFileKey.SIMULATION_FILE_KEY.value,
-                                              file_extension=FilesHelper.TVB_ZIP_FILE_EXTENSION)
+                                              file_extension=StorageInterface.TVB_ZIP_FILE_EXTENSION)
         zip_path = save_temporary_file(file)
-        result = FilesHelper().unpack_zip(zip_path, os.path.dirname(zip_path))
+        result = StorageInterface().unpack_zip(zip_path, os.path.dirname(zip_path))
 
         if len(result) == 0:
             self.logger.error("Empty zip archive. {}".format(zip_path))

@@ -48,7 +48,8 @@ from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX
 from tvb.core.services.exceptions import OperationException
-from tvb.file.lab import *
+from tvb.core.utils import date2string
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class AlgorithmService(object):
@@ -58,7 +59,7 @@ class AlgorithmService(object):
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.file_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     @staticmethod
     def get_category_by_id(identifier):
@@ -145,9 +146,10 @@ class AlgorithmService(object):
                 file_name = None
                 if hasattr(field, 'file') and field.file is not None:
                     project = dao.get_project_by_id(project_id)
-                    temporary_storage = self.file_helper.get_project_folder(project.name, self.file_helper.TEMP_FOLDER)
+                    temporary_storage = self.storage_interface.get_project_folder(
+                        project.name, self.storage_interface.TEMP_FOLDER)
                     try:
-                        uq_name = date2string(datetime.datetime.now(), True) + '_' + str(0)
+                        uq_name = date2string(datetime.now(), True) + '_' + str(0)
                         file_name = TEMPORARY_PREFIX + uq_name + '_' + field.filename
                         file_name = os.path.join(temporary_storage, file_name)
 
@@ -155,7 +157,7 @@ class AlgorithmService(object):
                             file_obj.write(field.file.read())
                     except Exception as excep:
                         # TODO: is this handled properly?
-                        self.file_helper.remove_files([file_name])
+                        self.storage_interface.remove_files([file_name])
                         excep.message = 'Could not continue: Invalid input files'
                         raise excep
                 post_data[form_field.name] = file_name

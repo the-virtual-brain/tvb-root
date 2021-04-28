@@ -45,16 +45,14 @@ from formencode import validators
 from simplejson import JSONEncoder
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.services.project_service import ProjectService
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
-from tvb.encryption.data_encryption_handler import DataEncryptionHandler
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
-from tvb.utils import string2bool
+from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.h5.utils import string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -80,7 +78,6 @@ class ProjectController(BaseController):
     def __init__(self):
         super(ProjectController, self).__init__()
         self.flow_controller = FlowController()
-        self.file_helper = FilesHelper()
 
     @expose_page
     @settings
@@ -187,9 +184,9 @@ class ProjectController(BaseController):
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
                 saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
-                if DataEncryptionHandler.encryption_enabled() and is_create:
-                    project_folder = self.file_helper.get_project_folder(saved_project.name)
-                    DataEncryptionHandler.sync_folders(project_folder)
+                if StorageInterface.encryption_enabled() and is_create:
+                    project_folder = StorageInterface().get_project_folder(saved_project.name)
+                    StorageInterface.sync_folders(project_folder)
                     shutil.rmtree(project_folder)
                 self._mark_selected(saved_project)
                 raise cherrypy.HTTPRedirect('/project/viewall')

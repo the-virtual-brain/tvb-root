@@ -41,10 +41,10 @@ import pytest
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_service import BurstService
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -67,7 +67,7 @@ class TestExporters(TransactionalTestCase):
         """
         user = TestFactory.create_user('Exporter_Tests_User2')
         project = TestFactory.create_project(user, 'Exporter_Tests_Project2')
-        FilesHelper().remove_project_structure(project.name)
+        StorageInterface().remove_project_structure(project.name)
 
         # Remove EXPORT folder
         export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME)
@@ -194,7 +194,7 @@ class TestExporters(TransactionalTestCase):
         burst_configuration.name = "Test_burst"
         burst_configuration = dao.store_entity(burst_configuration)
 
-        op_folder = FilesHelper().get_project_folder(self.test_project.name, str(operation.id))
+        op_folder = StorageInterface().get_project_folder(self.test_project.name, str(operation.id))
         BurstService().store_burst_configuration(burst_configuration, op_folder)
 
         export_file = self.export_manager.export_simulator_configuration(burst_configuration.id)

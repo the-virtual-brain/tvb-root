@@ -36,7 +36,6 @@ import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.entities import load
-from tvb.file.files_helper import FilesHelper
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -44,6 +43,7 @@ from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseContro
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 @traced
@@ -68,8 +68,8 @@ class NoiseConfigurationController(BurstBaseController):
         initial_noise = self.group_noise_array_by_state_var(noise_values, state_vars, conn_idx.number_of_regions)
 
         current_project = common.get_current_project()
-        file_handler = FilesHelper()
-        conn_path = file_handler.get_project_folder(current_project.name, str(conn_idx.fk_from_operation))
+        storage_interface = StorageInterface()
+        conn_path = storage_interface.get_project_folder(current_project.name, str(conn_idx.fk_from_operation))
 
         params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
         params.update({

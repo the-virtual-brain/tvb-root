@@ -35,8 +35,7 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
-from tvb.encryption.data_encryption_handler import encryption_handler, FoldersQueueConsumer, \
-    DataEncryptionHandler
+from tvb.storage.h5.storage_interface import StorageInterface
 
 STARTUP_TIC = time.time()
 
@@ -54,7 +53,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize, reset
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
-from tvb.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -90,7 +88,6 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 class CleanupSessionHandler(RamSession):
     def __init__(self, id=None, **kwargs):
         super(CleanupSessionHandler, self).__init__(id, **kwargs)
-        self.file_helper = FilesHelper()
 
     def clean_up(self):
         """Clean up expired sessions."""
@@ -100,7 +97,7 @@ class CleanupSessionHandler(RamSession):
             if expiration_time <= now:
                 if KEY_PROJECT in data:
                     selected_project = data[KEY_PROJECT]
-                    encryption_handler.set_project_inactive(selected_project)
+                    StorageInterface().set_project_inactive(selected_project)
                 try:
                     del self.cache[_id]
                 except KeyError:
@@ -127,7 +124,7 @@ def init_cherrypy(arguments=None):
     #### Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
-    if DataEncryptionHandler.encryption_enabled():
+    if StorageInterface.encryption_enabled():
         CONFIGUER["/"]["tools.sessions.storage_class"] = CleanupSessionHandler
     for module in arguments:
         module_inst = importlib.import_module(str(module))
@@ -222,10 +219,10 @@ def start_tvb(arguments, browser=True):
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
-    if DataEncryptionHandler.encryption_enabled():
-        queue_consumer = FoldersQueueConsumer()
-        queue_consumer.start()
-        DataEncryptionHandler.startup_cleanup()
+    if StorageInterface.encryption_enabled():
+        storage_interface = StorageInterface()
+        storage_interface.start()
+        storage_interface.startup_cleanup()
 
     #### Fire a browser page at the end.
     if browser:

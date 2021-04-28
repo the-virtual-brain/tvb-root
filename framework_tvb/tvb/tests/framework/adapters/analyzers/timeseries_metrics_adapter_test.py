@@ -37,8 +37,8 @@ import tvb_data
 import json
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.config import ALGORITHMS
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.file.files_helper import FilesHelper
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -62,7 +62,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         """
         Remove project folders and clean up database.
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_adapter_launch(self, connectivity_factory, region_mapping_factory,
                             time_series_region_index_factory):
@@ -75,7 +75,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         time_series_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
         ts_metric_adapter = TimeseriesMetricsAdapter()
-        ts_metric_adapter.storage_path = FilesHelper().get_project_folder(self.test_project.name, "42")
+        ts_metric_adapter.storage_path = StorageInterface().get_project_folder(self.test_project.name, "42")
         view_model = TimeseriesMetricsAdapterModel()
         view_model.time_series = time_series_index.gid
 

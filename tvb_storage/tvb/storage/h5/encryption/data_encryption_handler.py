@@ -43,9 +43,9 @@ import pyAesCrypt
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.decorators import synchronized
-from tvb.encryption.encryption_handler import EncryptionHandler
-from tvb.file.files_helper import FilesHelper
+from tvb.storage.h5.decorators import synchronized
+from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
+from tvb.storage.h5.file.files_helper import FilesHelper
 
 LOGGER = get_logger(__name__)
 
@@ -114,7 +114,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         self.users_project_usage[folder] = count
 
     @synchronized(lock)
-    def dec_project_usage_count(self, folder):
+    def _dec_project_usage_count(self, folder):
         count = self._project_active_count(folder)
         if count == 1:
             self.users_project_usage.pop(folder)
@@ -138,7 +138,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         self.running_operations[folder] = count
 
     @synchronized(lock)
-    def inc_queue_count(self, folder):
+    def _inc_queue_count(self, folder):
         count = self._queue_count(folder)
         count += 1
         self.queue_elements_count[folder] = count
@@ -170,9 +170,9 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
                or self._running_op_count(project_folder) > 0
 
     @staticmethod
-    def compute_encrypted_folder_path(project_folder):
-        project_name = os.path.basename(project_folder)
-        project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project_name)
+    def compute_encrypted_folder_path(current_project_folder, projects_folder):
+        project_name = os.path.basename(current_project_folder)
+        project_path = os.path.join(TvbProfile.current.TVB_STORAGE, projects_folder, project_name)
         return "{}{}".format(project_path, DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX)
 
     @staticmethod
@@ -198,7 +198,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             if os.path.exists(folder):
                 shutil.rmtree(folder)
 
-    def set_project_active(self, project, linked_dt=None):
+    def set_project_active(self, project, linked_dt):
         if not self.encryption_enabled():
             return
         project_folder = self.file_helper.get_project_folder(project)
@@ -223,7 +223,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         projects = self.linked_projects.pop(project_folder) if project_folder in self.linked_projects else set()
         projects.add(project_folder)
         for project_folder in projects:
-            self.dec_project_usage_count(project_folder)
+            self._dec_project_usage_count(project_folder)
             if self._queue_count(project_folder) > 0 \
                     or self._project_active_count(project_folder) > 0 \
                     or self._running_op_count(project_folder) > 0:
@@ -236,7 +236,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     def push_folder_to_sync(self, project_folder):
         if not self.encryption_enabled() or self._queue_count(project_folder) > 2:
             return
-        self.inc_queue_count(project_folder)
+        self._inc_queue_count(project_folder)
         self.sync_project_queue.put(project_folder)
 
     @staticmethod
@@ -249,8 +249,8 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         return True
 
     @staticmethod
-    def _get_unencrypted_projects():
-        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
+    def _get_unencrypted_projects(projects_folder):
+        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, projects_folder)
         project_list = os.listdir(projects_folder)
         return list(map(lambda project: os.path.join(projects_folder, str(project)),
                         filter(lambda project: not str(project).endswith(DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX),
@@ -307,6 +307,7 @@ class FoldersQueueConsumer(threading.Thread):
     def run(self):
         if not DataEncryptionHandler.encryption_enabled():
             return
+        encryption_handler = DataEncryptionHandler()
         while True:
             if encryption_handler.sync_project_queue.empty():
                 if self.was_processing:
@@ -323,6 +324,3 @@ class FoldersQueueConsumer(threading.Thread):
             encryption_handler.dec_queue_count(folder)
             encryption_handler.check_and_delete(folder)
             encryption_handler.sync_project_queue.task_done()
-
-
-encryption_handler = DataEncryptionHandler()

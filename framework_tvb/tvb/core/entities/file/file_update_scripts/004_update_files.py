@@ -41,10 +41,11 @@ import json
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
-from tvb.file.lab import *
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
 from tvb.datatypes.projections import ProjectionsType
+from tvb.storage.h5.file.exceptions import IncompatibleFileManagerException
+from tvb.storage.h5.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 FIELD_PROJECTION_TYPE = "Projection_type"
@@ -62,9 +63,9 @@ def update(input_file, burst_match_dict=None):
                                                "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
-    storage_manager = HDF5StorageManager(folder, file_name)
+    storage_interface = StorageInterface()
 
-    root_metadata = storage_manager.get_metadata()
+    root_metadata = storage_interface.get_metadata(folder, file_name)
     if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
         raise IncompatibleFileManagerException("File %s received for upgrading 3 -> 4 is not valid, due to missing "
                                                "metadata: %s" % (input_file, DataTypeMetaData.KEY_CLASS_NAME))
@@ -110,4 +111,4 @@ def update(input_file, burst_match_dict=None):
             root_metadata[FIELD_VOLUME_MAPPING] = json.dumps(False)
 
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
-    storage_manager.set_metadata(root_metadata)
+    storage_interface.set_metadata(folder, file_name, root_metadata)

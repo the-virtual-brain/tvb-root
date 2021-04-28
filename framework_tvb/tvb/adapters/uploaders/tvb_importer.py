@@ -38,8 +38,6 @@ import zipfile
 
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.file_storage_factory import FileStorageFactory
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
@@ -49,6 +47,7 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.exceptions import ImportException
 from tvb.core.services.import_service import ImportService
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class TVBImporterModel(UploaderViewModel):
@@ -114,7 +113,7 @@ class TVBImporter(ABCUploader):
             if zipfile.is_zipfile(view_model.data_file):
                 # Creates a new TMP folder where to extract data
                 tmp_folder = os.path.join(self.storage_path, "tmp_import")
-                FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
+                StorageInterface().unpack_zip(view_model.data_file, tmp_folder)
                 is_group = False
                 current_op_id = current_op.id
                 for file in os.listdir(tmp_folder):
@@ -147,8 +146,8 @@ class TVBImporter(ABCUploader):
                 file_update_manager.upgrade_file(view_model.data_file)
 
                 folder, h5file = os.path.split(view_model.data_file)
-                manager = FileStorageFactory.get_file_storage(folder, h5file)
-                if manager.is_valid_hdf5_file():
+                storage_interface = StorageInterface()
+                if storage_interface.is_valid_hdf5_file(folder, h5file):
                     datatype = None
                     try:
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)

@@ -45,7 +45,6 @@ from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import MEASURE_METRICS_MODEL_CLASS
-from tvb.encryption.data_encryption_handler import encryption_handler
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR, OperationProcessIdentifier
 from tvb.core.entities.storage import dao, OperationDAO
@@ -53,7 +52,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
-from tvb.file.lab import *
+from tvb.storage.h5.storage_interface import StorageInterface
 
 try:
     import pyunicore.client as unicore_client
@@ -112,12 +111,12 @@ class HPCSchedulerClient(BackendClient):
     HOME_FOLDER_MOUNT = '/HOME_FOLDER'
     CSCS_DATA_FOLDER = 'data'
     CONTAINER_INPUT_FOLDER = '/home/tvb_user/.data'
-    file_handler = FilesHelper()
+    storage_interface = StorageInterface()
 
-    @staticmethod
-    def _prepare_input(operation, simulator_gid):
+    def _prepare_input(self, operation, simulator_gid):
         # type: (Operation, str) -> list
-        storage_path = FilesHelper().get_project_folder(operation.project.name, str(operation.id))
+        storage_path = self.storage_interface.get_project_folder(operation.project.name,
+                                                                 str(operation.id))
         vm_files, dt_files = h5.gather_references_of_view_model(simulator_gid, storage_path)
         vm_files.extend(dt_files)
         return vm_files
@@ -128,8 +127,10 @@ class HPCSchedulerClient(BackendClient):
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
-        inputs_in_container = os.path.join(HPCSchedulerClient.CONTAINER_INPUT_FOLDER,
-                                           EncryptionHandler(simulator_gid).current_enc_dirname)
+        inputs_in_container = os.path.join(
+            HPCSchedulerClient.CONTAINER_INPUT_FOLDER,
+            StorageInterface(StorageInterface.ENCRYPTION_HANDLER,
+                             dir_gid=simulator_gid).encryption_handler.current_enc_dirname)
 
         # Build job configuration JSON
         my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
@@ -171,7 +172,8 @@ class HPCSchedulerClient(BackendClient):
         # TODO: update column count_results
         pass
 
-    def update_db_with_results(self, operation, sim_h5_filenames, metric_operation, metric_h5_filename):
+    @staticmethod
+    def update_db_with_results(operation, sim_h5_filenames, metric_operation, metric_h5_filename):
         # type: (Operation, list, Operation, str) -> (str, int)
         """
         Generate corresponding Index entities for the resulted H5 files and insert them in DB.
@@ -272,9 +274,9 @@ class HPCSchedulerClient(BackendClient):
                                                                    is_group_launch, operation.id)
 
         LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
-        encryption_handler = EncryptionHandler(simulator_gid)
+        storage_interface = StorageInterface()
         LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
-        job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
+        job_encrypted_inputs = storage_interface.encrypt_inputs(simulator_gid, job_plain_inputs)
 
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
@@ -306,8 +308,9 @@ class HPCSchedulerClient(BackendClient):
         output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSchedulerClient.OUTPUT_FOLDER
         output_list = HPCSchedulerClient._listdir(working_dir, output_subfolder)
         LOGGER.info("Output list {}".format(output_list))
-        encryption_handler = EncryptionHandler(simulator_gid)
-        encrypted_dir = os.path.join(encryption_handler.get_encrypted_dir(), HPCSchedulerClient.OUTPUT_FOLDER)
+        storage_interface = StorageInterface()
+        encrypted_dir = os.path.join(storage_interface.get_encrypted_dir(simulator_gid),
+                                     HPCSchedulerClient.OUTPUT_FOLDER)
         encrypted_files = HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
         # Clean data uploaded on CSCS
@@ -318,13 +321,14 @@ class HPCSchedulerClient(BackendClient):
         return encrypted_files
 
     @staticmethod
-    def _handle_metric_results(metric_encrypted_file, metric_vm_encrypted_file, operation, encryption_handler):
+    def _handle_metric_results(metric_encrypted_file, metric_vm_encrypted_file, operation, storage_interface,
+                               simulator_gid):
         if not metric_encrypted_file:
             return None, None
 
         metric_op_dir, metric_op = BurstService.prepare_metrics_operation(operation)
-        metric_files = encryption_handler.decrypt_files_to_dir([metric_encrypted_file, metric_vm_encrypted_file],
-                                                               metric_op_dir)
+        metric_files = storage_interface.decrypt_files_to_dir(simulator_gid, [metric_encrypted_file,
+                                                                              metric_vm_encrypted_file], metric_op_dir)
         metric_file = metric_files[0]
         metric_vm = h5.load_view_model_from_file(metric_files[1])
         metric_op.view_model_gid = metric_vm.gid.hex
@@ -335,7 +339,6 @@ class HPCSchedulerClient(BackendClient):
     def stage_out_to_operation_folder(working_dir, operation, simulator_gid):
         # type: (Storage, Operation, typing.Union[uuid.UUID, str]) -> (list, Operation, str)
         encrypted_files = HPCSchedulerClient._stage_out_results(working_dir, simulator_gid)
-        encryption_handler = EncryptionHandler(simulator_gid)
 
         simulation_results = list()
         metric_encrypted_file = None
@@ -348,13 +351,14 @@ class HPCSchedulerClient(BackendClient):
             else:
                 simulation_results.append(encrypted_file)
 
+        storage_interface = StorageInterface()
         metric_op, metric_file = HPCSchedulerClient._handle_metric_results(metric_encrypted_file,
                                                                            metric_vm_encrypted_file, operation,
-                                                                           encryption_handler)
+                                                                           storage_interface, simulator_gid)
         project = dao.get_project_by_id(operation.fk_launched_in)
-        operation_dir = HPCSchedulerClient.file_handler.get_project_folder(project.name, str(operation.id))
-        h5_filenames = encryption_handler.decrypt_files_to_dir(simulation_results, operation_dir)
-        encryption_handler.cleanup()
+        operation_dir = HPCSchedulerClient.storage_interface.get_project_folder(project.name, str(operation.id))
+        h5_filenames = storage_interface.decrypt_files_to_dir(simulator_gid, simulation_results, operation_dir)
+        storage_interface.cleanup(simulator_gid)
         LOGGER.info("Decrypted h5: {}".format(h5_filenames))
         LOGGER.info("Metric op: {}".format(metric_op))
         LOGGER.info("Metric file: {}".format(metric_file))
@@ -365,8 +369,9 @@ class HPCSchedulerClient(BackendClient):
     def _run_hpc_job(operation_identifier):
         # type: (int) -> None
         operation = dao.get_operation_by_id(operation_identifier)
-        project_folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project.name)
-        encryption_handler.inc_running_op_count(project_folder)
+        project_folder = HPCSchedulerClient.storage_interface.get_project_folder(operation.project.name)
+        storage_interface = StorageInterface()
+        storage_interface.inc_running_op_count(project_folder)
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = operation.view_model_gid
         try:
@@ -376,8 +381,8 @@ class HPCSchedulerClient(BackendClient):
             operation.mark_complete(STATUS_ERROR,
                                     exception.response.text if isinstance(exception, HTTPError) else repr(exception))
             dao.store_entity(operation)
-        encryption_handler.dec_running_op_count(project_folder)
-        encryption_handler.check_and_delete(project_folder)
+        storage_interface.dec_running_op_count(project_folder)
+        storage_interface.check_and_delete(project_folder)
 
     @staticmethod
     def _stage_out_outputs(encrypted_dir_path, output_list):

@@ -40,7 +40,6 @@ import numpy
 
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import load
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
@@ -50,6 +49,7 @@ from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException
 from tvb.core.services.operation_service import OperationService
 from tvb.simulator.integrators import IntegratorStochastic
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class SimulatorService(object):
@@ -58,7 +58,7 @@ class SimulatorService(object):
         self.burst_service = BurstService()
         self.operation_service = OperationService()
         self.algorithm_service = AlgorithmService()
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     @staticmethod
     def _reset_model(session_stored_simulator):
@@ -102,7 +102,7 @@ class SimulatorService(object):
                                                                  view_model=simulator, burst_gid=burst_config.gid,
                                                                  op_group_id=burst_config.fk_operation_group)
             burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id, simulator.gid)
-            storage_path = self.files_helper.get_project_folder(project.name, str(operation.id))
+            storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
             self.burst_service.store_burst_configuration(burst_config, storage_path)
 
             wf_errs = 0
@@ -185,7 +185,7 @@ class SimulatorService(object):
                         first_simulator = simulator
 
             first_operation = operations[0]
-            storage_path = self.files_helper.get_project_folder(project.name, str(first_operation.id))
+            storage_path = self.storage_interface.get_project_folder(project.name, str(first_operation.id))
             burst_config = self.burst_service.update_simulation_fields(burst_config, first_operation.id,
                                                                        first_simulator.gid)
             self.burst_service.store_burst_configuration(burst_config, storage_path)

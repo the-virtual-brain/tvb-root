@@ -55,7 +55,8 @@ class FourierSpectrumH5(DataTypeMatrixH5):
         self.phase = DataSet(FourierSpectrum.phase, self, expand_dimension=2)
         self.power = DataSet(FourierSpectrum.power, self, expand_dimension=2)
         self.average_power = DataSet(FourierSpectrum.average_power, self, expand_dimension=2)
-        self.normalised_average_power = DataSet(FourierSpectrum.normalised_average_power, self, expand_dimension=2)
+        self.normalised_average_power = DataSet(FourierSpectrum.normalised_average_power, self,
+                                                expand_dimension=2)
 
     def write_data_slice(self, partial_result):
         """

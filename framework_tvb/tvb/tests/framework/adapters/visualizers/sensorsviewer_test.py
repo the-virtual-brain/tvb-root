@@ -40,9 +40,9 @@ from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.file.files_helper import FilesHelper
 from tvb.datatypes.sensors import SensorTypes
 from tvb.datatypes.surfaces import EEG_CAP
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -75,7 +75,7 @@ class TestSensorViewers(TransactionalTestCase):
         """
         Clean-up tests data
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch_eeg(self):
         """

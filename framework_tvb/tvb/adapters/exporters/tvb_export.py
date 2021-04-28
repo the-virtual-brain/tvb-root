@@ -34,11 +34,11 @@
 
 import os
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.file.files_helper import FilesHelper
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class TVBExporter(ABCExporter):
@@ -60,7 +60,7 @@ class TVBExporter(ABCExporter):
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
         download_file_name = self.get_export_file_name(data)
-        files_helper = FilesHelper()
+        storage_interface = StorageInterface()
          
         if self.is_data_a_group(data):
             all_datatypes = self._get_all_data_types_arr(data)
@@ -73,11 +73,11 @@ class TVBExporter(ABCExporter):
             # Now process each data type from group and add it to ZIP file
             operation_folders = []
             for data_type in all_datatypes:
-                operation_folder = files_helper.get_operation_folder(project.name, data_type.fk_from_operation)
+                operation_folder = storage_interface.get_operation_folder(project.name, data_type.fk_from_operation)
                 operation_folders.append(operation_folder)
                 
             # Create ZIP archive    
-            files_helper.zip_folders(zip_file, operation_folders, self.OPERATION_FOLDER_PREFIX)
+            storage_interface.zip_folders(zip_file, operation_folders, self.OPERATION_FOLDER_PREFIX)
                         
             return download_file_name, zip_file, True
 
@@ -85,11 +85,12 @@ class TVBExporter(ABCExporter):
             data_file = self.copy_dt_to_export_folder(data, export_folder)
             return None, data_file, True
 
-    def copy_dt_to_export_folder(self, data, data_export_folder):
+    @staticmethod
+    def copy_dt_to_export_folder(data, data_export_folder):
         data_path = h5.path_for_stored_index(data)
         file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
         if not os.path.exists(file_destination):
-            FilesHelper().copy_file(data_path, file_destination)
+            StorageInterface().copy_file(data_path, file_destination)
         H5File.remove_metadata_param(file_destination, 'parent_burst')
 
         return file_destination

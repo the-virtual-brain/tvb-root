@@ -31,13 +31,13 @@
 import os
 import shutil
 
-from tvb.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.files_helper import create_temp_folder
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class SimulationApi(MainApi):
@@ -48,7 +48,7 @@ class SimulationApi(MainApi):
 
         h5.store_view_model(session_stored_simulator, temporary_folder)
         zip_folder_path = os.path.join(temp_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
-        FilesHelper().zip_folder(zip_folder_path, temporary_folder)
+        StorageInterface().zip_folder(zip_folder_path, temporary_folder)
         shutil.rmtree(temporary_folder)
 
         file_obj = open(zip_folder_path, 'rb')

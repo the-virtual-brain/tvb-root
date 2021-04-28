@@ -43,12 +43,12 @@ from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
-from tvb.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.project_service import ProjectService
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class ExportManager(object):
@@ -69,7 +69,7 @@ class ExportManager(object):
         self._register_exporter(TVBExporter())
         self._register_exporter(TVBLinkedExporter())
         self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def _register_exporter(self, exporter):
         """
@@ -145,7 +145,7 @@ class ExportManager(object):
 
         return export_data
 
-    def _export_linked_datatypes(self, project, zip_file):
+    def _export_linked_datatypes(self, project, storage_interface, result_path):
         linked_paths = ProjectService().get_linked_datatypes_storage_path(project)
 
         if not linked_paths:
@@ -161,16 +161,16 @@ class ExportManager(object):
         op.start_now()
         op.mark_complete(model_operation.STATUS_FINISHED)
 
-        op_folder = self.files_helper.get_operation_folder(op.project.name, op.id)
+        op_folder = self.storage_interface.get_operation_folder(op.project.name, op.id)
         op_folder_name = os.path.basename(op_folder)
 
         # add linked datatypes to archive in the import operation
         for pth in linked_paths:
             zip_pth = op_folder_name + '/' + os.path.basename(pth)
-            zip_file.write(pth, zip_pth)
+            storage_interface.write_zip_arc(result_path, "w", pth, zip_pth)
 
         # remove these files, since we only want them in export archive
-        self.files_helper.remove_folder(op_folder)
+        self.storage_interface.remove_folder(op_folder)
 
     def export_project(self, project, optimize_size=False):
         """
@@ -181,7 +181,7 @@ class ExportManager(object):
         if project is None:
             raise ExportException("Please provide project to be exported")
 
-        project_folder = self.files_helper.get_project_folder(project.name)
+        project_folder = self.storage_interface.get_project_folder(project.name)
         project_datatypes = dao.get_datatypes_in_project(project.id, only_visible=optimize_size)
         to_be_exported_folders = []
         considered_op_ids = []
@@ -192,8 +192,8 @@ class ExportManager(object):
             for dt in project_datatypes:
                 op_id = dt.fk_from_operation
                 if op_id not in considered_op_ids:
-                    to_be_exported_folders.append({'folder': self.files_helper.get_project_folder(project.name,
-                                                                                                  str(op_id)),
+                    to_be_exported_folders.append({'folder': self.storage_interface.get_project_folder(project.name,
+                                                                                                       str(op_id)),
                                                    'archive_path_prefix': str(op_id) + os.sep,
                                                    'exclude': folders_to_exclude})
                     considered_op_ids.append(op_id)
@@ -211,20 +211,20 @@ class ExportManager(object):
         export_folder = self._build_data_export_folder(project)
         result_path = os.path.join(export_folder, zip_file_name)
 
-        with TvbZip(result_path, "w") as zip_file:
-            # Pack project [filtered] content into a ZIP file:
-            self.logger.debug("Done preparing, now we will write folders " + str(len(to_be_exported_folders)))
-            self.logger.debug(str(to_be_exported_folders))
-            for pack in to_be_exported_folders:
-                zip_file.write_folder(**pack)
-            self.logger.debug("Done exporting files, now we will export linked DTs")
-            self._export_linked_datatypes(project, zip_file)
-            # Make sure the Project.xml file gets copied:
-            if optimize_size:
-                self.logger.debug("Done linked, now we write the project xml")
-                zip_file.write(self.files_helper.get_project_meta_file_path(project.name),
-                               self.files_helper.TVB_PROJECT_FILE)
-            self.logger.debug("Done, closing")
+        # Pack project [filtered] content into a ZIP file:
+        self.logger.debug("Done preparing, now we will write folders " + str(len(to_be_exported_folders)))
+        self.logger.debug(str(to_be_exported_folders))
+        for pack in to_be_exported_folders:
+            self.storage_interface.write_folder(result_path, "w", **pack)
+        self.logger.debug("Done exporting files, now we will export linked DTs")
+        self._export_linked_datatypes(project, self.storage_interface, result_path)
+        # Make sure the Project.xml file gets copied:
+        if optimize_size:
+            self.logger.debug("Done linked, now we write the project xml")
+            self.storage_interface.write_zip_arc(result_path, "w",
+                                                 self.storage_interface.get_project_meta_file_path(project.name),
+                                                 self.storage_interface.TVB_PROJECT_FILE)
+        self.logger.debug("Done, closing")
 
         return result_path
 
@@ -249,7 +249,7 @@ class ExportManager(object):
                                              now.minute, now.second, now.microsecond)
         tmp_str = date_str + "@" + data.gid
         data_export_folder = os.path.join(self.export_folder, tmp_str)
-        self.files_helper.check_created(data_export_folder)
+        self.storage_interface.check_created(data_export_folder)
 
         return data_export_folder
 
@@ -258,7 +258,7 @@ class ExportManager(object):
         if burst is None:
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
-        op_folder = self.files_helper.get_project_folder(burst.project.name, str(burst.fk_simulation))
+        op_folder = self.storage_interface.get_project_folder(burst.project.name, str(burst.fk_simulation))
         tmp_export_folder = self._build_data_export_folder(burst)
         tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
 
@@ -272,11 +272,11 @@ class ExportManager(object):
 
         for vm_path in all_view_model_paths:
             dest = os.path.join(tmp_sim_folder, os.path.basename(vm_path))
-            self.files_helper.copy_file(vm_path, dest)
+            self.storage_interface.copy_file(vm_path, dest)
 
         for dt_path in all_datatype_paths:
             dest = os.path.join(tmp_sim_folder, self.EXPORTED_SIMULATION_DTS_DIR, os.path.basename(dt_path))
-            self.files_helper.copy_file(dt_path, dest)
+            self.storage_interface.copy_file(dt_path, dest)
 
         main_vm_path = h5.determine_filepath(burst.simulator_gid, tmp_sim_folder)
         H5File.remove_metadata_param(main_vm_path, 'history_gid')
@@ -286,8 +286,7 @@ class ExportManager(object):
         zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), self.ZIP_FILE_EXTENSION)
 
         result_path = os.path.join(tmp_export_folder, zip_file_name)
-        with TvbZip(result_path, "w") as zip_file:
-            zip_file.write_folder(tmp_sim_folder)
+        self.storage_interface.write_folder(result_path, "w", tmp_sim_folder)
 
-        self.files_helper.remove_folder(tmp_sim_folder)
+        self.storage_interface.remove_folder(tmp_sim_folder)
         return result_path

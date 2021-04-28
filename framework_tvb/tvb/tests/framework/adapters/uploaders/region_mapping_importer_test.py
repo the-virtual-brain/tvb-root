@@ -39,12 +39,12 @@ import tvb_data.surfaceData
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.surfaces import CORTICAL
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -86,7 +86,7 @@ class TestRegionMappingImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_import_no_surface_or_connectivity(self):
         """

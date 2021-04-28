@@ -30,10 +30,11 @@
 
 import flask
 from flask_restplus import Resource
-from tvb.file.files_helper import FilesHelper
+
 from tvb.interfaces.rest.commons.exceptions import BadRequestException, InvalidInputException
 from tvb.interfaces.rest.commons.strings import RequestFileKey, Strings
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, secured
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class SecuredResource(Resource):
@@ -50,7 +51,7 @@ class RestResource(SecuredResource):
 
     @staticmethod
     def extract_file_from_request(request_file_key=RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value,
-                                  file_extension=FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+                                  file_extension=StorageInterface.TVB_STORAGE_FILE_EXTENSION):
         if not RestResource.is_key_in_request_files(request_file_key):
             raise BadRequestException("No file '%s' in the request!" % request_file_key)
         file = flask.request.files[request_file_key]

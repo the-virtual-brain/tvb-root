@@ -35,7 +35,7 @@
 import os
 import cherrypy
 from tvb.core.utils import hash_password
-from tvb.utils import string2bool
+from tvb.storage.h5.utils import string2bool
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.interfaces.web.controllers import common

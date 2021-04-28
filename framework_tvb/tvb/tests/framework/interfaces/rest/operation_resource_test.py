@@ -37,7 +37,6 @@ import pytest
 import tvb_data
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, SUPPORTED_WINDOWING_FUNCTIONS
 from tvb.basic.exceptions import TVBException
-from tvb.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
@@ -45,6 +44,7 @@ from tvb.interfaces.rest.commons.strings import Strings, RequestFileKey
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory, OperationPossibleStatus
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 from werkzeug.datastructures import FileStorage
@@ -59,7 +59,7 @@ class TestOperationResource(RestResourceTest):
         self.status_resource = GetOperationStatusResource()
         self.results_resource = GetOperationResultsResource()
         self.launch_resource = LaunchOperationResource()
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def test_server_get_operation_status_inexistent_gid(self, mocker):
         self._mock_user(mocker)
@@ -169,7 +169,7 @@ class TestOperationResource(RestResourceTest):
         fft_model.time_series = UUID(input_ts_index.gid)
         fft_model.window_function = list(SUPPORTED_WINDOWING_FUNCTIONS)[0]
 
-        input_folder = self.files_helper.get_project_folder(self.test_project.name)
+        input_folder = self.storage_interface.get_project_folder(self.test_project.name)
         view_model_h5_path = h5.store_view_model(fft_model, input_folder)
 
         # Mock flask.request.files to return a dictionary
@@ -191,4 +191,4 @@ class TestOperationResource(RestResourceTest):
         assert len(operation_gid) > 0
 
     def transactional_teardown_method(self):
-        self.files_helper.remove_project_structure(self.test_project.name)
+        self.storage_interface.remove_project_structure(self.test_project.name)

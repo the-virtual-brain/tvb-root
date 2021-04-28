@@ -41,13 +41,13 @@ import formencode
 from formencode import validators
 from cherrypy.lib.static import serve_file
 from tvb.core import utils
-from tvb.file.files_helper import FilesHelper
 from tvb.core.services.figure_service import FigureService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error
 from tvb.interfaces.web.controllers.decorators import using_template, expose_page
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 @traced
@@ -58,7 +58,7 @@ class FigureController(ProjectController):
 
     def __init__(self):
         ProjectController.__init__(self)
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.figure_service = FigureService()
 
 
@@ -152,7 +152,6 @@ class FigureController(ProjectController):
             self._update_figure(figure_id, **data)
         raise cherrypy.HTTPRedirect(redirect_url)
 
-
     def _update_figure(self, figure_id, **data):
         """
         Updates the figure details to the given data.
@@ -167,7 +166,6 @@ class FigureController(ProjectController):
             common.set_error_message(excep.message)
             return False
 
-
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
@@ -176,11 +174,10 @@ class FigureController(ProjectController):
         Allow a user to download a figure.
         """
         figure = self.figure_service.load_figure(figure_id)
-        image_folder = self.files_helper.get_images_folder(figure.project.name)
+        image_folder = self.storage_interface.get_images_folder(figure.project.name)
         figure_path = os.path.join(image_folder, figure.file_path)
         return serve_file(figure_path, "image/" + figure.file_format, "attachment",
                           "%s.%s" % (figure.name, figure.file_format))
-
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -191,7 +188,7 @@ class FigureController(ProjectController):
         Displays the image with the specified id in an overlay dialog.
         """
         figure = self.figure_service.load_figure(figure_id)
-        figures_folder = self.files_helper.get_images_folder(figure.project.name)
+        figures_folder = self.storage_interface.get_images_folder(figure.project.name)
         figure_full_path = os.path.join(figures_folder, figure.file_path)
         figure_file_path = utils.path2url_part(figure_full_path)
         description = figure.session_name + " - " + figure.name
@@ -200,13 +197,9 @@ class FigureController(ProjectController):
                                             "project/figure_zoom_overlay", "lightbox")
 
 
-
 class EditPreview(formencode.Schema):
     """
     Validate edit action on Stored Preview 
     """
     name = formencode.All(validators.UnicodeString(not_empty=True))
     session_name = formencode.All(validators.UnicodeString(not_empty=True))
-    
-       
-        

@@ -42,13 +42,13 @@ from datetime import datetime
 import h5py as hdf5
 import numpy as numpy
 
-from tvb import utils
-from tvb.encryption.data_encryption_handler import encryption_handler
-from tvb.file.exceptions import IncompatibleFileManagerException, FileStructureException, MissingDataSetException, \
-    MissingDataFileException
-from tvb.file.files_helper import FilesHelper
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.storage.h5 import utils
+from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler
+from tvb.storage.h5.file.exceptions import MissingDataSetException, IncompatibleFileManagerException, \
+    FileStructureException, MissingDataFileException
+from tvb.storage.h5.file.files_helper import FilesHelper
 
 # Create logger for this module
 LOG = get_logger(__name__)
@@ -65,13 +65,12 @@ class HDF5StorageManager(object):
     __hfd5_file = None
 
     TVB_ATTRIBUTE_PREFIX = "TVB_"
-    ROOT_NODE_PATH = "/"
     BOOL_VALUE_PREFIX = "bool:"
     DATETIME_VALUE_PREFIX = "datetime:"
     DATE_TIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
     LOCKS = {}
 
-    def __init__(self, storage_folder, file_name, buffer_size=600000):
+    def __init__(self, storage_folder, file_name, buffer_size):
         """
         Creates a new storage manager instance.
         :param buffer_size: the size in Bytes of the amount of data that will be buffered before writing to file.
@@ -80,6 +79,7 @@ class HDF5StorageManager(object):
         self.__buffer_size = buffer_size
         self.__buffer_array = None
         self.data_buffers = {}
+        self.data_encryption_handler = DataEncryptionHandler()
 
     def is_valid_hdf5_file(self):
         """
@@ -91,7 +91,7 @@ class HDF5StorageManager(object):
         except RuntimeError:
             return False
 
-    def store_data(self, dataset_name, data_list, where=ROOT_NODE_PATH):
+    def store_data(self, dataset_name, data_list, where):
         """
         This method stores provided data list into a data set in the H5 file.
         
@@ -99,11 +99,6 @@ class HDF5StorageManager(object):
         :param data_list: Data to be stored
         :param where: represents the path where to store our dataset (e.g. /data/info)
         """
-        if dataset_name is None:
-            dataset_name = ''
-        if where is None:
-            where = self.ROOT_NODE_PATH
-
         data_to_store = self._check_data(data_list)
 
         try:
@@ -125,9 +120,10 @@ class HDF5StorageManager(object):
         finally:
             # Now close file
             self.close_file()
-            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+            self.data_encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(
+                self.__storage_full_name))
 
-    def append_data(self, dataset_name, data_list, grow_dimension=-1, close_file=True, where=ROOT_NODE_PATH):
+    def append_data(self, dataset_name, data_list, grow_dimension, close_file, where):
         """
         This method appends data to an existing data set. If the data set does not exists, create it first.
         
@@ -139,10 +135,6 @@ class HDF5StorageManager(object):
         :param where: represents the path where to store our dataset (e.g. /data/info)
         
         """
-        if dataset_name is None:
-            dataset_name = ''
-        if where is None:
-            where = self.ROOT_NODE_PATH
         data_to_store = self._check_data(data_list)
         data_buffer = self.data_buffers.get(where + dataset_name, None)
 
@@ -170,9 +162,10 @@ class HDF5StorageManager(object):
                 data_buffer.flush_buffered_data()
         if close_file:
             self.close_file()
-        encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+        self.data_encryption_handler.push_folder_to_sync(
+            FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
-    def remove_data(self, dataset_name, where=ROOT_NODE_PATH):
+    def remove_data(self, dataset_name, where):
         """
         Deleting a data set from H5 file.
         
@@ -181,10 +174,6 @@ class HDF5StorageManager(object):
           
         """
         LOG.debug("Removing data set: %s" % dataset_name)
-        if dataset_name is None:
-            dataset_name = ''
-        if where is None:
-            where = self.ROOT_NODE_PATH
         try:
             # Open file in append mode ('a') to allow data remove
             hdf5_file = self._open_h5_file()
@@ -195,9 +184,10 @@ class HDF5StorageManager(object):
             raise FileStructureException("Could not locate dataset: %s" % dataset_name)
         finally:
             self.close_file()
-            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+            self.data_encryption_handler.push_folder_to_sync(
+                FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
-    def get_data(self, dataset_name, data_slice=None, where=ROOT_NODE_PATH, ignore_errors=False, close_file=True):
+    def get_data(self, dataset_name, data_slice, where, ignore_errors, close_file):
         """
         This method reads data from the given data set based on the slice specification
         
@@ -210,10 +200,6 @@ class HDF5StorageManager(object):
         
         """
         LOG.debug("Reading data from data set: %s" % dataset_name)
-        if dataset_name is None:
-            dataset_name = ''
-        if where is None:
-            where = self.ROOT_NODE_PATH
 
         data_path = where + dataset_name
         try:
@@ -239,7 +225,7 @@ class HDF5StorageManager(object):
             if close_file:
                 self.close_file()
 
-    def get_data_shape(self, dataset_name, where=ROOT_NODE_PATH):
+    def get_data_shape(self, dataset_name, where):
         """
         This method reads data-size from the given data set 
         
@@ -249,11 +235,6 @@ class HDF5StorageManager(object):
         
         """
         LOG.debug("Reading data from data set: %s" % dataset_name)
-        if dataset_name is None:
-            dataset_name = ''
-        if where is None:
-            where = self.ROOT_NODE_PATH
-
         try:
             # Open file to read data
             hdf5_file = self._open_h5_file('r')
@@ -266,7 +247,7 @@ class HDF5StorageManager(object):
         finally:
             self.close_file()
 
-    def set_metadata(self, meta_dictionary, dataset_name='', tvb_specific_metadata=True, where=ROOT_NODE_PATH):
+    def set_metadata(self, meta_dictionary, dataset_name, tvb_specific_metadata, where):
         """
         Set meta-data information for root node or for a given data set.
         
@@ -277,10 +258,6 @@ class HDF5StorageManager(object):
         
         """
         LOG.debug("Setting metadata on node: %s" % dataset_name)
-        if dataset_name is None:
-            dataset_name = ''
-        if where is None:
-            where = self.ROOT_NODE_PATH
 
         # Open file to read data
         hdf5_file = self._open_h5_file()
@@ -301,7 +278,8 @@ class HDF5StorageManager(object):
                 node.attrs[key_to_store] = processed_value
         finally:
             self.close_file()
-            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+            self.data_encryption_handler.push_folder_to_sync(
+                FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
     @staticmethod
     def serialize_bool(value):
@@ -327,7 +305,7 @@ class HDF5StorageManager(object):
         else:
             return value
 
-    def remove_metadata(self, meta_key, dataset_name='', tvb_specific_metadata=True, where=ROOT_NODE_PATH):
+    def remove_metadata(self, meta_key, dataset_name, tvb_specific_metadata, where):
         """
         Remove meta-data information for root node or for a given data set.
         
@@ -339,10 +317,6 @@ class HDF5StorageManager(object):
              
         """
         LOG.debug("Deleting metadata: %s for dataset: %s" % (meta_key, dataset_name))
-        if dataset_name is None:
-            dataset_name = ''
-        if where is None:
-            where = self.ROOT_NODE_PATH
         try:
             # Open file to read data
             hdf5_file = self._open_h5_file()
@@ -361,9 +335,10 @@ class HDF5StorageManager(object):
             raise FileStructureException("There is no metadata named %s on this node" % meta_key)
         finally:
             self.close_file()
-            encryption_handler.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
+            self.data_encryption_handler.push_folder_to_sync(
+                FilesHelper.get_project_folder_from_h5(self.__storage_full_name))
 
-    def get_metadata(self, dataset_name='', where=ROOT_NODE_PATH):
+    def get_metadata(self, dataset_name, where):
         """
         Retrieve ALL meta-data information for root node or for a given data set.
 
@@ -373,11 +348,6 @@ class HDF5StorageManager(object):
         
         """
         LOG.debug("Retrieving metadata for dataset: %s" % dataset_name)
-        if dataset_name is None:
-            dataset_name = ''
-        if where is None:
-            where = self.ROOT_NODE_PATH
-
         meta_key = ""
         try:
             # Open file to read data
@@ -410,7 +380,7 @@ class HDF5StorageManager(object):
         finally:
             self.close_file()
 
-    def get_file_data_version(self, data_version):
+    def get_file_data_version(self, data_version, dataset_name, where):
         """
         Checks the data version for the current file.
         """
@@ -418,7 +388,7 @@ class HDF5StorageManager(object):
             raise MissingDataFileException("File storage data not found at path %s" % (self.__storage_full_name,))
 
         if self.is_valid_hdf5_file():
-            metadata = self.get_metadata()
+            metadata = self.get_metadata(dataset_name, where)
             if data_version in metadata:
                 return metadata[data_version]
             else:
@@ -427,6 +397,7 @@ class HDF5StorageManager(object):
         raise IncompatibleFileManagerException("File %s is not a hdf5 format file. Are you using the correct "
                                                "manager for this file?" % (self.__storage_full_name,))
 
+    # -------------- Private methods  --------------
     def _deserialize_value(self, value):
         """
         This method takes value loaded from H5 file and transform it to TVB data. 
@@ -516,7 +487,6 @@ class HDF5StorageManager(object):
             if not hdf5_file.id.valid:
                 self.__hfd5_file = None
 
-    # -------------- Private methods  --------------
     def __open_h5_file(self, mode='a'):
         """
         Open file for reading, writing or append. 

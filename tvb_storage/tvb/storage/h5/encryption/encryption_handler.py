@@ -106,7 +106,7 @@ class EncryptionHandler(object):
     def get_password_file(self):
         return os.path.join(self.pass_dir, self.current_enc_dirname)
 
-    def prepare_encryption_dir(self, subdir=None):
+    def _prepare_encryption_dir(self, subdir):
         encrypted_dir = self.get_encrypted_dir()
 
         if subdir:
@@ -116,14 +116,14 @@ class EncryptionHandler(object):
             os.makedirs(encrypted_dir)
         return encrypted_dir
 
-    def encrypt_inputs(self, files_to_encrypt, subdir=None):
+    def encrypt_inputs(self, files_to_encrypt, subdir):
         # type: (list, str) -> list
         """
         Receive a list with all files to encrypt.
         Prepare encryption directory and encrypt each file.
         Return a list with all files from the encrypted directory.
         """
-        encryption_dir = self.prepare_encryption_dir(subdir)
+        encryption_dir = self._prepare_encryption_dir(subdir)
         password_file = self._generate_password()
 
         password = self._read_password(password_file)
@@ -139,7 +139,7 @@ class EncryptionHandler(object):
         # type: (str, str) -> str
         return os.path.join(dir, os.path.basename(encrypted_file).replace(self.encrypted_suffix, ''))
 
-    def decrypt_results_to_dir(self, dir, from_subdir=None):
+    def decrypt_results_to_dir(self, dir, from_subdir):
         # type: (str, str) -> list
         """
         Having an already encrypted directory, decrypt all files,

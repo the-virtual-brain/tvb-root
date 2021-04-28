@@ -30,10 +30,9 @@
 
 import os
 from io import BytesIO
-
 import flask
 import pytest
-from tvb.file.files_helper import FilesHelper
+
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.neocom import h5
@@ -41,6 +40,7 @@ from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 from werkzeug.datastructures import FileStorage
@@ -52,7 +52,7 @@ class TestSimulationResource(RestResourceTest):
         self.test_user = TestFactory.create_user('Rest_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Rest_Project', users=[self.test_user.id])
         self.simulation_resource = FireSimulationResource()
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def test_server_fire_simulation_inexistent_gid(self, mocker):
         self._mock_user(mocker)
@@ -83,7 +83,7 @@ class TestSimulationResource(RestResourceTest):
 
     def test_server_fire_simulation(self, mocker, connectivity_factory):
         self._mock_user(mocker)
-        input_folder = self.files_helper.get_project_folder(self.test_project.name)
+        input_folder = self.storage_interface.get_project_folder(self.test_project.name)
         sim_dir = os.path.join(input_folder, 'test_sim')
         if not os.path.isdir(sim_dir):
             os.makedirs(sim_dir)
@@ -93,7 +93,7 @@ class TestSimulationResource(RestResourceTest):
         h5.store_view_model(simulator, sim_dir)
 
         zip_filename = os.path.join(input_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
-        FilesHelper().zip_folder(zip_filename, sim_dir)
+        self.storage_interface.zip_folder(zip_filename, sim_dir)
 
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request')
@@ -113,4 +113,4 @@ class TestSimulationResource(RestResourceTest):
         assert status == 201
 
     def transactional_teardown_method(self):
-        self.files_helper.remove_project_structure(self.test_project.name)
+        self.storage_interface.remove_project_structure(self.test_project.name)

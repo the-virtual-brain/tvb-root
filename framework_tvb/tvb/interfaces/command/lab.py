@@ -44,7 +44,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import command_initializer
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_operation import STATUS_FINISHED
@@ -55,6 +54,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.services.user_service import UserService
+from tvb.storage.h5.storage_interface import StorageInterface
 
 command_initializer()
 LOG = get_logger(__name__)
@@ -114,7 +114,7 @@ def import_conn_h5(project_id, h5_path):
     uq_name = "%s-Connectivity" % date_str
     new_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, uq_name)
 
-    FilesHelper.copy_file(h5_path, new_path)
+    StorageInterface.copy_file(h5_path, new_path)
     importer = ABCAdapter.build_adapter_from_class(TVBImporter)
     view_model = importer.get_view_model_class()()
     view_model.data_file = new_path

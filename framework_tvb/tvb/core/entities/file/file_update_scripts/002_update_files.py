@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import datetime
 import os
 import sys
 import importlib
@@ -39,7 +39,8 @@ import tables
 import h5py
 import numpy
 from tvb.basic.profile import TvbProfile
-from tvb.file.lab import *
+from tvb.core.utils import string2bool, string2date, date2string
+from tvb.storage.h5.file.exceptions import FileVersioningException
 
 PYTHON_EXE_PATH = TvbProfile.current.PYTHON_INTERPRETER_PATH
 DATA_BUFFER_SIZE = 50000000 / 8  # 500 MB maximum read at once (just assume worst case float64)

@@ -38,12 +38,12 @@ import os
 import pytest
 
 from tvb.basic.profile import TvbProfile
-from tvb.file.exceptions import FileStructureException
-from tvb.file.files_helper import FilesHelper
-from tvb.file.xml_metadata_handlers import XMLReader
-from tvb.tests.dummy.dummy_project import DummyProject
-from tvb.tests.dummy.dummy_storage_data_h5 import DummyStorageDataH5
-from tvb.tests.storage_test import StorageTestCase
+from tvb.storage.h5.file.exceptions import FileStructureException
+from tvb.storage.h5.file.files_helper import FilesHelper
+from tvb.storage.h5.file.xml_metadata_handlers import XMLReader
+from tvb.storage.tests.dummy.dummy_project import DummyProject
+from tvb.storage.tests.dummy.dummy_storage_data_h5 import DummyStorageDataH5
+from tvb.storage.tests.storage_test import StorageTestCase
 
 root_storage = TvbProfile.current.TVB_STORAGE
 
@@ -159,13 +159,6 @@ class TestFilesHelper(StorageTestCase):
         new_file_path = os.path.join(self.files_helper.get_project_folder(self.project_name + '2', "1"),
                                      os.path.basename(old_h5_path))
         assert os.path.exists(new_file_path), "Test file was not created!"
-
-    def test_find_relative_path(self):
-        """
-        Tests that relative path is computed properly.
-        """
-        rel_path = self.files_helper.find_relative_path("/root/up/to/here/test/it/now", "/root/up/to/here")
-        assert rel_path == os.sep.join(["test", "it", "now"]), "Did not extract relative path as expected."
 
     def test_remove_files_valid(self):
         """

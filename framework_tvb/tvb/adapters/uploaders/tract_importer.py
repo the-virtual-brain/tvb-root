@@ -39,7 +39,6 @@ from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.file.files_helper import TvbZip
 from tvb.core.entities.storage import transactional
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import path_for
@@ -48,6 +47,7 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 def chunk_iter(iterable, n):
@@ -258,7 +258,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        with TvbZip(view_model.data_file) as zipf:
+        with StorageInterface(StorageInterface.TVB_ZIP, dest_path=view_model.data_file).tvb_zip as zipf:
             for tractf in sorted(zipf.namelist()):  # one track per file
                 if not tractf.endswith('.txt'):  # omit directories and other non track files
                     continue

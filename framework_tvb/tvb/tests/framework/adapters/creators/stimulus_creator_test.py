@@ -36,10 +36,10 @@ import tvb_data.surfaceData
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, SurfaceStimulusCreator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
-from tvb.file.files_helper import FilesHelper
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.equations import TemporalApplicableEquation, FiniteSupportEquation
 from tvb.datatypes.surfaces import CORTICAL
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -52,6 +52,7 @@ class TestStimulusCreator(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user('Stim_User')
         self.test_project = TestFactory.create_project(self.test_user, "Stim_Project")
+        self.storage_interface = StorageInterface()
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
@@ -64,12 +65,12 @@ class TestStimulusCreator(TransactionalTestCase):
         """
         Remove project folders and clean up database.
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
+        self.storage_interface.remove_project_structure(self.test_project.name)
 
     def test_create_stimulus_region(self):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
         region_stimulus_creator = RegionStimulusCreator()
-        region_stimulus_creator.storage_path = FilesHelper().get_project_folder(self.test_project.name, "42")
+        region_stimulus_creator.storage_path = self.storage_interface.get_project_folder(self.test_project.name, "42")
 
         view_model = region_stimulus_creator.get_view_model_class()()
         view_model.connectivity = self.connectivity.gid
@@ -105,7 +106,7 @@ class TestStimulusCreator(TransactionalTestCase):
 
     def test_create_stimulus_surface(self):
         surface_stimulus_creator = SurfaceStimulusCreator()
-        surface_stimulus_creator.storage_path = FilesHelper().get_project_folder(self.test_project.name, "42")
+        surface_stimulus_creator.storage_path = self.storage_interface.get_project_folder(self.test_project.name, "42")
 
         view_model = surface_stimulus_creator.get_view_model_class()()
         view_model.surface = self.surface.gid

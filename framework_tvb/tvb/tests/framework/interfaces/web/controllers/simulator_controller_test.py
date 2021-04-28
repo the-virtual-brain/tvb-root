@@ -47,7 +47,6 @@ from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.adapters.simulator.model_forms import get_form_for_model
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -60,6 +59,7 @@ from tvb.interfaces.web.controllers.common import *
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.models import ModelsEnum
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
@@ -768,7 +768,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
-        storage_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
+        storage_path = StorageInterface().get_project_folder(self.test_project.name, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -802,7 +802,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
             self.simulator_controller.set_stimulus(**self.sess_mock._data)
 
-        storage_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
+        storage_path = StorageInterface().get_project_folder(self.test_project.name, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -855,7 +855,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.set_simulator(self.session_stored_simulator)
             self.simulator_controller.set_connectivity(**self.sess_mock._data)
 
-        storage_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
+        storage_path = StorageInterface().get_project_folder(self.test_project.name, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
 
         with patch('cherrypy.session', self.sess_mock, create=True):
@@ -932,7 +932,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
     def _prepare_burst_for_export(self):
         op = TestFactory.create_operation(test_user=self.test_user, test_project=self.test_project)
-        storage_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
+        storage_path = StorageInterface().get_project_folder(self.test_project.name, str(op.id))
         h5.store_view_model(self.session_stored_simulator, storage_path)
 
         burst_service = BurstService()

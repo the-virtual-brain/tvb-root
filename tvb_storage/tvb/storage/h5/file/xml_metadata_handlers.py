@@ -65,18 +65,6 @@ class XMLReader(object):
         result_data = self._parse_xml_node_to_dict(root_node)
         return result_data
 
-    def read_only_element(self, tag_name):
-        """
-        From XML file, read only an element specified by tag-name.
-        :returns: Textual value of the XML node, or None
-        """
-        root_node = self._find_root()
-        gid_node = root_node.getElementsByTagName(tag_name)
-        if gid_node is None:
-            self.logger.warning("Invalid XML, missing " + tag_name + " tag!!!")
-            return None
-        return self.get_node_text(gid_node[0])
-
     @staticmethod       
     def get_node_text(node):
         """
@@ -139,7 +127,7 @@ class XMLWriter(object):
         self.entity = entity
         self.logger = get_logger(self.__class__.__module__) 
 
-    def write(self, final_path):
+    def write_metadata(self, final_path):
         """
         From a meta-data dictionary for an entity, create the XML file.
         """

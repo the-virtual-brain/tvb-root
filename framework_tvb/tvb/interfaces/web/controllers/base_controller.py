@@ -44,13 +44,13 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.encryption.data_encryption_handler import encryption_handler
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.user_service import UserService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import using_template
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.structure import WebStructure
+from tvb.storage.h5.storage_interface import StorageInterface
 
 # Constants used be the mechanism that deletes files on disk
 FILES_TO_DELETE_ATTR = "files_to_delete"
@@ -144,9 +144,10 @@ class BaseController(object):
             self.logger.debug("Selected project is now " + project.name)
             common.set_info_message("Your current working project is: " + str(project.name))
             linked_dt = self.project_service.get_linked_datatypes_storage_path(project)
-            encryption_handler.set_project_active(project, linked_dt)
+            storage_interface = StorageInterface(StorageInterface.ENCRYPTION_HANDLER)
+            storage_interface.set_project_active(project, linked_dt)
             if previous_project is not None:
-                encryption_handler.set_project_inactive(previous_project)
+                storage_interface.set_project_inactive(previous_project)
 
         # Add the project entity to session every time, as it might be changed (e.g. after edit)
         common.add2session(common.KEY_PROJECT, project)

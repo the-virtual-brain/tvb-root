@@ -38,10 +38,10 @@ Upgrade script from H5 version 2 to version 3
 import os
 
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.file_storage_factory import FileStorageFactory
-from tvb.file.lab import *
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
+from tvb.storage.h5.file.exceptions import FileVersioningException
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 def update_localconnectivity_metadata(folder, file_name):
@@ -71,18 +71,18 @@ def update(input_file, burst_match_dict=None):
                                       "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
-    storage_manager = FileStorageFactory.get_file_storage(folder, file_name)
+    storage_interface = StorageInterface()
 
-    root_metadata = storage_manager.get_metadata()
+    root_metadata = storage_interface.get_metadata(folder, file_name)
     class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]
 
     if class_name == "LocalConnectivity":
         root_metadata[DataTypeMetaData.KEY_MODULE] = "tvb.datatypes.local_connectivity"
-        storage_manager.set_metadata(root_metadata)
+        storage_interface.set_metadata(folder, file_name, root_metadata)
         update_localconnectivity_metadata(folder, file_name)
 
     elif class_name == "RegionMapping":
         root_metadata[DataTypeMetaData.KEY_MODULE] = "tvb.datatypes.region_mapping"
 
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
-    storage_manager.set_metadata(root_metadata)
+    storage_interface.set_metadata(folder, file_name, root_metadata)

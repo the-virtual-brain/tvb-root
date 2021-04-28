@@ -29,8 +29,8 @@
 #
 import os
 import threading
-
 from cherrypy.lib.static import serve_file
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
@@ -43,7 +43,6 @@ from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
@@ -61,6 +60,7 @@ from tvb.interfaces.web.controllers.simulator.simulator_fragment_rendering_rules
     SimulatorFragmentRenderingRules, POST_REQUEST
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 @traced
@@ -74,7 +74,6 @@ class SimulatorController(BurstBaseController):
         self.range_parameters = SimulatorRangeParameters()
         self.burst_service = BurstService()
         self.simulator_service = SimulatorService()
-        self.files_helper = FilesHelper()
         self.cached_simulator_algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
             IntrospectionRegistry.SIMULATOR_MODULE, IntrospectionRegistry.SIMULATOR_CLASS)
         self.context = SimulatorContext()
@@ -648,7 +647,7 @@ class SimulatorController(BurstBaseController):
     def load_burst_read_only(self, burst_config_id):
         try:
             burst_config = self.burst_service.load_burst_configuration(burst_config_id)
-            storage_path = self.files_helper.get_project_folder(self.context.project.name,
+            storage_path = StorageInterface().get_project_folder(self.context.project.name,
                                                                 str(burst_config.fk_simulation))
             simulator = h5.load_view_model(burst_config.simulator_gid, storage_path)
             last_loaded_form_url = self.get_url_for_final_fragment(burst_config)

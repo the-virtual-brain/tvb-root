@@ -36,9 +36,8 @@ Change for TVB version 1.4.1.
 
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
-from tvb.file.files_helper import FilesHelper
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
-
+from tvb.storage.h5.storage_interface import StorageInterface
 
 PAGE_SIZE = 20
 
@@ -56,7 +55,7 @@ def update():
 
         for project in projects_page:
 
-            project_path = FilesHelper().get_project_folder(project.name)
+            project_path = StorageInterface().get_project_folder(project.name)
             update_manager = ProjectUpdateManager(project_path)
             update_manager.run_all_updates()
 

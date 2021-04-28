@@ -45,12 +45,12 @@ from tvb.core.neocom import h5
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.storage import dao
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import no_matlab
 from tvb.datatypes.graph import ConnectivityMeasure
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.algorithm_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
@@ -362,7 +362,7 @@ class TestProjectStructure(TransactionalTestCase):
 
             op = operation_factory(test_project=project)
             conn = connectivity_index_factory(op=op)
-            storage_path = FilesHelper().get_project_folder(op.project.name, str(op.id))
+            storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
 
             count = _create_measure(conn, op, storage_path, project.id)
             assert count == 1

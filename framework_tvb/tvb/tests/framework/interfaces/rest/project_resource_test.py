@@ -33,11 +33,11 @@ import os
 import flask
 import pytest
 import tvb_data
-from tvb.file.files_helper import FilesHelper
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.commons.strings import Strings
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource, \
     GetOperationsInProjectResource
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
@@ -105,5 +105,6 @@ class TestProjectResource(RestResourceTest):
         assert len(result['operations']) > 0
 
     def transactional_teardown_method(self):
-        FilesHelper().remove_project_structure(self.test_project_with_data.name)
-        FilesHelper().remove_project_structure(self.test_project_without_data.name)
+        storage_interface = StorageInterface()
+        storage_interface.remove_project_structure(self.test_project_with_data.name)
+        storage_interface.remove_project_structure(self.test_project_without_data.name)

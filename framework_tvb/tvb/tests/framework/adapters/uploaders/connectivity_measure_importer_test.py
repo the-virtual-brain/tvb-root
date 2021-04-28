@@ -40,8 +40,8 @@ import tvb_data
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporter
 from tvb.adapters.uploaders.connectivity_measure_importer import ConnectivityMeasureImporterModel
-from tvb.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.uploaders import test_data
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -60,7 +60,7 @@ class TestConnectivityMeasureImporter(BaseTestCase):
 
     def teardown_method(self):
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_name):
         path = os.path.join(os.path.dirname(test_data.__file__), import_file_name)

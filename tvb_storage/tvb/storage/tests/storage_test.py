@@ -40,7 +40,7 @@ import decorator
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.file.files_helper import FilesHelper
+from tvb.storage.h5.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 
@@ -49,10 +49,10 @@ class BaseStorageTestCase(object):
 
     @staticmethod
     def delete_projects_folders():
-        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
+        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.PROJECTS_FOLDER)
         if os.path.exists(projects_folder):
             for current_file in os.listdir(projects_folder):
-                full_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, current_file)
+                full_path = os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.PROJECTS_FOLDER, current_file)
                 if os.path.isdir(full_path):
                     shutil.rmtree(full_path, ignore_errors=True)
 

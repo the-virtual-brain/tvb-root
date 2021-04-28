@@ -35,8 +35,8 @@
 import os
 
 import tvb_data.surfaceData
-from tvb.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -54,7 +54,7 @@ class TestZIPSurfaceImporter(BaseTestCase):
 
     def teardown_method(self):
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_import_surf_zip(self):
         surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.surf_skull, CORTICAL,

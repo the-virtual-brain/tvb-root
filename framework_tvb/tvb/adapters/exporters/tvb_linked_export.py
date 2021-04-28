@@ -36,10 +36,10 @@ import os
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.core.entities import load
-from tvb.file.files_helper import FilesHelper, TvbZip
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
+from tvb.storage.h5.storage_interface import StorageInterface
 
 
 class TVBLinkedExporter(ABCExporter):
@@ -69,7 +69,7 @@ class TVBLinkedExporter(ABCExporter):
         return os.path.join(os.path.dirname(data_export_folder), zip_file_name)
 
     def export_data_with_references(self, export_data_zip_path, data_export_folder):
-        with TvbZip(export_data_zip_path, "w") as zip_file:
+        with StorageInterface(StorageInterface.TVB_ZIP, export_data_zip_path, "w").tvb_zip as zip_file:
             for filename in os.listdir(data_export_folder):
                 zip_file.write(os.path.join(data_export_folder, filename), filename)
 
@@ -80,7 +80,7 @@ class TVBLinkedExporter(ABCExporter):
         with H5File.from_file(data_path) as f:
             file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
             if not os.path.exists(file_destination):
-                FilesHelper().copy_file(data_path, file_destination)
+                StorageInterface().copy_file(data_path, file_destination)
 
             sub_dt_refs = f.gather_references()
 

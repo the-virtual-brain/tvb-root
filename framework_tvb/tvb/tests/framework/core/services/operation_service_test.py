@@ -37,12 +37,12 @@ import uuid
 
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.file.files_helper import FilesHelper
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import initialize_storage, ProjectService
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
 from tvb.tests.framework.adapters.testadapter3 import *
 from tvb.tests.framework.core.base_testcase import BaseTestCase
@@ -101,7 +101,7 @@ class TestOperationService(BaseTestCase):
 
         for op in operations:
             model.gid = uuid.uuid4()
-            op_path = FilesHelper().get_project_folder(self.test_project.name, str(op.id))
+            op_path = StorageInterface().get_project_folder(self.test_project.name, str(op.id))
             op.view_model_gid = model.gid.hex
             op.algorithm = adapter.stored_adapter
             h5.store_view_model(model, op_path)
