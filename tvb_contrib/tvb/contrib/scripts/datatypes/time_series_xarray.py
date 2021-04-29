@@ -71,6 +71,7 @@ def coords_to_dict(coords):
 
 def save_show_figure(plotter_config, figure_name=None, fig=None):
     import os
+    from matplotlib import pyplot
     if plotter_config.SAVE_FLAG:
         if figure_name is None:
             if fig is None:
@@ -441,7 +442,7 @@ class TimeSeries(HasTraits):
             data = kwargs.pop("data", None)
             if data is None:
                 # ...either from self._data
-                _data = xr.DataArray(self._data)
+                _data = self._data.copy()
             else:
                 # ...or from a potential numpy/list/tuple input
                 _data = xr.DataArray(np.array(data))
@@ -846,7 +847,7 @@ class TimeSeries(HasTraits):
     def plot(self, time=None, data=None, y=None, hue=None, col=None, row=None,
              figname=None, plotter_config=None, **kwargs):
         if data is None:
-            data = xr.DataArray(self._data)
+            data = self._data.copy()
         if time is None or len(time) == 0:
             time = data.dims[0]
         if figname is None:
@@ -881,6 +882,7 @@ class TimeSeries(HasTraits):
         if kwargs.pop("per_variable", False):
             for var in self.labels_dimensions[self.labels_ordering[1]]:
                 var_ts = self[:, var]
+                var_ts.name = ": ".join([var_ts.name, var])
                 var_ts.plot_map(**kwargs)
             return
         if np.all([s < 2 for s in self.shape[1:]]):
@@ -940,6 +942,7 @@ class TimeSeries(HasTraits):
             outputs = []
             for var in self.labels_dimensions[self.labels_ordering[1]]:
                 var_ts = self[:, var]
+                var_ts.name = ": ".join([var_ts.name, var])
                 outputs.append(var_ts.plot_timeseries(**kwargs))
             return outputs
         if np.all([s > 1 for s in self.shape[1:]]):
@@ -980,6 +983,7 @@ class TimeSeries(HasTraits):
                   plotter_config=plotter_config, subplot_kws={'ylabel': ''}, **kwargs)
 
     def plot_raster(self, **kwargs):
+        figname = kwargs.pop("figname", "%s" % (self.title + " raster"))
         """In this plotting method, we can have hue defined but no y axis.
            We arrange a dimension along the y axis instead.
         """
