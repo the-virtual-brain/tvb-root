@@ -71,7 +71,7 @@ class TestHDF5Storage(object):
         os.makedirs(self.storage_folder)
 
         # Now create HDF5 storage instance
-        self.storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME, buffer_size=600000)
+        self.storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
 
         self.test_2D_array = numpy.random.random((10, 10))
         self.test_3D_array = numpy.random.random((3, 3, 3))
@@ -99,11 +99,11 @@ class TestHDF5Storage(object):
         self.storage_folder = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, "test_hdf5")
         # Test if folder name is None
         with pytest.raises(FileStructureException):
-            HDF5StorageManager(None, "test_data.h5", 600000)
+            HDF5StorageManager(None, "test_data.h5")
 
         # Test if file name is None
         with pytest.raises(FileStructureException):
-            HDF5StorageManager(self.storage_folder, None, 600000)
+            HDF5StorageManager(self.storage_folder, None)
 
     def test_file_creation(self):
         """
@@ -400,7 +400,7 @@ class TestHDF5Storage(object):
         """
         This method tests scenario when HDF5 file is opened concurrent for read & write
         """
-        new_storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME, 600000)
+        new_storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
         new_storage.store_data(DATASET_NAME_2, self.test_2D_array, StorageInterface.ROOT_NODE_PATH)
 
         for index in range(self.test_3D_array.shape[-1]):

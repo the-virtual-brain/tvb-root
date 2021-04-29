@@ -42,7 +42,7 @@ from types import FunctionType
 from tvb.config.init.model_manager import reset_database
 from tvb.config.init.initializer import initialize
 from tvb.core.neocom.h5 import REGISTRY
-from tvb.storage.tests.storage_test import BaseStorageTestCase
+from tvb.tests.storage.storage_test import BaseStorageTestCase
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
