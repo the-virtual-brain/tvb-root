@@ -117,6 +117,7 @@ class BurstService(object):
         :return: operation instance changed
         """
         operation.mark_complete(operation_status, message)
+        operation.queue_full = False
         operation = dao.store_entity(operation)
         # update burst also
         burst_config = self.get_burst_for_operation_id(operation.id)
