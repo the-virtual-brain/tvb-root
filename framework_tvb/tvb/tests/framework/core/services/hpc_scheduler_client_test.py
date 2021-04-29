@@ -102,7 +102,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         # Unencrypt data
         out_dir = os.path.join(str(tmpdir), 'output')
         os.mkdir(out_dir)
-        self.storage_interface.decrypt_files_to_dir(self.dir, [enc_files[1]], out_dir)
+        self.storage_interface.decrypt_files_to_dir(self.dir_gid, [enc_files[1]], out_dir)
         list_plain_dir = os.listdir(out_dir)
         assert len(list_plain_dir) == 1
         assert os.path.basename(enc_files[0]).replace('.aes', '') not in list_plain_dir
@@ -118,8 +118,9 @@ class TestHPCSchedulerClient(BaseTestCase):
     def _do_operation_launch(self, op, sim_gid, mocker, is_pse=False):
         # Prepare encrypted dir
         self.storage_interface = StorageInterface()
+        self.dir_gid = sim_gid
         job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
-        self.storage_interface.encrypt_inputs(self.dir_gid, job_encrypted_inputs)
+        self.storage_interface.encrypt_inputs(sim_gid, job_encrypted_inputs)
         encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)
 
         mocker.patch('tvb.core.operation_hpc_launcher._request_passfile', _request_passfile_dummy)

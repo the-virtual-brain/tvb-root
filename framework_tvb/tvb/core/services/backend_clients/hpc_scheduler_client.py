@@ -113,10 +113,11 @@ class HPCSchedulerClient(BackendClient):
     CONTAINER_INPUT_FOLDER = '/home/tvb_user/.data'
     storage_interface = StorageInterface()
 
-    def _prepare_input(self, operation, simulator_gid):
+    @staticmethod
+    def _prepare_input(operation, simulator_gid):
         # type: (Operation, str) -> list
-        storage_path = self.storage_interface.get_project_folder(operation.project.name,
-                                                                 str(operation.id))
+        storage_path = StorageInterface().get_project_folder(operation.project.name,
+                                                             str(operation.id))
         vm_files, dt_files = h5.gather_references_of_view_model(simulator_gid, storage_path)
         vm_files.extend(dt_files)
         return vm_files
