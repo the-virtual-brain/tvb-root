@@ -828,7 +828,7 @@ def sort_events_by_x_and_y(events, x="senders", y="times",
 
 def data_xarray_from_continuous_events(events, times, senders, variables=[],
                                        filter_senders=None, exclude_senders=[], name=None,
-                                       dims_names=["Variable", "Neuron", "Time"]):
+                                       dims_names=["Time", "Variable", "Neuron"]):
     unique_times = np.unique(times).tolist()
     if filter_senders is None:
         filter_senders = np.unique(senders).tolist()
@@ -842,9 +842,9 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
         variables = list(events.keys())
     dims_names = ensure_list(dims_names)
     coords = OrderedDict()
-    coords[dims_names[0]] = variables
-    coords[dims_names[1]] = filter_senders
-    coords[dims_names[2]] = unique_times
+    coords[dims_names[0]] = unique_times
+    coords[dims_names[1]] = variables
+    coords[dims_names[2]] = filter_senders
     n_senders = len(filter_senders)
     n_times = len(unique_times)
     data = np.empty((len(variables), n_senders, n_times))
@@ -870,7 +870,7 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
             if time != unique_times[i_time]:
                 i_time = unique_times.index(time)
         for i_var, var in enumerate(variables):
-            data[i_var, i_sender, i_time] = events[var][id]
+            data[i_time, i_sender, i_var] = events[var][id]
     try:
         from xarray import DataArray
         return DataArray(data, dims=list(coords.keys()), coords=coords, name=name)
