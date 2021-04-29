@@ -54,6 +54,7 @@ from tvb.storage.h5.file.files_helper import FilesHelper
 LOG = get_logger(__name__)
 
 LOCK_OPEN_FILE = threading.Lock()
+BUFFER_SIZE = 300
 
 
 class HDF5StorageManager(object):
@@ -70,7 +71,7 @@ class HDF5StorageManager(object):
     DATE_TIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
     LOCKS = {}
 
-    def __init__(self, storage_folder, file_name, buffer_size):
+    def __init__(self, storage_folder, file_name):
         """
         Creates a new storage manager instance.
         :param buffer_size: the size in Bytes of the amount of data that will be buffered before writing to file.
@@ -81,7 +82,6 @@ class HDF5StorageManager(object):
             raise FileStructureException("Please provide the file name where to store data")
 
         self.__storage_full_name = os.path.join(storage_folder, file_name)
-        self.__buffer_size = buffer_size
         self.__buffer_array = None
         self.data_buffers = {}
         self.data_encryption_handler = DataEncryptionHandler()
@@ -149,7 +149,6 @@ class HDF5StorageManager(object):
             if datapath in hdf5_file:
                 dataset = hdf5_file[datapath]
                 self.data_buffers[datapath] = HDF5StorageManager.H5pyStorageBuffer(dataset,
-                                                                                   buffer_size=self.__buffer_size,
                                                                                    buffered_data=data_to_store,
                                                                                    grow_dimension=grow_dimension)
             else:
@@ -159,7 +158,6 @@ class HDF5StorageManager(object):
                 dataset = hdf5_file.create_dataset(where + dataset_name, data=data_to_store, shape=data_to_store.shape,
                                                    dtype=data_to_store.dtype, maxshape=data_shape)
                 self.data_buffers[datapath] = HDF5StorageManager.H5pyStorageBuffer(dataset,
-                                                                                   buffer_size=self.__buffer_size,
                                                                                    buffered_data=None,
                                                                                    grow_dimension=grow_dimension)
         else:
@@ -550,9 +548,9 @@ class HDF5StorageManager(object):
         HDD I/O operations.
         """
 
-        def __init__(self, h5py_dataset, buffer_size=300, buffered_data=None, grow_dimension=-1):
+        def __init__(self, h5py_dataset, buffered_data=None, grow_dimension=-1):
             self.buffered_data = buffered_data
-            self.buffer_size = buffer_size
+            self.buffer_size = BUFFER_SIZE
             if h5py_dataset is None:
                 raise MissingDataSetException("A H5pyStorageBuffer instance must have a h5py dataset for which the"
                                               "buffering is done. Please supply one to the 'h5py_dataset' parameter.")
