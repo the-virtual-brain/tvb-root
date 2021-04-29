@@ -41,6 +41,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.file.exceptions import FileStructureException
 from tvb.storage.h5.file.files_helper import FilesHelper
 from tvb.storage.h5.file.xml_metadata_handlers import XMLReader
+from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.storage.tests.dummy.dummy_project import DummyProject
 from tvb.storage.tests.dummy.dummy_storage_data_h5 import DummyStorageDataH5
 from tvb.storage.tests.storage_test import StorageTestCase
@@ -50,7 +51,7 @@ root_storage = TvbProfile.current.TVB_STORAGE
 
 class TestFilesHelper(StorageTestCase):
     """
-    This class contains tests for the tvb.file.files_helper module.
+    This class contains tests for the tvb.storage.h5.file.files_helper module.
     """
 
     def storage_setup_method(self):
@@ -62,7 +63,7 @@ class TestFilesHelper(StorageTestCase):
 
     def test_check_created(self):
         """ Test standard flows for check created. """
-        self.files_helper.check_created()
+        self.files_helper.check_created(TvbProfile.current.TVB_STORAGE)
         assert os.path.exists(root_storage), "Storage not created!"
 
         self.files_helper.check_created(os.path.join(root_storage, "test"))
@@ -106,8 +107,9 @@ class TestFilesHelper(StorageTestCase):
         """  Write XML for test-project. """
         user_id = 1
         dummy_project = DummyProject(self.project_name, "description", 3, user_id)
-        self.files_helper.write_project_metadata(dummy_project.to_dict())
-        expected_file = self.files_helper.get_project_meta_file_path(self.project_name)
+        self.files_helper.write_project_metadata(dummy_project.to_dict(), StorageInterface.TVB_PROJECT_FILE)
+        expected_file = self.files_helper.get_project_meta_file_path(self.project_name,
+                                                                     StorageInterface.TVB_PROJECT_FILE)
         assert os.path.exists(expected_file)
         project_meta = XMLReader(expected_file).read_metadata()
         loaded_project = DummyProject(None, None, None, None)
@@ -171,7 +173,7 @@ class TestFilesHelper(StorageTestCase):
             fp.close()
         for file_n in file_list:
             assert os.path.isfile(file_n)
-        self.files_helper.remove_files(file_list)
+        self.files_helper.remove_files(file_list, False)
         for file_n in file_list:
             assert not os.path.isfile(file_n)
 
@@ -182,7 +184,7 @@ class TestFilesHelper(StorageTestCase):
         folder_name = "test_folder"
         os.mkdir(folder_name)
         assert os.path.isdir(folder_name), "Folder should be created."
-        self.files_helper.remove_folder(folder_name)
+        self.files_helper.remove_folder(folder_name, False)
         assert not os.path.isdir(folder_name), "Folder should be deleted."
 
     def test_remove_folder_non_existing_ignore_exc(self):

@@ -409,7 +409,7 @@ class TvbZip(ZipFile):
     def __exit__(self, _type, _value, _traceback):
         self.close()
 
-    def write_folder(self, folder, archive_path_prefix, exclude):
+    def write_zip_folder(self, folder, archive_path_prefix, exclude):
         """
         write folder contents in archive
         :param archive_path_prefix: root folder in archive. Defaults to "" the archive root

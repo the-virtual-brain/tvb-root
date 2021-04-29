@@ -63,7 +63,9 @@ class ZipSurfaceParser(object):
         self._read(path)
 
     def _read(self, path):
-        vertices, normals, triangles = self._group_by_type(sorted(self.storage_interface.namelist(path, "r")))
+        self.storage_interface.initialize_tvb_zip(path)
+        vertices, normals, triangles = self._group_by_type(sorted(self.storage_interface.namelist()))
+        self.storage_interface.close_tvb_zip()
         if len(vertices) == 0:
             raise Exception("Cannot find vertices file.")
         if len(vertices) != len(triangles):
@@ -139,8 +141,9 @@ class ZipSurfaceParser(object):
         """
         # we need to process vertices in parallel with triangles, so that we can offset triangle indices
         for vertices_file, triangles_file in zip(vertices_files, triangles_files):
-            vertices_file = self.storage_interface.open(path, "r", vertices_file)
-            triangles_file = self.storage_interface.open(path, "r", triangles_file)
+            self.storage_interface.initialize_tvb_zip(path)
+            vertices_file = self.storage_interface.open_tvb_zip(vertices_file)
+            triangles_file = self.storage_interface.open_tvb_zip(triangles_file)
 
             current_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
             self.vertices.append(current_vertices)
@@ -155,9 +158,10 @@ class ZipSurfaceParser(object):
             triangles_file.close()
 
         for normals_file in normals_files:
-            normals_file = self.storage_interface.open(path, "r", normals_file)
+            normals_file = self.storage_interface.open_tvb_zip(normals_file)
 
             current_normals = numpy.loadtxt(normals_file, dtype=numpy.float32)
             self.normals.append(current_normals)
 
-            normals_file .close()
+            normals_file.close()
+        self.storage_interface.close_tvb_zip()

@@ -61,7 +61,6 @@ class TestHPCSchedulerClient(BaseTestCase):
     def setup_method(self):
         self.storage_interface = StorageInterface()
         self.dir_gid = '123'
-        self.storage_interface.set_component()
         self.clean_database()
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
@@ -118,7 +117,7 @@ class TestHPCSchedulerClient(BaseTestCase):
 
     def _do_operation_launch(self, op, sim_gid, mocker, is_pse=False):
         # Prepare encrypted dir
-        self.storage_interface = self.StorageInterface(dir_gid=sim_gid)
+        self.storage_interface = StorageInterface()
         job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
         self.storage_interface.encrypt_inputs(self.dir_gid, job_encrypted_inputs)
         encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)

@@ -144,7 +144,7 @@ class BaseController(object):
             self.logger.debug("Selected project is now " + project.name)
             common.set_info_message("Your current working project is: " + str(project.name))
             linked_dt = self.project_service.get_linked_datatypes_storage_path(project)
-            storage_interface = StorageInterface(StorageInterface.ENCRYPTION_HANDLER)
+            storage_interface = StorageInterface()
             storage_interface.set_project_active(project, linked_dt)
             if previous_project is not None:
                 storage_interface.set_project_inactive(previous_project)

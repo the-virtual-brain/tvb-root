@@ -353,7 +353,7 @@ class TestHDF5Storage(object):
 
         # Now we'll test removal of metadata on root node
         self.storage.set_metadata(META_DICT, '', True, StorageInterface.ROOT_NODE_PATH)
-        read_meta_data = self.storage.get_metadata(DATASET_NAME_1, StorageInterface.ROOT_NODE_PATH)
+        read_meta_data = self.storage.get_metadata('', StorageInterface.ROOT_NODE_PATH)
         assert META_VALUE == read_meta_data[META_KEY], "Retrieved meta value is not correct"
         self.storage.remove_metadata(META_KEY, '', True, StorageInterface.ROOT_NODE_PATH)
         read_meta_data = self.storage.get_metadata('', StorageInterface.ROOT_NODE_PATH)
@@ -370,7 +370,7 @@ class TestHDF5Storage(object):
         self.storage.set_metadata(META_DICT, DATASET_NAME_1, True, STORE_PATH)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1, STORE_PATH)
         assert META_VALUE == read_meta_data[META_KEY]
-        self.storage.remove_metadata(META_KEY, DATASET_NAME_1, STORE_PATH, StorageInterface.ROOT_NODE_PATH)
+        self.storage.remove_metadata(META_KEY, DATASET_NAME_1, True, STORE_PATH)
         read_meta_data = self.storage.get_metadata(DATASET_NAME_1, STORE_PATH)
         assert 0 == len(read_meta_data), "There should be no metadata stored on dataset"
 
@@ -400,7 +400,7 @@ class TestHDF5Storage(object):
         """
         This method tests scenario when HDF5 file is opened concurrent for read & write
         """
-        new_storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME)
+        new_storage = HDF5StorageManager(self.storage_folder, STORAGE_FILE_NAME, 600000)
         new_storage.store_data(DATASET_NAME_2, self.test_2D_array, StorageInterface.ROOT_NODE_PATH)
 
         for index in range(self.test_3D_array.shape[-1]):

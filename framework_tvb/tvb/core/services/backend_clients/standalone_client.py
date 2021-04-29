@@ -82,7 +82,6 @@ class OperationExecutor(Thread):
 
         current_operation = dao.get_operation_by_id(operation_id)
         storage_interface = StorageInterface()
-        storage_interface.set_component()
         project_folder = storage_interface.get_project_folder(current_operation.project.name)
         storage_interface.inc_running_op_count(project_folder)
         # In the exceptional case where the user pressed stop while the Thread startup is done,

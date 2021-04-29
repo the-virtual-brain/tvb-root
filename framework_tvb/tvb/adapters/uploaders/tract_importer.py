@@ -258,20 +258,22 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        with StorageInterface(StorageInterface.TVB_ZIP, dest_path=view_model.data_file).tvb_zip as zipf:
-            for tractf in sorted(zipf.namelist()):  # one track per file
-                if not tractf.endswith('.txt'):  # omit directories and other non track files
-                    continue
-                vertices_file = zipf.open(tractf)
-                datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
+        storage_interface = StorageInterface()
+        storage_interface.initialize_tvb_zip(view_model.data_file)
+        for tractf in sorted(storage_interface.namelist()):  # one track per file
+            if not tractf.endswith('.txt'):  # omit directories and other non track files
+                continue
+            vertices_file = storage_interface.open_tvb_zip(tractf)
+            datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
 
-                tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
-                tracts_h5.write_vertices_slice(datatype.tract_vertices)
+            tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
+            tracts_h5.write_vertices_slice(datatype.tract_vertices)
 
-                if view_model.region_volume is not None:
-                    tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
-                vertices_file.close()
+            if view_model.region_volume is not None:
+                tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
+            vertices_file.close()
 
+        self.storage_interface.close_tvb_zip()
         tracts_h5.close()
         self.region_volume_h5.close()
 

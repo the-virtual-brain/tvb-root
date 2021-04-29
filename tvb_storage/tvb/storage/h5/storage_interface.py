@@ -158,20 +158,22 @@ class StorageInterface:
         return FilesHelper.compute_recursive_h5_disk_usage(start_path)
 
     # TvbZip methods start here #
-    def write_folder(self, dest_path, mode, folder, archive_path_prefix="", exclude=None):
+    def initialize_tvb_zip(self, dest_path, mode="r"):
         self.tvb_zip = TvbZip(dest_path, mode)
-        return self.tvb_zip.write_folder(folder, archive_path_prefix, exclude)
 
-    def namelist(self, dest_path, mode):
-        self.tvb_zip = TvbZip(dest_path, mode)
+    def write_zip_folder(self, folder, archive_path_prefix="", exclude=None):
+        self.tvb_zip.write_zip_folder(folder, archive_path_prefix, exclude)
+
+    def namelist(self):
         return self.tvb_zip.namelist()
 
-    def open(self, dest_path, mode, name):
-        self.tvb_zip = TvbZip(dest_path, mode)
+    def open_tvb_zip(self, name):
         return self.tvb_zip.open(name)
 
-    def write_zip_arc(self, dest_path, mode, file_name, arc):
-        self.tvb_zip = TvbZip(dest_path, mode)
+    def close_tvb_zip(self):
+        self.tvb_zip.close()
+
+    def write_zip_arc(self, file_name, arc):
         return self.tvb_zip.write(file_name, arc)
 
     # HDF5 Storage Manager methods start here #
@@ -203,7 +205,7 @@ class StorageInterface:
         self.storage_manager = HDF5StorageManager(storage_folder, file_name, buffer_size)
         return self.storage_manager.get_data_shape(dataset_name, where)
 
-    def set_metadata(self, storage_folder, file_name, meta_dictionary, buffer_size=600000, dataset_name='',
+    def set_metadata(self, storage_folder, file_name, meta_dictionary, dataset_name='', buffer_size=600000,
                      tvb_specific_metadata=True, where=ROOT_NODE_PATH):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name, buffer_size)
         return self.storage_manager.set_metadata(meta_dictionary, dataset_name, tvb_specific_metadata, where)
@@ -217,11 +219,11 @@ class StorageInterface:
         self.storage_manager = HDF5StorageManager(storage_folder, file_name, buffer_size)
         return self.storage_manager.remove_metadata(meta_key, dataset_name, tvb_specific_metadata, where)
 
-    def get_metadata(self, storage_folder, file_name, buffer_size=600000, dataset_name='', where=ROOT_NODE_PATH):
+    def get_metadata(self, storage_folder, file_name, dataset_name='', buffer_size=600000,  where=ROOT_NODE_PATH):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name, buffer_size)
         return self.storage_manager.get_metadata(dataset_name, where)
 
-    def get_file_data_version(self, storage_folder, file_name, data_version, buffer_size=600000, dataset_name='',
+    def get_file_data_version(self, storage_folder, file_name, data_version, dataset_name='', buffer_size=600000,
                               where=ROOT_NODE_PATH):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name, buffer_size)
         return self.storage_manager.get_file_data_version(data_version, dataset_name, where)
@@ -273,6 +275,10 @@ class StorageInterface:
         self.encryption_handler = EncryptionHandler(dir_gid)
         return self.encryption_handler.decrypt_results_to_dir(files, dir)
 
+    def get_current_enc_dirname(self, dir_gid):
+        self.encryption_handler = EncryptionHandler(dir_gid)
+        return self.encryption_handler.current_enc_dirname
+
     # Data Encryption Handler methods start here #
 
     def inc_project_usage_count(self, folder):
@@ -319,5 +325,18 @@ class StorageInterface:
         return DataEncryptionHandler.project_key_path(project_name)
 
     # Folders Queue Consumer methods start here #
+
     def run(self):
-        return self.data_encryption_handler.run()
+        return self.folders_queue_consumer.run()
+
+    def start(self):
+        self.folders_queue_consumer.start()
+
+    def mark_stop(self):
+        self.folders_queue_consumer.mark_stop()
+
+    def join(self):
+        self.folders_queue_consumer.join()
+
+
+
