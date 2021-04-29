@@ -870,7 +870,7 @@ def data_xarray_from_continuous_events(events, times, senders, variables=[],
             if time != unique_times[i_time]:
                 i_time = unique_times.index(time)
         for i_var, var in enumerate(variables):
-            data[i_time, i_sender, i_var] = events[var][id]
+            data[i_time, i_var, i_sender] = events[var][id]
     try:
         from xarray import DataArray
         return DataArray(data, dims=list(coords.keys()), coords=coords, name=name)
