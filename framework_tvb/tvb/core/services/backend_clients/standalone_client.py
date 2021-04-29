@@ -176,7 +176,7 @@ class StandAloneClient(BackendClient):
                 return
             LOGGER.info("Found {} operations with the queue full flag set.".format(len(operations)))
             operations.sort(key=lambda l_operation: l_operation.id)
-            for operation in operations:
+            for operation in operations[0:TvbProfile.current.MAX_THREADS_NUMBER]:
                 try:
                     op = dao.get_operation_by_id(operation.id)
                     operation_process = dao.get_operation_process_for_operation(operation.id)

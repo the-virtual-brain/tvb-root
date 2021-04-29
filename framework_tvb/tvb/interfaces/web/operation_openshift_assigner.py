@@ -56,7 +56,7 @@ if __name__ == '__main__':
             if pods:
                 pods_no = len(pods)
                 operations.sort(key=lambda l_operation: l_operation.id)
-                for index, operation in enumerate(operations):
+                for index, operation in enumerate(operations[0:TvbProfile.current.MAX_THREADS_NUMBER*pods_no]):
                     pod_ip = pods[index % pods_no]['ip']
                     log.info("Notify pod: {}".format(pod_ip))
                     url_pattern = "http://{}:{}/kube/start_operation_pod/{}"
