@@ -49,7 +49,6 @@ from formencode import validators
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
 from tvb.core.services.authorization import AuthorizationManager
-from tvb.core.services.cache_service import cache
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.texture_to_json import color_texture_to_list
 from tvb.core.services.user_service import KEY_AUTH_TOKEN, USERS_PAGE_SIZE

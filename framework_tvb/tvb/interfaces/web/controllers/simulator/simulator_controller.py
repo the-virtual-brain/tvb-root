@@ -47,7 +47,6 @@ from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, 
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.neocom import h5
-from tvb.core.services.backend_clients.standalone_client import StandAloneClient
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException, ServicesBaseException
 from tvb.core.services.import_service import ImportService
