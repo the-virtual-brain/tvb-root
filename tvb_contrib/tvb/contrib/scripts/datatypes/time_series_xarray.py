@@ -918,7 +918,7 @@ class TimeSeries(HasTraits):
             return outputs
         if np.any([s < 2 for s in self.shape[1:]]):
             if self.shape[1] == 1:  # only one variable
-                figname = kwargs.pop("figname", "%s" % (self.title + "Time Series")) + ": " \
+                figname = kwargs.pop("figname", "%s" % (self.title)) + ": " \
                           + self.labels_dimensions[self.labels_ordering[1]][0]
                 kwargs["figname"] = figname
             return self.plot_line(**kwargs)
@@ -926,7 +926,7 @@ class TimeSeries(HasTraits):
             return self.plot_raster(**kwargs)
 
     def plot_raster(self, **kwargs):
-        figname = kwargs.pop("figname", "%s" % (self.title + "Time Series raster"))
+        figname = kwargs.pop("figname", "%s" % (self.title + " raster"))
         if kwargs.pop("per_variable", False):
             outputs = []
             for var in self.labels_dimensions[self.labels_ordering[1]]:
