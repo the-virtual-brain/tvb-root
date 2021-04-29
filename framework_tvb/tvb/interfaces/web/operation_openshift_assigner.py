@@ -30,6 +30,7 @@
 """
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
+import random
 from concurrent.futures.thread import ThreadPoolExecutor
 from time import sleep
 
@@ -54,6 +55,7 @@ if __name__ == '__main__':
                 continue
             pods, auth_header = KubeService.get_pods(TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
             if pods:
+                random.shuffle(pods)
                 pods_no = len(pods)
                 operations.sort(key=lambda l_operation: l_operation.id)
                 for index, operation in enumerate(operations[0:TvbProfile.current.MAX_THREADS_NUMBER*pods_no]):
