@@ -55,6 +55,13 @@ def _mpr_integrate(
             V_int = V[n,i-1] + dt*dV_0 + V_noise
             r_int = r_bound(r_int)
 
+% if not compatibility_mode:
+            # coupling
+            r_c = 0
+            for m in range(N):
+                r_c += weights[n,m] * r[m, i - idelays[n, m]]
+            r_c = r_c * G # post
+% endif
             r[n,i] = r[n,i-1] + dt*(dr_0 + dr(r_int, V_int))/2.0 + r_noise
             V[n,i] = V[n,i-1] + dt*(dV_0 + dV(r_int, V_int, r_c))/2.0 + V_noise
             r[n,i] = r_bound(r[n,i])

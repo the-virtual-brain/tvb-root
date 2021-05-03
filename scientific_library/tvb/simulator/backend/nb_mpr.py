@@ -80,7 +80,7 @@ class NbMPRBackend(MakoUtilMix):
         fns = [getattr(mod,n) for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
 
-    def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000):
+    def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000, compatibility_mode=False):
         assert nstep is not None or simulation_length is not None or sim.simulation_length is not None
         if nstep is None:
             if simulation_length is None:
@@ -103,9 +103,9 @@ class NbMPRBackend(MakoUtilMix):
         )
         return (time, data),   
 
-    def _run_sim_plain(self, sim, nstep=None):
+    def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
-        content = dict(foo='bar') 
+        content = dict(compatibility_mode=compatibility_mode) 
         integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=False)
 
         horizon = sim.connectivity.horizon
