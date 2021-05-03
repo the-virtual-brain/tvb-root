@@ -183,8 +183,15 @@ class NbMPRBackend(MakoUtilMix):
             )
 
             tavg_chunk = chunk * tavg_chunksize
-            r_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = self._time_average(r[:, horizon:], tavg_steps)
-            V_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = self._time_average(V[:, horizon:], tavg_steps)
+            r_chunk = self._time_average(r[:, horizon:], tavg_steps)
+            V_chunk = self._time_average(V[:, horizon:], tavg_steps)
+            if tavg_chunk+tavg_chunksize > r_out.shape[1]:
+                cutoff = tavg_chunk+tavg_chunksize - r_out.shape[1]
+                r_chunk = r_chunk[:,:-cutoff]
+                V_chunk = V_chunk[:,:-cutoff]
+            
+            r_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = r_chunk
+            V_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = V_chunk
 
             r[:,:horizon] = r[:,-horizon:]
             V[:,:horizon] = V[:,-horizon:]
