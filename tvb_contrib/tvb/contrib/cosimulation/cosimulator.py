@@ -102,10 +102,9 @@ class CoSimulator(Simulator):
            - configure the cosimulation monitor
            - zero connectivity weights to/from nodes modelled exclusively by the other cosimulator
            """
+        self._configure_synchronization_time()
         if self.voi.shape[0] * self.proxy_inds.shape[0] != 0:
             self._cosimulation_flag = True
-
-            self._configure_synchronization_time()
 
             # Check if the couplings variables are in the cosimulation variables of interest
             for cvar in self.model.cvar:
@@ -141,7 +140,6 @@ class CoSimulator(Simulator):
                              % (self.voi.shape[0], self.proxy_inds.shape[0]))
         else:
             self._cosimulation_flag = False
-            self.synchronization_n_step = 0
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
