@@ -1012,7 +1012,7 @@ class TimeSeries(HasTraits):
         elif self.shape[2] == 1 and self.shape[3] > 1:
             yind = 3  # Modes/Samples/Populations
         yticklabels = labels_dimensions[labels_ordering[yind]]
-        data = xr.DataArray(self._data)
+        data = self._data.copy()
         slice_tuple = (slice(None), 0, slice(None), slice(None))
         figname = kwargs.pop("figname", "%s" % (self.title + " raster"))
         if self.shape[1] < 2:
