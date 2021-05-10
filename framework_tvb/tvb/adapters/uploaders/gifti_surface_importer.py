@@ -40,7 +40,6 @@ from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.neotraits.forms import SelectField, TraitUploadField, BoolField
-from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
 
@@ -116,7 +115,7 @@ class GIFTISurfaceImporter(ABCUploader):
         """
         Execute import operations:
         """
-        parser = GIFTIParser(self.storage_path, self.operation_id)
+        parser = GIFTIParser(self.operation_id)
         try:
             surface = parser.parse(view_model.data_file, view_model.data_file_part2, view_model.file_type,
                                    should_center=view_model.should_center)

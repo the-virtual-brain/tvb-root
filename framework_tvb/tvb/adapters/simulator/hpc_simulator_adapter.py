@@ -50,9 +50,8 @@ from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerC
 
 class HPCSimulatorAdapter(SimulatorAdapter):
 
-    def __init__(self, storage_path, is_group_launch):
+    def __init__(self, is_group_launch):
         super(HPCSimulatorAdapter, self).__init__()
-        self.storage_path = storage_path
         self.is_group_launch = is_group_launch
 
     def _prelaunch(self, operation, view_model, available_disk_space=0):
@@ -67,12 +66,12 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid)
+        trait, _ = h5.load_with_links_from_dir(self.get_storage_path(), data_gid)
         return trait
 
     def load_with_references(self, dt_gid):
         # type: (typing.Union[uuid.UUID, str]) -> HasTraits
-        dt, _ = h5.load_with_references_from_dir(self.storage_path, dt_gid)
+        dt, _ = h5.load_with_references_from_dir(self.get_storage_path(), dt_gid)
         return dt
 
     def _try_load_region_mapping(self):
@@ -85,7 +84,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         return self.is_group_launch
 
     def _get_output_path(self):
-        output_path = os.path.join(self.storage_path, HPCSchedulerClient.OUTPUT_FOLDER)
+        output_path = os.path.join(self.get_storage_path(), HPCSchedulerClient.OUTPUT_FOLDER)
         if not os.path.isdir(output_path):
             os.mkdir(output_path)
         return output_path
@@ -104,8 +103,9 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         """
         Update h5 files with generic attributes
         """
-        for file in os.listdir(self._get_output_path()):
-            path = os.path.join(self._get_output_path(), file)
+        storage_path = self._get_output_path()
+        for file in os.listdir(storage_path):
+            path = os.path.join(storage_path, file)
             if issubclass(H5File.h5_class_from_file(path), ViewModelH5):
                 continue
             with H5File.from_file(path) as f:
@@ -134,15 +134,14 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         metric_vm.time_series = time_series_index.gid
         metric_vm.algorithms = tuple(ALGORITHMS.keys())
         h5.store_view_model(metric_vm, self._get_output_path())
-        metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
+        metric_adapter = HPCTimeseriesMetricsAdapter(time_series_index)
         metric_adapter._prelaunch(None, metric_vm, self.available_disk_space)
 
 
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
 
-    def __init__(self, storage_path, input_time_series_index):
+    def __init__(self, input_time_series_index):
         super(HPCTimeseriesMetricsAdapter, self).__init__()
-        self.storage_path = storage_path
         self.input_time_series_index = input_time_series_index
 
     def configure(self, view_model):
@@ -160,7 +159,7 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid)
+        trait, _ = h5.load_with_links_from_dir(self._get_output_path(), data_gid)
         return trait
 
     def extract_operation_data(self, operation=None):

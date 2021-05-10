@@ -117,7 +117,7 @@ class DummyAdapter3(abcadapter.ABCAdapter):
             result.row1 = str(view_model.param_5)
         if view_model.param_6 is not None:
             result.row2 = str(view_model.param_6)
-        return h5.store_complete(result, self.storage_path)
+        return h5.store_complete(result, self.get_storage_path())
 
 
 class DummyAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
@@ -236,7 +236,6 @@ class DummyAdapterHDDRequired(abcadapter.ABCAdapter):
         result = DummyDataTypeIndex()
         result.row1 = 'param_5'
         result.row2 = 'param_6'
-        result.storage_path = self.storage_path
         res_array = []
         for _ in range(int(view_model.test)):
             res_array.append("data")

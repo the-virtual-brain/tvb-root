@@ -42,7 +42,6 @@ from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesSurfaceH5
 from tvb.adapters.datatypes.db.time_series import TimeSeriesSurfaceIndex
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.surfaces import Surface
@@ -105,7 +104,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
         if view_model.surface is None:
             raise LaunchException("No surface selected. Please initiate upload again and select a brain surface.")
 
-        parser = GIFTIParser(self.storage_path, self.operation_id)
+        parser = GIFTIParser(self.operation_id)
         try:
             partial_time_series, gifti_data_arrays = parser.parse(view_model.data_file)
 
