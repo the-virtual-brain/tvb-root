@@ -145,7 +145,7 @@ class ExportManager(object):
 
         return export_data
 
-    def _export_linked_datatypes(self, project, storage_interface):
+    def _export_linked_datatypes(self, project):
         linked_paths = ProjectService().get_linked_datatypes_storage_path(project)
 
         if not linked_paths:
@@ -167,7 +167,7 @@ class ExportManager(object):
         # add linked datatypes to archive in the import operation
         for pth in linked_paths:
             zip_pth = op_folder_name + '/' + os.path.basename(pth)
-            storage_interface.write_zip_arc(pth, zip_pth)
+            self.storage_interface.write_zip_arc(pth, zip_pth)
 
         # remove these files, since we only want them in export archive
         self.storage_interface.remove_folder(op_folder)
@@ -218,7 +218,7 @@ class ExportManager(object):
         for pack in to_be_exported_folders:
             self.storage_interface.write_zip_folder(**pack)
         self.logger.debug("Done exporting files, now we will export linked DTs")
-        self._export_linked_datatypes(project, self.storage_interface)
+        self._export_linked_datatypes(project)
         # Make sure the Project.xml file gets copied:
         if optimize_size:
             self.logger.debug("Done linked, now we write the project xml")

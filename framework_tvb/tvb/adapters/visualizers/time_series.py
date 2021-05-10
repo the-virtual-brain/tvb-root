@@ -166,7 +166,7 @@ class TimeSeriesDisplay(ABCSpaceDisplayer):
         h5_file = h5.h5_file_for_index(time_series_index)
         assert isinstance(h5_file, TimeSeriesH5)
         shape = list(h5_file.read_data_shape())
-        ts = h5_file.storage_interface.get_data(h5_file.storage_folder, h5_file.file_name, 'time')
+        ts = h5_file.time.load()
         state_variables = time_series_index.get_labels_for_dimension(1)
         labels = self.get_space_labels(h5_file)
 

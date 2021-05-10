@@ -137,7 +137,7 @@ class RegionMappingImporter(ABCUploader):
         if zipfile.is_zipfile(view_model.mapping_file):
             tmp_folder = tempfile.mkdtemp(prefix='region_mapping_zip_', dir=TvbProfile.current.TVB_TEMP_FOLDER)
             try:
-                files = StorageInterface().unpack_zip(view_model.mapping_file, tmp_folder)
+                files = self.storage_interface.unpack_zip(view_model.mapping_file, tmp_folder)
                 if len(files) > 1:
                     raise LaunchException("Please upload a ZIP file containing only one file.")
                 array_data = self.read_list_data(files[0], dtype=numpy.int32)
