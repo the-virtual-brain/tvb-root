@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-import datetime
+from datetime import datetime
 import os
 import sys
 import importlib
@@ -76,7 +76,7 @@ def _serialize_value(value):
     if isinstance(value, bool):
         return BOOL_VALUE_PREFIX + str(value)
     # Transform date to string and append prefix
-    elif isinstance(value, datetime.datetime):
+    elif isinstance(value, datetime):
         return DATETIME_VALUE_PREFIX + date2string(value, date_format=DATE_TIME_FORMAT)
     else:
         return value

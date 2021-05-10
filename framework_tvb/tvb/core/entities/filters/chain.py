@@ -48,7 +48,8 @@ In order to define a default filter, from the adapter interface add::
 """
 import importlib
 import json
-import datetime
+from datetime import datetime
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.filters.exceptions import *
 
@@ -296,7 +297,7 @@ class FilterChain(object):
             result = result + field
             result = result + operation
             prepared_value = self.__prepare_filter_string(str(value))
-            if isinstance(value, (str, datetime.datetime)):
+            if isinstance(value, (str, datetime)):
                 if prepared_value == str(value):
                     # It was just a regular string, need to add quotes so it's not evaluated to a variable
                     prepared_value = '"' + prepared_value + '"'

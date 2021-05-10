@@ -28,7 +28,7 @@
 #
 #
 
-import datetime
+from datetime import datetime
 
 COMPLEX_TIME_FORMAT = '%Y-%m-%d,%H-%M-%S.%f'
 # LESS_COMPLEX_TIME_FORMAT is also compatible with data exported from TVB 1.0.
@@ -42,14 +42,14 @@ def string2date(string_input, complex_format=True, date_format=None):
     if string_input == 'None':
         return None
     if date_format is not None:
-        return datetime.datetime.strptime(string_input, date_format)
+        return datetime.strptime(string_input, date_format)
     if complex_format:
         try:
-            return datetime.datetime.strptime(string_input, COMPLEX_TIME_FORMAT)
+            return datetime.strptime(string_input, COMPLEX_TIME_FORMAT)
         except ValueError:
             # For backwards compatibility with TVB 1.0
-            return datetime.datetime.strptime(string_input, LESS_COMPLEX_TIME_FORMAT)
-    return datetime.datetime.strptime(string_input, SIMPLE_TIME_FORMAT)
+            return datetime.strptime(string_input, LESS_COMPLEX_TIME_FORMAT)
+    return datetime.strptime(string_input, SIMPLE_TIME_FORMAT)
 
 
 def date2string(date_input, complex_format=True, date_format=None):

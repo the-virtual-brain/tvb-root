@@ -36,7 +36,7 @@
 
 import os
 import pytest
-import datetime
+from datetime import datetime
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core.utils import path2url_part, get_unique_file_name, string2date, date2string, string2bool
 
@@ -77,20 +77,20 @@ class TestUtils(TransactionalTestCase):
         """
         simple_time_string = "03-03-1999"
         simple_date = string2date(simple_time_string, complex_format=False)
-        assert simple_date == datetime.datetime(1999, 3, 3),\
+        assert simple_date == datetime(1999, 3, 3),\
                          "Did not get expected datetime from conversion object."
         complex_time_string = "1999-03-16,18-20-33.1"
         complex_date = string2date(complex_time_string)
-        assert complex_date == datetime.datetime(1999, 3, 16, 18, 20, 33, 100000),\
+        assert complex_date == datetime(1999, 3, 16, 18, 20, 33, 100000),\
                          "Did not get expected datetime from conversion object."
         complex_time_stringv1 = "1999-03-16,18-20-33"
         complexv1_date = string2date(complex_time_stringv1)
-        assert complexv1_date == datetime.datetime(1999, 3, 16, 18, 20, 33),\
+        assert complexv1_date == datetime(1999, 3, 16, 18, 20, 33),\
                          "Did not get expected datetime from conversion object."
         custom_format = "%Y"
         custom_time_string = "1999"
         custom_date = string2date(custom_time_string, date_format=custom_format)
-        assert custom_date == datetime.datetime(1999, 1, 1),\
+        assert custom_date == datetime(1999, 1, 1),\
                          "Did not get expected datetime from conversion object."
 
     def test_string2date_invalid(self):
@@ -104,7 +104,7 @@ class TestUtils(TransactionalTestCase):
         """
         Check the date2string method for various inputs.
         """
-        date_input = datetime.datetime(1999, 3, 16, 18, 20, 33, 100000)
+        date_input = datetime(1999, 3, 16, 18, 20, 33, 100000)
         assert date2string(date_input, complex_format=False) == '03-16-1999',\
                          "Did not get expected string from datetime conversion object."
         custom_format = "%Y"

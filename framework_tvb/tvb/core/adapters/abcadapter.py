@@ -34,7 +34,7 @@ Root classes for adding custom functionality to the code.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
-import datetime
+from datetime import datetime
 import importlib
 import json
 import os
@@ -368,7 +368,7 @@ class ABCAdapter(object):
         data_type_group_id = None
         operation = dao.get_operation_by_id(self.operation_id)
         if operation.user_group is None or len(operation.user_group) == 0:
-            operation.user_group = date2string(datetime.datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
+            operation.user_group = date2string(datetime.now(), date_format=LESS_COMPLEX_TIME_FORMAT)
             operation = dao.store_entity(operation)
         if self._is_group_launch():
             data_type_group_id = dao.get_datatypegroup_by_op_group_id(operation.fk_operation_group).id

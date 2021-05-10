@@ -38,7 +38,7 @@ import json
 import os
 import shutil
 import uuid
-import datetime
+from datetime import datetime
 from cgi import FieldStorage
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -91,7 +91,7 @@ class Operation2ImportData(object):
 
     @property
     def order_field(self):
-        return self.operation.create_date if (self.operation is not None) else datetime.datetime.now()
+        return self.operation.create_date if (self.operation is not None) else datetime.now()
 
 
 class ImportService(object):
@@ -129,7 +129,7 @@ class ImportService(object):
         """
         :return: the name of the folder where to expand uploaded zip
         """
-        now = datetime.datetime.now()
+        now = datetime.now()
         date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
                                              now.minute, now.second, now.microsecond)
         uq_name = "%s-ImportProject" % date_str
@@ -268,7 +268,7 @@ class ImportService(object):
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
         # type: (Project, dict) -> int
         sorted_dts = sorted(all_datatypes.items(),
-                            key=lambda dt_item: dt_item[1].create_date or datetime.datetime.now())
+                            key=lambda dt_item: dt_item[1].create_date or datetime.now())
         count = 0
         for dt_path, datatype in sorted_dts:
             count += self.store_or_link_datatype(datatype, dt_path, project.id)
@@ -347,7 +347,7 @@ class ImportService(object):
                     operation = Operation(main_view_model.gid.hex, project.fk_admin, project.id, alg.id,
                                           status=STATUS_FINISHED,
                                           user_group=main_view_model.generic_attributes.operation_tag,
-                                          start_date=datetime.datetime.now(), completion_date=datetime.datetime.now(),
+                                          start_date=datetime.now(), completion_date=datetime.now(),
                                           op_group_id=op_group_id, range_values=main_view_model.range_values)
                     operation.create_date = main_view_model.create_date
                     operation.visible = main_view_model.generic_attributes.visible
@@ -365,7 +365,7 @@ class ImportService(object):
                     all_view_model_files.append(vm_path)
                     operation = Operation(view_model.gid.hex, project.fk_admin, project.id, alg.id,
                                           status=STATUS_FINISHED,
-                                          start_date=datetime.datetime.now(), completion_date=datetime.datetime.now())
+                                          start_date=datetime.now(), completion_date=datetime.now())
                     self.logger.debug("Found no ViewModel in folder, so we default to " + str(operation))
 
                     if importer_operation_id:

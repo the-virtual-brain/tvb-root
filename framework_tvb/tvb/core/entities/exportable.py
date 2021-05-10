@@ -32,8 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import datetime
-
+from datetime import datetime
 from tvb.core.utils import date2string
 
 
@@ -49,7 +48,7 @@ class Exportable(object):
         dict_equivalent = {}
         for key in self.__dict__:
             if '_sa_' not in key[:5] and key not in excludes:
-                if isinstance(self.__dict__[key], datetime.datetime):
+                if isinstance(self.__dict__[key], datetime):
                     dict_equivalent[key] = date2string(self.__dict__[key])
                 else:
                     dict_equivalent[key] = self.__dict__[key]

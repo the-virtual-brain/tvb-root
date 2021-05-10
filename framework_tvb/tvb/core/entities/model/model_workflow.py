@@ -35,7 +35,7 @@ Here we define entities related to workflows and portlets.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import datetime
+from datetime import datetime
 from sqlalchemy import Integer, String, Column, DateTime
 from tvb.core.neotraits.db import Base
 
@@ -62,4 +62,4 @@ class Portlet(Base):
         self.algorithm_identifier = algorithm_identifier
         self.xml_path = xml_path
         self.name = name
-        self.last_introspection_check = datetime.datetime.now()
+        self.last_introspection_check = datetime.now()

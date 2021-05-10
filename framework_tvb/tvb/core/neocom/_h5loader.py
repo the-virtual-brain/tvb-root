@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import datetime
+from datetime import datetime
 import os
 import typing
 import uuid
@@ -296,7 +296,7 @@ class ViewModelLoader(DirLoader):
         with ViewModelH5(h5_path, view_model) as h5_file:
             h5_file.store(view_model)
             h5_file.type.store(self.get_class_path(view_model))
-            h5_file.create_date.store(date2string(datetime.datetime.now()))
+            h5_file.create_date.store(date2string(datetime.now()))
             if hasattr(view_model, "generic_attributes"):
                 h5_file.store_generic_attributes(view_model.generic_attributes)
             else:

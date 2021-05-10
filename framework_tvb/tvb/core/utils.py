@@ -35,7 +35,7 @@
 import os
 import sys
 import json
-import datetime
+from datetime import datetime
 import uuid
 import urllib.request, urllib.parse, urllib.error
 from hashlib import md5
@@ -86,7 +86,7 @@ def get_unique_file_name(storage_folder, file_name, try_number=0):
     """
     # TODO this method should be re-tought
     name, ext = os.path.splitext(file_name)
-    date = str(datetime.datetime.now())
+    date = str(datetime.now())
     date = date.replace(' ', '').replace(':', '').replace('.', '').replace('-', '')
     if try_number > 0:
         file_ = '%s-%s%s' % (name, date, ext)
@@ -108,14 +108,14 @@ def string2date(string_input, complex_format=True, date_format=None):
     if string_input == 'None':
         return None
     if date_format is not None:
-        return datetime.datetime.strptime(string_input, date_format)
+        return datetime.strptime(string_input, date_format)
     if complex_format:
         try:
-            return datetime.datetime.strptime(string_input, COMPLEX_TIME_FORMAT)
+            return datetime.strptime(string_input, COMPLEX_TIME_FORMAT)
         except ValueError:
             # For backwards compatibility with TVB 1.0
-            return datetime.datetime.strptime(string_input, LESS_COMPLEX_TIME_FORMAT)
-    return datetime.datetime.strptime(string_input, SIMPLE_TIME_FORMAT)
+            return datetime.strptime(string_input, LESS_COMPLEX_TIME_FORMAT)
+    return datetime.strptime(string_input, SIMPLE_TIME_FORMAT)
 
 
 def date2string(date_input, complex_format=True, date_format=None):

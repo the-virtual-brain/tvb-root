@@ -31,7 +31,7 @@
 """
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-import datetime
+from datetime import datetime
 import importlib
 import os
 import shutil
@@ -100,7 +100,7 @@ def initialize(skip_import=False, skip_updates=False):
     initialize_storage()
 
     # Populate DB algorithms, by introspection
-    start_introspection_time = datetime.datetime.now()
+    start_introspection_time = datetime.now()
     # Introspection is always done, even if DB was not empty.
     introspector = Introspector()
     introspector.introspect()
@@ -168,13 +168,13 @@ class Introspector(object):
                                                      algo_category.order_nr)
 
         if algo_category_instance is not None:
-            algo_category_instance.last_introspection_check = datetime.datetime.now()
+            algo_category_instance.last_introspection_check = datetime.now()
             algo_category_instance.removed = False
         else:
             algo_category_instance = AlgorithmCategory(algo_category.category_name, algo_category.launchable,
                                                        algo_category.rawinput, algo_category.display,
                                                        algo_category.defaultdatastate, algo_category.order_nr,
-                                                       datetime.datetime.now())
+                                                       datetime.now())
         algo_category_instance = dao.store_entity(algo_category_instance)
 
         return algo_category_instance.id
@@ -188,7 +188,7 @@ class Introspector(object):
                 stored_adapter = Algorithm(adapter_class.__module__, adapter_class.__name__, algo_category_id,
                                            adapter_class.get_group_name(), adapter_class.get_group_description(),
                                            adapter_class.get_ui_name(), adapter_class.get_ui_description(),
-                                           adapter_class.get_ui_subsection(), datetime.datetime.now())
+                                           adapter_class.get_ui_subsection(), datetime.now())
                 adapter_inst = adapter_class()
 
                 adapter_form = adapter_inst.get_form()
@@ -312,7 +312,7 @@ class Introspector(object):
             for verified_portlet in portlets_list:
                 if stored_portlet.algorithm_identifier == verified_portlet.algorithm_identifier:
                     stored_portlet.xml_path = verified_portlet.xml_path
-                    stored_portlet.last_introspection_check = datetime.datetime.now()
+                    stored_portlet.last_introspection_check = datetime.now()
                     stored_portlet.name = verified_portlet.name
                     dao.store_entity(stored_portlet)
                     break
