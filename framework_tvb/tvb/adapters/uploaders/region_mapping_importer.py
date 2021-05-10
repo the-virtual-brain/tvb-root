@@ -51,7 +51,7 @@ from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CORTICAL, Surface
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class RegionMappingImporterModel(UploaderViewModel):

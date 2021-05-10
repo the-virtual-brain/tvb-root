@@ -63,7 +63,7 @@ from tvb.core.neotraits.forms import Form
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger("ABCAdapter")
 

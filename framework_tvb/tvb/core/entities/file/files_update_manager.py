@@ -48,7 +48,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.utils import string2date
 from tvb.storage.h5.file.exceptions import FileStructureException, MissingDataFileException, FileMigrationException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'

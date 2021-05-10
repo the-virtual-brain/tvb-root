@@ -37,7 +37,7 @@ Main controller for the updates related to the Project entity.
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
 from tvb.core.project_versions import project_update_scripts
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ProjectUpdateManager(UpdateManager):

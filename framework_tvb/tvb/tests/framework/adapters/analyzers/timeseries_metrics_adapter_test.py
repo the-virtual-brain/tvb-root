@@ -37,7 +37,7 @@ import tvb_data
 import json
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.config import ALGORITHMS
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel
 from tvb.tests.framework.core.factory import TestFactory

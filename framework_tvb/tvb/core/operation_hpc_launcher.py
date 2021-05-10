@@ -41,7 +41,7 @@ from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_FINIS
 from tvb.core.neocom import h5
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 log = get_logger(__name__)
 

@@ -46,7 +46,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory

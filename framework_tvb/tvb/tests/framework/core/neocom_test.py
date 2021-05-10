@@ -36,7 +36,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import load, store, load_from_dir, store_to_dir
 from tvb.datatypes.projections import ProjectionSurfaceEEG
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 def test_store_load(tmpdir, connectivity_factory):

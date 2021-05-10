@@ -71,7 +71,7 @@ from tvb.datatypes.sensors import Sensors, SensorsEEG
 from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.simulator import Simulator
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType

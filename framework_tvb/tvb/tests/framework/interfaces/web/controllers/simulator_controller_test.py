@@ -59,7 +59,7 @@ from tvb.interfaces.web.controllers.common import *
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.models import ModelsEnum
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 

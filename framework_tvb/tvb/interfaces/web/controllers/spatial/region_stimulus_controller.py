@@ -55,7 +55,7 @@ from tvb.interfaces.web.controllers.decorators import handle_error, expose_page,
     check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import EquationPlotForm
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 LOAD_EXISTING_URL = '/spatial/stimulus/region/load_region_stimulus'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/region/reset_region_stimulus'

@@ -46,7 +46,7 @@ from tvb.core.operation_hpc_launcher import UPDATE_STATUS_KEY
 from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import expose_endpoint
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 @traced

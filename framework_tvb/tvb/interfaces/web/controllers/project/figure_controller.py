@@ -47,7 +47,7 @@ from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import context_selected, check_user, handle_error
 from tvb.interfaces.web.controllers.decorators import using_template, expose_page
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 @traced

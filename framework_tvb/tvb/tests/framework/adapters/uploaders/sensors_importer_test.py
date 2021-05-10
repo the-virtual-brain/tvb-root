@@ -38,7 +38,7 @@ import tvb_data.sensors as demo_data
 from tvb.adapters.uploaders.sensors_importer import SensorsImporter, SensorsImporterModel
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

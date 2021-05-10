@@ -37,7 +37,7 @@ from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.files_helper import create_temp_folder
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class SimulationApi(MainApi):

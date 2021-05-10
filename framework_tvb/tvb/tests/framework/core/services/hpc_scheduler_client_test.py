@@ -42,7 +42,7 @@ from tvb.core.neocom import h5
 from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.datatypes.projections import ProjectionSurfaceEEG
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

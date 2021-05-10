@@ -44,7 +44,7 @@ from tvb.core.neotraits.forms import TraitUploadField, SelectField, TraitDataTyp
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class CSVConnectivityParser(object):

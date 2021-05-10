@@ -41,7 +41,7 @@ from tvb.core.neotraits.view_model import Str
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.connectivity import Connectivity
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
 

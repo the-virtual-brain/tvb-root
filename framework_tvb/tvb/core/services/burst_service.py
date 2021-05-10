@@ -48,7 +48,7 @@ from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import DirLoader
 from tvb.core.services.import_service import ImportService
 from tvb.core.utils import format_bytes_human, format_timedelta
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 MAX_BURSTS_DISPLAYED = 50
 STATUS_FOR_OPERATION = {

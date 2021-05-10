@@ -42,7 +42,7 @@ from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.core.utils import string2date, date2string
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 H5_EXTENSION = '.h5'
 H5_FILE_NAME_STRUCTURE = '{}_{}.h5'

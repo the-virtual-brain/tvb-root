@@ -46,7 +46,7 @@ from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import string2date, date2string
 from tvb.datatypes.equations import Equation
 from tvb.storage.h5.file.exceptions import MissingDataSetException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 

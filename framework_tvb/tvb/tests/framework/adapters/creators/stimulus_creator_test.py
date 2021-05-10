@@ -39,7 +39,7 @@ from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfac
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.equations import TemporalApplicableEquation, FiniteSupportEquation
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

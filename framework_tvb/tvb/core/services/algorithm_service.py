@@ -49,7 +49,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX
 from tvb.core.services.exceptions import OperationException
 from tvb.core.utils import date2string
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class AlgorithmService(object):

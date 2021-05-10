@@ -40,7 +40,7 @@ from tvb.interfaces.rest.server.decorators.rest_decorators import check_permissi
 from tvb.interfaces.rest.server.facades.simulation_facade import SimulationFacade
 from tvb.interfaces.rest.server.request_helper import get_current_user
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class FireSimulationResource(RestResource):

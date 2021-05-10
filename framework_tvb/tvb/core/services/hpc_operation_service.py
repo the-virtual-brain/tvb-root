@@ -41,7 +41,7 @@ from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDI
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient, HPCJobStatus
 from tvb.core.services.exceptions import OperationException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 try:
     from pyunicore.client import Job, Transport

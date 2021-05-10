@@ -34,7 +34,7 @@ from flask_restplus import Resource
 from tvb.interfaces.rest.commons.exceptions import BadRequestException, InvalidInputException
 from tvb.interfaces.rest.commons.strings import RequestFileKey, Strings
 from tvb.interfaces.rest.server.decorators.rest_decorators import rest_jsonify, secured
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class SecuredResource(Resource):

@@ -37,7 +37,7 @@ Change for TVB version 1.4.1.
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import dao
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 PAGE_SIZE = 20
 

@@ -42,7 +42,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import initialize_storage, ProjectService
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
 from tvb.tests.framework.adapters.testadapter3 import *
 from tvb.tests.framework.core.base_testcase import BaseTestCase

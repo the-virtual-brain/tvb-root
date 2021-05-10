@@ -60,7 +60,7 @@ from tvb.core.utils import date2string
 from tvb.datatypes.sensors import SensorTypes
 from tvb.storage.h5.file.exceptions import MissingDataSetException, IncompatibleFileManagerException, \
     FileMigrationException, MissingMatlabOctavePathException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 LOGGER = get_logger(__name__)

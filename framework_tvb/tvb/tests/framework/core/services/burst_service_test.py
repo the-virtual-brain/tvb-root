@@ -43,7 +43,7 @@ from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.storage import dao
 from tvb.core.services.algorithm_service import AlgorithmService, GenericAttributes
 from tvb.core.services.project_service import ProjectService
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1

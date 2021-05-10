@@ -42,7 +42,7 @@ from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.datatypes.sensors import SensorTypes
 from tvb.datatypes.surfaces import EEG_CAP
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

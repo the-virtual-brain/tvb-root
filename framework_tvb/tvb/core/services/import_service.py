@@ -67,7 +67,7 @@ from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
 from tvb.storage.h5.file.exceptions import MissingDataSetException, FileStructureException, \
     IncompatibleFileManagerException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 OPERATION_XML = "Operation.xml"
 

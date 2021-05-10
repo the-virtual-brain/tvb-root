@@ -59,7 +59,7 @@ from tvb.core.services.exceptions import StructureException, ProjectServiceExcep
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
 from tvb.core.utils import format_timedelta, format_bytes_human
 from tvb.storage.h5.file.exceptions import FileStructureException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.core.utils import string2date, date2string
 
 

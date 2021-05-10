@@ -49,7 +49,7 @@ from tvb.core.entities.model.model_operation import OperationProcessIdentifier, 
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 

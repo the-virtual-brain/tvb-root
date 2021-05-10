@@ -34,7 +34,7 @@
 """
 
 from tvb.core.entities.storage import dao
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ABCRemover(object):

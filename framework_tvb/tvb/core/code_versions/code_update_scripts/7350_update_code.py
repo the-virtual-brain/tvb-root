@@ -41,7 +41,7 @@ from tvb.core.entities import model
 from tvb.core.entities.storage import SA_SESSIONMAKER, dao, transactional
 from tvb.core.utils import parse_json_parameters
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 

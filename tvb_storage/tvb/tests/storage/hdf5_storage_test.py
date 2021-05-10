@@ -42,7 +42,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.file.exceptions import MissingDataSetException, IncompatibleFileManagerException, \
     FileStructureException
 from tvb.storage.h5.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 # Some constants used by tests
 

@@ -65,7 +65,7 @@ from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.time_series import TimeSeries
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 RANGE_PARAMETER_1 = RANGE_PARAMETER_1
 RANGE_PARAMETER_2 = RANGE_PARAMETER_2

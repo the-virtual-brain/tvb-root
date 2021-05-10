@@ -35,7 +35,7 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 STARTUP_TIC = time.time()
 

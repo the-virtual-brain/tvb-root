@@ -46,7 +46,7 @@ from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
 from tvb.datatypes.sensors import SensorTypes
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 

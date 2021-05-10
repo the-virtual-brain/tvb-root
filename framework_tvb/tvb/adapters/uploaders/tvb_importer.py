@@ -47,7 +47,7 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.exceptions import ImportException
 from tvb.core.services.import_service import ImportService
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class TVBImporterModel(UploaderViewModel):

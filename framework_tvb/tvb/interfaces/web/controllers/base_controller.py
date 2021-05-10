@@ -50,7 +50,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.decorators import using_template
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 from tvb.interfaces.web.structure import WebStructure
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 # Constants used be the mechanism that deletes files on disk
 FILES_TO_DELETE_ATTR = "files_to_delete"

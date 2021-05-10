@@ -48,7 +48,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.project_service import ProjectService
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ExportManager(object):

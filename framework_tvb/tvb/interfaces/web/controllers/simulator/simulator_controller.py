@@ -60,7 +60,7 @@ from tvb.interfaces.web.controllers.simulator.simulator_fragment_rendering_rules
     SimulatorFragmentRenderingRules, POST_REQUEST
 from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import SimulatorWizzardURLs
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 @traced

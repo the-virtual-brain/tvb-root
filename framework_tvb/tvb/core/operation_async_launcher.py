@@ -51,7 +51,7 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.burst_service import BurstService
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[2], True)

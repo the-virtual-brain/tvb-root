@@ -38,7 +38,7 @@ When executed on a project already stored, an update in DB references might also
 import os
 import shutil
 
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 def _rewrite_img_meta(pth, op_id):

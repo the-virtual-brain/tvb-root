@@ -41,7 +41,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
 from tvb.storage.h5.file.exceptions import FileVersioningException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 def update_localconnectivity_metadata(folder, file_name):

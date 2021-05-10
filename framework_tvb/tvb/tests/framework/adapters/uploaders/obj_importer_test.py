@@ -37,7 +37,7 @@ import tvb_data.obj
 
 from tvb.core.neocom import h5
 from tvb.datatypes.surfaces import FACE
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

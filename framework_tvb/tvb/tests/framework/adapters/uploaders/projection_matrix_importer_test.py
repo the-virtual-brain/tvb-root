@@ -42,7 +42,7 @@ from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

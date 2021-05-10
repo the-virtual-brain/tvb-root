@@ -74,7 +74,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import hash_password
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.surfaces import CorticalSurface
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class TestFactory(object):

@@ -34,7 +34,7 @@
 import os
 import re
 import numpy
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ZipSurfaceParser(object):

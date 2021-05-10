@@ -59,7 +59,7 @@ from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_user, expose_json, check_admin
 from tvb.interfaces.web.controllers.decorators import handle_error, using_template, settings, jsonify
 from tvb.interfaces.web.entities.context_simulator import SimulatorContext
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 KEY_SERVER_VERSION = "versionInfo"
 KEY_CURRENT_VERSION_FULL = "currentVersionLongText"

@@ -82,7 +82,7 @@ if "TEST_INITIALIZATION_DONE" not in globals():
 
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.services.operation_service import OperationService
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.core.entities.storage import dao
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities.model.model_project import *

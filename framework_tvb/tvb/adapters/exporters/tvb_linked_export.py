@@ -39,7 +39,7 @@ from tvb.core.entities import load
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class TVBLinkedExporter(ABCExporter):

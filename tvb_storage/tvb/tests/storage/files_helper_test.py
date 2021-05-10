@@ -41,7 +41,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.file.exceptions import FileStructureException
 from tvb.storage.h5.file.files_helper import FilesHelper
 from tvb.storage.h5.file.xml_metadata_handlers import XMLReader
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.storage.dummy.dummy_project import DummyProject
 from tvb.tests.storage.dummy.dummy_storage_data_h5 import DummyStorageDataH5
 from tvb.tests.storage.storage_test import StorageTestCase

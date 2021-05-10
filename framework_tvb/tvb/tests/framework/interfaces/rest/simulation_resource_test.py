@@ -40,7 +40,7 @@ from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.server.resources.simulator.simulation_resource import FireSimulationResource
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 from werkzeug.datastructures import FileStorage

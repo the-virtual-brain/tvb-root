@@ -28,10 +28,8 @@
 #
 #
 """
-This module contains logic for meta-data handling.
-
-It handles read/write operations in XML files for retrieving/storing meta-data.
-More specific: it contains XML Reader/Writer Utility, for generic metadata dictionary.
+This module is an interface for the tvb storage module.
+All calls to methods from this module must be done through this class.
 
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
