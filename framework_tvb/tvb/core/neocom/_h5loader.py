@@ -31,7 +31,6 @@ from datetime import datetime
 import os
 import typing
 import uuid
-from uuid import UUID
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
@@ -43,14 +42,6 @@ from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.core.utils import string2date, date2string
 from tvb.storage.storage_interface import StorageInterface
-
-H5_EXTENSION = '.h5'
-H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
-
-
-def get_h5_filename(class_name, gid):
-    # type: (str, UUID) -> str
-    return H5_FILE_NAME_STRUCTURE.format(class_name, gid.hex)
 
 
 class Loader(object):
@@ -98,7 +89,7 @@ class DirLoader(object):
     def _locate(self, gid):
         # type: (uuid.UUID) -> str
         for fname in os.listdir(self.base_dir):
-            if fname.endswith(gid.hex + H5_EXTENSION):
+            if fname.endswith(gid.hex + StorageInterface.H5_EXTENSION):
                 fpath = os.path.join(self.base_dir, fname)
                 return fpath
         raise IOError('could not locate h5 with gid {}'.format(gid))
@@ -179,14 +170,14 @@ class DirLoader(object):
 
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = get_h5_filename(self._get_has_traits_classname(has_traits_class), gid)
+        fname = StorageInterface().get_h5_filename(self._get_has_traits_classname(has_traits_class), gid)
         return os.path.join(self.base_dir, fname)
 
     def find_file_for_has_traits_type(self, has_traits_class):
 
         filename_prefix = self._get_has_traits_classname(has_traits_class)
         for fname in os.listdir(self.base_dir):
-            if fname.startswith(filename_prefix) and fname.endswith(H5_EXTENSION):
+            if fname.startswith(filename_prefix) and fname.endswith(StorageInterface.H5_EXTENSION):
                 return fname
         raise IOError('could not locate h5 for {}'.format(has_traits_class.__name__))
 
@@ -210,15 +201,12 @@ class TVBLoader(object):
 
         gid = uuid.UUID(dt_index_instance.gid)
         h5_file_class = self.registry.get_h5file_for_index(dt_index_instance.__class__)
-        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
+        fname = self.storage_interface.get_h5_filename(h5_file_class.file_name_base(), gid)
 
         return os.path.join(operation_folder, fname)
 
-    def path_for(self, operation_dir, h5_file_class, gid, dt_class=None):
-        if isinstance(gid, str):
-            gid = uuid.UUID(gid)
-        fname = get_h5_filename(dt_class or h5_file_class.file_name_base(), gid)
-        return os.path.join(operation_dir, fname)
+    def path_for(self, op_id, h5_file_class, gid, project_name, dt_class):
+        return self.storage_interface.path_for(op_id, h5_file_class, gid, project_name, dt_class)
 
     def load_from_index(self, dt_index):
         # type: (DataType) -> HasTraits

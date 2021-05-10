@@ -149,7 +149,8 @@ class NodeCoherenceAdapter(ABCAdapter):
         """
         # -------------------- Prepare result entities -----------------------##
         coherence_spectrum_index = CoherenceSpectrumIndex()
-        dest_path = h5.path_for(self.storage_path, CoherenceSpectrumH5, coherence_spectrum_index.gid)
+        dest_path = self.path_for(self.operation_id, CoherenceSpectrumH5, coherence_spectrum_index.gid,
+                                  self.current_project_id)
         coherence_h5 = CoherenceSpectrumH5(dest_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##

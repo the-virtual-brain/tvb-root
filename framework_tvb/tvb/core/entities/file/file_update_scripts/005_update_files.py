@@ -46,6 +46,7 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexVie
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration
@@ -1266,8 +1267,9 @@ def update(input_file, burst_match_dict, op_id):
                             alg.configure()
                             simulation_history = SimulationHistory()
                             simulation_history.populate_from(alg)
-                            history_index = h5.store_complete(simulation_history, folder,
-                                                              generic_attributes=vm.generic_attributes)
+                            history_index = ABCAdapter.store_complete(simulation_history, op_id,
+                                                                      operation.fk_launched_in,
+                                                                      generic_attributes=vm.generic_attributes)
                             history_index.fk_from_operation = op_id
                             history_index.fk_parent_burst = burst_config.gid
                             history_index.disk_size = StorageInterface.compute_size_on_disk(

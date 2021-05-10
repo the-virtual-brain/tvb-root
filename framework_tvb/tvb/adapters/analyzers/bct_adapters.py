@@ -147,21 +147,21 @@ class BaseBCT(ABCAdapter):
         measure.title = title
         measure.label_x = label_x
         measure.label_y = label_y
-        return h5.store_complete(measure, self.storage_path)
+        return self.store_complete(measure, self.operation_id, self.current_project_id)
 
     def build_float_value_wrapper(self, result, key, title=""):
         value = ValueWrapper()
         value.data_value = str(float(result[key]))
         value.data_type = 'float'
         value.data_name = title
-        return h5.store_complete(value, self.storage_path)
+        return self.store_complete(value, self.operation_id, self.current_project_id)
 
     def build_int_value_wrapper(self, result, key, title=""):
         value = ValueWrapper()
         value.data_value = str(int(result[key]))
         value.data_type = 'int'
         value.data_name = title
-        return h5.store_complete(value, self.storage_path)
+        return self.store_complete(value, self.operation_id, self.current_project_id)
 
     @abstractmethod
     def launch(self, view_model):

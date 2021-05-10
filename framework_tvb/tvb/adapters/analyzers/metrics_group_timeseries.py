@@ -195,6 +195,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
                 metrics_results[algorithm_name] = unstored_result
 
         dt_metric = DatatypeMeasure(analyzed_datatype=dt_timeseries, metrics=metrics_results)
-        result = h5.store_complete(dt_metric, self._get_output_path())
+
+        result = self.store_complete(dt_metric, self.operation_id, self.current_project_id)
 
         return result

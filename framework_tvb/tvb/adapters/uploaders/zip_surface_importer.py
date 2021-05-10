@@ -188,4 +188,4 @@ class ZIPSurfaceImporter(ABCUploader):
         surface.configure()
         self.logger.debug("Surface ready to be stored")
 
-        return h5.store_complete(surface, self.storage_path)
+        return self.store_complete(surface, self.operation_id, self.current_project_id)

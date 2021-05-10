@@ -67,7 +67,7 @@ class TestStimulusCreator(TransactionalTestCase):
         """
         self.storage_interface.remove_project_structure(self.test_project.name)
 
-    def test_create_stimulus_region(self):
+    def test_create_stimulus_region(self, operation_factory):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
         region_stimulus_creator = RegionStimulusCreator()
         region_stimulus_creator.storage_path = self.storage_interface.get_project_folder(self.test_project.name, "42")
@@ -79,6 +79,8 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 2.0
 
+        operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        region_stimulus_creator.extract_operation_data(operation)
         region_stimulus_index = region_stimulus_creator.launch(view_model)
 
         assert region_stimulus_index.temporal_equation == 'TemporalApplicableEquation'
@@ -104,7 +106,7 @@ class TestStimulusCreator(TransactionalTestCase):
         assert json.loads(region_stimulus_index.temporal_parameters) == {'a': 1.0, 'b': 2.0}
         assert region_stimulus_index.fk_connectivity_gid == self.connectivity.gid
 
-    def test_create_stimulus_surface(self):
+    def test_create_stimulus_surface(self, operation_factory):
         surface_stimulus_creator = SurfaceStimulusCreator()
         surface_stimulus_creator.storage_path = self.storage_interface.get_project_folder(self.test_project.name, "42")
 
@@ -119,6 +121,8 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 0.0
 
+        operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        surface_stimulus_creator.extract_operation_data(operation)
         surface_stimulus_index = surface_stimulus_creator.launch(view_model)
 
         assert surface_stimulus_index.spatial_equation == 'FiniteSupportEquation'

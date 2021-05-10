@@ -205,4 +205,4 @@ class ZIPConnectivityImporter(ABCUploader):
             result.hemispheres = hemisphere_vector
 
         result.configure()
-        return h5.store_complete(result, self.storage_path)
+        return self.store_complete(result, self.operation_id, self.current_project_id)

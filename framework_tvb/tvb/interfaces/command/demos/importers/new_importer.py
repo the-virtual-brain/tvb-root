@@ -91,7 +91,7 @@ class FooDataImporter(ABCUploader):
         ts_index = TimeSeriesIndex()
         ts_index.fill_from_has_traits(ts)
 
-        ts_h5_path = h5.path_for(self.storage_path, TimeSeriesH5, ts_index.gid)
+        ts_h5_path = self.path_for(self.operation_id, TimeSeriesH5, ts_index.gid, self.current_project_id)
 
         with TimeSeriesH5(ts_h5_path) as ts_h5:
             ts_h5.store(ts, scalars_only=True)

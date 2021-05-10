@@ -219,7 +219,8 @@ class BalloonModelAdapter(ABCAdapter):
         time_line = input_time_series_h5.read_time_page(0, self.input_shape[0])
 
         bold_signal_index = TimeSeriesRegionIndex()
-        bold_signal_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, bold_signal_index.gid)
+        bold_signal_h5_path = self.path_for(self.operation_id, TimeSeriesRegionH5, bold_signal_index.gid,
+                                            self.current_project_id)
         bold_signal_h5 = TimeSeriesRegionH5(bold_signal_h5_path)
         bold_signal_h5.gid.store(uuid.UUID(bold_signal_index.gid))
         self._fill_result_h5(bold_signal_h5, input_time_series_h5)

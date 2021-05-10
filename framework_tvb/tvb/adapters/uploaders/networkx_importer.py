@@ -136,7 +136,7 @@ class NetworkxConnectivityImporter(ABCUploader):
             parser = NetworkxParser(view_model)
             net = pandas.read_pickle(view_model.data_file)
             connectivity = parser.parse(net)
-            return h5.store_complete(connectivity, self.storage_path)
+            return self.store_complete(connectivity, self.operation_id, self.current_project_id)
         except ParseException as excep:
             self.log.exception("Could not process Connectivity")
             raise LaunchException(excep)

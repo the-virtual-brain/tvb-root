@@ -228,9 +228,10 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         self.log.debug("ComplexCoherenceSpectrum epoch_length is %s" % (str(ht_result.epoch_length)))
         self.log.debug("ComplexCoherenceSpectrum windowing_function is %s" % (str(ht_result.windowing_function)))
 
-        complex_coherence_index = h5.store_complete(ht_result, self.storage_path)
+        complex_coherence_index = self.store_complete(ht_result, self.operation_id, self.current_project_id)
 
-        result_path = h5.path_for(self.storage_path, ComplexCoherenceSpectrumH5, complex_coherence_index.gid)
+        result_path = self.path_for(self.operation_id, ComplexCoherenceSpectrumH5, complex_coherence_index.gid,
+                                    self.current_project_id)
         ica_h5 = ComplexCoherenceSpectrumH5(path=result_path)
 
         self.fill_index_from_h5(complex_coherence_index, ica_h5)

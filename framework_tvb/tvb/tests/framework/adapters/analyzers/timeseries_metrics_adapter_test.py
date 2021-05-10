@@ -65,7 +65,7 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_adapter_launch(self, connectivity_factory, region_mapping_factory,
-                            time_series_region_index_factory):
+                            time_series_region_index_factory, operation_from_existing_op_factory):
         """
         Test that the adapters launches and successfully generates a datatype measure entry.
         """
@@ -74,12 +74,15 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         region_mapping = region_mapping_factory()
         time_series_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
+        metric_op, _ = operation_from_existing_op_factory(time_series_index.fk_from_operation)
+
         ts_metric_adapter = TimeseriesMetricsAdapter()
         ts_metric_adapter.storage_path = StorageInterface().get_project_folder(self.test_project.name, "42")
         view_model = TimeseriesMetricsAdapterModel()
         view_model.time_series = time_series_index.gid
 
         ts_metric_adapter.configure(view_model)
+        ts_metric_adapter.extract_operation_data(metric_op)
         resulted_metric = ts_metric_adapter.launch(view_model)
 
         assert isinstance(resulted_metric, DatatypeMeasureIndex), "Result should be a datatype measure."

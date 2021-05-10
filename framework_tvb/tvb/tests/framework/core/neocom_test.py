@@ -29,6 +29,7 @@
 #
 import os
 import numpy
+from tvb.core.adapters.abcadapter import ABCAdapter
 
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel, EEGViewModel, HeunStochasticViewModel, \
     TemporalAverageViewModel
@@ -100,8 +101,7 @@ def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_inde
     proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
     op = operation_factory()
-    storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
-    prj_db_db = h5.store_complete(proj, storage_path)
+    prj_db_db = ABCAdapter.store_complete(proj, op.id, op.project.id)
     prj_db_db.fk_from_operation = op.id
     dao.store_entity(prj_db_db)
 
@@ -149,8 +149,7 @@ def test_gather_view_model_and_datatype_references_multiple_monitors(connectivit
     proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
     op = operation_factory()
-    storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
-    prj_db = h5.store_complete(proj, storage_path)
+    prj_db = ABCAdapter.store_complete(proj, op.id, op.project.id)
     prj_db.fk_from_operation = op.id
     dao.store_entity(prj_db)
 

@@ -138,7 +138,7 @@ class ObjSurfaceImporter(ABCUploader):
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
 
-            return h5.store_complete(surface, self.storage_path)
+            return self.store_complete(surface, self.operation_id, self.current_project_id)
 
         except ParseException as excep:
             self.log.exception(excep)

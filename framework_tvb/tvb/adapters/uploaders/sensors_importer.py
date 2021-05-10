@@ -142,4 +142,4 @@ class SensorsImporter(ABCUploader):
         sensors_inst.configure()
         self.logger.debug("Sensors instance ready to be stored")
 
-        return h5.store_complete(sensors_inst, self.storage_path)
+        return self.store_complete(sensors_inst, self.operation_id, self.current_project_id)

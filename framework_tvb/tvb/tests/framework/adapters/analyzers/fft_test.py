@@ -48,7 +48,7 @@ class TestFFT(TransactionalTestCase):
         around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
         assert numpy.abs(around_peak).sum() < 0.5 * 20
 
-    def test_fourier_adapter(self, tmpdir, time_series_index_factory):
+    def test_fourier_adapter(self, tmpdir, time_series_index_factory, operation_from_existing_op_factory):
         # make file stored and indexed time series
         ts_db = time_series_index_factory()
 
@@ -65,6 +65,8 @@ class TestFFT(TransactionalTestCase):
         # weather it is a in memory HasTraits or a H5File to access it.
         # Here we consider this last option.
 
+        fourier_operation, _ = operation_from_existing_op_factory(ts_db.fk_from_operation)
+
         adapter = FourierAdapter()
         adapter.storage_path = str(tmpdir)
         view_model = adapter.get_view_model_class()()
@@ -73,6 +75,7 @@ class TestFFT(TransactionalTestCase):
         adapter.configure(view_model)
         diskq = adapter.get_required_disk_size(view_model)
         memq = adapter.get_required_memory_size(view_model)
+        adapter.extract_operation_data(fourier_operation)
         spectra_idx = adapter.launch(view_model)
 
         assert spectra_idx.fk_source_gid == ts_db.gid

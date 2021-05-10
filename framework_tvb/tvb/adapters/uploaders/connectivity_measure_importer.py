@@ -125,7 +125,7 @@ class ConnectivityMeasureImporter(ABCUploader):
                 measure.connectivity = connectivity
                 measure.title = "Measure %d for Connectivity with %d nodes." % ((i + 1), node_count)
 
-                cm_idx = h5.store_complete(measure, self.storage_path)
+                cm_idx = self.store_complete(measure, self.operation_id, self.current_project_id)
                 measures.append(cm_idx)
             return measures
 

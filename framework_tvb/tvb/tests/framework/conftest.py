@@ -211,6 +211,18 @@ def operation_factory(user_factory, project_factory, connectivity_factory):
 
 
 @pytest.fixture()
+def operation_from_existing_op_factory(operation_factory):
+    def build(existing_op_id):
+        op = dao.get_operation_by_id(existing_op_id)
+        project = dao.get_project_by_id(op.fk_launched_in)
+        user = dao.get_user_by_id(op.fk_launched_by)
+
+        return operation_factory(test_user=user, test_project=project), project.id
+
+    return build
+
+
+@pytest.fixture()
 def connectivity_factory():
     def build(nr_regions=4):
         return Connectivity(
@@ -239,8 +251,7 @@ def connectivity_index_factory(connectivity_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
-        conn_db = h5.store_complete(conn, storage_path)
+        conn_db = ABCAdapter.store_complete(conn, op.id, op.project.id)
         conn_db.fk_from_operation = op.id
         return dao.store_entity(conn_db)
 
@@ -291,8 +302,7 @@ def surface_index_factory(surface_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
-        surface_db = h5.store_complete(surface, storage_path)
+        surface_db = ABCAdapter.store_complete(surface, op.id, op.project.id)
         surface_db.fk_from_operation = op.id
         return dao.store_entity(surface_db), surface
 
@@ -322,20 +332,19 @@ def region_mapping_index_factory(region_mapping_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
         if not surface_gid:
-            surface_db = h5.store_complete(region_mapping.surface, storage_path)
+            surface_db = ABCAdapter.store_complete(region_mapping.surface, op.id, op.project.id)
             surface_db.fk_from_operation = op.id
             dao.store_entity(surface_db)
         else:
             region_mapping.surface.gid = uuid.UUID(surface_gid)
         if not conn_gid:
-            conn_db = h5.store_complete(region_mapping.connectivity, storage_path)
+            conn_db = ABCAdapter.store_complete(region_mapping.connectivity, op.id, op.project.id)
             conn_db.fk_from_operation = op.id
             dao.store_entity(conn_db)
         else:
             region_mapping.connectivity.gid = uuid.UUID(conn_gid)
-        rm_db = h5.store_complete(region_mapping, storage_path)
+        rm_db = ABCAdapter.store_complete(region_mapping, op.id, op.project.id)
         rm_db.fk_from_operation = op.id
         return dao.store_entity(rm_db)
 
@@ -375,8 +384,7 @@ def sensors_index_factory(sensors_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
-        sensors_db = h5.store_complete(sensors, storage_path)
+        sensors_db = ABCAdapter.store_complete(sensors, op.id, op.project.id)
         sensors_db.fk_from_operation = op.id
         return dao.store_entity(sensors_db), sensors
 
@@ -664,12 +672,11 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
-        surface_db = h5.store_complete(surface, storage_path)
+        surface_db = ABCAdapter.store_complete(surface, op.id, op.project.id)
         surface_db.fk_from_operation = op.id
         dao.store_entity(surface_db)
 
-        lconn_db = h5.store_complete(lconn, storage_path)
+        lconn_db = ABCAdapter.store_complete(lconn, op.id, op.project.id)
         lconn_db.fk_from_operation = op.id
         return dao.store_entity(lconn_db), lconn
 

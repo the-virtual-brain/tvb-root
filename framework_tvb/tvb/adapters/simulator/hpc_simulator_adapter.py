@@ -163,9 +163,6 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
         trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid)
         return trait
 
-    def _get_output_path(self):
-        return self.storage_path
-
     def extract_operation_data(self, operation=None):
         """
         Do nothing for HPC run.

@@ -436,9 +436,6 @@ class ABCAdapter(object):
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
 
-    def _get_output_path(self):
-        return self.storage_path
-
     def load_entity_by_gid(self, data_gid):
         # type: (typing.Union[uuid.UUID, str]) -> DataType
         """
@@ -567,3 +564,13 @@ class ABCAdapter(object):
         analyzer_index.array_is_finite = metadata.is_finite
         analyzer_index.shape = json.dumps(analyzer_h5.array_data.shape)
         analyzer_index.ndim = len(analyzer_h5.array_data.shape)
+
+    @staticmethod
+    def path_for(op_id, h5_file_class, gid, project_id, dt_class=None):
+        project = dao.get_project_by_id(project_id)
+        return h5.path_for(op_id, h5_file_class, gid, project.name, dt_class)
+
+    @staticmethod
+    def store_complete(datatype, op_id, project_id, generic_attributes=GenericAttributes()):
+        project = dao.get_project_by_id(project_id)
+        return h5.store_complete(datatype, op_id, project.name, generic_attributes)

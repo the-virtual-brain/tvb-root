@@ -44,6 +44,7 @@ from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSe
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.projections import *
+from tvb.datatypes.projections import ProjectionMatrix
 from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.surfaces import Surface
 
@@ -176,4 +177,4 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,
                                              projection_data=projection_data)
-        return h5.store_complete(projection_matrix, self.storage_path)
+        return self.store_complete(projection_matrix, self.operation_id, self.current_project_id)

@@ -151,7 +151,8 @@ class CrossCorrelateAdapter(ABCAdapter):
         """
         # --------- Prepare CrossCorrelationIndex and CrossCorrelationH5 objects for result ------------##
         cross_corr_index = CrossCorrelationIndex()
-        cross_corr_h5_path = h5.path_for(self.storage_path, CrossCorrelationH5, cross_corr_index.gid)
+        cross_corr_h5_path = self.path_for(self.operation_id, CrossCorrelationH5, cross_corr_index.gid,
+                                           self.current_project_id)
         cross_corr_h5 = CrossCorrelationH5(cross_corr_h5_path)
 
         node_slice = [slice(self.input_shape[0]), None, slice(self.input_shape[2]), slice(self.input_shape[3])]
@@ -348,7 +349,7 @@ class PearsonCorrelationCoefficientAdapter(ABCAdapter):
         corr_coef.source = TimeSeries(gid=view_model.time_series)
         corr_coef.labels_ordering = labels_ordering
 
-        return h5.store_complete(corr_coef, self.storage_path)
+        return self.store_complete(corr_coef, self.operation_id, self.current_project_id)
 
     def _compute_correlation_coefficients(self, ts_h5, t_start, t_end):
         """

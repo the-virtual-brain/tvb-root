@@ -40,6 +40,7 @@ from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader, ViewModelLoa
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import ViewModel
+from tvb.storage.h5.storage_interface import StorageInterface
 
 REGISTRY = Registry()
 
@@ -50,10 +51,10 @@ def path_for_stored_index(dt_index_instance):
     return loader.path_for_stored_index(dt_index_instance)
 
 
-def path_for(base_dir, h5_file_class, gid, dt_class=None):
-    # type: (str, typing.Type[H5File], object, str) -> str
+def path_for(op_id, h5_file_class, gid, project_name, dt_class=None):
+    # type: (int, typing.Type[H5File], object, str, str) -> str
     loader = TVBLoader(REGISTRY)
-    return loader.path_for(base_dir, h5_file_class, gid, dt_class)
+    return loader.path_for(op_id, h5_file_class, gid, project_name, dt_class)
 
 
 def h5_file_for_index(dt_index_instance):
@@ -119,8 +120,8 @@ def load_with_links(source_path):
     return loader.load_with_links(source_path)
 
 
-def store_complete(datatype, base_dir, generic_attributes=GenericAttributes()):
-    # type: (HasTraits, str, GenericAttributes) -> DataType
+def store_complete(datatype, op_id, project_name, generic_attributes=GenericAttributes()):
+    # type: (HasTraits, int, str, GenericAttributes) -> DataType
     """
     Stores the given HasTraits instance in a h5 file, and fill the Index entity for later storage in DB
     """
@@ -130,7 +131,7 @@ def store_complete(datatype, base_dir, generic_attributes=GenericAttributes()):
     index_inst.fill_from_generic_attributes(generic_attributes)
 
     h5_class = REGISTRY.get_h5file_for_datatype(datatype.__class__)
-    storage_path = path_for(base_dir, h5_class, datatype.gid)
+    storage_path = path_for(op_id, h5_class, datatype.gid, project_name)
     with h5_class(storage_path) as f:
         f.store(datatype)
         # Store empty Generic Attributes, in case the file is saved no through ABCAdapter it can still be used

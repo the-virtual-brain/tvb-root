@@ -191,7 +191,7 @@ class FourierAdapter(ABCAdapter):
 
         # --------------------- Prepare result entities ----------------------
         fft_index = FourierSpectrumIndex()
-        dest_path = h5.path_for(self.storage_path, FourierSpectrumH5, fft_index.gid)
+        dest_path = self.path_for(self.operation_id, FourierSpectrumH5, fft_index.gid, self.current_project_id)
         spectra_file = FourierSpectrumH5(dest_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------

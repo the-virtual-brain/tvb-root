@@ -174,4 +174,4 @@ class RegionMappingImporter(ABCUploader):
         connectivity_ht = h5.load_from_index(conn_idx)
 
         region_mapping = RegionMapping(surface=surface_ht, connectivity=connectivity_ht, array_data=array_data)
-        return h5.store_complete(region_mapping, self.storage_path)
+        return self.store_complete(region_mapping, self.operation_id, self.current_project_id)

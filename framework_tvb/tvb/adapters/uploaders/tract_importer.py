@@ -41,7 +41,6 @@ from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.storage import transactional
 from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import path_for
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
@@ -211,7 +210,7 @@ class TrackvizTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        with TractsH5(path_for(self.storage_path, TractsH5, datatype.gid)) as tracts_h5:
+        with TractsH5(self.path_for(self.operation_id, TractsH5, datatype.gid, self.current_project_id)) as tracts_h5:
             # we process tracts in bigger chunks to optimize disk write costs
             for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
                 tract_bundle = [tr[0] for tr in tract_bundle]
@@ -252,7 +251,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
     def launch(self, view_model):
         # type: (TrackImporterModel) -> [TractsIndex]
         datatype = self._base_before_launch(view_model.data_file, view_model.region_volume)
-        tracts_h5 = TractsH5(path_for(self.storage_path, TractsH5, datatype.gid))
+        tracts_h5 = TractsH5(self.path_for(self.operation_id, TractsH5, datatype.gid, self.current_project_id))
 
         tract_start_indices = [0]
         tract_region = []

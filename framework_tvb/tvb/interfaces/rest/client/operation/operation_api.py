@@ -58,6 +58,7 @@ class OperationApi(MainApi):
 
     @handle_response
     def launch_operation(self, project_gid, algorithm_class, view_model, temp_folder):
+        # TODO: Update this path for as well, it will not work the way it is now
         h5_file_path = h5.path_for(temp_folder, ViewModelH5, view_model.gid, type(view_model).__name__)
         h5.store_view_model(view_model, temp_folder)
 

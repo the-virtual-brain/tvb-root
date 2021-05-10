@@ -102,7 +102,7 @@ class BRCOImporter(ABCUploader):
             result_ht.set_annotations(annotations)
             result_ht.connectivity = conn
 
-            result = h5.store_complete(result_ht, self.storage_path)
+            result = self.store_complete(result_ht, self.operation_id, self.current_project_id)
             return result
         except Exception as excep:
             self.log.exception("Could not process Connectivity Annotations")

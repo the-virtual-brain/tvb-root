@@ -296,7 +296,7 @@ class SimulatorAdapter(ABCAdapter):
                 ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)
 
             ts_h5_class = h5.REGISTRY.get_h5file_for_datatype(type(ts))
-            ts_h5_path = h5.path_for(self._get_output_path(), ts_h5_class, ts.gid)
+            ts_h5_path = self.path_for(self.operation_id, ts_h5_class, ts.gid, self.current_project_id)
             self.log.info("Generating Timeseries at: {}".format(ts_h5_path))
             ts_h5 = ts_h5_class(ts_h5_path)
             ts_h5.store(ts, scalars_only=True, store_references=False)
@@ -326,7 +326,8 @@ class SimulatorAdapter(ABCAdapter):
             simulation_history = SimulationHistory()
             simulation_history.populate_from(self.algorithm)
             self.generic_attributes.visible = False
-            history_index = h5.store_complete(simulation_history, self._get_output_path(), self.generic_attributes)
+            history_index = self.store_complete(simulation_history, self.operation_id, self.current_project_id,
+                                                self.generic_attributes)
             self.generic_attributes.visible = True
             history_index.fixed_generic_attributes = True
             results.append(history_index)

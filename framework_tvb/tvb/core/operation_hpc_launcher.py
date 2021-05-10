@@ -53,7 +53,7 @@ if __name__ == '__main__':
 
 
 def _encrypt_results(adapter_instance, storage_interface, dir_gid):
-    output_plain_dir = adapter_instance._get_output_path()
+    output_plain_dir = adapter_instance.storage_path
     output_plain_files = os.listdir(output_plain_dir)
     output_plain_files = [os.path.join(output_plain_dir, plain_file) for plain_file in output_plain_files]
     log.info("Encrypt files: {}".format(output_plain_files))
