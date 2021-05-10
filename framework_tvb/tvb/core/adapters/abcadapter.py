@@ -304,7 +304,6 @@ class ABCAdapter(object):
 
     def extract_operation_data(self, operation):
         operation = dao.get_operation_by_id(operation.id)
-        project = dao.get_project_by_id(operation.fk_launched_in)
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by

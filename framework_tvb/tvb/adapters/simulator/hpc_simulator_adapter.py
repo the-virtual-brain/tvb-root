@@ -35,6 +35,7 @@
 import os
 import uuid
 import typing
+
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel, \
     TimeseriesMetricsAdapter
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
@@ -159,7 +160,7 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
         """
         Load a generic HasTraits instance, specified by GID.
         """
-        trait, _ = h5.load_with_links_from_dir(self._get_output_path(), data_gid)
+        trait, _ = h5.load_with_links_from_dir(self.get_storage_path(), data_gid)
         return trait
 
     def extract_operation_data(self, operation=None):

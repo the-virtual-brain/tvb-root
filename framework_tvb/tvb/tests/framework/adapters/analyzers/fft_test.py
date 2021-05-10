@@ -48,7 +48,7 @@ class TestFFT(TransactionalTestCase):
         around_peak = spectra.array_data[peak - 10: peak + 10, 0, 0, 0].real
         assert numpy.abs(around_peak).sum() < 0.5 * 20
 
-    def test_fourier_adapter(self, tmpdir, time_series_index_factory, operation_from_existing_op_factory):
+    def test_fourier_adapter(self, time_series_index_factory, operation_from_existing_op_factory):
         # make file stored and indexed time series
         ts_db = time_series_index_factory()
 
@@ -68,7 +68,6 @@ class TestFFT(TransactionalTestCase):
         fourier_operation, _ = operation_from_existing_op_factory(ts_db.fk_from_operation)
 
         adapter = FourierAdapter()
-        adapter.storage_path = str(tmpdir)
         view_model = adapter.get_view_model_class()()
         view_model.time_series = ts_db.gid
         view_model.segment_length = 400

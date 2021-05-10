@@ -70,7 +70,6 @@ class TestStimulusCreator(TransactionalTestCase):
     def test_create_stimulus_region(self, operation_factory):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)
         region_stimulus_creator = RegionStimulusCreator()
-        region_stimulus_creator.storage_path = self.storage_interface.get_project_folder(self.test_project.name, "42")
 
         view_model = region_stimulus_creator.get_view_model_class()()
         view_model.connectivity = self.connectivity.gid
@@ -108,7 +107,6 @@ class TestStimulusCreator(TransactionalTestCase):
 
     def test_create_stimulus_surface(self, operation_factory):
         surface_stimulus_creator = SurfaceStimulusCreator()
-        surface_stimulus_creator.storage_path = self.storage_interface.get_project_folder(self.test_project.name, "42")
 
         view_model = surface_stimulus_creator.get_view_model_class()()
         view_model.surface = self.surface.gid

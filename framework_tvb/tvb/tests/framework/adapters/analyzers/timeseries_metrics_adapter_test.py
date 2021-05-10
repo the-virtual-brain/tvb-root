@@ -77,7 +77,6 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         metric_op, _ = operation_from_existing_op_factory(time_series_index.fk_from_operation)
 
         ts_metric_adapter = TimeseriesMetricsAdapter()
-        ts_metric_adapter.storage_path = StorageInterface().get_project_folder(self.test_project.name, "42")
         view_model = TimeseriesMetricsAdapterModel()
         view_model.time_series = time_series_index.gid
 
