@@ -146,8 +146,7 @@ class AlgorithmService(object):
                 file_name = None
                 if hasattr(field, 'file') and field.file is not None:
                     project = dao.get_project_by_id(project_id)
-                    temporary_storage = self.storage_interface.get_project_folder(
-                        project.name, self.storage_interface.TEMP_FOLDER)
+                    temporary_storage = self.storage_interface.get_temp_folder(project.name)
                     try:
                         uq_name = date2string(datetime.now(), True) + '_' + str(0)
                         file_name = TEMPORARY_PREFIX + uq_name + '_' + field.filename

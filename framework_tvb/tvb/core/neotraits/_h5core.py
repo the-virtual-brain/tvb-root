@@ -263,11 +263,11 @@ class H5File(object):
         self.storage_interface.set_metadata(self.storage_folder, self.file_name, {key: value})
 
     @staticmethod
-    def remove_metadata_param(file_path, param, dataset_name='', where=StorageInterface.ROOT_NODE_PATH):
+    def remove_metadata_param(file_path, param):
         base_dir, fname = os.path.split(file_path)
         storage_interface = StorageInterface()
-        if param in storage_interface.get_metadata(base_dir, fname, dataset_name=dataset_name, where=where):
-            storage_interface.remove_metadata(base_dir, fname, param, dataset_name=dataset_name, where=where)
+        if param in storage_interface.get_metadata(base_dir, fname):
+            storage_interface.remove_metadata(base_dir, fname, param)
 
     @staticmethod
     def h5_class_from_file(path):

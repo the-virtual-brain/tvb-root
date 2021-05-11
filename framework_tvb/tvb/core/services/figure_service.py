@@ -41,6 +41,7 @@ from PIL import Image
 import base64
 import xml.dom.minidom
 from io import BytesIO
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
 from tvb.core.entities.model.model_operation import ResultFigure
@@ -138,7 +139,7 @@ class FigureService:
         figure = dao.load_figure(entity.id)
         # Write image meta data to disk
         _, meta_data = figure.to_dict()
-        self.storage_interface.write_image_metadata(figure, meta_data, StorageInterface.IMAGES_FOLDER)
+        self.storage_interface.write_image_metadata(figure, meta_data)
         self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(project.name))
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
@@ -175,7 +176,7 @@ class FigureService:
         figure = dao.load_figure(figure_id)
         # Store figure meta data in an XML attached to the image.
         _, meta_data = figure.to_dict()
-        self.storage_interface.write_image_metadata(figure, meta_data, StorageInterface.IMAGES_FOLDER)
+        self.storage_interface.write_image_metadata(figure, meta_data)
         self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(figure.project.name))
 
     def remove_result_figure(self, figure_id):
@@ -189,7 +190,7 @@ class FigureService:
         path2figure = os.path.join(figures_folder, figure.file_path)
         if os.path.exists(path2figure):
             os.remove(path2figure)
-            self.storage_interface.remove_image_metadata(figure, StorageInterface.IMAGES_FOLDER)
+            self.storage_interface.remove_image_metadata(figure)
             self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(figure.project.name))
         # Remove figure reference from DB.
         result = dao.remove_entity(ResultFigure, figure_id)

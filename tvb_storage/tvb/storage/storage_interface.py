@@ -78,6 +78,9 @@ class StorageInterface:
     def get_project_folder(self, project_name, *sub_folders):
         return self.files_helper.get_project_folder(project_name, *sub_folders)
 
+    def get_temp_folder(self, project_name):
+        return self.files_helper.get_project_folder(project_name, self.TEMP_FOLDER)
+
     @staticmethod
     def get_project_folder_from_h5(h5_file):
         return FilesHelper.get_project_folder_from_h5(h5_file)
@@ -115,11 +118,11 @@ class StorageInterface:
     def get_images_folder(self, project_name):
         return self.files_helper.get_images_folder(project_name, self.IMAGES_FOLDER)
 
-    def write_image_metadata(self, figure, meta_entity, images_folder):
-        self.files_helper.write_image_metadata(figure, meta_entity, images_folder)
+    def write_image_metadata(self, figure, meta_entity):
+        self.files_helper.write_image_metadata(figure, meta_entity, self.IMAGES_FOLDER)
 
-    def remove_image_metadata(self, figure, images_folder):
-        self.files_helper.remove_image_metadata(figure, images_folder)
+    def remove_image_metadata(self, figure):
+        self.files_helper.remove_image_metadata(figure, self.IMAGES_FOLDER)
 
     def get_allen_mouse_cache_folder(self, project_name):
         return self.get_allen_mouse_cache_folder(project_name)
@@ -184,14 +187,13 @@ class StorageInterface:
         self.storage_manager = HDF5StorageManager(storage_folder, file_name)
         self.storage_manager.store_data(dataset_name, data_list, where)
 
-    def append_data(self, storage_folder, file_name, dataset_name, data_list, grow_dimension=1, close_file=True,
-                    where=ROOT_NODE_PATH):
+    def append_data(self, storage_folder, file_name, dataset_name, data_list, grow_dimension=1, close_file=True):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name)
-        self.storage_manager.append_data(dataset_name, data_list, grow_dimension, close_file, where)
+        self.storage_manager.append_data(dataset_name, data_list, grow_dimension, close_file, self.ROOT_NODE_PATH)
 
-    def remove_data(self, storage_folder, file_name, dataset_name, where=ROOT_NODE_PATH):
+    def remove_data(self, storage_folder, file_name, dataset_name):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name)
-        self.storage_manager.remove_data(dataset_name, where)
+        self.storage_manager.remove_data(dataset_name, self.ROOT_NODE_PATH)
 
     def get_data(self, storage_folder, file_name, dataset_name, data_slice=None,
                  where=ROOT_NODE_PATH, ignore_errors=False,
@@ -199,9 +201,9 @@ class StorageInterface:
         self.storage_manager = HDF5StorageManager(storage_folder, file_name)
         return self.storage_manager.get_data(dataset_name, data_slice, where, ignore_errors, close_file)
 
-    def get_data_shape(self, storage_folder, file_name, dataset_name, where=ROOT_NODE_PATH):
+    def get_data_shape(self, storage_folder, file_name, dataset_name):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name)
-        return self.storage_manager.get_data_shape(dataset_name, where)
+        return self.storage_manager.get_data_shape(dataset_name, self.ROOT_NODE_PATH)
 
     def set_metadata(self, storage_folder, file_name, meta_dictionary, dataset_name='', tvb_specific_metadata=True,
                      where=ROOT_NODE_PATH):
@@ -212,18 +214,18 @@ class StorageInterface:
     def serialize_bool(value):
         return HDF5StorageManager.serialize_bool(value)
 
+    def get_metadata(self, storage_folder, file_name, dataset_name=''):
+        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+        return self.storage_manager.get_metadata(dataset_name, self.ROOT_NODE_PATH)
+
     def remove_metadata(self, storage_folder, file_name, meta_key, dataset_name='',
-                        tvb_specific_metadata=True, where=ROOT_NODE_PATH):
+                        tvb_specific_metadata=True):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name)
-        return self.storage_manager.remove_metadata(meta_key, dataset_name, tvb_specific_metadata, where)
+        return self.storage_manager.remove_metadata(meta_key, dataset_name, tvb_specific_metadata, self.ROOT_NODE_PATH)
 
-    def get_metadata(self, storage_folder, file_name, dataset_name='', where=ROOT_NODE_PATH):
+    def get_file_data_version(self, storage_folder, file_name, data_version, dataset_name=''):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name)
-        return self.storage_manager.get_metadata(dataset_name, where)
-
-    def get_file_data_version(self, storage_folder, file_name, data_version, dataset_name='', where=ROOT_NODE_PATH):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
-        return self.storage_manager.get_file_data_version(data_version, dataset_name, where)
+        return self.storage_manager.get_file_data_version(data_version, dataset_name, self.ROOT_NODE_PATH)
 
     def close_file(self, storage_folder, file_name):
         self.storage_manager = HDF5StorageManager(storage_folder, file_name)
@@ -335,5 +337,12 @@ class StorageInterface:
     def join(self):
         self.folders_queue_consumer.join()
 
+    # Generic methods start here
+
+    def ends_with_tvb_file_extension(self, file):
+        return file.endswith(self.TVB_FILE_EXTENSION)
+
+    def ends_with_tvb_storage_file_extension(self, file):
+        return file.endswith(self.TVB_STORAGE_FILE_EXTENSION)
 
 

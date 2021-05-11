@@ -213,7 +213,7 @@ class ImportService(object):
         """
         all_datatypes = {}
         for file_name in os.listdir(src_op_path):
-            if file_name.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
+            if self.storage_interface.ends_with_tvb_storage_file_extension(file_name):
                 h5_file = os.path.join(src_op_path, file_name)
                 try:
                     file_update_manager = FilesUpdateManager()
@@ -282,7 +282,7 @@ class ImportService(object):
         target_images_path = self.storage_interface.get_images_folder(project_name)
         for root, _, files in os.walk(images_root):
             for metadata_file in files:
-                if metadata_file.endswith(StorageInterface.TVB_FILE_EXTENSION):
+                if self.storage_interface.ends_with_tvb_file_extension(metadata_file):
                     self._import_image(root, metadata_file, project.id, target_images_path)
 
     @staticmethod
@@ -317,7 +317,7 @@ class ImportService(object):
                 dt_paths = []
                 all_view_model_files = []
                 for file in files:
-                    if file.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
+                    if self.storage_interface.ends_with_tvb_storage_file_extension(file):
                         h5_file = os.path.join(root, file)
                         try:
                             h5_class = H5File.h5_class_from_file(h5_file)
@@ -533,7 +533,7 @@ class ImportService(object):
         shutil.move(actual_figure, target_images_path)
         self.logger.debug("Store imported figure")
         _, meta_data = figure.to_dict()
-        self.storage_interface.write_image_metadata(figure, meta_data, StorageInterface.IMAGES_FOLDER)
+        self.storage_interface.write_image_metadata(figure, meta_data)
 
     def load_datatype_from_file(self, current_file, op_id, datatype_group=None, current_project_id=None):
         # type: (str, int, DataTypeGroup, int) -> HasTraitsIndex

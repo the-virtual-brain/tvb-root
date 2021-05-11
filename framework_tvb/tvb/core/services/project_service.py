@@ -118,14 +118,14 @@ class ProjectService:
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
                 project_folder = self.storage_interface.get_project_folder(current_proj.name)
-                if StorageInterface.encryption_enabled() and not storage_interface.is_in_usage(project_folder):
+                if StorageInterface.encryption_enabled() and not self.storage_interface.is_in_usage(project_folder):
                     raise ProjectServiceException(
                         "A project can not be renamed while sync encryption operations are running")
                 self.storage_interface.rename_project_structure(current_proj.name, new_name)
                 encrypted_path = self.storage_interface.compute_encrypted_folder_path(project_folder)
                 if os.path.exists(encrypted_path):
                     new_encrypted_path = self.storage_interface.compute_encrypted_folder_path(
-                        self.storage_interface.get_project_folder(new_name), StorageInterface.PROJECTS_FOLDER)
+                        self.storage_interface.get_project_folder(new_name))
                     os.rename(encrypted_path, new_encrypted_path)
             current_proj.name = new_name
             current_proj.description = data["description"]

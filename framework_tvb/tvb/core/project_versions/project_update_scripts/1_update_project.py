@@ -56,7 +56,7 @@ def _rename_images(op_id, img_path):
         src_pth = os.path.join(img_path, f)
         dst_pth = os.path.join(img_path, new_name)
 
-        if f.endswith(StorageInterface.TVB_FILE_EXTENSION):
+        if StorageInterface().ends_with_tvb_file_extension(f):
             _rewrite_img_meta(src_pth, op_id)
         os.rename(src_pth, dst_pth)
 

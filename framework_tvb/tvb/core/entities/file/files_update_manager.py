@@ -229,7 +229,7 @@ class FilesUpdateManager(UpdateManager):
                     int(op_folder)
                     op_folder_path = os.path.join(project_full_path, op_folder)
                     for file in os.listdir(op_folder_path):
-                        if file.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
+                        if StorageInterface().ends_with_tvb_storage_file_extension(file):
                             h5_file = os.path.join(op_folder_path, file)
                             try:
                                 if FilesUpdateManager._is_empty_file(h5_file):
