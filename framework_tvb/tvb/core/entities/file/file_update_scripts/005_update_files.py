@@ -40,8 +40,8 @@ import json
 import os
 import sys
 import uuid
-
 import numpy
+
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -1091,8 +1091,8 @@ def _migrate_general_part(input_file):
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
 
     # UPDATE CREATION DATE
-    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(string2date(root_metadata[DataTypeMetaData.KEY_DATE],
-                                                                       date_format=DATE_FORMAT_V4_H5))
+    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(
+        string2date(root_metadata[DataTypeMetaData.KEY_DATE], date_format=DATE_FORMAT_V4_H5))
 
     # OBTAIN THE MODULE (for a few data types the old module doesn't exist anymore, in those cases the attr
     # will be set later
