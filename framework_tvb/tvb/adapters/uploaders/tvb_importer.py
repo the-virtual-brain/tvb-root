@@ -144,7 +144,7 @@ class TVBImporter(ABCUploader):
                 file_update_manager = FilesUpdateManager()
                 file_update_manager.upgrade_file(view_model.data_file)
 
-                if self.storage_interface.is_valid_hdf5_file(view_model.data_file):
+                if self.storage_interface.is_valid_tvb_file(view_model.data_file):
                     datatype = None
                     try:
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)

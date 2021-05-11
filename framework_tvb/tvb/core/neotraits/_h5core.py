@@ -88,7 +88,7 @@ class H5File(object):
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
 
-        if not self.storage_interface.is_valid_hdf5_file(self.path):
+        if not self.storage_interface.is_valid_tvb_file(self.path):
             self.written_by.store(self.get_class_path())
             self.is_new_file = True
 

@@ -47,7 +47,6 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.region_mapping import RegionVolumeMapping
 from tvb.datatypes.tracts import Tracts
-from tvb.storage.storage_interface import StorageInterface
 
 
 def chunk_iter(iterable, n):
@@ -258,12 +257,11 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        storage_interface = StorageInterface()
-        storage_interface.initialize_tvb_zip(view_model.data_file)
-        for tractf in sorted(storage_interface.namelist()):  # one track per file
+        self.storage_interface.initialize_tvb_zip(view_model.data_file)
+        for tractf in sorted(self.storage_interface.namelist()):  # one track per file
             if not tractf.endswith('.txt'):  # omit directories and other non track files
                 continue
-            vertices_file = storage_interface.open_tvb_zip(tractf)
+            vertices_file = self.storage_interface.open_tvb_zip(tractf)
             datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
 
             tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))

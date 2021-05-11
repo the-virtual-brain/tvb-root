@@ -179,9 +179,9 @@ class StorageInterface:
 
     # HDF5 Storage Manager methods start here #
 
-    def is_valid_hdf5_file(self, file_full_path):
+    def is_valid_tvb_file(self, file_full_path):
         self.storage_manager = HDF5StorageManager(file_full_path)
-        return self.storage_manager.is_valid_hdf5_file()
+        return self.storage_manager.is_valid_tvb_file()
 
     def store_data(self, file_full_path,  dataset_name, data_list, where=ROOT_NODE_PATH):
         self.storage_manager = HDF5StorageManager(file_full_path)

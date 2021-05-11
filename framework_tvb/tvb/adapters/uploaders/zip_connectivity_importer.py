@@ -41,7 +41,6 @@ from tvb.core.neotraits.view_model import Str
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neocom import h5
 from tvb.datatypes.connectivity import Connectivity
-from tvb.storage.storage_interface import StorageInterface
 
 NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
 
@@ -116,7 +115,7 @@ class ZIPConnectivityImporter(ABCUploader):
         if view_model.uploaded is None:
             raise LaunchException("Please select ZIP file which contains data to import")
 
-        files = StorageInterface().unpack_zip(view_model.uploaded, self.storage_path)
+        files = self.storage_interface.unpack_zip(view_model.uploaded, self.storage_path)
 
         weights_matrix = None
         centres = None
@@ -146,7 +145,7 @@ class ZIPConnectivityImporter(ABCUploader):
                 hemisphere_vector = self.read_list_data(file_name, dtype=numpy.bool)
 
         # Clean remaining text-files.
-        StorageInterface.remove_files(files, True)
+        self.storage_interface.remove_files(files, True)
 
         result = Connectivity()
 

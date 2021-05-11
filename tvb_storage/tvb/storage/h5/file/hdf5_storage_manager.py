@@ -84,7 +84,7 @@ class HDF5StorageManager(object):
         self.data_buffers = {}
         self.data_encryption_handler = DataEncryptionHandler()
 
-    def is_valid_hdf5_file(self):
+    def is_valid_tvb_file(self):
         """
         This method checks if specified file exists and if it has correct HDF5 format
         :returns: True is file exists and has HDF5 format. False otherwise.
@@ -388,7 +388,7 @@ class HDF5StorageManager(object):
         if not os.path.exists(self.__storage_full_name):
             raise MissingDataFileException("File storage data not found at path %s" % (self.__storage_full_name,))
 
-        if self.is_valid_hdf5_file():
+        if self.is_valid_tvb_file():
             metadata = self.get_metadata(dataset_name, where)
             if data_version in metadata:
                 return metadata[data_version]
