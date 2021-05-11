@@ -63,7 +63,6 @@ class H5File(object):
     def __init__(self, path):
         # type: (str) -> None
         self.path = path
-        self.storage_folder, self.file_name = os.path.split(path)
         self.storage_interface = StorageInterface()
         # would be nice to have an opened state for the chunked api instead of the close_file=False
 
@@ -89,7 +88,7 @@ class H5File(object):
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
 
-        if not self.storage_interface.is_valid_hdf5_file(self.storage_folder, self.file_name):
+        if not self.storage_interface.is_valid_hdf5_file(self.path):
             self.written_by.store(self.get_class_path())
             self.is_new_file = True
 
@@ -121,7 +120,7 @@ class H5File(object):
         self.close()
 
     def close(self):
-        self.storage_interface.close_file(self.storage_folder, self.file_name)
+        self.storage_interface.close_file(self.path)
 
     def store(self, datatype, scalars_only=False, store_references=True):
         # type: (HasTraits, bool, bool) -> None
@@ -254,20 +253,18 @@ class H5File(object):
 
     @staticmethod
     def get_metadata_param(path, param):
-        base_dir, fname = os.path.split(path)
         storage_interface = StorageInterface()
-        meta = storage_interface.get_metadata(base_dir, fname)
+        meta = storage_interface.get_metadata(path)
         return meta.get(param)
 
     def store_metadata_param(self, key, value):
-        self.storage_interface.set_metadata(self.storage_folder, self.file_name, {key: value})
+        self.storage_interface.set_metadata(self.path, {key: value})
 
     @staticmethod
     def remove_metadata_param(file_path, param):
-        base_dir, fname = os.path.split(file_path)
         storage_interface = StorageInterface()
-        if param in storage_interface.get_metadata(base_dir, fname):
-            storage_interface.remove_metadata(base_dir, fname, param)
+        if param in storage_interface.get_metadata(file_path):
+            storage_interface.remove_metadata(file_path, param)
 
     @staticmethod
     def h5_class_from_file(path):

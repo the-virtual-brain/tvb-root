@@ -179,56 +179,56 @@ class StorageInterface:
 
     # HDF5 Storage Manager methods start here #
 
-    def is_valid_hdf5_file(self, storage_folder, file_name):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+    def is_valid_hdf5_file(self, file_full_path):
+        self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.is_valid_hdf5_file()
 
-    def store_data(self, storage_folder, file_name,  dataset_name, data_list, where=ROOT_NODE_PATH):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+    def store_data(self, file_full_path,  dataset_name, data_list, where=ROOT_NODE_PATH):
+        self.storage_manager = HDF5StorageManager(file_full_path)
         self.storage_manager.store_data(dataset_name, data_list, where)
 
-    def append_data(self, storage_folder, file_name, dataset_name, data_list, grow_dimension=1, close_file=True):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+    def append_data(self, file_full_path, dataset_name, data_list, grow_dimension=1, close_file=True):
+        self.storage_manager = HDF5StorageManager(file_full_path)
         self.storage_manager.append_data(dataset_name, data_list, grow_dimension, close_file, self.ROOT_NODE_PATH)
 
-    def remove_data(self, storage_folder, file_name, dataset_name):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+    def remove_data(self, file_full_path, dataset_name):
+        self.storage_manager = HDF5StorageManager(file_full_path)
         self.storage_manager.remove_data(dataset_name, self.ROOT_NODE_PATH)
 
-    def get_data(self, storage_folder, file_name, dataset_name, data_slice=None,
+    def get_data(self, file_full_path, dataset_name, data_slice=None,
                  where=ROOT_NODE_PATH, ignore_errors=False,
                  close_file=True):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+        self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.get_data(dataset_name, data_slice, where, ignore_errors, close_file)
 
-    def get_data_shape(self, storage_folder, file_name, dataset_name):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+    def get_data_shape(self, file_full_path, dataset_name):
+        self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.get_data_shape(dataset_name, self.ROOT_NODE_PATH)
 
-    def set_metadata(self, storage_folder, file_name, meta_dictionary, dataset_name='', tvb_specific_metadata=True,
+    def set_metadata(self, file_full_path, meta_dictionary, dataset_name='', tvb_specific_metadata=True,
                      where=ROOT_NODE_PATH):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+        self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.set_metadata(meta_dictionary, dataset_name, tvb_specific_metadata, where)
 
     @staticmethod
     def serialize_bool(value):
         return HDF5StorageManager.serialize_bool(value)
 
-    def get_metadata(self, storage_folder, file_name, dataset_name=''):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+    def get_metadata(self, file_full_path, dataset_name=''):
+        self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.get_metadata(dataset_name, self.ROOT_NODE_PATH)
 
-    def remove_metadata(self, storage_folder, file_name, meta_key, dataset_name='',
+    def remove_metadata(self, file_full_path, meta_key, dataset_name='',
                         tvb_specific_metadata=True):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+        self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.remove_metadata(meta_key, dataset_name, tvb_specific_metadata, self.ROOT_NODE_PATH)
 
-    def get_file_data_version(self, storage_folder, file_name, data_version, dataset_name=''):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+    def get_file_data_version(self, file_full_path, data_version, dataset_name=''):
+        self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.get_file_data_version(data_version, dataset_name, self.ROOT_NODE_PATH)
 
-    def close_file(self, storage_folder, file_name):
-        self.storage_manager = HDF5StorageManager(storage_folder, file_name)
+    def close_file(self, file_full_path):
+        self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.close_file()
 
     # XML methods start here #

@@ -71,17 +71,15 @@ class HDF5StorageManager(object):
     DATE_TIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
     LOCKS = {}
 
-    def __init__(self, storage_folder, file_name):
+    def __init__(self, storage_full_name):
         """
         Creates a new storage manager instance.
         :param buffer_size: the size in Bytes of the amount of data that will be buffered before writing to file.
         """
-        if storage_folder is None:
-            raise FileStructureException("Please provide the folder where to store data")
-        if file_name is None:
+        if storage_full_name is None:
             raise FileStructureException("Please provide the file name where to store data")
 
-        self.__storage_full_name = os.path.join(storage_folder, file_name)
+        self.__storage_full_name = storage_full_name
         self.__buffer_array = None
         self.data_buffers = {}
         self.data_encryption_handler = DataEncryptionHandler()

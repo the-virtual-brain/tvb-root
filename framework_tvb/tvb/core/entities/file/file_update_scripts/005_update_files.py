@@ -56,12 +56,11 @@ from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.h5 import H5File, STORE_STRING, DataSetMetaData
 from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
-from tvb.core.utils import date2string
+from tvb.core.utils import date2string, string2date
 from tvb.datatypes.sensors import SensorTypes
 from tvb.storage.h5.file.exceptions import MissingDataSetException, IncompatibleFileManagerException, \
     FileMigrationException, MissingMatlabOctavePathException
 from tvb.storage.storage_interface import StorageInterface
-
 
 LOGGER = get_logger(__name__)
 FIELD_SURFACE_MAPPING = "has_surface_mapping"
@@ -112,14 +111,14 @@ def _pop_common_metadata(root_metadata):
     root_metadata.pop('nr_dimensions')
 
 
-def _bytes_ds_to_string_ds(ds_name, storage_interface, storage_folder, file_name):
-    bytes_labels = storage_interface.get_data(storage_folder, file_name, ds_name)
+def _bytes_ds_to_string_ds(ds_name, storage_interface, file_path):
+    bytes_labels = storage_interface.get_data(file_path, ds_name)
     string_labels = []
     for i in range(len(bytes_labels)):
         string_labels.append(_value2str(bytes_labels[i]))
 
-    storage_interface.remove_data(storage_folder, file_name, ds_name)
-    storage_interface.store_data(storage_folder, file_name, ds_name, numpy.asarray(string_labels).astype(STORE_STRING))
+    storage_interface.remove_data(file_path, ds_name)
+    storage_interface.store_data(file_path, ds_name, numpy.asarray(string_labels).astype(STORE_STRING))
     return storage_interface
 
 
@@ -138,9 +137,8 @@ def _migrate_connectivity(**kwargs):
     metadata = ['centres', 'region_labels', 'tract_lengths', 'weights']
     extra_metadata = ['orientations', 'areas', 'cortical', 'hemispheres', 'orientations']
     storage_interface = kwargs['storage_interface']
-    storage_folder = kwargs['storage_folder']
-    file_name = kwargs['file_name']
-    _bytes_ds_to_string_ds(storage_interface, 'region_labels', storage_folder, file_name)
+    input_file = kwargs['input_file']
+    _bytes_ds_to_string_ds(storage_interface, 'region_labels', input_file)
 
     try:
         storage_manager.get_data('hemispheres')
@@ -154,7 +152,7 @@ def _migrate_connectivity(**kwargs):
 
     for mt in extra_metadata:
         try:
-            storage_interface.get_metadata(storage_folder, file_name, mt)
+            storage_interface.get_metadata(input_file, mt)
             metadata.append(mt)
         except MissingDataSetException:
             pass
@@ -183,14 +181,14 @@ def _migrate_connectivity(**kwargs):
     if 'input_data' in operation_xml_parameters:
         operation_xml_parameters['input_data'] = uuid.UUID(operation_xml_parameters['input_data'])
 
-    storage_interface.remove_metadata(storage_folder, file_name, 'Mean non zero', 'tract_lengths')
-    storage_interface.remove_metadata(storage_folder, file_name, 'Min. non zero', 'tract_lengths')
-    storage_interface.remove_metadata(storage_folder, file_name, 'Var. non zero', 'tract_lengths')
-    storage_interface.remove_metadata(storage_folder, file_name, 'Mean non zero', 'weights')
-    storage_interface.remove_metadata(storage_folder, file_name, 'Min. non zero', 'weights')
-    storage_interface.remove_metadata(storage_folder, file_name, 'Var. non zero', 'weights')
+    storage_interface.remove_metadata(input_file, 'Mean non zero', 'tract_lengths')
+    storage_interface.remove_metadata(input_file, 'Min. non zero', 'tract_lengths')
+    storage_interface.remove_metadata(input_file, 'Var. non zero', 'tract_lengths')
+    storage_interface.remove_metadata(input_file, 'Mean non zero', 'weights')
+    storage_interface.remove_metadata(input_file, 'Min. non zero', 'weights')
+    storage_interface.remove_metadata(input_file, 'Var. non zero', 'weights')
 
-    _migrate_dataset_metadata(metadata, storage_interface, storage_folder, file_name)
+    _migrate_dataset_metadata(metadata, storage_interface, input_file)
 
     return {'operation_xml_parameters': operation_xml_parameters}
 
@@ -217,14 +215,12 @@ def _migrate_surface(**kwargs):
         _, operation_xml_parameters['should_center'] = _parse_bool(operation_xml_parameters['should_center'])
 
     storage_interface = kwargs['storage_interface']
-    storage_folder = kwargs['storage_folder']
-    file_name = kwargs['file_name']
-    if storage_interface.get_data(storage_folder, file_name, 'split_triangles',
-                                  ignore_errors=True) is None:
-        kwargs['storage_interface'].store_data(storage_folder, file_name, 'split_triangles', [])
+    input_file = kwargs['input_file']
+    if storage_interface.get_data(input_file, 'split_triangles', ignore_errors=True) is None:
+        kwargs['storage_interface'].store_data(input_file, 'split_triangles', [])
 
     _migrate_dataset_metadata(['split_triangles', 'triangle_normals', 'triangles', 'vertex_normals', 'vertices'],
-                              kwargs['storage_interface'], storage_folder, file_name)
+                              kwargs['storage_interface'], input_file)
 
     return {'operation_xml_parameters': operation_xml_parameters}
 
@@ -237,8 +233,7 @@ def _migrate_region_mapping(**kwargs):
     root_metadata['surface'] = _parse_gid(root_metadata['surface'])
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
 
-    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['input_file'])
     algorithm = '{"classname": "RegionMappingImporter", "module": "tvb.adapters.uploaders.region_mapping_importer"}'
 
     return {'algorithm': algorithm, 'operation_xml_parameters': kwargs['operation_xml_parameters']}
@@ -253,14 +248,13 @@ def _migrate_region_volume_mapping(**kwargs):
     root_metadata['volume'] = _parse_gid(root_metadata['volume'])
 
     storage_interface = kwargs['storage_interface']
-    storage_folder = kwargs['storage_folder']
-    file_name = kwargs['file_name']
-    array_data = storage_interface.get_data(storage_folder, file_name, 'array_data')
+    input_file = kwargs['input_file']
+    array_data = storage_interface.get_data(input_file, 'array_data')
     array_data = array_data.astype(int)
-    storage_interface.remove_data(storage_folder, file_name, 'array_data')
-    storage_interface.store_data(storage_folder, file_name, 'array_data', array_data)
+    storage_interface.remove_data(input_file, 'array_data')
+    storage_interface.store_data(input_file, 'array_data', array_data)
 
-    _migrate_dataset_metadata(['array_data'], storage_interface, storage_folder, file_name)
+    _migrate_dataset_metadata(['array_data'], storage_interface, input_file)
 
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
@@ -272,15 +266,14 @@ def _migrate_sensors(datasets, **kwargs):
     root_metadata['has_orientation'], _ = _parse_bool(root_metadata['has_orientation'])
 
     storage_interface = kwargs['storage_interface']
-    storage_folder = kwargs['storage_folder']
-    file_name = kwargs['file_name']
-    storage_interface.remove_metadata(storage_folder, file_name, 'Size', 'labels')
-    storage_interface.remove_metadata(storage_folder, file_name, 'Size', 'locations')
-    storage_interface.remove_metadata(storage_folder, file_name, 'Variance', 'locations')
-    _bytes_ds_to_string_ds(storage_interface, 'labels', storage_folder, file_name)
-    _migrate_dataset_metadata(datasets, storage_interface, storage_folder, file_name)
+    input_file = kwargs['input_file']
+    storage_interface.remove_metadata(input_file, 'Size', 'labels')
+    storage_interface.remove_metadata(input_file, 'Size', 'locations')
+    storage_interface.remove_metadata(input_file, 'Variance', 'locations')
+    _bytes_ds_to_string_ds(storage_interface, 'labels', input_file)
+    _migrate_dataset_metadata(datasets, storage_interface, input_file)
     algorithm = '{"classname": "SensorsImporter", "module": "tvb.adapters.uploaders.sensors_importer"}'
-    kwargs['operation_xml_parameters']['sensors_file'] = kwargs['input_file']
+    kwargs['operation_xml_parameters']['sensors_file'] = input_file
     return algorithm, kwargs['operation_xml_parameters']
 
 
@@ -310,14 +303,13 @@ def _migrate_projection(**kwargs):
     root_metadata['projection_type'] = root_metadata["projection_type"].replace("\"", '')
 
     storage_interface = kwargs['storage_interface']
-    storage_folder = kwargs['storage_folder']
-    file_name = kwargs['file_name']
-    storage_interface.remove_metadata(storage_folder, file_name, 'Size', 'projection_data')
-    storage_interface.remove_metadata(storage_folder, file_name, 'Variance', 'projection_data')
+    input_file = kwargs['input_file']
+    storage_interface.remove_metadata(input_file, 'Size', 'projection_data')
+    storage_interface.remove_metadata(input_file, 'Variance', 'projection_data')
 
     kwargs['operation_xml_parameters']['projection_file'] = kwargs['input_file']
 
-    _migrate_dataset_metadata(['projection_data'], storage_interface, storage_folder, file_name)
+    _migrate_dataset_metadata(['projection_data'], storage_interface, input_file)
     algorithm = '{"classname": "ProjectionMatrixSurfaceEEGImporter", "module": ' \
                 '"tvb.adapters.uploaders.projection_matrix_importer"} '
 
@@ -330,11 +322,12 @@ def _migrate_local_connectivity(**kwargs):
     root_metadata['surface'] = _parse_gid(root_metadata['surface'])
 
     storage_interface = kwargs['storage_interface']
-    matrix_metadata = storage_interface.get_metadata('matrix', kwargs['storage_folder'], kwargs['file_name'])
+    input_file = kwargs['input_file']
+    matrix_metadata = storage_interface.get_metadata(input_file, 'matrix')
     matrix_metadata['Shape'] = _value2str(matrix_metadata['Shape'])
     matrix_metadata['dtype'] = _value2str(matrix_metadata['dtype'])
     matrix_metadata['format'] = _value2str(matrix_metadata['format'])
-    storage_interface.set_metadata(kwargs['storage_folder'], kwargs['file_name'], matrix_metadata, 'matrix')
+    storage_interface.set_metadata(input_file, matrix_metadata, 'matrix')
     operation_xml_parameters = kwargs['operation_xml_parameters']
 
     equation = json.loads(root_metadata['equation'])
@@ -371,8 +364,7 @@ def _migrate_connectivity_annotations(**kwargs):
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
     root_metadata['written_by'] = "tvb.adapters.datatypes.h5.annotation_h5.ConnectivityAnnotationsH5"
 
-    _migrate_dataset_metadata(['region_annotations'], kwargs['storage_interface'],
-                              kwargs['storage_folder'], kwargs['file_name'])
+    _migrate_dataset_metadata(['region_annotations'], kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -449,7 +441,7 @@ def _migrate_noise(operation_xml_parameters, integrator, integrator_name, noise_
     return integrator_param_base_name, equation_name
 
 
-def _migrate_common_root_metadata_time_series(metadata, root_metadata, storage_interface, storage_folder, file_name):
+def _migrate_common_root_metadata_time_series(metadata, root_metadata, storage_interface, input_file):
     root_metadata.pop(FIELD_SURFACE_MAPPING, False)
     root_metadata.pop(FIELD_VOLUME_MAPPING, False)
     _pop_lengths(root_metadata)
@@ -460,7 +452,7 @@ def _migrate_common_root_metadata_time_series(metadata, root_metadata, storage_i
 
     root_metadata["sample_period_unit"] = root_metadata["sample_period_unit"].replace("\"", '')
     root_metadata[DataTypeMetaData.KEY_TITLE] = root_metadata[DataTypeMetaData.KEY_TITLE].replace("\"", '')
-    _migrate_dataset_metadata(metadata, storage_interface, storage_folder, file_name)
+    _migrate_dataset_metadata(metadata, storage_interface, input_file)
 
 
 def _migrate_time_series(operation_xml_parameters):
@@ -540,7 +532,7 @@ def _migrate_time_series_simple(**kwargs):
     operation_xml_parameters = kwargs['operation_xml_parameters']
     root_metadata = kwargs['root_metadata']
     _migrate_common_root_metadata_time_series(['data', 'time'], root_metadata, kwargs['storage_interface'],
-                                              kwargs['storage_folder'], kwargs['file_name'])
+                                              kwargs['input_file'])
 
     operation_xml_parameters, additional_params = _migrate_time_series(operation_xml_parameters)
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
@@ -568,7 +560,7 @@ def _migrate_time_series_region(**kwargs):
     root_metadata = kwargs['root_metadata']
 
     _migrate_common_root_metadata_time_series(['data', 'time'], root_metadata, kwargs['storage_interface'],
-                                              kwargs['storage_folder'], kwargs['file_name'])
+                                              kwargs['input_file'])
     if 'region_mapping' in root_metadata:
         root_metadata['region_mapping'] = _parse_gid(root_metadata['region_mapping'])
     root_metadata['connectivity'] = _parse_gid(root_metadata['connectivity'])
@@ -587,7 +579,7 @@ def _migrate_time_series_surface(**kwargs):
     operation_xml_parameters = kwargs['operation_xml_parameters']
     root_metadata = kwargs['root_metadata']
     _migrate_common_root_metadata_time_series(['data', 'time'], root_metadata, kwargs['storage_interface'],
-                                              kwargs['storage_folder'], kwargs['file_name'])
+                                              kwargs['input_file'])
 
     if 'data_file' in operation_xml_parameters:
         # Parsing in case TimeSeriesSurface was imported via GiftiImporter
@@ -629,7 +621,7 @@ def _migrate_time_series_sensors(**kwargs):
     operation_xml_parameters = kwargs['operation_xml_parameters']
     root_metadata = kwargs['root_metadata']
     _migrate_common_root_metadata_time_series(['data', 'time'], root_metadata, kwargs['storage_interface'],
-                                              kwargs['storage_folder'], kwargs['file_name'])
+                                              kwargs['input_file'])
 
     if 'data_file' in operation_xml_parameters:
         # Parsing in case TimeSeriesSensors was imported via EEGMatImporter
@@ -654,7 +646,7 @@ def _migrate_time_series_volume(**kwargs):
     operation_xml_parameters = kwargs['operation_xml_parameters']
     root_metadata = kwargs['root_metadata']
     _migrate_common_root_metadata_time_series(['data'], root_metadata, kwargs['storage_interface'],
-                                              kwargs['storage_folder'], kwargs['file_name'])
+                                              kwargs['input_file'])
 
     if 'data_file' in operation_xml_parameters:
         operation_xml_parameters, additional_params = _migrate_nifti_importer_operation(operation_xml_parameters)
@@ -681,8 +673,7 @@ def _migrate_volume(**kwargs):
     if 'apply_corrections' in operation_xml_parameters:
         _, operation_xml_parameters['apply_corrections'] = _parse_bool(operation_xml_parameters['apply_corrections'])
 
-    _migrate_dataset_metadata(['origin', 'voxel_size'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+    _migrate_dataset_metadata(['origin', 'voxel_size'], kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': operation_xml_parameters}
 
 
@@ -693,8 +684,7 @@ def _migrate_structural_mri(**kwargs):
 
     root_metadata['volume'] = _parse_gid(root_metadata['volume'])
 
-    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -710,8 +700,7 @@ def _migrate_complex_coherence_spectrum(**kwargs):
     root_metadata['windowing_function'] = root_metadata['windowing_function'].replace("\"", '')
     root_metadata['source'] = _parse_gid(root_metadata['source'])
 
-    _migrate_dataset_metadata(['array_data', 'cross_spectrum'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+    _migrate_dataset_metadata(['array_data', 'cross_spectrum'], kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -737,7 +726,7 @@ def _migrate_wavelet_coefficients(**kwargs):
     operation_xml_parameters['sample_period'] = float(operation_xml_parameters['sample_period'])
     operation_xml_parameters['q_ratio'] = float(operation_xml_parameters['q_ratio'])
     _migrate_dataset_metadata(['amplitude', 'array_data', 'frequencies', 'phase', 'power'],
-                              kwargs['storage_interface'], kwargs['storage_folder'], kwargs['file_name'])
+                              kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': operation_xml_parameters}
 
 
@@ -751,15 +740,13 @@ def _migrate_coherence_spectrum(**kwargs):
     root_metadata['source'] = _parse_gid(root_metadata['source'])
 
     storage_interface = kwargs['storage_interface']
-    storage_folder = kwargs['storage_folder']
-    file_name = kwargs['file_name']
-    array_data = storage_interface.get_data(storage_folder, file_name, 'array_data')
-    storage_interface.remove_data(storage_folder, file_name, 'array_data')
-    storage_interface.store_data(storage_folder, file_name, 'array_data', numpy.asarray(array_data,
-                                                                                        dtype=numpy.float64))
+    input_file = kwargs['input_file']
+    array_data = storage_interface.get_data(input_file, 'array_data')
+    storage_interface.remove_data(input_file, 'array_data')
+    storage_interface.store_data(input_file, 'array_data', numpy.asarray(array_data, dtype=numpy.float64))
     kwargs['operation_xml_parameters']['nfft'] = int(kwargs['operation_xml_parameters']['nfft'])
 
-    _migrate_dataset_metadata(['array_data', 'frequency'], storage_interface, storage_folder, file_name)
+    _migrate_dataset_metadata(['array_data', 'frequency'], storage_interface, input_file)
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -770,7 +757,7 @@ def _migrate_cross_correlation(**kwargs):
 
     root_metadata['source'] = _parse_gid(root_metadata['source'])
     _migrate_dataset_metadata(['array_data', 'time'], kwargs['storage_interface'],
-                              kwargs['storage_folder'], kwargs['file_name'])
+                              kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -788,11 +775,10 @@ def _migrate_fcd(**kwargs):
     operation_xml_parameters['sw'] = root_metadata['sw']
 
     storage_interface = kwargs['storage_interface']
-    storage_folder = kwargs['storage_folder']
-    file_name = kwargs['file_name']
-    storage_interface.set_metadata(storage_folder, file_name, root_metadata)
+    input_file = kwargs['input_file']
+    storage_interface.set_metadata(input_file, root_metadata)
 
-    _migrate_dataset_metadata(['array_data'], storage_interface, storage_folder, file_name)
+    _migrate_dataset_metadata(['array_data'], storage_interface, input_file)
 
     return {'operation_xml_parameters': operation_xml_parameters}
 
@@ -812,8 +798,7 @@ def _migrate_fourier_spectrum(**kwargs):
     operation_xml_parameters['segment_length'] = root_metadata['segment_length']
 
     _migrate_dataset_metadata(['amplitude', 'array_data', 'average_power', 'normalised_average_power',
-                               'phase', 'power'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+                               'phase', 'power'], kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -824,8 +809,7 @@ def _migrate_independent_components(**kwargs):
 
     _migrate_dataset_metadata(['component_time_series', 'mixing_matrix', 'norm_source',
                                'normalised_component_time_series', 'prewhitening_matrix',
-                               'unmixing_matrix'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+                               'unmixing_matrix'], kwargs['storage_interface'], kwargs['file_name'])
     operation_xml_parameters = kwargs['operation_xml_parameters']
     operation_xml_parameters['n_components'] = int(operation_xml_parameters['n_components'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
@@ -844,8 +828,7 @@ def _migrate_correlation_coefficients(**kwargs):
     operation_xml_parameters['t_start'] = float(operation_xml_parameters['t_start'])
     operation_xml_parameters['t_end'] = float(operation_xml_parameters['t_end'])
 
-    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -854,7 +837,7 @@ def _migrate_principal_components(**kwargs):
     root_metadata['source'] = _parse_gid(root_metadata['source'])
 
     _migrate_dataset_metadata(['component_time_series', 'fractions', 'norm_source', 'normalised_component_time_series',
-                               'weights'], kwargs['storage_interface'], kwargs['storage_folder'], kwargs['file_name'])
+                               'weights'], kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -866,8 +849,7 @@ def _migrate_covariance(**kwargs):
 
     root_metadata['source'] = _parse_gid(root_metadata['source'])
 
-    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
@@ -882,19 +864,21 @@ def _migrate_connectivity_measure(**kwargs):
     operation_xml_parameters['connectivity'] = root_metadata['connectivity']
     root_metadata['title'] = root_metadata['title'].replace('\\n', '').replace('"', '')
 
-    _migrate_dataset_metadata(['array_data'], kwargs['storage_interface'], kwargs['storage_folder'],
-                              kwargs['file_name'])
+    storage_interface = kwargs['storage_interface']
+    input_file = kwargs['input_file']
+
+    _migrate_dataset_metadata(['array_data'], storage_interface, input_file)
 
     if 'parent_burst' in root_metadata or 'time_series' not in operation_xml_parameters:
         return {'operation_xml_parameters': operation_xml_parameters}
 
     # If we encounter a Connectivity Measure we expect that it could have more ConnectivityMeasure's and FCDs
     # so we can only set here the parent_burst attribute on all files
-    folder_name = os.path.dirname(kwargs['input_file'])
+    folder_name = os.path.dirname(input_file)
     for file_name in os.listdir(folder_name):
-        if file_name != OPERATION_XML and file_name not in kwargs['input_file']:
-            root_metadata = kwargs['storage_interface'].get_metadata(kwargs['storage_folder'], kwargs['file_name'])
-            _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, kwargs['storage_interface'], True)
+        if file_name != OPERATION_XML and file_name not in input_file:
+            root_metadata = storage_interface.get_metadata(input_file)
+            _set_parent_burst(operation_xml_parameters['time_series'], root_metadata, storage_interface, True)
 
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
@@ -929,14 +913,14 @@ def _migrate_stimuli_equation_params(operation_xml_parameters, equation_type):
     return [equation_type, 'parameters', param_dict]
 
 
-def _migrate_stimuli(datasets, root_metadata, storage_interface, storage_folder, file_name):
+def _migrate_stimuli(datasets, root_metadata, storage_interface, input_file):
     _migrate_one_stimuli_param(root_metadata, 'spatial')
     _migrate_one_stimuli_param(root_metadata, 'temporal')
 
     for dataset in datasets:
         weights = json.loads(root_metadata[dataset])
-        storage_interface.store_data(storage_folder, file_name, dataset, weights)
-        _migrate_dataset_metadata([dataset], storage_interface, storage_folder, file_name)
+        storage_interface.store_data(input_file, dataset, weights)
+        _migrate_dataset_metadata([dataset], storage_interface, input_file)
         root_metadata.pop(dataset)
 
 
@@ -946,8 +930,7 @@ def _migrate_stimuli_region(**kwargs):
     operation_xml_parameters = kwargs['operation_xml_parameters']
 
     operation_xml_parameters['weight'] = numpy.asarray(json.loads(root_metadata['weight']), dtype=numpy.float64)
-    _migrate_stimuli(['weight'], root_metadata, kwargs['storage_interface'], kwargs['storage_folder'],
-                     kwargs['file_name'])
+    _migrate_stimuli(['weight'], root_metadata, kwargs['storage_interface'], kwargs['input_file'])
     additional_params = [_migrate_stimuli_equation_params(operation_xml_parameters, 'temporal')]
 
     return {'operation_xml_parameters': operation_xml_parameters, 'additional_params': additional_params}
@@ -960,7 +943,7 @@ def _migrate_stimuli_surface(**kwargs):
     operation_xml_parameters['focal_points_triangles'] = numpy.asarray(
         json.loads(root_metadata['focal_points_triangles']), dtype=numpy.int)
     _migrate_stimuli(['focal_points_surface', 'focal_points_triangles'], root_metadata, kwargs['storage_interface'],
-                     kwargs['storage_folder'], kwargs['file_name'])
+                     kwargs['input_file'])
     additional_params = [_migrate_stimuli_equation_params(operation_xml_parameters, 'temporal'),
                          _migrate_stimuli_equation_params(operation_xml_parameters, 'spatial')]
 
@@ -984,19 +967,19 @@ def _migrate_tracts(**kwargs):
     root_metadata = kwargs['root_metadata']
     root_metadata['region_volume_map'] = _parse_gid(root_metadata['region_volume_map'])
     _migrate_dataset_metadata(['tract_region', 'tract_start_idx', 'vertices'], kwargs['storage_interface'],
-                              kwargs['storage_folder'], kwargs['file_name'])
+                              kwargs['input_file'])
     return {'operation_xml_parameters': kwargs['operation_xml_parameters']}
 
 
-def _migrate_dataset_metadata(dataset_list, storage_interface, storage_folder, file_name):
+def _migrate_dataset_metadata(dataset_list, storage_interface, input_file):
     for dataset in dataset_list:
-        metadata = DataSetMetaData.from_array(storage_interface.get_data(storage_folder, file_name, dataset)).to_dict()
-        storage_interface.set_metadata(storage_folder, file_name, metadata, dataset)
-        metadata = storage_interface.get_metadata(storage_folder, file_name, dataset)
+        metadata = DataSetMetaData.from_array(storage_interface.get_data(input_file, dataset)).to_dict()
+        storage_interface.set_metadata(input_file, metadata, dataset)
+        metadata = storage_interface.get_metadata(input_file, dataset)
         if 'Variance' in metadata:
-            storage_interface.remove_metadata(storage_folder, file_name, 'Variance', dataset)
+            storage_interface.remove_metadata(input_file, 'Variance', dataset)
         if 'Size' in metadata:
-            storage_interface.remove_metadata(storage_folder, file_name, 'Size', dataset)
+            storage_interface.remove_metadata(input_file, 'Size', dataset)
 
 
 def _migrate_one_stimuli_param(root_metadata, param_name):
@@ -1007,14 +990,14 @@ def _migrate_one_stimuli_param(root_metadata, param_name):
     root_metadata[param_name] = json.dumps(new_param)
 
 
-def _set_parent_burst(time_series_gid, root_metadata, storage_interface, storage_folder, file_name, is_ascii=False):
+def _set_parent_burst(time_series_gid, root_metadata, storage_interface, input_file, is_ascii=False):
     ts = dao.get_datatype_by_gid(uuid.UUID(time_series_gid).hex)
     if ts.fk_parent_burst:
         burst_gid = _parse_gid(ts.fk_parent_burst)
         if is_ascii:
             burst_gid = burst_gid.encode('ascii', 'ignore')
         root_metadata['parent_burst'] = burst_gid
-        storage_interface.set_metadata(storage_folder, file_name, root_metadata)
+        storage_interface.set_metadata(input_file, root_metadata)
     return ts.fk_parent_burst, ts.fk_datatype_group
 
 
@@ -1086,15 +1069,14 @@ datatypes_to_be_migrated = {
 }
 
 
-def _migrate_general_part(folder, file_name):
+def _migrate_general_part(input_file):
     # Obtain storage manager and metadata
     storage_interface = StorageInterface()
-    root_metadata = storage_interface.get_metadata(folder, file_name)
+    root_metadata = storage_interface.get_metadata(input_file)
 
     if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
         raise IncompatibleFileManagerException("File %s received for upgrading 4 -> 5 is not valid, due to missing "
-                                               "metadata: %s" % (os.path.join(folder, file_name),
-                                                                 DataTypeMetaData.KEY_CLASS_NAME))
+                                               "metadata: %s" % (input_file, DataTypeMetaData.KEY_CLASS_NAME))
 
     # In the new format all metadata has the 'TVB_%' format, where '%' starts with a lowercase letter
     lowercase_keys = []
@@ -1104,15 +1086,15 @@ def _migrate_general_part(folder, file_name):
         except TypeError:
             pass
         lowercase_keys.append(_lowercase_first_character(key))
-        storage_interface.remove_metadata(folder, file_name, key)
+        storage_interface.remove_metadata(input_file, key)
 
     # Update DATA_VERSION
     root_metadata = dict(zip(lowercase_keys, list(root_metadata.values())))
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
 
     # UPDATE CREATION DATE
-    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(
-        string2date(root_metadata[DataTypeMetaData.KEY_DATE], date_format=DATE_FORMAT_V4_H5))
+    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(string2date(root_metadata[DataTypeMetaData.KEY_DATE],
+                                                                       date_format=DATE_FORMAT_V4_H5))
 
     # OBTAIN THE MODULE (for a few data types the old module doesn't exist anymore, in those cases the attr
     # will be set later
@@ -1169,7 +1151,7 @@ def update(input_file, burst_match_dict):
         storage_migrate = False
 
     folder, file_name = os.path.split(input_file)
-    root_metadata, storage_interface = _migrate_general_part(folder, file_name)
+    root_metadata, storage_interface = _migrate_general_part(input_file)
     class_name = root_metadata['type']
     root_metadata.pop("type")
 
@@ -1201,8 +1183,6 @@ def update(input_file, burst_match_dict):
         # Calls the specific method for the current h5 class
         params = datatypes_to_be_migrated[class_name](root_metadata=root_metadata,
                                                       storage_interface=storage_interface,
-                                                      storage_folder=folder,
-                                                      file_name=file_name,
                                                       operation_xml_parameters=operation_xml_parameters,
                                                       input_file=input_file)
 
@@ -1218,7 +1198,7 @@ def update(input_file, burst_match_dict):
         if class_name == 'SimulationState':
             return
 
-        storage_interface.set_metadata(folder, file_name, root_metadata)
+        storage_interface.set_metadata(input_file, root_metadata)
 
         if storage_migrate is False:
             return
@@ -1233,7 +1213,8 @@ def update(input_file, burst_match_dict):
             # Get parent_burst when needed
             time_series_gid = operation_xml_parameters.get('time_series')
             if time_series_gid:
-                burst_gid, fk_datatype_group = _set_parent_burst(time_series_gid, root_metadata, storage_interface)
+                burst_gid, fk_datatype_group = _set_parent_burst(time_series_gid, root_metadata, storage_interface,
+                                                                 input_file)
                 if fk_datatype_group is not None:
                     fk_datatype_group = fk_datatype_group + 1
                     datatype_group = dao.get_datatype_by_id(fk_datatype_group)
@@ -1243,7 +1224,7 @@ def update(input_file, burst_match_dict):
 
                     root_metadata['visible'] = "bool:False"
                     generic_attributes.visible = False
-                    storage_interface.set_metadata(folder, file_name, root_metadata)
+                    storage_interface.set_metadata(input_file, root_metadata)
 
                 generic_attributes.parent_burst = burst_gid
 
@@ -1320,7 +1301,7 @@ def update(input_file, burst_match_dict):
 
                     burst_match_dict[possible_burst_id] = new_burst_id
                     root_metadata['parent_burst'] = _parse_gid(burst_config.gid)
-                    storage_interface.set_metadata(folder, file_name, root_metadata)
+                    storage_interface.set_metadata(input_file, root_metadata)
 
             os.remove(os.path.join(folder, OPERATION_XML))
 

@@ -80,9 +80,8 @@ class FilesUpdateManager(UpdateManager):
         :returns: a number representing the data version for which the input file was written
         """
         storage_interface = StorageInterface()
-        folder, file_name = os.path.split(file_path)
         data_version = TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
-        return storage_interface.get_file_data_version(folder, file_name, data_version)
+        return storage_interface.get_file_data_version(file_path, data_version)
 
     def is_file_up_to_date(self, file_path):
         """

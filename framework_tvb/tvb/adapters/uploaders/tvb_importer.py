@@ -47,7 +47,6 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.exceptions import ImportException
 from tvb.core.services.import_service import ImportService
-from tvb.storage.storage_interface import StorageInterface
 
 
 class TVBImporterModel(UploaderViewModel):
@@ -113,7 +112,7 @@ class TVBImporter(ABCUploader):
             if zipfile.is_zipfile(view_model.data_file):
                 # Creates a new TMP folder where to extract data
                 tmp_folder = os.path.join(self.storage_path, "tmp_import")
-                StorageInterface().unpack_zip(view_model.data_file, tmp_folder)
+                self.storage_interface.unpack_zip(view_model.data_file, tmp_folder)
                 is_group = False
                 current_op_id = current_op.id
                 for file in os.listdir(tmp_folder):
@@ -145,9 +144,7 @@ class TVBImporter(ABCUploader):
                 file_update_manager = FilesUpdateManager()
                 file_update_manager.upgrade_file(view_model.data_file)
 
-                folder, h5file = os.path.split(view_model.data_file)
-                storage_interface = StorageInterface()
-                if storage_interface.is_valid_hdf5_file(folder, h5file):
+                if self.storage_interface.is_valid_hdf5_file(view_model.data_file):
                     datatype = None
                     try:
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)
