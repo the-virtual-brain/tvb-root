@@ -324,3 +324,6 @@ class FoldersQueueConsumer(threading.Thread):
             encryption_handler.dec_queue_count(folder)
             encryption_handler.check_and_delete(folder)
             encryption_handler.sync_project_queue.task_done()
+
+
+encryption_handler = DataEncryptionHandler()

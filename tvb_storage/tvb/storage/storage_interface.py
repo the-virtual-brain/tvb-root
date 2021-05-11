@@ -35,7 +35,8 @@ All calls to methods from this module must be done through this class.
 """
 
 from tvb.basic.profile import TvbProfile
-from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer
+from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer, \
+    encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
 from tvb.storage.h5.file.files_helper import FilesHelper, TvbZip
 from tvb.storage.h5.file.hdf5_storage_manager import HDF5StorageManager
@@ -56,7 +57,7 @@ class StorageInterface:
 
     def __init__(self):
         self.files_helper = FilesHelper()
-        self.data_encryption_handler = DataEncryptionHandler()
+        self.data_encryption_handler = encryption_handler
         self.folders_queue_consumer = FoldersQueueConsumer()
 
         # object attributes which have parameters in their constructor will be lazily instantiated
