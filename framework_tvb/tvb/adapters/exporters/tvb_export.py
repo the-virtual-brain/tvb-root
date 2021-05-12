@@ -71,16 +71,9 @@ class TVBExporter(ABCExporter):
                 raise ExportException("Could not export a data type group with no data")    
             
             zip_file = os.path.join(export_folder, download_file_name)
-            
-            # Now process each data type from group and add it to ZIP file
-            operation_folders = []
-            for data_type in all_datatypes:
-                operation_folder = self.storage_interface.get_operation_folder(project.name,
-                                                                               data_type.fk_from_operation)
-                operation_folders.append(operation_folder)
-                
+
             # Create ZIP archive    
-            self.storage_interface.zip_folders(zip_file, operation_folders, self.OPERATION_FOLDER_PREFIX)
+            self.storage_interface.zip_folders(all_datatypes, project.name, zip_file, self.OPERATION_FOLDER_PREFIX)
                         
             return download_file_name, zip_file, True
 

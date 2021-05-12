@@ -257,8 +257,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        self.storage_interface.initialize_tvb_zip(view_model.data_file)
-        for tractf in sorted(self.storage_interface.namelist()):  # one track per file
+        for tractf in sorted(self.storage_interface.namelist(view_model.data_file)):  # one track per file
             if not tractf.endswith('.txt'):  # omit directories and other non track files
                 continue
             vertices_file = self.storage_interface.open_tvb_zip(tractf)

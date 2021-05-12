@@ -253,8 +253,7 @@ class H5File(object):
 
     @staticmethod
     def get_metadata_param(path, param):
-        storage_interface = StorageInterface()
-        meta = storage_interface.get_metadata(path)
+        meta = StorageInterface().get_metadata(path)
         return meta.get(param)
 
     def store_metadata_param(self, key, value):

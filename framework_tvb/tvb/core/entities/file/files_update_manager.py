@@ -71,17 +71,15 @@ class FilesUpdateManager(UpdateManager):
                                                  TvbProfile.current.version.DATA_VERSION)
         self.storage_interface = StorageInterface()
 
-    @staticmethod
-    def get_file_data_version(file_path):
+    def get_file_data_version(self, file_path):
         """
         Return the data version for the given file.
 
         :param file_path: the path on disk to the file for which you need the TVB data version
         :returns: a number representing the data version for which the input file was written
         """
-        storage_interface = StorageInterface()
         data_version = TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
-        return storage_interface.get_file_data_version(file_path, data_version)
+        return self.storage_interface.get_file_data_version(file_path, data_version)
 
     def is_file_up_to_date(self, file_path):
         """

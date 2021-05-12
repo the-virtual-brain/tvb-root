@@ -170,9 +170,9 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
                or self._running_op_count(project_folder) > 0
 
     @staticmethod
-    def compute_encrypted_folder_path(current_project_folder, projects_folder):
+    def compute_encrypted_folder_path(current_project_folder):
         project_name = os.path.basename(current_project_folder)
-        project_path = os.path.join(TvbProfile.current.TVB_STORAGE, projects_folder, project_name)
+        project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project_name)
         return "{}{}".format(project_path, DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX)
 
     @staticmethod

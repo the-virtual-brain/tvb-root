@@ -33,6 +33,8 @@ All calls to methods from this module must be done through this class.
 
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+
+from datetime import datetime
 import os
 
 from tvb.basic.profile import TvbProfile
@@ -131,9 +133,12 @@ class StorageInterface:
     def get_allen_mouse_cache_folder(self, project_name):
         return self.get_allen_mouse_cache_folder(project_name)
 
-    @staticmethod
-    def zip_folders(zip_full_path, folders, folder_prefix=""):
-        FilesHelper.zip_folders(zip_full_path, folders, folder_prefix)
+    def zip_folders(self, all_datatypes, project_name, zip_full_path, folder_prefix=""):
+        operation_folders = []
+        for data_type in all_datatypes:
+            operation_folder = self.get_operation_folder(project_name, data_type.fk_from_operation)
+            operation_folders.append(operation_folder)
+        FilesHelper.zip_folders(zip_full_path, operation_folders, folder_prefix)
 
     @staticmethod
     def zip_folder(result_name, folder_root):
@@ -169,8 +174,11 @@ class StorageInterface:
     def write_zip_folder(self, folder, archive_path_prefix="", exclude=None):
         self.tvb_zip.write_zip_folder(folder, archive_path_prefix, exclude)
 
-    def namelist(self):
-        return self.tvb_zip.namelist()
+    def namelist(self, dest_path, mode="r"):
+        self.initialize_tvb_zip(dest_path, mode)
+        name_list = self.tvb_zip.namelist()
+        self.close_tvb_zip()
+        return name_list
 
     def open_tvb_zip(self, name):
         return self.tvb_zip.open(name)
@@ -274,8 +282,9 @@ class StorageInterface:
         self.encryption_handler = EncryptionHandler(dir_gid)
         return self.encryption_handler.decrypt_results_to_dir(dir, from_subdir)
 
-    def decrypt_files_to_dir(self, dir_gid, files, dir):
+    def decrypt_files_to_dir(self, dir_gid, files, project_name, op_id):
         self.encryption_handler = EncryptionHandler(dir_gid)
+        dir = StorageInterface().get_project_folder(project_name, op_id)
         return self.encryption_handler.decrypt_files_to_dir(files, dir)
 
     def get_current_enc_dirname(self, dir_gid):
@@ -299,8 +308,9 @@ class StorageInterface:
     def is_in_usage(self, project_folder):
         return self.data_encryption_handler.is_in_usage(project_folder)
 
-    def compute_encrypted_folder_path(self, current_project_folder):
-        return DataEncryptionHandler.compute_encrypted_folder_path(current_project_folder, self.PROJECTS_FOLDER)
+    @staticmethod
+    def compute_encrypted_folder_path(current_project_folder):
+        return DataEncryptionHandler.compute_encrypted_folder_path(current_project_folder)
 
     @staticmethod
     def sync_folders(folder):
@@ -312,7 +322,8 @@ class StorageInterface:
     def set_project_inactive(self, project):
         self.data_encryption_handler.set_project_inactive(project)
 
-    def push_folder_to_sync(self, project_folder):
+    def push_folder_to_sync(self, project_name):
+        project_folder = self.get_project_folder(project_name)
         self.data_encryption_handler.push_folder_to_sync(project_folder)
 
     @staticmethod
@@ -379,3 +390,25 @@ class StorageInterface:
 
         self.sync_folders(to_project_path)
         self.set_project_inactive(to_project)
+
+    def export_datatypes(self, paths, operation):
+        op_folder = self.get_operation_folder(operation.project.name, operation.id)
+        op_folder_name = os.path.basename(op_folder)
+
+        # add linked datatypes to archive in the import operation
+        for pth in paths:
+            zip_pth = op_folder_name + '/' + os.path.basename(pth)
+            self.write_zip_arc(pth, zip_pth)
+
+        # remove these files, since we only want them in export archive
+        self.remove_folder(op_folder)
+
+    def build_data_export_folder(self, data, export_folder):
+        now = datetime.now()
+        date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
+                                             now.minute, now.second, now.microsecond)
+        tmp_str = date_str + "@" + data.gid
+        data_export_folder = os.path.join(export_folder, tmp_str)
+        self.check_created(data_export_folder)
+
+        return data_export_folder

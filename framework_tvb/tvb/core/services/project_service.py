@@ -68,8 +68,7 @@ def initialize_storage():
     Create Projects storage root folder in case it does not exist.
     """
     try:
-        storage_interface = StorageInterface()
-        storage_interface.check_created()
+        StorageInterface().check_created()
     except FileStructureException:
         # Do nothing, because we do not have any UI to display exception
         logger = get_logger("tvb.core.services.initialize_storage")
@@ -607,7 +606,7 @@ class ProjectService:
             # but we still remove it for the case when no DTs exist
             dao.remove_entity(Operation, operation.id)
             self.storage_interface.remove_operation_data(operation.project.name, operation_id)
-            self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(operation.project.name))
+            self.storage_interface.push_folder_to_sync(operation.project.name)
             self.logger.debug("Finished deleting operation %s " % operation)
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
@@ -673,7 +672,7 @@ class ProjectService:
             # Make sure Operation folder is removed
             self.storage_interface.remove_operation_data(project.name, operation_id)
 
-        self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(project.name))
+        self.storage_interface.push_folder_to_sync(project.name)
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
 

@@ -55,7 +55,6 @@ from tvb.interfaces.web.controllers.decorators import handle_error, expose_page,
     check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import EquationPlotForm
-from tvb.storage.storage_interface import StorageInterface
 
 LOAD_EXISTING_URL = '/spatial/stimulus/region/load_region_stimulus'
 RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/region/reset_region_stimulus'
@@ -255,8 +254,8 @@ class RegionStimulusController(SpatioTemporalController):
         if connectivity is None:
             raise MissingDataException(RegionStimulusController.MSG_MISSING_CONNECTIVITY + "!!")
         current_project = common.get_current_project()
-        conn_path = StorageInterface().get_project_folder(current_project.name, str(connectivity.fk_from_operation))
-        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
+        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, current_project.name,
+                                                                                    str(connectivity.fk_from_operation))
 
         template_specification = dict()
         template_specification['isSingleMode'] = True

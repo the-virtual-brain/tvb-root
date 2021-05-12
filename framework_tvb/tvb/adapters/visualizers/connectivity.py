@@ -54,6 +54,7 @@ from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.surfaces import Surface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ConnectivityViewerModel(ViewModel):
@@ -282,10 +283,11 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         return global_params, global_pages
 
     @staticmethod
-    def get_connectivity_parameters(input_connectivity, conn_path):
+    def get_connectivity_parameters(input_connectivity, project_name, op_id):
         """
         Returns a dictionary which contains all the needed data for drawing a connectivity.
         """
+        conn_path = StorageInterface().get_project_folder(project_name, op_id)
         viewer = ConnectivityViewer()
         viewer.storage_path = conn_path
         conn_dt = h5.load_from_index(input_connectivity)

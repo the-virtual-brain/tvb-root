@@ -332,8 +332,7 @@ class BurstService(object):
                                      range_values=range_values)
         metric_operation.visible = False
         metric_operation = dao.store_entity(metric_operation)
-        op_dir = StorageInterface().get_project_folder(operation.project.name, str(metric_operation.id))
-        return op_dir, metric_operation
+        return metric_operation
 
     @staticmethod
     def handle_range_params_at_loading(burst_config, all_range_parameters):

@@ -140,7 +140,7 @@ class FigureService:
         # Write image meta data to disk
         _, meta_data = figure.to_dict()
         self.storage_interface.write_image_metadata(figure, meta_data)
-        self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(project.name))
+        self.storage_interface.push_folder_to_sync(project.name)
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
         """
@@ -177,7 +177,7 @@ class FigureService:
         # Store figure meta data in an XML attached to the image.
         _, meta_data = figure.to_dict()
         self.storage_interface.write_image_metadata(figure, meta_data)
-        self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(figure.project.name))
+        self.storage_interface.push_folder_to_sync(figure.project.name)
 
     def remove_result_figure(self, figure_id):
         """
@@ -191,7 +191,7 @@ class FigureService:
         if os.path.exists(path2figure):
             os.remove(path2figure)
             self.storage_interface.remove_image_metadata(figure)
-            self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder(figure.project.name))
+            self.storage_interface.push_folder_to_sync(figure.project.name)
         # Remove figure reference from DB.
         result = dao.remove_entity(ResultFigure, figure_id)
         return result

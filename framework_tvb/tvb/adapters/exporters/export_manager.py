@@ -135,7 +135,7 @@ class ExportManager(object):
         # This will imply to generate a folder which is unique for each export
         data_export_folder = None
         try:
-            data_export_folder = self._build_data_export_folder(data)
+            data_export_folder = self.storage_interface.build_data_export_folder(data, self.export_folder)
             self.logger.debug("Start export of data: %s" % data.type)
             export_data = exporter.export(data, data_export_folder, project)
         finally:
@@ -152,7 +152,7 @@ class ExportManager(object):
             # do not export an empty operation
             return
 
-        # Make a import operation which will contain links to other projects
+        # Make an import operation which will contain links to other projects
         algo = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
         op = model_operation.Operation(None, None, project.id, algo.id)
         op.project = project
@@ -161,16 +161,7 @@ class ExportManager(object):
         op.start_now()
         op.mark_complete(model_operation.STATUS_FINISHED)
 
-        op_folder = self.storage_interface.get_operation_folder(op.project.name, op.id)
-        op_folder_name = os.path.basename(op_folder)
-
-        # add linked datatypes to archive in the import operation
-        for pth in linked_paths:
-            zip_pth = op_folder_name + '/' + os.path.basename(pth)
-            self.storage_interface.write_zip_arc(pth, zip_pth)
-
-        # remove these files, since we only want them in export archive
-        self.storage_interface.remove_folder(op_folder)
+        self.storage_interface.export_datatypes(linked_paths, op)
 
     def export_project(self, project, optimize_size=False):
         """
@@ -208,7 +199,7 @@ class ExportManager(object):
         date_str = now.strftime("%Y-%m-%d_%H-%M")
         zip_file_name = "%s_%s.%s" % (date_str, project.name, self.ZIP_FILE_EXTENSION)
 
-        export_folder = self._build_data_export_folder(project)
+        export_folder = self.storage_interface.build_data_export_folder(project, self.export_folder)
         result_path = os.path.join(export_folder, zip_file_name)
 
         self.storage_interface.initialize_tvb_zip(result_path, "w")
@@ -240,27 +231,13 @@ class ExportManager(object):
             op_with_errors.append(op.id)
         return op_with_errors
 
-    def _build_data_export_folder(self, data):
-        """
-        This method computes the folder where results of an export operation will be
-        stored for a while (e.g until download is done; or for 1 day)
-        """
-        now = datetime.now()
-        date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
-                                             now.minute, now.second, now.microsecond)
-        tmp_str = date_str + "@" + data.gid
-        data_export_folder = os.path.join(self.export_folder, tmp_str)
-        self.storage_interface.check_created(data_export_folder)
-
-        return data_export_folder
-
     def export_simulator_configuration(self, burst_id):
         burst = dao.get_burst_by_id(burst_id)
         if burst is None:
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
         op_folder = self.storage_interface.get_project_folder(burst.project.name, str(burst.fk_simulation))
-        tmp_export_folder = self._build_data_export_folder(burst)
+        tmp_export_folder = self.storage_interface.build_data_export_folder(burst, self.export_folder)
         tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
 
         if not os.path.exists(tmp_sim_folder):

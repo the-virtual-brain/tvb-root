@@ -63,9 +63,7 @@ class ZipSurfaceParser(object):
         self._read(path)
 
     def _read(self, path):
-        self.storage_interface.initialize_tvb_zip(path)
-        vertices, normals, triangles = self._group_by_type(sorted(self.storage_interface.namelist()))
-        self.storage_interface.close_tvb_zip()
+        vertices, normals, triangles = self._group_by_type(sorted(self.storage_interface.namelist(path)))
         if len(vertices) == 0:
             raise Exception("Cannot find vertices file.")
         if len(vertices) != len(triangles):

@@ -326,9 +326,10 @@ class HPCSchedulerClient(BackendClient):
         if not metric_encrypted_file:
             return None, None
 
-        metric_op_dir, metric_op = BurstService.prepare_metrics_operation(operation)
+        metric_op = BurstService.prepare_metrics_operation(operation)
         metric_files = storage_interface.decrypt_files_to_dir(simulator_gid, [metric_encrypted_file,
-                                                                              metric_vm_encrypted_file], metric_op_dir)
+                                                                              metric_vm_encrypted_file],
+                                                              operation.project.name, str(metric_op.id))
         metric_file = metric_files[0]
         metric_vm = h5.load_view_model_from_file(metric_files[1])
         metric_op.view_model_gid = metric_vm.gid.hex
@@ -356,8 +357,8 @@ class HPCSchedulerClient(BackendClient):
                                                                            metric_vm_encrypted_file, operation,
                                                                            storage_interface, simulator_gid)
         project = dao.get_project_by_id(operation.fk_launched_in)
-        operation_dir = HPCSchedulerClient.storage_interface.get_project_folder(project.name, str(operation.id))
-        h5_filenames = storage_interface.decrypt_files_to_dir(simulator_gid, simulation_results, operation_dir)
+        h5_filenames = storage_interface.decrypt_files_to_dir(simulator_gid, simulation_results, project.name,
+                                                              str(operation.id))
         storage_interface.cleanup(simulator_gid)
         LOGGER.info("Decrypted h5: {}".format(h5_filenames))
         LOGGER.info("Metric op: {}".format(metric_op))
