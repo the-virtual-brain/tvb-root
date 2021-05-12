@@ -287,9 +287,8 @@ class StorageInterface:
         self.encryption_handler = EncryptionHandler(dir_gid)
         return self.encryption_handler.decrypt_results_to_dir(dir, from_subdir)
 
-    def decrypt_files_to_dir(self, dir_gid, files, project_name, op_id):
+    def decrypt_files_to_dir(self, dir_gid, files, dir):
         self.encryption_handler = EncryptionHandler(dir_gid)
-        dir = StorageInterface().get_project_folder(project_name, op_id)
         return self.encryption_handler.decrypt_files_to_dir(files, dir)
 
     def get_current_enc_dirname(self, dir_gid):
