@@ -60,7 +60,6 @@ class ExportManager(object):
     EXPORT_FOLDER_NAME = "EXPORT_TMP"
     EXPORTED_SIMULATION_NAME = "exported_simulation"
     EXPORTED_SIMULATION_DTS_DIR = "datatypes"
-    ZIP_FILE_EXTENSION = "zip"
     logger = get_logger(__name__)
 
     def __init__(self):
@@ -150,7 +149,7 @@ class ExportManager(object):
 
         if not linked_paths:
             # do not export an empty operation
-            return
+            return None, None
 
         # Make an import operation which will contain links to other projects
         algo = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
@@ -161,7 +160,7 @@ class ExportManager(object):
         op.start_now()
         op.mark_complete(model_operation.STATUS_FINISHED)
 
-        self.storage_interface.export_datatypes(linked_paths, op)
+        return linked_paths, op
 
     def export_project(self, project, optimize_size=False):
         """
@@ -172,51 +171,13 @@ class ExportManager(object):
         if project is None:
             raise ExportException("Please provide project to be exported")
 
-        project_folder = self.storage_interface.get_project_folder(project.name)
         project_datatypes = dao.get_datatypes_in_project(project.id, only_visible=optimize_size)
-        to_be_exported_folders = []
-        considered_op_ids = []
+
         folders_to_exclude = self._get_op_with_errors(project.id)
+        linked_paths, op = self._export_linked_datatypes(project)
 
-        if optimize_size:
-            # take only the DataType with visibility flag set ON
-            for dt in project_datatypes:
-                op_id = dt.fk_from_operation
-                if op_id not in considered_op_ids:
-                    to_be_exported_folders.append({'folder': self.storage_interface.get_project_folder(project.name,
-                                                                                                       str(op_id)),
-                                                   'archive_path_prefix': str(op_id) + os.sep,
-                                                   'exclude': folders_to_exclude})
-                    considered_op_ids.append(op_id)
-
-        else:
-            folders_to_exclude.append("TEMP")
-            to_be_exported_folders.append({'folder': project_folder,
-                                           'archive_path_prefix': '', 'exclude': folders_to_exclude})
-
-        # Compute path and name of the zip file
-        now = datetime.now()
-        date_str = now.strftime("%Y-%m-%d_%H-%M")
-        zip_file_name = "%s_%s.%s" % (date_str, project.name, self.ZIP_FILE_EXTENSION)
-
-        export_folder = self.storage_interface.build_data_export_folder(project, self.export_folder)
-        result_path = os.path.join(export_folder, zip_file_name)
-
-        self.storage_interface.initialize_tvb_zip(result_path, "w")
-        # Pack project [filtered] content into a ZIP file:
-        self.logger.debug("Done preparing, now we will write folders " + str(len(to_be_exported_folders)))
-        self.logger.debug(str(to_be_exported_folders))
-        for pack in to_be_exported_folders:
-            self.storage_interface.write_zip_folder(**pack)
-        self.logger.debug("Done exporting files, now we will export linked DTs")
-        self._export_linked_datatypes(project)
-        # Make sure the Project.xml file gets copied:
-        if optimize_size:
-            self.logger.debug("Done linked, now we write the project xml")
-            self.storage_interface.write_zip_arc(self.storage_interface.get_project_meta_file_path(project.name),
-                                                 self.storage_interface.TVB_PROJECT_FILE)
-        self.logger.debug("Done, closing")
-        self.storage_interface.close_tvb_zip()
+        result_path = self.storage_interface.export_project(project, project_datatypes, folders_to_exclude,
+                                                            self.export_folder, linked_paths, op, optimize_size)
 
         return result_path
 
@@ -261,7 +222,7 @@ class ExportManager(object):
 
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
-        zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), self.ZIP_FILE_EXTENSION)
+        zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), StorageInterface.ZIP_FILE_EXTENSION)
 
         result_path = os.path.join(tmp_export_folder, zip_file_name)
         self.storage_interface.initialize_tvb_zip(result_path, "w")

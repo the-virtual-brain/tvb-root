@@ -37,6 +37,7 @@ All calls to methods from this module must be done through this class.
 from datetime import datetime
 import os
 
+from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer, \
     encryption_handler
@@ -58,6 +59,10 @@ class StorageInterface:
     TVB_ZIP_FILE_EXTENSION = ".zip"
 
     TVB_PROJECT_FILE = "Project" + TVB_FILE_EXTENSION
+
+    ZIP_FILE_EXTENSION = "zip"
+
+    logger = get_logger(__name__)
 
     def __init__(self):
         self.files_helper = FilesHelper()
@@ -195,7 +200,7 @@ class StorageInterface:
         self.storage_manager = HDF5StorageManager(file_full_path)
         return self.storage_manager.is_valid_tvb_file()
 
-    def store_data(self, file_full_path,  dataset_name, data_list, where=ROOT_NODE_PATH):
+    def store_data(self, file_full_path, dataset_name, data_list, where=ROOT_NODE_PATH):
         self.storage_manager = HDF5StorageManager(file_full_path)
         self.storage_manager.store_data(dataset_name, data_list, where)
 
@@ -412,3 +417,54 @@ class StorageInterface:
         self.check_created(data_export_folder)
 
         return data_export_folder
+
+    def export_project(self, project, project_datatypes, folders_to_exclude, export_folder, linked_paths, op,
+                       optimize_size):
+        project_folder = self.get_project_folder(project.name)
+        to_be_exported_folders = []
+        considered_op_ids = []
+
+        if optimize_size:
+            # take only the DataType with visibility flag set ON
+            for dt in project_datatypes:
+                op_id = dt.fk_from_operation
+                if op_id not in considered_op_ids:
+                    to_be_exported_folders.append({'folder': self.get_project_folder(project.name,
+                                                                                     str(op_id)),
+                                                   'archive_path_prefix': str(op_id) + os.sep,
+                                                   'exclude': folders_to_exclude})
+                    considered_op_ids.append(op_id)
+
+        else:
+            folders_to_exclude.append("TEMP")
+            to_be_exported_folders.append({'folder': project_folder,
+                                           'archive_path_prefix': '', 'exclude': folders_to_exclude})
+
+        # Compute path and name of the zip file
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d_%H-%M")
+        zip_file_name = "%s_%s.%s" % (date_str, project.name, self.ZIP_FILE_EXTENSION)
+
+        export_folder = self.build_data_export_folder(project, export_folder)
+        result_path = os.path.join(export_folder, zip_file_name)
+
+        self.initialize_tvb_zip(result_path, "w")
+        # Pack project [filtered] content into a ZIP file:
+        self.logger.debug("Done preparing, now we will write folders " + str(len(to_be_exported_folders)))
+        self.logger.debug(str(to_be_exported_folders))
+        for pack in to_be_exported_folders:
+            self.write_zip_folder(**pack)
+        self.logger.debug("Done exporting files, now we will export linked DTs")
+
+        if linked_paths is not None:
+            self.export_datatypes(linked_paths, op)
+
+        # Make sure the Project.xml file gets copied:
+        if optimize_size:
+            self.logger.debug("Done linked, now we write the project xml")
+            self.write_zip_arc(self.get_project_meta_file_path(project.name),
+                               self.TVB_PROJECT_FILE)
+        self.logger.debug("Done, closing")
+        self.close_tvb_zip()
+
+        return result_path
