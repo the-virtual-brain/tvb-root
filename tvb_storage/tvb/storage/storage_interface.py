@@ -33,11 +33,13 @@ All calls to methods from this module must be done through this class.
 
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+import os
 
 from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer, \
     encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
+from tvb.storage.h5.file.exceptions import RenameWhileSyncEncryptingException
 from tvb.storage.h5.file.files_helper import FilesHelper, TvbZip
 from tvb.storage.h5.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.storage.h5.file.xml_metadata_handlers import XMLReader, XMLWriter
@@ -112,6 +114,7 @@ class StorageInterface:
 
     def remove_datatype_file(self, h5_file):
         self.files_helper.remove_datatype_file(h5_file)
+        self.push_folder_to_sync(self.get_project_folder_from_h5(h5_file))
 
     def move_datatype(self, new_project_name, new_op_id, full_path):
         self.files_helper.move_datatype(new_project_name, new_op_id, full_path)
@@ -346,4 +349,33 @@ class StorageInterface:
     def ends_with_tvb_storage_file_extension(self, file):
         return file.endswith(self.TVB_STORAGE_FILE_EXTENSION)
 
+    def rename_project(self, current_proj_name, new_name):
+        project_folder = self.get_project_folder(current_proj_name)
+        if self.encryption_enabled() and not self.is_in_usage(project_folder):
+            raise RenameWhileSyncEncryptingException(
+                "A project can not be renamed while sync encryption operations are running")
+        self.rename_project_structure(current_proj_name, new_name)
+        encrypted_path = self.compute_encrypted_folder_path(project_folder)
+        if os.path.exists(encrypted_path):
+            new_encrypted_path = self.compute_encrypted_folder_path(
+                self.get_project_folder(new_name))
+            os.rename(encrypted_path, new_encrypted_path)
 
+    def remove_project(self, project):
+        project_folder = self.get_project_folder(project.name)
+        self.remove_project_structure(project.name)
+        encrypted_path = self.compute_encrypted_folder_path(project_folder)
+        if os.path.exists(encrypted_path):
+            self.remove_folder(encrypted_path)
+        if os.path.exists(self.project_key_path(project.id)):
+            os.remove(self.project_key_path(project.id))
+
+    def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, full_path, vm_full_path):
+        self.set_project_active(to_project)
+        self.sync_folders(to_project_path)
+
+        self.move_datatype(to_project.name, str(new_op_id), full_path)
+        self.move_datatype(to_project.name, str(new_op_id), vm_full_path)
+
+        self.sync_folders(to_project_path)
+        self.set_project_inactive(to_project)

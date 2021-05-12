@@ -117,16 +117,7 @@ class ProjectService:
                 self.logger.exception("An error has occurred!")
                 raise ProjectServiceException(str(excep))
             if current_proj.name != new_name:
-                project_folder = self.storage_interface.get_project_folder(current_proj.name)
-                if StorageInterface.encryption_enabled() and not self.storage_interface.is_in_usage(project_folder):
-                    raise ProjectServiceException(
-                        "A project can not be renamed while sync encryption operations are running")
-                self.storage_interface.rename_project_structure(current_proj.name, new_name)
-                encrypted_path = self.storage_interface.compute_encrypted_folder_path(project_folder)
-                if os.path.exists(encrypted_path):
-                    new_encrypted_path = self.storage_interface.compute_encrypted_folder_path(
-                        self.storage_interface.get_project_folder(new_name))
-                    os.rename(encrypted_path, new_encrypted_path)
+                self.storage_interface.rename_project(current_proj.name, new_name)
             current_proj.name = new_name
             current_proj.description = data["description"]
         # Commit to make sure we have a valid ID
@@ -322,13 +313,7 @@ class ProjectService:
             for burst in project_bursts:
                 dao.remove_entity(burst.__class__, burst.id)
 
-            project_folder = self.storage_interface.get_project_folder(project2delete.name)
-            self.storage_interface.remove_project_structure(project2delete.name)
-            encrypted_path = self.storage_interface.compute_encrypted_folder_path(project_folder)
-            if os.path.exists(encrypted_path):
-                self.storage_interface.remove_folder(encrypted_path)
-            if os.path.exists(self.storage_interface.project_key_path(project_id)):
-                os.remove(self.storage_interface.project_key_path(project_id))
+            self.storage_interface.remove_project(project2delete)
             dao.delete_project(project_id)
             self.logger.debug("Deleted project: id=" + str(project_id) + ' name=' + project2delete.name)
 
@@ -584,20 +569,12 @@ class ProjectService:
                     to_project = self.find_project(links[0].fk_to_project)
                     to_project_path = self.storage_interface.get_project_folder(to_project.name)
 
-                    self.storage_interface.set_project_active(to_project)
-                    self.storage_interface.sync_folders(to_project_path)
-                    to_project_name = to_project.name
-
                     full_path = h5.path_for_stored_index(datatype)
-                    self.storage_interface.move_datatype(to_project_name, str(new_op.id), full_path)
-                    # Move also the ViewModel H5
                     old_folder = self.storage_interface.get_project_folder(project.name, str(op.id))
-                    view_model = adapter.load_view_model(op)
                     vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
-                    self.storage_interface.move_datatype(to_project_name, str(new_op.id), vm_full_path)
 
-                    self.storage_interface.sync_folders(to_project_path)
-                    self.storage_interface.set_project_inactive(to_project)
+                    self.storage_interface.move_datatype_with_sync(to_project, to_project_path, new_op.id, full_path,
+                                                         vm_full_path)
 
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
@@ -608,7 +585,6 @@ class ProjectService:
                 specific_remover.remove_datatype(skip_validation)
                 h5_path = h5.path_for_stored_index(datatype)
                 self.storage_interface.remove_datatype_file(h5_path)
-                self.storage_interface.push_folder_to_sync(self.storage_interface.get_project_folder_from_h5(h5_path))
 
         except RemoveDataTypeException:
             self.logger.exception("Could not execute operation Node Remove!")

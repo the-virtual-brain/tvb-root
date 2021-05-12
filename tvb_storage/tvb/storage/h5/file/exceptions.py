@@ -121,3 +121,11 @@ class UnsupportedFileStorageException(TVBException):
 
     def __init__(self, message):
         super().__init__(message)
+
+
+class RenameWhileSyncEncryptingException(TVBException):
+    """
+    Exception to be thrown in case a project is to be renamed during sync encryption.
+    """
+    def __init__(self, message):
+        super().__init__(message)
