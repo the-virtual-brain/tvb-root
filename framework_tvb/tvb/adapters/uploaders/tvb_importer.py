@@ -111,7 +111,7 @@ class TVBImporter(ABCUploader):
             current_op = dao.get_operation_by_id(self.operation_id)
             if zipfile.is_zipfile(view_model.data_file):
                 # Creates a new TMP folder where to extract data
-                tmp_folder = os.path.join(self.storage_path, "tmp_import")
+                tmp_folder = os.path.join(self.get_storage_path(), "tmp_import")
                 self.storage_interface.unpack_zip(view_model.data_file, tmp_folder)
                 is_group = False
                 current_op_id = current_op.id

@@ -114,7 +114,7 @@ class ZIPConnectivityImporter(ABCUploader):
         if view_model.uploaded is None:
             raise LaunchException("Please select ZIP file which contains data to import")
 
-        files = self.storage_interface.unpack_zip(view_model.uploaded, self.storage_path)
+        files = self.storage_interface.unpack_zip(view_model.uploaded, self.get_storage_path())
 
         weights_matrix = None
         centres = None

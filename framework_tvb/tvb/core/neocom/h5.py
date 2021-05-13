@@ -40,7 +40,6 @@ from tvb.core.neocom._h5loader import Loader, DirLoader, TVBLoader, ViewModelLoa
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import ViewModel
-from tvb.storage.h5.storage_interface import StorageInterface
 
 REGISTRY = Registry()
 
