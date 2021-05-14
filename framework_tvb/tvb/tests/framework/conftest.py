@@ -251,7 +251,7 @@ def connectivity_index_factory(connectivity_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        conn_db = ABCAdapter.store_complete(conn, op.id, op.project.id)
+        conn_db = h5.store_complete_to_op_dir(conn, op.id, op.project.name)
         conn_db.fk_from_operation = op.id
         return dao.store_entity(conn_db)
 
@@ -302,7 +302,7 @@ def surface_index_factory(surface_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        surface_db = ABCAdapter.store_complete(surface, op.id, op.project.id)
+        surface_db = h5.store_complete_to_op_dir(surface, op.id, op.project.name)
         surface_db.fk_from_operation = op.id
         return dao.store_entity(surface_db), surface
 
@@ -333,18 +333,18 @@ def region_mapping_index_factory(region_mapping_factory, operation_factory):
             op = operation_factory()
 
         if not surface_gid:
-            surface_db = ABCAdapter.store_complete(region_mapping.surface, op.id, op.project.id)
+            surface_db = h5.store_complete_to_op_dir(region_mapping.surface, op.id, op.project.name)
             surface_db.fk_from_operation = op.id
             dao.store_entity(surface_db)
         else:
             region_mapping.surface.gid = uuid.UUID(surface_gid)
         if not conn_gid:
-            conn_db = ABCAdapter.store_complete(region_mapping.connectivity, op.id, op.project.id)
+            conn_db = h5.store_complete_to_op_dir(region_mapping.connectivity, op.id, op.project.name)
             conn_db.fk_from_operation = op.id
             dao.store_entity(conn_db)
         else:
             region_mapping.connectivity.gid = uuid.UUID(conn_gid)
-        rm_db = ABCAdapter.store_complete(region_mapping, op.id, op.project.id)
+        rm_db = h5.store_complete_to_op_dir(region_mapping, op.id, op.project.name)
         rm_db.fk_from_operation = op.id
         return dao.store_entity(rm_db)
 
@@ -384,7 +384,7 @@ def sensors_index_factory(sensors_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        sensors_db = ABCAdapter.store_complete(sensors, op.id, op.project.id)
+        sensors_db = h5.store_complete_to_op_dir(sensors, op.id, op.project.name)
         sensors_db.fk_from_operation = op.id
         return dao.store_entity(sensors_db), sensors
 
@@ -672,11 +672,11 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        surface_db = ABCAdapter.store_complete(surface, op.id, op.project.id)
+        surface_db = h5.store_complete_to_op_dir(surface, op.id, op.project.name)
         surface_db.fk_from_operation = op.id
         dao.store_entity(surface_db)
 
-        lconn_db = ABCAdapter.store_complete(lconn, op.id, op.project.id)
+        lconn_db = h5.store_complete_to_op_dir(lconn, op.id, op.project.name)
         lconn_db.fk_from_operation = op.id
         return dao.store_entity(lconn_db), lconn
 

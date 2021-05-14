@@ -40,7 +40,6 @@ from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
@@ -91,7 +90,7 @@ class FooDataImporter(ABCUploader):
         ts_index = TimeSeriesIndex()
         ts_index.fill_from_has_traits(ts)
 
-        ts_h5_path = self.path_for(self.operation_id, TimeSeriesH5, ts_index.gid, self.current_project_id)
+        ts_h5_path = self.path_for(TimeSeriesH5, ts_index.gid)
 
         with TimeSeriesH5(ts_h5_path) as ts_h5:
             ts_h5.store(ts, scalars_only=True)

@@ -133,8 +133,7 @@ class NodeCovarianceAdapter(ABCAdapter):
         """
         # -------------------- Prepare result entities ---------------------##
         covariance_index = CovarianceIndex()
-        covariance_h5_path = self.path_for(self.operation_id, CovarianceH5, covariance_index.gid,
-                                           self.current_project_id)
+        covariance_h5_path = self.path_for(CovarianceH5, covariance_index.gid)
         covariance_h5 = CovarianceH5(covariance_h5_path)
 
         # ------------ NOTE: Assumes 4D, Simulator timeSeries -------------##

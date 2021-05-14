@@ -196,6 +196,6 @@ class TimeseriesMetricsAdapter(ABCAdapter):
 
         dt_metric = DatatypeMeasure(analyzed_datatype=dt_timeseries, metrics=metrics_results)
 
-        result = self.store_complete(dt_metric, self.operation_id, self.current_project_id)
+        result = self.store_complete(dt_metric)
 
         return result

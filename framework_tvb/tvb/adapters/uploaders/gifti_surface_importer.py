@@ -125,7 +125,7 @@ class GIFTISurfaceImporter(ABCUploader):
 
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
-            surface_idx = self.store_complete(surface, self.operation_id, self.current_project_id)
+            surface_idx = self.store_complete(surface)
             return [surface_idx]
         except ParseException as excep:
             logger = get_logger(__name__)

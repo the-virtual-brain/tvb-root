@@ -171,7 +171,7 @@ class TestFactory(object):
             test_project = TestFactory.create_project(test_user, 'test_proj')
         operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
         value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
-        vw_idx = ABCAdapter.store_complete(value_wrapper, operation.id, operation.project.id)
+        vw_idx = h5.store_complete_to_op_dir(value_wrapper, operation.id, operation.project.name)
         vw_idx.fk_from_operation = operation.id
         vw_idx = dao.store_entity(vw_idx)
         return test_project, vw_idx.gid, operation
@@ -185,7 +185,7 @@ class TestFactory(object):
         wrapper_surf.gid = uuid.UUID(surface_gid)
         lc_ht = LocalConnectivity.from_file()
         lc_ht.surface = wrapper_surf
-        lc_idx = ABCAdapter.store_complete(lc_ht, op.id, project.id)
+        lc_idx = h5.store_complete_to_op_dir(lc_ht, op.id, project.name)
         lc_idx.fk_surface_gid = surface_gid
         lc_idx.fk_from_operation = op.id
         dao.store_entity(lc_idx)

@@ -177,4 +177,4 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,
                                              projection_data=projection_data)
-        return self.store_complete(projection_matrix, self.operation_id, self.current_project_id)
+        return self.store_complete(projection_matrix)

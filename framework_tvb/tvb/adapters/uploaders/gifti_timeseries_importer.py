@@ -109,7 +109,7 @@ class GIFTITimeSeriesImporter(ABCUploader):
             partial_time_series, gifti_data_arrays = parser.parse(view_model.data_file)
 
             ts_idx = TimeSeriesSurfaceIndex()
-            ts_h5_path = self.path_for(self.operation_id, TimeSeriesSurfaceH5, ts_idx.gid, self.current_project_id)
+            ts_h5_path = self.path_for(TimeSeriesSurfaceH5, ts_idx.gid)
 
             ts_h5 = TimeSeriesSurfaceH5(ts_h5_path)
             # todo : make sure that write_time_slice is not required here

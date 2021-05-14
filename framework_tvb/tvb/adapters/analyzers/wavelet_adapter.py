@@ -218,7 +218,7 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
 
         # --------------------- Prepare result entities ----------------------##
         wavelet_index = WaveletCoefficientsIndex()
-        dest_path = self.path_for(self.operation_id, WaveletCoefficientsH5, wavelet_index.gid, self.current_project_id)
+        dest_path = self.path_for(WaveletCoefficientsH5, wavelet_index.gid)
         wavelet_h5 = WaveletCoefficientsH5(path=dest_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##

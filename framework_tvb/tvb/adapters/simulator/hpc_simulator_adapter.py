@@ -140,15 +140,11 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
         metric_adapter._prelaunch(None, metric_vm, self.available_disk_space)
 
-    @staticmethod
-    def path_for(op_id, h5_file_class, gid, project_id, dt_class=None):
-        """
-        """
+    def path_for(self, h5_file_class, gid, dt_class=None):
+        return h5.path_by_dir(self.storage_path, h5_file_class, gid, dt_class)
 
-    @staticmethod
-    def store_complete(datatype, op_id, project_id, generic_attributes=GenericAttributes()):
-        """
-        """
+    def store_complete(self, datatype, generic_attributes=GenericAttributes()):
+        return h5.store_complete(self.storage_path, datatype, generic_attributes)
 
     def get_storage_path(self):
         """
@@ -198,15 +194,11 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
     def _ensure_enough_resources(self, available_disk_space, view_model):
         return 0
 
-    @staticmethod
-    def path_for(op_id, h5_file_class, gid, project_id, dt_class=None):
-        """
-        """
+    def path_for(self, h5_file_class, gid, dt_class=None):
+        return h5.path_by_dir(self.storage_path, h5_file_class, gid, dt_class)
 
-    @staticmethod
-    def store_complete(datatype, op_id, project_id, generic_attributes=GenericAttributes()):
-        """
-        """
+    def store_complete(self, datatype, generic_attributes=GenericAttributes()):
+        return h5.store_complete(self.storage_path, datatype, generic_attributes)
 
     def get_storage_path(self):
         """

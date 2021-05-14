@@ -67,7 +67,7 @@ class TestAdapters(TransactionalTestCase):
         wavelet_adapter.extract_operation_data(wavelet_op)
         wavelet_idx = wavelet_adapter.launch(view_model)
 
-        result_h5 = wavelet_adapter.path_for(wavelet_op.id, WaveletCoefficientsH5, wavelet_idx.gid, project_id)
+        result_h5 = wavelet_adapter.path_for(WaveletCoefficientsH5, wavelet_idx.gid)
         assert os.path.exists(result_h5)
 
     def test_pca_adapter(self, time_series_index_factory, operation_from_existing_op_factory):
@@ -86,7 +86,7 @@ class TestAdapters(TransactionalTestCase):
         pca_adapter.extract_operation_data(pca_op)
         pca_idx = pca_adapter.launch(view_model)
 
-        result_h5 = pca_adapter.path_for(pca_op.id, PrincipalComponentsH5, pca_idx.gid, project_id)
+        result_h5 = pca_adapter.path_for(PrincipalComponentsH5, pca_idx.gid)
         assert os.path.exists(result_h5)
 
     def test_ica_adapter(self, time_series_index_factory, operation_from_existing_op_factory):
@@ -105,7 +105,7 @@ class TestAdapters(TransactionalTestCase):
         ica_adapter.extract_operation_data(ica_op)
         ica_idx = ica_adapter.launch(view_model)
 
-        result_h5 = ica_adapter.path_for(ica_op.id, IndependentComponentsH5, ica_idx.gid, project_id)
+        result_h5 = ica_adapter.path_for(IndependentComponentsH5, ica_idx.gid)
         assert os.path.exists(result_h5)
 
     def test_metrics_adapter_launch(self, time_series_index_factory, operation_from_existing_op_factory):
@@ -124,7 +124,7 @@ class TestAdapters(TransactionalTestCase):
         metrics_adapter.extract_operation_data(metrics_op)
         datatype_measure_index = metrics_adapter.launch(view_model)
 
-        result_h5 = metrics_adapter.path_for(metrics_op.id, DatatypeMeasureH5, datatype_measure_index.gid, project_id)
+        result_h5 = metrics_adapter.path_for(DatatypeMeasureH5, datatype_measure_index.gid)
         assert os.path.exists(result_h5)
 
     def test_cross_correlation_adapter(self, time_series_index_factory, operation_from_existing_op_factory):
@@ -143,8 +143,7 @@ class TestAdapters(TransactionalTestCase):
         cross_correlation_adapter.extract_operation_data(cross_correlation_op)
         cross_correlation_idx = cross_correlation_adapter.launch(view_model)
 
-        result_h5 = cross_correlation_adapter.path_for(cross_correlation_op.id, CrossCorrelationH5,
-                                                       cross_correlation_idx.gid, project_id)
+        result_h5 = cross_correlation_adapter.path_for(CrossCorrelationH5, cross_correlation_idx.gid)
         assert os.path.exists(result_h5)
 
     def test_pearson_correlation_coefficient_adapter(self, time_series_index_factory,
@@ -165,9 +164,8 @@ class TestAdapters(TransactionalTestCase):
         pearson_correlation_coefficient_adapter.extract_operation_data(pearson_correlation_op)
         correlation_coefficients_idx = pearson_correlation_coefficient_adapter.launch(view_model)
 
-        result_h5 = pearson_correlation_coefficient_adapter.path_for(pearson_correlation_op.id,
-                                                                     CorrelationCoefficientsH5,
-                                                                     correlation_coefficients_idx.gid, project_id)
+        result_h5 = pearson_correlation_coefficient_adapter.path_for(CorrelationCoefficientsH5,
+                                                                     correlation_coefficients_idx.gid)
         assert os.path.exists(result_h5)
 
     def test_node_coherence_adapter(self, time_series_index_factory, operation_from_existing_op_factory):
@@ -187,8 +185,7 @@ class TestAdapters(TransactionalTestCase):
         node_coherence_adapter.extract_operation_data(node_coherence_op)
         coherence_spectrum_idx = node_coherence_adapter.launch(view_model)
 
-        result_h5 = node_coherence_adapter.path_for(node_coherence_op.id, CoherenceSpectrumH5,
-                                                    coherence_spectrum_idx.gid, project_id)
+        result_h5 = node_coherence_adapter.path_for(CoherenceSpectrumH5, coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
     def test_node_complex_coherence_adapter(self, time_series_index_factory, operation_from_existing_op_factory):
@@ -207,8 +204,8 @@ class TestAdapters(TransactionalTestCase):
         node_complex_coherence_adapter.extract_operation_data(complex_coherence_op)
         complex_coherence_spectrum_idx = node_complex_coherence_adapter.launch(view_model)
 
-        result_h5 = node_complex_coherence_adapter.path_for(complex_coherence_op.id, ComplexCoherenceSpectrumH5,
-                                                            complex_coherence_spectrum_idx.gid, project_id)
+        result_h5 = node_complex_coherence_adapter.path_for(ComplexCoherenceSpectrumH5,
+                                                            complex_coherence_spectrum_idx.gid)
         assert os.path.exists(result_h5)
 
     def test_fcd_adapter(self, time_series_region_index_factory, connectivity_index_factory,
@@ -235,7 +232,7 @@ class TestAdapters(TransactionalTestCase):
         fcd_adapter.extract_operation_data(fcd_op)
         fcd_idx = fcd_adapter.launch(view_model)
 
-        result_h5 = fcd_adapter.path_for(fcd_op.id, FcdH5, fcd_idx[0].gid, project_id)
+        result_h5 = fcd_adapter.path_for(FcdH5, fcd_idx[0].gid)
         assert os.path.exists(result_h5)
 
     def test_fmri_balloon_adapter(self, time_series_region_index_factory,
@@ -259,7 +256,7 @@ class TestAdapters(TransactionalTestCase):
         fmri_balloon_adapter.extract_operation_data(fmri_balloon_op)
         ts_index = fmri_balloon_adapter.launch(view_model)
 
-        result_h5 = fmri_balloon_adapter.path_for(fmri_balloon_op.id, TimeSeriesRegionH5, ts_index.gid, project_id)
+        result_h5 = fmri_balloon_adapter.path_for(TimeSeriesRegionH5, ts_index.gid)
         assert os.path.exists(result_h5)
 
     def test_node_covariance_adapter(self, time_series_index_factory, operation_from_existing_op_factory):
@@ -278,6 +275,5 @@ class TestAdapters(TransactionalTestCase):
         node_covariance_adapter.extract_operation_data(node_covariance_op)
         covariance_idx = node_covariance_adapter.launch(view_model)
 
-        result_h5 = node_covariance_adapter.path_for(node_covariance_op.id, CovarianceH5, covariance_idx.gid,
-                                                     project_id)
+        result_h5 = node_covariance_adapter.path_for(CovarianceH5, covariance_idx.gid)
         assert os.path.exists(result_h5)

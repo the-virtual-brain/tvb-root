@@ -224,4 +224,4 @@ class CSVConnectivityImporter(ABCUploader):
         result.hemispheres = input_connectivity.hemispheres
         result.configure()
 
-        return self.store_complete(result, self.operation_id, self.current_project_id)
+        return self.store_complete(result)

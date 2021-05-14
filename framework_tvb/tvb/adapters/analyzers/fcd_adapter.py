@@ -216,7 +216,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
 
         # Create an index for the computed fcd.
         fcd_index = FcdIndex()
-        fcd_h5_path = self.path_for(self.operation_id, FcdH5, fcd_index.gid, self.current_project_id)
+        fcd_h5_path = self.path_for(FcdH5, fcd_index.gid)
         with FcdH5(fcd_h5_path) as fcd_h5:
             self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, self.input_time_series_index.gid,
                                   view_model.sw, view_model.sp)
@@ -225,8 +225,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
 
         if np.amax(fcd_segmented) == 1.1:
             result_fcd_segmented_index = FcdIndex()
-            result_fcd_segmented_h5_path = self.path_for(self.operation_id, FcdH5, result_fcd_segmented_index.gid,
-                                                         self.current_project_id)
+            result_fcd_segmented_h5_path = self.path_for(FcdH5, result_fcd_segmented_index.gid)
             with FcdH5(result_fcd_segmented_h5_path) as result_fcd_segmented_h5:
                 self._populate_fcd_h5(result_fcd_segmented_h5, fcd_segmented,
                                       result_fcd_segmented_index.gid,
@@ -246,7 +245,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
                         measure.array_data = cm_data
                         measure.title = "Epoch # %d, eigenvalue = %s, variable = %s, " \
                                         "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
-                        cm_index = self.store_complete(measure, self.operation_id, self.current_project_id)
+                        cm_index = self.store_complete(measure)
                         result.append(cm_index)
         return result
 

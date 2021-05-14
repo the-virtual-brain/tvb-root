@@ -167,7 +167,7 @@ class LocalConnectivityCreator(ABCAdapter):
         local_connectivity.compute_sparse_matrix()
         self.generic_attributes.user_tag_1 = view_model.display_name
 
-        return self.store_complete(local_connectivity, self.operation_id, self.current_project_id)
+        return self.store_complete(local_connectivity)
 
     def get_required_disk_size(self, view_model):
         # type: (LocalConnectivityCreatorModel) -> int

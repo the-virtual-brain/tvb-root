@@ -50,7 +50,7 @@ if __name__ == '__main__':
     h5.store_complete(conn_ht, PATH)
 
     # Reproduce the just written file name containing GUID
-    file_name = h5.path_for(PATH, ConnectivityH5, conn_ht.gid)
+    file_name = h5.path_by_dir(PATH, ConnectivityH5, conn_ht.gid)
 
     # Load back from a file name a HasTraits instance
     conn_back = h5.load(file_name)

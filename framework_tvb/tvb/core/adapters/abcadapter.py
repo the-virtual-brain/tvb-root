@@ -562,15 +562,13 @@ class ABCAdapter(object):
         analyzer_index.shape = json.dumps(analyzer_h5.array_data.shape)
         analyzer_index.ndim = len(analyzer_h5.array_data.shape)
 
-    @staticmethod
-    def path_for(op_id, h5_file_class, gid, project_id, dt_class=None):
-        project = dao.get_project_by_id(project_id)
-        return h5.path_for(op_id, h5_file_class, gid, project.name, dt_class)
+    def path_for(self, h5_file_class, gid, dt_class=None):
+        project = dao.get_project_by_id(self.current_project_id)
+        return h5.path_for(self.operation_id, h5_file_class, gid, project.name, dt_class)
 
-    @staticmethod
-    def store_complete(datatype, op_id, project_id, generic_attributes=GenericAttributes()):
-        project = dao.get_project_by_id(project_id)
-        return h5.store_complete(datatype, op_id, project.name, generic_attributes)
+    def store_complete(self, datatype, generic_attributes=GenericAttributes()):
+        project = dao.get_project_by_id(self.current_project_id)
+        return h5.store_complete_to_op_dir(datatype, self.operation_id, project.name, generic_attributes)
 
     def get_storage_path(self):
         project = dao.get_project_by_id(self.current_project_id)

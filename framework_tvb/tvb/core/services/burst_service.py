@@ -223,8 +223,8 @@ class BurstService(object):
 
     @staticmethod
     def store_burst_configuration(burst_config):
-        bc_path = ABCAdapter.path_for(burst_config.fk_simulation, BurstConfigurationH5, burst_config.gid,
-                                      burst_config.fk_project)
+        project = dao.get_project_by_id(burst_config.fk_project)
+        bc_path = h5.path_for(burst_config.fk_simulation, BurstConfigurationH5, burst_config.gid, project.name)
         with BurstConfigurationH5(bc_path) as bc_h5:
             bc_h5.store(burst_config)
 

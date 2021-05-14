@@ -210,7 +210,7 @@ class TrackvizTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        with TractsH5(self.path_for(self.operation_id, TractsH5, datatype.gid, self.current_project_id)) as tracts_h5:
+        with TractsH5(self.path_for(TractsH5, datatype.gid)) as tracts_h5:
             # we process tracts in bigger chunks to optimize disk write costs
             for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
                 tract_bundle = [tr[0] for tr in tract_bundle]
@@ -251,7 +251,7 @@ class ZipTxtTractsImporter(_TrackImporterBase):
     def launch(self, view_model):
         # type: (TrackImporterModel) -> [TractsIndex]
         datatype = self._base_before_launch(view_model.data_file, view_model.region_volume)
-        tracts_h5 = TractsH5(self.path_for(self.operation_id, TractsH5, datatype.gid, self.current_project_id))
+        tracts_h5 = TractsH5(self.path_for(TractsH5, datatype.gid))
 
         tract_start_indices = [0]
         tract_region = []

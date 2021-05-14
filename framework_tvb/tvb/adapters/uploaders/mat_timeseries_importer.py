@@ -154,7 +154,7 @@ class RegionTimeSeriesImporter(ABCUploader):
             ts_idx.fk_region_mapping_gid = region_map_indexes[0].gid
             ts_idx.has_surface_mapping = True
 
-        ts_h5_path = self.path_for(self.operation_id, TimeSeriesRegionH5, ts_idx.gid, self.current_project_id)
+        ts_h5_path = self.path_for(TimeSeriesRegionH5, ts_idx.gid)
         ts_h5 = TimeSeriesRegionH5(ts_h5_path)
         ts_h5.connectivity.store(uuid.UUID(connectivity.gid))
 
@@ -168,7 +168,7 @@ class RegionTimeSeriesImporter(ABCUploader):
         ts_idx = TimeSeriesEEGIndex()
         ts_idx.fk_sensors_gid = sensors.gid
 
-        ts_h5_path = self.path_for(self.operation_id, TimeSeriesEEGH5, ts_idx.gid, self.current_project_id)
+        ts_h5_path = self.path_for(TimeSeriesEEGH5, ts_idx.gid)
         ts_h5 = TimeSeriesEEGH5(ts_h5_path)
         ts_h5.sensors.store(uuid.UUID(sensors.gid))
 

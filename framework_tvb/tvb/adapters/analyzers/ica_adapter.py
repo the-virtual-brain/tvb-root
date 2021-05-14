@@ -148,7 +148,7 @@ class ICAAdapter(ABCAdapter):
         """
         # --------------------- Prepare result entities ---------------------##
         ica_index = IndependentComponentsIndex()
-        result_path = self.path_for(self.operation_id, IndependentComponentsH5, ica_index.gid, self.current_project_id)
+        result_path = self.path_for(IndependentComponentsH5, ica_index.gid)
         ica_h5 = IndependentComponentsH5(path=result_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##

@@ -137,8 +137,7 @@ class PCAAdapter(ABCAdapter):
         """
         # --------------------- Prepare result entities ----------------------##
         principal_components_index = PrincipalComponentsIndex()
-        dest_path = self.path_for(self.operation_id, PrincipalComponentsH5, principal_components_index.gid,
-                                  self.current_project_id)
+        dest_path = self.path_for(PrincipalComponentsH5, principal_components_index.gid)
         pca_h5 = PrincipalComponentsH5(path=dest_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##

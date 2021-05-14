@@ -178,7 +178,7 @@ class SurfaceStimulusCreator(ABCAdapter):
         """
         self.generic_attributes.user_tag_1 = view_model.display_name
         stimuli_surface = self.prepare_stimuli_surface_from_view_model(view_model, view_model.surface)
-        stimuli_surface_index = self.store_complete(stimuli_surface, self.operation_id, self.current_project_id)
+        stimuli_surface_index = self.store_complete(stimuli_surface)
         return stimuli_surface_index
 
     def get_required_memory_size(self, view_model):
@@ -290,7 +290,7 @@ class RegionStimulusCreator(ABCAdapter):
         stimuli_region.temporal = view_model.temporal
         self.generic_attributes.user_tag_1 = view_model.display_name
 
-        stimuli_region_idx = self.store_complete(stimuli_region, self.operation_id, self.current_project_id)
+        stimuli_region_idx = self.store_complete(stimuli_region)
         return stimuli_region_idx
 
     def get_required_disk_size(self, view_model):

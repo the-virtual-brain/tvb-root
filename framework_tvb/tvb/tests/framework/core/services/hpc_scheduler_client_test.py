@@ -39,6 +39,7 @@ from tvb.basic.config.settings import HPCSettings
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.datatypes.projections import ProjectionSurfaceEEG
@@ -164,7 +165,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
         op = operation_factory()
-        prj_db_db = ABCAdapter.store_complete(proj, op.id, op.project.id)
+        prj_db_db = h5.store_complete_to_op_dir(proj, op.id, op.project.name)
         prj_db_db.fk_from_operation = op.id
         dao.store_entity(prj_db_db)
 

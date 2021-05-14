@@ -131,7 +131,7 @@ class NIFTIImporter(ABCUploader):
         if self.parser.units is not None and len(self.parser.units) > 0:
             volume.voxel_unit = self.parser.units[0]
 
-        return self.store_complete(volume, self.operation_id, self.current_project_id), volume
+        return self.store_complete(volume), volume
 
     def _create_mri(self, volume, title):
         mri = StructuralMRI()
@@ -141,7 +141,7 @@ class NIFTIImporter(ABCUploader):
         mri.array_data = self.parser.parse()
         mri.volume = volume
 
-        return self.store_complete(mri, self.operation_id, self.current_project_id)
+        return self.store_complete(mri)
 
     def _create_time_series(self, volume, title):
         # Now create TimeSeries and fill it with data from NIFTI image
@@ -160,7 +160,7 @@ class NIFTIImporter(ABCUploader):
         if self.parser.units is not None and len(self.parser.units) > 1:
             time_series.sample_period_unit = self.parser.units[1]
 
-        ts_h5_path = self.path_for(self.operation_id, TimeSeriesVolumeH5, time_series.gid, self.current_project_id)
+        ts_h5_path = self.path_for(TimeSeriesVolumeH5, time_series.gid)
         nifti_data = self.parser.parse()
         with TimeSeriesVolumeH5(ts_h5_path) as ts_h5:
             ts_h5.store(time_series, scalars_only=True, store_references=True)
@@ -187,7 +187,7 @@ class NIFTIImporter(ABCUploader):
         rvm.connectivity = h5.load_from_index(connectivity)
         rvm.array_data = nifti_data
 
-        return self.store_complete(rvm, self.operation_id, self.current_project_id)
+        return self.store_complete(rvm)
 
     def _apply_corrections_and_mapping(self, data, apply_corrections, mappings_file, conn_nr_regions):
 
