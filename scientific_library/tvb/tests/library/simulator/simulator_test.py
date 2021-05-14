@@ -128,6 +128,7 @@ class Simulator(object):
             white_matter = Connectivity.from_file(source_file="connectivity_192.zip")
             region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_192.txt")
         region_mapping.surface = CorticalSurface.from_file()
+        region_mapping.connectivity = white_matter
 
         white_matter_coupling = coupling.Linear(a=numpy.array([coupling_strength]))
         white_matter.speed = numpy.array([speed])  # no longer allow scalars to numpy array promotion
