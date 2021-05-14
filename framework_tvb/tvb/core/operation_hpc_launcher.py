@@ -70,7 +70,7 @@ def do_operation_launch(simulator_gid, available_disk_space, is_group_launch, ba
         storage_interface.decrypt_results_to_dir(simulator_gid, plain_dir)
         log.info("Current wdir is: {}".format(plain_dir))
         view_model = h5.load_view_model(simulator_gid, plain_dir)
-        adapter_instance = HPCSimulatorAdapter(is_group_launch)
+        adapter_instance = HPCSimulatorAdapter(plain_dir, is_group_launch)
         _update_operation_status(STATUS_STARTED, simulator_gid, operation_id, base_url)
         adapter_instance._prelaunch(None, view_model, available_disk_space)
         _encrypt_results(adapter_instance, storage_interface, simulator_gid)
