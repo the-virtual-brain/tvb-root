@@ -161,6 +161,7 @@ class TestProjectionMonitorsWithSubcorticalRegions(BaseTestCase):
         default_cortex = Cortex.from_file()
         default_cortex.region_mapping_data = region_mapping
         default_cortex.coupling_strength = local_coupling_strength
+        default_cortex.region_mapping_data.connectivity = white_matter
 
         sim = simulator.Simulator(model=oscillator, connectivity=white_matter, coupling=white_matter_coupling,
                                   integrator=heunint, monitors=mons, surface=default_cortex)

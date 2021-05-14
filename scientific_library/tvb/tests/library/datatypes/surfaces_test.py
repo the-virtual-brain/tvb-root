@@ -34,6 +34,7 @@
 import sys
 import numpy
 import pytest
+from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.cortex import Cortex
@@ -196,6 +197,7 @@ class TestSurfaces(BaseTestCase):
     @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
     def test_cortexdata(self):
         dt = Cortex.from_file()
+        dt.region_mapping_data.connectivity = Connectivity.from_file()
         dt.__setattr__('valid_for_simulations', True)
         assert isinstance(dt, Cortex)
         assert dt.region_mapping is not None
