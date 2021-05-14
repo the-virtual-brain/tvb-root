@@ -243,6 +243,7 @@ class Model(HasTraits):
     def _map_roi_param_to_surface(self, sim, param, region_parameters, spatial_reshape):
         if sim.surface is not None:
             if region_parameters.size == sim.connectivity.number_of_regions:
+                # TODO: cortex.region_mapping
                 new_parameters = region_parameters[sim.surface.region_mapping].reshape(spatial_reshape)
                 setattr(self, param, new_parameters)
 

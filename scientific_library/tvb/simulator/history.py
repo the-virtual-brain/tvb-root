@@ -104,7 +104,7 @@ class BaseHistory(StaticAttr):
             n_time, n_svar, n_node, n_mode = ic_shape = initial_conditions.shape
             nr = sim.connectivity.number_of_regions
             if sim.surface is not None and n_node == nr:
-                initial_conditions = initial_conditions[:, :, sim._regmap]
+                initial_conditions = initial_conditions[:, :, sim.surface.full_region_map]
                 return sim._configure_history(initial_conditions)
             elif sim.surface is None and ic_shape[1:] != sim.good_history_shape[1:]:
                 raise ValueError("Incorrect history sample shape %s, expected %s"
@@ -115,12 +115,12 @@ class BaseHistory(StaticAttr):
                     history = initial_conditions[-sim.connectivity.horizon:, :, :, :].copy()
                 else:
                     # maybe a better broadcast test than this?
-                    if ic_shape[2] != sim._regmap.shape[0] or ic_shape[1] != len(sim.model.state_variables):
+                    if ic_shape[2] != sim.surface.full_region_map.shape[0] or ic_shape[1] != len(sim.model.state_variables):
                         raise ValueError(
                             'Incorrect initial condition shape for a surface sim. '
                             'Expected broadcastable to (time, n_state_vars, n_nodes, n_modes) = (1, %s, %s, %s). '
                             'Found %s' %
-                            (len(sim.model.state_variables), sim._regmap.shape[0], sim.model.number_of_modes,
+                            (len(sim.model.state_variables), sim.surface.full_region_map.shape[0], sim.model.number_of_modes,
                              ic_shape)
                         )
                     sim.log.debug('Padding initial conditions with model.initial')
@@ -131,8 +131,8 @@ class BaseHistory(StaticAttr):
                         n_reg = sim.connectivity.number_of_regions
                         (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
                         region_initial_conditions = numpy.zeros((nt, ns, n_reg, nm))
-                        backend.add_at(region_initial_conditions.transpose(ax), sim._regmap, initial_conditions.transpose(ax))
-                        region_initial_conditions /= numpy.bincount(sim._regmap).reshape((-1, 1))
+                        backend.add_at(region_initial_conditions.transpose(ax), sim.surface.full_region_map, initial_conditions.transpose(ax))
+                        region_initial_conditions /= numpy.bincount(sim.surface.full_region_map).reshape((-1, 1))
                         history[:region_initial_conditions.shape[0], :, :, :] = region_initial_conditions
                     else:
                         history[:ic_shape[0], :, :, :] = initial_conditions
@@ -160,8 +160,8 @@ class BaseHistory(StaticAttr):
             n_reg = sim.connectivity.number_of_regions
             (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
             region_history = numpy.zeros((nt, ns, n_reg, nm))
-            backend.add_at(region_history.transpose(ax), sim._regmap, history.transpose(ax))
-            region_history /= numpy.bincount(sim._regmap).reshape((-1, 1))
+            backend.add_at(region_history.transpose(ax), sim.surface.full_region_map, history.transpose(ax))
+            region_history /= numpy.bincount(sim.surface.full_region_map).reshape((-1, 1))
             history = region_history
 
         inst = cls(sim.connectivity.weights, sim.connectivity.idelays,
