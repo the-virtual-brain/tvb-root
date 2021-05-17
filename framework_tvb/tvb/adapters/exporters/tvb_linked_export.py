@@ -72,9 +72,7 @@ class TVBLinkedExporter(ABCExporter):
         return os.path.join(os.path.dirname(data_export_folder), zip_file_name)
 
     def export_data_with_references(self, export_data_zip_path, data_export_folder):
-        self.storage_interface.initialize_tvb_zip(export_data_zip_path, "w")
-        self.storage_interface.write_zip_folder(data_export_folder)
-        self.storage_interface.close_tvb_zip()
+        self.storage_interface.write_zip_folder(export_data_zip_path, data_export_folder)
 
         return None, export_data_zip_path, True
 

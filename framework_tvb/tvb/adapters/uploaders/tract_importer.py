@@ -257,10 +257,10 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        for tractf in sorted(self.storage_interface.namelist(view_model.data_file)):  # one track per file
+        for tractf in sorted(self.storage_interface.get_filenames_in_zip(view_model.data_file)):  # one track per file
             if not tractf.endswith('.txt'):  # omit directories and other non track files
                 continue
-            vertices_file = self.storage_interface.open_tvb_zip(tractf)
+            vertices_file = self.storage_interface.open_tvb_zip(view_model.data_file, tractf)
             datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
 
             tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
@@ -270,7 +270,6 @@ class ZipTxtTractsImporter(_TrackImporterBase):
                 tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
             vertices_file.close()
 
-        self.storage_interface.close_tvb_zip()
         tracts_h5.close()
         self.region_volume_h5.close()
 

@@ -36,17 +36,15 @@ After running this script, you should have a message in the console telling wher
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-from tvb.core.services.project_service import ProjectService
-from tvb.core.entities.storage import dao
 from tvb.adapters.exporters.export_manager import ExportManager
 
 
-def run_export(project_id, loose_irrelevant=False):
+def run_export(project_id):
     s = ProjectService()
     mng = ExportManager()
 
     project = s.find_project(project_id)
-    export_file = mng.export_project(project, loose_irrelevant)
+    export_file = mng.export_project(project)
     print("Check the exported file: %s" % export_file)
 
 

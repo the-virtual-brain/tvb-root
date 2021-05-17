@@ -409,7 +409,7 @@ class TvbZip(ZipFile):
     def __exit__(self, _type, _value, _traceback):
         self.close()
 
-    def write_zip_folder(self, folder, archive_path_prefix, exclude):
+    def write_zip_folder(self, folder, exclude):
         """
         write folder contents in archive
         :param archive_path_prefix: root folder in archive. Defaults to "" the archive root
@@ -429,6 +429,6 @@ class TvbZip(ZipFile):
             for file_n in files:
                 abs_file_n = os.path.join(root, file_n)
                 zip_file_n = abs_file_n[len(folder) + len(os.sep):]
-                self.write(abs_file_n, archive_path_prefix + zip_file_n)
+                self.write(abs_file_n, zip_file_n)
 
     # TODO: move filehelper's zip methods here

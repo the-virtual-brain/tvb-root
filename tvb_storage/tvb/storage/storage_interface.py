@@ -173,26 +173,34 @@ class StorageInterface:
         return FilesHelper.compute_recursive_h5_disk_usage(start_path)
 
     # TvbZip methods start here #
-    def initialize_tvb_zip(self, dest_path, mode="r"):
-        self.tvb_zip = TvbZip(dest_path, mode)
 
-    def write_zip_folder(self, folder, archive_path_prefix="", exclude=None):
-        self.tvb_zip.write_zip_folder(folder, archive_path_prefix, exclude)
-
-    def namelist(self, dest_path, mode="r"):
-        self.initialize_tvb_zip(dest_path, mode)
-        name_list = self.tvb_zip.namelist()
-        self.close_tvb_zip()
-        return name_list
-
-    def open_tvb_zip(self, name):
-        return self.tvb_zip.open(name)
-
-    def close_tvb_zip(self):
+    def write_zip_folder(self, dest_path, folder, exclude=None):
+        self.tvb_zip = TvbZip(dest_path, "w")
+        self.tvb_zip.write_zip_folder(folder, exclude)
         self.tvb_zip.close()
 
-    def write_zip_arc(self, file_name, arc):
-        return self.tvb_zip.write(file_name, arc)
+    def write_zip_folder_with_links(self, dest_path, folder, linked_paths, op, exclude=None):
+        self.tvb_zip = TvbZip(dest_path, "w")
+        self.tvb_zip.write_zip_folder(folder, exclude)
+
+        self.logger.debug("Done exporting files, now we will export linked DTs")
+
+        if linked_paths is not None:
+            self.export_datatypes(linked_paths, op)
+
+        self.tvb_zip.close()
+
+    def get_filenames_in_zip(self, dest_path, mode="r"):
+        self.tvb_zip = TvbZip(dest_path, mode)
+        name_list = self.tvb_zip.namelist()
+        self.tvb_zip.close()
+        return name_list
+
+    def open_tvb_zip(self, dest_path, name, mode="r"):
+        self.tvb_zip = TvbZip(dest_path, mode)
+        file = self.tvb_zip.open(name)
+        self.tvb_zip.close()
+        return file
 
     # HDF5 Storage Manager methods start here #
 
@@ -402,7 +410,7 @@ class StorageInterface:
         # add linked datatypes to archive in the import operation
         for pth in paths:
             zip_pth = op_folder_name + '/' + os.path.basename(pth)
-            self.write_zip_arc(pth, zip_pth)
+            self.tvb_zip.write(pth, zip_pth)
 
         # remove these files, since we only want them in export archive
         self.remove_folder(op_folder)
@@ -417,27 +425,9 @@ class StorageInterface:
 
         return data_export_folder
 
-    def export_project(self, project, project_datatypes, folders_to_exclude, export_folder, linked_paths, op,
-                       optimize_size):
+    def export_project(self, project, folders_to_exclude, export_folder, linked_paths, op):
         project_folder = self.get_project_folder(project.name)
-        to_be_exported_folders = []
-        considered_op_ids = []
-
-        if optimize_size:
-            # take only the DataType with visibility flag set ON
-            for dt in project_datatypes:
-                op_id = dt.fk_from_operation
-                if op_id not in considered_op_ids:
-                    to_be_exported_folders.append({'folder': self.get_project_folder(project.name,
-                                                                                     str(op_id)),
-                                                   'archive_path_prefix': str(op_id) + os.sep,
-                                                   'exclude': folders_to_exclude})
-                    considered_op_ids.append(op_id)
-
-        else:
-            folders_to_exclude.append("TEMP")
-            to_be_exported_folders.append({'folder': project_folder,
-                                           'archive_path_prefix': '', 'exclude': folders_to_exclude})
+        folders_to_exclude.append("TEMP")
 
         # Compute path and name of the zip file
         now = datetime.now()
@@ -447,23 +437,12 @@ class StorageInterface:
         export_folder = self.build_data_export_folder(project, export_folder)
         result_path = os.path.join(export_folder, zip_file_name)
 
-        self.initialize_tvb_zip(result_path, "w")
         # Pack project [filtered] content into a ZIP file:
-        self.logger.debug("Done preparing, now we will write folders " + str(len(to_be_exported_folders)))
-        self.logger.debug(str(to_be_exported_folders))
-        for pack in to_be_exported_folders:
-            self.write_zip_folder(**pack)
-        self.logger.debug("Done exporting files, now we will export linked DTs")
-
-        if linked_paths is not None:
-            self.export_datatypes(linked_paths, op)
+        self.logger.debug("Done preparing, now we will write the folder.")
+        self.logger.debug(project_folder)
+        self.write_zip_folder_with_links(result_path, project_folder, linked_paths, op, folders_to_exclude)
 
         # Make sure the Project.xml file gets copied:
-        if optimize_size:
-            self.logger.debug("Done linked, now we write the project xml")
-            self.write_zip_arc(self.get_project_meta_file_path(project.name),
-                               self.TVB_PROJECT_FILE)
         self.logger.debug("Done, closing")
-        self.close_tvb_zip()
 
         return result_path

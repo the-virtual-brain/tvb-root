@@ -156,8 +156,8 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
     def test_export(self, initialize_linked_projects):
         export_file = self.export_mng.export_project(self.dest_project)
         storage_interface = StorageInterface()
-        assert sum('links-to-external-projects' in s for s in storage_interface.namelist(export_file)) == 2,\
-            "Two linked datatypes should have been created!"
+        assert sum('links-to-external-projects' in s for s in storage_interface.get_filenames_in_zip(export_file)) \
+               == 2, "Two linked datatypes should have been created!"
 
     def _export_and_remove(self, project):
         """export the project and remove it"""

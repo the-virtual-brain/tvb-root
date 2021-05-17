@@ -162,7 +162,7 @@ class ExportManager(object):
 
         return linked_paths, op
 
-    def export_project(self, project, optimize_size=False):
+    def export_project(self, project):
         """
         Given a project root and the TVB storage_path, create a ZIP
         ready for export.
@@ -171,13 +171,11 @@ class ExportManager(object):
         if project is None:
             raise ExportException("Please provide project to be exported")
 
-        project_datatypes = dao.get_datatypes_in_project(project.id, only_visible=optimize_size)
-
         folders_to_exclude = self._get_op_with_errors(project.id)
         linked_paths, op = self._export_linked_datatypes(project)
 
-        result_path = self.storage_interface.export_project(project, project_datatypes, folders_to_exclude,
-                                                            self.export_folder, linked_paths, op, optimize_size)
+        result_path = self.storage_interface.export_project(project, folders_to_exclude,
+                                                            self.export_folder, linked_paths, op)
 
         return result_path
 
@@ -225,9 +223,7 @@ class ExportManager(object):
         zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), StorageInterface.ZIP_FILE_EXTENSION)
 
         result_path = os.path.join(tmp_export_folder, zip_file_name)
-        self.storage_interface.initialize_tvb_zip(result_path, "w")
-        self.storage_interface.write_zip_folder(tmp_sim_folder)
-        self.storage_interface.close_tvb_zip()
+        self.storage_interface.write_zip_folder(result_path, tmp_sim_folder)
 
         self.storage_interface.remove_folder(tmp_sim_folder)
         return result_path
