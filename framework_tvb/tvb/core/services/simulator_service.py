@@ -41,13 +41,14 @@ import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import load
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException
-from tvb.core.services.operation_service import OperationService
+from tvb.core.services.operation_service import OperationService, GROUP_BURST_PENDING
 from tvb.simulator.integrators import IntegratorStochastic
 from tvb.storage.storage_interface import StorageInterface
 
@@ -159,9 +160,21 @@ class SimulatorService(object):
             if range_param2:
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
-
+            pse_canceled = False
+            GROUP_BURST_PENDING[burst_config.id] = True
             for param1_value in range_param1.get_range_values():
                 for param2_value in range_param2_values:
+                    burst_config = dao.get_burst_by_id(burst_config.id)
+                    if burst_config is None:
+                        self.logger.debug("Burst config was deleted")
+                        pse_canceled = True
+                        break
+
+                    if burst_config.status in [BurstConfiguration.BURST_CANCELED, BurstConfiguration.BURST_ERROR]:
+                        self.logger.debug("Current burst status is {}. Preparing operations cannot continue.".format(
+                            burst_config.status))
+                        pse_canceled = True
+                        break
                     # Copy, but generate a new GUID for every Simulator in PSE
                     simulator = copy.deepcopy(session_stored_simulator)
                     simulator.gid = uuid.uuid4()
@@ -183,8 +196,14 @@ class SimulatorService(object):
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator
+            GROUP_BURST_PENDING[burst_config.id] = False
+            if pse_canceled:
+                return
 
             first_operation = operations[0]
+            if dao.try_get_operation_by_id(first_operation.id) is None:
+                self.logger.debug("First operation does not exist.")
+                return
             storage_path = self.storage_interface.get_project_folder(project.name, str(first_operation.id))
             burst_config = self.burst_service.update_simulation_fields(burst_config, first_operation.id,
                                                                        first_simulator.gid)
@@ -201,6 +220,11 @@ class SimulatorService(object):
             wf_errs = 0
             for operation in operations:
                 try:
+                    burst_config = dao.get_burst_by_id(burst_config.id)
+                    if burst_config.status in [BurstConfiguration.BURST_CANCELED, BurstConfiguration.BURST_ERROR]:
+                        self.logger.debug("Current burst status is {}. Preparing operations cannot continue.".format(
+                            burst_config.status))
+                        return
                     OperationService().launch_operation(operation.id, True)
                 except Exception as excep:
                     self.logger.error(excep)

@@ -50,7 +50,7 @@ from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException, ServicesBaseException
 from tvb.core.services.import_service import ImportService
-from tvb.core.services.operation_service import OperationService
+from tvb.core.services.operation_service import OperationService, GROUP_BURST_PENDING
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
@@ -98,6 +98,11 @@ class SimulatorController(BurstBaseController):
         """
         # Load before we remove, to have its data in memory here
         burst_config = BurstService.get_burst_for_operation_id(operation_id, is_group)
+        if burst_config is not None:
+            self.burst_service.mark_burst_finished(burst_config, BurstConfiguration.BURST_CANCELED, store_h5_file=False)
+            while GROUP_BURST_PENDING.get(burst_config.id, False):
+                pass
+            GROUP_BURST_PENDING.pop(burst_config.id, False)
         result = OperationService.stop_operation(operation_id, is_group, remove_after_stop)
 
         if remove_after_stop:
@@ -106,6 +111,10 @@ class SimulatorController(BurstBaseController):
                     ((current_burst.fk_simulation == operation_id and not is_group) or
                      (current_burst.fk_operation_group == operation_id and is_group))):
                 self.reset_simulator_configuration()
+            if burst_config is not None:
+                burst_config = BurstService.load_burst_configuration(burst_config.id)
+                if burst_config:
+                    BurstService.remove_burst_configuration(burst_config.id)
         return result
 
     @expose_page

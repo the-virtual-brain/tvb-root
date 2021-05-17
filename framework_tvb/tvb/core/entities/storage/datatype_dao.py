@@ -64,7 +64,6 @@ class DatatypeDAO(RootDAO):
                                           ).filter(OperationGroup.fk_launched_in == project_id).order_by(DataTypeGroup.id)
         return query.all()
 
-
     def get_datatypegroup_by_op_group_id(self, operation_group_id):
         """
         Returns the DataTypeGroup corresponding to a certain OperationGroup.
@@ -72,9 +71,11 @@ class DatatypeDAO(RootDAO):
         try:
             result = self.session.query(DataTypeGroup).filter_by(fk_operation_group=operation_group_id).one()
             return result
+        except NoResultFound:
+            self.logger.debug("No operation group was found for operation group id = {}".format(operation_group_id))
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
-            return None
+        return None
 
     def get_datatype_group_by_gid(self, datatype_group_gid):
         """
