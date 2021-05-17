@@ -71,18 +71,18 @@ def update(input_file, burst_match_dict=None):
                                       "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
-    storage_interface = StorageInterface()
+    storage_manager = StorageInterface.get_storage_manager(input_file)
 
-    root_metadata = storage_interface.get_metadata(input_file)
+    root_metadata = storage_manager.get_metadata()
     class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]
 
     if class_name == "LocalConnectivity":
         root_metadata[DataTypeMetaData.KEY_MODULE] = "tvb.datatypes.local_connectivity"
-        storage_interface.set_metadata(input_file, root_metadata)
+        storage_manager.set_metadata(root_metadata)
         update_localconnectivity_metadata(folder, file_name)
 
     elif class_name == "RegionMapping":
         root_metadata[DataTypeMetaData.KEY_MODULE] = "tvb.datatypes.region_mapping"
 
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
-    storage_interface.set_metadata(input_file, root_metadata)
+    storage_manager.set_metadata(root_metadata)

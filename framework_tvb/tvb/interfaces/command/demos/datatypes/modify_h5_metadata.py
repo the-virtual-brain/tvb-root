@@ -44,13 +44,11 @@ from tvb.core.utils import date2string
 
 def update_local_connectivity_metadata(file_path):
     with LocalConnectivityH5(file_path) as f:
-        f.storage_interface.set_metadata(f.path,
-                                         {'Shape': "(16384, 16384)",
+        f.storage_interface.set_metadata({'Shape': "(16384, 16384)",
                                           'format': "csc",
                                           "dtype": "<f8"},
                                          "/matrix")
-        f.storage_interface.set_metadata(f.path,
-                                         {'cutoff': 40.0,
+        f.storage_interface.set_metadata({'cutoff': 40.0,
                                           'state': "RAW_DATA",
                                           'subject': "John Doe",
                                           'user_tag_1': "srf_16k",

@@ -63,7 +63,7 @@ class H5File(object):
     def __init__(self, path):
         # type: (str) -> None
         self.path = path
-        self.storage_interface = StorageInterface()
+        self.storage_manager = StorageInterface.get_storage_manager(self.path)
         # would be nice to have an opened state for the chunked api instead of the close_file=False
 
         # common scalar headers
@@ -88,7 +88,7 @@ class H5File(object):
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
 
-        if not self.storage_interface.is_valid_tvb_file(self.path):
+        if not self.storage_manager.is_valid_tvb_file():
             self.written_by.store(self.get_class_path())
             self.is_new_file = True
 
@@ -120,7 +120,7 @@ class H5File(object):
         self.close()
 
     def close(self):
-        self.storage_interface.close_file(self.path)
+        self.storage_manager.close_file()
 
     def store(self, datatype, scalars_only=False, store_references=True):
         # type: (HasTraits, bool, bool) -> None
@@ -253,17 +253,17 @@ class H5File(object):
 
     @staticmethod
     def get_metadata_param(path, param):
-        meta = StorageInterface().get_metadata(path)
+        meta = StorageInterface.get_storage_manager(path).get_metadata()
         return meta.get(param)
 
     def store_metadata_param(self, key, value):
-        self.storage_interface.set_metadata(self.path, {key: value})
+        self.storage_manager.set_metadata({key: value})
 
     @staticmethod
     def remove_metadata_param(file_path, param):
-        storage_interface = StorageInterface()
-        if param in storage_interface.get_metadata(file_path):
-            storage_interface.remove_metadata(file_path, param)
+        storage_manager = StorageInterface.get_storage_manager(file_path)
+        if param in storage_manager.get_metadata():
+            storage_manager.remove_metadata(param)
 
     @staticmethod
     def h5_class_from_file(path):

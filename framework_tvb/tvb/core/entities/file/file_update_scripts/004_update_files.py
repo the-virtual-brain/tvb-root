@@ -63,9 +63,9 @@ def update(input_file, burst_match_dict=None):
                                                "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
-    storage_interface = StorageInterface()
+    storage_manager = StorageInterface.get_storage_manager(input_file)
 
-    root_metadata = storage_interface.get_metadata(input_file)
+    root_metadata = storage_manager.get_metadata()
     if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
         raise IncompatibleFileManagerException("File %s received for upgrading 3 -> 4 is not valid, due to missing "
                                                "metadata: %s" % (input_file, DataTypeMetaData.KEY_CLASS_NAME))
@@ -111,4 +111,4 @@ def update(input_file, burst_match_dict=None):
             root_metadata[FIELD_VOLUME_MAPPING] = json.dumps(False)
 
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
-    storage_interface.set_metadata(input_file, root_metadata)
+    storage_manager.set_metadata(root_metadata)
