@@ -64,7 +64,7 @@ class TestMetaDataReadXML:
         Test that content return by read_metadata matches the
         actual content of the XML.
         """
-        meta_data = self.meta_reader.read_metadata()
+        meta_data = self.meta_reader.read_metadata_from_xml()
         for key, value in self.EXPECTED_DICTIONARY.items():
             found_value = meta_data[key]
             assert value == found_value
@@ -94,10 +94,10 @@ class TestMetaDataWriteXML:
         Test that an XML file is created and correct data is written in it.
         """
         assert not os.path.exists(self.result_path)
-        self.meta_writer.write_metadata(self.result_path)
+        self.meta_writer.write_metadata_in_xml(self.result_path)
         assert os.path.exists(self.result_path)
         reader = XMLReader(self.result_path)
-        meta_data = reader.read_metadata()
+        meta_data = reader.read_metadata_from_xml()
         for key, value in TestMetaDataReadXML.EXPECTED_DICTIONARY.items():
             found_value = meta_data[key]
             assert value == found_value

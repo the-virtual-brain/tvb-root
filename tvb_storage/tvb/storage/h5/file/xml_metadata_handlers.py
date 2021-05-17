@@ -55,7 +55,7 @@ class XMLReader(object):
         self.logger = get_logger(self.__class__.__module__)
         self.xml_path = xml_path
 
-    def read_metadata(self):
+    def read_metadata_from_xml(self):
         """
         Return a dictionary, filled with data read from XML file.
         """
@@ -75,15 +75,6 @@ class XMLReader(object):
                 return str(text_child.data).lstrip().rstrip()
         
         return ''
-
-    def parse_xml_content_to_dict(self, xml_data):
-        """
-        :param xml_data: String representing an XML root.
-        :returns: Dictionary with text-content read from the given XML.
-        """
-        root = xml.dom.minidom.parseString(xml_data)
-        root = root.childNodes[-1]
-        return self._parse_xml_node_to_dict(root)
 
     ####### PRIVATE METHODS Start Here #######################################
 
@@ -127,7 +118,7 @@ class XMLWriter(object):
         self.entity = entity
         self.logger = get_logger(self.__class__.__module__) 
 
-    def write_metadata(self, final_path):
+    def write_metadata_in_xml(self, final_path):
         """
         From a meta-data dictionary for an entity, create the XML file.
         """

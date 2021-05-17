@@ -35,7 +35,6 @@ Service Layer for the Project entity.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
 import formencode
 
 from tvb.basic.logger.builder import get_logger

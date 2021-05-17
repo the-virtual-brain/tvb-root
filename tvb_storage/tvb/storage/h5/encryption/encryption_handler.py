@@ -70,7 +70,7 @@ class EncryptionHandler(object):
             if not os.path.isdir(dirr):
                 os.makedirs(dirr)
 
-    def cleanup(self):
+    def cleanup_encryption_handler(self):
         for path in [self.get_encrypted_dir(), self.get_password_file()]:
             if os.path.exists(path):
                 if os.path.isdir(path):

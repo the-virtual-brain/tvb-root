@@ -206,7 +206,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         if linked_dt is None:
             linked_dt = []
         for dt_path in linked_dt:
-            project_path = self.file_helper.get_project_folder_from_h5(dt_path)
+            project_path = FilesHelper.get_project_folder_from_h5(dt_path)
             projects.add(project_path)
         if len(linked_dt) > 0:
             self.linked_projects[project_folder] = projects

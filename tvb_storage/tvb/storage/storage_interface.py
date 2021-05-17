@@ -91,13 +91,6 @@ class StorageInterface:
     def get_temp_folder(self, project_name):
         return self.files_helper.get_project_folder(project_name, self.TEMP_FOLDER)
 
-    @staticmethod
-    def get_project_folder_from_h5(h5_file):
-        return FilesHelper.get_project_folder_from_h5(h5_file)
-
-    def rename_project_structure(self, project_name, new_name):
-        return self.files_helper.rename_project_structure(project_name, new_name)
-
     def remove_project_structure(self, project_name):
         self.files_helper.remove_project_structure(project_name)
 
@@ -113,18 +106,12 @@ class StorageInterface:
     def write_project_metadata(self, meta_dictionary):
         self.files_helper.write_project_metadata(meta_dictionary, self.TVB_PROJECT_FILE)
 
-    def get_operation_folder(self, project_name, operation_id):
-        return self.files_helper.get_operation_folder(project_name, operation_id)
-
     def remove_operation_data(self, project_name, operation_id):
         self.files_helper.remove_operation_data(project_name, operation_id)
 
     def remove_datatype_file(self, h5_file):
         self.files_helper.remove_datatype_file(h5_file)
-        self.push_folder_to_sync(self.get_project_folder_from_h5(h5_file))
-
-    def move_datatype(self, new_project_name, new_op_id, full_path):
-        self.files_helper.move_datatype(new_project_name, new_op_id, full_path)
+        self.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(h5_file))
 
     def get_images_folder(self, project_name):
         return self.files_helper.get_images_folder(project_name, self.IMAGES_FOLDER)
@@ -141,7 +128,7 @@ class StorageInterface:
     def zip_folders(self, all_datatypes, project_name, zip_full_path, folder_prefix=""):
         operation_folders = []
         for data_type in all_datatypes:
-            operation_folder = self.get_operation_folder(project_name, data_type.fk_from_operation)
+            operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
             operation_folders.append(operation_folder)
         FilesHelper.zip_folders(zip_full_path, operation_folders, folder_prefix)
 
@@ -210,22 +197,19 @@ class StorageInterface:
 
     # XML methods start here #
 
-    def read_metadata(self, xml_path):
+    def read_metadata_from_xml(self, xml_path):
         self.xml_reader = XMLReader(xml_path)
-        return self.xml_reader.read_metadata()
+        return self.xml_reader.read_metadata_from_xml()
 
-    def parse_xml_content_to_dict(self, xml_data):
-        return self.xml_reader.parse_xml_content_to_dict(xml_data)
-
-    def write_metadata(self, entity, final_path):
+    def write_metadata_in_xml(self, entity, final_path):
         self.xml_writer = XMLWriter(entity)
-        return self.xml_writer.write_metadata(final_path)
+        return self.xml_writer.write_metadata_in_xml(final_path)
 
     # Encryption Handler methods start here #
 
-    def cleanup(self, dir_gid):
+    def cleanup_encryption_handler(self, dir_gid):
         self.encryption_handler = EncryptionHandler(dir_gid)
-        self.encryption_handler.cleanup()
+        self.encryption_handler.cleanup_encryption_handler()
 
     @staticmethod
     def generate_random_password(pass_size):
@@ -269,13 +253,6 @@ class StorageInterface:
     def check_and_delete(self, folder):
         return self.data_encryption_handler.check_and_delete(folder)
 
-    def is_in_usage(self, project_folder):
-        return self.data_encryption_handler.is_in_usage(project_folder)
-
-    @staticmethod
-    def compute_encrypted_folder_path(current_project_folder):
-        return DataEncryptionHandler.compute_encrypted_folder_path(current_project_folder)
-
     @staticmethod
     def sync_folders(folder):
         DataEncryptionHandler.sync_folders(folder)
@@ -297,10 +274,6 @@ class StorageInterface:
     @staticmethod
     def startup_cleanup():
         return DataEncryptionHandler.startup_cleanup()
-
-    @staticmethod
-    def project_key_path(project_name):
-        return DataEncryptionHandler.project_key_path(project_name)
 
     # Folders Queue Consumer methods start here #
 
@@ -326,37 +299,37 @@ class StorageInterface:
 
     def rename_project(self, current_proj_name, new_name):
         project_folder = self.get_project_folder(current_proj_name)
-        if self.encryption_enabled() and not self.is_in_usage(project_folder):
+        if self.encryption_enabled() and not self.data_encryption_handler.is_in_usage(project_folder):
             raise RenameWhileSyncEncryptingException(
                 "A project can not be renamed while sync encryption operations are running")
-        self.rename_project_structure(current_proj_name, new_name)
-        encrypted_path = self.compute_encrypted_folder_path(project_folder)
+        self.files_helper.rename_project_structure(current_proj_name, new_name)
+        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
         if os.path.exists(encrypted_path):
-            new_encrypted_path = self.compute_encrypted_folder_path(
+            new_encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(
                 self.get_project_folder(new_name))
             os.rename(encrypted_path, new_encrypted_path)
 
     def remove_project(self, project):
         project_folder = self.get_project_folder(project.name)
         self.remove_project_structure(project.name)
-        encrypted_path = self.compute_encrypted_folder_path(project_folder)
+        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
         if os.path.exists(encrypted_path):
             self.remove_folder(encrypted_path)
-        if os.path.exists(self.project_key_path(project.id)):
-            os.remove(self.project_key_path(project.id))
+        if os.path.exists(DataEncryptionHandler.project_key_path(project.id)):
+            os.remove(DataEncryptionHandler.project_key_path(project.id))
 
     def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, full_path, vm_full_path):
         self.set_project_active(to_project)
         self.sync_folders(to_project_path)
 
-        self.move_datatype(to_project.name, str(new_op_id), full_path)
-        self.move_datatype(to_project.name, str(new_op_id), vm_full_path)
+        self.files_helper.move_datatype(to_project.name, str(new_op_id), full_path)
+        self.files_helper.move_datatype(to_project.name, str(new_op_id), vm_full_path)
 
         self.sync_folders(to_project_path)
         self.set_project_inactive(to_project)
 
     def export_datatypes(self, paths, operation):
-        op_folder = self.get_operation_folder(operation.project.name, operation.id)
+        op_folder = self.get_project_folder(operation.project.name, operation.id)
         op_folder_name = os.path.basename(op_folder)
 
         # add linked datatypes to archive in the import operation

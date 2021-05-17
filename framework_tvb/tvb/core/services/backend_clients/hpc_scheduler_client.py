@@ -358,7 +358,7 @@ class HPCSchedulerClient(BackendClient):
         project = dao.get_project_by_id(operation.fk_launched_in)
         operation_dir = HPCSchedulerClient.storage_interface.get_project_folder(project.name, str(operation.id))
         h5_filenames = storage_interface.decrypt_files_to_dir(simulator_gid, simulation_results, operation_dir)
-        storage_interface.cleanup(simulator_gid)
+        storage_interface.cleanup_encryption_handler(simulator_gid)
         LOGGER.info("Decrypted h5: {}".format(h5_filenames))
         LOGGER.info("Metric op: {}".format(metric_op))
         LOGGER.info("Metric file: {}".format(metric_file))

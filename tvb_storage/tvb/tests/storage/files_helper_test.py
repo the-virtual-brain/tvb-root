@@ -111,7 +111,7 @@ class TestFilesHelper(StorageTestCase):
         expected_file = self.files_helper.get_project_meta_file_path(self.project_name,
                                                                      StorageInterface.TVB_PROJECT_FILE)
         assert os.path.exists(expected_file)
-        project_meta = XMLReader(expected_file).read_metadata()
+        project_meta = XMLReader(expected_file).read_metadata_from_xml()
         loaded_project = DummyProject(None, None, None, None)
         loaded_project.from_dict(project_meta, user_id)
         assert dummy_project.name == loaded_project.name

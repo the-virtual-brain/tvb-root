@@ -42,9 +42,9 @@ from tvb.storage.storage_interface import StorageInterface
 
 
 def _rewrite_img_meta(pth, op_id):
-    figure_dict = StorageInterface().read_metadata(pth)
+    figure_dict = StorageInterface().read_metadata_from_xml(pth)
     figure_dict['file_path'] = op_id + '-' + figure_dict['file_path']
-    StorageInterface().write_metadata(figure_dict, pth)
+    StorageInterface().write_metadata_in_xml(figure_dict, pth)
 
 
 def _rename_images(op_id, img_path):

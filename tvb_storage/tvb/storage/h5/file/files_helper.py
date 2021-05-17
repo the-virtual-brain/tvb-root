@@ -146,12 +146,12 @@ class FilesHelper(object):
     @staticmethod
     def read_project_metadata(project_path, project_file):
         project_cfg_file = os.path.join(project_path, project_file)
-        return XMLReader(project_cfg_file).read_metadata()
+        return XMLReader(project_cfg_file).read_metadata_from_xml()
 
     @staticmethod
     def write_project_metadata_from_dict(project_path, meta_entity, project_file):
         project_cfg_file = os.path.join(project_path, project_file)
-        XMLWriter(meta_entity).write_metadata(project_cfg_file)
+        XMLWriter(meta_entity).write_metadata_in_xml(project_cfg_file)
         os.chmod(project_path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
 
     def write_project_metadata(self, meta_dictionary, project_file):
@@ -163,21 +163,13 @@ class FilesHelper(object):
         self.write_project_metadata_from_dict(proj_path, meta_dictionary, project_file)
 
     ############# OPERATION related METHODS Start Here #########################
-    def get_operation_folder(self, project_name, operation_id):
-        """
-        Computes the folder where operation details are stored
-        """
-        operation_path = self.get_project_folder(project_name, str(operation_id))
-        if not os.path.exists(operation_path):
-            self.check_created(operation_path)
-        return operation_path
 
     def remove_operation_data(self, project_name, operation_id):
         """
         Remove H5 storage fully.
         """
         try:
-            complete_path = self.get_operation_folder(project_name, operation_id)
+            complete_path = self.get_project_folder(project_name, str(operation_id))
             self.logger.debug("Removing: " + str(complete_path))
             if os.path.isdir(complete_path):
                 shutil.rmtree(complete_path)
@@ -228,7 +220,7 @@ class FilesHelper(object):
         Writes figure meta-data into XML file
         """
         _, dict_data = figure.to_dict()
-        XMLWriter(meta_entity).write_metadata(self._compute_image_metadata_file(figure, images_folder))
+        XMLWriter(meta_entity).write_metadata_in_xml(self._compute_image_metadata_file(figure, images_folder))
 
     def remove_image_metadata(self, figure, images_folder):
         """

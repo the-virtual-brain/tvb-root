@@ -111,7 +111,7 @@ class DiagnoseDiskUsage(object):
             if dt.type == 'DataTypeGroup':
                 # these have no h5
                 continue
-            op_pth = self.storage_interface.get_operation_folder(self.project.name, op.id)
+            op_pth = self.storage_interface.get_project_folder(self.project.name, str(op.id))
             dt_pth = self.get_h5_by_gid(op_pth, dt.gid)
 
             dt_actual_disk_size = self.get_file_kib_size(dt_pth)

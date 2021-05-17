@@ -517,7 +517,7 @@ class ImportService(object):
         """
         Create and store a image entity.
         """
-        figure_dict = StorageInterface().read_metadata(os.path.join(src_folder, metadata_file))
+        figure_dict = StorageInterface().read_metadata_from_xml(os.path.join(src_folder, metadata_file))
         actual_figure = os.path.join(src_folder, os.path.split(figure_dict['file_path'])[1])
         if not os.path.exists(actual_figure):
             self.logger.warning("Expected to find image path %s .Skipping" % actual_figure)
@@ -622,7 +622,7 @@ class ImportService(object):
         """
         Create Operation entity from metadata file.
         """
-        operation_dict = StorageInterface().read_metadata(operation_file)
+        operation_dict = StorageInterface().read_metadata_from_xml(operation_file)
         operation_entity = manager_of_class(Operation).new_instance()
         return operation_entity.from_dict(operation_dict, dao, self.user_id, project.gid)
 
