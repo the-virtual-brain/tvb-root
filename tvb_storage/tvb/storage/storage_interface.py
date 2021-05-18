@@ -62,6 +62,8 @@ class StorageInterface:
 
     ZIP_FILE_EXTENSION = "zip"
 
+    OPERATION_FOLDER_PREFIX = "Operation_"
+
     logger = get_logger(__name__)
 
     def __init__(self):
@@ -125,12 +127,12 @@ class StorageInterface:
     def get_allen_mouse_cache_folder(self, project_name):
         return self.get_allen_mouse_cache_folder(project_name)
 
-    def zip_folders(self, all_datatypes, project_name, zip_full_path, folder_prefix=""):
+    def zip_folders(self, all_datatypes, project_name, zip_full_path):
         operation_folders = []
         for data_type in all_datatypes:
             operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
             operation_folders.append(operation_folder)
-        FilesHelper.zip_folders(zip_full_path, operation_folders, folder_prefix)
+        FilesHelper.zip_folders(zip_full_path, operation_folders, self.OPERATION_FOLDER_PREFIX)
 
     @staticmethod
     def zip_folder(result_name, folder_root):

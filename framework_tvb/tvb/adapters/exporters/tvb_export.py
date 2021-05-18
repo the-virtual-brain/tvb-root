@@ -45,7 +45,6 @@ class TVBExporter(ABCExporter):
     """ 
     This exporter simply provides for download data in TVB format
     """
-    OPERATION_FOLDER_PREFIX = "Operation_"
 
     def __init__(self):
         self.storage_interface = StorageInterface()
@@ -73,7 +72,7 @@ class TVBExporter(ABCExporter):
             zip_file = os.path.join(export_folder, download_file_name)
 
             # Create ZIP archive    
-            self.storage_interface.zip_folders(all_datatypes, project.name, zip_file, self.OPERATION_FOLDER_PREFIX)
+            self.storage_interface.zip_folders(all_datatypes, project.name, zip_file)
                         
             return download_file_name, zip_file, True
 

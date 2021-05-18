@@ -46,8 +46,6 @@ class TVBLinkedExporter(ABCExporter):
     """
     """
 
-    OPERATION_FOLDER_PREFIX = "Operation_"
-
     def __init__(self):
         self.storage_interface = StorageInterface()
 
