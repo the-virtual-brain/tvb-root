@@ -26,7 +26,7 @@
                             {% endif %}
                             <p><button class="action action-copy" onclick="copyBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a copy of the current simulation configuration.">
                                 Copy</button></p>
-                            {% if burst.range1 == None %}
+                            {% if burst.range1 == None and burst.status == 'finished' %}
                                 <p><button class="action action-copy" onclick="branchBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a branch of the current simulation configuration.">
                                     Branch</button></p>
                             {% endif %}
