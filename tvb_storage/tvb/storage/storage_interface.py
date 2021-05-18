@@ -253,6 +253,7 @@ class StorageInterface:
         return self.data_encryption_handler.dec_running_op_count(folder)
 
     def check_and_delete(self, folder):
+        self.data_encryption_handler.dec_running_op_count(folder)
         return self.data_encryption_handler.check_and_delete(folder)
 
     @staticmethod

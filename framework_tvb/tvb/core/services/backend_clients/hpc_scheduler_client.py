@@ -381,7 +381,6 @@ class HPCSchedulerClient(BackendClient):
             operation.mark_complete(STATUS_ERROR,
                                     exception.response.text if isinstance(exception, HTTPError) else repr(exception))
             dao.store_entity(operation)
-        storage_interface.dec_running_op_count(project_folder)
         storage_interface.check_and_delete(project_folder)
 
     @staticmethod

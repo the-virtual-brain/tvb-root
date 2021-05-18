@@ -119,7 +119,6 @@ class OperationExecutor(Thread):
 
             del launched_process
 
-        storage_interface.dec_running_op_count(project_folder)
         storage_interface.check_and_delete(project_folder)
 
         # Give back empty spot now that you finished your operation
