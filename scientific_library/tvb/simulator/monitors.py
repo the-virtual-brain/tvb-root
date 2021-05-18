@@ -1008,3 +1008,88 @@ class ProgressLogger(Monitor):
 
     def sample(self, step, state):
         raise NotImplementedError
+
+
+
+class Ca(Monitor):
+    """
+    Calcium signal monitor.
+    
+    """
+    
+    
+    _ui_name = "Calcium signal"
+    
+    
+    variables_of_interest = NArray(
+        dtype=int,
+        label="Ca Monitor needs time and firing rates",
+        required=False)
+    
+    tau_decay = Float(
+        label="Decay time (ms)",
+        default=100,
+        doc = "Time constant for the decay of the calcium events") 
+    
+    tau_rise = Float(
+        label="Rise time (ms)",
+        default=10,
+        doc = "Time constant for the rise of the calcium events") 
+    
+
+    def __str__(self):
+        clsname = self.__class__.__name__
+        return '%s(period=%f, voi=%s,with tau_rise=%f and tau_decay=%f)' % (clsname, self.period, self.variables_of_interest.tolist(), self.tau_rise, self.tau_decay)
+
+    def _config_vois(self, simulator):
+            self.voi = numpy.arange(len(simulator.model.variables_of_interest))
+
+    def _config_time(self, simulator):
+        self.dt = simulator.integrator.dt
+        self.period = simulator.integrator.dt
+        self.istep = 1
+        # create _stock!
+        stock_size = (self.istep, self.voi.shape[0],
+                      simulator.number_of_nodes,
+                      simulator.model.number_of_modes)
+        self.log.debug("Temporal average stock_size is %s" % (str(stock_size),))
+        self._stock = numpy.zeros(stock_size)
+        
+    def sample(self, step, state):
+        
+        time = step * self.dt
+        
+        if step==1:
+            # fill in self_stock with step=1 values of firing rate (for excitatory and inhibitory popultaions):
+            self._stock[0,0,:,0] = state[0,:,0] # exc FR
+            self._stock[0,1,:,0] = state[1,:,0] # inh FR
+        elif step>1:            
+            
+            # previous value of firing rate of exc and inh pops in each region:
+                
+            fes = self._stock[0,0,:,0]
+            fis = self._stock[0,1,:,0]
+        
+            # current values of decaying and rising calcium signals overwritten in stock variables 2 and 3 (excitatory popopulation) or 4 and 5 (inhibitory population):
+            
+            self._stock[0,2,:,0] = self._stock[0,2,:,0]*numpy.exp(-self.dt/(self.tau_decay)) + fes * self.dt
+            self._stock[0,3,:,0] = self._stock[0,3,:,0]*numpy.exp(-self.dt/(self.tau_rise)) + fes * self.dt
+        
+            self._stock[0,4,:,0] = self._stock[0,4,:,0]*numpy.exp(-self.dt/(self.tau_decay)) + fis * self.dt
+            self._stock[0,5,:,0] = self._stock[0,5,:,0]*numpy.exp(-self.dt/(self.tau_rise)) + fis * self.dt
+    
+    
+        # current calcium signals = decay - rise, for exc and inh:
+    
+        ca_e = self._stock[0,2,:,0] - self._stock[0,3,:,0]
+        ca_i = self._stock[0,4,:,0] - self._stock[0,5,:,0]
+        
+        calcium = numpy.array([ca_e , ca_i])
+        
+        # update firing rates in _stock:
+                
+        self._stock[0,0,:,0] = state[0,:,0] # exc FR
+        self._stock[0,1,:,0] = state[1,:,0] # inh FR
+        
+
+        return [time,calcium]
