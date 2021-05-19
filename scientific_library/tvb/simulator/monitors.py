@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -77,7 +77,7 @@ class Monitor(HasTraits):
         label="Sampling period (ms)",  # order = 10
         default=0.9765625,  # ms. 0.9765625 => 1024Hz #ms, 0.5 => 2000Hz
         doc="""Sampling period in milliseconds, must be an integral multiple
-        of integration-step size. As a guide: 2048 Hz => 0.48828125 ms ;  
+        of integration-step size. As a guide: 2048 Hz => 0.48828125 ms ;
         1024 Hz => 0.9765625 ms ; 512 Hz => 1.953125 ms.""")
 
     variables_of_interest = NArray(
@@ -111,7 +111,7 @@ class Monitor(HasTraits):
 
         Grab the Simulator's integration step size. Set the monitor's variables
         of interest based on the Monitor's 'variables_of_interest' attribute, if
-        it was specified, otherwise use the 'variables_of_interest' specified 
+        it was specified, otherwise use the 'variables_of_interest' specified
         for the Model. Calculate the number of integration steps (isteps)
         between returns by the record method. This method is called from within
         the the Simulator's configure() method.
@@ -165,7 +165,7 @@ class Raw(Monitor):
     It collects:
 
         - all state variables and modes from class :Model:
-        - all nodes of a region or surface based 
+        - all nodes of a region or surface based
         - all the integration time steps
 
     """
@@ -241,7 +241,7 @@ class SpatialAverage(Monitor):
     integers, from a set contiguous from zero, specifying the new grouping to
     which each node belongs should work.
 
-    Additionally, this monitor temporally sub-samples the simulation every `istep` 
+    Additionally, this monitor temporally sub-samples the simulation every `istep`
     integration steps.
 
     """
@@ -256,7 +256,7 @@ class SpatialAverage(Monitor):
         required=False,
         doc="""A vector of length==nodes that assigns an index to each node
             specifying the "region" to which it belongs. The default usage is
-            for mapping a surface based simulation back to the regions used in 
+            for mapping a surface based simulation back to the regions used in
             its `Long-range Connectivity.`""")
 
     default_mask = Attr(
@@ -265,12 +265,12 @@ class SpatialAverage(Monitor):
         default=HEMISPHERES,
         label="Default Mask",
         required=False,
-        doc=("Fallback in case spatial mask is none and no surface provided" 
+        doc=("Fallback in case spatial mask is none and no surface provided"
              "to use either connectivity hemispheres or cortical attributes."))
         # order = -1)
-    
+
     backend = ReferenceBackend()
-    
+
     def _support_bool_mask(self, mask):
         """
         Ensure we support also the case of a boolean mask (eg: connectivity.cortical) with all values being 1,
@@ -394,7 +394,7 @@ class TemporalAverage(Monitor):
         """
         Records if integration step corresponds to sampling period, Otherwise
         just update the monitor's stock. When the step corresponds to the sample
-        period, the ``_stock`` is averaged over time for return. 
+        period, the ``_stock`` is averaged over time for return.
 
         """
         self._stock[((step % self.istep) - 1), :] = state[self.voi]
@@ -1014,28 +1014,36 @@ class ProgressLogger(Monitor):
 class Ca(Monitor):
     """
     Calcium signal monitor.
-    
+
+    **References**:
+
+    .. [We_2020] Wei, Z., Lin, B. J., Chen, T. W., Daie, K., Svoboda, K., & Druckmann, S. (2020). A comparison of neuronal population dynamics measured with calcium imaging and electrophysiology. PLoS computational biology, 16(9), e1008198.
+
+    .. [Ya_2004] Yasuda, R., Nimchinsky, E. A., Scheuss, V., Pologruto, T. A., Oertner, T. G., Sabatini, B. L., & Svoboda, K. (2004). Imaging calcium concentration dynamics in small neuronal compartments. Science's STKE, 2004(219), pl5-pl5.
+
+    .. [Sr_1993] Srinivasan, R., & Chiel, H. J. (1993). Fast calculation of synaptic conductances.
+
     """
-    
-    
+
+
     _ui_name = "Calcium signal"
-    
-    
+
+
     variables_of_interest = NArray(
         dtype=int,
         label="Ca Monitor needs time and firing rates",
         required=False)
-    
+
     tau_decay = Float(
         label="Decay time (ms)",
         default=100,
-        doc = "Time constant for the decay of the calcium events") 
-    
+        doc = "Time constant for the decay of the calcium events")
+
     tau_rise = Float(
         label="Rise time (ms)",
         default=10,
-        doc = "Time constant for the rise of the calcium events") 
-    
+        doc = "Time constant for the rise of the calcium events")
+
 
     def __str__(self):
         clsname = self.__class__.__name__
@@ -1054,42 +1062,42 @@ class Ca(Monitor):
                       simulator.model.number_of_modes)
         self.log.debug("Temporal average stock_size is %s" % (str(stock_size),))
         self._stock = numpy.zeros(stock_size)
-        
+
     def sample(self, step, state):
-        
+
         time = step * self.dt
-        
+
         if step==1:
             # fill in self_stock with step=1 values of firing rate (for excitatory and inhibitory popultaions):
             self._stock[0,0,:,0] = state[0,:,0] # exc FR
             self._stock[0,1,:,0] = state[1,:,0] # inh FR
-        elif step>1:            
-            
+        elif step>1:
+
             # previous value of firing rate of exc and inh pops in each region:
-                
+
             fes = self._stock[0,0,:,0]
             fis = self._stock[0,1,:,0]
-        
+
             # current values of decaying and rising calcium signals overwritten in stock variables 2 and 3 (excitatory popopulation) or 4 and 5 (inhibitory population):
-            
+
             self._stock[0,2,:,0] = self._stock[0,2,:,0]*numpy.exp(-self.dt/(self.tau_decay)) + fes * self.dt
             self._stock[0,3,:,0] = self._stock[0,3,:,0]*numpy.exp(-self.dt/(self.tau_rise)) + fes * self.dt
-        
+
             self._stock[0,4,:,0] = self._stock[0,4,:,0]*numpy.exp(-self.dt/(self.tau_decay)) + fis * self.dt
             self._stock[0,5,:,0] = self._stock[0,5,:,0]*numpy.exp(-self.dt/(self.tau_rise)) + fis * self.dt
-    
-    
+
+
         # current calcium signals = decay - rise, for exc and inh:
-    
+
         ca_e = self._stock[0,2,:,0] - self._stock[0,3,:,0]
         ca_i = self._stock[0,4,:,0] - self._stock[0,5,:,0]
-        
+
         calcium = numpy.array([ca_e , ca_i])
-        
+
         # update firing rates in _stock:
-                
+
         self._stock[0,0,:,0] = state[0,:,0] # exc FR
         self._stock[0,1,:,0] = state[1,:,0] # inh FR
-        
+
 
         return [time,calcium]
