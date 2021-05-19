@@ -635,6 +635,11 @@ function setInitialFocusOnButton(simulator_params) {
 }
 
 function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
+    $.ajax({
+        url: '/burst/set_fragment_url',
+        type: 'POST',
+        data: {"url": previous_action},
+    });
     const simulator_params = document.getElementById(div_id);
     simulator_params.removeChild(currentForm);
 
@@ -683,7 +688,7 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     setInitialFocusOnButton(simulator_params);
 }
 
-function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters') {
+function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters', go_to_next_wizard = true) {
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
@@ -694,6 +699,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
         $(fieldset).removeAttr('disabled')
     }
     var form_data = $(currentForm).serialize(); //Encode form elements for submission
+    form_data += "&go_to_next_wizard=" + (go_to_next_wizard ? 'True': 'False')
     if (disabledFieldset){
         $(fieldset).attr('disabled', 'disabled')
     }

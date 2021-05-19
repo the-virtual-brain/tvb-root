@@ -68,6 +68,7 @@ class SimulatorController(BurstBaseController):
     KEY_IS_LOAD_AFTER_REDIRECT = "is_load_after_redirect"
     COPY_NAME_FORMAT = "copy_of_{}"
     BRANCH_NAME_FORMAT = "{}_branch{}"
+    KEY_GO_TO_NEXT_SIM_WIZARD = "go_to_next_wizard"
 
     def __init__(self):
         BurstBaseController.__init__(self)
@@ -138,6 +139,11 @@ class SimulatorController(BurstBaseController):
             last_form_url=self.context.last_loaded_fragment_url,
             last_request_type=cherrypy.request.method, is_first_fragment=True, is_branch=is_branch)
         template_specification.update(**rendering_rules.to_dict())
+
+        cherrypy.response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        cherrypy.response.headers['Pragma'] = 'no-cache'
+        cherrypy.response.headers['Expires'] = '0'
+
         return self.fill_default_attributes(template_specification)
 
     def prepare_first_fragment(self):
@@ -151,6 +157,13 @@ class SimulatorController(BurstBaseController):
         self.simulator_service.validate_first_fragment(form, self.context.project.id, ConnectivityIndex)
         form.fill_from_trait(self.context.simulator)
         return form
+
+    @expose_json
+    def set_fragment_url(self, **data):
+        try:
+            self.context.add_last_loaded_form_url_to_session(data['url'])
+        except KeyError:
+            self.logger.error("Cannot set last loaded url to session because the required data was not found.")
 
     @expose_fragment('simulator_fragment')
     def set_connectivity(self, **data):
@@ -259,7 +272,12 @@ class SimulatorController(BurstBaseController):
         session_stored_simulator, is_simulation_copy, is_simulation_load, _ = self.context.get_common_params()
 
         if cherrypy.request.method == POST_REQUEST:
-            self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_MODEL_PARAMS_URL)
+            try:
+                set_next_wizard = eval(data[SimulatorController.KEY_GO_TO_NEXT_SIM_WIZARD])
+            except KeyError:
+                set_next_wizard = True
+            if set_next_wizard:
+                self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_MODEL_PARAMS_URL)
             form = SimulatorModelFragment()
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator)
