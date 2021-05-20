@@ -221,9 +221,9 @@ class SimulatorService(object):
             for operation in operations:
                 try:
                     burst_config = dao.get_burst_by_id(burst_config.id)
-                    if burst_config.status in [BurstConfiguration.BURST_CANCELED, BurstConfiguration.BURST_ERROR]:
-                        self.logger.debug("Current burst status is {}. Preparing operations cannot continue.".format(
-                            burst_config.status))
+                    if burst_config is None or burst_config.status in [BurstConfiguration.BURST_CANCELED, BurstConfiguration.BURST_ERROR]:
+                        self.logger.debug("Preparing operations cannot continue. Burst config {}".format(
+                            burst_config))
                         return
                     OperationService().launch_operation(operation.id, True)
                 except Exception as excep:
