@@ -125,7 +125,7 @@ class StorageInterface:
         self.files_helper.remove_image_metadata(figure, self.IMAGES_FOLDER)
 
     def get_allen_mouse_cache_folder(self, project_name):
-        return self.get_allen_mouse_cache_folder(project_name)
+        return self.files_helper.get_allen_mouse_cache_folder(project_name)
 
     def zip_folders(self, all_datatypes, project_name, zip_full_path):
         operation_folders = []

@@ -307,7 +307,7 @@ class HDF5StorageManager(object):
         else:
             return value
 
-    def remove_metadata(self, meta_key, dataset_name, tvb_specific_metadata, where):
+    def remove_metadata(self, meta_key, dataset_name='', tvb_specific_metadata=True, where=ROOT_NODE_PATH):
         """
         Remove meta-data information for root node or for a given data set.
 

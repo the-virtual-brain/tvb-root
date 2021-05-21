@@ -164,14 +164,6 @@ class FilesUpdateManager(UpdateManager):
             update message.
         """
         if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
-            total_count = dao.count_all_datatypes()
-
-            self.log.info("Starting to run H5 file updates from version %d to %d, for %d datatypes" % (
-                TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
-                TvbProfile.current.version.DATA_VERSION, total_count))
-
-            # Keep track of how many DataTypes were properly updated and how many
-            # were marked as invalid due to missing files or invalid manager.
             start_time = datetime.now()
 
             file_paths = self.get_all_h5_paths()
@@ -193,7 +185,8 @@ class FilesUpdateManager(UpdateManager):
                                               "Thank you for your patience!" % total_count)
                 self.log.info(FilesUpdateManager.MESSAGE)
             else:
-                # Something went wrong
+                # Keep track of how many DataTypes were properly updated and how many
+                # were marked as invalid due to missing files or invalid manager.
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_INVALID
                 FilesUpdateManager.STATUS = False
                 FilesUpdateManager.MESSAGE = ("Out of %s stored DataTypes, %s were upgraded successfully, but %s had "
