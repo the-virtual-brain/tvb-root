@@ -68,3 +68,6 @@ jobs:
 
       - name: run framework tests
         run: cd framework_tvb && python -m pytest
+
+      - name: run storage tests
+        run: cd tvb_storage && python -m pytest
