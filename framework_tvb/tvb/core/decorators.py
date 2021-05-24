@@ -36,33 +36,6 @@ import os
 from tvb.basic.config.environment import Environment
 
 
-
-def synchronized(lock):
-    """ 
-    Synchronization annotation. 
-    We try to mimic the same behavior as Java has with keyword synchronized, for methods.
-    """
-
-
-    def wrap(func):
-        """Wrap current function with a lock mechanism"""
-
-
-        def new_function(*args, **kw):
-            """ New function will actually write the Lock."""
-            lock.acquire()
-            try:
-                return func(*args, **kw)
-            finally:
-                lock.release()
-
-
-        return new_function
-
-
-    return wrap
-
-
 def user_environment_execution(func):
     """
     Decorator that makes sure a function is executed in a 'user' environment,

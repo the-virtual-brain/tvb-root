@@ -52,7 +52,6 @@ class CommonDetails(EnhancedDictionary):
     CODE_OPERATION_GROUP_NAME = 'operation_group_name'
 
     def __init__(self):
-
         super(CommonDetails, self).__init__()
         self.metadata = dict()
         self.scientific_details = dict()
@@ -81,7 +80,6 @@ class CommonDetails(EnhancedDictionary):
         self.burst_name = None
         self.metadata['burst_name'] = {"name": "Simulation", "disabled": "True"}
 
-
     def add_scientific_fields(self, extra_fields_dict):
         """
         :param extra_fields_dict a dictionary of fields to be added in a distinct category.
@@ -94,7 +92,6 @@ class CommonDetails(EnhancedDictionary):
                 value = [str(v) for v in value]
             self.scientific_details[key] = {"name": key, "value": str(value), "disabled": "True"}
 
-
     @property
     def meta_attributes_list(self):
         """
@@ -104,7 +101,6 @@ class CommonDetails(EnhancedDictionary):
         result.remove('metadata')
         result.remove('scientific_details')
         return result
-
 
     @staticmethod
     def compute_operation_name(category_name, algorithm_name):
@@ -117,7 +113,6 @@ class CommonDetails(EnhancedDictionary):
         if algorithm_name:
             display_name = display_name + "->" + algorithm_name
         return display_name
-
 
     def get_ui_fields(self):
         """
@@ -136,8 +131,6 @@ class OperationOverlayDetails(CommonDetails):
     """
     Entity used for displaying in an overlay details about an operation.
     """
-
-
     def __init__(self, operation, user_display_name, count_inputs, count_results, burst, no_of_op_in_group, op_pid):
         super(OperationOverlayDetails, self).__init__()
 
@@ -202,9 +195,7 @@ class DataTypeOverlayDetails(CommonDetails):
     DATA_TAG_4 = "datatype_tag_4"
     DATA_TAG_5 = "datatype_tag_5"
 
-
     def __init__(self):
-
         super(DataTypeOverlayDetails, self).__init__()
 
         self.data_state = None
@@ -243,14 +234,12 @@ class DataTypeOverlayDetails(CommonDetails):
         self.datatype_size = None
         self.metadata['datatype_size'] = {"name": "Size on Disk (KB)", "disabled": "True"}
 
-
     def fill_from_datatype(self, datatype_result, parent_burst):
         """
         Fill current dictionary with information from a loaded DB DataType.
         :param datatype_result DB loaded DataType
         :param parent_burst Burst entity in which current dataType was generated
         """
-
         self.gid = datatype_result.gid
         self.data_type_id = datatype_result.id
         self.data_state = datatype_result.state

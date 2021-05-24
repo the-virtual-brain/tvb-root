@@ -39,7 +39,6 @@ from tvb.adapters.datatypes.db.tracts import TractsIndex
 from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import TvbZip
 from tvb.core.entities.storage import transactional
 from tvb.core.neocom import h5
 from tvb.core.neocom.h5 import path_for
@@ -258,19 +257,18 @@ class ZipTxtTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        with TvbZip(view_model.data_file) as zipf:
-            for tractf in sorted(zipf.namelist()):  # one track per file
-                if not tractf.endswith('.txt'):  # omit directories and other non track files
-                    continue
-                vertices_file = zipf.open(tractf)
-                datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
+        for tractf in sorted(self.storage_interface.get_filenames_in_zip(view_model.data_file)):  # one track per file
+            if not tractf.endswith('.txt'):  # omit directories and other non track files
+                continue
+            vertices_file = self.storage_interface.open_tvb_zip(view_model.data_file, tractf)
+            datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
 
-                tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
-                tracts_h5.write_vertices_slice(datatype.tract_vertices)
+            tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
+            tracts_h5.write_vertices_slice(datatype.tract_vertices)
 
-                if view_model.region_volume is not None:
-                    tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
-                vertices_file.close()
+            if view_model.region_volume is not None:
+                tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
+            vertices_file.close()
 
         tracts_h5.close()
         self.region_volume_h5.close()

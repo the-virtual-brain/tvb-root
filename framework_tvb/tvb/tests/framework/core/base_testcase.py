@@ -42,6 +42,7 @@ from types import FunctionType
 from tvb.config.init.model_manager import reset_database
 from tvb.config.init.initializer import initialize
 from tvb.core.neocom.h5 import REGISTRY
+from tvb.tests.storage.storage_test import BaseStorageTestCase
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
@@ -81,7 +82,7 @@ if "TEST_INITIALIZATION_DONE" not in globals():
 
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.services.operation_service import OperationService
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.storage.storage_interface import StorageInterface
 from tvb.core.entities.storage import dao
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities.model.model_project import *
@@ -154,20 +155,16 @@ class BaseTestCase(object):
                 # Ignore potential wrongly written operations by other unit-tests
                 pass
 
-    def delete_project_folders(self):
+    @staticmethod
+    def delete_project_folders():
         """
         This method deletes folders for all projects from TVB folder.
         This is done without any check on database. You might get projects in DB but no folder for them on disk.
         """
-        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
-        if os.path.exists(projects_folder):
-            for current_file in os.listdir(projects_folder):
-                full_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, current_file)
-                if os.path.isdir(full_path):
-                    shutil.rmtree(full_path, ignore_errors=True)
+        BaseStorageTestCase.delete_projects_folders()
 
         for folder in [os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME),
-                       os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.TEMP_FOLDER)]:
+                       os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.TEMP_FOLDER)]:
             if os.path.exists(folder):
                 shutil.rmtree(folder)
             os.makedirs(folder)

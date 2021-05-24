@@ -137,7 +137,7 @@ def move_overwrite_files_to_folder_with_wildcard(folder, path_wildcard):
             shutil.move(file, filepath)
 
 
-def write_metadata(meta_dict, h5_file, key_date, key_version, path="/"):
+def write_metadata_in_xml(meta_dict, h5_file, key_date, key_version, path="/"):
     root = h5_file[path].attrs
     root[key_date] = str(datetime.now())
     root[key_version] = 2

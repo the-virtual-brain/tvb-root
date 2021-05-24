@@ -37,13 +37,11 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.exceptions import TVBException
 
 
-
 class InvalidUpgradeScriptException(TVBException):
     """
     Raised in case an update script is present but does not comply to TVB conventions.
     """
     pass
-
 
 
 class UpdateManager(object):
@@ -57,7 +55,6 @@ class UpdateManager(object):
         self.update_scripts_module = module_scripts
         self.checked_version = check_version
         self.current_version = current_version
-
 
     def get_update_scripts(self, checked_version=None):
         """
@@ -78,7 +75,6 @@ class UpdateManager(object):
             self.log.info("Found unprocessed update scripts: %s." % result)
         return result
 
-
     def run_update_script(self, script_name, **kwargs):
         """
         Run one script file.
@@ -91,7 +87,6 @@ class UpdateManager(object):
 
         script_module.update(**kwargs)
 
-
     def run_all_updates(self, **kwargs):
         """
         Upgrade the code to current version. 
@@ -100,5 +95,3 @@ class UpdateManager(object):
             for script_name in self.get_update_scripts():
                 self.log.info("We will run update %s" % script_name)
                 self.run_update_script(script_name, **kwargs)
-                
-        

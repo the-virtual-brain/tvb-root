@@ -34,9 +34,11 @@ import uuid
 import numpy
 import scipy.sparse
 import typing
+import os
+
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
-from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.datatypes import equations
+from tvb.storage.h5.file.exceptions import MissingDataSetException
 
 
 class Accessor(object, metaclass=abc.ABCMeta):
@@ -187,14 +189,14 @@ class DataSet(Accessor):
         if not grow_dimension:
             grow_dimension = self.expand_dimension
         self.owner.storage_manager.append_data(
-            self.field_name,
             data,
+            self.field_name,
             grow_dimension=grow_dimension,
             close_file=close_file
         )
         # update the cached array min max metadata values
         new_meta = DataSetMetaData.from_array(numpy.array(data))
-        meta_dict = self.owner.storage_manager.get_metadata(self.field_name)
+        meta_dict = self.owner.storage_manager.get_metadata(dataset_name=self.field_name)
         if meta_dict:
             meta = DataSetMetaData.from_dict(meta_dict)
             meta.merge(new_meta)
@@ -210,7 +212,7 @@ class DataSet(Accessor):
         if data is None:
             return
 
-        self.owner.storage_manager.store_data(self.field_name, data)
+        self.owner.storage_manager.store_data(data, self.field_name)
         # cache some array information
         self.owner.storage_manager.set_metadata(
             DataSetMetaData.from_array(data).to_dict(),
@@ -225,7 +227,7 @@ class DataSet(Accessor):
 
     def __getitem__(self, data_slice):
         # type: (typing.Tuple[slice, ...]) -> numpy.ndarray
-        return self.owner.storage_manager.get_data(self.field_name, data_slice)
+        return self.owner.storage_manager.get_data(self.field_name, data_slice=data_slice)
 
     @property
     def shape(self):
@@ -358,7 +360,6 @@ class SparseMatrixMetaData(DataSetMetaData):
         }
 
 
-
 class SparseMatrix(Accessor):
     """
     Stores and loads a scipy.sparse csc or csr matrix in h5.
@@ -378,18 +379,18 @@ class SparseMatrix(Accessor):
             raise TypeError("expected scipy.sparse.spmatrix, got {}".format(type(mtx)))
 
         self.owner.storage_manager.store_data(
-            'data',
             mtx.data,
+            'data',
             where=self.field_name
         )
         self.owner.storage_manager.store_data(
-            'indptr',
             mtx.indptr,
+            'indptr',
             where=self.field_name
         )
         self.owner.storage_manager.store_data(
-            'indices',
             mtx.indices,
+            'indices',
             where=self.field_name
         )
         self.owner.storage_manager.set_metadata(
@@ -421,7 +422,6 @@ class SparseMatrix(Accessor):
         mtx = constructor((data, indices, indptr), shape=meta.shape, dtype=meta.dtype)
         mtx.sort_indices()
         return mtx
-
 
 
 class Json(Scalar):

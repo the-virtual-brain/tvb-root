@@ -34,13 +34,11 @@ from .data import FooDatatype, BarDatatype, BazDataType, PropsDataType
 from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
 
 
-
 class BazFile(H5File):
     def __init__(self, path):
         super(BazFile, self).__init__(path)
         self.miu = DataSet(BazDataType.miu, self)
         self.scalar_str = Scalar(BazDataType.scalar_str, self)
-
 
 
 class FooFile(H5File):
@@ -50,7 +48,6 @@ class FooFile(H5File):
         self.array_int = DataSet(FooDatatype.array_int, self)
         self.scalar_int = Scalar(FooDatatype.scalar_int, self)
         self.abaz = Reference(FooDatatype.abaz, self)
-
 
 
 class BarFile(FooFile):

@@ -31,7 +31,7 @@
 This module contains logic for meta-data handling.
 
 It handles read/write operations in XML files for retrieving/storing meta-data.
-More specific: it contains XML Reader/Writer Utility, for GenericMetaData.
+More specific: it contains XML Reader/Writer Utility, for generic metadata dictionary.
 
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
@@ -41,7 +41,7 @@ More specific: it contains XML Reader/Writer Utility, for GenericMetaData.
 import json
 import xml.dom.minidom
 from xml.dom.minidom import Node, Document
-from tvb.core.entities.transient.structure_entities import GenericMetaData
+
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 
@@ -50,37 +50,21 @@ class XMLReader(object):
     """
     Reader for XML with meta-data on generic entities (e.g. Project, Operation).
     """
-    
-    
+
     def __init__(self, xml_path):
         self.logger = get_logger(self.__class__.__module__)
         self.xml_path = xml_path
 
-
-    def read_metadata(self):
+    def read_metadata_from_xml(self):
         """
-        Return one instance of GenericMetaData, filled with data read from XML file.
+        Return a dictionary, filled with data read from XML file.
         """
         self.logger.debug("Starting to parse XML file " + self.xml_path)
         root_node = self._find_root()
         # Parse all nodes, and read text content.    
         result_data = self._parse_xml_node_to_dict(root_node)
-        return GenericMetaData(result_data)        
-    
-    
-    def read_only_element(self, tag_name):
-        """
-        From XML file, read only an element specified by tag-name.
-        :returns: Textual value of the XML node, or None
-        """
-        root_node = self._find_root()
-        gid_node = root_node.getElementsByTagName(tag_name)
-        if gid_node is None:
-            self.logger.warning("Invalid XML, missing " + tag_name + " tag!!!")
-            return None
-        return self.get_node_text(gid_node[0])
-    
-    
+        return result_data
+
     @staticmethod       
     def get_node_text(node):
         """
@@ -91,21 +75,9 @@ class XMLReader(object):
                 return str(text_child.data).lstrip().rstrip()
         
         return ''
-            
-            
-    
-    def parse_xml_content_to_dict(self, xml_data):
-        """
-        :param xml_data: String representing an XML root.
-        :returns: Dictionary with text-content read from the given XML.
-        """
-        root = xml.dom.minidom.parseString(xml_data)
-        root = root.childNodes[-1]
-        return self._parse_xml_node_to_dict(root)
-    
-    
+
     ####### PRIVATE METHODS Start Here #######################################
-        
+
     def _find_root(self):
         """
         From given file path, get XML root node.
@@ -115,8 +87,7 @@ class XMLReader(object):
             if child_node.nodeType == Node.ELEMENT_NODE:
                 return child_node
         return None
-    
-    
+
     def _parse_xml_node_to_dict(self, root_node):
         """
         Parse a given input XML node, and return the dictionary of text attributes.
@@ -132,26 +103,22 @@ class XMLReader(object):
                     result[node.nodeName] = result_meta
         return result
     
-    
-    
-    
+
 class XMLWriter(object):
     """
     Writer for XML with meta-data on generic entities (e.g. Project, Operation).
     """
     ELEM_ROOT = "tvb_data"
     FILE_EXTENSION = ".xml"
-    
-    
+
     def __init__(self, entity):
         """
-        :param entity:  GenericMetaData instance to be written
+        :param entity:  a dictionary that contains generic metadata to be written
         """
         self.entity = entity
         self.logger = get_logger(self.__class__.__module__) 
-    
-    
-    def write(self, final_path):
+
+    def write_metadata_in_xml(self, final_path):
         """
         From a meta-data dictionary for an entity, create the XML file.
         """
@@ -162,7 +129,7 @@ class XMLWriter(object):
         root_node.setAttribute(TvbProfile.current.version.DATA_VERSION_ATTRIBUTE,
                                str(TvbProfile.current.version.DATA_VERSION))
         
-        # Add each attribute GenericMetaData, as XML node-elements.
+        # Add each generic metadata attribute as XML node-elements.
         for att_name, att_value in self.entity.items():
             node = doc.createElement(att_name)
             if isinstance(att_value, list):
@@ -174,4 +141,3 @@ class XMLWriter(object):
         # Now dump the XML content into a file.
         with open(final_path, 'wt') as file_obj:
             doc.writexml(file_obj, addindent="\t", newl="\n")
-

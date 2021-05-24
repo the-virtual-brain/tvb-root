@@ -44,7 +44,6 @@ from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -255,8 +254,8 @@ class RegionStimulusController(SpatioTemporalController):
         if connectivity is None:
             raise MissingDataException(RegionStimulusController.MSG_MISSING_CONNECTIVITY + "!!")
         current_project = common.get_current_project()
-        conn_path = FilesHelper().get_project_folder(current_project, str(connectivity.fk_from_operation))
-        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
+        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, current_project.name,
+                                                                                    str(connectivity.fk_from_operation))
 
         template_specification = dict()
         template_specification['isSingleMode'] = True

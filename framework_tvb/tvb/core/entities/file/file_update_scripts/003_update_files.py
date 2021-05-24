@@ -36,11 +36,12 @@ Upgrade script from H5 version 2 to version 3
 """
 
 import os
+
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.exceptions import FileVersioningException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
+from tvb.storage.h5.file.exceptions import FileVersioningException
+from tvb.storage.storage_interface import StorageInterface
 
 
 def update_localconnectivity_metadata(folder, file_name):
@@ -70,7 +71,7 @@ def update(input_file, burst_match_dict=None):
                                       "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
-    storage_manager = HDF5StorageManager(folder, file_name)
+    storage_manager = StorageInterface.get_storage_manager(input_file)
 
     root_metadata = storage_manager.get_metadata()
     class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]

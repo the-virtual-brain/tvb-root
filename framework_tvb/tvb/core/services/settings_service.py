@@ -214,6 +214,7 @@ class SettingsService(object):
         if first_run:
             data[stored.KEY_LAST_CHECKED_FILE_VERSION] = TvbProfile.current.version.DATA_VERSION
             data[stored.KEY_LAST_CHECKED_CODE_VERSION] = TvbProfile.current.version.REVISION_NUMBER
+            data[stored.KEY_FILE_STORAGE] = TvbProfile.current.file_storage
             file_data = data
             if self.KEY_ADMIN_PWD in data:
                 data[self.KEY_ADMIN_PWD] = hash_password(data[self.KEY_ADMIN_PWD])

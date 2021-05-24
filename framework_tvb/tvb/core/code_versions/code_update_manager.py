@@ -38,18 +38,15 @@ from tvb.core.code_versions.base_classes import UpdateManager
 import tvb.core.code_versions.code_update_scripts as code_versions
 
 
-
 class CodeUpdateManager(UpdateManager):
     """
     A manager that goes through all the scripts that are newer than the version number 
     written in the .tvb.basic.config.setting configuration file.
     """
 
-
     def __init__(self):
         super(CodeUpdateManager, self).__init__(code_versions, TvbProfile.current.version.CODE_CHECKED_TO_VERSION,
                                                 TvbProfile.current.version.REVISION_NUMBER)
-
 
     def run_update_script(self, script_name):
         """
@@ -61,14 +58,13 @@ class CodeUpdateManager(UpdateManager):
         TvbProfile.current.manager.add_entries_to_config_file(
             {stored.KEY_LAST_CHECKED_CODE_VERSION: script_name.split('_')[0]})
 
-
     def run_all_updates(self):
         """
         Upgrade the code to current version. 
         Go through all update scripts with lower SVN version than the current running version.
         """
         if TvbProfile.is_first_run():
-            ## We've just started with a clean TVB. No need to upgrade anything.
+            # We've just started with a clean TVB. No need to upgrade anything.
             return
 
         super(CodeUpdateManager, self).run_all_updates()
@@ -76,7 +72,3 @@ class CodeUpdateManager(UpdateManager):
         if self.checked_version < self.current_version:
             TvbProfile.current.manager.add_entries_to_config_file(
                 {stored.KEY_LAST_CHECKED_CODE_VERSION: TvbProfile.current.version.REVISION_NUMBER})
-        
-        
-        
-        

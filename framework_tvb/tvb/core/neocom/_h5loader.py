@@ -27,22 +27,22 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from datetime import datetime
 import os
 import typing
 import uuid
-from datetime import datetime
 from uuid import UUID
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
 from tvb.core.neocom._registry import Registry
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.neotraits.view_model import ViewModel
-from tvb.core.utils import date2string, string2date
+from tvb.core.utils import string2date, date2string
+from tvb.storage.storage_interface import StorageInterface
 
 H5_EXTENSION = '.h5'
 H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
@@ -194,7 +194,7 @@ class DirLoader(object):
 class TVBLoader(object):
 
     def __init__(self, registry):
-        self.file_handler = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.registry = registry
 
     def path_for_stored_index(self, dt_index_instance):
@@ -206,7 +206,7 @@ class TVBLoader(object):
         else:
             op_id = dt_index_instance.fk_from_operation
         operation = dao.get_operation_by_id(op_id)
-        operation_folder = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        operation_folder = self.storage_interface.get_project_folder(operation.project.name, str(operation.id))
 
         gid = uuid.UUID(dt_index_instance.gid)
         h5_file_class = self.registry.get_h5file_for_index(dt_index_instance.__class__)

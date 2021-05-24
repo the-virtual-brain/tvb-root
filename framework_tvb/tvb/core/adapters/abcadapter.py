@@ -34,26 +34,24 @@ Root classes for adding custom functionality to the code.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
-
+from datetime import datetime
 import importlib
 import json
 import os
 import typing
 import uuid
 from abc import ABCMeta, abstractmethod
-from datetime import datetime
 from enum import Enum
 from functools import wraps
-
 import numpy
 import psutil
 from six import add_metaclass
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, HasTraits, List
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
@@ -65,6 +63,7 @@ from tvb.core.neotraits.forms import Form
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger("ABCAdapter")
 
@@ -179,7 +178,7 @@ class ABCAdapter(object):
     def __init__(self):
         self.generic_attributes = GenericAttributes()
         self.generic_attributes.subject = DataTypeMetaData.DEFAULT_SUBJECT
-        self.file_handler = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.storage_path = '.'
         # Will be populate with current running operation's identifier
         self.operation_id = None
@@ -307,7 +306,7 @@ class ABCAdapter(object):
     def extract_operation_data(self, operation):
         operation = dao.get_operation_by_id(operation.id)
         project = dao.get_project_by_id(operation.fk_launched_in)
-        self.storage_path = self.file_handler.get_project_folder(project, str(operation.id))
+        self.storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
@@ -393,7 +392,7 @@ class ABCAdapter(object):
                     with H5File.from_file(associated_file) as f:
                         f.store_generic_attributes(self.generic_attributes)
                 # Compute size-on disk, in case file-storage is used
-                res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
+                res.disk_size = self.storage_interface.compute_size_on_disk(associated_file)
 
             dao.store_entity(res)
             res.after_store()
@@ -538,7 +537,7 @@ class ABCAdapter(object):
             raise IntrospectionException(msg)
 
     def load_view_model(self, operation):
-        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        storage_path = self.storage_interface.get_project_folder(operation.project.name, str(operation.id))
         input_gid = operation.view_model_gid
         return h5.load_view_model(input_gid, storage_path)
 

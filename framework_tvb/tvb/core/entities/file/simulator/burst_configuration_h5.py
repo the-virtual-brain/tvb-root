@@ -30,9 +30,9 @@
 
 import uuid
 from tvb.basic.neotraits.api import Attr
-from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.neotraits.h5 import H5File, Scalar, Reference
-from tvb.core.utils import date2string, string2date
+from tvb.core.utils import string2date, date2string
+from tvb.storage.h5.file.exceptions import MissingDataSetException
 
 
 class BurstConfigurationH5(H5File):

@@ -39,10 +39,9 @@ from zipfile import ZipFile, ZIP_DEFLATED, BadZipfile
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.decorators import synchronized
-from tvb.core.entities.file.exceptions import FileStructureException
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
-from tvb.core.entities.transient.structure_entities import GenericMetaData
+from tvb.storage.h5.decorators import synchronized
+from tvb.storage.h5.file.exceptions import FileStructureException
+from tvb.storage.h5.file.xml_metadata_handlers import XMLWriter, XMLReader
 
 LOCK_CREATE_FOLDER = Lock()
 
@@ -52,16 +51,8 @@ class FilesHelper(object):
     This class manages all Structure related operations, using File storage.
     It will handle creating meaning-full entities and retrieving existent ones.
     """
-    TEMP_FOLDER = "TEMP"
-    IMAGES_FOLDER = "IMAGES"
     PROJECTS_FOLDER = "PROJECTS"
     ALLEN_MOUSE_CONNECTIVITY_CACHE_FOLDER = "ALLEN_MOUSE_CONNECTIVITY_CACHE"
-
-    TVB_FILE_EXTENSION = XMLWriter.FILE_EXTENSION
-    TVB_STORAGE_FILE_EXTENSION = ".h5"
-    TVB_ZIP_FILE_EXTENSION = ".zip"
-
-    TVB_PROJECT_FILE = "Project" + TVB_FILE_EXTENSION
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
@@ -69,7 +60,7 @@ class FilesHelper(object):
     ############# PROJECT RELATED methods ##################################
 
     @synchronized(LOCK_CREATE_FOLDER)
-    def check_created(self, path=TvbProfile.current.TVB_STORAGE):
+    def check_created(self, path):
         """
         Check that the given folder exists, otherwise create it, with the entire tree of parent folders.
         This method is synchronized, for parallel access from events, to avoid conflicts.
@@ -90,16 +81,15 @@ class FilesHelper(object):
         if TvbProfile.current.web.ENCRYPT_STORAGE and TvbProfile.current.web.CAN_ENCRYPT_STORAGE and TvbProfile.current.web.DECRYPT_PATH:
             base_path = TvbProfile.current.web.DECRYPT_PATH
 
+        # TODO: Use somehow the same PROJECTS_FOLDER as in StorageInterface, it requires too many changes
         return os.path.join(base_path, FilesHelper.PROJECTS_FOLDER)
 
-    def get_project_folder(self, project, *sub_folders):
+    def get_project_folder(self, project_name, *sub_folders):
         """
         Retrieve the root path for the given project.
         If root folder is not created yet, will create it.
         """
-        if hasattr(project, 'name'):
-            project = project.name
-        complete_path = os.path.join(self.get_projects_folder(), project)
+        complete_path = os.path.join(self.get_projects_folder(), project_name)
         if sub_folders is not None:
             complete_path = os.path.join(complete_path, *sub_folders)
         if not os.path.exists(complete_path):
@@ -141,7 +131,7 @@ class FilesHelper(object):
             self.logger.exception("A problem occurred while removing folder.")
             raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
 
-    def get_project_meta_file_path(self, project_name):
+    def get_project_meta_file_path(self, project_name, project_file):
         """
         Retrieve project meta info file path.
         
@@ -150,43 +140,36 @@ class FilesHelper(object):
             
         """
         complete_path = self.get_project_folder(project_name)
-        complete_path = os.path.join(complete_path, self.TVB_PROJECT_FILE)
+        complete_path = os.path.join(complete_path, project_file)
         return complete_path
 
-    def read_project_metadata(self, project_path):
-        project_cfg_file = os.path.join(project_path, self.TVB_PROJECT_FILE)
-        return XMLReader(project_cfg_file).read_metadata()
+    @staticmethod
+    def read_project_metadata(project_path, project_file):
+        project_cfg_file = os.path.join(project_path, project_file)
+        return XMLReader(project_cfg_file).read_metadata_from_xml()
 
-    def write_project_metadata_from_dict(self, project_path, meta_dictionary):
-        project_cfg_file = os.path.join(project_path, self.TVB_PROJECT_FILE)
-        meta_entity = GenericMetaData(meta_dictionary)
-        XMLWriter(meta_entity).write(project_cfg_file)
+    @staticmethod
+    def write_project_metadata_from_dict(project_path, meta_entity, project_file):
+        project_cfg_file = os.path.join(project_path, project_file)
+        XMLWriter(meta_entity).write_metadata_in_xml(project_cfg_file)
         os.chmod(project_path, TvbProfile.current.ACCESS_MODE_TVB_FILES)
 
-    def write_project_metadata(self, project):
+    def write_project_metadata(self, meta_dictionary, project_file):
         """
-        :param project: Project instance, to get metadata from it.
+        :param meta_dictionary: Project metadata
+        :param project_file: Project file path
         """
-        proj_path = self.get_project_folder(project.name)
-        _, meta_dictionary = project.to_dict()
-        self.write_project_metadata_from_dict(proj_path, meta_dictionary)
+        proj_path = self.get_project_folder(meta_dictionary['name'])
+        self.write_project_metadata_from_dict(proj_path, meta_dictionary, project_file)
 
     ############# OPERATION related METHODS Start Here #########################
-    def get_operation_folder(self, project_name, operation_id):
-        """
-        Computes the folder where operation details are stored
-        """
-        operation_path = self.get_project_folder(project_name, str(operation_id))
-        if not os.path.exists(operation_path):
-            self.check_created(operation_path)
-        return operation_path
 
     def remove_operation_data(self, project_name, operation_id):
         """
         Remove H5 storage fully.
         """
         try:
-            complete_path = self.get_operation_folder(project_name, operation_id)
+            complete_path = self.get_project_folder(project_name, str(operation_id))
             self.logger.debug("Removing: " + str(complete_path))
             if os.path.isdir(complete_path):
                 shutil.rmtree(complete_path)
@@ -210,7 +193,7 @@ class FilesHelper(object):
             self.logger.exception("Could not remove file")
             raise FileStructureException("Could not remove " + str(h5_file))
 
-    def move_datatype(self, datatype, new_project_name, new_op_id, full_path):
+    def move_datatype(self, new_project_name, new_op_id, full_path):
         """
         Move H5 storage into a new location
         """
@@ -220,40 +203,39 @@ class FilesHelper(object):
             os.rename(full_path, full_new_file)
         except Exception:
             self.logger.exception("Could not move file")
-            raise FileStructureException("Could not move " + str(datatype))
+            raise FileStructureException("Could not move " + full_path)
 
     ######################## IMAGES METHODS Start Here #######################    
-    def get_images_folder(self, project_name):
+    def get_images_folder(self, project_name, images_folder):
         """
         Computes the name/path of the folder where to store images.
         """
         project_folder = self.get_project_folder(project_name)
-        images_folder = os.path.join(project_folder, self.IMAGES_FOLDER)
+        images_folder = os.path.join(project_folder, images_folder)
         self.check_created(images_folder)
         return images_folder
 
-    def write_image_metadata(self, figure):
+    def write_image_metadata(self, figure, meta_entity, images_folder):
         """
         Writes figure meta-data into XML file
         """
         _, dict_data = figure.to_dict()
-        meta_entity = GenericMetaData(dict_data)
-        XMLWriter(meta_entity).write(self._compute_image_metadata_file(figure))
+        XMLWriter(meta_entity).write_metadata_in_xml(self._compute_image_metadata_file(figure, images_folder))
 
-    def remove_image_metadata(self, figure):
+    def remove_image_metadata(self, figure, images_folder):
         """
         Remove the file storing image meta data
         """
-        metadata_file = self._compute_image_metadata_file(figure)
+        metadata_file = self._compute_image_metadata_file(figure, images_folder)
         if os.path.exists(metadata_file):
             os.remove(metadata_file)
 
-    def _compute_image_metadata_file(self, figure):
+    def _compute_image_metadata_file(self, figure, images_folder):
         """
         Computes full path of image meta data XML file. 
         """
         name = figure.file_path.split('.')[0]
-        images_folder = self.get_images_folder(figure.project.name)
+        images_folder = self.get_images_folder(figure.project.name, images_folder)
         return os.path.join(TvbProfile.current.TVB_STORAGE, images_folder, name + XMLWriter.FILE_EXTENSION)
 
     def get_allen_mouse_cache_folder(self, project_name):
@@ -262,50 +244,10 @@ class FilesHelper(object):
         self.check_created(folder)
         return folder
 
-    @staticmethod
-    def find_relative_path(full_path, root_path=TvbProfile.current.TVB_STORAGE):
-        """
-        :param full_path: Absolute full path
-        :root_path: find relative path from param full_path to this root.
-        """
-        try:
-            full = os.path.normpath(full_path)
-            prefix = os.path.normpath(root_path)
-            result = full.replace(prefix, '')
-            #  Make sure the resulting relative path doesn't start with root, 
-            # to be then treated as an absolute path.      
-            if result.startswith(os.path.sep):
-                result = result.replace(os.path.sep, '', 1)
-            return result
-        except Exception as excep:
-            logger = get_logger(__name__)
-            logger.warning("Could not normalize " + str(full_path))
-            logger.warning(str(excep))
-            return full_path
-
             ######################## GENERIC METHODS Start Here #######################
 
     @staticmethod
-    def parse_xml_content(xml_content):
-        """
-        Delegate reading of some XML content.
-        Will parse the XMl and return a dictionary of elements with max 2 levels.
-        """
-        return XMLReader(None).parse_xml_content_to_dict(xml_content)
-
-    @staticmethod
-    def zip_files(zip_full_path, files):
-        """
-        This method creates a ZIP file with all files provided as parameters
-        :param zip_full_path: full path and name of the result ZIP file
-        :param files: array with the FULL names/path of the files to add into ZIP 
-        """
-        with ZipFile(zip_full_path, "w", ZIP_DEFLATED, True) as zip_file:
-            for file_to_include in files:
-                zip_file.write(file_to_include, os.path.basename(file_to_include))
-
-    @staticmethod
-    def zip_folders(zip_full_path, folders, folder_prefix=""):
+    def zip_folders(zip_full_path, folders, folder_prefix):
         """
         This method creates a ZIP file with all folders provided as parameters
         :param zip_full_path: full path and name of the result ZIP file
@@ -362,7 +304,7 @@ class FilesHelper(object):
             raise FileStructureException("Could not unpack the given ZIP file..." + str(excep))
 
     @staticmethod
-    def copy_file(source, dest, dest_postfix=None, buffer_size=1024 * 1024):
+    def copy_file(source, dest, dest_postfix, buffer_size):
         """
         Copy a file from source to dest. source and dest can either be strings or 
         any object with a read or write method, like StringIO for example.
@@ -392,7 +334,7 @@ class FilesHelper(object):
                 dest.close()
 
     @staticmethod
-    def remove_files(file_list, ignore_exception=False):
+    def remove_files(file_list, ignore_exception):
         """
         :param file_list: list of file paths to be removed.
         :param ignore_exception: When True and one of the specified files could not be removed, an exception is raised.  
@@ -410,7 +352,7 @@ class FilesHelper(object):
                     raise
 
     @staticmethod
-    def remove_folder(folder_path, ignore_errors=False):
+    def remove_folder(folder_path, ignore_errors):
         """
         Given a folder path, try to remove that folder from disk.
         :param ignore_errors: When False throw FileStructureException if folder_path is invalid.
@@ -432,7 +374,7 @@ class FilesHelper(object):
         return 0
 
     @staticmethod
-    def compute_recursive_h5_disk_usage(start_path='.'):
+    def compute_recursive_h5_disk_usage(start_path):
         """
         Computes the disk usage of all h5 files under the given directory.
         :param start_path:
@@ -450,7 +392,7 @@ class FilesHelper(object):
 
 
 class TvbZip(ZipFile):
-    def __init__(self, dest_path, mode="r"):
+    def __init__(self, dest_path, mode):
         ZipFile.__init__(self, dest_path, mode, ZIP_DEFLATED, True)
 
     def __enter__(self):
@@ -459,7 +401,7 @@ class TvbZip(ZipFile):
     def __exit__(self, _type, _value, _traceback):
         self.close()
 
-    def write_folder(self, folder, archive_path_prefix="", exclude=None):
+    def write_zip_folder(self, folder, exclude):
         """
         write folder contents in archive
         :param archive_path_prefix: root folder in archive. Defaults to "" the archive root
@@ -479,6 +421,6 @@ class TvbZip(ZipFile):
             for file_n in files:
                 abs_file_n = os.path.join(root, file_n)
                 zip_file_n = abs_file_n[len(folder) + len(os.sep):]
-                self.write(abs_file_n, archive_path_prefix + zip_file_n)
+                self.write(abs_file_n, zip_file_n)
 
     # TODO: move filehelper's zip methods here

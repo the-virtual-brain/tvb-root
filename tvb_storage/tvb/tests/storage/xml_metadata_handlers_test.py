@@ -34,18 +34,17 @@
 
 import os
 import json
-from tvb.core.entities.model.model_operation import STATUS_FINISHED
-from tvb.core.entities.transient.structure_entities import GenericMetaData
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
+
+from tvb.storage.h5.file.xml_metadata_handlers import XMLReader, XMLWriter
 
 
-class TestMetaDataReadXML():
+class TestMetaDataReadXML:
     """
     Tests for tvb.core.entities.file.metadatahandler.XMLReader class.
     """   
     TO_BE_READ_FILE = "test_read.xml"
     #Values expected to be read from file
-    EXPECTED_DICTIONARY = {'status': STATUS_FINISHED,
+    EXPECTED_DICTIONARY = {'status': "5-FINISHED",
                            'gid': '497b3d59-b3c1-11e1-b2e4-68a86d1bd4fa',
                            'user_group': 'cff_74',
                            'fk_from_algo': json.dumps({'classname': 'CFF_Importer', 'identifier': None,
@@ -65,22 +64,13 @@ class TestMetaDataReadXML():
         Test that content return by read_metadata matches the
         actual content of the XML.
         """
-        meta_data = self.meta_reader.read_metadata()
-        assert isinstance(meta_data, GenericMetaData)
+        meta_data = self.meta_reader.read_metadata_from_xml()
         for key, value in self.EXPECTED_DICTIONARY.items():
             found_value = meta_data[key]
             assert value == found_value
         
-    def test_read_gid(self):
-        """
-        Test that value returned by read_only_element matches the actual value from the XML file.
-        """
-        read_value = self.meta_reader.read_only_element('gid')
-        assert isinstance(read_value, str)
-        assert read_value == self.EXPECTED_DICTIONARY['gid']
 
-     
-class TestMetaDataWriteXML():
+class TestMetaDataWriteXML:
     """
     Tests for XMLWriter.
     """ 
@@ -90,8 +80,7 @@ class TestMetaDataWriteXML():
         """
         Sets up necessary files for the tests.
         """
-        meta_data_entity = GenericMetaData(self.WRITABLE_METADATA)
-        self.meta_writer = XMLWriter(meta_data_entity)
+        self.meta_writer = XMLWriter(self.WRITABLE_METADATA)
         self.result_path = os.path.join(os.path.dirname(__file__), "Operation.xml")
       
     def teardown_method(self):
@@ -105,10 +94,10 @@ class TestMetaDataWriteXML():
         Test that an XML file is created and correct data is written in it.
         """
         assert not os.path.exists(self.result_path)
-        self.meta_writer.write(self.result_path)
+        self.meta_writer.write_metadata_in_xml(self.result_path)
         assert os.path.exists(self.result_path)
         reader = XMLReader(self.result_path)
-        meta_data = reader.read_metadata()
+        meta_data = reader.read_metadata_from_xml()
         for key, value in TestMetaDataReadXML.EXPECTED_DICTIONARY.items():
             found_value = meta_data[key]
             assert value == found_value
