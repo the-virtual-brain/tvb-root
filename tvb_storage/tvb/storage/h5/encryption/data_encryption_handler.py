@@ -38,9 +38,8 @@ from io import BytesIO
 from os import stat
 from queue import Queue
 from threading import Lock
-import pyAesCrypt
-from syncrypto import Crypto, Syncrypto
 
+import pyAesCrypt
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -49,6 +48,11 @@ from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
 from tvb.storage.h5.file.files_helper import FilesHelper
 
 LOGGER = get_logger(__name__)
+
+try:
+    from syncrypto import Crypto, Syncrypto
+except ModuleNotFoundError:
+    LOGGER.info("Cannot import syncrypto library.")
 
 
 class InvalidStorageEncryptionException(TVBException):
