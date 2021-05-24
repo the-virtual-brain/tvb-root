@@ -52,7 +52,7 @@ class DiagnoseDiskUsage(object):
             # The query on attribute access style fits better than aggregating queries.
             self.project = dao.session.query(Project).filter(Project.id == prj_id).one()
             self.expected_files.add(self.storage_interface.get_project_meta_file_path(self.project.name))
-            root_path = self.storage_interface.get_project_folder(self.project)
+            root_path = self.storage_interface.get_project_folder(self.project.name)
 
             print()
             print('Reporting disk for project {} in {}'.format(self.project.name, root_path))

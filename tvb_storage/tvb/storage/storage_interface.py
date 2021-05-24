@@ -264,7 +264,7 @@ class StorageInterface:
         self.data_encryption_handler.set_project_active(project, linked_dt)
 
     def set_project_inactive(self, project):
-        self.data_encryption_handler.set_project_inactive(project)
+        self.data_encryption_handler.set_project_inactive(project.name)
 
     def push_folder_to_sync(self, project_name):
         project_folder = self.get_project_folder(project_name)

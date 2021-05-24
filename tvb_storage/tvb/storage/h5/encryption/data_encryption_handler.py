@@ -39,6 +39,7 @@ from os import stat
 from queue import Queue
 from threading import Lock
 import pyAesCrypt
+from syncrypto import Crypto, Syncrypto
 
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
@@ -183,7 +184,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         project_name = os.path.basename(folder)
         encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
 
-        if os.path.exists(encrypted_folder) and os.path.exists(folder):
+        if os.path.exists(encrypted_folder) or os.path.exists(folder):
             crypto_pass = DataEncryptionHandler._project_key(project_name)
             crypto = Crypto(crypto_pass)
             syncro = Syncrypto(crypto, encrypted_folder, folder)
@@ -193,15 +194,11 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
                 shutil.rmtree(trash_path)
         else:
             LOGGER.info("Project {} was deleted".format(project_name))
-            if os.path.exists(encrypted_folder):
-                shutil.rmtree(encrypted_folder)
-            if os.path.exists(folder):
-                shutil.rmtree(folder)
 
     def set_project_active(self, project, linked_dt):
         if not self.encryption_enabled():
             return
-        project_folder = self.file_helper.get_project_folder(project)
+        project_folder = self.file_helper.get_project_folder(project.name)
         projects = set()
         if linked_dt is None:
             linked_dt = []
@@ -234,7 +231,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             shutil.rmtree(project_folder)
 
     def push_folder_to_sync(self, project_folder):
-        if not self.encryption_enabled() or self._queue_count(project_folder) > 2:
+        if not self.encryption_enabled() or self._queue_count(project_folder) > 0:
             return
         self._inc_queue_count(project_folder)
         self.sync_project_queue.put(project_folder)
@@ -250,7 +247,6 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
     @staticmethod
     def _get_unencrypted_projects(projects_folder):
-        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, projects_folder)
         project_list = os.listdir(projects_folder)
         return list(map(lambda project: os.path.join(projects_folder, str(project)),
                         filter(lambda project: not str(project).endswith(DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX),
@@ -258,7 +254,8 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
     @staticmethod
     def startup_cleanup():
-        projects_list = DataEncryptionHandler._get_unencrypted_projects()
+        unencrypted_projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
+        projects_list = DataEncryptionHandler._get_unencrypted_projects(unencrypted_projects_folder)
         for project in projects_list:
             LOGGER.info("Sync and clean project: {}".format(project))
             DataEncryptionHandler.sync_folders(project)
@@ -307,7 +304,6 @@ class FoldersQueueConsumer(threading.Thread):
     def run(self):
         if not DataEncryptionHandler.encryption_enabled():
             return
-        encryption_handler = DataEncryptionHandler()
         while True:
             if encryption_handler.sync_project_queue.empty():
                 if self.was_processing:
