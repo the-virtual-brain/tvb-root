@@ -1904,11 +1904,6 @@ top: 0;
 z-index: 400;
 }
 
-nav.inline-hover-menu:active .extension,
-nav.inline-hover-menu .extension:hover {
-display: block;
-}
-
 nav.inline-menu .dropdown-pane {
 background: rgb(255, 254, 246);
 margin-top: 26px;

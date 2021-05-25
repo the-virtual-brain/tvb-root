@@ -9,8 +9,8 @@
                 id='burst_id_{{ burst.id }}'>
                 <a href="#" onclick="changeBurstHistory({{ burst.id }}, true); loadBurstReadOnly({{ burst.id }}, '{{ first_fragment_url }}');" title="Load this simulation">{{ burst.name }}</a>
                 <nav class="inline-menu inline-hover-menu">
-                    <button class="action action-edit action-menu">Edit</button>
-                    <div class="extension">
+                    <button id="action_menu_{{ burst.id }}" class="action action-edit action-menu">Edit</button>
+                    <div id="extension_{{ burst.id }}" class="extension">
                         <div class="dropdown-pane">
                             <p class="burst-prop-state"></p>
 
@@ -72,3 +72,17 @@
         {% endfor %}
     </ul>
 </div>
+
+<script>
+    $("nav.inline-hover-menu .extension").each(function () {
+        $(this).siblings().click($(this),function (clickHandler) {
+            clickHandler.data.css('display', 'block')
+        })
+        $(this).hover(function () {
+            $(this).css('display', 'block')
+        }, function () {
+            $(this).css('display', 'none')
+            $(this).siblings().trigger('click')
+        })
+    })
+</script>
