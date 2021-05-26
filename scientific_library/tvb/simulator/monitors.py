@@ -294,7 +294,7 @@ class SpatialAverage(Monitor):
         if self.spatial_mask is None:
             self.is_default_special_mask = True
             if simulator.surface is not None:
-                self.spatial_mask = simulator.surface.full_cortical_region_map
+                self.spatial_mask = simulator.surface.cortical_region_mapping
             else:
                 conn = simulator.connectivity
                 if self.default_mask == self.CORTICAL:
@@ -529,8 +529,8 @@ class Projection(Monitor):
         using_cortical_surface = surf is not None
         if using_cortical_surface:
             # This code assumes that subcortical regions are mapped to a single vertex
-            non_cortical_indices, = numpy.where(numpy.bincount(surf.full_region_map) == 1)
-            self.rmap = surf.full_region_map
+            non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
+            self.rmap = surf.region_mapping
         else:
             # assume all cortical if no info
             if conn.cortical.size == 0:
@@ -974,7 +974,7 @@ class BoldRegionROI(Bold):
 
     def config_for_sim(self, simulator):
         super(BoldRegionROI, self).config_for_sim(simulator)
-        self.region_mapping = simulator.surface.full_region_map
+        self.region_mapping = simulator.surface.region_mapping
 
     def sample(self, step, state, array=numpy.array):
         result = super(BoldRegionROI, self).sample(step, state)
