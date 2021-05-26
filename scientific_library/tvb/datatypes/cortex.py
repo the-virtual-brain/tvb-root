@@ -69,15 +69,6 @@ class Cortex(HasTraits):
 
     @property
     def region_mapping(self):
-        """
-        Define shortcut for retrieving RegionMapping map array.
-        """
-        if self.region_mapping_data is None:
-            return None
-        return self.region_mapping_data.array_data
-
-    @property
-    def full_region_map(self):
         "Generate a full region mapping vector."
         if self._regmap is not None:
             return self._regmap
@@ -85,14 +76,6 @@ class Cortex(HasTraits):
         unmapped = self.region_mapping_data.connectivity.unmapped_indices(rm)
         self._regmap = numpy.r_[rm, unmapped]
         return self._regmap
-
-    @property
-    def full_cortical_region_map(self):
-        return self.full_region_map
-
-    @property
-    def cortical_surface(self):
-        return self.surface
 
     @property
     def surface(self):
@@ -151,13 +134,13 @@ class Cortex(HasTraits):
 
         # Pad the local connectivity matrix with zeros when non-cortical regions
         # are included in the long range connectivity...
-        if self.local_connectivity.matrix.shape[0] < self.full_region_map.shape[0]:
+        if self.local_connectivity.matrix.shape[0] < self.region_mapping.shape[0]:
             self.log.info("There are non-cortical regions, will pad local connectivity")
             padding = scipy.sparse.csc_matrix((self.local_connectivity.matrix.shape[0],
-                                               self.full_region_map.shape[0] - self.local_connectivity.matrix.shape[0]))
+                                               self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0]))
             self.local_connectivity.matrix = scipy.sparse.hstack([self.local_connectivity.matrix, padding])
 
-            padding = scipy.sparse.csc_matrix((self.full_region_map.shape[0] - self.local_connectivity.matrix.shape[0],
+            padding = scipy.sparse.csc_matrix((self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0],
                                                self.local_connectivity.matrix.shape[1]))
             self.local_connectivity.matrix = scipy.sparse.vstack([self.local_connectivity.matrix, padding])
 
@@ -207,7 +190,6 @@ class Cortex(HasTraits):
         else:
             raise RuntimeError("cortex.coupling_strength must be size 1 or number_of_vertices")
         return local_coupling
-
 
     @classmethod
     def from_file(cls, source_file='cortex_16384.zip', region_mapping_file=os.path.join("regionMapping_16k_76.txt"),
