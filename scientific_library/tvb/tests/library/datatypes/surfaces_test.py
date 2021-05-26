@@ -200,7 +200,7 @@ class TestSurfaces(BaseTestCase):
         dt.region_mapping_data.connectivity = Connectivity.from_file()
         dt.__setattr__('valid_for_simulations', True)
         assert isinstance(dt, Cortex)
-        assert dt.region_mapping is not None
+        assert dt.full_region_map is not None
         ## Initialize Local Connectivity, to avoid long computation time.
         dt.local_connectivity = LocalConnectivity.from_file()
 

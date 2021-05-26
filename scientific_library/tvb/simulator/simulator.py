@@ -600,7 +600,7 @@ class Simulator(HasTraits):
         try:
             memreq += self.surface.triangles.nbytes * 2
             memreq += self.surface.vertices.nbytes * 2
-            memreq += self.surface.region_mapping.nbytes * self.number_of_nodes * 8. * 4  # region_average, region_sum
+            memreq += self.surface.full_region_map.nbytes * self.number_of_nodes * 8. * 4  # region_average, region_sum
             memreq += self.surface.local_connectivity.matrix.nnz * 8
         except AttributeError:
             pass
