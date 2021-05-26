@@ -253,6 +253,8 @@ class DataTypeMatrix(DataType):
     array_has_complex = Column(Boolean, default=False)
     # has_volume_mapping will currently be changed for ConnectivityMeasureIndex subclass
     has_volume_mapping = Column(Boolean, nullable=False, default=False)
+    # currently has_valid_time_series is False only when importing Correlation Coefficients via BIDS
+    has_valid_time_series = Column(Boolean, nullable=False, default=True)
 
     def fill_from_has_traits(self, datatype):
         super(DataTypeMatrix, self).fill_from_has_traits(datatype)
