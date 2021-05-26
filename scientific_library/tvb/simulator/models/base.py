@@ -239,7 +239,7 @@ class Model(HasTraits):
     def _map_roi_param_to_surface(self, sim, param, region_parameters, spatial_reshape):
         if sim.surface is not None:
             if region_parameters.size == sim.connectivity.number_of_regions:
-                new_parameters = region_parameters[sim.surface.full_region_map].reshape(spatial_reshape)
+                new_parameters = region_parameters[sim.surface.region_mapping].reshape(spatial_reshape)
                 setattr(self, param, new_parameters)
 
     def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0):

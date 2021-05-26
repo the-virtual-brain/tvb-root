@@ -237,7 +237,7 @@ class Simulator(HasTraits):
             self.number_of_nodes = self.connectivity.number_of_regions
             self.log.info('Region simulation with %d ROI nodes', self.number_of_nodes)
         else:
-            self.number_of_nodes = len(self.surface.full_region_map)
+            self.number_of_nodes = len(self.surface.region_mapping)
             self.log.info('Surface simulation with %d total nodes (vertices + non-cortical)', self.number_of_nodes)
 
     def configure(self, full_configure=True):
@@ -289,7 +289,7 @@ class Simulator(HasTraits):
         """Compute delayed node coupling values."""
         coupling = self.coupling(step, self.history)
         if self.surface is not None:
-            coupling = coupling[:, self.surface.full_region_map]
+            coupling = coupling[:, self.surface.region_mapping]
         return coupling
 
     def _prepare_stimulus(self):
@@ -313,7 +313,7 @@ class Simulator(HasTraits):
     def _loop_update_history(self, step, state):
         """Update history."""
         if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
-            state = self.backend.surface_state_to_rois(self.surface.full_region_map, self.connectivity.number_of_regions, state)
+            state = self.backend.surface_state_to_rois(self.surface.region_mapping, self.connectivity.number_of_regions, state)
         self.history.update(step, state)
 
     def _loop_monitor_output(self, step, state, node_coupling):
@@ -398,12 +398,12 @@ class Simulator(HasTraits):
 
         if self.surface is not None:
             if self.integrator.noise.nsig.size == self.connectivity.number_of_regions:
-                self.integrator.noise.nsig = self.integrator.noise.nsig[self.surface.full_region_map]
+                self.integrator.noise.nsig = self.integrator.noise.nsig[self.surface.region_mapping]
             elif self.integrator.noise.nsig.size == self.model.nvar * self.connectivity.number_of_regions:
                 self.integrator.noise.nsig = \
-                    self.integrator.noise.nsig[self.model.state_variable_mask][:, self.surface.full_region_map]
+                    self.integrator.noise.nsig[self.model.state_variable_mask][:, self.surface.region_mapping]
             elif self.integrator.noise.nsig.size == self.model.nintvar * self.connectivity.number_of_regions:
-                self.integrator.noise.nsig = self.integrator.noise.nsig[:, self.surface.full_region_map]
+                self.integrator.noise.nsig = self.integrator.noise.nsig[:, self.surface.region_mapping]
 
         good_nsig_shape = (self.model.nintvar, self.number_of_nodes, self.model.number_of_modes)
         nsig = self.integrator.noise.nsig
@@ -441,7 +441,7 @@ class Simulator(HasTraits):
         if self.stimulus is not None:
             if self.surface:
                 # NOTE the region mapping of the stimuli should also include the subcortical areas
-                self.stimulus.configure_space(region_mapping=self.surface.full_region_map)
+                self.stimulus.configure_space(region_mapping=self.surface.region_mapping)
             else:
                 self.stimulus.configure_space()
 
@@ -568,7 +568,7 @@ class Simulator(HasTraits):
         try:
             memreq += self.surface.triangles.nbytes * 2
             memreq += self.surface.vertices.nbytes * 2
-            memreq += self.surface.full_region_map.nbytes * self.number_of_nodes * 8. * 4  # region_average, region_sum
+            memreq += self.surface.region_mapping.nbytes * self.number_of_nodes * 8. * 4  # region_average, region_sum
             memreq += self.surface.local_connectivity.matrix.nnz * 8
         except AttributeError:
             pass
