@@ -528,10 +528,9 @@ class Projection(Monitor):
         conn = simulator.connectivity
         using_cortical_surface = surf is not None
         if using_cortical_surface:
-            # TODO: Shouldn't the full_reg_map be used here?
             # This code assumes that subcortical regions are mapped to a single vertex
-            non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
-            self.rmap = surf.region_mapping
+            non_cortical_indices, = numpy.where(numpy.bincount(surf.full_region_map) == 1)
+            self.rmap = surf.full_region_map
         else:
             # assume all cortical if no info
             if conn.cortical.size == 0:

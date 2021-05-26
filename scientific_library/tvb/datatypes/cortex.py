@@ -81,7 +81,7 @@ class Cortex(HasTraits):
         "Generate a full region mapping vector."
         if self._regmap is not None:
             return self._regmap
-        rm = self.region_mapping
+        rm = self.region_mapping_data.array_data
         unmapped = self.region_mapping_data.connectivity.unmapped_indices(rm)
         self._regmap = numpy.r_[rm, unmapped]
         return self._regmap
