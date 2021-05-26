@@ -3,6 +3,8 @@
 <!-- ============================= -->
 <div id="main" class="columnized colscheme-2-1st-narrow">
 
+    <script type="text/javascript" src="/static/js/tumor_dataset_import.js"></script>
+
     {% macro drawLevelSelect(level_index, data, default_selected, project_id) -%}
         <label for="levelTree_{{ level_index }}" id="label_levelTree_{{ level_index }}">Level {{ level_index }}:</label>
         <select id="levelTree_{{ level_index }}" name='levelTree_{{ level_index }}'
@@ -27,6 +29,12 @@
                         <button tabindex='50' type="submit" class="action action-upload"
                                 onclick="showDataUploadOverlay({{ project.id }})"
                                 title="Import ">Upload
+                        </button>
+                    </li>
+                    <li>
+                        <button tabindex='50' type="submit" class="action action-upload"
+                                onclick="importTumorDataset({{ project.id }})"
+                                title="Import Tumor Dataset ">Import Tumor Dataset
                         </button>
                     </li>
                 </ul>

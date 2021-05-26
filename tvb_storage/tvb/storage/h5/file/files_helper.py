@@ -53,6 +53,7 @@ class FilesHelper(object):
     """
     PROJECTS_FOLDER = "PROJECTS"
     ALLEN_MOUSE_CONNECTIVITY_CACHE_FOLDER = "ALLEN_MOUSE_CONNECTIVITY_CACHE"
+    TUMOR_DATASET_FOLDER = "TUMOR_DATASET"
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
@@ -81,7 +82,6 @@ class FilesHelper(object):
         if TvbProfile.current.web.ENCRYPT_STORAGE and TvbProfile.current.web.CAN_ENCRYPT_STORAGE and TvbProfile.current.web.DECRYPT_PATH:
             base_path = TvbProfile.current.web.DECRYPT_PATH
 
-        # TODO: Use somehow the same PROJECTS_FOLDER as in StorageInterface, it requires too many changes
         return os.path.join(base_path, FilesHelper.PROJECTS_FOLDER)
 
     def get_project_folder(self, project_name, *sub_folders):
@@ -241,6 +241,12 @@ class FilesHelper(object):
     def get_allen_mouse_cache_folder(self, project_name):
         project_folder = self.get_project_folder(project_name)
         folder = os.path.join(project_folder, self.ALLEN_MOUSE_CONNECTIVITY_CACHE_FOLDER)
+        self.check_created(folder)
+        return folder
+
+    def get_tumor_dataset_folder(self, project_name):
+        project_folder = self.get_project_folder(project_name)
+        folder = os.path.join(project_folder, self.TUMOR_DATASET_FOLDER)
         self.check_created(folder)
         return folder
 

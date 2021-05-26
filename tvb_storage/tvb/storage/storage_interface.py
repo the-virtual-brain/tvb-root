@@ -128,6 +128,9 @@ class StorageInterface:
     def get_allen_mouse_cache_folder(self, project_name):
         return self.files_helper.get_allen_mouse_cache_folder(project_name)
 
+    def get_tumor_dataset_folder(self, project_name):
+        return self.files_helper.get_tumor_dataset_folder(project_name)
+
     def zip_folders(self, all_datatypes, project_name, zip_full_path):
         operation_folders = []
         for data_type in all_datatypes:
