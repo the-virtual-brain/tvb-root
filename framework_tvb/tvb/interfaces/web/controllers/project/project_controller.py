@@ -718,7 +718,6 @@ class ProjectController(BaseController):
         return serve_file(export_file, "application/x-download", "attachment")
 
     def _download_tumor_dataset(self, start_byte, file_name, retry_no):
-        count = 1
         if retry_no == 0:
             self.logger.error(
                 "The download of the tumor dataset has failed. The maximum number of retries ({}) has been reached!"
@@ -733,13 +732,11 @@ class ProjectController(BaseController):
             with open(file_name, 'ab') as f:
                 for chunk in r.iter_content(chunk_size=1024):
                     f.write(chunk)
-                    count = count + 1
-                    print(count)
 
             self.logger.info("The download of the tumor dataset has been successfully completed!")
             return True
 
-        except Exception as e:
+        except Exception:
             self.logger.warning("An unexpected error has appeared while downloading the tumor dataset."
                                 " Trying the download again, number of retries left is {}!".format(retry_no - 1))
             time.sleep(self.SLEEP_TIME)
@@ -751,7 +748,7 @@ class ProjectController(BaseController):
         download_path = prepare_tumor_dataset_for_download(project_id)
         import_path = os.path.join(os.path.dirname(download_path), 'TVB_brain_tumor', 'derivatives', 'TVB')
 
-        if not os.path.exists(download_path):
+        if not os.path.exists(import_path):
             was_downloaded = self._download_tumor_dataset(0, download_path, self.MAXIMUM_DOWNLOAD_RETRIES)
 
             if was_downloaded is False:
