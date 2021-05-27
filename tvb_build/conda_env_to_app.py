@@ -316,7 +316,7 @@ def create_plist():
         'LSMinimumSystemVersion': '10.7.0',
         'LSUIElement': False,
         'NSAppTransportSecurity': {'NSAllowsArbitraryLoads': True},
-        'NSHumanReadableCopyright': "(c) 2012-2020, Baycrest Centre for Geriatric Care ('Baycrest') and others",
+        'NSHumanReadableCopyright': "(c) 2012-2022, Baycrest Centre for Geriatric Care ('Baycrest') and others",
         'NSMainNibFile': 'MainMenu',
         'NSPrincipalClass': 'NSApplication',
         'NSHighResolutionCapable': True,
