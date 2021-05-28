@@ -15,14 +15,6 @@
  * You should have received a copy of the GNU General Public License along with this
  * program.  If not, see <http://www.gnu.org/licenses/>.
  *
- *   CITATION:
- * When using The Virtual Brain for scientific publications, please cite it as follows:
- *
- *   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
- *   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
- *       The Virtual Brain: a simulator of primate brain network dynamics.
- *   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
- *
  **/
 
 var CONNECTIVITY_SPACE_TIME_CANVAS_ID = "GLcanvas_SPACETIME";
