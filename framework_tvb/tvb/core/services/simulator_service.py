@@ -196,26 +196,22 @@ class SimulatorService(object):
                     operations.append(operation)
                     if first_simulator is None:
                         first_simulator = simulator
+                        storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
+                        burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id,
+                                                                                   first_simulator.gid)
+                        self.burst_service.store_burst_configuration(burst_config, storage_path)
+                        datatype_group = DataTypeGroup(operation_group, operation_id=operation.id,
+                                                       fk_parent_burst=burst_config.gid,
+                                                       state=algo_category.defaultdatastate)
+                        dao.store_entity(datatype_group)
+
+                        metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.gid,
+                                                               state=algo_category.defaultdatastate)
+                        dao.store_entity(metrics_datatype_group)
+
             GROUP_BURST_PENDING[burst_config.id] = False
             if pse_canceled:
                 return
-
-            first_operation = operations[0]
-            if dao.try_get_operation_by_id(first_operation.id) is None:
-                self.logger.debug("First operation does not exist.")
-                return
-            storage_path = self.storage_interface.get_project_folder(project.name, str(first_operation.id))
-            burst_config = self.burst_service.update_simulation_fields(burst_config, first_operation.id,
-                                                                       first_simulator.gid)
-            self.burst_service.store_burst_configuration(burst_config, storage_path)
-            datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
-                                           fk_parent_burst=burst_config.gid,
-                                           state=algo_category.defaultdatastate)
-            dao.store_entity(datatype_group)
-
-            metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.gid,
-                                                   state=algo_category.defaultdatastate)
-            dao.store_entity(metrics_datatype_group)
 
             wf_errs = 0
             for operation in operations:
