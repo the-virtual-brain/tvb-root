@@ -160,6 +160,7 @@ class SimulatorService(object):
             if range_param2:
                 range_param2_values = range_param2.get_range_values()
             first_simulator = None
+            first_operation = None
             pse_canceled = False
             GROUP_BURST_PENDING[burst_config.id] = True
             for param1_value in range_param1.get_range_values():
@@ -195,6 +196,7 @@ class SimulatorService(object):
                     simulator.range_values = ranges
                     operations.append(operation)
                     if first_simulator is None:
+                        first_operation = operation
                         first_simulator = simulator
                         storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
                         burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id,
