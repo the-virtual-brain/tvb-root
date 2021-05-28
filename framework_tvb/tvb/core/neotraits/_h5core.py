@@ -87,6 +87,8 @@ class H5File(object):
         self.parent_burst = Uuid(Attr(uuid.UUID, required=False), self, name='parent_burst')
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
+        # Keep a list with datasets for which we should write metadata before closing the file
+        self.expandable_datasets = []
 
         if not self.storage_manager.is_valid_tvb_file():
             self.written_by.store(self.get_class_path())
@@ -120,6 +122,8 @@ class H5File(object):
         self.close()
 
     def close(self):
+        for dataset in self.expandable_datasets:
+            self.storage_manager.set_metadata(dataset.meta.to_dict(), dataset.field_name)
         self.storage_manager.close_file()
 
     def store(self, datatype, scalars_only=False, store_references=True):

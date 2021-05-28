@@ -183,6 +183,8 @@ class DataSet(Accessor):
         """
         super(DataSet, self).__init__(trait_attribute, h5file, name)
         self.expand_dimension = expand_dimension
+        # Cache metadata for expandable DataSets to avoid multiple reads/writes at append time
+        self.meta = None
 
     def append(self, data, close_file=True, grow_dimension=None):
         # type: (numpy.ndarray, bool, int) -> None
@@ -196,14 +198,12 @@ class DataSet(Accessor):
         )
         # update the cached array min max metadata values
         new_meta = DataSetMetaData.from_array(numpy.array(data))
-        meta_dict = self.owner.storage_manager.get_metadata(dataset_name=self.field_name)
-        if meta_dict:
-            meta = DataSetMetaData.from_dict(meta_dict)
-            meta.merge(new_meta)
+        if self.meta:
+            self.meta.merge(new_meta)
         else:
             # this must be a new file, nothing to merge, set the new meta
-            meta = new_meta
-        self.owner.storage_manager.set_metadata(meta.to_dict(), self.field_name)
+            self.meta = new_meta
+            self.owner.write_meta_on_close.append(self)
 
     def store(self, data):
         # type: (numpy.ndarray) -> None
