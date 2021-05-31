@@ -30,12 +30,11 @@
 
 import abc
 import json
+import typing
 import uuid
+
 import numpy
 import scipy.sparse
-import typing
-import os
-
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
 from tvb.datatypes import equations
 from tvb.storage.h5.file.exceptions import MissingDataSetException
@@ -188,6 +187,10 @@ class DataSet(Accessor):
 
     def append(self, data, close_file=True, grow_dimension=None):
         # type: (numpy.ndarray, bool, int) -> None
+        """
+        Method to be called when it is necessary to write slices of data for a large dataset, eg. TimeSeries.
+        Metdata for such datasets is written only at file close time, see H5File.close method.
+        """
         if not grow_dimension:
             grow_dimension = self.expand_dimension
         self.owner.storage_manager.append_data(

@@ -27,8 +27,9 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import numpy
 import json
+
+import numpy
 from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
 from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
 
@@ -66,22 +67,22 @@ class FourierSpectrumH5(DataTypeMatrixH5):
 
         # mhtodo: these computations on the partial_result belong in the caller not here
 
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)
 
         partial_result.compute_amplitude()
-        self.amplitude.append(partial_result.amplitude)
+        self.amplitude.append(partial_result.amplitude, close_file=False)
 
         partial_result.compute_phase()
-        self.phase.append(partial_result.phase)
+        self.phase.append(partial_result.phase, close_file=False)
 
         partial_result.compute_power()
-        self.power.append(partial_result.power)
+        self.power.append(partial_result.power, close_file=False)
 
         partial_result.compute_average_power()
-        self.average_power.append(partial_result.average_power)
+        self.average_power.append(partial_result.average_power, close_file=False)
 
         partial_result.compute_normalised_average_power()
-        self.normalised_average_power.append(partial_result.normalised_average_power)
+        self.normalised_average_power.append(partial_result.normalised_average_power, close_file=False)
 
     def get_fourier_data(self, selected_state, selected_mode, normalized):
         shape = self.array_data.shape
@@ -127,16 +128,16 @@ class WaveletCoefficientsH5(DataTypeMatrixH5):
         """
         # mhtodo: these computations on the partial_result belong in the caller not here
 
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)
 
         partial_result.compute_amplitude()
-        self.amplitude.append(partial_result.amplitude)
+        self.amplitude.append(partial_result.amplitude, close_file=False)
 
         partial_result.compute_phase()
-        self.phase.append(partial_result.phase)
+        self.phase.append(partial_result.phase, close_file=False)
 
         partial_result.compute_power()
-        self.power.append(partial_result.power)
+        self.power.append(partial_result.power, close_file=False)
 
 
 class CoherenceSpectrumH5(DataTypeMatrixH5):
@@ -152,7 +153,7 @@ class CoherenceSpectrumH5(DataTypeMatrixH5):
         """
         Append chunk.
         """
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)
 
 
 class ComplexCoherenceSpectrumH5(DataTypeMatrixH5):
@@ -171,9 +172,9 @@ class ComplexCoherenceSpectrumH5(DataTypeMatrixH5):
         """
         Append chunk.
         """
-        self.cross_spectrum.append(partial_result.cross_spectrum)
+        self.cross_spectrum.append(partial_result.cross_spectrum, close_file=False)
 
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)
 
     def get_spectrum_data(self, selected_spectrum):
         shape = self.array_data.shape
