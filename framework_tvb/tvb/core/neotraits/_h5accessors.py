@@ -240,6 +240,8 @@ class DataSet(Accessor):
         This cache is useful for large, expanding datasets,
         when we want to avoid loading the whole dataset just to compute a max.
         """
+        if self in self.owner.expandable_datasets:
+            return self.meta
         meta = self.owner.storage_manager.get_metadata(self.field_name)
         return DataSetMetaData.from_dict(meta)
 
