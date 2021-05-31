@@ -203,7 +203,7 @@ class DataSet(Accessor):
         else:
             # this must be a new file, nothing to merge, set the new meta
             self.meta = new_meta
-            self.owner.write_meta_on_close.append(self)
+            self.owner.expandable_datasets.append(self)
 
     def store(self, data):
         # type: (numpy.ndarray) -> None
