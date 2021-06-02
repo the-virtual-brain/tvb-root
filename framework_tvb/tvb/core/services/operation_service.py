@@ -70,6 +70,8 @@ from tvb.storage.storage_interface import StorageInterface
 RANGE_PARAMETER_1 = RANGE_PARAMETER_1
 RANGE_PARAMETER_2 = RANGE_PARAMETER_2
 
+GROUP_BURST_PENDING = {}
+
 
 class OperationService:
     """
@@ -388,7 +390,8 @@ class OperationService:
             result = BackendClientFactory.stop_operation(operation_id)
             if remove_after_stop:
                 burst_config = dao.get_burst_for_direct_operation_id(operation_id)
-                ProjectService().remove_operation(operation_id)
                 if burst_config is not None:
                     result = dao.remove_entity(BurstConfiguration, burst_config.id) or result
+                ProjectService().remove_operation(operation_id)
+
         return result

@@ -68,7 +68,7 @@ class BurstService(object):
         self.logger = get_logger(self.__class__.__module__)
         self.storage_interface = StorageInterface()
 
-    def mark_burst_finished(self, burst_entity, burst_status=None, error_message=None):
+    def mark_burst_finished(self, burst_entity, burst_status=None, error_message=None, store_h5_file=True):
         """
         Mark Burst status field.
         Also compute 'weight' for current burst: no of operations inside, estimate time on disk...
@@ -97,14 +97,16 @@ class BurstService(object):
             burst_entity.error_message = error_message
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
-            self.update_burst_configuration_h5(burst_entity)
+            if store_h5_file:
+                self.update_burst_configuration_h5(burst_entity)
         except Exception:
             self.logger.exception("Could not correctly update Burst status and meta-data!")
             burst_entity.status = burst_status
             burst_entity.error_message = "Error when updating Burst Status"
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
-            self.update_burst_configuration_h5(burst_entity)
+            if store_h5_file:
+                self.update_burst_configuration_h5(burst_entity)
 
     def persist_operation_state(self, operation, operation_status, message=None):
         """
@@ -197,6 +199,11 @@ class BurstService(object):
         # type: (int) -> BurstConfiguration
         burst_config = dao.get_burst_by_id(burst_config_id)
         return burst_config
+
+    @staticmethod
+    def remove_burst_configuration(burst_config_id):
+        # type: (int) -> None
+        dao.remove_entity(BurstConfiguration, burst_config_id)
 
     @staticmethod
     def prepare_burst_for_pse(burst_config):

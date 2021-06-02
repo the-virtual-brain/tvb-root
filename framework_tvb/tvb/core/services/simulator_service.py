@@ -41,13 +41,14 @@ import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import load
 from tvb.core.entities.filters.chain import FilterChain
+from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import BurstServiceException
-from tvb.core.services.operation_service import OperationService
+from tvb.core.services.operation_service import OperationService, GROUP_BURST_PENDING
 from tvb.simulator.integrators import IntegratorStochastic
 from tvb.storage.storage_interface import StorageInterface
 
@@ -154,66 +155,101 @@ class SimulatorService(object):
             algo_category = simulator_algo.algorithm_category
             operation_group = burst_config.operation_group
             metric_operation_group = burst_config.metric_operation_group
-            operations = []
             range_param2_values = [None]
             if range_param2:
                 range_param2_values = range_param2.get_range_values()
-            first_simulator = None
+            GROUP_BURST_PENDING[burst_config.id] = True
+            operations, pse_canceled = self._prepare_operations(algo_category, burst_config,
+                                                                metric_operation_group,
+                                                                operation_group, project,
+                                                                range_param1,
+                                                                range_param2, range_param2_values,
+                                                                session_stored_simulator,
+                                                                simulator_algo, user)
 
-            for param1_value in range_param1.get_range_values():
-                for param2_value in range_param2_values:
-                    # Copy, but generate a new GUID for every Simulator in PSE
-                    simulator = copy.deepcopy(session_stored_simulator)
-                    simulator.gid = uuid.uuid4()
-                    self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
+            GROUP_BURST_PENDING[burst_config.id] = False
+            if pse_canceled:
+                return
 
-                    ranges = {range_param1.name: self._set_range_param_in_dict(param1_value)}
-
-                    if param2_value is not None:
-                        self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
-                        ranges[range_param2.name] = self._set_range_param_in_dict(param2_value)
-
-                    ranges = json.dumps(ranges)
-
-                    operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
-                                                                         view_model=simulator, ranges=ranges,
-                                                                         burst_gid=burst_config.gid,
-                                                                         op_group_id=burst_config.fk_operation_group)
-                    simulator.range_values = ranges
-                    operations.append(operation)
-                    if first_simulator is None:
-                        first_simulator = simulator
-
-            first_operation = operations[0]
-            storage_path = self.storage_interface.get_project_folder(project.name, str(first_operation.id))
-            burst_config = self.burst_service.update_simulation_fields(burst_config, first_operation.id,
-                                                                       first_simulator.gid)
-            self.burst_service.store_burst_configuration(burst_config, storage_path)
-            datatype_group = DataTypeGroup(operation_group, operation_id=first_operation.id,
-                                           fk_parent_burst=burst_config.gid,
-                                           state=algo_category.defaultdatastate)
-            dao.store_entity(datatype_group)
-
-            metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.gid,
-                                                   state=algo_category.defaultdatastate)
-            dao.store_entity(metrics_datatype_group)
-
-            wf_errs = 0
-            for operation in operations:
-                try:
-                    OperationService().launch_operation(operation.id, True)
-                except Exception as excep:
-                    self.logger.error(excep)
-                    wf_errs += 1
-                    self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
-
+            wf_errs = self._launch_operations(operations, burst_config)
             self.logger.debug("Finished launching workflows. " + str(len(operations) - wf_errs) +
                               " were launched successfully, " + str(wf_errs) + " had error on pre-launch steps")
-            return first_operation
+            return operations[0] if len(operations) > 0 else None
 
         except Exception as excep:
             self.logger.error(excep)
             self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
+
+    def _launch_operations(self, operations, burst_config):
+        wf_errs = 0
+        for operation in operations:
+            try:
+                burst_config = dao.get_burst_by_id(burst_config.id)
+                if burst_config is None or burst_config.status in [BurstConfiguration.BURST_CANCELED,
+                                                                   BurstConfiguration.BURST_ERROR]:
+                    self.logger.debug("Preparing operations cannot continue. Burst config {}".format(
+                        burst_config))
+                    return
+                OperationService().launch_operation(operation.id, True)
+            except Exception as excep:
+                self.logger.error(excep)
+                wf_errs += 1
+                self.burst_service.mark_burst_finished(burst_config, error_message=str(excep))
+        return wf_errs
+
+    def _prepare_operations(self, algo_category, burst_config, metric_operation_group,
+                            operation_group, project, range_param1, range_param2,
+                            range_param2_values, session_stored_simulator, simulator_algo, user):
+        first_simulator = None
+        pse_canceled = False
+        operations = []
+        for param1_value in range_param1.get_range_values():
+            for param2_value in range_param2_values:
+                burst_config = dao.get_burst_by_id(burst_config.id)
+                if burst_config is None:
+                    self.logger.debug("Burst config was deleted")
+                    pse_canceled = True
+                    break
+
+                if burst_config.status in [BurstConfiguration.BURST_CANCELED, BurstConfiguration.BURST_ERROR]:
+                    self.logger.debug("Current burst status is {}. Preparing operations cannot continue.".format(
+                        burst_config.status))
+                    pse_canceled = True
+                    break
+                # Copy, but generate a new GUID for every Simulator in PSE
+                simulator = copy.deepcopy(session_stored_simulator)
+                simulator.gid = uuid.uuid4()
+                self._set_simulator_range_parameter(simulator, range_param1.name, param1_value)
+
+                ranges = {range_param1.name: self._set_range_param_in_dict(param1_value)}
+
+                if param2_value is not None:
+                    self._set_simulator_range_parameter(simulator, range_param2.name, param2_value)
+                    ranges[range_param2.name] = self._set_range_param_in_dict(param2_value)
+
+                ranges = json.dumps(ranges)
+
+                operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
+                                                                     view_model=simulator, ranges=ranges,
+                                                                     burst_gid=burst_config.gid,
+                                                                     op_group_id=burst_config.fk_operation_group)
+                simulator.range_values = ranges
+                operations.append(operation)
+                if first_simulator is None:
+                    first_simulator = simulator
+                    storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
+                    burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id,
+                                                                               first_simulator.gid)
+                    self.burst_service.store_burst_configuration(burst_config, storage_path)
+                    datatype_group = DataTypeGroup(operation_group, operation_id=operation.id,
+                                                   fk_parent_burst=burst_config.gid,
+                                                   state=algo_category.defaultdatastate)
+                    dao.store_entity(datatype_group)
+
+                    metrics_datatype_group = DataTypeGroup(metric_operation_group, fk_parent_burst=burst_config.gid,
+                                                           state=algo_category.defaultdatastate)
+                    dao.store_entity(metrics_datatype_group)
+        return operations, pse_canceled
 
     @staticmethod
     def compute_conn_branch_conditions(is_branch, simulator):
