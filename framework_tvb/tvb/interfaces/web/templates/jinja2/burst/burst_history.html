@@ -31,7 +31,7 @@
                                     <p><button class="action action-copy" onclick="branchBurst({{ burst.id }}, '{{ first_fragment_url }}')" title="Create a branch of the current simulation configuration.">
                                         Branch</button></p>
                                 {% else %}
-                                    <p><button class="action action-copy" title="Cannot branch current burst because simulation is still running or an error occured." disabled="disabled">
+                                    <p><button class="action action-copy action-idle" title="Cannot branch current burst because simulation is still running or an error occured." disabled="disabled">
                                         Branch</button></p>
                                 {% endif %}
                             {% endif %}
@@ -87,7 +87,9 @@
             $(this).css('display', 'block')
         }, function () {
             $(this).css('display', 'none')
+            {% if fromInit is defined and fromInit%}
             $(this).siblings().trigger('click')
+            {% endif %}
         })
     })
 </script>

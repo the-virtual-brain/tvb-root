@@ -653,14 +653,18 @@ class SimulatorController(BurstBaseController):
             return {'error': e.message}
 
     @expose_fragment('burst/burst_history')
-    def load_burst_history(self):
+    def load_burst_history(self, initBurst=None):
         """
         Load the available burst that are stored in the database at this time.
         This is one alternative to 'chrome-back problem'.
         """
         bursts = self.burst_service.get_available_bursts(self.context.project.id)
         self.burst_service.populate_burst_disk_usage(bursts)
+        fromInit = False
+        if initBurst is not None:
+            fromInit = True
         return {'burst_list': bursts,
+                'fromInit': fromInit,
                 'selectedBurst': self.context.burst_config.id,
                 'first_fragment_url': SimulatorFragmentRenderingRules.FIRST_FORM_URL}
 

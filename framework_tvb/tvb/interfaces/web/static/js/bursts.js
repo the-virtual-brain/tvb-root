@@ -165,10 +165,10 @@ function renderAllSimulatorForms(url, stop_at_url = '', onFinishFunction = null)
 /*
  * Reload entire Burst-History column.
  */
-function loadBurstHistory() {
+function loadBurstHistory(initBurst = false) {
     doAjaxCall({
         type: "POST",
-        url: '/burst/load_burst_history',
+        url: '/burst/load_burst_history/' + (initBurst ? initBurst : ''),
         cache: false,
         async: false,
         success: function (r) {
@@ -247,7 +247,7 @@ function _updateBurstHistoryElapsedTime(result) {
 function scheduleNewUpdate(withFullUpdate, refreshCurrent) {
     if ($('#burst-history').length !== 0) {
         if (withFullUpdate) {
-            loadBurstHistory();
+            loadBurstHistory(true);
             changeBurstHistory(sessionStoredBurstID, false);
             if (refreshCurrent) {
                 loadBurstReadOnly(sessionStoredBurstID,  '/burst/set_connectivity');
@@ -483,7 +483,7 @@ function setPseRangeParameters(){
 function initBurstConfiguration(currentBurstID, currentBurstName, selectedTab) {
     setPseRangeParameters();
 
-    loadBurstHistory();
+    loadBurstHistory(true);
     changeBurstHistory(currentBurstID, true);
     fill_burst_name(currentBurstName, currentBurstID !== "");
     toggleConfigSurfaceModelParamsButton();
