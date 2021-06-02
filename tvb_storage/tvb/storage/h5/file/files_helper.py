@@ -244,9 +244,9 @@ class FilesHelper(object):
         self.check_created(folder)
         return folder
 
-    def get_tumor_dataset_folder(self, project_name):
-        project_folder = self.get_project_folder(project_name)
-        folder = os.path.join(project_folder, self.TUMOR_DATASET_FOLDER)
+    def get_tumor_dataset_folder(self):
+        project_folder = self.get_projects_folder()
+        folder = os.path.join(os.path.dirname(project_folder), self.TUMOR_DATASET_FOLDER)
         self.check_created(folder)
         return folder
 

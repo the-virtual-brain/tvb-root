@@ -48,7 +48,6 @@ from pathlib import Path
 import requests
 
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.adapters.uploaders.tumor_dataset_importer import prepare_tumor_dataset_for_download, import_tumor_datatypes
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
@@ -79,11 +78,6 @@ class ProjectController(BaseController):
     KEY_OPERATION_FILTERS = "operationfilters"
     NODE_OPERATION_TYPE = "operation"
     NODE_OPERATION_GROUP_TYPE = "operationGroup"
-
-    TUMOR_DATASET_URL = 'https://kg.ebrains.eu/proxy/export?container=https://object.cscs.ch/v1/AUTH_6ebec77683fb4' \
-                        '72f94d352be92b5a577/hbp-d000001_TVB_brain_tumor_pub'
-    MAXIMUM_DOWNLOAD_RETRIES = 3
-    SLEEP_TIME = 3
 
     def __init__(self):
         super(ProjectController, self).__init__()
@@ -716,49 +710,6 @@ class ProjectController(BaseController):
         self.mark_file_for_delete(export_file, True)
 
         return serve_file(export_file, "application/x-download", "attachment")
-
-    def _download_tumor_dataset(self, start_byte, file_name, retry_no):
-        if retry_no == 0:
-            self.logger.error(
-                "The download of the tumor dataset has failed. The maximum number of retries ({}) has been reached!"
-                    .format(self.MAXIMUM_DOWNLOAD_RETRIES))
-            return False
-
-        resume_header = {'Range': f'bytes={start_byte}'}
-
-        try:
-            r = requests.get(self.TUMOR_DATASET_URL, stream=True, headers=resume_header)
-
-            with open(file_name, 'ab') as f:
-                for chunk in r.iter_content(chunk_size=1024):
-                    f.write(chunk)
-
-            self.logger.info("The download of the tumor dataset has been successfully completed!")
-            return True
-
-        except Exception:
-            self.logger.warning("An unexpected error has appeared while downloading the tumor dataset."
-                                " Trying the download again, number of retries left is {}!".format(retry_no - 1))
-            time.sleep(self.SLEEP_TIME)
-            next_start_byte = Path(file_name).stat().st_size
-            return self._download_tumor_dataset(next_start_byte, file_name, retry_no - 1)
-
-    @expose_json
-    def download_tumor_dataset(self, project_id):
-        download_path = prepare_tumor_dataset_for_download(project_id)
-        import_path = os.path.join(os.path.dirname(download_path), 'TVB_brain_tumor', 'derivatives', 'TVB')
-
-        if not os.path.exists(import_path):
-            was_downloaded = self._download_tumor_dataset(0, download_path, self.MAXIMUM_DOWNLOAD_RETRIES)
-
-            if was_downloaded is False:
-                return {'is_downloaded': False}
-
-            StorageInterface().unpack_zip(download_path, os.path.dirname(download_path))
-            os.remove(download_path)
-
-        import_tumor_datatypes(project_id, import_path)
-        return {'is_downloaded': True}
 
     def fill_default_attributes(self, template_dictionary, subsection='project'):
         """

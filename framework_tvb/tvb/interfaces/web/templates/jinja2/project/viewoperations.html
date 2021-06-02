@@ -7,14 +7,21 @@
               - list of icons for results, or
               - expand button in case of a group.
         -->
-        {% if operation_row['datatype_group_gid'] is not none %}
+        {% if operation_row['datatype_group_gid'] is not none or operation_row['results'] | length > 10 %}
             <nav class="inline-menu">
                 <button class="action action-menu" type="button">Expand</button>
 
                 <div class="extension">
                     <div class="dropdown-pane" onkeypress="redirectToHrefChild(this)" tabindex="3">
                         <mark>{{ operation_row['count'] }} operations</mark>
-                        <p>Group {{ operation_row['group'] }}</p>
+
+                        {% if operation_row['datatype_group_gid'] is not none %}
+                            <p>Group {{ operation_row['group'] }}</p>
+                        {% else %}
+                            <p>There are too many datatypes to display them.
+                                To view them, please visit the Data Structure page!</p>
+                        {% endif %}
+
 
                         {% for view_algo in operation_row.view_groups %}
                             {% set launchParamName = view_algo.parameter_name %}
@@ -32,7 +39,7 @@
             </nav>
         {% endif %}
 
-        {% if operation_row['results'] is not none %}
+        {% if operation_row['results'] is not none and operation_row['results'] | length < 10 %}
             <div>
                 {% for 	result in operation_row['results'] %}
                     {% if not result.invalid and not result.is_nan %}

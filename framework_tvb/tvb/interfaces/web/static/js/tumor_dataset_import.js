@@ -24,7 +24,8 @@ function importTumorDataset(projectId){
         " This operation is going to take a while, please wait...")
     doAjaxCall({
         type: "POST",
-        url: "/project/download_tumor_dataset/?project_id=" + projectId,
+        /* TODO: Would be nice not to hardcode the algorithm id */
+        url: "/project/launchloader/" + projectId + "/29",
         success: function(response){
             if (JSON.parse(response).is_downloaded){
                 displayMessage("The Tumor Dataset has been succesfully imported!");
