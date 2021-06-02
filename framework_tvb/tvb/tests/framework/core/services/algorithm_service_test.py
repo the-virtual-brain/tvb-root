@@ -80,8 +80,7 @@ class TestAlgorithmService(TransactionalTestCase):
     def test_get_uploaders(self):
 
         result = AlgorithmService.get_upload_algorithms()
-        # Not sure if it is correct but I think there are not 29 algorithms anymore here
-        assert 19 == len(result)
+        assert 20 == len(result)
         found = False
         for algo in result:
             if algo.classname == self.algorithm.classname and algo.module == self.algorithm.module:
