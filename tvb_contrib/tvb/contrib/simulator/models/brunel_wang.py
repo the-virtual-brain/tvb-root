@@ -38,6 +38,7 @@ Based on the Brunel and Wang model.
 
 import inspect
 import numpy
+
 import tvb.contrib.scripts.datatypes.lookup_tables as lookup_tables
 import tvb.simulator.models as models
 from tvb.basic.neotraits.api import NArray, Range, List, Final
@@ -357,12 +358,9 @@ class BrunelWang(models.Model):
     def __init__(self, **kwargs):
         """
         May need to put kwargs back if we can't get them from trait...
-
         """
-
-        LOG.info("%s: initing..." % str(self))
-
         super(BrunelWang, self).__init__(**kwargs)
+        LOG.info("%s: initing..." % str(self))
 
         # self._state_variables = ["E", "I"]
         self._nvar = 2

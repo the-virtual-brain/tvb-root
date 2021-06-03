@@ -37,10 +37,12 @@ A contributed model: Hindmarsh-Rose
 """
 
 import numpy
+
 from tvb.simulator.common import psutil, get_logger
-LOG = get_logger(__name__)
 from tvb.basic.neotraits.api import NArray, Range, Final
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
 
 
 class HindmarshRose(models.Model):
@@ -145,15 +147,13 @@ class HindmarshRose(models.Model):
 #        default = numpy.array([0.0]),
 #        range = basic.Range(lo = 0.0, hi = 1.0))
 
-
     def __init__(self, **kwargs):
         """
         Initialize the HindmarshRose model's traited attributes, any provided
         as keywords will overide their traited default.
-        
         """
-        LOG.info('%s: initing...' % str(self))
         super(HindmarshRose, self).__init__(**kwargs)
+        LOG.info('%s: initing...' % str(self))
 
         self._state_variables = ["x", "y", "z"]
         self._nvar = 3
@@ -161,7 +161,6 @@ class HindmarshRose(models.Model):
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
         LOG.debug('%s: inited.' % repr(self))
-
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
@@ -196,4 +195,3 @@ class HindmarshRose(models.Model):
         derivative = numpy.array([dx, dy, dz])
 
         return derivative
-

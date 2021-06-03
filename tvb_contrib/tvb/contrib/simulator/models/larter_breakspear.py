@@ -34,6 +34,7 @@ A contributed model: Larter model revisited by Breaskpear M.
 """
 
 import numpy
+
 from tvb.simulator.common import get_logger
 from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
@@ -374,7 +375,6 @@ class LarterBreakspear(models.Model):
         
         """
         super(LarterBreakspear, self).__init__(**kwargs)
-
         LOG.info('%s: initing...' % str(self))
 
         self.cvar = numpy.array([0], dtype=numpy.int32)

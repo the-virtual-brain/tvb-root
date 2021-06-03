@@ -37,12 +37,12 @@ A contributed model: Morris-Lecar
 """
 
 import numpy
-from tvb.simulator.common import psutil, get_logger
-LOG = get_logger(__name__)
 
+from tvb.simulator.common import psutil, get_logger
 from tvb.basic.neotraits.api import NArray, Range, Final
 import tvb.simulator.models as models
 
+LOG = get_logger(__name__)
 
 
 class MorrisLecar(models.Model):
@@ -173,7 +173,6 @@ class MorrisLecar(models.Model):
 #        default = numpy.array([0.0]),
 #        range = basic.Range(lo = 0.0, hi = 1.0))
 
-
     def __init__(self, **kwargs):
         """
         Initialize the MorrisLecar model's traited attributes, any provided
@@ -188,7 +187,6 @@ class MorrisLecar(models.Model):
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
         LOG.debug('%s: inited.' % repr(self))
-
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
@@ -232,4 +230,3 @@ class MorrisLecar(models.Model):
         derivative = numpy.array([dV, dN])
 
         return derivative
-

@@ -34,10 +34,12 @@ The Epileptor model
 """
 
 import numpy
+
 from tvb.simulator.common import psutil, get_logger
-LOG = get_logger(__name__)
 from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
 
 
 class HMJEpileptor(models.Model):
@@ -161,20 +163,16 @@ class HMJEpileptor(models.Model):
 #        doc="default state variables to be monitored",
 #        order=10)
 
-
     def __init__(self, **kwargs):
         """
         """
-
-        LOG.info("%s: init'ing..." % (str(self),))
-
         super(HMJEpileptor, self).__init__(**kwargs)
+        LOG.info("%s: init'ing..." % (str(self),))
 
         #self._state_variables = ["y%d" % i for i in range(6)]
         #self._state_variables = ["y%d" % i for i in range(6)]
         self._nvar = 6
         self.cvar = numpy.array([0,3], dtype=numpy.int32)
-
 
         LOG.debug("%s: init'ed." % (repr(self),))
 
@@ -250,10 +248,7 @@ class HMJEpileptor(models.Model):
         #     ydot4 = -y(5)+ y(4)-y(4)^3 + iext2+ 2*y(6)-0.3*(y(3)-3.5); 
         #     ydot5 = (-y(5) + aa*(y(4)+0.25))/tau;   % here is the mlj structure
         # end
-
-        else_pop2 = concat([ (-y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kpop2 * (c_pop2 - y[3])).reshape((1, n, 1)), ((-y[4] + self.aa*(y[3] + 0.25))/self.tau).reshape((1, n, 1)) ])
-
-
+        else_pop2 = concat([ (-y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kpop2 * (c_pop2 - y[3])).reshape((1, n, 1)), ((-y[4] + self.aa*(y[3] + 0.25))/self.tau).reshape((1, n, 1))])
         pop2 = where(y[3] < -0.25, if_, else_pop2)
 
         # 

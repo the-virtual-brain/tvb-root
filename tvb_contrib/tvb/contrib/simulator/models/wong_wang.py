@@ -36,11 +36,13 @@ The original Wong and Wang model
 """
 
 import numpy
-from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
 
+from tvb.simulator.common import get_logger
 from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
+
 
 class WongWang(models.Model):
     """
@@ -193,15 +195,14 @@ class WongWang(models.Model):
     def __init__(self, **kwargs):
         """
         .. May need to put kwargs back if we can't get them from trait...
-
         """
-
         super(WongWang, self).__init__(**kwargs)
+        LOG.info('%s: initing...' % str(self))
 
         self._nvar = 2
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
-        #derived parameters
+        # derived parameters
         self.I_mot_l = None
         self.I_mot_r = None
 
@@ -211,7 +212,6 @@ class WongWang(models.Model):
         """  """
         super(WongWang, self).configure()
         self.update_derived_parameters()
-
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -237,7 +237,6 @@ class WongWang(models.Model):
         derivative = numpy.array([ds1, ds2])
         return derivative
 
-
     def update_derived_parameters(self):
         """
         Derived parameters
@@ -248,7 +247,6 @@ class WongWang(models.Model):
         if len(self.I_mot_l) > 1:
             self.I_mot_l = numpy.expand_dims(self.I_mot_l, -1)
             self.I_mot_r = numpy.expand_dims(self.I_mot_r, -1)
-
 
 
 if __name__ == "__main__":
@@ -273,5 +271,3 @@ if __name__ == "__main__":
     INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2**-5)
     ppi_fig = PhasePlaneInteractive(model=WW, integrator=INTEGRATOR)
     ppi_fig.show()
-
-#EoF

@@ -37,12 +37,12 @@ A contributed model: Larter
 """
 
 import numpy
-from tvb.simulator.common import psutil, get_logger
-LOG = get_logger(__name__)
 
+from tvb.simulator.common import psutil, get_logger
 from tvb.basic.neotraits.api import NArray, Range, Final, List
 import tvb.simulator.models as models
 
+LOG = get_logger(__name__)
 
 
 class Larter(models.Model):
@@ -228,23 +228,21 @@ class Larter(models.Model):
         corresponding state-variable indices for this model are :math:`V = 0`,
         :math:`W = 1`, and :math:`Z = 2`.""")
 
-
     def __init__(self, **kwargs):
         """
         Initialize the Larter model's traited attributes, any provided as
         keywords will overide their traited default.
         
         """
-        LOG.info('%s: initing...' % str(self))
         super(Larter, self).__init__(**kwargs)
+        LOG.info('%s: initing...' % str(self))
 
-        #self._state_variables = ["V", "W", "Z"]
+        # self._state_variables = ["V", "W", "Z"]
         self._nvar = 3
 
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
         LOG.debug('%s: inited.' % repr(self))
-
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
@@ -274,8 +272,8 @@ class Larter(models.Model):
         alpha_exc = self.a_exc * (1 + numpy.tanh((V - self.V5) / self.V6))
         alpha_inh = self.a_inh * (1 + numpy.tanh((V - self.V7) / self.V6))
 
-        #import pdb; pdb.set_trace()
-        dV =  (local_coupling * V - alpha_inh * Z -
+        # import pdb; pdb.set_trace()
+        dV = (local_coupling * V - alpha_inh * Z -
               self.gL * (V - self.VL) -
               self.gCa * M_inf * (V - 1) -
               self.gK * W * (V - self.VK + c_0) + self.Iext)
@@ -287,4 +285,3 @@ class Larter(models.Model):
         derivative = numpy.array([dV, dW, dZ])
 
         return derivative
-
