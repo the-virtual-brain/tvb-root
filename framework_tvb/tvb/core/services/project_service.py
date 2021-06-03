@@ -465,10 +465,6 @@ class ProjectService:
             data = {}
             is_group = False
             group_op = None
-            dt_entity = dao.get_datatype_by_gid(dt.gid)
-            if dt_entity is None:
-                self.logger.warning("Ignored entity (possibly removed DT class)" + str(dt))
-                continue
             #  Filter by dt.type, otherwise Links to individual DT inside a group will be mistaken
             if dt.type == "DataTypeGroup" and dt.parent_operation.operation_group is not None:
                 is_group = True
@@ -480,7 +476,7 @@ class ProjectService:
             data[DataTypeMetaData.KEY_NODE_TYPE] = dt.display_type
             data[DataTypeMetaData.KEY_STATE] = dt.state
             data[DataTypeMetaData.KEY_SUBJECT] = str(dt.subject)
-            data[DataTypeMetaData.KEY_TITLE] = dt_entity.display_name
+            data[DataTypeMetaData.KEY_TITLE] = dt.display_name
             data[DataTypeMetaData.KEY_RELEVANCY] = dt.visible
             data[DataTypeMetaData.KEY_LINK] = dt.parent_operation.fk_launched_in != project.id
 
