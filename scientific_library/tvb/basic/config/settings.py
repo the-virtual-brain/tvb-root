@@ -52,7 +52,7 @@ class VersionSettings(object):
     BASE_VERSION = "2.2.2"
 
     # Current DB version. Create a new migration script from command line and copy its gid here
-    DB_STRUCTURE_VERSION = 'ec2859bb9114'
+    DB_STRUCTURE_VERSION = '32d4bf9f8cab'
 
     # This is the version of the data stored in H5 and XML files
     # and should be used by next versions to know how to import
