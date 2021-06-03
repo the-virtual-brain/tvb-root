@@ -19,21 +19,12 @@
  **/
 
 
-function importTumorDataset(projectId){
+function importTumorDataset(projectId, algorithmId){
     displayMessage("Downloading Tumor Dataset from Ebrains has started." +
         " This operation is going to take a while, please wait...")
     doAjaxCall({
         type: "POST",
-        /* TODO: Would be nice not to hardcode the algorithm id */
-        url: "/project/launchloader/" + projectId + "/29",
-        success: function(response){
-            if (JSON.parse(response).is_downloaded){
-                displayMessage("The Tumor Dataset has been succesfully imported!");
-            }else{
-                displayMessage("We encountered an error while downloading the Tumor Dataset." +
-                " Please try reload and then check the logs!", "errorMessage");
-            }
-        },
+        url: "/project/launchloader/" + projectId + "/" + algorithmId,
         error: function(){
             displayMessage("We encountered an error while downloading the Tumor Dataset." +
                 " Please try reload and then check the logs!", "errorMessage");
