@@ -42,7 +42,7 @@
         {% if operation_row['results'] is not none and operation_row['results'] | length < 10 %}
             <div>
                 {% for 	result in operation_row['results'] %}
-                    {% if not result.invalid and not result.is_nan %}
+                    {% if not result.invalid and not result.is_nan and result.visible %}
                         <img src="/static/style/nodes/node{{ result.display_type }}.png" class="result_icon"
                              title="{{ result.display_name }} "
                              onclick="displayNodeDetails('{{ result.gid }}', '{{ result.type }}', 'operations');"/>
