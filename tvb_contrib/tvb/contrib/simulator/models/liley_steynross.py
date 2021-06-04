@@ -303,7 +303,7 @@ class LileySteynRoss(models.Model):
         """
         super(LileySteynRoss, self).__init__(**kwargs)
         LOG.info('%s: initing...' % str(self))
-        # self._state_variables = ["E", "I"]
+        self.state_variables = ["he", "hi"]
         self._nvar = 2
         self.cvar = numpy.array([0, 1], dtype=numpy.int32)
         LOG.debug('%s: inited.' % repr(self))

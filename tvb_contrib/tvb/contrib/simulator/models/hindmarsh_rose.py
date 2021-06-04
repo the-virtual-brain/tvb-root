@@ -39,7 +39,7 @@ A contributed model: Hindmarsh-Rose
 import numpy
 
 from tvb.simulator.common import psutil, get_logger
-from tvb.basic.neotraits.api import NArray, Range, Final
+from tvb.basic.neotraits.api import NArray, Range, Final, List
 import tvb.simulator.models as models
 
 LOG = get_logger(__name__)
@@ -128,11 +128,11 @@ class HindmarshRose(models.Model):
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.""")
 
-    variables_of_interest = NArray(
-        dtype=numpy.int,
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        domain=Range(lo=0, hi=3, step=1),
-        default=numpy.array([0], dtype=numpy.int32),
+        choices=("x", "y", "z"),
+        default="x",
         doc="""This represents the default state-variables of this Model to be
         monitored. It can be overridden for each Monitor if desired. The 
         corresponding state-variable indices for this model are :math:`x = 0`,
@@ -155,7 +155,7 @@ class HindmarshRose(models.Model):
         super(HindmarshRose, self).__init__(**kwargs)
         LOG.info('%s: initing...' % str(self))
 
-        self._state_variables = ["x", "y", "z"]
+        self.state_variables = ["x", "y", "z"]
         self._nvar = 3
 
         self.cvar = numpy.array([0], dtype=numpy.int32)

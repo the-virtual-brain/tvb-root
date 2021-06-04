@@ -82,7 +82,6 @@ class Attr(_Attr):
         self.final = bool(final)
         self.choices = choices
 
-
     def __validate(self, value):
         """ check field_type and choices """
         if not isinstance(value, self.field_type):
@@ -121,7 +120,6 @@ class Attr(_Attr):
         # we do not check here if we have a value for a required field
         # it is too early for that, owner.__init__ has not run yet
 
-
     def _validate_set(self, instance, value):
         # type: ('HasTraits', typing.Any) -> typing.Any
         """
@@ -140,9 +138,7 @@ class Attr(_Attr):
         self.__validate(value)
         return value
 
-
     # descriptor protocol
-
     def __get__(self, instance, owner):
         # type: (typing.Optional['HasTraits'], 'MetaType') -> typing.Any
         self._assert_have_field_name()
@@ -170,7 +166,6 @@ class Attr(_Attr):
                                       'Use a default or assign a value before reading it', attr=self)
         return value
 
-
     def __set__(self, instance, value):
         # type: ('HasTraits', typing.Any) -> None
         self._assert_have_field_name()
@@ -189,7 +184,6 @@ class Attr(_Attr):
 
         instance.__dict__[self.field_name] = value
 
-
     def _defined_on_str_helper(self):
         if self.owner is not None:
             return '{}.{}.{} = {}'.format(
@@ -205,7 +199,6 @@ class Attr(_Attr):
         return '{}(field_type={}, default={!r}, required={})'.format(
             self._defined_on_str_helper(), self.field_type, self.default, self.required
         )
-
 
 
 class Final(Attr):
@@ -254,7 +247,6 @@ class List(Attr):
         self.element_type = of
         self.element_choices = choices
 
-
     def __validate_elements(self, value):
         """ check that all elements are of the declared type and one of the declared choices """
         for i, el in enumerate(value):
@@ -269,12 +261,10 @@ class List(Attr):
                         attr=self
                     )
 
-
     def _post_bind_validate(self):
         super(List, self)._post_bind_validate()
         # check that the default contains elements of the declared type
         self.__validate_elements(self.default)
-
 
     def _validate_set(self, instance, value):
         value = super(List, self)._validate_set(instance, value)
@@ -284,14 +274,11 @@ class List(Attr):
         self.__validate_elements(value)
         return value
 
-
     # __get__ __set__ here only for typing purposes, for better ide checking and autocomplete
-
 
     def __get__(self, instance, owner):
         # type: (typing.Optional[HasTraits], MetaType) -> typing.Sequence
         return super(List, self).__get__(instance, owner)
-
 
     def __set__(self, instance, value):
         # type: (HasTraits, typing.Sequence) -> None
@@ -322,7 +309,6 @@ class _Number(Attr):
         if self.default is not None:
             self.__validate(self.default)
 
-
     def _validate_set(self, instance, value):
         if value is None:
             if self.required:
@@ -332,7 +318,6 @@ class _Number(Attr):
 
         self.__validate(value)
         return self.field_type(value)
-
 
 
 class Int(_Number):
@@ -363,7 +348,6 @@ class Int(_Number):
             raise TraitTypeError(msg, attr=self)
         # super call after the field_type check above
         super(Int, self)._post_bind_validate()
-
 
 
 class Float(_Number):
@@ -400,7 +384,6 @@ class Float(_Number):
         super(Float, self)._post_bind_validate()
 
 
-
 class Dim(Final):
     """
     A symbol that defines a dimension in a numpy array shape.
@@ -412,7 +395,6 @@ class Dim(Final):
 
     def __init__(self, doc=''):
         super(Dim, self).__init__(field_type=int, doc=doc)
-
 
 
 class NArray(Attr):
@@ -482,7 +464,6 @@ class NArray(Attr):
         if not numpy.can_cast(value.dtype, self.dtype, 'safe'):
             raise TraitTypeError("can't be set to an array of dtype {}".format(value.dtype), attr=self)
 
-
     def _post_bind_validate(self):
         if self.default is None:
             return
@@ -505,7 +486,6 @@ class NArray(Attr):
 
                     break
 
-
     def _lookup_expected_shape(self, instance):
         """ look up expected shape on the instance """
         expected_shape = []
@@ -524,7 +504,6 @@ class NArray(Attr):
                     raise TraitAttributeError(msg.format(dim_attr.field_name), attr=self)
             expected_shape.append(expected_dim)
         return expected_shape
-
 
     def _validate_set(self, instance, value):
         value = super(NArray, self)._validate_set(instance, value)
@@ -549,7 +528,6 @@ class NArray(Attr):
                     )
 
         return value.astype(self.dtype)
-
 
     # here only for typing purposes, so ide's can get better suggestions
     def __get__(self, instance, owner):

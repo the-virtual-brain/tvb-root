@@ -153,7 +153,7 @@ class JansenRitDavid(models.Model):
         super(JansenRitDavid, self).__init__(**kwargs)
         LOG.info("%s: initing..." % str(self))
 
-        # self._state_variables = ["y0", "y1", "y2", "y3", "y4", "y5"]
+        self.state_variables = ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
         self._nvar = 8
 
         self.cvar = numpy.array([1,2], dtype=numpy.int32)

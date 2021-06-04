@@ -36,7 +36,7 @@ A abstract 2d oscillator model.
 import numpy
 
 from tvb.simulator.common import psutil, get_logger
-from tvb.basic.neotraits.api import NArray, Range, Final
+from tvb.basic.neotraits.api import NArray, Range, Final, List
 import tvb.simulator.models as models
 
 LOG = get_logger(__name__)
@@ -117,11 +117,11 @@ class Generic2dOscillator(models.Model):
         domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""ratio :math:`\\eta/b` gives W-nullcline intersect(V=0)""")
 
-    variables_of_interest = NArray(
-        dtype=numpy.int,
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors.",
-        domain=Range(lo=0, hi=2, step=1),
-        default=numpy.array([0], dtype=numpy.int32),
+        choices=("V", "W"),
+        default="V",
         doc="""This represents the default state-variables of this Model to be
         monitored. It can be overridden for each Monitor if desired.""")
 
@@ -145,8 +145,8 @@ class Generic2dOscillator(models.Model):
         super(Generic2dOscillator, self).__init__(**kwargs)
         LOG.info("%s: initing..." % str(self))
 
-        self._state_variables = ["V", "W"]
-        self._nvar = 2 #len(self._state_variables)
+        self.state_variables = ["V", "W"]
+        self._nvar = 2
         self.cvar = numpy.array([0], dtype=numpy.int32)
 
         LOG.debug("%s: inited." % repr(self))

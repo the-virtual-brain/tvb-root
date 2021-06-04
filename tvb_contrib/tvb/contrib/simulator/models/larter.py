@@ -208,16 +208,6 @@ class Larter(models.Model):
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.""")
 
-    # variables_of_interest = arrays.IntegerArray(
-    #     label = "Variables watched by Monitors",
-    #     range = basic.Range(lo = 0, hi = 3, step=1),
-    #     default = numpy.array([0, 2], dtype=numpy.int32),
-    #     doc = """This represents the default state-variables of this Model to be
-    #     monitored. It can be overridden for each Monitor if desired. The 
-    #     corresponding state-variable indices for this model are :math:`V = 0`,
-    #     :math:`W = 1`, and :math:`Z = 2`.""",
-    #     order = 21)
-
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
@@ -237,7 +227,7 @@ class Larter(models.Model):
         super(Larter, self).__init__(**kwargs)
         LOG.info('%s: initing...' % str(self))
 
-        # self._state_variables = ["V", "W", "Z"]
+        self.state_variables = ["V", "W", "Z"]
         self._nvar = 3
 
         self.cvar = numpy.array([0], dtype=numpy.int32)

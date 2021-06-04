@@ -156,21 +156,13 @@ class HMJEpileptor(models.Model):
         default=("y0", "y3"),
         doc="""default state variables to be monitored""")
 
-#    variables_of_interest = arrays.IntegerArray(
-#        label="Variables watched by Monitors",
-#        range=basic.Range(lo=0.0, hi=6.0, step=1.0),
-#        default=numpy.array([0], dtype=numpy.int32),
-#        doc="default state variables to be monitored",
-#        order=10)
-
     def __init__(self, **kwargs):
         """
         """
         super(HMJEpileptor, self).__init__(**kwargs)
         LOG.info("%s: init'ing..." % (str(self),))
 
-        #self._state_variables = ["y%d" % i for i in range(6)]
-        #self._state_variables = ["y%d" % i for i in range(6)]
+        self.state_variables = ["y%d" % i for i in range(6)]
         self._nvar = 6
         self.cvar = numpy.array([0,3], dtype=numpy.int32)
 
@@ -213,7 +205,7 @@ class HMJEpileptor(models.Model):
                               (self.c - self.d*y[0]**2 - y[1]).reshape((1, n, 1)),
                               (self.r*(self.s*(y[0] - self.x0) - y[2] - self.Kpop1 * (c_pop1 - y[0]) )).reshape((1, n, 1)) ])
 
-         # else
+        # else
         # %    ydot1 = y(2) + (slope - y(4) -1.0*(y(3)-4))*y(1) - y(3)+iext; % this is just an
         # %    alternative representation, which worked well
         #     ydot1 = y(2) + (slope - y(4) + 0.6*(y(3)-4)^2)*y(1) -y(3)+iext; 

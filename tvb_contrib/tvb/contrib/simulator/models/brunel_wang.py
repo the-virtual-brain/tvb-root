@@ -362,7 +362,7 @@ class BrunelWang(models.Model):
         super(BrunelWang, self).__init__(**kwargs)
         LOG.info("%s: initing..." % str(self))
 
-        # self._state_variables = ["E", "I"]
+        self.state_variables = ["E", "I"]
         self._nvar = 2
 
         self.cvar = numpy.array([0, 1], dtype=numpy.int32)
@@ -585,27 +585,3 @@ class BrunelWang(models.Model):
                         (self.gm_e * self.taum_e) ** 2
         self.csigma_i = (self.gAMPAext_i ** 2 * self.Cext * self.tauAMPA ** 2) / \
                         (self.gm_i * self.taum_i) ** 2
-
-
-if __name__ == "__main__":
-    # Do some stuff that tests or makes use of this module...
-    LOG.info("Testing %s module..." % __file__)
-
-    # Check that the docstring examples, if there are any, are accurate.
-    import doctest
-    doctest.testmod()
-
-    # Initialise Models in their default state:
-    BW = BrunelWang()
-
-    LOG.info("Model initialised in its default state without error...")
-
-    LOG.info("Testing phase plane interactive ... ")
-
-    # Check the Phase Plane
-    from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
-    import tvb.simulator.integrators
-
-    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2 ** -5)
-    ppi_fig = PhasePlaneInteractive(model=BW, integrator=INTEGRATOR)
-    ppi_fig.show()

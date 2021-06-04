@@ -432,32 +432,3 @@ class LarterBreakspear(models.Model):
         derivative = numpy.array([dV, dW, dZ])
 
         return derivative
-
-
-if __name__ == "__main__":
-    # Do some stuff that tests or makes use of this module...
-    LOG.info("Testing %s module..." % __file__)
-
-    # Check that the docstring examples, if there are any, are accurate.
-    import doctest
-
-    doctest.testmod()
-
-    # Reproduce Fig. 4 from [Breaksetal_2003_b]_
-    LB = LarterBreakspear(QV_max=1.0, QZ_max=1.0,
-                          t_scale=1.0, C=0.00,
-                          d_V=0.6, aee=0.5, aie=0.5,
-                          gNa=0.0, Iext=0.165, VT=0.65,
-                          ani=0.1)
-
-    LOG.info("Model initialised in its default state without error...")
-
-    LOG.info("Testing phase plane interactive ... ")
-
-    import tvb.simulator.plot.phase_plane_interactive as ppi
-    import tvb.simulator.integrators
-
-    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=0.9)
-    ppi.TRAJ_STEPS = 2048
-    ppi_fig = ppi.PhasePlaneInteractive(model=LB, integrator=INTEGRATOR)
-    ppi_fig.show()
