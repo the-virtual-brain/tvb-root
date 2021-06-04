@@ -240,14 +240,7 @@ class ProjectService:
                 result['operation_tag'] = one_op[12]
                 if not result['group']:
                     datatype_results = dao.get_results_for_operation(result['id'])
-                    result['results'] = []
-                    for dt in datatype_results:
-                        dt_loaded = load_entity_by_gid(dt.gid)
-                        if dt_loaded:
-                            result['results'].append(dt_loaded)
-                        else:
-                            self.logger.warning("Could not retrieve datatype %s" % str(dt))
-
+                    result['results'] = [dt for dt in datatype_results]
                 else:
                     result['results'] = None
                 operations.append(result)
