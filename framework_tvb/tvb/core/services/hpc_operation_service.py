@@ -140,7 +140,7 @@ class HPCOperationService(object):
                         HPCOperationService._operation_finished(operation, simulator_gid)
                     else:
                         HPCOperationService._operation_error(operation)
-                    cache.clear_cache()
+                    # cache.clear_cache()
             except Exception:
                 HPCOperationService.LOGGER.error(
                     "There was an error on background processing process for operation {}".format(operation.id),

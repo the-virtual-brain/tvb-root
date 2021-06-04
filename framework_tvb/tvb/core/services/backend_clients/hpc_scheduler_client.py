@@ -436,5 +436,5 @@ class HPCSchedulerClient(BackendClient):
             while not operation_thread.stopped():
                 LOGGER.info("Thread for operation {} is stopping".format(operation_id))
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
-        cache.clear_cache()
+        # cache.clear_cache()
         return True

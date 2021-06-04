@@ -125,7 +125,7 @@ class OperationExecutor(Thread):
         storage_interface.check_and_delete(project_folder)
 
         # Give back empty spot now that you finished your operation
-        cache.clear_cache()
+        # cache.clear_cache()
         CURRENT_ACTIVE_THREADS.remove(self)
         LOCKS_QUEUE.put(1)
 
@@ -235,7 +235,7 @@ class StandAloneClient(BackendClient):
         stopped = StandAloneClient.stop_operation_process(operation_id, True)
         # Mark operation as canceled in DB and on disk
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
-        cache.clear_cache()
+        # cache.clear_cache()
         return stopped
 
     @staticmethod

@@ -271,7 +271,7 @@ class UserService:
         if user.is_administrator() and user.username == TvbProfile.current.web.admin.ADMINISTRATOR_NAME:
             TvbProfile.current.manager.add_entries_to_config_file({SettingsService.KEY_ADMIN_EMAIL: user.email,
                                                                    SettingsService.KEY_ADMIN_PWD: user.password})
-        cache.clear_cache()
+        # cache.clear_cache()
 
     def delete_user(self, user_id):
         """
@@ -351,7 +351,7 @@ class UserService:
 
         if should_update:
             dao.store_entity(current_user, True)
-            cache.clear_cache()
+            # cache.clear_cache()
             return self.get_user_by_gid(current_user.gid)
         return current_user
 

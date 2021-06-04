@@ -49,4 +49,4 @@ class ABCRemover(object):
         Perform basic operation, should overwrite in specific implementations.
         """
         dao.remove_entity(self.handled_datatype.__class__, self.handled_datatype.id)
-        cache.clear_cache()
+        # cache.clear_cache()
