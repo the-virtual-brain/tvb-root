@@ -53,6 +53,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.removers_factory import get_remover
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.cache_service import cache
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
@@ -199,26 +200,30 @@ class ProjectService:
                 result["burst_name"] = burst.name if burst else '-'
                 result["count"] = one_op[2]
                 result["gid"] = one_op[13]
-                if one_op[3] is not None and one_op[3]:
+                operation_group_id = one_op[3]
+                if operation_group_id is not None and operation_group_id:
                     try:
-                        operation_group = dao.get_generic_entity(OperationGroup, one_op[3])[0]
+                        operation_group = cache.cached_operation_group(operation_group_id)
                         result["group"] = operation_group.name
                         result["group"] = result["group"].replace("_", " ")
                         result["operation_group_id"] = operation_group.id
-                        datatype_group = dao.get_datatypegroup_by_op_group_id(one_op[3])
+                        datatype_group = cache.cached_dt_group(operation_group_id)
                         result["datatype_group_gid"] = datatype_group.gid if datatype_group is not None else None
                         result["gid"] = operation_group.gid
                         # Filter only viewers for current DataTypeGroup entity:
-                        result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid) \
-                            if datatype_group is not None else None
+                        if datatype_group is None:
+                            view_groups = None
+                        else:
+                            view_groups = cache.cached_visualizers_for_group(datatype_group.gid)
+                        result["view_groups"] = view_groups
                     except Exception:
                         self.logger.exception("We will ignore group on entity:" + str(one_op))
                         result["datatype_group_gid"] = None
                 else:
                     result['group'] = None
                     result['datatype_group_gid'] = None
-                result["algorithm"] = dao.get_algorithm_by_id(one_op[4])
-                result["user"] = dao.get_user_by_id(one_op[5])
+                result["algorithm"] = cache.cached_algorithm(one_op[4])
+                result["user"] = cache.cached_user(one_op[5])
                 if type(one_op[6]) is str:
                     result["create"] = string2date(str(one_op[6]))
                 else:
@@ -231,7 +236,6 @@ class ProjectService:
                     result["complete"] = string2date(str(one_op[8]))
                 else:
                     result["complete"] = one_op[8]
-
                 if result["complete"] is not None and result["start"] is not None:
                     result["duration"] = format_timedelta(result["complete"] - result["start"])
                 result["status"] = one_op[9]
@@ -239,8 +243,7 @@ class ProjectService:
                 result["visible"] = True if one_op[11] > 0 else False
                 result['operation_tag'] = one_op[12]
                 if not result['group']:
-                    datatype_results = dao.get_results_for_operation(result['id'])
-                    result['results'] = [dt for dt in datatype_results]
+                    result['results'] = cache.cached_operation_results(result['id'])
                 else:
                     result['results'] = None
                 operations.append(result)
@@ -561,7 +564,7 @@ class ProjectService:
                     vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
 
                     self.storage_interface.move_datatype_with_sync(to_project, to_project_path, new_op.id, full_path,
-                                                         vm_full_path)
+                                                                   vm_full_path)
 
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
@@ -596,6 +599,7 @@ class ProjectService:
             self.storage_interface.remove_operation_data(operation.project.name, operation_id)
             self.storage_interface.push_folder_to_sync(operation.project.name)
             self.logger.debug("Finished deleting operation %s " % operation)
+            cache.clear_cache()
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
 
@@ -663,6 +667,7 @@ class ProjectService:
         self.storage_interface.push_folder_to_sync(project.name)
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
+        cache.clear_cache()
 
     def _remove_operation_group(self, operation_group_id, project_id, skip_validation, operations_set):
         metrics_groups = dao.get_generic_entity(DataTypeGroup, operation_group_id,

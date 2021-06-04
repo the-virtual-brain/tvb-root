@@ -40,6 +40,7 @@ from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELE
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient, HPCJobStatus
+from tvb.core.services.cache_service import cache
 from tvb.core.services.exceptions import OperationException
 from tvb.storage.storage_interface import StorageInterface
 
@@ -139,6 +140,7 @@ class HPCOperationService(object):
                         HPCOperationService._operation_finished(operation, simulator_gid)
                     else:
                         HPCOperationService._operation_error(operation)
+                    cache.clear_cache()
             except Exception:
                 HPCOperationService.LOGGER.error(
                     "There was an error on background processing process for operation {}".format(operation.id),
