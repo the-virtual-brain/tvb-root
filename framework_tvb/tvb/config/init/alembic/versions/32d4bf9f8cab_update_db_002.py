@@ -24,7 +24,7 @@ LOGGER = get_logger(__name__)
 
 
 def upgrade():
-    new_column = Column('has_valid_time_series', Boolean)
+    new_column = Column('has_valid_time_series', Boolean, default=True)
     op.add_column('DataTypeMatrix', new_column)
 
 
