@@ -236,10 +236,6 @@ class TopographicViewer(ABCDisplayer):
         """
         return -1
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (TopographicViewerModel, list) -> dict
-        return self.launch(view_model)
-
     def launch(self, view_model):
         # type: (TopographicViewerModel) -> dict
 

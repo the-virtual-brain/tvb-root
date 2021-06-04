@@ -35,7 +35,7 @@
 /* !-------------------------------------------- */
 
 /* :not is only needed to raise specificity here */
-#main:not(.portlet-frame) {
+#main{
 right: 15px;
 }
 
@@ -648,12 +648,6 @@ margin-right: 2px;
 /* !Needs major cleanup and will possibly be replaced completely! */
 /* !============================================================================ */
 /* !============================================================================ */
-
-.viewer-portlet {
-	width: 100%;
-	height: 100%;
-	background-color: #2C2F3B;
-}
 
 .space-time-input {
 	width: 40px;

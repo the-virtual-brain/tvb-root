@@ -196,7 +196,3 @@ class TimeSeriesDisplay(ABCSpaceDisplayer):
         # type: (TimeSeriesModel) -> dict
         """Construct data for visualization and launch it."""
         return self._launch(view_model, None)
-
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (TimeSeriesModel, (int, int)) -> dict
-        return self._launch(view_model, figsize=figure_size, preview=True)

@@ -99,10 +99,6 @@ class FourierSpectrumDisplay(ABCDisplayer):
         fs_input_index = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(fs_input_index.get_data_shape()) * 8
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (FourierSpectrumModel, (int,int)) -> dict
-        return self.launch(view_model)
-
     def launch(self, view_model):
         # type: (FourierSpectrumModel) -> dict
 

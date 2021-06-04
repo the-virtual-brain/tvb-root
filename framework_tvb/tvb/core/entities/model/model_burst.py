@@ -39,61 +39,9 @@ from tvb.core.entities.model.model_project import Project
 from tvb.core.neotraits.db import Base, HasTraitsIndex
 from tvb.core.utils import format_timedelta
 
-NUMBER_OF_PORTLETS_PER_TAB = 4
-
 PARAM_RANGE_PREFIX = 'range_'
 RANGE_PARAMETER_1 = "range_1"
 RANGE_PARAMETER_2 = "range_2"
-
-
-## TabConfiguration entity is not moved in the "transient" module, although it's not stored in DB,
-## because it was directly referenced from the BurstConfiguration old class.
-## In most of the case, we depend in "transient" module from classed in "model", and not vice-versa.
-
-
-class TabConfiguration():
-    """
-    Helper entity to hold data that is currently being configured in a new
-    burst page.
-    """
-
-    def __init__(self):
-        self.portlets = [None for _ in range(NUMBER_OF_PORTLETS_PER_TAB)]
-
-    def reset(self):
-        """
-        Set to None all portlets in current TAB.
-        """
-        for idx in range(len(self.portlets)):
-            self.portlets[idx] = None
-
-    def get_portlet(self, portlet_id):
-        """
-        :returns: a PortletConfiguration entity.
-        """
-        for portlet in self.portlets:
-            if portlet is not None and str(portlet.portlet_id) == str(portlet_id):
-                return portlet
-        return None
-
-    def clone(self):
-        """
-        Return an exact copy of the entity with the exception than none of it's
-        sub-entities (portlets, workflow steps) are persisted in db.
-        """
-        new_config = TabConfiguration()
-        for portlet_idx, portlet_entity in enumerate(self.portlets):
-            if portlet_entity is not None:
-                new_config.portlets[portlet_idx] = portlet_entity.clone()
-            else:
-                new_config.portlets[portlet_idx] = None
-        return new_config
-
-    def __repr__(self):
-        repr_str = "Tab: "
-        for portlet in self.portlets:
-            repr_str += str(portlet) + '; '
-        return repr_str
 
 
 class Dynamic(Base):
@@ -126,8 +74,6 @@ class BurstConfiguration(HasTraitsIndex):
     BURST_FINISHED = 'finished'
     BURST_CANCELED = 'canceled'
 
-    # TODO: Fix attrs for portlets
-    nr_of_tabs = 0
     selected_tab = -1
     is_group = False
 

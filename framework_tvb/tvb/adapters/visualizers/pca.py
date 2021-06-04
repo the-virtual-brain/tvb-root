@@ -101,6 +101,3 @@ class PCA(ABCSpaceDisplayer):
         return self.build_display_result("pca/view", dict(labels_data=json.dumps(labels_data),
                                                           fractions_update_url=fractions_update_url,
                                                           weights_update_url=weights_update_url))
-
-    def generate_preview(self, pca, figure_size=None):
-        return self.launch(pca)

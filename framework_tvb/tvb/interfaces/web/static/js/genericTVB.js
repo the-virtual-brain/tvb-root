@@ -53,7 +53,6 @@ function displayMessage(msg, className) {
             messageDivParent.removeClass('no-message');
             messageDivParent[0].className = 'generic-message ' + className;
         }
-        // else we are in the portlets
     }
 }
 

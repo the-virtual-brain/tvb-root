@@ -246,14 +246,6 @@ class EegMonitor(ABCSpaceDisplayer):
             time_series_index3 = self.load_entity_by_gid(view_model.data_3)
         return main_time_series_index, time_series_index2, time_series_index3
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (EegMonitorModel, list) -> dict
-        main_time_series_index, time_series_index2, time_series_index3 = self._load_input_indexes(view_model)
-        params = self.compute_parameters(main_time_series_index, time_series_index2, time_series_index3,
-                                         is_preview=True)
-        pages = dict(channelsPage=None)
-        return self.build_display_result("eeg/preview", params, pages)
-
     def launch(self, view_model):
         # type: (EegMonitorModel) -> dict
         """

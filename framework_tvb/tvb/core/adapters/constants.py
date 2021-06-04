@@ -46,7 +46,6 @@ ATT_MAXVALUE = "maxValue"
 ATT_STEP = "step"
 ATT_REQUIRED = "required"
 
-ELEM_PORTLET = "portlet"
 ELEM_INPUTS = "inputs"
 ELEM_INPUT = "input"
 ELEM_NAME = "name"

@@ -137,9 +137,6 @@ class SimulatorController(BurstBaseController):
 
         template_specification['burstConfig'] = self.context.burst_config
         template_specification['burst_list'] = self.burst_service.get_available_bursts(self.context.project.id)
-        portlets_list = []  # self.burst_service.get_available_portlets()
-        template_specification['portletList'] = portlets_list
-        template_specification['selectedPortlets'] = json.dumps(portlets_list)
 
         form = self.prepare_first_fragment()
         rendering_rules = SimulatorFragmentRenderingRules(
