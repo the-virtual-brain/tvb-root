@@ -34,10 +34,11 @@
 """
 
 import json
+
 from tvb.basic.neotraits.api import Int
 from tvb.core.adapters.arguments_serialisation import *
-from tvb.core.utils import prepare_time_slice
 from tvb.core.neotraits.h5 import H5File, Scalar, DataSet, Reference, Json
+from tvb.core.utils import prepare_time_slice
 from tvb.datatypes.time_series import *
 
 NO_OF_DEFAULT_SELECTED_CHANNELS = 20
@@ -177,16 +178,16 @@ class TimeSeriesH5(H5File):
         """
         Append a new value to the ``time`` attribute.
         """
-        self.time.append(partial_result)
+        self.time.append(partial_result, False)
 
     def write_data_slice(self, partial_result):
         """
         Append a chunk of time-series data to the ``data`` attribute.
         """
-        self.data.append(partial_result)
+        self.data.append(partial_result, False)
 
     def write_data_slice_on_grow_dimension(self, partial_result, grow_dimension=0):
-        self.data.append(partial_result, grow_dimension=grow_dimension)
+        self.data.append(partial_result, grow_dimension=grow_dimension, close_file=False)
 
     def get_min_max_values(self):
         """

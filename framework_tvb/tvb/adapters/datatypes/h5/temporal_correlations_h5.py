@@ -57,4 +57,4 @@ class CrossCorrelationH5(DataTypeMatrixH5):
         """
         Append chunk.
         """
-        self.array_data.append(partial_result.array_data)
+        self.array_data.append(partial_result.array_data, close_file=False)

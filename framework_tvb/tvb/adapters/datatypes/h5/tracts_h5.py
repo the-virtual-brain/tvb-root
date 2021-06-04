@@ -146,4 +146,4 @@ class TractsH5(H5File):
         """
         Append a new value to the ``vertices`` attribute.
         """
-        self.vertices.append(partial_result)
+        self.vertices.append(partial_result, close_file=False)
