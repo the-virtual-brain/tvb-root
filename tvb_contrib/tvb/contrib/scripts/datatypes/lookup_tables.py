@@ -36,7 +36,7 @@ The LookUpTable datatype.
 
 import numpy
 from tvb.basic.readers import try_get_absolute_path
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Float
 
 
 class LookUpTable(HasTraits):
@@ -45,17 +45,11 @@ class LookUpTable(HasTraits):
     Specific table subclasses are implemented below.
     """
 
-    equation = Attr(
-        field_type=str,
-        label="String representation of the precalculated function",
-        doc="""A latex representation of the function whose values are stored
-                in the table, with the extra escaping needed for interpretation via sphinx.""")
-
-    xmin = NArray(
+    xmin = Float(
         label="x-min",
         doc="""Minimum value""")
 
-    xmax = NArray(
+    xmax = Float(
         label="x-max",
         doc="""Maximum value""")
 
@@ -72,14 +66,14 @@ class LookUpTable(HasTraits):
         label="df",
         doc=""".""")
 
-    dx = NArray(
+    dx = Float(
         label="dx",
-        default=numpy.array([]),
+        default=0.,
         doc="""Tabulation step""")
 
-    invdx = NArray(
+    invdx = Float(
         label="invdx",
-        default=numpy.array([]),
+        default=0.,
         doc=""".""")
 
     @staticmethod
@@ -88,7 +82,8 @@ class LookUpTable(HasTraits):
         zip_data = numpy.load(source_full_path)
 
         result.df = zip_data['df']
-        result.xmin, result.xmax = zip_data['min_max']
+        result.xmin = zip_data['min_max'][0]
+        result.xmax = zip_data['min_max'][1]
         result.data = zip_data['f']
         return result
 
@@ -103,8 +98,7 @@ class LookUpTable(HasTraits):
         if self.number_of_values == 0:
             self.number_of_values = self.data.shape[0]
 
-        if self.dx.size == 0:
-            self.compute_search_indices()
+        self.compute_search_indices()
 
     def summary_info(self):
         """

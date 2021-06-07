@@ -39,9 +39,9 @@ Based on the Brunel and Wang model.
 import inspect
 import numpy
 
-import tvb.contrib.scripts.datatypes.lookup_tables as lookup_tables
 import tvb.simulator.models as models
 from tvb.basic.neotraits.api import NArray, Range, List, Final
+from tvb.contrib.scripts.datatypes.lookup_tables import PsiTable, NerfTable
 from tvb.simulator.common import get_logger
 from tvb.basic.profile import TvbProfile
 
@@ -401,9 +401,9 @@ class BrunelWang(models.Model):
         super(BrunelWang, self).configure()
         self.update_derived_parameters()
 
-        self.psi_table = lookup_tables.PsiTable(load_default=True, use_storage=False)
-        self.nerf_table = lookup_tables.NerfTable(load_default=True, use_storage=False)
-        # configure look up tables
+        self.psi_table = PsiTable.from_file()
+        self.nerf_table = NerfTable.from_file()
+
         self.psi_table.configure()
         self.nerf_table.configure()
 
