@@ -39,6 +39,7 @@ import json
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
@@ -74,7 +75,7 @@ class PearsonCorrelationCoefficientVisualizerForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None
+        return FilterChain(fields=[FilterChain.datatype + '.has_valid_time_series'], operations=['=='], values=[True])
 
 
 class PearsonCorrelationCoefficientVisualizer(ABCMappedArraySVGVisualizer):

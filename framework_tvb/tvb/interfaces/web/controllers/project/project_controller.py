@@ -36,17 +36,19 @@ This represents the Controller part (from MVC).
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import shutil
-
 import cherrypy
 import formencode
-import tvb.core.entities.model.model_operation as model
 from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
+
+import tvb.core.entities.model.model_operation as model
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.adapters.uploaders.tumor_dataset_importer import TumorDatasetImporter
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
+from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.import_service import ImportService
@@ -515,11 +517,15 @@ class ProjectController(BaseController):
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
+        tumor_import_algorithm = dao.get_algorithm_by_module(TumorDatasetImporter.__module__,
+                                                             TumorDatasetImporter.__name__)
+
         template_specification = dict(mainContent="project/structure",
                                       title=selected_project.name,
                                       project=selected_project, data=data,
                                       firstLevelSelection=first_level, secondLevelSelection=second_level,
-                                      filterInputValue=filter_input, filters=filters)
+                                      filterInputValue=filter_input, filters=filters,
+                                      tumorImporterAlgorithmId=tumor_import_algorithm.id)
         return self.fill_default_attributes(template_specification, 'data')
 
     @expose_fragment("overlay")

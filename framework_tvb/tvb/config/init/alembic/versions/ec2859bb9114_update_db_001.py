@@ -28,11 +28,9 @@
 #
 #
 
-"""Generate migration script
-
+"""
 Revision ID: ec2859bb9114
-Revises:
-Create Date: 2021-01-29 11:08:56.258864
+Create Date: 2021-01-29
 """
 
 from alembic import op
