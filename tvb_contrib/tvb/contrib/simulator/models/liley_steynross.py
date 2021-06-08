@@ -33,15 +33,13 @@ A contributed model: The Liley model as presented in Steyn-Ross et al., 1999
 
 """
 
-# Third party python libraries
 import numpy
 
-# The Virtual Brain
 from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
-
 from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
 
 
 class LileySteynRoss(models.Model):
@@ -298,19 +296,9 @@ class LileySteynRoss(models.Model):
                                     corresponding state-variable indices for this model are :math:`E = 0`
                                     and :math:`I = 1`.""")
 
-    def __init__(self, **kwargs):
-        """
-        Initialize the Liley Steyn-Ross model's traited attributes, any provided as
-        keywords will overide their traited default.
-
-        """
-        LOG.info('%s: initing...' % str(self))
-        super(LileySteynRoss, self).__init__(**kwargs)
-        #self._state_variables = ["E", "I"]
-        self._nvar = 2
-        self.cvar = numpy.array([0, 1], dtype=numpy.int32)
-        LOG.debug('%s: inited.' % repr(self))
-
+    state_variables = ["he", "hi"]
+    _nvar = 2
+    cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -327,15 +315,14 @@ class LileySteynRoss(models.Model):
         c_0 = coupling[0, :]
 
         # short-range (local) coupling - local coupling functions should be different for exc and inh
-        #lc_0 = local_coupling * he
-        #lc_1 = local_coupling * hi
+        # lc_0 = local_coupling * he
+        # lc_1 = local_coupling * hi
 
         # 
         psi_ee = (self.h_e_rev - he) / abs(self.h_e_rev - self.h_e_rest) # usually > 0
         psi_ei = (self.h_e_rev - hi) / abs(self.h_e_rev - self.h_i_rest) # usually > 0
         psi_ie = (self.h_i_rev - he) / abs(self.h_i_rev - self.h_e_rest) # usually < 0
         psi_ii = (self.h_i_rev - hi) / abs(self.h_i_rev - self.h_i_rest) # usually < 0
-
 
         S_e = 1.0 / (1.0 + numpy.exp(-self.g_e * (he + c_0 - self.theta_e)))
         S_i = 1.0 / (1.0 + numpy.exp(-self.g_i * (hi + c_0 - self.theta_i)))
@@ -345,10 +332,6 @@ class LileySteynRoss(models.Model):
 
         F2 = ((self.h_i_rest - hi) + psi_ei * ((self.N_a_ei + self.N_b_ei) * S_e  + self.p_ei) * (self.G_e/self.gamma_e) +\
                                   self.lambd * psi_ii * (self.N_b_ii * S_i + self.p_ii) * (self.G_i/self.gamma_i)) / self.tau_i
-
-
-
-
 
         dhe = F1
         dhi = F2
