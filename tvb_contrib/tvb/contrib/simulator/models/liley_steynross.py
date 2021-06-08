@@ -296,17 +296,9 @@ class LileySteynRoss(models.Model):
                                     corresponding state-variable indices for this model are :math:`E = 0`
                                     and :math:`I = 1`.""")
 
-    def __init__(self, **kwargs):
-        """
-        Initialize the Liley Steyn-Ross model's traited attributes, any provided as
-        keywords will overide their traited default.
-        """
-        super(LileySteynRoss, self).__init__(**kwargs)
-        LOG.info('%s: initing...' % str(self))
-        self.state_variables = ["he", "hi"]
-        self._nvar = 2
-        self.cvar = numpy.array([0, 1], dtype=numpy.int32)
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["he", "hi"]
+    _nvar = 2
+    cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""

@@ -156,17 +156,9 @@ class HMJEpileptor(models.Model):
         default=("y0", "y3"),
         doc="""default state variables to be monitored""")
 
-    def __init__(self, **kwargs):
-        """
-        """
-        super(HMJEpileptor, self).__init__(**kwargs)
-        LOG.info("%s: init'ing..." % (str(self),))
-
-        self.state_variables = ["y%d" % i for i in range(6)]
-        self._nvar = 6
-        self.cvar = numpy.array([0,3], dtype=numpy.int32)
-
-        LOG.debug("%s: init'ed." % (repr(self),))
+    state_variables = ["y%d" % i for i in range(6)]
+    _nvar = 6
+    cvar = numpy.array([0, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0,
              array=numpy.array, where=numpy.where, concat=numpy.concatenate):

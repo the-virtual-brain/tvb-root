@@ -138,29 +138,9 @@ class HindmarshRose(models.Model):
         corresponding state-variable indices for this model are :math:`x = 0`,
         :math:`y = 1`,and :math:`z = 2`.""")
 
-#    coupling_variables = arrays.IntegerArray(
-#        label = "Variables to couple activity through",
-#        default = numpy.array([0], dtype=numpy.int32))
-
-#    nsig = arrays.FloatArray(
-#        label = "Noise dispersion",
-#        default = numpy.array([0.0]),
-#        range = basic.Range(lo = 0.0, hi = 1.0))
-
-    def __init__(self, **kwargs):
-        """
-        Initialize the HindmarshRose model's traited attributes, any provided
-        as keywords will overide their traited default.
-        """
-        super(HindmarshRose, self).__init__(**kwargs)
-        LOG.info('%s: initing...' % str(self))
-
-        self.state_variables = ["x", "y", "z"]
-        self._nvar = 3
-
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["x", "y", "z"]
+    _nvar = 3
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """

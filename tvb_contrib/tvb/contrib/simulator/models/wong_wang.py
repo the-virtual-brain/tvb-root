@@ -204,23 +204,9 @@ class WongWang(models.Model):
         default=("S1",),
         doc="""default state variables to be monitored""")
 
-    def __init__(self, **kwargs):
-        """
-        .. May need to put kwargs back if we can't get them from trait...
-        """
-        super(WongWang, self).__init__(**kwargs)
-        LOG.info('%s: initing...' % str(self))
-
-        self.state_variables = ["S1", "S2"]
-
-        self._nvar = 2
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        # derived parameters
-        self.I_mot_l = None
-        self.I_mot_r = None
-
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["S1", "S2"]
+    _nvar = 2
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def configure(self):
         """  """

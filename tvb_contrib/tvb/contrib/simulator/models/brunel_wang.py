@@ -345,56 +345,9 @@ class BrunelWang(models.Model):
             history, it is also provides the default range of phase-plane plots.
             The corresponding state-variable units for this model are kHz.""")
 
-    # psi_table = lookup_tables.PsiTable(required=True,
-    #                                    default=lookup_tables.PsiTable(),
-    #                                    label="Psi Table",
-    #                                    doc="""Psi Table (description).""")
-    #
-    # nerf_table = lookup_tables.NerfTable(required=True,
-    #                                      default=lookup_tables.NerfTable(),
-    #                                      label="Nerf Table",
-    #                                      doc="""Nerf Table (description).""")
-
-    def __init__(self, **kwargs):
-        """
-        May need to put kwargs back if we can't get them from trait...
-        """
-        super(BrunelWang, self).__init__(**kwargs)
-        LOG.info("%s: initing..." % str(self))
-
-        self.state_variables = ["E", "I"]
-        self._nvar = 2
-
-        self.cvar = numpy.array([0, 1], dtype=numpy.int32)
-
-        # Derived parameters
-        self.crho1_e = None
-        self.crho1_i = None
-        self.crho2_e = None
-        self.crho2_i = None
-        self.csigma_e = None
-        self.csigma_i = None
-        self.tauNMDA = None
-
-        self.Text_e = None
-        self.Text_i = None
-        self.TAMPA_e = None
-        self.TAMPA_i = None
-        self.T_ei = None
-        self.T_ii = None
-
-        self.pool_fractions = None
-
-        # NOTE: We could speed up this model simplifying some the phi and psi functions
-        # above. However it was decided that functions should be the same as
-        # in the original paper.
-
-        # integral
-        # self.vector_nerf = lambda z: numpy.exp(z**2) * (scipy.special.erf(z) + 1)
-        # integral = lambda x : numpy.float64(quad(self.vector_nerf, float('-Inf') , x, full_output = True)[0])
-        # self.vint = numpy.vectorize(integral)
-
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["E", "I"]
+    _nvar = 2
+    cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def configure(self):
         """  """
@@ -406,28 +359,6 @@ class BrunelWang(models.Model):
 
         self.psi_table.configure()
         self.nerf_table.configure()
-
-        # self.optimize()
-
-    def optimize(self, fnname='optdfun'):
-        """
-        Optimization routine when we have too many self.parameters
-        within dfun
-        """
-
-        decl = "def %s(state_variables, coupling, local_coupling=0.0):\n" % (fnname,)
-
-        NoneType = type(None)
-        for k in dir(self):
-            attr = getattr(self, k)
-            if not k[0] == '_' and type(attr) in (numpy.ndarray, NoneType):
-                decl += '        %s = %r\n' % (k, attr)
-
-        decl += '\n'.join(inspect.getsource(self.dfun).split('\n')[1:]).replace("self.", "")
-        dikt = {'vint': self.vint, 'array': numpy.array, 'int32': numpy.int32, 'numpy': numpy}
-        # print decl
-        exec(decl, dikt)
-        self.dfun = dikt[fnname]
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """

@@ -164,29 +164,9 @@ class MorrisLecar(models.Model):
         corresponding state-variable indices for this model are :math:`V = 0`,
         and :math:`N = 1`.""")
 
-#    coupling_variables = arrays.IntegerArray(
-#        label = "Variables to couple activity through",
-#        default = numpy.array([0], dtype=numpy.int32))
-
-#    nsig = arrays.FloatArray(
-#        label = "Noise dispersion",
-#        default = numpy.array([0.0]),
-#        range = basic.Range(lo = 0.0, hi = 1.0))
-
-    def __init__(self, **kwargs):
-        """
-        Initialize the MorrisLecar model's traited attributes, any provided
-        as keywords will overide their traited default.
-        
-        """
-        super(MorrisLecar, self).__init__(**kwargs)
-        LOG.info('%s: initing...' % str(self))
-
-        self.state_variables = ["V", "N"]
-        self._nvar = 2
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["V", "N"]
+    _nvar = 2
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """

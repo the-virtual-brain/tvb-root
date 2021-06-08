@@ -138,18 +138,9 @@ class Generic2dOscillator(models.Model):
             conditions when the simulation isn't started from an explicit
             history, it is also provides the default range of phase-plane plots.""")
 
-    def __init__(self, **kwargs):
-        """
-        May need to put kwargs back if we can't get them from trait...
-        """
-        super(Generic2dOscillator, self).__init__(**kwargs)
-        LOG.info("%s: initing..." % str(self))
-
-        self.state_variables = ["V", "W"]
-        self._nvar = 2
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug("%s: inited." % repr(self))
+    state_variables = ["V", "W"]
+    _nvar = 2
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """

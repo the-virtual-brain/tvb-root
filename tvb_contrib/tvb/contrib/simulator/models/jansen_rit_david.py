@@ -145,19 +145,9 @@ class JansenRitDavid(models.Model):
                                     :math:`y1 = 1`, :math:`y2 = 2`, :math:`y3 = 3`, :math:`y4 = 4`, and
                                     :math:`y5 = 5`""")
 
-    def __init__(self, **kwargs):
-        """
-        Initialise parameters for the Jansen Rit column, [JR_1995]_.
-
-        """
-        super(JansenRitDavid, self).__init__(**kwargs)
-        LOG.info("%s: initing..." % str(self))
-
-        self.state_variables = ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
-        self._nvar = 8
-
-        self.cvar = numpy.array([1,2], dtype=numpy.int32)
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+    _nvar = 8
+    cvar = numpy.array([1, 2], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""

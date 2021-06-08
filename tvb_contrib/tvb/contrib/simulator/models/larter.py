@@ -218,21 +218,9 @@ class Larter(models.Model):
         corresponding state-variable indices for this model are :math:`V = 0`,
         :math:`W = 1`, and :math:`Z = 2`.""")
 
-    def __init__(self, **kwargs):
-        """
-        Initialize the Larter model's traited attributes, any provided as
-        keywords will overide their traited default.
-        
-        """
-        super(Larter, self).__init__(**kwargs)
-        LOG.info('%s: initing...' % str(self))
-
-        self.state_variables = ["V", "W", "Z"]
-        self._nvar = 3
-
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["V", "W", "Z"]
+    _nvar = 3
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """

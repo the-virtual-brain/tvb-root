@@ -368,18 +368,7 @@ class LarterBreakspear(models.Model):
 
     state_variables = ["V", "W", "Z"]
     _nvar = 3
-
-    def __init__(self, **kwargs):
-        """
-        .. May need to put kwargs back if we can't get them from trait...
-        
-        """
-        super(LarterBreakspear, self).__init__(**kwargs)
-        LOG.info('%s: initing...' % str(self))
-
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug('%s: inited.' % repr(self))
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
