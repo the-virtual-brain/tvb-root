@@ -36,7 +36,6 @@ Based on the Brunel and Wang model.
 
 """
 
-import inspect
 import numpy
 
 import tvb.simulator.models as models

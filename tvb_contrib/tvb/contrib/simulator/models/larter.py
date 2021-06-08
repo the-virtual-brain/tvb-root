@@ -38,7 +38,7 @@ A contributed model: Larter
 
 import numpy
 
-from tvb.simulator.common import psutil, get_logger
+from tvb.simulator.common import get_logger
 from tvb.basic.neotraits.api import NArray, Range, Final, List
 import tvb.simulator.models as models
 
