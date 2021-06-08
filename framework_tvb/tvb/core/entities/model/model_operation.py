@@ -252,6 +252,7 @@ class Operation(Base, Exportable):
     range_values = Column(String, default=None)
     estimated_disk_size = Column(Integer)
     view_model_disk_size = Column(Integer, default=0)
+    # This flag is set to true for operations which cannot start a new Thread because of the full LOCKS_QUEUE.
     queue_full = Column(Boolean, default=False)
 
     algorithm = relationship(Algorithm)

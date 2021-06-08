@@ -32,19 +32,19 @@ parameters:
   - name: OPENSHIFT_PROJECT_NAME
     displayName: Project Name
     description: Project Name
-    value: "tvb-test"
+    value: "thevirtualbrain"
     required: true
 
   - name: GUI_ROUTE
     displayName: TVB GUI route
     description: TVB GUI route
-    value: "tvb-test.apps.hbp.eu"
+    value: "thevirtualbrain.apps.hbp.eu"
     required: true
 
   - name: REST_ROUTE
     displayName: TVB REST route
     description: TVB REST route
-    value: "tvb-test-rest.apps.hbp.eu"
+    value: "thevirtualbrain-rest.apps.hbp.eu"
     required: true
 objects:
   - kind: "PersistentVolumeClaim"

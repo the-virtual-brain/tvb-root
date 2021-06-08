@@ -55,6 +55,7 @@ LOGGER = get_logger(__name__)
 def build_db_engine():
     if TvbProfile.current.db.SELECTED_DB == 'postgres':
         if TvbProfile.current.db.MAX_CONNECTIONS == 0:
+            # Disable psycopg pooling if MAX_CONNECTIONS flag is set to 0. In this case we will use an external pooling tool.
             DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, poolclass=NullPool)
         else:
             ### Control the pool size for PostgreSQL, otherwise we might end with multiple
