@@ -65,6 +65,8 @@ class Cortex(HasTraits):
         # file_storage=core.FILE_STORAGE_NONE,
         doc="""A factor that rescales local connectivity strengths.""")
 
+    _regmap = None
+
     @property
     def region_mapping(self):
         """
@@ -73,6 +75,24 @@ class Cortex(HasTraits):
         if self.region_mapping_data is None:
             return None
         return self.region_mapping_data.array_data
+
+    @property
+    def full_region_map(self):
+        "Generate a full region mapping vector."
+        if self._regmap is not None:
+            return self._regmap
+        rm = self.region_mapping
+        unmapped = self.region_mapping_data.connectivity.unmapped_indices(rm)
+        self._regmap = numpy.r_[rm, unmapped]
+        return self._regmap
+
+    @property
+    def full_cortical_region_map(self):
+        return self.full_region_map
+
+    @property
+    def cortical_surface(self):
+        return self.surface
 
     @property
     def surface(self):
@@ -131,13 +151,13 @@ class Cortex(HasTraits):
 
         # Pad the local connectivity matrix with zeros when non-cortical regions
         # are included in the long range connectivity...
-        if self.local_connectivity.matrix.shape[0] < self.region_mapping.shape[0]:
+        if self.local_connectivity.matrix.shape[0] < self.full_region_map.shape[0]:
             self.log.info("There are non-cortical regions, will pad local connectivity")
             padding = scipy.sparse.csc_matrix((self.local_connectivity.matrix.shape[0],
-                                               self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0]))
+                                               self.full_region_map.shape[0] - self.local_connectivity.matrix.shape[0]))
             self.local_connectivity.matrix = scipy.sparse.hstack([self.local_connectivity.matrix, padding])
 
-            padding = scipy.sparse.csc_matrix((self.region_mapping.shape[0] - self.local_connectivity.matrix.shape[0],
+            padding = scipy.sparse.csc_matrix((self.full_region_map.shape[0] - self.local_connectivity.matrix.shape[0],
                                                self.local_connectivity.matrix.shape[1]))
             self.local_connectivity.matrix = scipy.sparse.vstack([self.local_connectivity.matrix, padding])
 
@@ -186,15 +206,6 @@ class Cortex(HasTraits):
             local_coupling = sp_cs * self.local_connectivity.matrix
         else:
             raise RuntimeError("cortex.coupling_strength must be size 1 or number_of_vertices")
-        if local_coupling.shape[1] < number_of_nodes:
-            # must match unmapped indices handling in preconfigure
-            # TODO refactor the region mapping convention here
-            from scipy.sparse import csr_matrix, vstack, hstack
-            nn = number_of_nodes
-            npad = nn - local_coupling.shape[0]
-            rpad = csr_matrix((local_coupling.shape[0], npad))
-            bpad = csr_matrix((npad, nn))
-            local_coupling = vstack([hstack([local_coupling, rpad]), bpad])
         return local_coupling
 
 
