@@ -123,13 +123,6 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
     def get_output(self):
         return []
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (ViewModel, (int,int)) -> dict
-        """
-        Should be implemented by all visualizers that can be used by portlets.
-        """
-        raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
-
     def _prelaunch(self, operation, view_model, available_disk_space=0):
         """
         Shortcut in case of visualization calls.

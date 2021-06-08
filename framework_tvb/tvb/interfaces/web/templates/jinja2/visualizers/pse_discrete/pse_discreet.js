@@ -676,10 +676,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .on("mouseover", function (d) {
             let offsetX = window.event.pageX;
             let offsetY = window.event.pageY - 100;
-            const portletContainer = document.getElementById("section-pse");
-            if (portletContainer) {
-                let relativeOffsetLeft = portletContainer.offsetLeft;
-                let relativeOffsetTop = portletContainer.offsetTop;
+            const pseContainer = document.getElementById("section-pse");
+            if (pseContainer) {
+                let relativeOffsetLeft = pseContainer.offsetLeft;
+                let relativeOffsetTop = pseContainer.offsetTop;
                 offsetX = offsetX - relativeOffsetLeft;
                 offsetY = offsetY - relativeOffsetTop;
             }

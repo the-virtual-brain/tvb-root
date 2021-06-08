@@ -216,19 +216,6 @@ class ConnectivityViewer(ABCSpaceDisplayer):
 
         return self.build_display_result("connectivity/main_connectivity", result_params, result_pages)
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (ConnectivityViewerModel, (int,int)) -> dict
-        """
-        Generate the preview for the BURST cockpit.
-
-        see `launch_`
-        """
-        connectivity, colors, rays = self._load_input_data(view_model)
-
-        parameters, _ = Connectivity2DViewer().compute_preview_parameters(connectivity, figure_size[0],
-                                                                          figure_size[1], colors, rays, view_model.step)
-        return self.build_display_result("connectivity/portlet_preview", parameters)
-
     @staticmethod
     def _compute_matrix_extrema(m):
         """Returns the min max and the minimal nonzero value from ``m``"""

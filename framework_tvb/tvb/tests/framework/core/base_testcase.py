@@ -97,8 +97,7 @@ class BaseTestCase(object):
     """
     This class should implement basic functionality which is common to all TVB tests.
     """
-    EXCLUDE_TABLES = ["ALGORITHMS", "ALGORITHM_CATEGORIES", "PORTLETS",
-                      "MAPPED_INTERNAL__CLASS", "MAPPED_MAPPED_TEST_CLASS"]
+    EXCLUDE_TABLES = ["ALGORITHMS", "ALGORITHM_CATEGORIES"]
 
     def assertEqual(self, expected, actual, message=""):
         assert expected == actual, message + " Expected %s but got %s." % (expected, actual)

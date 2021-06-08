@@ -105,13 +105,6 @@ class HistogramViewer(ABCDisplayer):
         input_data = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(input_data.shape) * 2
 
-    def generate_preview(self, view_model, figure_size=None):
-        """
-        The preview for the burst page.
-        """
-        params = self.prepare_parameters(view_model.input_data)
-        return self.build_display_result("histogram/view", params)
-
     def prepare_parameters(self, connectivity_measure_gid):
         """
         Prepare all required parameters for a launch.

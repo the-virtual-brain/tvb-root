@@ -64,12 +64,6 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         input_size = dtm_index.parsed_shape
         return numpy.prod(input_size) * 8.0
 
-    def generate_preview(self, view_model, **kwargs):
-        # type: (MatrixVisualizerModel, dict) -> dict
-        result = self.launch(view_model)
-        result["isPreview"] = True
-        return result
-
     @staticmethod
     def compute_raw_matrix_params(matrix):
         """

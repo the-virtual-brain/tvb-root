@@ -100,10 +100,6 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
 
         return shape[0] * shape[1] * 8
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (WaveletSpectrogramVisualizerModel, (int,int)) -> dict
-        return self.launch(view_model)
-
     def launch(self, view_model):
         # type: (WaveletSpectrogramVisualizerModel) -> dict
 

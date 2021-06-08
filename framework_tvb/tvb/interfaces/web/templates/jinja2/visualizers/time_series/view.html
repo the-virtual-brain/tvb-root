@@ -25,11 +25,6 @@
 	    <div id="time-series-viewer"></div>
 
 	    <script type="text/javascript">
-			function launchViewer(width, height) {
-	        	// Global method automatically called when portlet is initialized.
-	        	// E.g. it might arrange the drawing to fill the page.
-	        }
-
 	        $(document).ready(function () {
 	            initTimeseriesViewer("{{ baseURL }}", "{{ preview }}", "{{ shape }}", "{{ t0 }}", "{{ dt }}", {{ labels_json | safe }}, "{{ measurePointsSelectionGID }}")
 	        });

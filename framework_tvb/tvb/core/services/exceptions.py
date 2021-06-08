@@ -87,12 +87,6 @@ class BurstServiceException(ServicesBaseException):
     """
 
 
-class InvalidPortletConfiguration(ServicesBaseException):
-    """
-    Exception thrown in cases related to wrong portlet configurations.
-    """
-
-
 class InvalidSettingsException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.

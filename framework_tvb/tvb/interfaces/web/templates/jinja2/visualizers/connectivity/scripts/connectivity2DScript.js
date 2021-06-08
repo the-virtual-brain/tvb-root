@@ -209,21 +209,3 @@ function prepareConnectivity2D(left_json, full_json, right_json) {
         right:right_json
     };
 }
-
-/**
- * Prepare Connectivity portlet preview, by selecting all nodes.
- */
-function startPreviewConnectivity() {
-    C2D_selectedView = 'both';
-
-    var currrentJSON = C2D_hemispheresJSON[C2D_selectedView];
-    NO_POSITIONS = currrentJSON.length;
-    GVAR_interestAreaNodeIndexes = [];
-    GVAR_pointsLabels = [];
-
-    for (var i = 0; i < NO_POSITIONS; i++) {
-        GVAR_pointsLabels.push(currrentJSON[i].id);
-        GVAR_interestAreaNodeIndexes.push(i);
-    }
-    C2D_displaySelectedPoints();
-}

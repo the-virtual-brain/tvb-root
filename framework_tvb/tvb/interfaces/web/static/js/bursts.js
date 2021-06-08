@@ -29,9 +29,6 @@
 
 var sessionStoredBurstID = "";
 
-//A list of selected portlets id. Used to correctly change/update the portlet checkboxes for each tab.
-var selectedPortlets;
-
 // Class mapping to the active burst entry
 var ACTIVE_BURST_CLASS = 'burst-active';
 // Class mapping to a workflow from a group launch
@@ -49,7 +46,7 @@ function clone(object_) {
  *************************************************************************************************************************/
 
 /*
- * When clicking on the New Burst Button reset to defaults for simulator interface and portlets.
+ * When clicking on the New Burst Button reset to defaults for simulator interface.
  */
 function resetToNewBurst() {
     doAjaxCall({
@@ -488,6 +485,7 @@ function initBurstConfiguration(currentBurstID, currentBurstName, selectedTab) {
     fill_burst_name(currentBurstName, currentBurstID !== "");
     toggleConfigSurfaceModelParamsButton();
 
+
     if ('-1' === selectedTab) {
         $("#tab-burst-tree").click();
     }
@@ -532,26 +530,21 @@ function fill_burst_name(burstName, isReadOnly) {
     const inputBurstName = $("#input-burst-name-id");
     const titleSimulation = $("#title-simulation");
     const titlePSE = $("#title-pse");
-    const titlePortlets = $("#title-visualizers");
 
     inputBurstName.val(burstName);
     titleSimulation.empty();
-    titlePortlets.empty();
     titlePSE.empty();
 
     if (isReadOnly) {
         titleSimulation.append("<mark>Review</mark> Simulation configuration for " + burstName);
-        titlePortlets.append(burstName);
         titlePSE.append(burstName);
         inputBurstName.parent().parent().removeClass('is-created');
     } else {
         if (burstName !== '') {
             titleSimulation.append("<mark>Edit</mark> Simulation configuration for " + burstName);
-            titlePortlets.append(burstName);
             titlePSE.append(burstName);
         } else {
             titleSimulation.append("<mark>Configure</mark> New simulation");
-            titlePortlets.append("New simulation");
             titlePSE.append("New simulation");
         }
         inputBurstName.parent().parent().addClass('is-created');
@@ -770,8 +763,5 @@ function displayBurstTree(selectedBurstID) {
         filterValue = {'type': 'from_burst', 'value': "0"};
     }
     updateTree("#treeOverlay", null, JSON.stringify(filterValue));
-    $("#portlets-display").hide();
-    $("#portlets-configure").hide();
-    $("#portlet-param-config").hide();
     $("#div-burst-tree").show();
 }

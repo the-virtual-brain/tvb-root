@@ -1053,19 +1053,13 @@ width: 100%;
 /* Including an auto-columnizer for various purposes */
 /* !-------------------------------------------- */
 
-/* We have to use a pseudo #main when portlet viewers are embedded through an <iframe> to make sure the action button frameworks actually functions. But: We don't want to limit the size of the pseudo div#main so we're specifically disabling it by using a :not selector. */
-#main:not(.portlet-frame) {
+#main {
 bottom: 60px;
 left: 15px;
 overflow: auto;
 position: absolute;
 right: 128px;
 top: 75px;
-}
-
-/* Needed for basic wrapper within portlet viewers embedded within an <iframe> */
-.portlet-frame {
-height: 100%;
 }
 
 #main.columnized .view-column {
@@ -1082,8 +1076,7 @@ box-shadow: inset 1px 1px 1px rgba(0, 0, 0, 0.4), inset -1px -1px 1px rgba(250, 
 }
 
 /* !!! Cautionary fix for when technical inner wrappers initialize to height 0. That's removing .view-column's reference point for height: 100% */
-/* The fix may not apply when a pseudo div#main is used for portlet viewers embedded by an <iframe> */
-body:not(#s-user) #main:not(.portlet-frame) > div,
+body:not(#s-user) #main > div,
 body:not(#s-user) #main > form {
 height: 100%;
 }

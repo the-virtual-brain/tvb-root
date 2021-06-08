@@ -33,11 +33,9 @@ DAO layer for WorkFlow and Burst entities.
 """
 
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql.expression import or_
 from tvb.core.entities.model.model_burst import Dynamic
 from tvb.core.entities.model.model_operation import Algorithm, AlgorithmCategory
-from tvb.core.entities.model.model_workflow import Portlet
 from tvb.core.entities.storage.root_dao import RootDAO
 
 
@@ -46,10 +44,9 @@ class WorkflowDAO(RootDAO):
     DAO layer for WorkFlow and Burst entities.
     """
 
-
     def get_non_validated_entities(self, reference_time):
         """
-        Get a list of all categories, portlets and algorithm groups that were not found valid since the reference_time.
+        Get a list of all categories and algorithm groups that were not found valid since the reference_time.
         Used in initializer on each start to filter out any entities that for some reason became invalid.
         :return tuple (list of entities to get invalidated) (list of entities to be removed)
         """
@@ -59,53 +56,11 @@ class WorkflowDAO(RootDAO):
                                                      Algorithm.last_introspection_check < reference_time)).all()
             categories = self.session.query(AlgorithmCategory
                                         ).filter(AlgorithmCategory.last_introspection_check<reference_time).all()
-            portlets = self.session.query(Portlet
-                                        ).filter(Portlet.last_introspection_check < reference_time).all()
-            result = stored_adapters + categories, portlets
+            result = stored_adapters + categories
         except SQLAlchemyError as ex:
             self.logger.exception(ex)
-            result = [], []
+            result = []
         return result
-
-    def get_available_portlets(self, ):
-        """
-        Get all the stored portlets form the db.
-        """
-        portlets = []
-        try:
-            portlets = self.session.query(Portlet).order_by(Portlet.name).all()
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-
-        return portlets
-
-
-    def get_portlet_by_identifier(self, portlet_identifier):
-        """
-        Given an identifer retieve the portlet that corresponds to it.
-        """
-        portlet = None
-        try:
-            portlet = self.session.query(Portlet).filter_by(algorithm_identifier=portlet_identifier).one()
-        except NoResultFound:
-            self.logger.debug("No portlet found with id=%s." % portlet_identifier)
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-
-        return portlet
-
-
-    def get_portlet_by_id(self, portlet_id):
-        """
-        Given an portlet id retieve the portlet entity.
-        """
-        portlet = None
-        try:
-            portlet = self.session.query(Portlet).filter_by(id=portlet_id).one()
-        except SQLAlchemyError as excep:
-            self.logger.exception(excep)
-
-        return portlet
 
     def get_dynamics_for_user(self, user_id):
         try:
@@ -113,7 +68,6 @@ class WorkflowDAO(RootDAO):
         except SQLAlchemyError as exc:
             self.logger.exception(exc)
             return []
-
 
     def get_dynamic(self, dyn_id):
         try:
