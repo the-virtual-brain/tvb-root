@@ -32,15 +32,16 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import sys
+
 import numpy
 import pytest
+from tvb.datatypes import surfaces
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes import surfaces
+from tvb.datatypes.surfaces import CorticalSurface
+from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class TestSurfaces(BaseTestCase):
@@ -204,7 +205,6 @@ class TestSurfaces(BaseTestCase):
     def test_cortexdata(self):
         dt = Cortex.from_file()
         dt.region_mapping_data.connectivity = Connectivity.from_file()
-        dt.__setattr__('valid_for_simulations', True)
         assert isinstance(dt, Cortex)
         assert dt.region_mapping is not None
         ## Initialize Local Connectivity, to avoid long computation time.
@@ -214,3 +214,13 @@ class TestSurfaces(BaseTestCase):
         assert dt.vertices.shape == (16384, 3)
         assert dt.vertex_normals.shape == (16384, 3)
         assert dt.triangles.shape == (32760, 3)
+
+    def test_cortex_reg_map_without_subcorticals(self):
+        dt = Cortex.from_file()
+        dt.region_mapping_data.connectivity = Connectivity.from_file()
+        self.add_subcorticals_to_conn(dt.region_mapping_data.connectivity)
+        dt.region_mapping_data.connectivity.configure()
+
+        assert isinstance(dt, Cortex)
+        assert dt.region_mapping is not None
+        assert numpy.unique(dt.region_mapping).size == dt.region_mapping_data.connectivity.number_of_regions
