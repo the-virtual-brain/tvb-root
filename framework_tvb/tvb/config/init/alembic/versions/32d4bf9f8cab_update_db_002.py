@@ -24,8 +24,13 @@ LOGGER = get_logger(__name__)
 
 
 def upgrade():
-    new_column = Column('has_valid_time_series', Boolean, default=True)
-    op.add_column('DataTypeMatrix', new_column)
+    new_column_1 = Column('has_valid_time_series', Boolean, default=True)
+    op.add_column('DataTypeMatrix', new_column_1)
+
+    new_column_2 = Column('queue_full', Boolean, default=False)
+    op.add_column('OPERATIONS', new_column_2)
+
+
 
 
 def downgrade():
