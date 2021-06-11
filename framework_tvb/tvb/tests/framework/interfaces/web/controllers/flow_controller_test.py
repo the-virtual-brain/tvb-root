@@ -163,6 +163,7 @@ class TestFlowController(BaseControllersTest):
     def test_stop_burst_operation(self, simulation_launch):
         operation = simulation_launch(self.test_user, self.test_project, 1000)
         assert not operation.has_finished
+        sleep(5)
         self.flow_c.cancel_or_remove_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
@@ -171,6 +172,7 @@ class TestFlowController(BaseControllersTest):
         first_op = simulation_launch(self.test_user, self.test_project, 1000, True)
         operations_group_id = first_op.fk_operation_group
         assert not first_op.has_finished
+        sleep(5)
         self.flow_c.cancel_or_remove_operation(operations_group_id, 1, False)
         operations = dao.get_operations_in_group(operations_group_id)
         for operation in operations:
@@ -197,9 +199,9 @@ class TestFlowController(BaseControllersTest):
                 assert op.status == STATUS_STARTED
         while dao.get_operation_by_id(operations[0].id).status != STATUS_FINISHED:
             pass
-        sleep(20)
+        sleep(10)
         StandAloneClient.process_queued_operations()
-        sleep(20)
+        sleep(10)
         op = operations[len(operations) -1]
         op = dao.get_operation_by_id(op.id)
         assert op.status == STATUS_STARTED

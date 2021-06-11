@@ -110,6 +110,8 @@ class OperationExecutor(Thread):
             LOGGER.info("Finished with launch of operation %s" % operation_id)
             returned = launched_process.wait()
 
+            LOGGER.info("Return code: {}. Stopped: {}".format(returned, self.stopped()))
+            LOGGER.info("Thread: {}".format(self))
             if returned != 0 and not self.stopped():
                 # Process did not end as expected. (e.g. Segmentation fault)
                 burst_service = BurstService()
@@ -248,15 +250,17 @@ class StandAloneClient(BackendClient):
                 return False
         else:
             # Set the thread stop flag to true
-            operation_thread = None
+            operation_threads = []
             for thread in CURRENT_ACTIVE_THREADS:
                 if int(thread.operation_id) == operation_id:
-                    operation_thread = thread
-                    break
+                    operation_threads.append(thread)
 
-            if operation_thread:
-                operation_thread._stop()
-                LOGGER.info("Found running thread for operation: %d" % operation_id)
+            if len(operation_threads) > 0:
+                for thread in operation_threads:
+                    thread._stop()
+                    LOGGER.info("Found running thread for operation: %d" % operation_id)
+                    LOGGER.info("Thread marked to stop: {}".format(thread.stopped()))
+                    LOGGER.info("Thread: {}".format(thread))
                 # Kill Thread
                 stopped = True
                 operation_process = dao.get_operation_process_for_operation(operation_id)
