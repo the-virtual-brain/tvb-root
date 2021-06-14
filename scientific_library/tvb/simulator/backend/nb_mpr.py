@@ -89,10 +89,10 @@ class NbMPRBackend(MakoUtilMix):
 
         assert len(sim.monitors) == 1, "Configure with exatly one monitor."
         if isinstance(sim.monitors[0], monitors.Raw):
-            r, V = self._run_sim_plain(sim, nstep)
+            r, V = self._run_sim_plain(sim, nstep, compatibility_mode=compatibility_mode)
             time = np.arange(r.shape[1]) * sim.integrator.dt
         elif isinstance(sim.monitors[0], monitors.TemporalAverage):
-            r, V = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize)
+            r, V = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize, compatibility_mode=compatibility_mode)
             T = sim.monitors[0].period
             time = np.arange(r.shape[1]) * T + 0.5 * T
         else:
@@ -106,7 +106,7 @@ class NbMPRBackend(MakoUtilMix):
     def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(compatibility_mode=compatibility_mode) 
-        integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=False)
+        integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=True)
 
         horizon = sim.connectivity.horizon
         buf_len = horizon + nstep
@@ -141,9 +141,9 @@ class NbMPRBackend(MakoUtilMix):
         N, T = ts.shape
         return np.mean(ts.reshape(N,T//istep,istep),-1) # length of ts better be multiple of istep 
 
-    def _run_sim_tavg_chunked(self, sim, nstep, chunksize):
+    def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
-        content = dict(foo='bar') 
+        content = dict(compatibility_mode=compatibility_mode) 
         integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=False)
         # chunksize in number of steps 
         horizon = sim.connectivity.horizon

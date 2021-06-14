@@ -144,7 +144,7 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1)
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1, compatibility_mode=True)
         r_pdq, V_pdq = pdq_d[0,:,:,0] 
 
         (raw_t, raw_d), = sim.run(simulation_length=1)
@@ -175,7 +175,7 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1)
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1, compatibility_mode=True)
         r_pdq, V_pdq = pdq_d[0,:,:,0] 
 
         (raw_t, raw_d), = sim.run(simulation_length=1)
@@ -206,10 +206,10 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=2000)
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=2000, compatibility_mode=True)
         r_pdq = pdq_d[:,0,:,0]
         V_pdq = pdq_d[:,1,:,0]
-        (pdq_chu_t, pdq_chu_d), = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=500)
+        (pdq_chu_t, pdq_chu_d), = NbMPRBackend().run_sim(sim, nstep=2000, chunksize=500, compatibility_mode=True)
         r_pdq_chu = pdq_d[:,0,:,0]
         V_pdq_chu = pdq_d[:,1,:,0]
 
