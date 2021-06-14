@@ -40,7 +40,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
-from tvb.tests.framework.adapters.testadapter3 import *
+from tvb.tests.framework.adapters.dummy_adapter3 import *
 
 
 class TestAdapterMemoryUsage(TransactionalTestCase):
@@ -56,8 +56,8 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         self.test_project = TestFactory.create_project(admin=self.test_user)
 
     def test_adapter_memory(self, test_adapter_factory):
-        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
         assert 42 == adapter.get_required_memory_size(adapter.get_view_model()())
 
     def test_adapter_huge_memory_requirement(self, test_adapter_factory):
@@ -65,12 +65,12 @@ class TestAdapterMemoryUsage(TransactionalTestCase):
         Test that an MemoryException is raised in case adapter cant launch due to lack of memory.
         """
         # Prepare adapter
-        test_adapter_factory(adapter_class=TestAdapterHugeMemoryRequired)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3",
-                                             "TestAdapterHugeMemoryRequired")
+        test_adapter_factory(adapter_class=DummyAdapterHugeMemoryRequired)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3",
+                                             "DummyAdapterHugeMemoryRequired")
 
         # Simulate receiving POST data
-        form = TestAdapterHugeMemoryRequiredForm()
+        form = DummyAdapterHugeMemoryRequiredForm()
 
         view_model = form.get_view_model()()
         view_model.test = 5

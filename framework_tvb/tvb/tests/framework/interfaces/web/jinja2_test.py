@@ -39,13 +39,14 @@ from tvb.core.adapters.abcadapter import ABCAdapter, ABCAdapterForm
 from tvb.core.entities.model.model_project import User
 from tvb.core.neotraits.forms import ArrayField
 from tvb.interfaces.web.controllers.decorators import using_template
-from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorFragmentRenderingRules, SimulatorWizzardURLs
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorFragmentRenderingRules, \
+    SimulatorWizzardURLs
 from tvb.simulator.models import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 
-class TestTrait(HasTraits):
+class DummyTrait(HasTraits):
     """ Test class with traited attributes"""
 
     test_array = NArray(label="State Variables range [[lo],[hi]]",
@@ -56,7 +57,7 @@ class TraitAdapterForm(ABCAdapterForm):
 
     def __init__(self):
         super(TraitAdapterForm, self).__init__()
-        self.test_array = ArrayField(TestTrait.test_array, name='test_array')
+        self.test_array = ArrayField(DummyTrait.test_array, name='test_array')
 
 
 class TraitAdapter(ABCAdapter):
@@ -91,7 +92,7 @@ class Jinja2Test(BaseTestCase):
         TvbProfile.current.web.RENDER_HTML = False
 
 
-class TestTraitAdapterForm(Jinja2Test):
+class DummyTraitAdapterForm(Jinja2Test):
     """
     Test HTML generation for a traited form.
     """
@@ -99,7 +100,7 @@ class TestTraitAdapterForm(Jinja2Test):
     @using_template('form_fields/form')
     def prepare_adapter_for_rendering(self):
         adapter = TraitAdapter()
-        datatype = TestTrait()
+        datatype = DummyTrait()
 
         form = adapter.get_form_class()()
         form.fill_from_trait(datatype)

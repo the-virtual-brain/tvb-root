@@ -72,7 +72,7 @@ from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.simulator import Simulator
 from tvb.storage.storage_interface import StorageInterface
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
@@ -622,7 +622,7 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
 
 @pytest.fixture()
 def test_adapter_factory():
-    def build(adapter_class=TestAdapter1):
+    def build(adapter_class=DummyAdapter1):
 
         all_categories = dao.get_algorithm_categories()
         algo_category_id = all_categories[0].id

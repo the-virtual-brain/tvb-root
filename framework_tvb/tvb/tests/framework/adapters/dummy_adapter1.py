@@ -41,24 +41,24 @@ from tvb.core.neotraits.view_model import ViewModel
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
-class TestModel(ViewModel):
+class DummyModel(ViewModel):
     test1_val1 = Int(default=0)
     test1_val2 = Int(default=0)
 
 
-class TestAdapter1Form(abcadapter.ABCAdapterForm):
+class DummyAdapter1Form(abcadapter.ABCAdapterForm):
     """
         This class is used for testing purposes.
     """
 
     def __init__(self):
-        super(TestAdapter1Form, self).__init__()
-        self.test1_val1 = IntField(TestModel.test1_val1, name='test1_val1')
-        self.test1_val2 = IntField(TestModel.test1_val2, name='test1_val2')
+        super(DummyAdapter1Form, self).__init__()
+        self.test1_val1 = IntField(DummyModel.test1_val1, name='test1_val1')
+        self.test1_val2 = IntField(DummyModel.test1_val2, name='test1_val2')
 
     @staticmethod
     def get_view_model():
-        return TestModel
+        return DummyModel
 
     @staticmethod
     def get_required_datatype():
@@ -73,21 +73,21 @@ class TestAdapter1Form(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapter1(abcadapter.ABCAdapter):
+class DummyAdapter1(abcadapter.ABCAdapter):
     """
         This class is used for testing purposes.
     """
     launch_mode = abcadapter.AdapterLaunchModeEnum.SYNC_SAME_MEM
 
     def __init__(self):
-        super(TestAdapter1, self).__init__()
+        super(DummyAdapter1, self).__init__()
 
     @staticmethod
     def get_view_model():
-        return TestModel
+        return DummyModel
 
     def get_form_class(self):
-        return TestAdapter1Form
+        return DummyAdapter1Form
 
     def get_output(self):
         return [DummyDataTypeIndex]

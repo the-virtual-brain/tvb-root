@@ -47,7 +47,7 @@ from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
 from tvb.storage.storage_interface import StorageInterface
-from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
+from tvb.tests.framework.adapters.dummy_adapter3 import DummyAdapter3
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
 
@@ -417,7 +417,7 @@ class TestProjectService(TransactionalTestCase):
         """
         Test the new update metaData for a group of dataTypes.
         """
-        test_adapter_factory(adapter_class=TestAdapter3)
+        test_adapter_factory(adapter_class=DummyAdapter3)
         group = datatype_group_factory()
         op_group_id = group.fk_operation_group
 
