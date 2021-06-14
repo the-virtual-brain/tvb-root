@@ -34,16 +34,16 @@
 """
 import os
 import shutil
-from sqlalchemy.sql import text
-from sqlalchemy.engine import reflection
-from alembic.config import Config
-from alembic import command
 
-from tvb.basic.profile import TvbProfile
+import tvb.config.init.alembic.versions as scripts
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import inspect
+from sqlalchemy.sql import text
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.core.neotraits.db import Base
-import tvb.config.init.alembic.versions as scripts
 
 LOGGER = get_logger(__name__)
 
@@ -52,7 +52,7 @@ def initialize_startup():
     """ Force DB tables create, in case no data is already found."""
     is_db_empty = False
     session = SA_SESSIONMAKER()
-    inspector = reflection.Inspector.from_engine(session.connection())
+    inspector = inspect(session.connection())
     table_names = inspector.get_table_names()
     if len(table_names) < 1:
         LOGGER.debug("Database access exception, maybe DB is empty")
@@ -110,7 +110,7 @@ def reset_database():
     try:
         session = SA_SESSIONMAKER()
         LOGGER.debug("Delete connection initiated.")
-        inspector = reflection.Inspector.from_engine(session.connection())
+        inspector = inspect(session.connection())
         for table in inspector.get_table_names():
             try:
                 LOGGER.debug("Removing:" + table)

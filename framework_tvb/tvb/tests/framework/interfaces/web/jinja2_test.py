@@ -109,7 +109,7 @@ class DummyTraitAdapterForm(Jinja2Test):
 
     def test_multidimensional_array(self):
         html = self.prepare_adapter_for_rendering()
-        soup = BeautifulSoup(html)
+        soup = BeautifulSoup(html, features="html.parser")
 
         array_entry = soup.find_all('input', attrs=dict(name='test_array'))
         assert len(array_entry) == 1, 'Array entry not found'
@@ -140,7 +140,7 @@ class TestJinja2Simulator(Jinja2Test):
         mocker.patch.object(User, 'is_online_help_active', _is_online_help_active)
 
         html = self.dummy_renderer(rendering_rules.to_dict())
-        soup = BeautifulSoup(html)
+        soup = BeautifulSoup(html, features="html.parser")
         return soup
 
     def test_models_list(self, mocker):
