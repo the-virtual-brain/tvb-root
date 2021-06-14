@@ -182,7 +182,7 @@ class HDF5StorageManager(object):
             del hdf5_file[where + dataset_name]
 
         except KeyError:
-            LOG.warn("Trying to delete data set: %s but current file does not contain it." % dataset_name)
+            LOG.warning("Trying to delete data set: %s but current file does not contain it." % dataset_name)
             raise FileStructureException("Could not locate dataset: %s" % dataset_name)
         finally:
             self.close_file()

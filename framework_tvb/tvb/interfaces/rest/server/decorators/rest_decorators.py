@@ -113,7 +113,7 @@ def check_permission(resource_access_permission_class, requested_resource_identi
                 if access_permission_instance.has_access():
                     return func(*a, **b)
             except KeyError:
-                get_logger().warn("Invalid identifier name")
+                get_logger().warning("Invalid identifier name")
             raise AuthorizationRequestException("You cannot access this resource")
 
         return deco

@@ -249,7 +249,7 @@ class SurfaceH5(H5File):
             end_idx = min(self._split_slices[str(slice_idx)][KEY_TRIANGLES][KEY_END], self._number_of_triangles)
             return start_idx, end_idx
         else:
-            LOG.warn("Could not access slice indices, possibly due to an incompatibility with code update!")
+            LOG.warning("Could not access slice indices, possibly due to an incompatibility with code update!")
             return 0, self._number_of_triangles
 
     def get_vertices_slice(self, slice_number=0):
