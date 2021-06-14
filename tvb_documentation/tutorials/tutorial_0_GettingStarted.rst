@@ -4,75 +4,18 @@
 Getting Started
 ===============
 
-First things first. We need you to upload the projects from the `TVB sharing
-area <http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. This might
-take some time, so while we continue with the program you can start importing
-the projects into your copy of TVB.
-
-============================    ========
- **Name**                       **Size** 
-----------------------------    --------
- LinkandShare_a                  11 MB
- LinkandShare_b                  62 KB
- BuildingYourOWnBNM              1.3 GB
- Resting State Netowrks          1 GB 
- ModelingEpilepsy                411 MB 
-============================    ========   
-
-------------------------
+First things first. Please follow `this link
+<https://zenodo.org/record/4263723#.YL9x4jaA7t0>`_ to download *tvb-data*
+and `this second link
+<https://www.thevirtualbrain.org/tvb/zwei/client-area/public?_ga=2.222814555.1504534223.1522695590-1355432300.1522695590#>`_ to download the *ModelingEpilepsy.zip (3)* project.
 
 Objectives
 ----------
 
 This tutorial presents the basic steps to upload a project, and share data with
 other users and/or link data to other TVB projects.  After this tutorial you
-should be able to import a new dataset, export a project and share it with a colleague.
-
-For your convenience, all the data were already generated. You can download
-the LinkandShare_a.zip and LinkandShare_b.zip files in the `TVB sharing area
-<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. We’ll only go
-through the steps required to reproduce some simulations.  You can always start
-over, click along and/or try to change parameters.
-
-------------------------
-
-Importing TVB projects
-----------------------
-
-We assume that you have already created an account in your machine. If not, you
-can always work with the default account *admin*. Make sure you have
-enough disk space, all the projects add up to 2 GB.
-
-#. Go to *Projects > List of all projects*.
-
-#. On the right column, bottom corner, click on Import project structure. 
-
-.. figure:: figures/ImportingProjects_Import.png
-   :alt: Click on Import project structure
-   :scale: 30%
-
-3. Select one of the projects. Click on *Upload*.
-
-.. figure:: figures/ImportingProjects_ImportOverlay.png
-   :alt: Click on Select files
-   :scale: 30%
-
-.. figure:: figures/ImportingProjects_Upload.png
-   :alt: Upload.
-   :scale: 30%
-
-4. Be patient.
-
-.. figure:: figures/ImportingProjects_Wait.png
-   :alt: Be patient, it will take a few minutes.
-   :scale: 30%
-
-5. You can now see the project on the *List of all projects*.
-
-.. figure:: figures/ImportingProjects_Done.png
-   :alt: The imported project is on the .
-   :scale: 30%
-
+should be able to import new dataset, create, import, export and delete a project and
+share your data with among your projects or with a colleague.
 
 ------------------------
 
@@ -83,108 +26,196 @@ In this exercise we will assume that multiple users are working with the
 same TVB installation.
 
 
-#. By default your are the *Admin* user.
+1. By default your are the *Admin* user.
 
-#. Change the admin email. 
+2. Change the admin email.
 
-.. figure:: figures/LinkAndShare_ChangeAdminEmail.png
+.. figure:: figures/Users_ChangeAdminEmail.png
    :scale: 30%
 
-3. Create a user for someone else by registering a new user. 
 
-.. figure:: figures/LinkAndShare_AddNewUser.png
+3. Create a user for someone else by registering a new user.
+
+.. figure:: figures/Users_AddNewUser.png
    :scale: 30%
+
 
 4. You’ll receive a notification email.
 
+5. Make sure the new user has been validated.
 
-5. Make sure the new user has been validated. 
-
-.. figure:: figures/LinkAndShare_ValidateNewUser.png
+.. figure:: figures/Users_ValidateNewUser.png
    :scale: 30%
 
+
 6. Login with the Admin account.
+
+--------------------------------------------
+
+Creating, Importing, Exporting and Deleting Projects
+---------------------------------------------------------
+
+We assume that you have already created an account on your machine. If not, you
+can always work with the default account *admin*.
+
+Normally when you start TVB you should have the *Default Project* from *tvb_data* already imported.
+If you don't have it, go to step 4 to see how you can import a new project.
+
+1. Go to *Projects > List of all projects*.
+
+2. On the right column, bottom corner, click on *Create new project*.
+
+.. figure:: figures/Projects_ListOfAllProjects1.png
+   :alt: Click on Create new project
+   :scale: 30%
+
+
+3. Choose a project name (e.g. *NewProject*) and optionally add a description as well.
+   On the right column, bottom corner, click on *Save Changes* when you are done.
+
+.. figure:: figures/Projects_CreatingProjects.png
+   :alt: Click on Save Changes
+   :scale: 30%
+
+
+   The new project will appear in the list of all projects.
+
+.. figure:: figures/Projects_ListOfAllProjects2.png
+   :alt: See the newly created project
+   :scale: 30%
+
+
+4. If you wish to import a project, on the right column, bottom corner,
+   click on *Import project structure*.
+
+.. figure:: figures/Projects_Import.png
+   :alt: Click on Import project structure
+   :scale: 30%
+
+
+5. Select one of the projects (e.g. ModelingEpilepsy.zip). Click on *Upload*.
+
+.. figure:: figures/Projects_ImportOverlay.png
+   :alt: Click on Select files
+   :scale: 30%
+
+6. Be patient.
+
+.. figure:: figures/Projects_Wait.png
+   :alt: Be patient, it will take a few minutes.
+   :scale: 30%
+
+
+7. You can now see the project on the *List of all projects*.
+
+.. figure:: figures/Projects_Done.png
+   :alt: The imported project can be seen in the list of all projects.
+   :scale: 30%
+
+
+8. If you wish to export a project, click on the pencil icon located left to the project name.
+
+.. figure:: figures/Projects_PencilIcon.png
+   :alt: Pencil Icon
+   :scale: 30%
+
+   Clicking on it will open the Properties page of the project. Click on the Export Project button.
+
+.. figure:: figures/Projects_PropertiesPage.png
+   :alt: Project Properties page
+   :scale: 30%
+
+9. If you wish to delete a project, you click on the *Delete* button and the project
+   will disappear from the list.
 
 ------------------------
 
 Importing A Connectivity
 ------------------------
 
-1. Create a project (e.g. *LinkAndShare\_a*).
-
-2. Create a second project (e.g. *LinkAndShare\_b*).
-
-3. Assuming that you are working in the first project, upload a Connectivity in
-   a zip file. This was already done but you can repeat these steps.
-
-4. Go to *Projects > Data structure*. Click on *Upload Data*. An
+1. Assuming that you are working in the previously created project, upload a Connectivity in
+   a zip file. Go to *Projects > Data structure*. Click on *Upload Data*. An
    overlay with the current supported formats will appear. 
 
-5. Select *Connectivity ZIP*.
+2. Select *Connectivity ZIP*.
 
-6. Select the file *connectivity\_regions\_96.zip* found at
-   *TVB\_Distribution/tvb\_data/*.
+3. From your downloaded tvb-data folder select the file *connectivity_96.zip* found at *tvb_data/connectivity/*.
 
-.. figure:: figures/LinkAndShare_Uploaders.png
+.. figure:: figures/ImportConnectivity_Uploaders.png
    :alt: Supported data formats.
    :scale: 30%
 
-7. Add a personalized tag to this newly created datatype (e.g.
-   *conn\_96*). 
 
-8. Save the changes.
+4. Add a personalized tag to this newly created datatype (e.g.
+   *conn\_96*).
 
-.. figure:: figures/LinkAndShare_TagDatatype.png
+5. Save the changes.
+
+.. figure:: figures/ImportConnectivity_TagDatatype.png
    :alt: Add a personalized tag.
    :scale: 50%
 
 ------------------------
 
 Link And Share
---------------
+---------------
 
 1. Select the connectivity you want to share.
 
 2. In the *metadata overlay*, go to the tab *Links*. You’ll see a list with all
-   your projects. 
+   your projects except the current one.
 
-3. Link this datatype (connectivity) with the project you’ll share (e.g.
-   *Session\_II\_ShareAndLink\_b*).
+3. Link this datatype (connectivity) with the project you’ll share.
 
 .. figure:: figures/LinkAndShare_LinksTab.png
    :alt: Links tab.
-   :scale: 50%
+   :scale: 30%
 
+4. Go to *Project > List of all projects*.
 
-4. Link the time-series from simulation *SimulationConnectivity192*
+5. Switch to the project you shared your datatype (connectivity) with.
 
+6. Then at *Project > Data Structure* you should see
+the datatype (connectivity) that you shared (the name is written in italics).
+
+.. figure:: figures/LinkAndShare_LinkedDatatype.png
+   :alt: You can see the datatype that you shared from NewProject.
+   :scale: 30%
+
+7. Go to *Project > List of all projects*.
+
+8. Switch to *ModelingEpilepsy*.
+
+9. Then from Project > Basic properties share this project with the other user account.
 
 .. figure:: figures/LinkAndShare_LinkedProject.png
-   :alt: Link a datatype to another project.
-   :scale: 50%
+   :alt: Click on the checkbox next to the user you want to share the project with
+   :scale: 30%
 
-5. Go to *Project > List of all projects*
+10. Logout from your account and login with the other user.
 
-6. Switch to *ShareAndLink\_b*.
+You should be able to see the *ModelingEpilepsy* project in your other account as well.
 
-7. Then from *Project > Basic properties* share this
-   project with the other user account.
-
-8. Logout from your account and login with the other user account.
-
-You should be able to see the connectivity matrix (and other datatypes)
-you linked from project *Session\_II\_ShareAndLink\_a*.
 
 ------------------------
 
-Export and Read
+Export and Read Datatype
 ---------------
 
-#. Go to *Project > Data structure*
+1. Select *ModelingEpilepsy* as your current project.
 
-#. Click on |node_tr| from *TimeSeriesRegion - conn\_192*.
+2. Go to *Project > Data structure*
 
-#. From the overlay, *Export* tab, download the data in TVB format (h5).
+3. Click on |node_tr| from TimeSeriesRegion.
+
+4. From the overlay, *Export* tab, download only the time series h5 file by clicking on *TVB format* (h5).
+
+5. If you wish to download not just the time series file, but the linked datatypes as well,
+choose the *TVB Format with links* option.
+
+.. figure:: figures/LinkAndShare_LinkedProject.png
+   :alt: Export with or without links
+   :scale: 30%
 
 #. Rename the file if you want (e.g. *LinkAndShare\_TimeSeriesRegion*).
 
@@ -198,54 +229,44 @@ start the jupyter_notebook script.
     In [1]: import h5py
     In [2]: import matplotlib.pyplot as plt
 
-    In [3]: f = h5py.File('LinkAndShare_TimeSeriesRegion.h5')
+    In [3]: f = h5py.File('LinkAndShare_TimeSeriesRegion.h5', 'r')
 
     In [4]: f.keys()
-    Out[4]: [u'data', u'time']
+    Out[4]: <KeysViewHDF5 ['data', 'time']>
 
     In [5]: f.attrs.keys()
     Out[5]: 
-    [u'TVB_User_tag_1',
-     u'TVB_Title',
-     u'TVB_Length_2d',
-     u'TVB_Gid',
-     u'TVB_Length_3d',
-     u'TVB_Sample_period_unit',
-     u'TVB_Labels_ordering',
-     u'TVB_Length_1d',
-     u'TVB_User_tag_4',
-     u'TVB_User_tag_5',
-     u'TVB_Subject',
-     u'TVB_Length_4d',
-     u'TVB_Data_version',
-     u'TVB_User_tag_3',
-     u'TVB_Is_nan',
-     u'TVB_Type',
-     u'TVB_Invalid',
-     u'TVB_Connectivity',
-     u'TVB_Create_date',
-     u'TVB_User_tag_2',
-     u'TVB_Labels_dimensions',
-     u'TVB_Sample_rate',
-     u'TVB_State',
-     u'TVB_Start_time',
-     u'TVB_Sample_period',
-     u'TVB_Nr_dimensions',
-     u'TVB_Visible',
-     u'TVB_Module']
-
+    <KeysViewHDF5 [
+     'TVB_Data_version',
+     'TVB_connectivity',
+     'TVB_create_date',
+     'TVB_gid',
+     'TVB_invalid',
+     'TVB_is_nan',
+     'TVB_labels_dimensions',
+     'TVB_nr_dimensions',
+     'TVB_operation_tag',
+     'TVB_region_mapping',
+     'TVB_sample_period',
+     'TVB_sample_period_unit',
+     'TVB_sample_rate',
+     'TVB_start_time',
+     'TVB_state',
+     'TVB_subject',
+     'TVB_title',
+     'TVB_user_tag_1',
+     'TVB_user_tag_2',
+     'TVB_user_tag_3',
+     'TVB_user_tag_4',
+     'TVB_user_tag_5',
+     'TVB_visible',
+     'TVB_written_by']>
 
     In[6]: plt.plot(f['time'], f['data'][:, 0, :, 0])
-    ...
-
-    In [7]: plt.xlabel('time [ms]')
-    Out[7]: <matplotlib.text.Text at 0x118e95310>
-
-    In [8]: plt.ylabel('amplitude [au]')
-    Out[8]: <matplotlib.text.Text at 0x118e9a190>
-
-    In [9]: plt.title(f.attrs['TVB_Title'])
-    Out[9]: <matplotlib.text.Text at 0x118eb0ad0>
+           plt.xlabel('time [ms]')
+           plt.ylabel('amplitude [au]')
+           plt.title(f.attrs['TVB_Title'])
+    Out[6]: <matplotlib.text.Text at 0x118eb0ad0>
 
 .. figure:: figures/LinkAndShare_IpythonTimeSeriesRegion.png
    :scale: 40%
