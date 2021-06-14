@@ -283,7 +283,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
             labels_dimensions[self.get_dimension_name(dim_index)] = \
                 (numpy.array(labels_dimensions[self.get_dimension_name(dim_index)])[indices]).tolist()
         except:
-            self.logger.warn("Failed to get labels subset for indices %s of dimension %d!"
+            self.logger.warning("Failed to get labels subset for indices %s of dimension %d!"
                              % (str(indices), dim_index))
             labels_dimensions[self.get_dimension_name(dim_index)] = []
         return self.duplicate(data=data, labels_dimensions=labels_dimensions, **kwargs)

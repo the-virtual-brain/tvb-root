@@ -42,28 +42,28 @@ from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
-class TestModel(ViewModel):
+class DummyModel(ViewModel):
     param_5 = Int(default=0)
     param_6 = Int(default=0)
 
 
-class TestModelRequired(ViewModel):
+class DummyModelRequired(ViewModel):
     test = Int(default=100)
 
 
-class TestAdapter3Form(abcadapter.ABCAdapterForm):
+class DummyAdapter3Form(abcadapter.ABCAdapterForm):
     """
         This class is used for testing purposes.
     """
 
     def __init__(self):
-        super(TestAdapter3Form, self).__init__()
-        self.param_5 = IntField(TestModel.param_5, name='param_5')
-        self.param_6 = IntField(TestModel.param_6, name='param_6')
+        super(DummyAdapter3Form, self).__init__()
+        self.param_5 = IntField(DummyModel.param_5, name='param_5')
+        self.param_6 = IntField(DummyModel.param_6, name='param_6')
 
     @staticmethod
     def get_view_model():
-        return TestModel
+        return DummyModel
 
     @staticmethod
     def get_required_datatype():
@@ -78,7 +78,7 @@ class TestAdapter3Form(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapter3(abcadapter.ABCAdapter):
+class DummyAdapter3(abcadapter.ABCAdapter):
     """
     This class is used for testing purposes.
     It will be used as an adapter for testing Groups of operations. For ranges to work, it need to be asynchronous.
@@ -86,14 +86,14 @@ class TestAdapter3(abcadapter.ABCAdapter):
     launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
 
     def __init__(self):
-        super(TestAdapter3, self).__init__()
+        super(DummyAdapter3, self).__init__()
 
     @staticmethod
     def get_view_model():
-        return TestModel
+        return DummyModel
 
     def get_form_class(self):
-        return TestAdapter3Form
+        return DummyAdapter3Form
 
     def get_output(self):
         return [DummyDataTypeIndex]
@@ -120,18 +120,18 @@ class TestAdapter3(abcadapter.ABCAdapter):
         return h5.store_complete(result, self.storage_path)
 
 
-class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
+class DummyAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
     """
         This class is used for testing purposes.
     """
 
     def __init__(self):
-        super(TestAdapterHugeMemoryRequiredForm, self).__init__()
-        self.test = IntField(TestModelRequired.test, name='test')
+        super(DummyAdapterHugeMemoryRequiredForm, self).__init__()
+        self.test = IntField(DummyModelRequired.test, name='test')
 
     @staticmethod
     def get_view_model():
-        return TestModelRequired
+        return DummyModelRequired
 
     @staticmethod
     def get_required_datatype():
@@ -146,17 +146,17 @@ class TestAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapterHugeMemoryRequired(abcadapter.ABCAdapter):
+class DummyAdapterHugeMemoryRequired(abcadapter.ABCAdapter):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
     launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
 
     def __init__(self):
-        super(TestAdapterHugeMemoryRequired, self).__init__()
+        super(DummyAdapterHugeMemoryRequired, self).__init__()
 
     def get_form_class(self):
-        return TestAdapterHugeMemoryRequiredForm
+        return DummyAdapterHugeMemoryRequiredForm
 
     def get_output(self):
         return [DummyDataTypeIndex]
@@ -173,18 +173,18 @@ class TestAdapterHugeMemoryRequired(abcadapter.ABCAdapter):
         str(view_model.test)
 
 
-class TestAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
+class DummyAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
     """
         This class is used for testing purposes.
     """
 
     def __init__(self):
-        super(TestAdapterHDDRequiredForm, self).__init__()
-        self.test = IntField(TestModelRequired.test, name='test')
+        super(DummyAdapterHDDRequiredForm, self).__init__()
+        self.test = IntField(DummyModelRequired.test, name='test')
 
     @staticmethod
     def get_view_model():
-        return TestModelRequired
+        return DummyModelRequired
 
     @staticmethod
     def get_required_datatype():
@@ -199,21 +199,21 @@ class TestAdapterHDDRequiredForm(abcadapter.ABCAdapterForm):
         pass
 
 
-class TestAdapterHDDRequired(abcadapter.ABCAdapter):
+class DummyAdapterHDDRequired(abcadapter.ABCAdapter):
     """
     Adapter used for testing launch when a lot of memory is required.
     """
     launch_mode = abcadapter.AdapterLaunchModeEnum.SYNC_SAME_MEM
 
     def __init__(self):
-        super(TestAdapterHDDRequired, self).__init__()
+        super(DummyAdapterHDDRequired, self).__init__()
 
     @staticmethod
     def get_view_model():
-        return TestModelRequired
+        return DummyModelRequired
 
     def get_form_class(self):
-        return TestAdapterHDDRequiredForm
+        return DummyAdapterHDDRequiredForm
 
     def get_output(self):
         return [DummyDataTypeIndex]

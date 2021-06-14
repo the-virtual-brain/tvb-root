@@ -203,7 +203,7 @@ class StimuliSurface(SpatioTemporalPattern):
         focal_points = []
 
         if self.surface is None or self.surface.triangles is None:
-            self.log.warn('Focal points list will be empty. Load the surface triangles before accessing this property!')
+            self.log.warning('Focal points list will be empty. Load the surface triangles before accessing this property!')
             return numpy.array(focal_points)
 
         for triangle_index in self.focal_points_triangles:

@@ -34,7 +34,7 @@
 """
 
 import pytest
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestAdapter1, TestModel
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form, DummyAdapter1, DummyModel
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
@@ -43,8 +43,8 @@ from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.algorithm_service import AlgorithmService
 
-TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.testadapter1"
-TEST_ADAPTER_VALID_CLASS = "TestAdapter1"
+TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.dummy_adapter1"
+TEST_ADAPTER_VALID_CLASS = "DummyAdapter1"
 TEST_ADAPTER_INVALID_CLASS = "InvalidTestAdapter"
 
 
@@ -141,6 +141,6 @@ class TestAlgorithmService(TransactionalTestCase):
         """
         assert isinstance(self.algorithm, model_operation.Algorithm), "Can not find Adapter!"
         adapter = self.algorithm_service.prepare_adapter(self.algorithm)
-        assert isinstance(adapter, TestAdapter1), "Adapter incorrectly built"
-        assert adapter.get_form_class() == TestAdapter1Form
-        assert adapter.get_view_model() == TestModel
+        assert isinstance(adapter, DummyAdapter1), "Adapter incorrectly built"
+        assert adapter.get_form_class() == DummyAdapter1Form
+        assert adapter.get_view_model() == DummyModel

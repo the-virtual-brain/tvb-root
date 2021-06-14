@@ -29,64 +29,89 @@
 #
 
 """
-.. Ionel Ortelecan <ionel.ortelecan@codemart.ro>
+Created on Jul 21, 2011
+
+.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.model.model_datatype import DataType
+from time import sleep
+
+import tvb.core.adapters.abcadapter as abcadapter
+from tvb.basic.neotraits.api import Int
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
+from tvb.core.neotraits.forms import IntField
+from tvb.core.neotraits.view_model import ViewModel
+from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
-class StoreAdapter(ABCAdapter):
+class DummyModel(ViewModel):
+    test = Int(default=0)
+
+
+class DummyAdapter2Form(abcadapter.ABCAdapterForm):
     """
-    The purpose of this adapter is only to allow you to
-    store into the db a list of data types.
+        This class is used for testing purposes.
     """
-    list_of_entities_to_store = []
 
-    def __init__(self, list_of_entities_to_store):
-        """
-        Expacts a list of 'DataType' instances.
-        """
-        ABCAdapter.__init__(self)
-        if (list_of_entities_to_store is None 
-            or not isinstance(list_of_entities_to_store, list) 
-            or len(list_of_entities_to_store) == 0):
-            raise Exception("The adapter expacts a list of entities")
+    def __init__(self):
+        super(DummyAdapter2Form, self).__init__()
+        self.test = IntField(DummyModel.test, name='test')
 
-        self.list_of_entities_to_store = list_of_entities_to_store
+    @staticmethod
+    def get_view_model():
+        return DummyModel
 
-    def get_required_memory_size(self, **kwargs):
+    @staticmethod
+    def get_required_datatype():
+        return DummyDataTypeIndex
+
+    @staticmethod
+    def get_input_name():
+        return "dummy_data_type"
+
+    @staticmethod
+    def get_filters():
+        pass
+
+
+class DummyAdapter2(abcadapter.ABCAdapter):
+    """
+        This class is used for testing purposes.
+    """
+    launch_mode = AdapterLaunchModeEnum.ASYNC_DIFF_MEM
+
+    def __init__(self):
+        super(DummyAdapter2, self).__init__()
+
+    @staticmethod
+    def get_view_model():
+        return DummyModel
+
+    def get_form_class(self):
+        return DummyAdapter2Form
+
+    def get_output(self):
+        return [DummyDataTypeIndex]
+
+    def get_required_memory_size(self, view_model):
         """
         Return the required memory to run this algorithm.
         """
         # Don't know how much memory is needed.
         return -1
-    
-    def get_required_disk_size(self, **kwargs):
+
+    def get_required_disk_size(self, view_model):
         """
         Returns the required disk size to be able to run the adapter.
         """
         return 0
 
-    def get_input_tree(self):
+    def launch(self, view_model):
         """
-        Describes inputs and outputs of the launch method.
-        """
-        return None
+        Mimics launching with a long delay
 
-    def get_output(self):
+        :param test2: a dummy parameter
         """
-        Describes the outputs of the launch method.
-        """
-        return [DataType]
-
-
-    def launch(self):
-        """
-        Saves in the db the list of entities passed to the constructor.
-        """
-        return self.list_of_entities_to_store
-    
-    
-    
-    
+        sleep(15)
+        test_var = 1
+        int(test_var)

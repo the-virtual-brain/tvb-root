@@ -99,7 +99,7 @@ class _PhaseSpace(object):
             trajs[step + 1, :] = states
 
         if numpy.isnan(trajs).any():
-            self.log.warn("NaN in trajectories")
+            self.log.warning("NaN in trajectories")
         return trajs
 
 

@@ -39,7 +39,7 @@ from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestModel
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form, DummyModel
 from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED, STATUS_STARTED
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
@@ -144,14 +144,14 @@ class TestFlowController(BaseControllersTest):
 
     def test_get_simple_adapter_interface(self, test_adapter_factory):
         algo = test_adapter_factory()
-        form = TestAdapter1Form()
-        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
+        form = DummyAdapter1Form()
+        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.dummy_adapter1', 'DummyAdapter1')
         adapter.submit_form(form)
         result = self.flow_c.get_simple_adapter_interface(algo.id)
         expected_interface = adapter.get_form()
         found_form = result['adapter_form']['adapter_form']
         assert isinstance(result['adapter_form'], dict)
-        assert isinstance(found_form, TestAdapter1Form)
+        assert isinstance(found_form, DummyAdapter1Form)
         assert found_form.test1_val1.value == expected_interface.test1_val1.value
         assert found_form.test1_val2.value == expected_interface.test1_val2.value
 
@@ -190,8 +190,8 @@ class TestFlowController(BaseControllersTest):
             assert operation is None
 
     def _asynch_launch_simple_op(self):
-        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
-        view_model = TestModel()
+        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.dummy_adapter1', 'DummyAdapter1')
+        view_model = DummyModel()
         view_model.test1_val1 = 5
         view_model.test1_val2 = 6
         algo = adapter.stored_adapter

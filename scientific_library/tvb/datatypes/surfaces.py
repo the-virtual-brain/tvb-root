@@ -82,7 +82,7 @@ class ValidationResult(object):
 
     def add_warning(self, message, data):
         self.warnings.append((message, data))
-        self.log.warn(message)
+        self.log.warning(message)
         if data:
             self.log.debug(data)
 

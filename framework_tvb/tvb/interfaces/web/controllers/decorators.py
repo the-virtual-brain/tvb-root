@@ -167,7 +167,7 @@ def handle_error(redirect):
                     raise
                 else:
                     log = get_logger(_LOGGER_NAME)
-                    log.warn('Redirect converted to error: ' + str(ex))
+                    log.warning('Redirect converted to error: ' + str(ex))
                     # should we do this? Are browsers following redirects in ajax?
                     raise cherrypy.HTTPError(500, str(ex))
 

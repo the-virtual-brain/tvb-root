@@ -214,7 +214,7 @@ class NIFTIImporter(ABCUploader):
 
             self.log.info("Imported RM with values in interval [%d - %d]" % (data.min(), data.max()))
             if not_matched:
-                self.log.warn("Not matched regions will be considered background: %s" % not_matched)
+                self.log.warning("Not matched regions will be considered background: %s" % not_matched)
                 if not apply_corrections:
                     raise ValidationException("Not matched regions were identified %s" % not_matched)
 

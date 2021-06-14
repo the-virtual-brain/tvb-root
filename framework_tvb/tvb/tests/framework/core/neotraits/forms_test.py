@@ -41,7 +41,7 @@ from tvb.core.neotraits.forms import TraitUploadField, StrField, FloatField, Int
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.storage.storage_interface import StorageInterface
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -288,7 +288,7 @@ class TestForms(BaseTestCase):
         assert hidden_field.label == '', "Hidden field should have empty label!"
 
     def test_form_field(self):
-        form_field = FormField(TestAdapter1Form, self.name)
+        form_field = FormField(DummyAdapter1Form, self.name)
 
         test_val1 = 'test1_val1'
         test_val2 = 'test1_val2'
@@ -301,7 +301,7 @@ class TestForms(BaseTestCase):
             "test1_val2 was not set correctly set on Form!"
 
     def test_form(self):
-        form = TestAdapter1Form()
+        form = DummyAdapter1Form()
 
         test_val1 = 'test1_val1'
         test_val2 = 'test1_val2'
