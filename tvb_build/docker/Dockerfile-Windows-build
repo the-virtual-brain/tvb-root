@@ -21,6 +21,7 @@ RUN activate tvb-run && pip install --upgrade pip
 RUN activate tvb-run && pip install certifi
 RUN activate tvb-run && pip install h5py==2.10 formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk
 RUN activate tvb-run && pip install typing tvb-gdist BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore==0.6.0
+RUN activate tvb-run && pip install autopep8
 
 # Download and install tvb data
 ADD https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 C:\\TEMP\\tvb_data.zip
