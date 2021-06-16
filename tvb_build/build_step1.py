@@ -242,5 +242,5 @@ if __name__ == '__main__':
         branch = sys.argv[1]
         if branch.startswith("origin/"):
             branch = branch.replace("origin/","")
-    # ensure_tvb_current_revision(branch)
+    ensure_tvb_current_revision(branch)
     build_step1()

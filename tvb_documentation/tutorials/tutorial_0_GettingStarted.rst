@@ -4,9 +4,8 @@
 Getting Started
 ===============
 
-First things first. Please follow `this link
-<https://zenodo.org/record/4263723#.YL9x4jaA7t0>`_ to download *tvb-data*
-and `this second link
+First things first. We are going to use *tvb-data* which is present within the distribution
+so it can be used directly from there. Other than that, please follow `this link
 <https://www.thevirtualbrain.org/tvb/zwei/client-area/public?_ga=2.222814555.1504534223.1522695590-1355432300.1522695590#>`_ to download the *ModelingEpilepsy.zip (3)* project.
 
 Objectives
@@ -59,12 +58,12 @@ can always work with the default account *admin*.
 Normally when you start TVB you should have the *Default Project* from *tvb_data* already imported.
 If you don't have it, go to step 4 to see how you can import a new project.
 
-1. Go to *Projects > List of all projects*.
+1. Go to *Project > List of all projects*.
 
 2. On the right column, bottom corner, click on *Create new project*.
 
 .. figure:: figures/Projects_ListOfAllProjects1.png
-   :alt: Click on Create new project
+   :alt: Click on Save Changes
    :scale: 30%
 
 3. Choose a project name (e.g. *NewProject*) and optionally add a description as well.
@@ -87,7 +86,14 @@ If you don't have it, go to step 4 to see how you can import a new project.
    :alt: Click on Import project structure
    :scale: 30%
 
-5. Select one of the projects (e.g. ModelingEpilepsy.zip). Click on *Upload*.
+5. Select one of the projects (e.g. ModelingEpilepsy.zip). You select a project by clicking
+on the star icon.
+
+.. figure:: figures/Projects_SelectCurrentProject.png
+   :alt: Select Current Project
+   :scale: 30%
+
+Click on *Upload*.
 
 .. figure:: figures/Projects_ImportOverlay.png
    :alt: Click on Select files
@@ -126,7 +132,7 @@ Importing A Connectivity
 ------------------------
 
 1. Assuming that you are working in the previously created project, upload a Connectivity in
-   a zip file. Go to *Projects > Data structure*. Click on *Upload Data*. An
+   a zip file. Go to *Projects > Data structure*. Click on *Upload*. An
    overlay with the current supported formats will appear. 
 
 2. Select *Connectivity ZIP*.
@@ -156,7 +162,7 @@ Link And Share
 2. In the *metadata overlay*, go to the tab *Links*. You’ll see a list with all
    your projects except the current one.
 
-3. Link this datatype (connectivity) with the project you’ll share.
+3. Link this datatype (connectivity) with *SecondNewProject*.
 
 .. figure:: figures/LinkAndShare_LinksTab.png
    :alt: Links tab.
@@ -164,7 +170,7 @@ Link And Share
 
 4. Go to *Project > List of all projects*.
 
-5. Switch to the project you shared your datatype (connectivity) with.
+5. Switch to *SecondNewProject*.
 
 6. Then at *Project > Data Structure* you should see
    the datatype (connectivity) that you shared (the name is written in italics).
@@ -204,7 +210,7 @@ Export and Read Datatype
 5. If you wish to download not just the time series file, but the linked datatypes as well,
    choose the *TVB Format with links* option.
 
-.. figure:: figures/LinkAndShare_LinkedProject.png
+.. figure:: figures/ExportDatatype.png
    :alt: Export with or without links
    :scale: 30%
 
