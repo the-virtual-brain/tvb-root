@@ -17,15 +17,11 @@ Objectives
 
 This tutorial presents the basic anatomy of a brain network model at the region
 level using The Virtual Brain’s (TVB’s) graphical interface. You are not
-expected to launch all the simulations. However, following these steps you
-should be able to reproduce the results from the simulations in the project
-BuildingYourOwnBrainNetworkModel.
+expected to launch all the simulations.
 
-In this tutorial, all the data have already been generated. You can download the 
-BuildingYourOwnBrainNetworkModel.zip file in the `TVB sharing area
-<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_. We’ll only go through
-the necessary steps required to reproduce some simulations. You can always
-start over, click along and/or try to change parameters.
+We will be using the Default Project that should be imported when you start TVB.
+We’ll only go through the necessary steps required to reproduce some simulations.
+You can always start over, click along and/or try to change parameters.
 
 
 -------------------
@@ -40,8 +36,7 @@ configurable object in TVB:
 - *Model*  or *Local population model*, which is, at its core, a set of
   differential equations describing the local neuronal dynamics;
 
-- *Connectivity*, represents the large scale structural connectivity of the brain, ie
-   white-matter tracts;
+- *Connectivity*, represents the large scale structural connectivity of the brain, i.e. white-matter tracts;
 
 - *Long range Coupling*, is a function that is used to join the local dynamics at distinct
    locations over the connections described in *Connectivity*;
@@ -49,12 +44,11 @@ configurable object in TVB:
 - *Integrator*, is the integration scheme that will be applied to the coupled set
    of differential equations;
 
-- *Monitors*, one or more *Monitors* can be attached to a simulation, they act to record the
+- *Monitors*, one or more *Monitors* can be attached to a simulation, their role is to record the
    output data.
 
 
-In this example, *AnatomyOfARegionSimulation\_a*, we will change the
-default parameters and configure some visualizers on the right column to
+In this example, we will change the default parameters to
 have a quick idea of some properties of the simulated data.
 
 1. Go to the simulator page.
@@ -63,35 +57,36 @@ have a quick idea of some properties of the simulated data.
    :alt: TVB’s Simulator page
    :scale: 30%
 
+   You can move through the fragments by clicking on the *Next* and *Previous* buttons.
 
-2. *Connectivity*: Define some structure for your network. Here, we’ll rely on **TVB’s
+2. *Connectivity*: define some structure for your network. Here, we’ll rely on **TVB’s
    default matrix.**
 
-3. Set a *Long range coupling* function. For our present purposes, we happen to know that for
+3. *Conduction speed:* alter the speed of signal propagation through the network to **4 mm/ms**.
+
+4. Set a *Long range coupling* function. For our present purposes, we happen to know that for
    the parameters we will use through TVB’s default *Connectivity* matrix, a **linear**
    function with a slope of :math:`\mathbf{a=0.0042}` is a reasonable
    thing to use.
 
-4. *Conduction speed:* Alter the speed of signal propagation through the network to **4 mm/ms**.
-
-5. *Local dynamics:* Then define a *Model* for the local dynamics. Here we’ll use the **generic 2
+5. *Local dynamics:* then define a *Model* for the local dynamics. Here we’ll use the **generic 2
    dimensional oscillator**  with the parameters shown in the following table.
 
 =================   =======
 Model parameter     Value
 -----------------   -------
+  :math:`\tau`      1.25
+  :math:`I_ext`     0.0
   :math:`a`         1.05
   :math:`b`         -1.0
-  :math:`c`         0
+  :math:`c`         0.0
   :math:`d`         0.1
-  :math:`e`         0
+  :math:`e`         0.0
   :math:`f`         0.33333 
-  :math:`g`         1
-  :math:`I`         0
-  :math:`\alpha`    1
+  :math:`g`         1.0
+  :math:`\alpha`    1.0
   :math:`\beta`     0.2
-  :math:`\gamma`    -1
-  :math:`\tau`      1.25
+  :math:`\gamma`    -1.0
 =================   =======
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_Model.png
@@ -100,31 +95,25 @@ Model parameter     Value
 
 
 6. Now that we’ve defined our structure and dynamics we need to select
-   an integration scheme. We’ll use **HeunDeterministic**. The most
+   an integration scheme. We’ll use **Heun**. The most
    important thing here is to use a step size that is small enough for
    the integration to be numerically stable. Here, we chose a value of
    **dt = 0.1 ms**.
 
 7. Select the **Temporal Average** monitor. It averages over a time window of
-   length *sampling period* returning one time point every period. It also, by
-   default, only returns those state-variables flagged in the *Models*
-   definition as *Variables watched by Monitors*. For our example the
+   length *sampling period* returning one time point every period. For our example the
    *Monitor's sampling period* is **1 ms**.
 
-Although there are Monitors which apply a biophysical measurement
+Although there are monitors which apply a biophysical measurement
 process to the simulated neural activity, such as EEG, MEG, SEEG, etc.,
 here we’ll select only one simple monitor just to show the idea. The Raw
 Monitor takes no arguments and simply returns all the simulated data.
 
 8. Provide the *simulation length*. Here we’ll use the default value of **1000 ms**.
 
-9. Before launching the simulation, configure a set of *Visualizers* and/or
-   *Analyzers* by clicking on *Configure*, selecting the what you want to see
-   and saving your choices. These windows will enable you to have a glimpse of
-   the results as soon as the simulation ends.
+9. Choose a simulation name. In this example, we chose *AnatomyOfARegionSimulation\_a*.
 
-10. Enter a name for the current simulation (e.g,
-    *AnatomyOfARegionSimulation\_a*) and click on |arrow|.
+10. Click on the *Launch* button.
 
 
 -------------------
@@ -132,9 +121,9 @@ Monitor takes no arguments and simply returns all the simulated data.
 Looking at the Results
 ----------------------
 
-#. Go to *Projects > operations* dashboard.
+1. Go to *Projects > Operations* dashboard.
 
-#. Click on the icon of the time-series |tr|. From the metadata
+2. Click on the icon of the time-series |tr|. From the metadata
    overlay’s visualizers tab, launch the *Animated Time Series Visualizer*.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_AnimatedTimeSeries.png
@@ -151,32 +140,20 @@ if we were to set the initial conditions exactly to the values corresponding to
 that fixed point there would be no such initial transient (we will see how to
 achieve that later on).
 
-
-
-#. Go back to the simulator page and check the Fourier spectrum. Select
-   a linear scale on the Y axis. We see that the intrinsic frequency of
-   the oscillations is set at about 11 Hz.
-
-.. figure:: figures/BuildingYourOwnBrainNetworkModel_Fourier.png
-   :alt: Fourier spectra of the time-series from *AnatomyOfARegionSimulation\_a*
-   :scale: 30% 
-
-
-
-#. Now let’s have a look at a second simulation, which has the same
+3. Now let’s have a look at a second simulation, which has the same
    parameters as *AnatomyOfARegionSimulation\_a* except that the
    coupling strength has been increased by an order of magnitude. Hence,
    the slope of the linear coupling function is
    :math:`\mathbf{a=0.042}`.
 
-#. To make things easy, we copy the first simulation by clicking on |pen| on the top right
+4. To make things easy, we copy the first simulation by clicking on |pen| on the top right
    corner of a simulation tab. From the menu you can get a copy, edit
    the name the simulation or delete it. 
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_CopyASimulation.png
-   :scale: 80% 
+   :scale: 50%
 
-3. Change the name of the new simulation (e.g.,
+5. Change the name of the new simulation (e.g.,
    *AnatomyOfARegionSimulation\_b* ) and set the coupling strength to
    the value in step 1. Launch the simulation.
 
@@ -191,27 +168,60 @@ see that the system exhibits self-sustained oscillations.
 A frequent question is at which value of coupling strength this
 “bifurcation” occurs. Well, we can easily set up a parameter search by
 defining a range of values that will be explored. We’ll see how to do
-this in the next section.
+this in the section after the next one.
+
+-----------------------------
+
+Analyze the simulation results
+--------------------------------
+
+1. Go to the **Analysis** page. Here you are going to see a list of the basic analyzers.
+
+.. figure:: figures/BuildingYourOwnBrainNetworkModel_Analyzers.png
+   :alt: List of Analyzers
+   :scale: 30%
+
+2. Click on **Fourier Spectral Analysis**.
+
+3. Launch the analyzer with the default parameters.
+
+4. Look at the results using the **Fourier Visualizer**.
+
+.. figure:: figures/BuildingYourOwnBrainNetworkModel_Fourier.png
+   :alt: Fourier Visualizer
+   :scale: 30%
 
 -------------------
 
 Parameter Space Exploration (PSE)
 ---------------------------------
 
-TVB will launch a simulation for every value. The example is set up in
+A PSE simulation means that TVB will launch a simulation for every value.
+
+1. Copy the **AnatomyOfARegionSimulation_b** and name the new simulation
 *AnatomyOfARegionSimulation\_pse*.
 
-#. In *Long range coupling function*, under **a**, click on |expand|. Set the range between
+2. Set the *simulation length* to **2000 ms** and launch the simulations.
+
+3. Click on the **Setup PSE** button.
+
+4. Select **Conduction_Speed** as **PSE param1** and **Model.A** as **PSE param2**.
+Click on **Next**.
+
+5. For *Conduction_Speed* set the range between :math:`\mathbf{1-10}`
+   and the step to **1 mm/ms**.
+
+6. For **Model.A** set the range between
    :math:`\mathbf{0.012 \text{ and } 0.042}` and the step to
    :math:`\mathbf{0.002}`.
 
-#. Do the same under *conduction speed*, setting the range between :math:`\mathbf{1-10}`
-   and the step to **1 mm/ms**.
+7. Click on the **Launch PSE** button.
 
-#. Set the *simulation length* to **2000 ms** and launch the simulations.
+.. figure:: figures/BuildingYourOwnBrainNetworkModel_PSESettings.png
+   :alt: PSE Settings
+   :scale: 30%
 
-
-All the 150 simulations are presented as a discrete 2D map or a continous
+All the 135 simulations are presented as a discrete 2D map or a continous
 pseudocolor map.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_PSEDiscrete.png
@@ -220,7 +230,7 @@ pseudocolor map.
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_PSEContinuous.png
    :scale: 30% 
 
-These results are those presented in Ghosh_et_al_ and Knock_et_al_.
+These results are similar to those presented in Ghosh_et_al_ and Knock_et_al_.
 
 -------------------
 
@@ -233,15 +243,15 @@ To overcome this issue we have a couple of alternatives. First, we could narrow
 the range of the state variables around the values of a fixed point. How can we
 know this value?
 
-#. Clik on |burst_menu| *> Phase plane*, you’ll be redirected to a new working area.
+1. Clik on |burst_menu| *> Phase plane*, you’ll be redirected to a new working area.
 
-In this area there’s a an interactive tool, the *Phase Plane*, which allows you to
+In this area there’s an interactive tool, the *Phase Plane*, which allows you to
 understand the local dynamics, that is the dynamics of a single isolated
 node, by observing how the model parameters change its phase plane. 
 
 2. Reset the same parameters as in the table above, click on any point of the
    phase plane. A trajectory will be drawn. We see that the fixed point is
-   approx (V, W) = (1.5, -0.6)
+   approx (V, W) = (0.0, 2.75)
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_PhasePlane.png
    :scale: 40% 
@@ -260,19 +270,15 @@ should remain unchanged (e.g., the number of nodes, conduction speed,
 the recorded state-variables, integration time-step size and selected
 monitors should be the same.)
 
--  In *AnatomyOfARegionSimulation\_a*, set :math:`\mathbf{a=0.042}` in
-   the *long-range coupling function*. Then, click on |branch|.
-
-*AnatomyOfARegionSimulation\_a\_branch1* is an example of this
-functionality, using the results from *AnatomyOfARegionSimulation\_a* as
-initial conditions.
+-  In *AnatomyOfARegionSimulation\_a* click on |pen|, set :math:`\mathbf{a=0.042}` in
+   the *long-range coupling function*. Then, click on the **Branch** button.
 
 -------------------
 
 Stochastic Simulations
 ----------------------
 
-As a last point, we will show the basics of running a simulation driven
+As a next step, we will show the basics of running a simulation driven
 by noise (i.e., using a stochastic integration scheme). Here we’ll also
 use a region level simulation, but the considerations for surface
 simulations are the same. In a stochastic integration scheme *Noise* enters
@@ -297,25 +303,19 @@ greater than zero producing coloured noise.
 
 
 1. After configuring a model similar to the one presented in
-   *AnatomyOfARegionSimulation\_b*, we select **HeunStochastic** as our
+   *AnatomyOfARegionSimulation\_b*, we select **Stochastic Heun** as our
    integration scheme.
 
-2. Set the values for :math:`\boldsymbol{\tau=0}` and **seed=42**.
+2. Set the values for :math:`\boldsymbol{\tau=0}` and **noise_seed=42**.
 
 3. Set the noise dispersion, :math:`\mathbf{D=0.005}`
+
+.. figure:: figures/BuildingYourOwnBrainNetworkModel_IntegratorSettings.png
+   :scale: 30%
 
 *AnatomyOfARegionSimulation\_b* and
 *AnatomyOfARegionSimulation\_stochastic* have the same parameters but
 the latter has an extra background noisy input.
-
-Observe the differences using the *Spectrogram of the Wavelet Transform*.
-
-.. figure:: figures/BuildingYourOwnBrainNetworkModel_WaveletDeterministic.png
-   :scale: 30% 
-
-.. figure:: figures/BuildingYourOwnBrainNetworkModel_WaveletStochastic.png
-   :scale: 30% 
-
 
 -------------------
 
@@ -324,12 +324,12 @@ Modeling the Neural Activity on the Folded Cortex
 
 This extends the basic region simulation to include the folded cortical
 surface to the anatomical structure on which the simulation is based. If
-you haven’t read or followed was written above you probably should do
+you haven’t read or followed the information written above, you probably should do
 that now as here we only really discuss in detail the extra components
 that are specific to a simulation on the cortical surface.
 
 In addition to the components discussed for a region simulation here we
-introduce two major components, that is:
+introduce three major components, that is:
 
 -  *Cortical Surface*, which is a mesh surface defining a 2d representation of the
    convoluted cortical surface embedded in 3d space.
@@ -340,46 +340,45 @@ introduce two major components, that is:
 -  *Region Mapping*, a breakup that defines to which anatomical region in the *Connectivity* each
    vertex of the mesh belongs to.
 
-#. The *connectivity*, *speed*, *coupling strength* and and its parameters are the same described in
-   *AnatomyOfARegionSimulation\_b* and Table [tab:modeltab].
+1. The *connectivity*, *speed*, *coupling strength* and and its parameters are the same described in
+   *AnatomyOfARegionSimulation\_b*].
 
-#. Select the **TVB’s default Cortical Surface**, which has 16384 nodes.
+2. Select the **TVB’s default Cortical Surface**, which has 16384 nodes.
 
-#. We rely on **TVB’s default Local Connectivity**.
+3. We rely on **TVB’s default Local Connectivity**.
 
-#. Rescale the *Local Connectivity* with *Local coupling strength* equal to :math:`\mathbf{0.1}`.
+4. Rescale the *Local Connectivity* with *Local coupling strength* equal to :math:`\mathbf{0.1}`.
 
-#. For the integration we’ll use **HeunDeterministic**. Here,
+5. For the integration we’ll use **Heun**. Here,
    integration time step size is the default:
    :math:`\mathbf{dt=0.1220703125}`\ **ms**.
 
 The first significant thing to note about surface simulations is that *Monitors*
-certain make a lot more sense in this context than they do at the region
-level, and so we’ll introduce a couple new *Monitors* here.
+certainly make a lot more sense in this context than they do at the region
+level, and so we’ll introduce a couple of new *Monitors* here.
 
 
 6. The first of these new *Monitors* is called **SpatialAverage**. To select
-   several monitors press the key Command or Control while you select
-   them.
+   several monitors just make sure you check the right boxes.
 
 7. The second of these new monitors, which is an instantiation of a
    biophysical measurement process, is called **EEG**. The third will be
-   the **Temporal Average**.
+   the already known **Temporal Average** monitor.
 
-8. The *Monitors period* is the value **1.953125 ms** which is equivalent to a
+8. The *Sampling period (ms)* for all three monitors is **1.953125 ms** which is equivalent to a
    sampling frequency of 256 Hz.
 
-9. Lastly, the *simulation length* is **500 ms**.
+9. The *simulation length* is **500 ms**.
 
-10. Run the simulation.
+10. Lastly, the simulation name is *AnatomyOfASurfaceSimulation* .
 
-11. Once the simulation is finished, without changing any parameters,
-    click on |branch|.
+11. Run the simulation.
 
-These simulations are *AnatomyOfASurfaceSimulation* and
-*AnatomyOfASurfaceSimulation\_branch1*.
+12. Once the simulation is finished, without changing any parameters,
+    launch a branch from it with the name
+    *AnatomyOfASurfaceSimulation\_branch1*.
 
-The first of these new *Monitors*, will average over the space (nodes) of the
+The first of these new *Monitors* that we mentioned will average over the space (nodes) of the
 simulation. The basic mechanism is general, in the sense that the nodes
 can be broken up into any non-overlapping, complete, set of sets. In
 other words, each node can only be counted in one collection and all
@@ -387,14 +386,14 @@ nodes must be in one collection.
 
 The second of these new Monitors, *EEG*, hopefully also unsurprisingly,
 returns the EEG signals resulting from the simulated neural dynamics
-using in the process a lead-field or *Projection Matrix*.
+using, in the process, a lead-field or *Projection Matrix*.
 
 EEG signals measured on the scalp depend strongly on the location and
 orientation of the underlying neural sources, which is why this monitor
 is more realistic and useful in the case of surface based simulations –
 where the simulation is run on the explicit geometry of the cortex,
 which can potentially have been obtained from a specific individual’s
-brain. In addition a simulation being built on the specific anatomical
+brain. In addition, a simulation being built on the specific anatomical
 structure of an individual subject, the specific electrodes used in
 experimental work can also be incorporated, providing a link between
 simulation and experiment. 
@@ -410,16 +409,16 @@ Define Your Own Local Connectivity
 The regularized mesh can support, in principle, arbitrary forms for the local
 connectivity kernel. Coupled across the realistic surface geometry this allows
 for a detailed investigation of the local connectivity’s effects on larger
-scale dynamics modelled by neural fields.
+scale dynamics modeled by neural fields.
 
-#. Go to *Connectivity > Local Connectivity*. In this area we’ll build two
+1. Go to *Connectivity > Local Connectivity*. In this area we’ll build two
    different kernels: a Gaussian and a Mexican Hat kernel. We’ll start with the
    Gaussian kernel.
 
-#. Select the *equation defining the spatial profile* of your *local
+2. Select the *equation defining the spatial profile* of your *local
    connectivity*. Here, we’ll set **sigma** to **15 mm**.
 
-#. Ideally, you want the function to have essentially dropped to zero by the
+3. Ideally, you want the function to have essentially dropped to zero by the
    **cutoff distance**. The *cutoff distance*, that is, the distance up to
    which a given node is connected to its neighbourhood (Spiegler_et_al_,
    Sanz_Leon_et_al_) is set to **40 mm**.
