@@ -39,14 +39,12 @@ same TVB installation.
 .. figure:: figures/Users_AddNewUser.png
    :scale: 30%
 
-
 4. You’ll receive a notification email.
 
 5. Make sure the new user has been validated.
 
 .. figure:: figures/Users_ValidateNewUser.png
-   :scale: 30%
-
+   :scale: 40%
 
 6. Login with the Admin account.
 
@@ -69,7 +67,6 @@ If you don't have it, go to step 4 to see how you can import a new project.
    :alt: Click on Create new project
    :scale: 30%
 
-
 3. Choose a project name (e.g. *NewProject*) and optionally add a description as well.
    On the right column, bottom corner, click on *Save Changes* when you are done.
 
@@ -77,13 +74,11 @@ If you don't have it, go to step 4 to see how you can import a new project.
    :alt: Click on Save Changes
    :scale: 30%
 
-
    The new project will appear in the list of all projects.
 
 .. figure:: figures/Projects_ListOfAllProjects2.png
    :alt: See the newly created project
    :scale: 30%
-
 
 4. If you wish to import a project, on the right column, bottom corner,
    click on *Import project structure*.
@@ -91,7 +86,6 @@ If you don't have it, go to step 4 to see how you can import a new project.
 .. figure:: figures/Projects_Import.png
    :alt: Click on Import project structure
    :scale: 30%
-
 
 5. Select one of the projects (e.g. ModelingEpilepsy.zip). Click on *Upload*.
 
@@ -105,13 +99,11 @@ If you don't have it, go to step 4 to see how you can import a new project.
    :alt: Be patient, it will take a few minutes.
    :scale: 30%
 
-
 7. You can now see the project on the *List of all projects*.
 
 .. figure:: figures/Projects_Done.png
    :alt: The imported project can be seen in the list of all projects.
    :scale: 30%
-
 
 8. If you wish to export a project, click on the pencil icon located left to the project name.
 
@@ -145,7 +137,6 @@ Importing A Connectivity
    :alt: Supported data formats.
    :scale: 30%
 
-
 4. Add a personalized tag to this newly created datatype (e.g.
    *conn\_96*).
 
@@ -176,11 +167,11 @@ Link And Share
 5. Switch to the project you shared your datatype (connectivity) with.
 
 6. Then at *Project > Data Structure* you should see
-the datatype (connectivity) that you shared (the name is written in italics).
+   the datatype (connectivity) that you shared (the name is written in italics).
 
 .. figure:: figures/LinkAndShare_LinkedDatatype.png
    :alt: You can see the datatype that you shared from NewProject.
-   :scale: 30%
+   :scale: 60%
 
 7. Go to *Project > List of all projects*.
 
@@ -211,13 +202,13 @@ Export and Read Datatype
 4. From the overlay, *Export* tab, download only the time series h5 file by clicking on *TVB format* (h5).
 
 5. If you wish to download not just the time series file, but the linked datatypes as well,
-choose the *TVB Format with links* option.
+   choose the *TVB Format with links* option.
 
 .. figure:: figures/LinkAndShare_LinkedProject.png
    :alt: Export with or without links
    :scale: 30%
 
-#. Rename the file if you want (e.g. *LinkAndShare\_TimeSeriesRegion*).
+6. Rename the file if you want (e.g. *LinkAndShare\_TimeSeriesRegion*).
 
 From an **ipython** shell you can follow the commands presented below. 
 You can also use a **ipython notebook** by going into *TVB_Distribution/bin/* and 
