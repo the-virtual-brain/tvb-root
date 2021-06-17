@@ -274,3 +274,4 @@ class StandAloneClient(BackendClient):
                 return stopped
 
             LOGGER.info("Running thread was not found for operation {}".format(operation_id))
+            return False

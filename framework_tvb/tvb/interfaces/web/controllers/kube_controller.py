@@ -33,18 +33,11 @@
 '''
 import cherrypy
 from tvb.core.services.backend_clients.standalone_client import StandAloneClient, LOCKS_QUEUE
-from tvb.core.services.cache_service import cache
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_kube_user
 
 
 class KubeController(BaseController):
-    @cherrypy.expose
-    @check_kube_user
-    def clear_cache(self):
-        self.logger.info("Received a request to clear cache.")
-        cache.clear_cache(False)
-
     @cherrypy.expose
     @check_kube_user
     def stop_operation_process(self, operation_id):
