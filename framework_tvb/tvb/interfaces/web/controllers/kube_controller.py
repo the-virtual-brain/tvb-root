@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -28,23 +28,28 @@
 #
 #
 
-"""
-.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
-.. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
-"""
+'''
+.. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
+'''
+import cherrypy
+from tvb.core.services.backend_clients.standalone_client import StandAloneClient, LOCKS_QUEUE
+from tvb.interfaces.web.controllers.base_controller import BaseController
+from tvb.interfaces.web.controllers.decorators import check_kube_user
 
-from tvb.core.entities.storage import dao
-from tvb.storage.storage_interface import StorageInterface
 
+class KubeController(BaseController):
+    @cherrypy.expose
+    @check_kube_user
+    def stop_operation_process(self, operation_id):
+        self.logger.info("Received a request to stop process for operation {}".format(operation_id))
+        StandAloneClient.stop_operation_process(int(operation_id))
 
-class ABCRemover(object):
-    
-    def __init__(self, handled_datatype):
-        self.storage_interface = StorageInterface()
-        self.handled_datatype = handled_datatype
-
-    def remove_datatype(self, skip_validation=False):
-        """
-        Perform basic operation, should overwrite in specific implementations.
-        """
-        dao.remove_entity(self.handled_datatype.__class__, self.handled_datatype.id)
+    @cherrypy.expose
+    @check_kube_user
+    def start_operation_pod(self, operation_id):
+        self.logger.info("Received a request to start operation {}".format(operation_id))
+        if LOCKS_QUEUE.qsize() == 0:
+            self.logger.info("Cannot start operation {} because queue is full.".format(operation_id))
+            return
+        LOCKS_QUEUE.get()
+        StandAloneClient.start_operation(operation_id)

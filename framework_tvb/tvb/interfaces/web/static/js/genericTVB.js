@@ -137,7 +137,7 @@ function fireOnClick(redirectElem) {
 // ---------- Function on the top left call-out
 function updateCallOutProject() {
     doAjaxCall({
-        async: false,
+        async: true,
         type: 'GET',
         url: "/project/generate_call_out_control/",
         success: function (r) {

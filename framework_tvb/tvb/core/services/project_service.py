@@ -41,7 +41,6 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.filters.factory import StaticFiltersFactory
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
@@ -199,18 +198,23 @@ class ProjectService:
                 result["burst_name"] = burst.name if burst else '-'
                 result["count"] = one_op[2]
                 result["gid"] = one_op[13]
-                if one_op[3] is not None and one_op[3]:
+                operation_group_id = one_op[3]
+                if operation_group_id is not None and operation_group_id:
                     try:
-                        operation_group = dao.get_generic_entity(OperationGroup, one_op[3])[0]
+                        operation_group = dao.get_generic_entity(OperationGroup, operation_group_id)[0]
                         result["group"] = operation_group.name
                         result["group"] = result["group"].replace("_", " ")
                         result["operation_group_id"] = operation_group.id
-                        datatype_group = dao.get_datatypegroup_by_op_group_id(one_op[3])
+                        datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
                         result["datatype_group_gid"] = datatype_group.gid if datatype_group is not None else None
                         result["gid"] = operation_group.gid
                         # Filter only viewers for current DataTypeGroup entity:
-                        result["view_groups"] = AlgorithmService().get_visualizers_for_group(datatype_group.gid) \
-                            if datatype_group is not None else None
+
+                        if datatype_group is None:
+                            view_groups = None
+                        else:
+                            view_groups = AlgorithmService().get_visualizers_for_group(datatype_group.gid)
+                        result["view_groups"] = view_groups
                     except Exception:
                         self.logger.exception("We will ignore group on entity:" + str(one_op))
                         result["datatype_group_gid"] = None
@@ -239,8 +243,7 @@ class ProjectService:
                 result["visible"] = True if one_op[11] > 0 else False
                 result['operation_tag'] = one_op[12]
                 if not result['group']:
-                    datatype_results = dao.get_results_for_operation(result['id'])
-                    result['results'] = [dt for dt in datatype_results]
+                    result['results'] = dao.get_results_for_operation(result['id'])
                 else:
                     result['results'] = None
                 operations.append(result)

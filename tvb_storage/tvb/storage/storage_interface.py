@@ -304,6 +304,9 @@ class StorageInterface:
     def ends_with_tvb_storage_file_extension(self, file):
         return file.endswith(self.TVB_STORAGE_FILE_EXTENSION)
 
+    def is_in_usage(self, project_folder):
+        return self.data_encryption_handler.is_in_usage(project_folder)
+
     def rename_project(self, current_proj_name, new_name):
         project_folder = self.get_project_folder(current_proj_name)
         if self.encryption_enabled() and not self.data_encryption_handler.is_in_usage(project_folder):

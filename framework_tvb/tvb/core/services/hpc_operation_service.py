@@ -114,7 +114,7 @@ class HPCOperationService(object):
 
     @staticmethod
     def check_operations_job():
-        operations = dao.get_operations()
+        operations = dao.get_operations_for_hpc_job()
         if operations is None or len(operations) == 0:
             return
 

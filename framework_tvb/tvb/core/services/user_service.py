@@ -44,7 +44,6 @@ from tvb.config import DEFAULT_PROJECT_GID
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR, USER_ROLES
 from tvb.core.entities.storage import dao
 from tvb.core.services import email_sender
-from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService

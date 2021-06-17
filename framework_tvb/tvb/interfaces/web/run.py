@@ -36,6 +36,8 @@ Launches the web server and configure the controllers for UI.
 import time
 
 from tvb.storage.storage_interface import StorageInterface
+from tvb.core.services.backend_clients.standalone_client import StandAloneClient
+from tvb.interfaces.web.controllers.kube_controller import KubeController
 
 STARTUP_TIC = time.time()
 
@@ -152,6 +154,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
     cherrypy.tree.mount(NoiseConfigurationController(), "/burst/noise/", config=CONFIGUER)
     cherrypy.tree.mount(HPCController(), "/hpc/", config=CONFIGUER)
+    cherrypy.tree.mount(KubeController(), "/kube/", config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 
@@ -168,6 +171,12 @@ def init_cherrypy(arguments=None):
             TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
         cherrypy.engine.housekeeper.start()
 
+    if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
+        operations_job = cherrypy.process.plugins.BackgroundTask(
+            TvbProfile.current.OPERATIONS_BACKGROUND_JOB_INTERVAL, StandAloneClient.process_queued_operations,
+            bus=cherrypy.engine)
+        operations_job.start()
+
     # HTTP Server is fired now ######
     cherrypy.engine.start()
 
@@ -178,7 +187,8 @@ def expose_rest_api():
         return
 
     if not os.path.exists(TvbProfile.current.KEYCLOAK_CONFIG):
-        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(TvbProfile.current.KEYCLOAK_CONFIG))
+        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(
+            TvbProfile.current.KEYCLOAK_CONFIG))
         return
 
     if CONFIG_EXISTS:

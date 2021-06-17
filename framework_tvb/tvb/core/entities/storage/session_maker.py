@@ -38,6 +38,7 @@ from types import FunctionType
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.pool import NullPool
 
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
@@ -53,10 +54,14 @@ LOGGER = get_logger(__name__)
 
 def build_db_engine():
     if TvbProfile.current.db.SELECTED_DB == 'postgres':
-        ### Control the pool size for PostgreSQL, otherwise we might end with multiple
-        ### concurrent Python processes failing because of too many opened connections.
-        DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, max_overflow=1,
-                                  pool_size=TvbProfile.current.db.MAX_CONNECTIONS)
+        if TvbProfile.current.db.MAX_CONNECTIONS == 0:
+            # Disable psycopg pooling if MAX_CONNECTIONS flag is set to 0. In this case we will use an external pooling tool.
+            DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, poolclass=NullPool)
+        else:
+            ### Control the pool size for PostgreSQL, otherwise we might end with multiple
+            ### concurrent Python processes failing because of too many opened connections.
+            DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, max_overflow=1,
+                                      pool_size=TvbProfile.current.db.MAX_CONNECTIONS)
     else:
         ### SqlLite does not support pool-size
         DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5)
@@ -400,4 +405,3 @@ SESSION_META_CLASS = MetaClassFactory([add_session], {'session': SessionMaker()}
 
 
 
-      

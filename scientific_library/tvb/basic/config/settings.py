@@ -258,6 +258,10 @@ class WebSettings(object):
 
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
 
+        self.OPENSHIFT_DEPLOY = manager.get_attribute(stored.KEY_OPENSHIFT_DEPLOY, False, eval)
+        self.OPENSHIFT_NAMESPACE = manager.get_attribute(stored.KEY_OPENSHIFT_NAMESPACE, "")
+        self.OPENSHIFT_APPLICATION = manager.get_attribute(stored.KEY_OPENSHIFT_APPLICATION, "")
+        self.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION = manager.get_attribute(stored.KEY_PROCESSING_OPERATIONS_APPLICATION, "")
         # Compute reference towards the current web application, valid FROM localhost
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))
@@ -335,13 +339,6 @@ class WebAdminSettings(object):
 
 
 class DBSettings(object):
-    # Overwrite number of connections to the DB.
-    # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
-    # MAX_CONNECTION default value will be used for WEB
-    # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
-    MAX_CONNECTIONS = 20
-    MAX_ASYNC_CONNECTIONS = 2
-
     # Nested transactions are not supported by all databases and not really necessary in TVB so far so
     # we don't support them yet. However when running tests we can use them to out advantage to rollback
     # any database changes between tests.
@@ -363,3 +360,10 @@ class DBSettings(object):
 
         # Upgrade/Downgrade repository
         self.DB_VERSIONING_REPO = os.path.join(current_storage, 'db_repo')
+
+        # Overwrite number of connections to the DB.
+        # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
+        # MAX_CONNECTION default value will be used for WEB
+        # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
+        self.MAX_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_CONNECTIONS, 20, int)
+        self.MAX_ASYNC_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_ASYNC_CONNECTIONS, 2, int)
