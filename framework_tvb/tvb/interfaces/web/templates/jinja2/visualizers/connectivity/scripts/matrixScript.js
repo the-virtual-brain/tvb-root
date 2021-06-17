@@ -510,7 +510,7 @@ function saveSubConnectivity(submitUrl, originalConnectivityId,  isBranch) {
     // Emulate the way browsers send checkboxes in forms.
     // They send a value only for the checked ones. All values are true
     if (isBranch){
-        data._is_branch = 'True';
+        data.is_branch = 'True';
     }
 
     doAjaxCall({ url: submitUrl, data: data });
