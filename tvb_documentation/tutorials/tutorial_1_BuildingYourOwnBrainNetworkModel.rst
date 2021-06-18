@@ -33,18 +33,18 @@ A basic simulation at the region level uses a coarse representation of the
 brain and consists of five main components, each of these components is a
 configurable object in TVB:
 
-- *Model*  or *Local population model*, which is, at its core, a set of
+- **Model**  or **Local population model**, which is, at its core, a set of
   differential equations describing the local neuronal dynamics;
 
-- *Connectivity*, represents the large scale structural connectivity of the brain, i.e. white-matter tracts;
+- **Connectivity**, represents the large scale structural connectivity of the brain, i.e. white-matter tracts;
 
-- *Long range Coupling*, is a function that is used to join the local dynamics at distinct
-   locations over the connections described in *Connectivity*;
+- **Long range Coupling**, is a function that is used to join the local dynamics at distinct
+   locations over the connections described in **Connectivity**;
 
-- *Integrator*, is the integration scheme that will be applied to the coupled set
+- **Integrator**, is the integration scheme that will be applied to the coupled set
    of differential equations;
 
-- *Monitors*, one or more *Monitors* can be attached to a simulation, their role is to record the
+- **Monitors**, one or more **Monitors** can be attached to a simulation, their role is to record the
    output data.
 
 
@@ -104,10 +104,10 @@ Model parameter     Value
    length *sampling period* returning one time point every period. For our example the
    *Monitor's sampling period* is **1 ms**.
 
-Although there are monitors which apply a biophysical measurement
-process to the simulated neural activity, such as EEG, MEG, SEEG, etc.,
-here we’ll select only one simple monitor just to show the idea. The Raw
-Monitor takes no arguments and simply returns all the simulated data.
+   Although there are monitors which apply a biophysical measurement
+   process to the simulated neural activity, such as EEG, MEG, SEEG, etc.,
+   here we’ll select only one simple monitor just to show the idea. The Raw
+   Monitor takes no arguments and simply returns all the simulated data.
 
 8. Provide the *simulation length*. Here we’ll use the default value of **1000 ms**.
 
@@ -130,15 +130,15 @@ Looking at the Results
    :alt: Time-series from *AnatomyOfARegionSimulation\_a*
    :scale: 30% 
 
-The transient large amplitude oscillatory activity at the beginning of the
-simulation is a result of the imperfectly set initial conditions.
+   The transient large amplitude oscillatory activity at the beginning of the
+   simulation is a result of the imperfectly set initial conditions.
 
-The initial history (i.e., initial conditions) is merely set by default to be
-random walks within the general range of state-variables values expected from
-the model. As the current simulation is configured with fixed point dynamics,
-if we were to set the initial conditions exactly to the values corresponding to
-that fixed point there would be no such initial transient (we will see how to
-achieve that later on).
+   The initial history (i.e., initial conditions) is merely set by default to be
+   random walks within the general range of state-variables values expected from
+   the model. As the current simulation is configured with fixed point dynamics,
+   if we were to set the initial conditions exactly to the values corresponding to
+   that fixed point there would be no such initial transient (we will see how to
+   achieve that later on).
 
 3. Now let’s have a look at a second simulation, which has the same
    parameters as *AnatomyOfARegionSimulation\_a* except that the
@@ -147,18 +147,18 @@ achieve that later on).
    :math:`\mathbf{a=0.042}`.
 
 4. To make things easy, we copy the first simulation by clicking on |pen| on the top right
-   corner of a simulation tab. From the menu you can get a copy, edit
-   the name the simulation or delete it. 
+   corner of a simulation tab. From the menu you can get a copy, edit the name of the
+   simulation, branch from it (more about this later), export it as a ZIP file or delete it.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_CopyASimulation.png
    :scale: 50%
 
 5. Change the name of the new simulation (e.g.,
    *AnatomyOfARegionSimulation\_b* ) and set the coupling strength to
-   the value in step 1. Launch the simulation.
+   the value specificed in step 3. Launch the simulation.
 
-Looking at the time series of *AnatomyOfARegionSimulation\_b*, we can
-see that the system exhibits self-sustained oscillations.
+   Looking at the time series of *AnatomyOfARegionSimulation\_b*, we can
+   see that the system exhibits self-sustained oscillations.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_AnimatedTimeSeriesOscillatory.png
    :alt: Time-series from *AnatomyOfARegionSimulation\_b*
@@ -196,12 +196,13 @@ Analyze the simulation results
 Parameter Space Exploration (PSE)
 ---------------------------------
 
-A PSE simulation means that TVB will launch a simulation for every value.
+A PSE simulation means that TVB will launch a simulation for every value from
+a range specified of one or two chosen parameters.
 
 1. Copy the **AnatomyOfARegionSimulation_b** and name the new simulation
 *AnatomyOfARegionSimulation\_pse*.
 
-2. Set the *simulation length* to **2000 ms** and launch the simulations.
+2. Set the *simulation length* to **2000 ms** and launch the simulation.
 
 3. Click on the **Setup PSE** button.
 
@@ -245,9 +246,9 @@ know this value?
 
 1. Clik on |burst_menu| *> Phase plane*, you’ll be redirected to a new working area.
 
-In this area there’s an interactive tool, the *Phase Plane*, which allows you to
-understand the local dynamics, that is the dynamics of a single isolated
-node, by observing how the model parameters change its phase plane. 
+   In this area there’s an interactive tool, the *Phase Plane*, which allows you to
+   understand the local dynamics, that is the dynamics of a single isolated
+   node, by observing how the model parameters change its phase plane.
 
 2. Reset the same parameters as in the table above, click on any point of the
    phase plane. A trajectory will be drawn. We see that the fixed point is
@@ -256,7 +257,7 @@ node, by observing how the model parameters change its phase plane.
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_PhasePlane.png
    :scale: 40% 
 
-However, there certainly is a more elegant way.
+   However, there certainly is a more elegant way.
 
 3. Set your model with fixed point dynamics and a weak coupling strength
    (e.g., *AnatomyOfARegionSimulation\_a*)
@@ -268,7 +269,7 @@ simulation as the initial history for a new simulation. The only thing
 you need to know is that the spatio-temporal structure of the network
 should remain unchanged (e.g., the number of nodes, conduction speed,
 the recorded state-variables, integration time-step size and selected
-monitors should be the same.)
+monitors should be the same).
 
 -  In *AnatomyOfARegionSimulation\_a* click on |pen|, set :math:`\mathbf{a=0.042}` in
    the *long-range coupling function*. Then, click on the **Branch** button.
@@ -430,8 +431,7 @@ scale dynamics modeled by neural fields.
 4. Name your *Local Connectivity* and save it by clicking on *Create new Local
    Connectivity* on the bottom right corner.
 
-This data structure is saved under the name
-*LocalConnectivity\_Gaussian\_zc\_40*.
+   This data structure is saved under the name *LocalConnectivity\_Gaussian\_zc\_40*.
 
 
 5. Select the *Mexican Hat equation*. Here, we changed the default parameters. See the values
@@ -452,8 +452,7 @@ cutoff distance   40 mm
 
 6. Save your new local connectivity.
 
-This data structure is saved under the name
-*LocalConnectivity\_MexicanHat\_zc\_40*.
+   This data structure is saved under the name *LocalConnectivity\_MexicanHat\_zc\_40*.
 
 Finally, we will run two more simulations using different local
 connectivity kernels.
@@ -470,9 +469,6 @@ connectivity kernels.
     **local connectivity strength** is set to **-0.001**. Run the
     simulation.
 
-These results are those of
-*SurfaceSimulation\_MexicanHatLocalConnectivity* and
-*SurfaceSimulation\_GaussianLocalConnectivity* respectively.
 
 -------------------
 
