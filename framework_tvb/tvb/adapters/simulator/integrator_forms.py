@@ -88,4 +88,5 @@ class IntegratorStochasticForm(IntegratorForm):
 
     def fill_from_trait(self, trait):
         # type: (IntegratorStochasticViewModel) -> None
+        super(IntegratorStochasticForm, self).fill_from_trait(trait)
         self.noise.data = trait.noise.__class__
