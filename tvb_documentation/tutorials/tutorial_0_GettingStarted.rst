@@ -9,14 +9,14 @@ First things first. We are going to use *tvb-data* which is present within the d
 or it can be downloaded from `here <https://zenodo.org/record/4263723#.YL9x4jaA7t0>`_.
 Other than that, please follow
 `this link <https://www.thevirtualbrain.org/tvb/zwei/client-area/public?_ga=2.222814555.1504534223.1522695590-1355432300.1522695590#>`_
-to download the *ModelingEpilepsy.zip (3)* project.
+to download the *ModelingEpilepsy.zip* project.
 
 Objectives
 ----------
 
 This tutorial presents the basic steps to upload a project, and share data with
 other users and/or link data to other TVB projects.  After this tutorial you
-should be able to import new dataset, create, import, export and delete a project and
+should be able to import a new dataset, create, import, export and delete a project and
 share your data with among your projects or with a colleague.
 
 ------------------------
@@ -89,7 +89,7 @@ If you don't have it, go to step 4 to see how you can import a new project.
    :alt: Click on Import project structure
    :scale: 30%
 
-Click on *Upload*.
+Chosing the ModelingEpilepsy.zip project and then Click on *Upload*.
 
 .. figure:: figures/Projects_ImportOverlay.png
    :alt: Click on Select files
@@ -199,7 +199,7 @@ You should be able to see the *ModelingEpilepsy* project in your other account a
 
 ------------------------
 
-Export and Read Datatype
+Export and Read a Datatype
 ---------------
 
 1. Select *ModelingEpilepsy* as your current project.
