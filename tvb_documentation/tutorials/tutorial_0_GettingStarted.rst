@@ -89,32 +89,25 @@ If you don't have it, go to step 4 to see how you can import a new project.
    :alt: Click on Import project structure
    :scale: 30%
 
-5. Select one of the projects (e.g. ModelingEpilepsy.zip). You select a project by clicking
-on the star icon.
-
-.. figure:: figures/Projects_SelectCurrentProject.png
-   :alt: Select Current Project
-   :scale: 30%
-
 Click on *Upload*.
 
 .. figure:: figures/Projects_ImportOverlay.png
    :alt: Click on Select files
    :scale: 30%
 
-6. Be patient.
+5. Be patient.
 
 .. figure:: figures/Projects_Wait.png
    :alt: Be patient, it will take a few minutes.
    :scale: 30%
 
-7. You can now see the project on the *List of all projects*.
+6. You can now see the project on the *List of all projects*.
 
 .. figure:: figures/Projects_Done.png
    :alt: The imported project can be seen in the list of all projects.
    :scale: 30%
 
-8. If you wish to export a project, click on the pencil icon located left to the project name.
+7. If you wish to export a project, click on the pencil icon located left to the project name.
 
 .. figure:: figures/Projects_PencilIcon.png
    :alt: Pencil Icon
@@ -126,8 +119,15 @@ Click on *Upload*.
    :alt: Project Properties page
    :scale: 30%
 
-9. If you wish to delete a project, you click on the *Delete* button and the project
+8. If you wish to delete a project, you click on the *Delete* button and the project
    will disappear from the list.
+
+9. Select one of the projects (e.g. ModelingEpilepsy.zip). You select a project by clicking
+   on the star icon.
+
+.. figure:: figures/Projects_SelectCurrentProject.png
+   :alt: Select Current Project
+   :scale: 30%
 
 ------------------------
 
