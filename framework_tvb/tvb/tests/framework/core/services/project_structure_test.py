@@ -33,22 +33,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
 import pytest
-import tvb_data
-from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
-from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.neocom import h5
-from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_datatype import *
-from tvb.core.entities.storage import dao
 from tvb.core.entities.filters.factory import StaticFiltersFactory
-from tvb.core.services.operation_service import OperationService
+from tvb.core.entities.load import get_filtered_datatypes
+from tvb.core.entities.model.model_datatype import *
+from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import no_matlab
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -259,33 +252,6 @@ class TestProjectStructure(TransactionalTestCase):
             assert expected.user_tag_1 == actual.user_tag_1, "Not the same user_tag_1."
             assert expected.invalid == actual.invalid, "The invalid field value is not correct."
             assert expected.is_nan == actual.is_nan, "The is_nan field value is not correct."
-
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
-    def test_get_inputs_for_operation(self):
-        """
-        Tests method get_datatype_and_datatypegroup_inputs_for_operation.
-        Verifies filters' influence over results is as expected
-        """
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        conn = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        view_model = BaseBCTModel()
-        view_model.connectivity = conn.gid
-        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        result = OperationService().fire_operation(adapter, self.test_user, self.test_project.id,
-                                                   view_model=view_model)
-
-        conn.visible = False
-        dao.store_entity(conn)
-        operation = dao.get_operation_by_id(result.id)
-
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
-                                                                                          self.relevant_filter)
-        assert len(inputs) == 0
-
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
-                                                                                          self.full_filter)
-        assert len(inputs) == 1, "Incorrect number of inputs."
-        assert conn.id == inputs[0].id, "Retrieved wrong input dataType."
 
     def test_remove_datatype(self, array_factory):
         """

@@ -36,11 +36,9 @@ Service Layer for the Project entity.
 """
 
 import formencode
-
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
-from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
@@ -56,9 +54,9 @@ from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import StructureException, ProjectServiceException
 from tvb.core.services.user_service import UserService, MEMBERS_PAGE_SIZE
 from tvb.core.utils import format_timedelta, format_bytes_human
+from tvb.core.utils import string2date, date2string
 from tvb.storage.h5.file.exceptions import FileStructureException
 from tvb.storage.storage_interface import StorageInterface
-from tvb.core.utils import string2date, date2string
 
 
 def initialize_storage():
@@ -564,7 +562,7 @@ class ProjectService:
                     vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
 
                     self.storage_interface.move_datatype_with_sync(to_project, to_project_path, new_op.id, full_path,
-                                                         vm_full_path)
+                                                                   vm_full_path)
 
                     datatype.fk_from_operation = new_op.id
                     datatype.parent_operation = new_op
@@ -783,34 +781,6 @@ class ProjectService:
         # 3. Update MetaData in DT Index DB as well.
         datatype.fill_from_generic_attributes(ga)
         dao.store_entity(datatype)
-
-    def get_datatype_and_datatypegroup_inputs_for_operation(self, operation_gid, selected_filter):
-        """
-        Returns the dataTypes that are used as input parameters for the given operation.
-        'selected_filter' - is expected to be a visibility filter.
-
-        If any dataType is part of a dataType group then the dataType group will
-        be returned instead of that dataType.
-        """
-        all_datatypes = self._review_operation_inputs(operation_gid)[0]
-        datatype_inputs = []
-        for datatype in all_datatypes:
-            if selected_filter.display_name == StaticFiltersFactory.RELEVANT_VIEW:
-                if datatype.visible:
-                    datatype_inputs.append(datatype)
-            else:
-                datatype_inputs.append(datatype)
-        datatypes = []
-        datatype_groups = dict()
-        for data_type in datatype_inputs:
-            if data_type.fk_datatype_group is None:
-                datatypes.append(data_type)
-            elif data_type.fk_datatype_group not in datatype_groups:
-                dt_group = dao.get_datatype_by_id(data_type.fk_datatype_group)
-                datatype_groups[data_type.fk_datatype_group] = dt_group
-
-        datatypes.extend([v for v in datatype_groups.values()])
-        return datatypes
 
     def _review_operation_inputs(self, operation_gid):
         """
