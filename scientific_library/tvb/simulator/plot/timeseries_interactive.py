@@ -62,7 +62,7 @@ Usage
 
 import matplotlib.widgets as widgets
 import numpy
-import pylab
+import matplotlib.pyplot as plt
 import tvb.datatypes.time_series as time_series_datatypes
 from matplotlib import rcParams
 from tvb.basic.neotraits.api import HasTraits, Attr, Int
@@ -208,7 +208,7 @@ class TimeSeriesInteractive(HasTraits):
         # Plot timeseries
         self.plot_time_series()
 
-        pylab.show(block=block, **kwargs)
+        plt.show(block=block, **kwargs)
 
     def ensure_list(self, arg):
         if not (isinstance(arg, list)):
@@ -246,16 +246,16 @@ class TimeSeriesInteractive(HasTraits):
         # time_series_type = self.time_series.__class__.__name__
         try:
             figure_window_title = "Interactive time series: "  # + time_series_type
-            #            pylab.close(figure_window_title)
-            self.its_fig = pylab.figure(num=figure_window_title,
+            #            plt.close(figure_window_title)
+            self.its_fig = plt.figure(num=figure_window_title,
                                         figsize=(14, 8),
                                         facecolor=BACKGROUNDCOLOUR,
                                         edgecolor=EDGECOLOUR)
         except ValueError:
-            LOG.info("My life would be easier if you'd update your PyLab...")
+            LOG.info("My life would be easier if you'd update your Pyplot...")
             figure_number = 42
-            pylab.close(figure_number)
-            self.its_fig = pylab.figure(num=figure_number,
+            plt.close(figure_number)
+            self.its_fig = plt.figure(num=figure_number,
                                         figsize=(14, 8),
                                         facecolor=BACKGROUNDCOLOUR,
                                         edgecolor=EDGECOLOUR)
@@ -532,7 +532,7 @@ class TimeSeriesInteractive(HasTraits):
                                              numpy.zeros((len(self.time_view),)),
                                              'b-', linewidth=4)
 
-        pylab.draw()
+        plt.draw()
 
 
 class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
@@ -546,16 +546,16 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
         try:
             figure_window_title = "Interactive time series: "  # + time_series_type
             num = kwargs.pop("figname", kwargs.get("num", figure_window_title))
-            #            pylab.close(figure_window_title)
-            self.its_fig = pylab.figure(num=num,
+            #            plt.close(figure_window_title)
+            self.its_fig = plt.figure(num=num,
                                         figsize=figsize,
                                         facecolor=facecolor,
                                         edgecolor=edgecolor)
         except ValueError:
-            LOG.info("My life would be easier if you'd update your PyLab...")
+            LOG.info("My life would be easier if you'd update your Pyplot...")
             figure_number = 42
-            pylab.close(figure_number)
-            self.its_fig = pylab.figure(num=figure_number,
+            plt.close(figure_number)
+            self.its_fig = plt.figure(num=figure_number,
                                         figsize=figsize,
                                         facecolor=facecolor,
                                         edgecolor=edgecolor)
@@ -638,7 +638,7 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
                                              numpy.zeros((len(self.time_view),)),
                                              'b-', linewidth=4)
 
-        pylab.draw()
+        plt.draw()
 
     def show(self, block=True, **kwargs):
         """ Generate the interactive time-series figure. """
@@ -670,4 +670,4 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
         # Plot timeseries
         self.plot_time_series()
 
-        pylab.show(block=block, **kwargs)
+        plt.show(block=block, **kwargs)

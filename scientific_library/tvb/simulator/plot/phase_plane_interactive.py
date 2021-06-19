@@ -62,7 +62,7 @@ Example specifying a Model and stochastic sample trajectories::
 #      check for leaks or look into "forcing" cleanup...
 
 import numpy
-import pylab
+import matplotlib.pyplot as plt
 import colorsys
 import matplotlib.widgets as widgets
 
@@ -232,7 +232,7 @@ class PhasePlaneInteractive(HasTraits):
                                         self.click_trajectory)
         # import pdb; pdb.set_trace()
 
-        pylab.show()
+        plt.show()
 
     ##------------------------------------------------------------------------##
     ##----------------- Functions for building the figure --------------------##
@@ -247,13 +247,13 @@ class PhasePlaneInteractive(HasTraits):
         try:
             figure_window_title = "Interactive phase-plane: " + model_name
             figure_window_title += "   --   %s" % integrator_name
-            self.ipp_fig = pylab.figure(num=figure_window_title,
+            self.ipp_fig = plt.figure(num=figure_window_title,
                                         figsize=figsize,
                                         facecolor=BACKGROUNDCOLOUR,
                                         edgecolor=EDGECOLOUR)
         except ValueError:
-            LOG.info("My life would be easier if you'd update your PyLab...")
-            self.ipp_fig = pylab.figure(num=42, figsize=figsize,
+            LOG.info("My life would be easier if you'd update your Pyplot...")
+            self.ipp_fig = plt.figure(num=42, figsize=figsize,
                                         facecolor=BACKGROUNDCOLOUR,
                                         edgecolor=EDGECOLOUR)
 
@@ -743,7 +743,7 @@ class PhasePlaneInteractive(HasTraits):
         self.nullcline_y = self.pp_ax.contour(self.X, self.Y,
                                               self.V[:, :, self.mode],
                                               [0], colors="g")
-        pylab.draw()
+        plt.draw()
 
     def plot_trajectory(self, x, y):
         """
@@ -778,7 +778,7 @@ class PhasePlaneInteractive(HasTraits):
         self.pp_splt.plot(numpy.arange(TRAJ_STEPS + 1) * self.integrator.dt,
                           traj[:, :, 0, self.mode])
 
-        pylab.draw()
+        plt.draw()
 
     def click_trajectory(self, event):
         """
