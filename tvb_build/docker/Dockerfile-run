@@ -59,6 +59,8 @@ RUN cd tvb-root; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop; \
     cd ../tvb_contrib; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop --no-deps; \
+    cd ../tvb_storage; \
+    /opt/conda/envs/tvb-run/bin/python setup.py develop; \
     cd ../tvb_bin; \
     /opt/conda/envs/tvb-run/bin/python setup.py develop; \
     cd ../tvb_build; \
