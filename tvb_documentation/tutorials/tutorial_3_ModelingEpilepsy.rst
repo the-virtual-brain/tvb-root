@@ -22,12 +22,11 @@ propagation of an epileptic seizure in the human brain, electrical stimulation
 of a brain region that can trigger a seizure, or surgical resection of brain
 regions.
 
-You can download the ModelingEpilepsy.zip (3) file in the `TVB sharing area
-<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_.  We’ll only go
-through the necessary steps required to reproduce these simulations, along with
-the relevant outline.  You can always start over, click along and/or try to
-change parameters.  We will use the default subject connectivity matrix and
-surface.
+We will be using the ModelingEpilepsy project. You can download the ModelingEpilepsy.zip file
+in the `TVB sharing area <http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_.
+We’ll only go through the necessary steps required to reproduce these simulations,
+along with the relevant outline.  You can always start over, click along and/or try to
+change parameters.  We will use the default subject connectivity matrix and surface.
 
 -------------------
 
@@ -221,7 +220,7 @@ Triggering a seizure by stimulation
 -----------------------------------
 
 We are now going to model an electric stimulation and trigger a seizure. We set
-the whole brain to non-epileptogenic but close to the threshold
+the whole brain to non-epileptogenic but close to the threshold:
 
 #. Go to *stimulus > Region Stimulus*
 
@@ -248,16 +247,11 @@ Temporal parameters    Value
    apply a scaling of 1.0 , and click on *Save New Stimulus on Region* in the
    right menu.
 
-The stimulus was already set for you under the name
-*Stim_PropagationZone*
+5.  Go to simulator and copy the former simulation.
 
-6.  Go to simulator and copy the former simulation.
+6.  Choose the *Stim_PropagationZone* stimulus.
 
-7.  Choose the *Stim_PropagationZone* stimulus.
-
-You can see the result of this simulation in *stimulation_Region_TemporalLobe*
-
-8. Visualize the time series, zoom in to better see the effect of the stimulation.
+7. Visualize the time series, zoom in to better see the effect of the stimulation.
 
 .. figure:: figures/ModelingEpilepsy_stimulationts.png
    :alt: Time Series for a stimulation
@@ -276,7 +270,7 @@ For more information on the **Epileptor** model, see Jirsa_et_al_, El_Houssaini_
 Support
 =======
 
-The official TVB webiste is
+The official TVB website is
 `www.thevirtualbrain.org <http://www.thevirtualbrain.org>`__. All the
 documentation and tutorials are hosted on
 `http://docs.thevirtualbrain.org <http://docs.thevirtualbrain.org>`__. You’ll

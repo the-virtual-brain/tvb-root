@@ -93,7 +93,7 @@ Knock_et_al_, Spiegler_et_al_.
 Support
 -------
 
-The official TVB webiste is
+The official TVB website is
 `www.thevirtualbrain.org <http://www.thevirtualbrain.org>`__. All the
 documentation and tutorials are hosted on
 `http://docs.thevirtualbrain.org <http://docs.thevirtualbrain.org>`__. You will

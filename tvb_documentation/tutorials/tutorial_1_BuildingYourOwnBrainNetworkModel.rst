@@ -101,7 +101,9 @@ Model parameter     Value
    **dt = 0.1 ms**.
 
 7. Select the **Temporal Average** monitor. It averages over a time window of
-   length *sampling period* returning one time point every period. For our example the
+   length *sampling period* returning one time point every period. It also, by
+   default, only returns those state-variables flagged in the *Models*
+   definition as *Model Variables to watch*. For our example the
    *Monitor's sampling period* is **1 ms**.
 
    Although there are monitors which apply a biophysical measurement
@@ -202,19 +204,19 @@ a range specified of one or two chosen parameters.
 1. Copy the **AnatomyOfARegionSimulation_b** and name the new simulation
 *AnatomyOfARegionSimulation\_pse*.
 
-2. Set the *simulation length* to **2000 ms** and launch the simulation.
+2. Set the *simulation length* to **2000 ms**.
 
 3. Click on the **Setup PSE** button.
 
-4. Select **Conduction_Speed** as **PSE param1** and **Model.A** as **PSE param2**.
+4. Select **Coupling.A** as **PSE param1** and **Conduction_Speed** as **PSE param2**.
 Click on **Next**.
 
-5. For *Conduction_Speed* set the range between :math:`\mathbf{1-10}`
-   and the step to **1 mm/ms**.
-
-6. For **Model.A** set the range between
+5. For **Coupling.A** set the range between
    :math:`\mathbf{0.012 \text{ and } 0.042}` and the step to
    :math:`\mathbf{0.002}`.
+
+6. For *Conduction_Speed* set the range between :math:`\mathbf{1-10}`
+   and the step to **1 mm/ms**.
 
 7. Click on the **Launch PSE** button.
 
@@ -271,8 +273,10 @@ should remain unchanged (e.g., the number of nodes, conduction speed,
 the recorded state-variables, integration time-step size and selected
 monitors should be the same).
 
--  In *AnatomyOfARegionSimulation\_a* click on |pen|, set :math:`\mathbf{a=0.042}` in
-   the *long-range coupling function*. Then, click on the **Branch** button.
+-  In *AnatomyOfARegionSimulation\_a* click on |pen|, click on the **Branch**
+   button. Click on the *Previous* button until you get to the second fragment
+   where you have the coupling params. Set :math:`\mathbf{a=0.042}` in the
+   *long-range coupling function*.
 
 -------------------
 
@@ -487,7 +491,7 @@ Virtual Brain, please see the following articles
 Support
 =======
 
-The official TVB webiste is
+The official TVB website is
 `www.thevirtualbrain.org <http://www.thevirtualbrain.org>`__. All the
 documentation and tutorials are hosted on
 `http://docs.thevirtualbrain.org <http://docs.thevirtualbrain.org>`__. You’ll
