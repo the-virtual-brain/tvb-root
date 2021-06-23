@@ -24,13 +24,23 @@ LOGGER = get_logger(__name__)
 
 
 def upgrade():
-    new_column_1 = Column('has_valid_time_series', Boolean, default=True)
-    op.add_column('DataTypeMatrix', new_column_1)
+    # Get tables
+    inspector = Inspector.from_engine(conn)
+    table_names = inspector.get_table_names()
+    tables = Base.metadata.tables
+
+    if 'DataTypeMatrix' in table_names:
+        new_column_1 = Column('has_valid_time_series', Boolean, default=True)
+        op.add_column('DataTypeMatrix', new_column_1)
+        datatype_matrix_table = tables['DataTypeMatrix']
+        conn.execute(datatype_matrix_table.update().values({"has_valid_time_series": True}))
 
     new_column_2 = Column('queue_full', Boolean, default=False)
     op.add_column('OPERATIONS', new_column_2)
 
-
+    operations_table = tables['OPERATIONS']
+    conn.execute(operations_table.update().values({"queue_full": False}))
+    conn.execute('COMMIT')
 
 
 def downgrade():
