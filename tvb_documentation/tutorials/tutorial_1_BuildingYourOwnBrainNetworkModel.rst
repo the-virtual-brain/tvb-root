@@ -38,14 +38,12 @@ configurable object in TVB:
 
 - **Connectivity**, represents the large scale structural connectivity of the brain, i.e. white-matter tracts;
 
-- **Long range Coupling**, is a function that is used to join the local dynamics at distinct
-   locations over the connections described in **Connectivity**;
+- **Long range Coupling**, is a function that is used to join the local dynamics at distinct locations over the
+  connections described in **Connectivity**;
 
-- **Integrator**, is the integration scheme that will be applied to the coupled set
-   of differential equations;
+- **Integrator**, is the integration scheme that will be applied to the coupled set of differential equations;
 
-- **Monitors**, one or more **Monitors** can be attached to a simulation, their role is to record the
-   output data.
+- **Monitors**, one or more **Monitors** can be attached to a simulation, their role is to record the output data.
 
 
 In this example, we will change the default parameters to
@@ -202,14 +200,14 @@ A PSE simulation means that TVB will launch a simulation for every value from
 a range specified of one or two chosen parameters.
 
 1. Copy the **AnatomyOfARegionSimulation_b** and name the new simulation
-*AnatomyOfARegionSimulation\_pse*.
+   *AnatomyOfARegionSimulation\_pse*.
 
 2. Set the *simulation length* to **2000 ms**.
 
 3. Click on the **Setup PSE** button.
 
 4. Select **Coupling.A** as **PSE param1** and **Conduction_Speed** as **PSE param2**.
-Click on **Next**.
+   Click on **Next**.
 
 5. For **Coupling.A** set the range between
    :math:`\mathbf{0.012 \text{ and } 0.042}` and the step to
@@ -321,6 +319,15 @@ greater than zero producing coloured noise.
 *AnatomyOfARegionSimulation\_b* and
 *AnatomyOfARegionSimulation\_stochastic* have the same parameters but
 the latter has an extra background noisy input.
+
+Observe the differences using the *Spectrogram of the Wavelet Transform*.
+
+.. figure:: figures/BuildingYourOwnBrainNetworkModel_WaveletDeterministic.png
+   :scale: 30%
+
+.. figure:: figures/BuildingYourOwnBrainNetworkModel_WaveletStochastic.png
+   :scale: 30%
+
 
 -------------------
 

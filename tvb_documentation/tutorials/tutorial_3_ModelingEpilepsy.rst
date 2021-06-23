@@ -59,7 +59,7 @@ will use the phase plane interactive tool.
    spikes in the Epileptor model. Change the lower and upper bound of the axis 
    to see the phase space correctly.
 
- .. figure:: figures/ModelingEpilepsy_PhasePlane_2.png
+.. figure:: figures/ModelingEpilepsy_PhasePlane_2.png
    :alt: :math:`y_3-y_4` phase plane for the second population.
    :scale: 50%
   
@@ -155,7 +155,7 @@ Model parameter    Value
 9. Now click on |bm|, select the EEG time series, and *Update the Visualizer*.
    Chnage the scaling and the number of channels.
 
- .. figure:: figures/ModelingEpilepsy_tseeg.png
+.. figure:: figures/ModelingEpilepsy_tseeg.png
    :alt: EEG time series of the simulation 
    :scale: 30%
 
