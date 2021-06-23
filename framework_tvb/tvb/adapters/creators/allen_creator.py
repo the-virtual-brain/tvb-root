@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -148,7 +148,7 @@ class AllenConnectomeBuilder(ABCAdapter):
         vol_thresh = view_model.vol_thresh
 
         project = dao.get_project_by_id(self.current_project_id)
-        manifest_file = self.file_handler.get_allen_mouse_cache_folder(project.name)
+        manifest_file = self.storage_interface.get_allen_mouse_cache_folder(project.name)
         manifest_file = os.path.join(manifest_file, 'mouse_connectivity_manifest.json')
         cache = MouseConnectivityCache(resolution=resolution, manifest_file=manifest_file)
 

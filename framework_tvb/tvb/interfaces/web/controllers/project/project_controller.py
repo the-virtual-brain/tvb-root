@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,26 +36,25 @@ This represents the Controller part (from MVC).
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import shutil
-
 import cherrypy
 import formencode
-import tvb.core.entities.model.model_operation as model
 from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
+
+import tvb.core.entities.model.model_operation as model
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.basic.profile import TvbProfile
+from tvb.adapters.uploaders.tumor_dataset_importer import TumorDatasetImporter
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
-from tvb.core.entities.file.data_encryption_handler import DataEncryptionHandler
+from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
-from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import string2bool
+from tvb.storage.storage_interface import StorageInterface
+from tvb.storage.h5.utils import string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -81,7 +80,6 @@ class ProjectController(BaseController):
     def __init__(self):
         super(ProjectController, self).__init__()
         self.flow_controller = FlowController()
-        self.file_helper = FilesHelper()
 
     @expose_page
     @settings
@@ -188,9 +186,9 @@ class ProjectController(BaseController):
             if cherrypy.request.method == 'POST' and save:
                 data = EditForm().to_python(data)
                 saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
-                if DataEncryptionHandler.encryption_enabled() and is_create:
-                    project_folder = self.file_helper.get_project_folder(saved_project)
-                    DataEncryptionHandler.sync_folders(project_folder)
+                if StorageInterface.encryption_enabled() and is_create:
+                    project_folder = StorageInterface().get_project_folder(saved_project.name)
+                    StorageInterface.sync_folders(project_folder)
                     shutil.rmtree(project_folder)
                 self._mark_selected(saved_project)
                 raise cherrypy.HTTPRedirect('/project/viewall')
@@ -519,11 +517,15 @@ class ProjectController(BaseController):
         self._mark_selected(selected_project)
         data = self.project_service.get_filterable_meta()
         filters = StaticFiltersFactory.build_datatype_filters(selected=visibility_filter)
+        tumor_import_algorithm = dao.get_algorithm_by_module(TumorDatasetImporter.__module__,
+                                                             TumorDatasetImporter.__name__)
+
         template_specification = dict(mainContent="project/structure",
                                       title=selected_project.name,
                                       project=selected_project, data=data,
                                       firstLevelSelection=first_level, secondLevelSelection=second_level,
-                                      filterInputValue=filter_input, filters=filters)
+                                      filterInputValue=filter_input, filters=filters,
+                                      tumorImporterAlgorithmId=tumor_import_algorithm.id)
         return self.fill_default_attributes(template_specification, 'data')
 
     @expose_fragment("overlay")

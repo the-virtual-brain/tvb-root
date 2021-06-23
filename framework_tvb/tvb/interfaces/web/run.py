@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,8 +35,9 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
-from tvb.core.entities.file.data_encryption_handler import encryption_handler, FoldersQueueConsumer, \
-    DataEncryptionHandler
+from tvb.storage.storage_interface import StorageInterface
+from tvb.core.services.backend_clients.standalone_client import StandAloneClient
+from tvb.interfaces.web.controllers.kube_controller import KubeController
 
 STARTUP_TIC = time.time()
 
@@ -54,7 +55,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize, reset
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -90,7 +90,6 @@ LOGGER.info("TVB application will be running using encoding: " + sys.getdefaulte
 class CleanupSessionHandler(RamSession):
     def __init__(self, id=None, **kwargs):
         super(CleanupSessionHandler, self).__init__(id, **kwargs)
-        self.file_helper = FilesHelper()
 
     def clean_up(self):
         """Clean up expired sessions."""
@@ -100,7 +99,7 @@ class CleanupSessionHandler(RamSession):
             if expiration_time <= now:
                 if KEY_PROJECT in data:
                     selected_project = data[KEY_PROJECT]
-                    encryption_handler.set_project_inactive(selected_project)
+                    StorageInterface().set_project_inactive(selected_project)
                 try:
                     del self.cache[_id]
                 except KeyError:
@@ -127,7 +126,7 @@ def init_cherrypy(arguments=None):
     #### Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
-    if DataEncryptionHandler.encryption_enabled():
+    if StorageInterface.encryption_enabled():
         CONFIGUER["/"]["tools.sessions.storage_class"] = CleanupSessionHandler
     for module in arguments:
         module_inst = importlib.import_module(str(module))
@@ -155,6 +154,7 @@ def init_cherrypy(arguments=None):
     cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
     cherrypy.tree.mount(NoiseConfigurationController(), "/burst/noise/", config=CONFIGUER)
     cherrypy.tree.mount(HPCController(), "/hpc/", config=CONFIGUER)
+    cherrypy.tree.mount(KubeController(), "/kube/", config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 
@@ -171,6 +171,12 @@ def init_cherrypy(arguments=None):
             TvbProfile.current.hpc.BACKGROUND_JOB_INTERVAL, HPCOperationService.check_operations_job)
         cherrypy.engine.housekeeper.start()
 
+    if not TvbProfile.current.web.OPENSHIFT_DEPLOY:
+        operations_job = cherrypy.process.plugins.BackgroundTask(
+            TvbProfile.current.OPERATIONS_BACKGROUND_JOB_INTERVAL, StandAloneClient.process_queued_operations,
+            bus=cherrypy.engine)
+        operations_job.start()
+
     # HTTP Server is fired now ######
     cherrypy.engine.start()
 
@@ -181,7 +187,8 @@ def expose_rest_api():
         return
 
     if not os.path.exists(TvbProfile.current.KEYCLOAK_CONFIG):
-        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(TvbProfile.current.KEYCLOAK_CONFIG))
+        LOGGER.warning("Cannot start REST server because the KEYCLOAK CONFIG file {} does not exist.".format(
+            TvbProfile.current.KEYCLOAK_CONFIG))
         return
 
     if CONFIG_EXISTS:
@@ -222,10 +229,10 @@ def start_tvb(arguments, browser=True):
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
-    if DataEncryptionHandler.encryption_enabled():
-        queue_consumer = FoldersQueueConsumer()
-        queue_consumer.start()
-        DataEncryptionHandler.startup_cleanup()
+    if StorageInterface.encryption_enabled():
+        storage_interface = StorageInterface()
+        storage_interface.start()
+        storage_interface.startup_cleanup()
 
     #### Fire a browser page at the end.
     if browser:

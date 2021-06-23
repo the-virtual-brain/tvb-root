@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,7 +35,6 @@
 from PIL import Image
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.core import utils
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.figure_service import FigureService
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -52,7 +51,6 @@ class TestFigureService(TransactionalTestCase):
         self.figure_service = FigureService()
         self.user = TestFactory.create_user()
         self.project = TestFactory.create_project(admin=self.user)
-        self.files_helper = FilesHelper()
 
     def transactional_teardown_method(self):
         self.delete_project_folders()

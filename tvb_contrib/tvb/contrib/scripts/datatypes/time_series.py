@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -283,7 +283,7 @@ class TimeSeries(TimeSeriesTVB, BaseModel):
             labels_dimensions[self.get_dimension_name(dim_index)] = \
                 (numpy.array(labels_dimensions[self.get_dimension_name(dim_index)])[indices]).tolist()
         except:
-            self.logger.warn("Failed to get labels subset for indices %s of dimension %d!"
+            self.logger.warning("Failed to get labels subset for indices %s of dimension %d!"
                              % (str(indices), dim_index))
             labels_dimensions[self.get_dimension_name(dim_index)] = []
         return self.duplicate(data=data, labels_dimensions=labels_dimensions, **kwargs)

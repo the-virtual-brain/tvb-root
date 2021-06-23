@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,8 +31,8 @@
 import os
 import argparse
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model.model_project import Project
+from tvb.storage.storage_interface import StorageInterface
 
 
 class DiagnoseDiskUsage(object):
@@ -40,7 +40,7 @@ class DiagnoseDiskUsage(object):
     HEADER_DT = FORMAT_DT.format('', '', 'disk_size(kib)', 'db_size(kib)', 'delta(kib)', 'ratio(%)')
 
     def __init__(self, prj_id):
-        self.file_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.expected_files = set()
         self.prj_disk_size, self.prj_db_size = 0, 0
 
@@ -51,8 +51,8 @@ class DiagnoseDiskUsage(object):
             # This code is doing a tree traversal of the db.
             # The query on attribute access style fits better than aggregating queries.
             self.project = dao.session.query(Project).filter(Project.id == prj_id).one()
-            self.expected_files.add(self.file_helper.get_project_meta_file_path(self.project.name))
-            root_path = self.file_helper.get_project_folder(self.project)
+            self.expected_files.add(self.storage_interface.get_project_meta_file_path(self.project.name))
+            root_path = self.storage_interface.get_project_folder(self.project.name)
 
             print()
             print('Reporting disk for project {} in {}'.format(self.project.name, root_path))
@@ -111,7 +111,7 @@ class DiagnoseDiskUsage(object):
             if dt.type == 'DataTypeGroup':
                 # these have no h5
                 continue
-            op_pth = self.file_helper.get_operation_folder(self.project.name, op.id)
+            op_pth = self.storage_interface.get_project_folder(self.project.name, str(op.id))
             dt_pth = self.get_h5_by_gid(op_pth, dt.gid)
 
             dt_actual_disk_size = self.get_file_kib_size(dt_pth)

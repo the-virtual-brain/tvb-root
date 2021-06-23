@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,7 +36,6 @@ import json
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.entities import load
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -68,10 +67,9 @@ class NoiseConfigurationController(BurstBaseController):
         initial_noise = self.group_noise_array_by_state_var(noise_values, state_vars, conn_idx.number_of_regions)
 
         current_project = common.get_current_project()
-        file_handler = FilesHelper()
-        conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
 
-        params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
+        params = ConnectivityViewer.get_connectivity_parameters(conn_idx, current_project.name,
+                                                                str(conn_idx.fk_from_operation))
         params.update({
             'title': 'Noise configuration',
             'mainContent': 'burst/noise',

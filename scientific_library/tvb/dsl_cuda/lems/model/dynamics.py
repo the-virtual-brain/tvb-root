@@ -1,4 +1,4 @@
-"""
+ """
 Behavioral dynamics of component types.
 
 @author: Gautham Ganapathy

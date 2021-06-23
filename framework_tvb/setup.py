@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,7 +40,7 @@ import os
 import shutil
 import setuptools
 
-VERSION = "2.2.2"
+VERSION = "2.3"
 
 TVB_TEAM = "Mihai Andrei, Lia Domide, Stuart Knock, Bogdan Neacsa, Paula Popa, Paula Sansz Leon, Marmaduke Woodman"
 
@@ -48,7 +48,7 @@ TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "cherrypy", "cryptography", "
                             "formencode", "gevent", "h5py<3", "Jinja2", "nibabel", "numpy", "pandas",
                             "Pillow", "psutil", "pyAesCrypt", "python-keycloak", "requests", "scikit-learn",
                             "scipy", "simplejson", "six", "sqlalchemy", "tvb-data", "tvb-gdist",
-                            "tvb-library", "werkzeug"]
+                            "tvb-library", "tvb-storage", "werkzeug"]
 
 # Packaging tvb-framework with REST server inside
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:

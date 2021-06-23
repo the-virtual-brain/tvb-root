@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,24 +33,17 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
 import pytest
-import tvb_data
-from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
-from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
-from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.load import get_filtered_datatypes
-from tvb.core.neocom import h5
-from tvb.core.entities.model.model_operation import *
-from tvb.core.entities.model.model_datatype import *
-from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.factory import StaticFiltersFactory
-from tvb.core.services.operation_service import OperationService
+from tvb.core.entities.load import get_filtered_datatypes
+from tvb.core.entities.model.model_datatype import *
+from tvb.core.entities.model.model_operation import *
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.project_service import ProjectService
-from tvb.core.utils import no_matlab
 from tvb.datatypes.graph import ConnectivityMeasure
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.algorithm_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
@@ -260,33 +253,6 @@ class TestProjectStructure(TransactionalTestCase):
             assert expected.invalid == actual.invalid, "The invalid field value is not correct."
             assert expected.is_nan == actual.is_nan, "The is_nan field value is not correct."
 
-    @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")
-    def test_get_inputs_for_operation(self):
-        """
-        Tests method get_datatype_and_datatypegroup_inputs_for_operation.
-        Verifies filters' influence over results is as expected
-        """
-        zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
-        conn = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-        view_model = BaseBCTModel()
-        view_model.connectivity = conn.gid
-        adapter = ABCAdapter.build_adapter_from_class(TransitivityBinaryDirected)
-        result = OperationService().fire_operation(adapter, self.test_user, self.test_project.id,
-                                                   view_model=view_model)
-
-        conn.visible = False
-        dao.store_entity(conn)
-        operation = dao.get_operation_by_id(result.id)
-
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
-                                                                                          self.relevant_filter)
-        assert len(inputs) == 0
-
-        inputs = self.project_service.get_datatype_and_datatypegroup_inputs_for_operation(operation.gid,
-                                                                                          self.full_filter)
-        assert len(inputs) == 1, "Incorrect number of inputs."
-        assert conn.id == inputs[0].id, "Retrieved wrong input dataType."
-
     def test_remove_datatype(self, array_factory):
         """
         Tests the deletion of a datatype.
@@ -362,7 +328,7 @@ class TestProjectStructure(TransactionalTestCase):
 
             op = operation_factory(test_project=project)
             conn = connectivity_index_factory(op=op)
-            storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+            storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
 
             count = _create_measure(conn, op, storage_path, project.id)
             assert count == 1

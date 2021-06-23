@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -167,7 +167,7 @@ class ConnectivityCreator(ABCAdapter):
                                                     view_model.interest_area_indexes, view_model.new_tracts)
             new_conn_index = h5.store_complete(new_conn_ht, self.storage_path)
             result.append(new_conn_index)
-            result.extend(self._store_related_region_mappings(view_model.original_connectivity.gid, new_conn_ht))
+            result.extend(self._store_related_region_mappings(view_model.original_connectivity.hex, new_conn_ht))
             return result
 
     @staticmethod

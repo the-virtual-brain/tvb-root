@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -253,6 +253,8 @@ class DataTypeMatrix(DataType):
     array_has_complex = Column(Boolean, default=False)
     # has_volume_mapping will currently be changed for ConnectivityMeasureIndex subclass
     has_volume_mapping = Column(Boolean, nullable=False, default=False)
+    # currently has_valid_time_series is False only when importing Correlation Coefficients via BIDS
+    has_valid_time_series = Column(Boolean, nullable=False, default=True)
 
     def fill_from_has_traits(self, datatype):
         super(DataTypeMatrix, self).fill_from_has_traits(datatype)

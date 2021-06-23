@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,4 +36,4 @@ ALL_UPLOADERS = ["brco_importer", "connectivity_measure_importer", "csv_connecti
                  "gifti_surface_importer", "gifti_timeseries_importer", "mat_timeseries_eeg_importer",
                  "mat_timeseries_importer", "networkx_importer", "nifti_importer", "obj_importer",
                  "projection_matrix_importer", "region_mapping_importer", "sensors_importer", "tract_importer",
-                 "tvb_importer", "zip_connectivity_importer", "zip_surface_importer"]
+                 "tumor_dataset_importer", "tvb_importer", "zip_connectivity_importer", "zip_surface_importer"]

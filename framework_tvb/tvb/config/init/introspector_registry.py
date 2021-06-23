@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,8 +30,8 @@
 
 import inspect
 from importlib import import_module
+
 import tvb.adapters.uploaders
-import tvb.adapters.portlets
 import tvb.adapters.visualizers
 import tvb.adapters.datatypes.db
 from tvb.adapters.analyzers import ALL_ANALYZERS
@@ -106,7 +106,6 @@ class IntrospectionRegistry(object):
         - fill-in all rows in the ALGORITHM_CATEGORIES table
         - fill-in all rows in the ALGORITHMS table. Will add BCT algorithms only if Matlab/Octave path is set
         - generate DB tables for all datatype indexes
-        - fill-in all rows in the PORTLETS table using data defined in XML files
         - keep an evidence of the datatype index removers
     All classes that subclass AlgorithmCategoryConfig, ABCAdapter, ABCRemover, HasTraitsIndex should be imported here
     and added to the proper dictionary/list.
@@ -121,8 +120,6 @@ class IntrospectionRegistry(object):
     }
 
     DATATYPES = import_dt_index(tvb.adapters.datatypes.db, ALL_DATATYPES)
-
-    PORTLETS_MODULE = tvb.adapters.portlets
 
     SIMULATOR_MODULE = SimulatorAdapter.__module__
     SIMULATOR_CLASS = SimulatorAdapter.__name__

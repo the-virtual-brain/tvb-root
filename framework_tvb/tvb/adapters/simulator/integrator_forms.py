@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -88,4 +88,5 @@ class IntegratorStochasticForm(IntegratorForm):
 
     def fill_from_trait(self, trait):
         # type: (IntegratorStochasticViewModel) -> None
+        super(IntegratorStochasticForm, self).fill_from_trait(trait)
         self.noise.data = trait.noise.__class__

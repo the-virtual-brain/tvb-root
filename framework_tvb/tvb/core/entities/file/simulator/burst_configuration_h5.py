@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,9 +30,9 @@
 
 import uuid
 from tvb.basic.neotraits.api import Attr
-from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.core.neotraits.h5 import H5File, Scalar, Reference
-from tvb.core.utils import date2string, string2date
+from tvb.core.utils import string2date, date2string
+from tvb.storage.h5.file.exceptions import MissingDataSetException
 
 
 class BurstConfigurationH5(H5File):

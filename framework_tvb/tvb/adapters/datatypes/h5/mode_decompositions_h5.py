@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,8 +29,8 @@
 #
 
 import numpy
-from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
 from tvb.core.neotraits.h5 import H5File, Reference, DataSet, Scalar
+from tvb.datatypes.mode_decompositions import PrincipalComponents, IndependentComponents
 
 
 class PrincipalComponentsH5(H5File):
@@ -60,7 +60,7 @@ class PrincipalComponentsH5(H5File):
         self.component_time_series.append(partial_result.component_time_series, close_file=False)
 
         partial_result.compute_normalised_component_time_series()
-        self.normalised_component_time_series.append(partial_result.normalised_component_time_series)
+        self.normalised_component_time_series.append(partial_result.normalised_component_time_series, close_file=False)
 
     def read_fractions_data(self, from_comp, to_comp):
         """
@@ -111,11 +111,15 @@ class IndependentComponentsH5(H5File):
         """
         self.unmixing_matrix.append(partial_result.unmixing_matrix, close_file=False)
         self.prewhitening_matrix.append(partial_result.prewhitening_matrix, close_file=False)
+
         partial_result.compute_norm_source()
         self.norm_source.append(partial_result.norm_source, close_file=False)
+
         partial_result.compute_component_time_series()
         self.component_time_series.append(partial_result.component_time_series, close_file=False)
+
         partial_result.compute_normalised_component_time_series()
         self.normalised_component_time_series.append(partial_result.normalised_component_time_series, close_file=False)
+
         partial_result.compute_mixing_matrix()
-        self.mixing_matrix.append(partial_result.mixing_matrix)
+        self.mixing_matrix.append(partial_result.mixing_matrix, close_file=False)

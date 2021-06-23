@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,9 +35,10 @@
 import os
 import tvb_data.surfaceData
 import tvb_data.regionMapping
+
 from tvb.core.neocom import h5
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex
 from tvb.tests.framework.core.factory import TestFactory
@@ -83,7 +84,7 @@ class TestBrainViewer(TransactionalTestCase):
         """
         Clean-up tests data
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch(self, time_series_region_index_factory):
         """
@@ -113,20 +114,6 @@ class TestBrainViewer(TransactionalTestCase):
         view_model = viewer.get_view_model_class()()
         view_model.time_series = time_series_index.gid
         assert viewer.get_required_memory_size(view_model) > 0
-
-    def test_generate_preview(self, time_series_region_index_factory):
-        """
-        Check that all required keys are present in preview generate by BrainViewer.
-        """
-        time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
-                                                             self.test_user, self.test_project)
-        viewer = BrainViewer()
-        viewer.current_project_id = self.test_project.id
-        view_model = viewer.get_view_model_class()()
-        view_model.time_series = time_series_index.gid
-        result = viewer.generate_preview(view_model, figure_size=(500, 200))
-        for key in TestBrainViewer.EXPECTED_KEYS:
-            assert key in result and result[key] is not None, key
 
     def test_launch_eeg(self, time_series_region_index_factory):
         """

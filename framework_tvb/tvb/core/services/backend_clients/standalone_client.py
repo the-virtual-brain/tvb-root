@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -44,13 +44,13 @@ from threading import Thread, Event
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED
+from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapter
+from tvb.core.entities.model.model_operation import OperationProcessIdentifier, STATUS_ERROR, STATUS_CANCELED, Operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
+from tvb.storage.storage_interface import StorageInterface
+from tvb.core.services.kube_service import KubeService
 
 LOGGER = get_logger(__name__)
 
@@ -75,15 +75,17 @@ class OperationExecutor(Thread):
         """
         Get the required data from the operation queue and launch the operation.
         """
-        # Try to get a spot to launch own operation.
-        LOCKS_QUEUE.get(True)
         operation_id = self.operation_id
         run_params = [TvbProfile.current.PYTHON_INTERPRETER_PATH, '-m', 'tvb.core.operation_async_launcher',
                       str(operation_id), TvbProfile.CURRENT_PROFILE_NAME]
 
         current_operation = dao.get_operation_by_id(operation_id)
-        project_folder = FilesHelper().get_project_folder(current_operation.project)
-        encryption_handler.inc_running_op_count(project_folder)
+        storage_interface = StorageInterface()
+        project_folder = storage_interface.get_project_folder(current_operation.project.name)
+        in_usage = storage_interface.is_in_usage(project_folder)
+        storage_interface.inc_running_op_count(project_folder)
+        if not in_usage:
+            storage_interface.sync_folders(project_folder)
         # In the exceptional case where the user pressed stop while the Thread startup is done,
         # We should no longer launch the operation.
         if self.stopped() is False:
@@ -108,6 +110,8 @@ class OperationExecutor(Thread):
             LOGGER.info("Finished with launch of operation %s" % operation_id)
             returned = launched_process.wait()
 
+            LOGGER.info("Return code: {}. Stopped: {}".format(returned, self.stopped()))
+            LOGGER.info("Thread: {}".format(self))
             if returned != 0 and not self.stopped():
                 # Process did not end as expected. (e.g. Segmentation fault)
                 burst_service = BurstService()
@@ -119,8 +123,7 @@ class OperationExecutor(Thread):
 
             del launched_process
 
-        encryption_handler.dec_running_op_count(project_folder)
-        encryption_handler.check_and_delete(project_folder)
+        storage_interface.check_and_delete(project_folder)
 
         # Give back empty spot now that you finished your operation
         CURRENT_ACTIVE_THREADS.remove(self)
@@ -165,10 +168,39 @@ class StandAloneClient(BackendClient):
     """
 
     @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
-        """Start asynchronous operation locally"""
+    def process_queued_operations():
+        LOGGER.info("Start Queued operations job")
+        try:
+            operations = dao.get_generic_entity(Operation, True, "queue_full")
+            if len(operations) == 0:
+                return
+            LOGGER.info("Found {} operations with the queue full flag set.".format(len(operations)))
+            operations.sort(key=lambda l_operation: l_operation.id)
+            for operation in operations[0:TvbProfile.current.MAX_THREADS_NUMBER]:
+                try:
+                    op = dao.get_operation_by_id(operation.id)
+                    operation_process = dao.get_operation_process_for_operation(operation.id)
+                    if operation_process is not None or not op.queue_full or LOCKS_QUEUE.qsize() == 0:
+                        continue
+                    LOCKS_QUEUE.get()
+                    StandAloneClient.start_operation(operation.id)
+                except Exception as e:
+                    LOGGER.error("Starting operation error", e)
+        except Exception as e:
+            LOGGER.error("Error", e)
+
+    @staticmethod
+    def start_operation(operation_id):
+        LOGGER.info("Start processing operation id:{}".format(operation_id))
+
+        operation = dao.get_operation_by_id(operation_id)
+        operation.queue_full = False
+        dao.store_entity(operation)
+
         thread = OperationExecutor(operation_id)
         CURRENT_ACTIVE_THREADS.append(thread)
+
+        adapter_instance = ABCAdapter.build_adapter(operation.algorithm)
         if adapter_instance.launch_mode is AdapterLaunchModeEnum.SYNC_DIFF_MEM:
             thread.run()
             operation = dao.get_operation_by_id(operation_id)
@@ -176,6 +208,18 @@ class StandAloneClient(BackendClient):
                 raise TVBException(operation.additional_info)
         else:
             thread.start()
+
+    @staticmethod
+    def execute(operation_id, user_name_label, adapter_instance):
+        """Start asynchronous operation locally"""
+        if TvbProfile.current.web.OPENSHIFT_DEPLOY or LOCKS_QUEUE.qsize() == 0:
+            operation = dao.get_operation_by_id(operation_id)
+            operation.queue_full = True
+            dao.store_entity(operation)
+            return
+
+        LOCKS_QUEUE.get(True)
+        StandAloneClient.start_operation(operation_id)
 
     @staticmethod
     def stop_operation(operation_id):
@@ -188,25 +232,46 @@ class StandAloneClient(BackendClient):
             return True
 
         LOGGER.debug("Stopping operation: %s" % str(operation_id))
-
-        # Set the thread stop flag to true
-        for thread in CURRENT_ACTIVE_THREADS:
-            if int(thread.operation_id) == operation_id:
-                thread._stop()
-                LOGGER.debug("Found running thread for operation: %d" % operation_id)
-
-        # Kill Thread
-        stopped = True
-        operation_process = dao.get_operation_process_for_operation(operation_id)
-        if operation_process is not None:
-            # Now try to kill the operation if it exists
-            stopped = OperationExecutor.stop_pid(operation_process.pid)
-            if not stopped:
-                LOGGER.debug("Operation %d was probably killed from it's specific thread." % operation_id)
-            else:
-                LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
-
+        stopped = StandAloneClient.stop_operation_process(operation_id, True)
         # Mark operation as canceled in DB and on disk
         BurstService().persist_operation_state(operation, STATUS_CANCELED)
-
         return stopped
+
+    @staticmethod
+    def stop_operation_process(operation_id, notify_pods=False):
+        if notify_pods and TvbProfile.current.web.OPENSHIFT_DEPLOY:
+            try:
+                LOGGER.info("Notify pods to stop operation process for {}".format(operation_id))
+                KubeService.notify_pods("/kube/stop_operation_process/{}".format(operation_id),
+                                        TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
+                return True
+            except Exception as e:
+                LOGGER.error("Stop operation notify error", e)
+                return False
+        else:
+            # Set the thread stop flag to true
+            operation_threads = []
+            for thread in CURRENT_ACTIVE_THREADS:
+                if int(thread.operation_id) == operation_id:
+                    operation_threads.append(thread)
+
+            if len(operation_threads) > 0:
+                for thread in operation_threads:
+                    thread._stop()
+                    LOGGER.info("Found running thread for operation: %d" % operation_id)
+                    LOGGER.info("Thread marked to stop: {}".format(thread.stopped()))
+                    LOGGER.info("Thread: {}".format(thread))
+                # Kill Thread
+                stopped = True
+                operation_process = dao.get_operation_process_for_operation(operation_id)
+                if operation_process is not None:
+                    # Now try to kill the operation if it exists
+                    stopped = OperationExecutor.stop_pid(operation_process.pid)
+                    if not stopped:
+                        LOGGER.debug("Operation %d was probably killed from it's specific thread." % operation_id)
+                    else:
+                        LOGGER.debug("Stopped OperationExecutor process for %d" % operation_id)
+                return stopped
+
+            LOGGER.info("Running thread was not found for operation {}".format(operation_id))
+            return False

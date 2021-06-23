@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,17 +33,17 @@
 """
 
 import os
-
 from uuid import UUID
+
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.services.burst_service import BurstService
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.algorithm_service import AlgorithmService, GenericAttributes
 from tvb.core.services.project_service import ProjectService
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
@@ -76,7 +76,7 @@ class TestBurstService(BaseTestCase):
         """
         Remove project folders and clean up database.
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
         self.clean_database()
 
     def test_clone_burst_configuration(self):

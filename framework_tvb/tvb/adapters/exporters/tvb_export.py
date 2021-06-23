@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,18 +34,20 @@
 
 import os
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
+from tvb.storage.storage_interface import StorageInterface
 
 
 class TVBExporter(ABCExporter):
     """ 
     This exporter simply provides for download data in TVB format
     """
-    OPERATION_FOLDER_PREFIX = "Operation_"
+
+    def __init__(self):
+        self.storage_interface = StorageInterface()
     
     def get_supported_types(self):
         return [DataType]
@@ -60,7 +62,6 @@ class TVBExporter(ABCExporter):
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
         download_file_name = self.get_export_file_name(data)
-        files_helper = FilesHelper()
          
         if self.is_data_a_group(data):
             all_datatypes = self._get_all_data_types_arr(data)
@@ -69,15 +70,9 @@ class TVBExporter(ABCExporter):
                 raise ExportException("Could not export a data type group with no data")    
             
             zip_file = os.path.join(export_folder, download_file_name)
-            
-            # Now process each data type from group and add it to ZIP file
-            operation_folders = []
-            for data_type in all_datatypes:
-                operation_folder = files_helper.get_operation_folder(project.name, data_type.fk_from_operation)
-                operation_folders.append(operation_folder)
-                
+
             # Create ZIP archive    
-            files_helper.zip_folders(zip_file, operation_folders, self.OPERATION_FOLDER_PREFIX)
+            self.storage_interface.zip_folders(all_datatypes, project.name, zip_file)
                         
             return download_file_name, zip_file, True
 
@@ -89,7 +84,7 @@ class TVBExporter(ABCExporter):
         data_path = h5.path_for_stored_index(data)
         file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
         if not os.path.exists(file_destination):
-            FilesHelper().copy_file(data_path, file_destination)
+            self.storage_interface.copy_file(data_path, file_destination)
         H5File.remove_metadata_param(file_destination, 'parent_burst')
 
         return file_destination

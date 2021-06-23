@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,14 +36,13 @@ import shutil
 import numpy
 import pytest
 from tvb.basic.config.settings import HPCSettings
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.operation_hpc_launcher import do_operation_launch
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
-from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.datatypes.projections import ProjectionSurfaceEEG
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -60,8 +59,8 @@ def _request_passfile_dummy(simulator_gid, op_id, base_url, passfile_folder):
 class TestHPCSchedulerClient(BaseTestCase):
 
     def setup_method(self):
-        self.files_helper = FilesHelper()
-        self.encryption_handler = EncryptionHandler('123')
+        self.storage_interface = StorageInterface()
+        self.dir_gid = '123'
         self.clean_database()
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
@@ -76,20 +75,20 @@ class TestHPCSchedulerClient(BaseTestCase):
 
     def test_encrypt_inputs(self, tmpdir):
         job_inputs = self._prepare_dummy_files(tmpdir)
-        job_encrypted_inputs = self.encryption_handler.encrypt_inputs(job_inputs)
+        job_encrypted_inputs = self.storage_interface.encrypt_inputs(self.dir_gid, job_inputs)
         # Encrypted folder has 2 more files are more then plain folder
         assert len(job_encrypted_inputs) == len(job_inputs)
 
     def test_decrypt_results(self, tmpdir):
         # Prepare encrypted dir
         job_inputs = self._prepare_dummy_files(tmpdir)
-        self.encryption_handler.encrypt_inputs(job_inputs)
-        encrypted_dir = self.encryption_handler.get_encrypted_dir()
+        self.storage_interface.encrypt_inputs(self.dir_gid, job_inputs)
+        encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)
 
         # Unencrypt data
         out_dir = os.path.join(str(tmpdir), 'output')
         os.mkdir(out_dir)
-        self.encryption_handler.decrypt_results_to_dir(out_dir)
+        self.storage_interface.decrypt_results_to_dir(self.dir_gid, out_dir)
         list_plain_dir = os.listdir(out_dir)
         assert len(list_plain_dir) == len(os.listdir(encrypted_dir))
         assert 'dummy1.txt' in list_plain_dir
@@ -98,12 +97,12 @@ class TestHPCSchedulerClient(BaseTestCase):
     def test_decrypt_files(self, tmpdir):
         # Prepare encrypted dir
         job_inputs = self._prepare_dummy_files(tmpdir)
-        enc_files = self.encryption_handler.encrypt_inputs(job_inputs)
+        enc_files = self.storage_interface.encrypt_inputs(self.dir_gid, job_inputs)
 
         # Unencrypt data
         out_dir = os.path.join(str(tmpdir), 'output')
         os.mkdir(out_dir)
-        self.encryption_handler.decrypt_files_to_dir([enc_files[1]], out_dir)
+        self.storage_interface.decrypt_files_to_dir(self.dir_gid, [enc_files[1]], out_dir)
         list_plain_dir = os.listdir(out_dir)
         assert len(list_plain_dir) == 1
         assert os.path.basename(enc_files[0]).replace('.aes', '') not in list_plain_dir
@@ -118,16 +117,17 @@ class TestHPCSchedulerClient(BaseTestCase):
 
     def _do_operation_launch(self, op, sim_gid, mocker, is_pse=False):
         # Prepare encrypted dir
-        self.encryption_handler = EncryptionHandler(sim_gid)
+        self.storage_interface = StorageInterface()
+        self.dir_gid = sim_gid
         job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
-        self.encryption_handler.encrypt_inputs(job_encrypted_inputs)
-        encrypted_dir = self.encryption_handler.get_encrypted_dir()
+        self.storage_interface.encrypt_inputs(sim_gid, job_encrypted_inputs)
+        encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)
 
         mocker.patch('tvb.core.operation_hpc_launcher._request_passfile', _request_passfile_dummy)
         mocker.patch('tvb.core.operation_hpc_launcher._update_operation_status', _update_operation_status)
 
         # Call do_operation_launch similarly to CSCS env
-        plain_dir = self.files_helper.get_project_folder(self.test_project, 'plain')
+        plain_dir = self.storage_interface.get_project_folder(self.test_project.name, 'plain')
         do_operation_launch(sim_gid.hex, 1000, is_pse, '', op.id, plain_dir)
         assert len(os.listdir(encrypted_dir)) == 7
         output_path = os.path.join(encrypted_dir, HPCSchedulerClient.OUTPUT_FOLDER)
@@ -165,7 +165,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
         op = operation_factory()
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
         prj_db_db = h5.store_complete(proj, storage_path)
         prj_db_db.fk_from_operation = op.id
         dao.store_entity(prj_db_db)
@@ -205,11 +205,11 @@ class TestHPCSchedulerClient(BaseTestCase):
         assert os.path.exists(sim_results_files[0])
 
     def teardown_method(self):
-        encrypted_dir = self.encryption_handler.get_encrypted_dir()
+        encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)
         if os.path.isdir(encrypted_dir):
             shutil.rmtree(encrypted_dir)
-        passfile = self.encryption_handler.get_password_file()
+        passfile = self.storage_interface.get_password_file(self.dir_gid)
         if os.path.exists(passfile):
             os.remove(passfile)
-        self.files_helper.remove_project_structure(self.test_project.name)
+        self.storage_interface.remove_project_structure(self.test_project.name)
         self.clean_database()

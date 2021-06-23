@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,17 +34,18 @@ A contributed model: The Jansen and Rit model as presented in (David et al., 200
 """
 
 import numpy
+
 from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
 from tvb.basic.neotraits.api import NArray, Range, Final, List
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
 
 
 class JansenRitDavid(models.Model):
     """
     The Jansen and Rit models as studied by David et al., 2005
     #TODO: finish this model
-
     """
 
     # Define traited attributes for this model, these represent possible kwargs.
@@ -144,33 +145,14 @@ class JansenRitDavid(models.Model):
                                     :math:`y1 = 1`, :math:`y2 = 2`, :math:`y3 = 3`, :math:`y4 = 4`, and
                                     :math:`y5 = 5`""")
 
-
-
-    def __init__(self, **kwargs):
-        """
-        Initialise parameters for the Jansen Rit column, [JR_1995]_.
-
-        """
-        LOG.info("%s: initing..." % str(self))
-        super(JansenRitDavid, self).__init__(**kwargs)
-
-        #self._state_variables = ["y0", "y1", "y2", "y3", "y4", "y5"]
-        self._nvar = 8
-
-        self.cvar = numpy.array([1,2], dtype=numpy.int32)
-
-
-
-        LOG.debug('%s: inited.' % repr(self))
-
+    state_variables = ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+    _nvar = 8
+    cvar = numpy.array([1, 2], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
         The dynamic equations were taken from:
-
         TODO: add equations and finish the model ...
-            
-
         """
 
         magic_exp_number = 709
@@ -187,17 +169,17 @@ class JansenRitDavid(models.Model):
         x7 = state_variables[7, :]
 
         y   = x1 - x2
-        #delayed activity x1 - x2
+        # delayed activity x1 - x2
         c_12   = coupling[0, :] -  coupling[1, :]
         c_12_f = AF * ((2 * self.eo) / (1 + numpy.exp(self.r * c_12)) - self.eo)
         c_12_b = AB * ((2 * self.eo) / (1 + numpy.exp(self.r * c_12)) - self.eo)
         c_12_l = AL * ((2 * self.eo) / (1 + numpy.exp(self.r * c_12)) - self.eo)
 
-        lc_f  = (local_coupling *  y)  * AF
-        lc_l  = (local_coupling *  y)  * AL
-        lc_b  = (local_coupling *  y)  * AB
+        lc_f = (local_coupling * y) * AF
+        lc_l = (local_coupling * y) * AL
+        lc_b = (local_coupling * y) * AB
 
-        S_y  = (2 * self.eo) / (1 + numpy.exp(self.r * y))  - self.eo
+        S_y = (2 * self.eo) / (1 + numpy.exp(self.r * y)) - self.eo
         S_x0 = (2 * self.eo) / (1 + numpy.exp(self.r * x0)) - self.eo
         S_x6 = (2 * self.eo) / (1 + numpy.exp(self.r * x6)) - self.eo
 
