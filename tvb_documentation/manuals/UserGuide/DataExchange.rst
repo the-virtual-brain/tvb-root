@@ -88,8 +88,8 @@ contains:
 
 - A root level XML file with details about the project itself
 - Folders for each operation performed as part of the project
-- Operation folder containts a set of H5/HDF5 files for each
-data type generated during that operation.
+- Operation folder contains a view model H5/HDF5 file with details of the operation and
+  a set of H5/HDF5 files for each data type generated during that operation.
     
     .. Note:: 
         each of the H5 files has a structure as described above in 
@@ -132,8 +132,9 @@ data type, contains both data and metadata. These files can be easily opened in
 Python / Matlab / Java / C++ for additional processing.
 
 Export in **TVB Format with links** will export not only the chosen file, but all other files
-which are linked to this datatype as well. This second type of export will result in a ZIP file,
-which contains an HDF5/H5 file for each exported datatype.
+which are linked to this datatype as well (for example, if you export a region mapping, it will
+also export the linked connectivity and cortical surface). This second type of export will result
+in a ZIP file, which contains an HDF5/H5 file for each exported datatype.
 
 In case you want to process HDF5 files with Matlab you can find API
 documentation here:
@@ -162,6 +163,8 @@ type or a group of data types. Each of such structures can be exported as follow
    - each operation folder containing a list of HDF5 files, one for each data type
      included in the exported group. Each file has structure/details as described above in the case of
      simple data type export. *This format applies to any |TVB| data type.*
+3. if a simple data type is exported with links, the result is a ZIP file containing a HDF5 file for
+the exported datatype and a HDF5 file for each linked datatype.
 
 
 
@@ -193,6 +196,23 @@ In correlation with export operations, |TVB| interface allows import of data in
 |TVB| format that has been exported from other systems. This format applies to any
 |TVB| data type. Depending on the uploaded file format, imported data can be as
 follows:
+
+File Format
+~~~~~~~~~~~
+
+1. If user uploads a ZIP file, the system automatically assumes a datatype group
+   must be imported and then process the file accordingly. More specifically, it
+   tries to find an XML file, within the ZIP file, describing the operation(s)
+   that generated the data types and the list of HDF5 files for each datatype.
+
+#. If user uploads a simple HDF5/H5 file, the system assumes that a simple data
+   type is imported and tries to process the file accordingly. Basically it
+   reads the metadata stored in the root node group and determines the data type
+   (e.g. connectivity, time series ...). Based on the detected type of data, the
+   rest of the details are filled and the object is stored in the database.
+
+|
+|
 
 Import Volume Time Series from NIFTI-1 Format
 .............................................
