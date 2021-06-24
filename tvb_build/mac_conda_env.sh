@@ -17,3 +17,4 @@ conda install -y --name mac-distribution -c conda-forge flask gevent pillow
 /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install python-magic-bin==0.4.14
 /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install dmgbuild
 /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install jupyterlab
+/WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install syncrypto
