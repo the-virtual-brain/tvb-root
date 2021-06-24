@@ -44,7 +44,7 @@ VERSION = "2.3"
 
 TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 
-TVB_INSTALL_REQUIREMENTS = ["alembic", "allensdk", "h5py", "nibabel", "numpy", "Pillow", "psutil",
+TVB_INSTALL_REQUIREMENTS = ["alembic", "h5py", "nibabel", "numpy", "Pillow", "psutil", "psycopg2",
                             "pyAesCrypt", "requests", "scipy", "simplejson", "sqlalchemy",
                             "tvb-data", "tvb-gdist", "tvb-library", "tvb-storage", "werkzeug"]
 
