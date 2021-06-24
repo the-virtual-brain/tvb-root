@@ -38,7 +38,7 @@ Before proceeding with more details about data exchange, it would be helpful to
 give you an idea how |TVB| stores its data. Basically there are two major
 storage areas:
 
-1. *Database* - where general information/metadata and relations between
+#. *Database* - where general information/metadata and relations between
    stored elements are stored (e.g. assignment of data to a project, data metadata
    - creation date, owner, etc...)
 
@@ -156,14 +156,14 @@ File Format
 As a result of a Simulation or Analyze function, |TVB| can generate either a data
 type or a group of data types. Each of such structures can be exported as follows:
 
-1. if a simple data type is exported, the result is a single HDF5 file.
-2. if a data type group is exported, the result is a ZIP file containing:
+#. if a simple data type is exported, the result is a single HDF5 file.
+#. if a data type group is exported, the result is a ZIP file containing:
 
    - a list of folders for each operation
    - each operation folder containing a list of HDF5 files, one for each data type
      included in the exported group. Each file has structure/details as described above in the case of
      simple data type export. *This format applies to any |TVB| data type.*
-3. if a simple data type is exported with links, the result is a ZIP file containing a HDF5 file for
+#. if a simple data type is exported with links, the result is a ZIP file containing a HDF5 file for
 the exported datatype and a HDF5 file for each linked datatype.
 
 
@@ -200,10 +200,10 @@ follows:
 File Format
 ~~~~~~~~~~~
 
-1. If user uploads a ZIP file, the system automatically assumes a datatype group
-   must be imported and then process the file accordingly. More specifically, it
-   tries to find an XML file, within the ZIP file, describing the operation(s)
-   that generated the data types and the list of HDF5 files for each datatype.
+#. If user uploads a ZIP file, the system has to decide if it represents
+   a datatype with links or a datatype group. More specifically, if it finds
+   folders inside the zip file, it will know it is a DatatypeGroup import, otherwise
+   it is an import with links.
 
 #. If user uploads a simple HDF5/H5 file, the system assumes that a simple data
    type is imported and tries to process the file accordingly. Basically it
@@ -253,7 +253,7 @@ During import, the user might upload either a TXT file or a zipped TXT in bz2
 format. This TXT file should contain data separated by spaces and grouped as
 follows:
 
-1. each line contains details of a sensor
+#. each line contains details of a sensor
 #. for each sensor there are four or seven columns
 
    - first column represents the name / label of the sensor
@@ -274,14 +274,14 @@ File Format
 
 ZIP file should include files with the following naming schema and format:
 
-1. If any file name contains "weight", it will be considered as the container
+#. If any file name contains "weight", it will be considered as the container
    for connectivity weights and the parse process expects the following format:
 
    - text file containing values separated by spaces / tabs
    - contains a matrix of weights
    - any value greater than zero is considered as a connection. You should not have negative values in your weights file.
 
-2. If any file name contains "centres" it will be considered as the container
+#. If any file name contains "centres" it will be considered as the container
    for connectivity centers and the parse process expects the following format:
 
    - text file containing values separated by spaces / tabs
@@ -294,7 +294,7 @@ ZIP file should include files with the following naming schema and format:
      A region centre would be a single spatial location in 3D.
      This location is specified by three numbers (x,y,z), these numbers should ideally represent mm and must be relative to an origin (x=0, y=0, z=0).
 
-3. If any file name contains "tract" it will be considered as a container for
+#. If any file name contains "tract" it will be considered as a container for
    connectivity tract lengths and the parse process expects the following
    format:
 
@@ -302,7 +302,7 @@ ZIP file should include files with the following naming schema and format:
    - contains a matrix of tract lengths
    - any value greater than zero is considered as a connection. You should not have negative values in your tract file.
 
-4. If any file name contains "orientation" it will be considered as a container
+#. If any file name contains "orientation" it will be considered as a container
    for connectivity center orientations and parse process expects the following
    format:
 
@@ -310,17 +310,17 @@ ZIP file should include files with the following naming schema and format:
    - each row represents orientation for a region center
    - each row should have at least 3 columns for region center orientations (3 float values separated with spaces or tabs)
 
-5. If any file name contains "area" it will be considered as a container for
+#. If any file name contains "area" it will be considered as a container for
    connectivity areas and the parse process expects the following format:
 
    - text file containing one area on each line (as float value)
    
-6. If any file name contains "cortical" it will be considered as a container for
+#. If any file name contains "cortical" it will be considered as a container for
    connectivity cortical/non-cortical region flags, and the parse process expects the following format:
 
    - text file containing one boolean value on each line (as 0 or 1 value) being 1 when corresponding region is cortical.
    
-7. If any file name contains "hemisphere" it will be considered as a container for
+#. If any file name contains "hemisphere" it will be considered as a container for
    hemisphere inclusion flag for connectivity regions, and the parse process expects the following format:
 
    - text file containing one boolean value on each line (as 0 or 1 value) being 1 when corresponding
@@ -343,21 +343,21 @@ File Format
 The uploaded ZIP file should contain files with a specified naming schema and format
 as follows:
 
-1. If any file name contains "vertices" it will be considered as a container for
+#. If any file name contains "vertices" it will be considered as a container for
    surface vertices and parse process expects the following format:
 
    - this is a space separated values file
    - each row represents position of a vertex
    - each row should have three columns (x, y, z as float values)
 
-2. If any file name contains "normals" it will be considered as a container for
+#. If any file name contains "normals" it will be considered as a container for
    surface vertices normals and parse process expects the following format:
    
    - this is a space separated values file
    - each row represents a vertex normal
    - each row should have three columns (with float values)
 
-3. If any file name contains "triangles" it will be considered as a container for
+#. If any file name contains "triangles" it will be considered as a container for
    surface triangles and parse process expects the following format:
    
    - this is a space separated values file
@@ -470,9 +470,3 @@ be the number of vertices in the target Cortical Surface. When the projection ma
 region-level one, **m** will be the number of regions in the Connectivity.
 Having headers in the text file is not accepted. An incorrect number of values (lines or rows) in the
 Projection Matrix will also raise an exception.
-
-
-
-
-
-
