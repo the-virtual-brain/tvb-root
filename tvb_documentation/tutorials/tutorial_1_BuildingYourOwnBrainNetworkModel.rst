@@ -49,7 +49,7 @@ configurable object in TVB:
 In this example, we will change the default parameters to
 have a quick idea of some properties of the simulated data.
 
-#. Go to the simulator page.
+1. Go to the simulator page.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_SimulatorArea.png
    :alt: TVB’s Simulator page
@@ -57,17 +57,17 @@ have a quick idea of some properties of the simulated data.
 
    You can move through the fragments by clicking on the *Next* and *Previous* buttons.
 
-#. *Connectivity*: define some structure for your network. Here, we’ll rely on **TVB’s
+2. *Connectivity*: define some structure for your network. Here, we’ll rely on **TVB’s
    default matrix.**
 
-#. *Conduction speed:* alter the speed of signal propagation through the network to **4 mm/ms**.
+3. *Conduction speed:* alter the speed of signal propagation through the network to **4 mm/ms**.
 
-#. Set a *Long range coupling* function. For our present purposes, we happen to know that for
+4. Set a *Long range coupling* function. For our present purposes, we happen to know that for
    the parameters we will use through TVB’s default *Connectivity* matrix, a **linear**
    function with a slope of :math:`\mathbf{a=0.0042}` is a reasonable
    thing to use.
 
-#. *Local dynamics:* then define a *Model* for the local dynamics. Here we’ll use the **generic 2
+5. *Local dynamics:* then define a *Model* for the local dynamics. Here we’ll use the **generic 2
    dimensional oscillator**  with the parameters shown in the following table.
 
 =================   =======
@@ -92,13 +92,13 @@ Model parameter     Value
    :scale: 30% 
 
 
-#. Now that we’ve defined our structure and dynamics we need to select
+6. Now that we’ve defined our structure and dynamics we need to select
    an integration scheme. We’ll use **Heun**. The most
    important thing here is to use a step size that is small enough for
    the integration to be numerically stable. Here, we chose a value of
    **dt = 0.1 ms**.
 
-#. Select the **Temporal Average** monitor. It averages over a time window of
+7. Select the **Temporal Average** monitor. It averages over a time window of
    length *sampling period* returning one time point every period. It also, by
    default, only returns those state-variables flagged in the *Models*
    definition as *Model Variables to watch*. For our example the
@@ -109,11 +109,11 @@ Model parameter     Value
    here we’ll select only one simple monitor just to show the idea. The Raw
    Monitor takes no arguments and simply returns all the simulated data.
 
-#. Provide the *simulation length*. Here we’ll use the default value of **1000 ms**.
+8. Provide the *simulation length*. Here we’ll use the default value of **1000 ms**.
 
-#. Choose a simulation name. In this example, we chose *AnatomyOfARegionSimulation\_a*.
+9. Choose a simulation name. In this example, we chose *AnatomyOfARegionSimulation\_a*.
 
-#. Click on the *Launch* button.
+10. Click on the *Launch* button.
 
 
 -------------------
@@ -121,9 +121,9 @@ Model parameter     Value
 Looking at the Results
 ----------------------
 
-#. Go to *Projects > Operations* dashboard.
+1. Go to *Projects > Operations* dashboard.
 
-#. Click on the icon of the time-series |tr|. From the metadata
+2. Click on the icon of the time-series |tr|. From the metadata
    overlay’s visualizers tab, launch the *Animated Time Series Visualizer*.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_AnimatedTimeSeries.png
@@ -140,20 +140,20 @@ Looking at the Results
    that fixed point there would be no such initial transient (we will see how to
    achieve that later on).
 
-#. Now let’s have a look at a second simulation, which has the same
+3. Now let’s have a look at a second simulation, which has the same
    parameters as *AnatomyOfARegionSimulation\_a* except that the
    coupling strength has been increased by an order of magnitude. Hence,
    the slope of the linear coupling function is
    :math:`\mathbf{a=0.042}`.
 
-#. To make things easy, we copy the first simulation by clicking on |pen| on the top right
+4. To make things easy, we copy the first simulation by clicking on |pen| on the top right
    corner of a simulation tab. From the menu you can get a copy, edit the name of the
    simulation, branch from it (more about this later), export it as a ZIP file or delete it.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_CopyASimulation.png
    :scale: 50%
 
-#. Change the name of the new simulation (e.g.,
+5. Change the name of the new simulation (e.g.,
    *AnatomyOfARegionSimulation\_b* ) and set the coupling strength to
    the value specificed in step 3. Launch the simulation.
 
@@ -175,17 +175,17 @@ this in the section after the next one.
 Analyze the simulation results
 --------------------------------
 
-#. Go to the **Analysis** page. Here you are going to see a list of the basic analyzers.
+1. Go to the **Analysis** page. Here you are going to see a list of the basic analyzers.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_Analyzers.png
    :alt: List of Analyzers
    :scale: 30%
 
-#. Click on **Fourier Spectral Analysis**.
+2. Click on **Fourier Spectral Analysis**.
 
-#. Launch the analyzer with the default parameters.
+3. Launch the analyzer with the default parameters.
 
-#. Look at the results using the **Fourier Visualizer**.
+4. Look at the results using the **Fourier Visualizer**.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_Fourier.png
    :alt: Fourier Visualizer
@@ -199,24 +199,24 @@ Parameter Space Exploration (PSE)
 A PSE simulation means that TVB will launch a simulation for every value from
 a range specified of one or two chosen parameters.
 
-#. Copy the **AnatomyOfARegionSimulation_b** and name the new simulation
+1. Copy the **AnatomyOfARegionSimulation_b** and name the new simulation
    *AnatomyOfARegionSimulation\_pse*.
 
-#. Set the *simulation length* to **2000 ms**.
+2. Set the *simulation length* to **2000 ms**.
 
-#. Click on the **Setup PSE** button.
+3. Click on the **Setup PSE** button.
 
-#. Select **Coupling.A** as **PSE param1** and **Conduction_Speed** as **PSE param2**.
+4. Select **Coupling.A** as **PSE param1** and **Conduction_Speed** as **PSE param2**.
    Click on **Next**.
 
-#. For **Coupling.A** set the range between
+5. For **Coupling.A** set the range between
    :math:`\mathbf{0.012 \text{ and } 0.042}` and the step to
    :math:`\mathbf{0.002}`.
 
-#. For *Conduction_Speed* set the range between :math:`\mathbf{1-10}`
+6. For *Conduction_Speed* set the range between :math:`\mathbf{1-10}`
    and the step to **1 mm/ms**.
 
-#. Click on the **Launch PSE** button.
+7. Click on the **Launch PSE** button.
 
 .. figure:: figures/BuildingYourOwnBrainNetworkModel_PSESettings.png
    :alt: PSE Settings
@@ -244,13 +244,13 @@ To overcome this issue we have a couple of alternatives. First, we could narrow
 the range of the state variables around the values of a fixed point. How can we
 know this value?
 
-#. Clik on |burst_menu| *> Phase plane*, you’ll be redirected to a new working area.
+1. Clik on |burst_menu| *> Phase plane*, you’ll be redirected to a new working area.
 
    In this area there’s an interactive tool, the *Phase Plane*, which allows you to
    understand the local dynamics, that is the dynamics of a single isolated
    node, by observing how the model parameters change its phase plane.
 
-#. Reset the same parameters as in the table above, click on any point of the
+2. Reset the same parameters as in the table above, click on any point of the
    phase plane. A trajectory will be drawn. We see that the fixed point is
    approx (V, W) = (0.0, 2.75)
 
@@ -259,10 +259,10 @@ know this value?
 
    However, there certainly is a more elegant way.
 
-#. Set your model with fixed point dynamics and a weak coupling strength
+3. Set your model with fixed point dynamics and a weak coupling strength
    (e.g., *AnatomyOfARegionSimulation\_a*)
 
-#. Run a simulation for **1000 ms**.
+4. Run a simulation for **1000 ms**.
 
 TVB has a branching mechanism that allows you to use the data of a
 simulation as the initial history for a new simulation. The only thing
@@ -370,7 +370,7 @@ certainly make a lot more sense in this context than they do at the region
 level, and so we’ll introduce a couple of new *Monitors* here.
 
 
-#. The first of these new *Monitors* is called **SpatialAverage**. To select
+6. The first of these new *Monitors* is called **SpatialAverage**. To select
    several monitors just make sure you check the right boxes.
 
 #. The second of these new monitors, which is an instantiation of a
@@ -423,14 +423,14 @@ connectivity kernel. Coupled across the realistic surface geometry this allows
 for a detailed investigation of the local connectivity’s effects on larger
 scale dynamics modeled by neural fields.
 
-#. Go to *Connectivity > Local Connectivity*. In this area we’ll build two
+1. Go to *Connectivity > Local Connectivity*. In this area we’ll build two
    different kernels: a Gaussian and a Mexican Hat kernel. We’ll start with the
    Gaussian kernel.
 
-#. Select the *equation defining the spatial profile* of your *local
+2. Select the *equation defining the spatial profile* of your *local
    connectivity*. Here, we’ll set **sigma** to **15 mm**.
 
-#. Ideally, you want the function to have essentially dropped to zero by the
+3. Ideally, you want the function to have essentially dropped to zero by the
    **cutoff distance**. The *cutoff distance*, that is, the distance up to
    which a given node is connected to its neighbourhood (Spiegler_et_al_,
    Sanz_Leon_et_al_) is set to **40 mm**.
@@ -439,13 +439,13 @@ scale dynamics modeled by neural fields.
    :alt: Gaussian local connectivity. 
    :scale: 30% 
 
-#. Name your *Local Connectivity* and save it by clicking on *Create new Local
+4. Name your *Local Connectivity* and save it by clicking on *Create new Local
    Connectivity* on the bottom right corner.
 
    This data structure is saved under the name *LocalConnectivity\_Gaussian\_zc\_40*.
 
 
-#. Select the *Mexican Hat equation*. Here, we changed the default parameters. See the values
+5. Select the *Mexican Hat equation*. Here, we changed the default parameters. See the values
    in the following Table.
 
 ===============   =========
@@ -461,22 +461,22 @@ cutoff distance   40 mm
 ===============   =========
 
 
-#. Save your new local connectivity.
+6. Save your new local connectivity.
 
    This data structure is saved under the name *LocalConnectivity\_MexicanHat\_zc\_40*.
 
 Finally, we will run two more simulations using different local
 connectivity kernels.
 
-#. Copy *AnatomyOfASurfaceSimulation*.
+7. Copy *AnatomyOfASurfaceSimulation*.
 
-#. Change the **local connectivity** to
+8. Change the **local connectivity** to
    ***LocalConnectivity\_Gaussian\_zc\_40*** and set the **local
    connectivity strength** to **0.001**. Run the simulation.
 
-#. Copy again *AnatomyOfASurfaceSimulation*.
+9. Copy again *AnatomyOfASurfaceSimulation*.
 
-#. This time select ***LocalConnectivity\_MexicanHat\_zc\_40***. The
+10. This time select ***LocalConnectivity\_MexicanHat\_zc\_40***. The
     **local connectivity strength** is set to **-0.001**. Run the
     simulation.
 

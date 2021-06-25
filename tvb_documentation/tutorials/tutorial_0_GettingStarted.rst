@@ -28,27 +28,27 @@ In this exercise we will assume that multiple users are working with the
 same TVB installation.
 
 
-#. By default your are the *Admin* user.
+1. By default your are the *Admin* user.
 
-#. Change the admin email.
+2. Change the admin email.
 
 .. figure:: figures/Users_ChangeAdminEmail.png
    :scale: 30%
 
 
-#. Create a user for someone else by registering a new user.
+3. Create a user for someone else by registering a new user.
 
 .. figure:: figures/Users_AddNewUser.png
    :scale: 30%
 
-#. You’ll receive a notification email.
+4. You’ll receive a notification email.
 
-#. Make sure the new user has been validated.
+5. Make sure the new user has been validated.
 
 .. figure:: figures/Users_ValidateNewUser.png
    :scale: 40%
 
-#. Login with the Admin account.
+6. Login with the Admin account.
 
 --------------------------------------------
 
@@ -61,15 +61,15 @@ can always work with the default account *admin*.
 Normally when you start TVB you should have the *Default Project* from *tvb_data* already imported.
 If you don't have it, go to step 4 to see how you can import a new project.
 
-#. Go to *Project > List of all projects*.
+1. Go to *Project > List of all projects*.
 
-#. On the right column, bottom corner, click on *Create new project*.
+2. On the right column, bottom corner, click on *Create new project*.
 
 .. figure:: figures/Projects_ListOfAllProjects1.png
    :alt: Click on Save Changes
    :scale: 30%
 
-#. Choose a project name (e.g. *NewProject*) and optionally add a description as well.
+3. Choose a project name (e.g. *NewProject*) and optionally add a description as well.
    On the right column, bottom corner, click on *Save Changes* when you are done.
 
 .. figure:: figures/Projects_CreatingProjects.png
@@ -82,7 +82,7 @@ If you don't have it, go to step 4 to see how you can import a new project.
    :alt: See the newly created project
    :scale: 30%
 
-#. If you wish to import a project, on the right column, bottom corner,
+4. If you wish to import a project, on the right column, bottom corner,
    click on *Import project structure*.
 
 .. figure:: figures/Projects_Import.png
@@ -95,19 +95,19 @@ Chosing the ModelingEpilepsy.zip project and then Click on *Upload*.
    :alt: Click on Select files
    :scale: 30%
 
-#. Be patient.
+5. Be patient.
 
 .. figure:: figures/Projects_Wait.png
    :alt: Be patient, it will take a few minutes.
    :scale: 30%
 
-#. You can now see the project on the *List of all projects*.
+6. You can now see the project on the *List of all projects*.
 
 .. figure:: figures/Projects_Done.png
    :alt: The imported project can be seen in the list of all projects.
    :scale: 30%
 
-#. If you wish to export a project, click on the pencil icon located left to the project name.
+7. If you wish to export a project, click on the pencil icon located left to the project name.
 
 .. figure:: figures/Projects_PencilIcon.png
    :alt: Pencil Icon
@@ -119,10 +119,10 @@ Chosing the ModelingEpilepsy.zip project and then Click on *Upload*.
    :alt: Project Properties page
    :scale: 30%
 
-#. If you wish to delete a project, you click on the *Delete* button and the project
+8. If you wish to delete a project, you click on the *Delete* button and the project
    will disappear from the list.
 
-#. Select one of the projects (e.g. ModelingEpilepsy.zip). You select a project by clicking
+9. Select one of the projects (e.g. ModelingEpilepsy.zip). You select a project by clicking
    on the star icon.
 
 .. figure:: figures/Projects_SelectCurrentProject.png
@@ -134,22 +134,22 @@ Chosing the ModelingEpilepsy.zip project and then Click on *Upload*.
 Importing A Connectivity
 ------------------------
 
-#. Assuming that you are working in the previously created project, upload a Connectivity in
+1. Assuming that you are working in the previously created project, upload a Connectivity in
    a zip file. Go to *Projects > Data structure*. Click on *Upload*. An
    overlay with the current supported formats will appear. 
 
-#. Select *Connectivity ZIP*.
+2. Select *Connectivity ZIP*.
 
-#. From your downloaded tvb-data folder select the file *connectivity_96.zip* found at *tvb_data/connectivity/*.
+3. From your downloaded tvb-data folder select the file *connectivity_96.zip* found at *tvb_data/connectivity/*.
 
 .. figure:: figures/ImportConnectivity_Uploaders.png
    :alt: Supported data formats.
    :scale: 30%
 
-#. Add a personalized tag to this newly created datatype (e.g.
+4. Add a personalized tag to this newly created datatype (e.g.
    *conn\_96*).
 
-#. Save the changes.
+5. Save the changes.
 
 .. figure:: figures/ImportConnectivity_TagDatatype.png
    :alt: Add a personalized tag.
@@ -160,39 +160,39 @@ Importing A Connectivity
 Link And Share
 ---------------
 
-#. Select the connectivity you want to share.
+1. Select the connectivity you want to share.
 
-#. In the *metadata overlay*, go to the tab *Links*. You’ll see a list with all
+2. In the *metadata overlay*, go to the tab *Links*. You’ll see a list with all
    your projects except the current one.
 
-#. Link this datatype (connectivity) with *SecondNewProject*.
+3. Link this datatype (connectivity) with *SecondNewProject*.
 
 .. figure:: figures/LinkAndShare_LinksTab.png
    :alt: Links tab.
    :scale: 30%
 
-#. Go to *Project > List of all projects*.
+4. Go to *Project > List of all projects*.
 
-#. Switch to *SecondNewProject*.
+5. Switch to *SecondNewProject*.
 
-#. Then at *Project > Data Structure* you should see
+6. Then at *Project > Data Structure* you should see
    the datatype (connectivity) that you shared (the name is written in italics).
 
 .. figure:: figures/LinkAndShare_LinkedDatatype.png
    :alt: You can see the datatype that you shared from NewProject.
    :scale: 60%
 
-#. Go to *Project > List of all projects*.
+7. Go to *Project > List of all projects*.
 
-#. Switch to *ModelingEpilepsy*.
+8. Switch to *ModelingEpilepsy*.
 
-#. Then from Project > Basic properties share this project with the other user account.
+9. Then from Project > Basic properties share this project with the other user account.
 
 .. figure:: figures/LinkAndShare_LinkedProject.png
    :alt: Click on the checkbox next to the user you want to share the project with
    :scale: 30%
 
-#. Logout from your account and login with the other user.
+10. Logout from your account and login with the other user.
 
 You should be able to see the *ModelingEpilepsy* project in your other account as well.
 
@@ -202,22 +202,22 @@ You should be able to see the *ModelingEpilepsy* project in your other account a
 Export and Read a Datatype
 ---------------
 
-#. Select *ModelingEpilepsy* as your current project.
+1. Select *ModelingEpilepsy* as your current project.
 
-#. Go to *Project > Data structure*
+2. Go to *Project > Data structure*
 
-#. Click on |node_tr| from TimeSeriesRegion.
+3. Click on |node_tr| from TimeSeriesRegion.
 
-#. From the overlay, *Export* tab, download only the time series h5 file by clicking on *TVB format* (h5).
+4. From the overlay, *Export* tab, download only the time series h5 file by clicking on *TVB format* (h5).
 
-#. If you wish to download not just the time series file, but the linked datatypes as well,
+5. If you wish to download not just the time series file, but the linked datatypes as well,
    choose the *TVB Format with links* option.
 
 .. figure:: figures/ExportDatatype.png
    :alt: Export with or without links
    :scale: 30%
 
-#. Rename the file if you want (e.g. *LinkAndShare\_TimeSeriesRegion*).
+6. Rename the file if you want (e.g. *LinkAndShare\_TimeSeriesRegion*).
 
 From an **ipython** shell you can follow the commands presented below. 
 You can also use a **ipython notebook** by going into *TVB_Distribution/bin/* and 
