@@ -43,11 +43,14 @@ from tvb.interfaces.web.controllers.simulator.simulator_wizzard_urls import Simu
 class MonitorsWizardHandler:
     def __init__(self):
         self.next_monitors_dict = None
+        self.all_monitors_dict = get_ui_name_to_monitor_dict(True)
+
+        for key, value in self.all_monitors_dict.items():
+            self.all_monitors_dict[key] = value()
 
     def set_monitors_list_on_simulator(self, session_stored_simulator, monitor_names):
         self.build_list_of_monitors_from_names(monitor_names, session_stored_simulator.is_surface_simulation)
-        monitor_dict = get_ui_name_to_monitor_dict(session_stored_simulator.is_surface_simulation)
-        session_stored_simulator.monitors = list(monitor_dict[monitor]() for monitor in monitor_names)
+        session_stored_simulator.monitors = list(self.all_monitors_dict[monitor] for monitor in monitor_names)
 
     def clear_next_monitors_dict(self):
         if self.next_monitors_dict:
