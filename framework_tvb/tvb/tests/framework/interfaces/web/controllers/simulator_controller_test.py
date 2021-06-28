@@ -59,6 +59,7 @@ from tvb.interfaces.web.controllers.common import *
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.models import ModelsEnum
+from tvb.simulator.models.epileptor import Epileptor
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
@@ -263,7 +264,6 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['alpha'] = '[1.0]'
         self.sess_mock['beta'] = '[1.0]'
         self.sess_mock['gamma'] = '[1.0]'
-        self.sess_mock['variables_of_interest'] = 'V'
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.context.set_simulator(self.session_stored_simulator)
@@ -281,7 +281,16 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.model.alpha == [1.0], "alpha has incorrect value."
         assert self.session_stored_simulator.model.beta == [1.0], "beta has incorrect value."
         assert self.session_stored_simulator.model.gamma == [1.0], "gamma has incorrect value."
-        assert self.session_stored_simulator.model.variables_of_interest == ['V'], \
+
+    def test_set_variables_of_interest(self):
+        self.sess_mock['variables_of_interest'] = ['x2 - x1', 'y2']
+        self.session_stored_simulator.model = Epileptor()
+
+        with patch('cherrypy.session', self.sess_mock, create=True):
+            self.simulator_controller.context.set_simulator(self.session_stored_simulator)
+            self.simulator_controller.set_variables_of_interest(**self.sess_mock._data)
+
+        assert self.session_stored_simulator.model.variables_of_interest == ['x2 - x1', 'y2'], \
             "variables_of_interest has incorrect value."
 
     def test_set_integrator(self):

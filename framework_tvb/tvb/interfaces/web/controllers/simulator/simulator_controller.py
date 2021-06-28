@@ -299,10 +299,32 @@ class SimulatorController(BurstBaseController):
     @expose_fragment('simulator_fragment')
     def set_model_params(self, **data):
         session_stored_simulator, is_simulation_copy, is_simulation_load, is_branch = self.context.get_common_params()
+        form = get_form_for_model(type(session_stored_simulator.model))
 
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
-            form = get_form_for_model(type(session_stored_simulator.model))()
+            form = form()
+            form.fill_from_post(data)
+            form.fill_trait(session_stored_simulator.model)
+
+        voi_fragment = self.algorithm_service.prepare_adapter_form(
+            form_instance=SimulatorVariablesOfInterestFragment(form.get_enum_value()))
+        voi_fragment.fill_from_trait(session_stored_simulator.model)
+
+        rendering_rules = SimulatorFragmentRenderingRules(
+            voi_fragment, SimulatorWizzardURLs.SET_VARIABLES_OF_INTEREST_URL,
+            SimulatorWizzardURLs.SET_MODEL_PARAMS_URL, is_simulation_copy, is_simulation_load,
+            self.context.last_loaded_fragment_url, cherrypy.request.method, is_branch=is_branch)
+        return rendering_rules.to_dict()
+
+    @expose_fragment('simulator_fragment')
+    def set_variables_of_interest(self, **data):
+        session_stored_simulator, is_simulation_copy, is_simulation_load, is_branch = self.context.get_common_params()
+
+        if cherrypy.request.method == POST_REQUEST:
+            self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_VARIABLES_OF_INTEREST_URL)
+            monitor_form = get_form_for_model(type(session_stored_simulator.model))
+            form = SimulatorVariablesOfInterestFragment(monitor_form.get_enum_value())
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.model)
 
@@ -312,7 +334,7 @@ class SimulatorController(BurstBaseController):
 
         rendering_rules = SimulatorFragmentRenderingRules(
             integrator_fragment, SimulatorWizzardURLs.SET_INTEGRATOR_URL,
-            SimulatorWizzardURLs.SET_MODEL_PARAMS_URL, is_simulation_copy, is_simulation_load,
+            SimulatorWizzardURLs.SET_VARIABLES_OF_INTEREST_URL, is_simulation_copy, is_simulation_load,
             self.context.last_loaded_fragment_url, cherrypy.request.method, is_branch=is_branch)
         return rendering_rules.to_dict()
 

@@ -124,12 +124,14 @@ class Generic2dOscillatorModelForm(FormWithRanges):
         self.alpha = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().alpha)
         self.beta = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().beta)
         self.gamma = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().gamma)
-        self.variables_of_interest = MultiSelectField(
-            ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['tau', 'a', 'b', 'c', 'I', 'd', 'e', 'f', 'g', 'alpha', 'beta', 'gamma']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.GENERIC_2D_OSCILLATOR
 
 
 class KuramotoModelForm(FormWithRanges):
@@ -137,11 +139,14 @@ class KuramotoModelForm(FormWithRanges):
     def __init__(self):
         super(KuramotoModelForm, self).__init__()
         self.omega = ArrayField(ModelsEnum.KURAMOTO.get_class().omega)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.KURAMOTO.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['omega']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.KURAMOTO
 
 
 class SupHopfModelForm(FormWithRanges):
@@ -150,11 +155,14 @@ class SupHopfModelForm(FormWithRanges):
         super(SupHopfModelForm, self).__init__()
         self.a = ArrayField(ModelsEnum.SUP_HOPF.get_class().a)
         self.omega = ArrayField(ModelsEnum.SUP_HOPF.get_class().omega)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.SUP_HOPF.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['a', 'omega']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.SUP_HOPF
 
 
 class HopfieldModelForm(FormWithRanges):
@@ -164,11 +172,14 @@ class HopfieldModelForm(FormWithRanges):
         self.taux = ArrayField(ModelsEnum.HOPFIELD.get_class().taux)
         self.tauT = ArrayField(ModelsEnum.HOPFIELD.get_class().tauT)
         self.dynamic = ArrayField(ModelsEnum.HOPFIELD.get_class().dynamic)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.HOPFIELD.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['taux', 'tauT', 'dynamic']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.HOPFIELD
 
 
 class EpileptorModelForm(FormWithRanges):
@@ -193,11 +204,14 @@ class EpileptorModelForm(FormWithRanges):
         self.Ks = ArrayField(ModelsEnum.EPILEPTOR.get_class().Ks)
         self.tt = ArrayField(ModelsEnum.EPILEPTOR.get_class().tt)
         self.modification = ArrayField(ModelsEnum.EPILEPTOR.get_class().modification)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ["Iext", "Iext2", "r", "x0", "slope"]
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.EPILEPTOR
 
 
 class Epileptor2DModelForm(FormWithRanges):
@@ -216,11 +230,14 @@ class Epileptor2DModelForm(FormWithRanges):
         self.Ks = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().Ks)
         self.tt = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().tt)
         self.modification = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().modification)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_2D.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ["r", "Iext", "x0"]
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.EPILEPTOR_2D
 
 
 class EpileptorCodim3ModelForm(FormWithRanges):
@@ -240,12 +257,15 @@ class EpileptorCodim3ModelForm(FormWithRanges):
         self.Ks = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().Ks)
         self.N = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().N)
         self.modification = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().modification)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['mu1_start', 'mu2_start', 'nu_start', 'mu1_stop', 'mu2_stop', 'nu_stop', 'b', 'R', 'c', 'dstar', 'N',
                 'Ks']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.EPILEPTOR_CODIM_3
 
 
 class EpileptorCodim3SlowModModelForm(FormWithRanges):
@@ -273,13 +293,15 @@ class EpileptorCodim3SlowModModelForm(FormWithRanges):
         self.Ks = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().Ks)
         self.N = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().N)
         self.modification = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().modification)
-        self.variables_of_interest = MultiSelectField(
-            ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['mu1_Ain', 'mu2_Ain', 'nu_Ain', 'mu1_Bin', 'mu2_Bin', 'nu_Bin', 'mu1_Aend', 'mu2_Aend', 'nu_Aend',
                 'mu1_Bend', 'mu2_Bend', 'nu_Bend', 'b', 'R', 'c', 'dstar', 'N']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.EPILEPTOR_CODIM_3_SLOW
 
 
 class EpileptorRestingStateModelForm(FormWithRanges):
@@ -314,12 +336,15 @@ class EpileptorRestingStateModelForm(FormWithRanges):
         self.beta_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().beta_rs)
         self.K_rs = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().K_rs)
         self.p = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().p)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_RS.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['Iext', 'Iext2', 'r', 'x0', 'slope', 'tau_rs', 'a_rs', 'b_rs', 'I_rs', 'd_rs', 'e_rs', 'f_rs',
                 'alpha_rs', 'beta_rs', 'gamma_rs']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.EPILEPTOR_RS
 
 
 class JansenRitModelForm(FormWithRanges):
@@ -341,11 +366,14 @@ class JansenRitModelForm(FormWithRanges):
         self.p_min = ArrayField(ModelsEnum.JANSEN_RIT.get_class().p_min)
         self.p_max = ArrayField(ModelsEnum.JANSEN_RIT.get_class().p_max)
         self.mu = ArrayField(ModelsEnum.JANSEN_RIT.get_class().mu)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.JANSEN_RIT.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['A', 'B', 'a', 'b', 'v0', 'nu_max', 'r', 'J', 'a_1', 'a_2', 'a_3', 'a_4', 'p_min', 'p_max', 'mu']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.JANSEN_RIT
 
 
 class ZetterbergJansenModelForm(FormWithRanges):
@@ -370,12 +398,15 @@ class ZetterbergJansenModelForm(FormWithRanges):
         self.P = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().P)
         self.U = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().U)
         self.Q = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().Q)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.ZETTERBERG_JANSEN.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['He', 'Hi', 'ke', 'ki', 'e0', 'rho_2', 'rho_1', 'gamma_1', 'gamma_2', 'gamma_3', 'gamma_4', 'gamma_5',
                 'P', 'U', 'Q']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.ZETTERBERG_JANSEN
 
 
 class ReducedWongWangModelForm(FormWithRanges):
@@ -391,11 +422,14 @@ class ReducedWongWangModelForm(FormWithRanges):
         self.J_N = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().J_N)
         self.I_o = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().I_o)
         self.sigma_noise = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().sigma_noise)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.REDUCED_WONG_WANG.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['a', 'b', 'd', 'gamma', 'tau_s', 'w', 'J_N', 'I_o']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.REDUCED_WONG_WANG
 
 
 class ReducedWongWangExcInhModelForm(FormWithRanges):
@@ -420,13 +454,15 @@ class ReducedWongWangExcInhModelForm(FormWithRanges):
         self.I_o = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().I_o)
         self.G = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().G)
         self.lamda = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().lamda)
-        self.variables_of_interest = MultiSelectField(
-            ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['a_e', 'b_e', 'd_e', 'gamma_e', 'tau_e', 'W_e', 'w_p', 'J_N', 'a_i', 'b_i', 'd_i', 'gamma_i', 'tau_i',
                 'W_i', 'J_i', 'I_o', 'G', 'lamda']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.REDUCED_WONG_WANG_EXCH_INH
 
 
 class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
@@ -441,13 +477,14 @@ class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
         self.K21 = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().K21)
         self.sigma = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().sigma)
         self.mu = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().mu)
-        self.variables_of_interest = MultiSelectField(
-            ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['tau', 'a', 'b', 'K11', 'K12', 'K21', 'sigma', 'mu']
 
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO
 
 class ReducedSetHindmarshRoseModelForm(FormWithRanges):
 
@@ -465,12 +502,14 @@ class ReducedSetHindmarshRoseModelForm(FormWithRanges):
         self.K21 = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().K21)
         self.sigma = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().sigma)
         self.mu = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().mu)
-        self.variables_of_interest = MultiSelectField(
-            ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['r', 'a', 'b', 'c', 'd', 's', 'xo', 'K11', 'K12', 'K21', 'sigma', 'mu']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.REDUCED_SET_HINDMARSH_ROSE
 
 
 class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
@@ -505,7 +544,6 @@ class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
         self.external_input_ex_in = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().external_input_ex_in)
         self.external_input_in_ex = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().external_input_in_ex)
         self.external_input_in_in = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().external_input_in_in)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
@@ -513,12 +551,18 @@ class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
                 'Q_i', 'tau_e', 'tau_i', 'N_tot', 'p_connect', 'g', 'K_ext_e', 'K_ext_i', 'T', 'external_input_ex_ex',
                 'external_input_ex_in', 'external_input_in_ex', 'external_input_in_in']
 
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.ZERLAUT_FIRST_ORDER
 
 class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm):
 
     def __init__(self):
         super(ZerlautAdaptationSecondOrderModelForm, self).__init__()
-        self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_SECOND_ORDER.get_class().variables_of_interest)
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.ZERLAUT_SECOND_ORDER
 
 class MontbrioPazoRoxinModelForm(FormWithRanges):
 
@@ -532,11 +576,14 @@ class MontbrioPazoRoxinModelForm(FormWithRanges):
         self.Gamma = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().Gamma)
         self.cr = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().cr)
         self.cv = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().cv)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['tau', 'I', 'Delta', 'J', 'eta', 'Gamma', 'cr', 'cv']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.MONTBRIO_PAZO_ROXIN
 
 class CoombesByrneModelForm(FormWithRanges):
 
@@ -547,11 +594,14 @@ class CoombesByrneModelForm(FormWithRanges):
         self.v_syn = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().v_syn)
         self.k = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().k)
         self.eta = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().eta)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.COOMBES_BYRNE.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['Delta', 'alpha', 'v_syn', 'k', 'eta']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.COOMBES_BYRNE
 
 class CoombesByrne2DModelForm(FormWithRanges):
 
@@ -561,11 +611,14 @@ class CoombesByrne2DModelForm(FormWithRanges):
         self.v_syn = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().v_syn)
         self.k = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().k)
         self.eta = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().eta)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.COOMBES_BYRNE_2D.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['Delta', 'v_syn', 'k', 'eta']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.COOMBES_BYRNE_2D
 
 class GastSchmidtKnoscheSDModelForm(FormWithRanges):
 
@@ -580,11 +633,14 @@ class GastSchmidtKnoscheSDModelForm(FormWithRanges):
         self.eta = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().eta)
         self.cr = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().cr)
         self.cv = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().cv)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD
 
 class GastSchmidtKnoscheSFModelForm(FormWithRanges):
 
@@ -599,11 +655,14 @@ class GastSchmidtKnoscheSFModelForm(FormWithRanges):
         self.eta = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().eta)
         self.cr = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().cr)
         self.cv = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().cv)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF
 
 class DumontGutkinModelForm(FormWithRanges):
 
@@ -623,12 +682,15 @@ class DumontGutkinModelForm(FormWithRanges):
         self.J_ie = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().J_ie)
         self.J_ii = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().J_ii)
         self.Gamma = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().Gamma)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.DUMONT_GUTKIN.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['I_e', 'Delta_e', 'eta_e', 'tau_e', 'I_i', 'Delta_i', 'eta_i', 'tau_i', 'tau_s',
                 'J_ee', 'J_ei', 'J_ie', 'J_ii', 'Gamma']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.DUMONT_GUTKIN
 
 
 class LinearModelForm(FormWithRanges):
@@ -636,11 +698,14 @@ class LinearModelForm(FormWithRanges):
     def __init__(self):
         super(LinearModelForm, self).__init__()
         self.gamma = ArrayField(ModelsEnum.LINEAR.get_class().gamma)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.LINEAR.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['gamma']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.LINEAR
 
 
 class WilsonCowanModelForm(FormWithRanges):
@@ -669,12 +734,15 @@ class WilsonCowanModelForm(FormWithRanges):
         self.Q = ArrayField(ModelsEnum.WILSON_COWAN.get_class().Q)
         self.alpha_e = ArrayField(ModelsEnum.WILSON_COWAN.get_class().alpha_e)
         self.alpha_i = ArrayField(ModelsEnum.WILSON_COWAN.get_class().alpha_i)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.WILSON_COWAN.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['c_ee', 'c_ei', 'c_ie', 'c_ii', 'tau_e', 'tau_i', 'a_e', 'b_e', 'c_e', 'a_i', 'b_i', 'c_i', 'r_e',
                 'r_i', 'k_e', 'k_i', 'P', 'Q', 'theta_e', 'theta_i', 'alpha_e', 'alpha_i']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.WILSON_COWAN
 
 
 class LarterBreakspearModelForm(FormWithRanges):
@@ -713,10 +781,13 @@ class LarterBreakspearModelForm(FormWithRanges):
         self.QV_max = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().QV_max)
         self.QZ_max = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().QZ_max)
         self.t_scale = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().t_scale)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.LARTER_BREAKSPEAR.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['gCa', 'gK', 'gL', 'phi', 'gNa', 'TK', 'TCa', 'TNa', 'VCa', 'VK', 'VL', 'VNa', 'd_K', 'tau_K', 'd_Na',
                 'd_Ca', 'aei', 'aie', 'b', 'C', 'ane', 'ani', 'aee', 'Iext', 'rNMDA', 'VT', 'd_V', 'ZT', 'd_Z',
                 'QV_max', 'QZ_max', 't_scale']
+
+    @staticmethod
+    def get_enum_value():
+        return ModelsEnum.LARTER_BREAKSPEAR

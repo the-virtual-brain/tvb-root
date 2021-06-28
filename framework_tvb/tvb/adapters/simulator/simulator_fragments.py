@@ -154,6 +154,11 @@ class SimulatorModelFragment(ABCAdapterForm):
             datatype.model = self.model.value()
 
 
+class SimulatorVariablesOfInterestFragment(ABCAdapterForm):
+    def __init__(self, model):
+        self.variables_of_interest = MultiSelectField(model.get_class().variables_of_interest)
+
+
 class SimulatorIntegratorFragment(ABCAdapterForm):
 
     def __init__(self):

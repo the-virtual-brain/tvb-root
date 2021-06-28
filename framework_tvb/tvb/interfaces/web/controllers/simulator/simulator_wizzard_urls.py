@@ -37,6 +37,7 @@ class SimulatorWizzardURLs(object):
     SET_CORTEX_URL = '/burst/set_cortex'
     SET_MODEL_URL = '/burst/set_model'
     SET_MODEL_PARAMS_URL = '/burst/set_model_params'
+    SET_VARIABLES_OF_INTEREST_URL = '/burst/set_variables_of_interest'
     SET_INTEGRATOR_URL = '/burst/set_integrator'
     SET_INTEGRATOR_PARAMS_URL = '/burst/set_integrator_params'
     SET_NOISE_PARAMS_URL = '/burst/set_noise_params'
