@@ -291,4 +291,4 @@ class TumorDatasetCreator(ABCAdapter):
                                 " Trying the download again, number of retries left is {}!".format(retry_no - 1))
             time.sleep(self.SLEEP_TIME)
             next_start_byte = Path(file_name).stat().st_size
-            return self.__download_tumor_dataset(next_start_byte, file_name, retry_no - 1)
+            return self.__download_tumor_dataset(next_start_byte, file_name, retry_no - 1, tumor_dataset_url)
