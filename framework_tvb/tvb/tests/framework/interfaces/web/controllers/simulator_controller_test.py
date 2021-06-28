@@ -36,7 +36,7 @@ import tvb_data.regionMapping
 import tvb_data.projectionMatrix
 from os import path
 from uuid import UUID
-from mock import patch
+from unittest.mock import patch
 from datetime import datetime
 from cherrypy.lib.sessions import RamSession
 
