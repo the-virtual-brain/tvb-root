@@ -1,13 +1,22 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 2.3 - build 16387
- Release Date: * June 2021
+ Version: 2.* - build 16***
+ Release Date: ** ** 2021
+ Description: ****
+======================================================================================================================================
+    * ...
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.3 - build 16440
+ Release Date: 28 June 2021
  Description: Framework optimizations, Brain Tumor dataset import button, tvb-storage module
 ======================================================================================================================================
     * Optimizations in framework: simulation run, Operations and Data structure page load
     * Start support for BIDS data: new button on Data structure page to import the Brain Tumor dataset from EBRAINS
+    * Improve mechanism to cancel/delete PSE operations
     * Separate tvb-storage as a module on pypi
     * Bug fixing
+    * Update documentation
 ======================================================================================================================================
  The Virtual Brain (TVB)
  Version: 2.2.2 - build 16153
