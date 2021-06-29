@@ -43,7 +43,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.entities.load import get_filtered_datatypes, load_entity_by_gid
 from tvb.core.services.exceptions import OperationException
 from tvb.storage.storage_interface import StorageInterface
-from tvb.storage.h5.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

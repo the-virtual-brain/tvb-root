@@ -34,7 +34,7 @@ All calls to methods from this module must be done through this class.
 
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-
+import uuid
 from datetime import datetime
 import os
 
@@ -62,6 +62,9 @@ class StorageInterface:
     TVB_PROJECT_FILE = "Project" + TVB_FILE_EXTENSION
 
     ZIP_FILE_EXTENSION = "zip"
+
+    H5_EXTENSION = '.h5'
+    H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
 
     OPERATION_FOLDER_PREFIX = "Operation_"
 
@@ -131,20 +134,6 @@ class StorageInterface:
     def get_tumor_dataset_folder(self):
         return self.files_helper.get_tumor_dataset_folder()
 
-    def zip_folders(self, all_datatypes, project_name, zip_full_path):
-        operation_folders = []
-        for data_type in all_datatypes:
-            operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
-            operation_folders.append(operation_folder)
-        FilesHelper.zip_folders(zip_full_path, operation_folders, self.OPERATION_FOLDER_PREFIX)
-
-    @staticmethod
-    def zip_folder(result_name, folder_root):
-        FilesHelper.zip_folder(result_name, folder_root)
-
-    def unpack_zip(self, uploaded_zip, folder_path):
-        return self.files_helper.unpack_zip(uploaded_zip, folder_path)
-
     @staticmethod
     def copy_file(source, dest, dest_postfix=None, buffer_size=1024 * 1024):
         FilesHelper.copy_file(source, dest, dest_postfix, buffer_size)
@@ -167,14 +156,14 @@ class StorageInterface:
 
     # TvbZip methods start here #
 
-    def write_zip_folder(self, dest_path, folder, exclude=None):
+    def write_zip_folder(self, dest_path, folder, exclude=[]):
         self.tvb_zip = TvbZip(dest_path, "w")
-        self.tvb_zip.write_zip_folder(folder, exclude)
+        self.tvb_zip.write_zip_folder(folder, self.OPERATION_FOLDER_PREFIX, exclude)
         self.tvb_zip.close()
 
-    def write_zip_folder_with_links(self, dest_path, folder, linked_paths, op, exclude=None):
+    def write_zip_folder_with_links(self, dest_path, folder, linked_paths, op, exclude=[]):
         self.tvb_zip = TvbZip(dest_path, "w")
-        self.tvb_zip.write_zip_folder(folder, exclude)
+        self.tvb_zip.write_zip_folder(folder, self.OPERATION_FOLDER_PREFIX, exclude)
 
         self.logger.debug("Done exporting files, now we will export linked DTs")
 
@@ -182,6 +171,25 @@ class StorageInterface:
             self.export_datatypes(linked_paths, op)
 
         self.tvb_zip.close()
+
+    def write_zip_folders(self, all_datatypes, project_name, zip_full_path, exclude=[]):
+        operation_folders = []
+        for data_type in all_datatypes:
+            operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
+            operation_folders.append(operation_folder)
+        self.tvb_zip = TvbZip(zip_full_path, "w")
+        self.tvb_zip.write_zip_folders(operation_folders, self.OPERATION_FOLDER_PREFIX, exclude)
+        self.tvb_zip.close()
+
+    @staticmethod
+    def zip_folder(result_name, folder_root):
+        FilesHelper.zip_folder(result_name, folder_root)
+
+    def unpack_zip(self, uploaded_zip, folder_path):
+        self.tvb_zip = TvbZip(uploaded_zip, "r")
+        unpacked_folder = self.tvb_zip.unpack_zip(folder_path)
+        self.tvb_zip.close()
+        return unpacked_folder
 
     def get_filenames_in_zip(self, dest_path, mode="r"):
         self.tvb_zip = TvbZip(dest_path, mode)
@@ -297,6 +305,23 @@ class StorageInterface:
         self.folders_queue_consumer.join()
 
     # Generic methods start here
+    def get_h5_by_gid(self, project_name, op_id, dt_gid):
+        op_path = self.files_helper.get_project_folder(project_name, str(op_id))
+
+        for f in os.listdir(op_path):
+            fp = os.path.join(op_path, f)
+            if dt_gid in f and os.path.isfile(fp):
+                return fp
+
+    def get_h5_filename(self, class_name, gid):
+        return self.H5_FILE_NAME_STRUCTURE.format(class_name, gid.hex)
+
+    def path_for(self, op_id, h5_file_class, gid, project_name, dt_class):
+        operation_dir = self.files_helper.get_project_folder(project_name, str(op_id))
+        if isinstance(gid, str):
+            gid = uuid.UUID(gid)
+        fname = self.get_h5_filename(dt_class or h5_file_class.file_name_base(), gid)
+        return os.path.join(operation_dir, fname)
 
     def ends_with_tvb_file_extension(self, file):
         return file.endswith(self.TVB_FILE_EXTENSION)
