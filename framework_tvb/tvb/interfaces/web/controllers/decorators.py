@@ -47,7 +47,7 @@ from keycloak.exceptions import KeycloakError
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.authorization import AuthorizationManager
-from tvb.core.services.kube_service import KubeService
+from tvb.storage.kube.kube_notifier import KubeNotifier
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 
@@ -212,7 +212,7 @@ def check_kube_user(func):
         if not authorization:
             raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, "Token is missing")
         try:
-            KubeService.fetch_endpoints({"Authorization": authorization})
+            KubeNotifier.fetch_endpoints({"Authorization": authorization})
             return func(*a, **b)
         except Exception as e:
             raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, e)

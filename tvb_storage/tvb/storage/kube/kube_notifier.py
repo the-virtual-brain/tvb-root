@@ -42,7 +42,7 @@ from tvb.basic.profile import TvbProfile
 LOGGER = get_logger(__name__)
 
 
-class KubeService:
+class KubeNotifier:
     @staticmethod
     def get_pods(application):
         sa_token = Popen(['cat', '/var/run/secrets/kubernetes.io/serviceaccount/token'], stdout=PIPE,
@@ -51,7 +51,7 @@ class KubeService:
         auth_header = {"Authorization": "Bearer {}".format(sa_token)}
         openshift_pods = None
         try:
-            response = KubeService.fetch_endpoints(auth_header, application)
+            response = KubeNotifier.fetch_endpoints(auth_header, application)
             openshift_pods = response.json()['subsets'][0]['addresses']
         except Exception as e:
             LOGGER.error("Failed to retrieve openshift pods for application {}".format(application), e)
@@ -63,7 +63,7 @@ class KubeService:
             return
 
         LOGGER.info("Notify all pods with url {}".format(url))
-        openshift_pods, auth_header = KubeService.get_pods(target_application)
+        openshift_pods, auth_header = KubeNotifier.get_pods(target_application)
         url_pattern = "http://{}:" + str(TvbProfile.current.web.SERVER_PORT) + url
         with ThreadPoolExecutor(max_workers=len(openshift_pods)) as executor:
             for pod in openshift_pods:

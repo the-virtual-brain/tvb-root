@@ -49,8 +49,8 @@ from tvb.core.entities.model.model_operation import OperationProcessIdentifier, 
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.burst_service import BurstService
+from tvb.storage.kube.kube_notifier import KubeNotifier
 from tvb.storage.storage_interface import StorageInterface
-from tvb.core.services.kube_service import KubeService
 
 LOGGER = get_logger(__name__)
 
@@ -242,7 +242,7 @@ class StandAloneClient(BackendClient):
         if notify_pods and TvbProfile.current.web.OPENSHIFT_DEPLOY:
             try:
                 LOGGER.info("Notify pods to stop operation process for {}".format(operation_id))
-                KubeService.notify_pods("/kube/stop_operation_process/{}".format(operation_id),
+                KubeNotifier.notify_pods("/kube/stop_operation_process/{}".format(operation_id),
                                         TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
                 return True
             except Exception as e:

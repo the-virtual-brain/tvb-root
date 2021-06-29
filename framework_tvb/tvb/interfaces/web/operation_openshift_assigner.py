@@ -31,7 +31,6 @@
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
 import random
-from concurrent.futures.thread import ThreadPoolExecutor
 from time import sleep
 
 import requests
@@ -39,7 +38,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import Operation
 from tvb.core.entities.storage import dao
-from tvb.core.services.kube_service import KubeService
+from tvb.storage.kube.kube_notifier import KubeNotifier
 
 log = get_logger(__name__)
 
@@ -53,7 +52,7 @@ if __name__ == '__main__':
             log.info("Found {} operations with the queue full flag set.".format(len(operations)))
             if len(operations) == 0:
                 continue
-            pods, auth_header = KubeService.get_pods(TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
+            pods, auth_header = KubeNotifier.get_pods(TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
             if pods:
                 random.shuffle(pods)
                 pods_no = len(pods)

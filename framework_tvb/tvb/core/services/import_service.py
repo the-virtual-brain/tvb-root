@@ -203,7 +203,7 @@ class ImportService(object):
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
             if StorageInterface.encryption_enabled():
-                StorageInterface.sync_folders(project_path)
+                StorageInterface().sync_folders(project_path)
                 shutil.rmtree(project_path)
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
