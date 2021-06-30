@@ -52,19 +52,19 @@ from tvb.adapters.uploaders.csv_connectivity_importer import DELIMITER_OPTIONS
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterModel
 from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import DEFAULTDATASTATE_RAW_DATA
-from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.basic.neotraits.api import Final
+from tvb.core.neotraits.view_model import ViewModel
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.datatypes.time_series import TimeSeriesRegion, TimeSeries
 from tvb.storage.storage_interface import StorageInterface
 
 
-class TumorDatasetImporterModel(UploaderViewModel):
+class TumorDatasetCreatorModel(ViewModel):
     tumor_dataset_url = Final(
         label='URL for downloading the Tumor Dataset',
         default='https://kg.ebrains.eu/proxy/export?container=https://object.cscs.ch/v1/AUTH_6ebec77683fb4' \
@@ -88,10 +88,11 @@ class TumorDatasetImporterForm(ABCAdapterForm):
 
     @staticmethod
     def get_view_model():
-        return TumorDatasetImporterModel
+        return TumorDatasetCreatorModel
 
 
-class TumorDatasetImporter(ABCUploader):
+class TumorDatasetCreator(ABCAdapter):
+
     _ui_name = "Import Tumor Dataset"
     _ui_description = "Download Tumor Dataset from the web and import it into TVB."
 
@@ -112,13 +113,11 @@ class TumorDatasetImporter(ABCUploader):
     def get_output(self):
         return []
 
-    def _prelaunch(self, operation, view_model, available_disk_space=0):
-        """
-        Overwrite method in order to return the correct number of stored datatypes.
-        """
-        self.nr_of_datatypes = 0
-        msg, _ = ABCUploader._prelaunch(self, operation, view_model, available_disk_space)
-        return msg, self.nr_of_datatypes
+    def get_required_disk_size(self, view_model):
+        return -1
+
+    def get_required_memory_size(self, view_model):
+        return -1
 
     def __import_tumor_connectivity(self, conn_folder, patient, user_tag, storage_path):
         connectivity_zip = os.path.join(conn_folder, self.CONN_ZIP_FILE)
@@ -292,4 +291,4 @@ class TumorDatasetImporter(ABCUploader):
                                 " Trying the download again, number of retries left is {}!".format(retry_no - 1))
             time.sleep(self.SLEEP_TIME)
             next_start_byte = Path(file_name).stat().st_size
-            return self.__download_tumor_dataset(next_start_byte, file_name, retry_no - 1)
+            return self.__download_tumor_dataset(next_start_byte, file_name, retry_no - 1, tumor_dataset_url)
