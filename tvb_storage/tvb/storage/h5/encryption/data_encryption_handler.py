@@ -71,12 +71,12 @@ class DataEncryptionHandlerMeta(type):
     Metaclass used to generate the singleton instance
     """
 
-    _instance = None
+    _instances = {}
 
     def __call__(cls):
-        if cls._instance is None:
-            cls._instance = super(DataEncryptionHandlerMeta, cls).__call__()
-        return cls._instance
+        if cls._instances.get(cls, None) is None:
+            cls._instances[cls] = super(DataEncryptionHandlerMeta, cls).__call__()
+        return DataEncryptionHandlerMeta._instances[cls]
 
 
 class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):

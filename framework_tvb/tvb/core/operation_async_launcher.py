@@ -108,11 +108,12 @@ def do_operation_launch(operation_id):
 
 if __name__ == '__main__':
     OPERATION_ID = sys.argv[1]
-    if StorageInterface.app_encryption_handler():
-        storage_interface = StorageInterface()
+    storage_interface = StorageInterface()
+    if storage_interface.app_encryption_handler():
         storage_interface.start()
+
     do_operation_launch(OPERATION_ID)
 
-    if StorageInterface.app_encryption_handler():
+    if storage_interface.app_encryption_handler():
         storage_interface.mark_stop()
         storage_interface.join()
