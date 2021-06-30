@@ -347,7 +347,7 @@ class DataEncryptionRemoteHandler(DataEncryptionHandler):
         if len(openshift_pods) == 0:
             raise TVBException("Openshift Data Encryption handler app not found")
         encryption_app = openshift_pods[0]
-        url = "http://{}/kube/data_encryption_handler/{}".format(encryption_app['ip'], method)
+        url = "http://{}:{}/kube/data_encryption_handler/{}".format(encryption_app['ip'], str(TvbProfile.current.web.SERVER_PORT), method)
         return requests.post(url=url, headers=auth_header, data=kwargs)
 
     @synchronized(lock)
