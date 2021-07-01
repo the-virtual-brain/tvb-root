@@ -60,7 +60,8 @@ Usage
 
 # TODO: Add state-variable and mode selection RadioButtons
 
-import matplotlib.widgets as widgets
+import ipywidgets as widgets
+from IPython.display import display
 import numpy
 import matplotlib.pyplot as plt
 import tvb.datatypes.time_series as time_series_datatypes
@@ -71,7 +72,7 @@ from tvb.simulator.plot.utils import ensure_list, rotate_n_list_elements
 
 LOG = get_logger(__name__)
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
-BACKGROUNDCOLOUR = "slategrey"
+BACKGROUNDCOLOUR = "white"
 EDGECOLOUR = "darkslateblue"
 AXCOLOUR = "steelblue"
 BUTTONCOLOUR = "steelblue"
@@ -149,10 +150,11 @@ class TimeSeriesInteractive(HasTraits):
         self.end_button = None
 
     def configure(self):
+        #print('Configure')
         """ Seperate configure cause ttraits be busted... """
         # TODO: if isinstance(self.time_series, TimeSeriesSurface) and self.first_n == -1: #LOG.error, return.
-        self.data = (self.time_series.data[:, :, :self.first_n, :] -
-                     self.time_series.data[:, :, :self.first_n, :].mean(axis=0)[numpy.newaxis, :])
+        self.data = (self.time_series.data[:, :, :, :] -
+                     self.time_series.data[:, :, :, :].mean(axis=0)[numpy.newaxis, :])#self.first_n
         self.period = self.time_series.sample_period
         self.tpts = self.data.shape[0]
         self.nsrs = self.data.shape[2]
@@ -165,7 +167,7 @@ class TimeSeriesInteractive(HasTraits):
         # Use actual labels if they exist.
         if (isinstance(self.time_series, time_series_datatypes.TimeSeriesRegion) and
                 (not self.time_series.connectivity is None)):
-            self.labels = self.time_series.connectivity.region_labels
+            self.labels = self.time_series.connectivity.region_labels#[1:]
         elif (isinstance(self.time_series, (time_series_datatypes.TimeSeriesEEG,
                                             time_series_datatypes.TimeSeriesMEG)) and (
                       not self.time_series.sensors is None)):
@@ -187,28 +189,12 @@ class TimeSeriesInteractive(HasTraits):
         LOG.info(msg % time_series_type)
 
         # Make the figure:
-        self.create_figure()
-
-        # Selectors
-        # self.add_mode_selector()
-
-        # Sliders
-        self.add_window_length_slider()
-        self.add_scaling_slider()
-        # self.add_time_slider()
-
-        # time-view buttons
-        self.add_step_back_button()
-        self.add_step_forward_button()
-        self.add_big_step_back_button()
-        self.add_big_step_forward_button()
-        self.add_start_button()
-        self.add_end_button()
+        fig = self.create_figure()
 
         # Plot timeseries
         self.plot_time_series()
 
-        plt.show(block=block, **kwargs)
+        display(fig)
 
     def ensure_list(self, arg):
         if not (isinstance(arg, list)):
@@ -243,36 +229,80 @@ class TimeSeriesInteractive(HasTraits):
     # ------------------------------------------------------------------------##
     def create_figure(self):
         """ Create the figure and time-series axes. """
-        # time_series_type = self.time_series.__class__.__name__
-        try:
-            figure_window_title = "Interactive time series: "  # + time_series_type
-            #            plt.close(figure_window_title)
-            self.its_fig = plt.figure(num=figure_window_title,
-                                        figsize=(14, 8),
-                                        facecolor=BACKGROUNDCOLOUR,
-                                        edgecolor=EDGECOLOUR)
-        except ValueError:
-            LOG.info("My life would be easier if you'd update your Pyplot...")
-            figure_number = 42
-            plt.close(figure_number)
-            self.its_fig = plt.figure(num=figure_number,
-                                        figsize=(14, 8),
-                                        facecolor=BACKGROUNDCOLOUR,
-                                        edgecolor=EDGECOLOUR)
 
-        self.ts_ax = self.its_fig.add_axes([0.1, 0.1, 0.85, 0.85])
+        self.outer_box_layout = widgets.Layout(border='solid 1px white',
+                            margin='3px 3px 3px 3px',
+                            padding='2px 2px 2px 2px')
+        
+        self.box_layout = widgets.Layout(border='solid 1px black',
+                                    margin='3px 3px 3px 3px',
+                                    padding='2px 2px 2px 2px')
+        
+        self.button_layout = widgets.Layout(max_width='50px')
 
-        self.whereami_ax = self.its_fig.add_axes([0.1, 0.95, 0.85, 0.025],
-                                                 facecolor=BACKGROUNDCOLOUR)
-        self.whereami_ax.set_axis_off()
-        if hasattr(self.whereami_ax, 'autoscale'):
-            self.whereami_ax.autoscale(enable=True, axis='both', tight=True)
-        self.whereami_ax.plot(self.time_view,
-                              numpy.zeros((len(self.time_view),)),
-                              color="0.3", linestyle="--")
-        self.hereiam = self.whereami_ax.plot(self.time_view,
-                                             numpy.zeros((len(self.time_view),)),
-                                             'b-', linewidth=4)
+
+        self.out = widgets.Output()
+        with self.out:
+            # time_series_type = self.time_series.__class__.__name__
+            try:
+                figure_window_title = "Interactive time series: "  # + time_series_type
+                #            plt.close(figure_window_title)
+                self.its_fig = plt.figure(num=figure_window_title,
+                                            figsize=(9, 8),
+                                            facecolor=BACKGROUNDCOLOUR,
+                                            edgecolor=EDGECOLOUR)
+            except ValueError:
+                LOG.info("My life would be easier if you'd update your Pyplot...")
+                figure_number = 42
+                plt.close(figure_number)
+                self.its_fig = plt.figure(num=figure_number,
+                                            figsize=(9, 8),
+                                            facecolor=BACKGROUNDCOLOUR,
+                                            edgecolor=EDGECOLOUR)
+
+            self.ts_ax = self.its_fig.add_axes([0.1, 0.1, 0.85, 0.85])
+
+            self.whereami_ax = self.its_fig.add_axes([0.1, 0.95, 0.85, 0.025],
+                                                    facecolor=BACKGROUNDCOLOUR)
+            self.whereami_ax.set_axis_off()
+            if hasattr(self.whereami_ax, 'autoscale'):
+                self.whereami_ax.autoscale(enable=True, axis='both', tight=True)
+            self.whereami_ax.plot(self.time_view,
+                                numpy.zeros((len(self.time_view),)),
+                                color="0.3", linestyle="--")
+            self.hereiam = self.whereami_ax.plot(self.time_view,
+                                                numpy.zeros((len(self.time_view),)),
+                                                'b-', linewidth=4)
+        
+        self.tsi_box = self.out
+        self.tsi_box.layout = self.box_layout
+
+        # WIDGETS
+        self.control_widgets = []
+        self.time_control_buttons = []
+
+        # Sliders
+        self.add_window_length_slider()
+        
+        # time-view buttons
+        self.add_start_button()
+        self.add_big_step_back_button()
+        self.add_step_back_button()
+        self.add_step_forward_button()
+        self.add_big_step_forward_button()
+        self.add_end_button()
+
+        self.tc_box = widgets.HBox(self.time_control_buttons, layout = self.outer_box_layout)
+        self.control_widgets.append(self.tc_box)
+
+        self.add_scaling_slider()
+
+        self.control_box = widgets.GridBox(self.control_widgets,  layout=widgets.Layout(grid_template_columns="300px 350px 300px", border='solid 1px black'))
+
+        items = [self.tsi_box, self.control_box]
+        grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_rows="800px 100px"))
+        
+        return grid
 
     #    def add_mode_selector(self):
     #        """
@@ -301,76 +331,73 @@ class TimeSeriesInteractive(HasTraits):
         """
         Add a slider to allow the time-series window length to be adjusted.
         """
-        pos_shp = [0.15, 0.02, 0.175, 0.035]
-        slax = self.its_fig.add_axes(pos_shp, facecolor=AXCOLOUR)
+        self.window_length_slider = widgets.IntSlider(min=TIME_RESOLUTION * self.period,
+                                                   max=self.time_series_length,
+                                                   value=self.window_length,
+                                                   layout = widgets.Layout(width="90%"),
+                                                   continuous_update = False)
+        self.window_length_slider.observe(self.update_window_length, 'value')
+        self.wls_label = widgets.Label("Window Length")
+        self.wls_box = widgets.VBox([self.wls_label, self.window_length_slider], layout=self.outer_box_layout)
 
-        self.window_length_slider = widgets.Slider(slax, "Window length",
-                                                   TIME_RESOLUTION * self.period,
-                                                   self.time_series_length,
-                                                   valinit=self.window_length,
-                                                   valfmt="%d")
-        self.window_length_slider.on_changed(self.update_window_length)
+        self.control_widgets.append(self.wls_box)
 
     # TODO: Add a conversion so this is an amplitude scaling, say 1.0-20.0
     def add_scaling_slider(self):
         """ Add a slider to allow scaling of the offset of time-series. """
-        pos_shp = [0.75, 0.02, 0.175, 0.035]
-        sax = self.its_fig.add_axes(pos_shp, facecolor=AXCOLOUR)
+        self.scaling_slider = widgets.FloatSlider(min = 0.0,
+                                                   max = 1.25,
+                                                   value=self.scaling,
+                                                   layout = widgets.Layout(width="90%"),
+                                                   continuous_update = False)
+        self.scaling_slider.observe(self.update_scaling, 'value')
+        self.ss_label = widgets.Label("Spacing")
+        self.ss_box = widgets.VBox([self.ss_label, self.scaling_slider], layout=self.outer_box_layout)
 
-        self.scaling_slider = widgets.Slider(sax, "Spacing", 0.0, 1.25,
-                                             valinit=self.scaling,
-                                             valfmt="%4.2f")
-        self.scaling_slider.on_changed(self.update_scaling)
+        self.control_widgets.append(self.ss_box)
 
     def add_step_back_button(self):
         """ Add a button to step back by 4 view_steps. """
-        bax = self.its_fig.add_axes([0.5, 0.015, 0.04, 0.045])
-        self.step_back_button = widgets.Button(bax, '<', color=BUTTONCOLOUR,
-                                               hovercolor=HOVERCOLOUR)
+        self.step_back_button = widgets.Button(description='<', layout=self.button_layout)
 
-        self.step_back_button.on_clicked(self.step_back)
+        self.step_back_button.on_click(self.step_back)
+        self.time_control_buttons.append(self.step_back_button)
+        
 
     def add_step_forward_button(self):
         """ Add a button to step forward by 4 view_steps. """
-        bax = self.its_fig.add_axes([0.54, 0.015, 0.04, 0.045])
-        self.step_forward_button = widgets.Button(bax, '>', color=BUTTONCOLOUR,
-                                                  hovercolor=HOVERCOLOUR)
+        self.step_forward_button = widgets.Button(description='>', layout=self.button_layout)
 
-        self.step_forward_button.on_clicked(self.step_forward)
+        self.step_forward_button.on_click(self.step_forward)
+        self.time_control_buttons.append(self.step_forward_button)
 
     def add_big_step_back_button(self):
         """ Add a button to step back by 1/4 window_length. """
-        bax = self.its_fig.add_axes([0.46, 0.015, 0.04, 0.045])
-        self.big_step_back_button = widgets.Button(bax, '<<',
-                                                   color=BUTTONCOLOUR,
-                                                   hovercolor=HOVERCOLOUR)
+        self.big_step_back_button = widgets.Button(description='<<', layout=self.button_layout)
 
-        self.big_step_back_button.on_clicked(self.bigstep_back)
+        self.big_step_back_button.on_click(self.bigstep_back)
+        self.time_control_buttons.append(self.big_step_back_button)
 
     def add_big_step_forward_button(self):
         """ Add a button to step forward by 1/4 window_length. """
-        bax = self.its_fig.add_axes([0.58, 0.015, 0.04, 0.045])
-        self.big_step_forward_button = widgets.Button(bax, '>>',
-                                                      color=BUTTONCOLOUR,
-                                                      hovercolor=HOVERCOLOUR)
+        self.big_step_forward_button = widgets.Button(description='>>', layout=self.button_layout)
 
-        self.big_step_forward_button.on_clicked(self.bigstep_forward)
+        self.big_step_forward_button.on_click(self.bigstep_forward)
+        self.time_control_buttons.append(self.big_step_forward_button)
 
     def add_start_button(self):
         """ Add a button to jump back to the start of the timeseries. """
-        bax = self.its_fig.add_axes([0.42, 0.015, 0.04, 0.045])
-        self.start_button = widgets.Button(bax, '|<<<', color=BUTTONCOLOUR,
-                                           hovercolor=HOVERCOLOUR)
+        self.start_button = widgets.Button(description='|<<<', layout=self.button_layout)
 
-        self.start_button.on_clicked(self.jump_to_start)
+        self.start_button.on_click(self.jump_to_start)
+        self.time_control_buttons.append(self.start_button)
 
     def add_end_button(self):
         """ Add a button to jump forward to the end of the timeseries. """
-        bax = self.its_fig.add_axes([0.62, 0.015, 0.04, 0.045])
-        self.end_button = widgets.Button(bax, '>>>|', color=BUTTONCOLOUR,
-                                         hovercolor=HOVERCOLOUR)
+        self.end_button = widgets.Button(description='>>>|', layout=self.button_layout)
 
-        self.end_button.on_clicked(self.jump_to_end)
+        self.end_button.on_click(self.jump_to_end)
+        self.time_control_buttons.append(self.end_button)
 
     # ------------------------------------------------------------------------##
     # ------------------ Functions for updating the state --------------------##
@@ -395,7 +422,7 @@ class TimeSeriesInteractive(HasTraits):
     def bigstep_back(self, event=None):
         """ Step the timeview back by 1/4 window length. """
         LOG.debug("bigstep_back accessed with event: %s" % str(event))
-        step = self.view_step * TIME_RESOLUTION / 4
+        step = int(self.view_step * TIME_RESOLUTION / 4)
         if self.time_view[0] - step >= 0:
             self.time_view = [k - step for k in self.time_view]
             self.update_time_series()
@@ -405,7 +432,7 @@ class TimeSeriesInteractive(HasTraits):
     def bigstep_forward(self, event=None):
         """ Step the timeview forward by 1/4 window length. """
         LOG.debug("bigstep_forward accessed with event: %s" % str(event))
-        step = self.view_step * TIME_RESOLUTION / 4
+        step = int(self.view_step * TIME_RESOLUTION / 4)
         if self.time_view[-1] + step < self.tpts:
             self.time_view = [k + step for k in self.time_view]
             self.update_time_series()
@@ -447,7 +474,7 @@ class TimeSeriesInteractive(HasTraits):
         """
         Update timeseries window length based on the time window slider value.
         """
-        self.window_length = length
+        self.window_length = length['new']
         self.update_time_view()
         self.update_time_series()
 
@@ -455,7 +482,7 @@ class TimeSeriesInteractive(HasTraits):
         """
         Update timeseries scaling based on the scaling slider value.
         """
-        self.scaling = scaling
+        self.scaling = scaling['new']
         self.update_time_series()
 
     def update_time_series(self):
@@ -539,40 +566,80 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
 
     def create_figure(self, **kwargs):
         """ Create the figure and time-series axes. """
-        # time_series_type = self.time_series.__class__.__name__
-        figsize = kwargs.pop("figsize", (14, 8))
-        facecolor = kwargs.pop("facecolor", BACKGROUNDCOLOUR)
-        edgecolor = kwargs.pop("edgecolor", EDGECOLOUR)
-        try:
-            figure_window_title = "Interactive time series: "  # + time_series_type
-            num = kwargs.pop("figname", kwargs.get("num", figure_window_title))
-            #            plt.close(figure_window_title)
-            self.its_fig = plt.figure(num=num,
-                                        figsize=figsize,
-                                        facecolor=facecolor,
-                                        edgecolor=edgecolor)
-        except ValueError:
-            LOG.info("My life would be easier if you'd update your Pyplot...")
-            figure_number = 42
-            plt.close(figure_number)
-            self.its_fig = plt.figure(num=figure_number,
-                                        figsize=figsize,
-                                        facecolor=facecolor,
-                                        edgecolor=edgecolor)
 
-        self.ts_ax = self.its_fig.add_axes([0.1, 0.1, 0.85, 0.85])
+        self.outer_box_layout = widgets.Layout(border='solid 1px white',
+                            margin='3px 3px 3px 3px',
+                            padding='2px 2px 2px 2px')
+        
+        self.box_layout = widgets.Layout(border='solid 1px black',
+                                    margin='3px 3px 3px 3px',
+                                    padding='2px 2px 2px 2px')
+        
+        self.button_layout = widgets.Layout(max_width='50px')
 
-        self.whereami_ax = self.its_fig.add_axes([0.1, 0.95, 0.85, 0.025],
-                                                 facecolor=facecolor)
-        self.whereami_ax.set_axis_off()
-        if hasattr(self.whereami_ax, 'autoscale'):
-            self.whereami_ax.autoscale(enable=True, axis='both', tight=True)
-        self.whereami_ax.plot(self.time_view,
-                              numpy.zeros((len(self.time_view),)),
-                              color="0.3", linestyle="--")
-        self.hereiam = self.whereami_ax.plot(self.time_view,
-                                             numpy.zeros((len(self.time_view),)),
-                                             'b-', linewidth=4)
+
+        self.out = widgets.Output()
+        with self.out:
+            # time_series_type = self.time_series.__class__.__name__
+            try:
+                figure_window_title = "Interactive time series: "  # + time_series_type
+                #            plt.close(figure_window_title)
+                self.its_fig = plt.figure(num=figure_window_title,
+                                            figsize=(9, 8),
+                                            facecolor=BACKGROUNDCOLOUR,
+                                            edgecolor=EDGECOLOUR)
+            except ValueError:
+                LOG.info("My life would be easier if you'd update your Pyplot...")
+                figure_number = 42
+                plt.close(figure_number)
+                self.its_fig = plt.figure(num=figure_number,
+                                            figsize=(9, 8),
+                                            facecolor=BACKGROUNDCOLOUR,
+                                            edgecolor=EDGECOLOUR)
+
+            self.ts_ax = self.its_fig.add_axes([0.1, 0.1, 0.85, 0.85])
+
+            self.whereami_ax = self.its_fig.add_axes([0.1, 0.95, 0.85, 0.025],
+                                                    facecolor=BACKGROUNDCOLOUR)
+            self.whereami_ax.set_axis_off()
+            if hasattr(self.whereami_ax, 'autoscale'):
+                self.whereami_ax.autoscale(enable=True, axis='both', tight=True)
+            self.whereami_ax.plot(self.time_view,
+                                numpy.zeros((len(self.time_view),)),
+                                color="0.3", linestyle="--")
+            self.hereiam = self.whereami_ax.plot(self.time_view,
+                                                numpy.zeros((len(self.time_view),)),
+                                                'b-', linewidth=4)
+        
+        self.tsi_box = self.out
+        self.tsi_box.layout = self.box_layout
+
+        # WIDGETS
+        self.control_widgets = []
+        self.time_control_buttons = []
+
+        # Sliders
+        self.add_window_length_slider()
+        
+        # time-view buttons
+        self.add_start_button()
+        self.add_big_step_back_button()
+        self.add_step_back_button()
+        self.add_step_forward_button()
+        self.add_big_step_forward_button()
+        self.add_end_button()
+
+        self.tc_box = widgets.HBox(self.time_control_buttons, layout = self.outer_box_layout)
+        self.control_widgets.append(self.tc_box)
+
+        self.add_scaling_slider()
+
+        self.control_box = widgets.GridBox(self.control_widgets,  layout=widgets.Layout(grid_template_columns="300px 350px 300px", border='solid 1px black'))
+
+        items = [self.tsi_box, self.control_box]
+        grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_rows="800px 100px"))
+        
+        return grid
 
     def plot_time_series(self, **kwargs):
         """ Plot a view on the timeseries. """
@@ -649,25 +716,9 @@ class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
         LOG.info(msg % time_series_type)
 
         # Make the figure:
-        self.create_figure()
-
-        # Selectors
-        # self.add_mode_selector()
-
-        # Sliders
-        self.add_window_length_slider()
-        self.add_scaling_slider()
-        # self.add_time_slider()
-
-        # time-view buttons
-        self.add_step_back_button()
-        self.add_step_forward_button()
-        self.add_big_step_back_button()
-        self.add_big_step_forward_button()
-        self.add_start_button()
-        self.add_end_button()
+        fig = self.create_figure()
 
         # Plot timeseries
         self.plot_time_series()
 
-        plt.show(block=block, **kwargs)
+        display(fig)
