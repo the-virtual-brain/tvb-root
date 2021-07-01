@@ -106,7 +106,7 @@ class MonitorsWizardHandler:
             return SimulatorFinalFragment.prepare_final_fragment(simulator, context.burst_config, context.project.id,
                                                                  rendering_rules, SimulatorWizzardURLs.SETUP_PSE_URL)
 
-        next_form = get_form_for_monitor(type(next_monitor))(simulator)
+        next_form = get_form_for_monitor(type(next_monitor))(simulator, is_branch)
         next_form = AlgorithmService().prepare_adapter_form(form_instance=next_form, project_id=context.project.id)
         next_form.fill_from_trait(next_monitor)
         monitor_name = self.prepare_monitor_legend(simulator.is_surface_simulation, next_monitor)
@@ -137,7 +137,7 @@ class MonitorsWizardHandler:
             return SimulatorFinalFragment.prepare_final_fragment(simulator, burst_config, project_id, rendering_rules,
                                                                  setup_pse_url)
 
-        form = get_form_for_monitor(type(first_monitor))(simulator)
+        form = get_form_for_monitor(type(first_monitor))(simulator, is_branch)
         form = AlgorithmService().prepare_adapter_form(form_instance=form)
         form.fill_from_trait(first_monitor)
 

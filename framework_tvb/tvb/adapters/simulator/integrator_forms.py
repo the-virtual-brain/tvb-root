@@ -65,16 +65,24 @@ class IntegratorForm(Form):
     def get_subform_key(self):
         return SubformsEnum.INTEGRATOR.name
 
-    def __init__(self):
+    def __init__(self, is_dt_disabled=False):
         super(IntegratorForm, self).__init__()
+        self.is_dt_disabled = is_dt_disabled
         self.dt = FloatField(IntegratorViewModel.dt)
+
+    def fill_from_trait(self, trait):
+        # type: (IntegratorViewModel) -> None
+        super(IntegratorForm, self).fill_from_trait(trait)
+
+        if self.is_dt_disabled:
+            self.dt.disabled = True
 
 
 class IntegratorStochasticForm(IntegratorForm):
     template = 'form_fields/select_field.html'
 
-    def __init__(self):
-        super(IntegratorStochasticForm, self).__init__()
+    def __init__(self, is_dt_disabled=False):
+        super(IntegratorStochasticForm, self).__init__(is_dt_disabled)
         self.noise_choices = get_ui_name_to_noise_dict()
         default_noise = list(self.noise_choices.values())[0]
 
