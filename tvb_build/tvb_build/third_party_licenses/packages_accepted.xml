@@ -2193,7 +2193,7 @@
     <dependency env="[win,mac,linux]" name="werkzeug">
         <full-name value="Werkzeug"/>
         <project-home value="https://palletsprojects.com/p/werkzeug/"/>
-        <version value="0.16.1"/>
+        <version value="2.0.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_werkzeug.txt"/>
         <license-type value="BSD_ 3 clause"/>

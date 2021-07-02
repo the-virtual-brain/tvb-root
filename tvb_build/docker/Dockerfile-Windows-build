@@ -14,7 +14,7 @@ RUN conda init powershell
 # Prepare tvb-run env
 RUN activate && conda create -y --name tvb-run python=3.7 numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN activate && conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
-RUN activate && conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
+RUN activate && conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug
 RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 
 RUN activate tvb-run && pip install --upgrade pip
