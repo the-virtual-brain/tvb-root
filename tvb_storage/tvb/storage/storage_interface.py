@@ -163,7 +163,7 @@ class StorageInterface:
 
     def write_zip_folder_with_links(self, dest_path, folder, linked_paths, op, exclude=[]):
         self.tvb_zip = TvbZip(dest_path, "w")
-        self.tvb_zip.write_zip_folder(folder, self.OPERATION_FOLDER_PREFIX, exclude)
+        self.tvb_zip.write_zip_folder(folder, exclude)
 
         self.logger.debug("Done exporting files, now we will export linked DTs")
 
@@ -178,7 +178,7 @@ class StorageInterface:
             operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
             operation_folders.append(operation_folder)
         self.tvb_zip = TvbZip(zip_full_path, "w")
-        self.tvb_zip.write_zip_folders(operation_folders, self.OPERATION_FOLDER_PREFIX, exclude)
+        self.tvb_zip.write_zip_folders(operation_folders, exclude)
         self.tvb_zip.close()
 
     @staticmethod
@@ -318,10 +318,13 @@ class StorageInterface:
 
     def path_for(self, op_id, h5_file_class, gid, project_name, dt_class):
         operation_dir = self.files_helper.get_project_folder(project_name, str(op_id))
+        return self.path_by_dir(operation_dir, h5_file_class, gid, dt_class)
+
+    def path_by_dir(self, base_dir, h5_file_class, gid, dt_class):
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
         fname = self.get_h5_filename(dt_class or h5_file_class.file_name_base(), gid)
-        return os.path.join(operation_dir, fname)
+        return os.path.join(base_dir, fname)
 
     def ends_with_tvb_file_extension(self, file):
         return file.endswith(self.TVB_FILE_EXTENSION)

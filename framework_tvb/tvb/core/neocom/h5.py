@@ -56,6 +56,12 @@ def path_for(op_id, h5_file_class, gid, project_name, dt_class=None):
     return loader.path_for(op_id, h5_file_class, gid, project_name, dt_class)
 
 
+def path_by_dir(base_dir, h5_file_class, gid, dt_class=None):
+    # type: (str, typing.Type[H5File], str, str) -> str
+    loader = TVBLoader(REGISTRY)
+    return loader.path_by_dir(base_dir, h5_file_class, gid, dt_class)
+
+
 def h5_file_for_index(dt_index_instance):
     # type: (DataType) -> H5File
     h5_path = path_for_stored_index(dt_index_instance)

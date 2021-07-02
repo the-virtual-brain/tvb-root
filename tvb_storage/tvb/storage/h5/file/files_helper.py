@@ -353,7 +353,7 @@ class TvbZip(ZipFile):
     def __exit__(self, _type, _value, _traceback):
         self.close()
 
-    def write_zip_folder(self, folder, archive_path_prefix, exclude, need_parent_folder=False):
+    def write_zip_folder(self, folder, exclude, need_parent_folder=False):
         """
         write folder contents in archive
         :param archive_path_prefix: root folder in archive. Defaults to "" the archive root
@@ -376,9 +376,9 @@ class TvbZip(ZipFile):
             for file_n in files:
                 abs_file_n = os.path.join(root, file_n)
                 zip_file_n = abs_file_n[len(parent_folder) + len(os.sep):]
-                self.write(abs_file_n, archive_path_prefix + zip_file_n)
+                self.write(abs_file_n, zip_file_n)
 
-    def write_zip_folders(self, folders, folder_prefix, exclude):
+    def write_zip_folders(self, folders, exclude):
         """
         This method creates a ZIP file with all folders provided as parameters
         :param folders: array with the FULL names/path of the folders to add into ZIP
@@ -386,7 +386,7 @@ class TvbZip(ZipFile):
         :param exclude: a list of file or folder names that will be recursively excluded
         """
         for folder in set(folders):
-            self.write_zip_folder(folder, folder_prefix, exclude, True)
+            self.write_zip_folder(folder, exclude, True)
 
     def unpack_zip(self, folder_path):
         """ Simple method to unpack ZIP archive in a given folder. """

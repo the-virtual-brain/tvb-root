@@ -208,6 +208,9 @@ class TVBLoader(object):
     def path_for(self, op_id, h5_file_class, gid, project_name, dt_class):
         return self.storage_interface.path_for(op_id, h5_file_class, gid, project_name, dt_class)
 
+    def path_by_dir(self, base_dir, h5_file_class, gid, dt_class):
+        return self.storage_interface.path_by_dir(base_dir, h5_file_class, gid, dt_class)
+
     def load_from_index(self, dt_index):
         # type: (DataType) -> HasTraits
         h5_path = self.path_for_stored_index(dt_index)
