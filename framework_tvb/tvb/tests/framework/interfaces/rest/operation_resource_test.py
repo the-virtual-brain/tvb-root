@@ -71,7 +71,7 @@ class TestOperationResource(RestResourceTest):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         operations_and_pages = self.operations_resource.get(project_gid=self.test_project.gid)
@@ -90,7 +90,7 @@ class TestOperationResource(RestResourceTest):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         operations_and_pages = self.operations_resource.get(project_gid=self.test_project.gid)
@@ -105,7 +105,7 @@ class TestOperationResource(RestResourceTest):
         with pytest.raises(TVBException):
             TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         operations_and_pages = self.operations_resource.get(project_gid=self.test_project.gid)
@@ -117,7 +117,7 @@ class TestOperationResource(RestResourceTest):
     def test_server_launch_operation_no_file(self, mocker):
         self._mock_user(mocker)
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {}
 
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid='', algorithm_module='',
@@ -127,7 +127,7 @@ class TestOperationResource(RestResourceTest):
         self._mock_user(mocker)
         dummy_file = FileStorage(BytesIO(b"test"), 'test.txt')
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid='', algorithm_module='',
@@ -138,7 +138,7 @@ class TestOperationResource(RestResourceTest):
         project_gid = "inexistent-gid"
         dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid=project_gid,
@@ -151,7 +151,7 @@ class TestOperationResource(RestResourceTest):
 
         dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: dummy_file}
 
         with pytest.raises(ServiceException): self.launch_resource.post(project_gid=self.test_project.gid,
@@ -173,7 +173,7 @@ class TestOperationResource(RestResourceTest):
         view_model_h5_path = h5.store_view_model(fft_model, input_folder)
 
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         fp = open(view_model_h5_path, 'rb')
         request_mock.files = {
             RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: FileStorage(fp, os.path.basename(view_model_h5_path))}

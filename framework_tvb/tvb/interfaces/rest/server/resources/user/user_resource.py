@@ -29,7 +29,7 @@
 #
 import flask
 import formencode
-from flask_restplus import Resource
+from flask_restx import Resource
 from tvb.core.services.authorization import AuthorizationManager
 from tvb.interfaces.rest.commons.exceptions import InvalidInputException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_CREATED

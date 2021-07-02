@@ -33,5 +33,5 @@ from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 class RestResourceTest(TransactionalTestCase):
     def _mock_user(self, mocker):
-        request_mock = mocker.patch.object(flask, 'g')
+        request_mock = mocker.patch.object(flask, 'g', spec={})
         request_mock.current_user = self.test_user

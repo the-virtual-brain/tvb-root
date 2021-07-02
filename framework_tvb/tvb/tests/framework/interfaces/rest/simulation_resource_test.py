@@ -59,7 +59,7 @@ class TestSimulationResource(RestResourceTest):
         project_gid = "inexistent-gid"
         dummy_file = FileStorage(BytesIO(b"test"), 'test.zip')
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {RequestFileKey.SIMULATION_FILE_KEY.value: dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.simulation_resource.post(project_gid=project_gid)
@@ -67,7 +67,7 @@ class TestSimulationResource(RestResourceTest):
     def test_server_fire_simulation_no_file(self, mocker):
         self._mock_user(mocker)
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {}
 
         with pytest.raises(InvalidIdentifierException): self.simulation_resource.post(project_gid='')
@@ -76,7 +76,7 @@ class TestSimulationResource(RestResourceTest):
         self._mock_user(mocker)
         dummy_file = FileStorage(BytesIO(b"test"), 'test.txt')
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {RequestFileKey.SIMULATION_FILE_KEY.value: dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.simulation_resource.post(project_gid='')
@@ -96,7 +96,7 @@ class TestSimulationResource(RestResourceTest):
         self.storage_interface.zip_folder(zip_filename, sim_dir)
 
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         fp = open(zip_filename, 'rb')
         request_mock.files = {RequestFileKey.SIMULATION_FILE_KEY.value: FileStorage(fp, os.path.basename(zip_filename))}
 

@@ -29,7 +29,7 @@
 #
 
 import flask
-from flask_restplus import Resource
+from flask_restx import Resource
 
 from tvb.interfaces.rest.commons.exceptions import BadRequestException, InvalidInputException
 from tvb.interfaces.rest.commons.strings import RequestFileKey, Strings
