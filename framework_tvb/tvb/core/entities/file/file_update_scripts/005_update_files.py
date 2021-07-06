@@ -1112,7 +1112,7 @@ def _migrate_general_part(input_file):
     return root_metadata, storage_manager
 
 
-def update(input_file, burst_match_dict):
+def update(input_file, burst_match_dict, op_id):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
@@ -1124,8 +1124,10 @@ def update(input_file, burst_match_dict):
     split_path = input_file.split(os.path.sep)
     storage_migrate = True
     try:
+        if op_id is None:
+            op_id = int(split_path[-2])
+
         # Change file names only for storage migration
-        op_id = int(split_path[-2])
         file_basename = os.path.basename(input_file)
         replaced_basename = file_basename.replace('-', '')
         replaced_basename = replaced_basename.replace('BrainSkull', 'Surface')
@@ -1166,10 +1168,9 @@ def update(input_file, burst_match_dict):
         # Take information out from the Operation.xml file
         if OPERATION_XML in files_in_folder:
             operation_file_path = os.path.join(folder, OPERATION_XML)
-            project = dao.get_project_by_name(split_path[-3])
-            xml_operation, operation_xml_parameters, algorithm = \
-                import_service.build_operation_from_file(project, operation_file_path)
             operation = dao.get_operation_by_id(op_id)
+            xml_operation, operation_xml_parameters, algorithm = \
+                import_service.build_operation_from_file(operation.project, operation_file_path)
             try:
                 operation_xml_parameters = json.loads(operation_xml_parameters)
             except NameError:
