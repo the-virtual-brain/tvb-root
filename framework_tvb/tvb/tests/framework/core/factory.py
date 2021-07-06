@@ -215,7 +215,7 @@ class TestFactory(object):
             burst.range2 = '["connectivity", null]'
             burst.fk_simulation = operation.id
             burst.simulator_gid = uuid.uuid4().hex
-            BurstService().update_burst_configuration_h5(burst)
+            BurstService().store_burst_configuration(burst)
         return dao.store_entity(burst)
 
     @staticmethod

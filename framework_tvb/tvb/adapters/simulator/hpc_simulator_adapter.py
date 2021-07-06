@@ -144,7 +144,7 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         return h5.path_by_dir(self.storage_path, h5_file_class, gid, dt_class)
 
     def store_complete(self, datatype, generic_attributes=GenericAttributes()):
-        return h5.store_complete(self.storage_path, datatype, generic_attributes)
+        return h5.store_complete_to_dir(datatype, self.storage_path, generic_attributes)
 
     def get_storage_path(self):
         """
@@ -176,6 +176,9 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
         trait, _ = h5.load_with_links_from_dir(self.storage_path, data_gid)
         return trait
 
+    def _get_output_path(self):
+        return self.storage_path
+
     def extract_operation_data(self, operation=None):
         """
         Do nothing for HPC run.
@@ -198,8 +201,4 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
         return h5.path_by_dir(self.storage_path, h5_file_class, gid, dt_class)
 
     def store_complete(self, datatype, generic_attributes=GenericAttributes()):
-        return h5.store_complete(self.storage_path, datatype, generic_attributes)
-
-    def get_storage_path(self):
-        """
-        """
+        return h5.store_complete_to_dir(datatype, self.storage_path, generic_attributes)

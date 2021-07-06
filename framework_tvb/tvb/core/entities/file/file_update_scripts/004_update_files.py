@@ -45,7 +45,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
 from tvb.datatypes.projections import ProjectionsType
 from tvb.storage.h5.file.exceptions import IncompatibleFileManagerException
-from tvb.storage.h5.storage_interface import StorageInterface
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 FIELD_PROJECTION_TYPE = "Projection_type"

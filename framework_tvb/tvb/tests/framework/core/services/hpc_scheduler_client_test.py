@@ -36,7 +36,6 @@ import shutil
 import numpy
 import pytest
 from tvb.basic.config.settings import HPCSettings
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -118,6 +117,7 @@ class TestHPCSchedulerClient(BaseTestCase):
 
     def _do_operation_launch(self, op, sim_gid, mocker, is_pse=False):
         # Prepare encrypted dir
+        self.dir_gid = sim_gid
         job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
         self.storage_interface.encrypt_inputs(sim_gid, job_encrypted_inputs)
         encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)

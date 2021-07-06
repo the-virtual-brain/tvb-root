@@ -99,7 +99,7 @@ class BurstService(object):
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
             if store_h5_file:
-                self.update_burst_configuration_h5(burst_entity)
+                self.store_burst_configuration(burst_entity)
         except Exception:
             self.logger.exception("Could not correctly update Burst status and meta-data!")
             burst_entity.status = burst_status
@@ -107,7 +107,7 @@ class BurstService(object):
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
             if store_h5_file:
-                self.update_burst_configuration_h5(burst_entity)
+                self.store_burst_configuration(burst_entity)
 
     def persist_operation_state(self, operation, operation_status, message=None):
         """
@@ -139,7 +139,7 @@ class BurstService(object):
         burst = dao.get_burst_by_id(burst_id)
         burst.name = new_name
         dao.store_entity(burst)
-        self.update_burst_configuration_h5(burst)
+        self.store_burst_configuration(burst)
 
     @staticmethod
     def get_available_bursts(project_id):
@@ -189,11 +189,6 @@ class BurstService(object):
         burst.simulator_gid = simulation_gid.hex
         burst = dao.store_entity(burst)
         return burst
-
-    def update_burst_configuration_h5(self, burst_configuration):
-        # type: (BurstConfiguration) -> None
-        project = dao.get_project_by_id(burst_configuration.fk_project)
-        self.store_burst_configuration(burst_configuration)
 
     @staticmethod
     def load_burst_configuration(burst_config_id):
