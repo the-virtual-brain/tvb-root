@@ -45,8 +45,8 @@ class MonitorsWizardHandler:
         self.next_monitors_dict = None
         self.all_monitors_dict = get_ui_name_to_monitor_dict(True)
 
-        for key, value in self.all_monitors_dict.items():
-            self.all_monitors_dict[key] = value()
+        for ui_name, monitor_vm in self.all_monitors_dict.items():
+            self.all_monitors_dict[ui_name] = monitor_vm()
 
     def set_monitors_list_on_simulator(self, session_stored_simulator, monitor_names):
         self.build_list_of_monitors_from_names(monitor_names, session_stored_simulator.is_surface_simulation)
@@ -152,3 +152,6 @@ class MonitorsWizardHandler:
     @staticmethod
     def prepare_monitor_legend(is_surface_simulation, monitor):
         return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
+
+    def update_monitor(self, monitor):
+        self.all_monitors_dict[monitor.ui_name] = monitor
