@@ -280,8 +280,7 @@ class OperationService:
     @staticmethod
     def _update_vm_generic_operation_tag(view_model, operation):
         project = dao.get_project_by_id(operation.fk_launched_in)
-        storage_path = StorageInterface().get_project_folder(project.name, str(operation.id))
-        h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid, type(view_model).__name__)
+        h5_path = h5.path_for(operation.id, ViewModelH5, view_model.gid, project.name, type(view_model).__name__)
         with ViewModelH5(h5_path, view_model) as vm_h5:
             vm_h5.operation_tag.store(operation.user_group)
 

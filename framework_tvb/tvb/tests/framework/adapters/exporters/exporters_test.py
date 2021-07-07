@@ -194,8 +194,7 @@ class TestExporters(TransactionalTestCase):
         burst_configuration.name = "Test_burst"
         burst_configuration = dao.store_entity(burst_configuration)
 
-        op_folder = StorageInterface().get_project_folder(self.test_project.name, str(operation.id))
-        BurstService().store_burst_configuration(burst_configuration, op_folder)
+        BurstService().store_burst_configuration(burst_configuration)
 
         export_file = self.export_manager.export_simulator_configuration(burst_configuration.id)
 

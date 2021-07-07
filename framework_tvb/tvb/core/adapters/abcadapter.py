@@ -179,7 +179,6 @@ class ABCAdapter(object):
         self.generic_attributes = GenericAttributes()
         self.generic_attributes.subject = DataTypeMetaData.DEFAULT_SUBJECT
         self.storage_interface = StorageInterface()
-        self.storage_path = '.'
         # Will be populate with current running operation's identifier
         self.operation_id = None
         self.user_id = None
@@ -305,8 +304,6 @@ class ABCAdapter(object):
 
     def extract_operation_data(self, operation):
         operation = dao.get_operation_by_id(operation.id)
-        project = dao.get_project_by_id(operation.fk_launched_in)
-        self.storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
@@ -436,9 +433,6 @@ class ABCAdapter(object):
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
 
-    def _get_output_path(self):
-        return self.storage_path
-
     def load_entity_by_gid(self, data_gid):
         # type: (typing.Union[uuid.UUID, str]) -> DataType
         """
@@ -567,3 +561,16 @@ class ABCAdapter(object):
         analyzer_index.array_is_finite = metadata.is_finite
         analyzer_index.shape = json.dumps(analyzer_h5.array_data.shape)
         analyzer_index.ndim = len(analyzer_h5.array_data.shape)
+
+    def path_for(self, h5_file_class, gid, dt_class=None):
+        project = dao.get_project_by_id(self.current_project_id)
+        return h5.path_for(self.operation_id, h5_file_class, gid, project.name, dt_class)
+
+    def store_complete(self, datatype, generic_attributes=GenericAttributes()):
+        project = dao.get_project_by_id(self.current_project_id)
+        return h5.store_complete(datatype, self.operation_id, project.name, generic_attributes)
+
+    def get_storage_path(self):
+        project = dao.get_project_by_id(self.current_project_id)
+        return self.storage_interface.get_project_folder(project.name, str(self.operation_id))
+

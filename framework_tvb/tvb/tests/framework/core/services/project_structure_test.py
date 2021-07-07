@@ -34,6 +34,7 @@
 """
 
 import pytest
+
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import get_filtered_datatypes
@@ -310,16 +311,16 @@ class TestProjectStructure(TransactionalTestCase):
 
     @pytest.fixture()
     def array_factory(self, operation_factory, connectivity_index_factory):
-        def _create_measure(conn, op, op_dir, project_id):
+        def _create_measure(conn, op, project):
             conn_measure = ConnectivityMeasure()
             conn_measure.connectivity = h5.load_from_index(conn)
             conn_measure.array_data = numpy.array(conn.number_of_regions)
 
-            conn_measure_db = h5.store_complete(conn_measure, op_dir)
+            conn_measure_db = h5.store_complete(conn_measure, op.id, project.name)
             conn_measure_db.fk_from_operation = op.id
             dao.store_entity(conn_measure_db)
 
-            count = dao.count_datatypes(project_id, DataTypeMatrix)
+            count = dao.count_datatypes(project.id, DataTypeMatrix)
             return count
 
         def build(project):
@@ -328,15 +329,14 @@ class TestProjectStructure(TransactionalTestCase):
 
             op = operation_factory(test_project=project)
             conn = connectivity_index_factory(op=op)
-            storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
 
-            count = _create_measure(conn, op, storage_path, project.id)
+            count = _create_measure(conn, op, project)
             assert count == 1
 
-            count = _create_measure(conn, op, storage_path, project.id)
+            count = _create_measure(conn, op, project)
             assert count == 2
 
-            count = _create_measure(conn, op, storage_path, project.id)
+            count = _create_measure(conn, op, project)
             assert count == 3
 
             return get_filtered_datatypes(project.id, DataTypeMatrix)[0]

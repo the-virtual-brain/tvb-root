@@ -93,7 +93,7 @@ class TestSimulationResource(RestResourceTest):
         h5.store_view_model(simulator, sim_dir)
 
         zip_filename = os.path.join(input_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
-        self.storage_interface.zip_folder(zip_filename, sim_dir)
+        self.storage_interface.write_zip_folder(zip_filename, sim_dir)
 
         # Mock flask.request.files to return a dictionary
         request_mock = mocker.patch.object(flask, 'request', spec={})

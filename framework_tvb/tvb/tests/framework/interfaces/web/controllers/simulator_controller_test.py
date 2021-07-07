@@ -942,7 +942,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst_config = dao.store_entity(burst_config)
         burst_config = burst_service.update_simulation_fields(burst_config, op.id,
                                                               self.session_stored_simulator.gid)
-        burst_service.store_burst_configuration(burst_config, storage_path)
+        burst_service.store_burst_configuration(burst_config)
         return burst_config
 
     def test_export(self):

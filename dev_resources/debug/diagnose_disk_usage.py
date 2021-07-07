@@ -72,7 +72,7 @@ class DiagnoseDiskUsage(object):
             dao.session.close_session()
 
     @staticmethod
-    def get_h5_by_gid(root, gid):
+    def get_file_by_gid(root, gid):
         for f in os.listdir(root):
             fp = os.path.join(root, f)
             if gid in f and os.path.isfile(fp):
@@ -112,7 +112,7 @@ class DiagnoseDiskUsage(object):
                 # these have no h5
                 continue
             op_pth = self.storage_interface.get_project_folder(self.project.name, str(op.id))
-            dt_pth = self.get_h5_by_gid(op_pth, dt.gid)
+            dt_pth = self.get_file_by_gid(op_pth, dt.gid)
 
             dt_actual_disk_size = self.get_file_kib_size(dt_pth)
 

@@ -226,10 +226,10 @@ class AllenConnectomeBuilder(ABCAdapter):
         result_template.weighting = 'T1'
         result_template.volume = result_volume
 
-        connectivity_index = h5.store_complete(result_connectivity, self.storage_path)
-        volume_index = h5.store_complete(result_volume, self.storage_path)
-        rvm_index = h5.store_complete(result_rvm, self.storage_path)
-        template_index = h5.store_complete(result_template, self.storage_path)
+        connectivity_index = self.store_complete(result_connectivity)
+        volume_index = self.store_complete(result_volume)
+        rvm_index = self.store_complete(result_rvm)
+        template_index = self.store_complete(result_template)
 
         return [connectivity_index, volume_index, rvm_index, template_index]
 

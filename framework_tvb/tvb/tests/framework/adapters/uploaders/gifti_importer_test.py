@@ -71,9 +71,8 @@ class TestGIFTISurfaceImporter(BaseTestCase):
                 normals needs to be calculated.
         """
         operation_id = operation_factory().id
-        storage_path = self.storage_interface.get_project_folder(self.test_project.name, str(operation_id))
 
-        parser = GIFTIParser(storage_path, operation_id)
+        parser = GIFTIParser(operation_id)
         surface = parser.parse(self.GIFTI_SURFACE_FILE)
 
         assert 131342 == len(surface.vertices)
@@ -87,9 +86,8 @@ class TestGIFTISurfaceImporter(BaseTestCase):
             normals needs to be calculated.
         """
         operation_id = operation_factory().id
-        storage_path = self.storage_interface.get_project_folder(self.test_project.name, str(operation_id))
 
-        parser = GIFTIParser(storage_path, operation_id)
+        parser = GIFTIParser(operation_id)
         time_series = parser.parse(self.GIFTI_TIME_SERIES_FILE)
 
         data_shape = time_series[1]

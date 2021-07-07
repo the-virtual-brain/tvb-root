@@ -251,64 +251,6 @@ class FilesHelper(object):
         return folder
 
             ######################## GENERIC METHODS Start Here #######################
-
-    @staticmethod
-    def zip_folders(zip_full_path, folders, folder_prefix):
-        """
-        This method creates a ZIP file with all folders provided as parameters
-        :param zip_full_path: full path and name of the result ZIP file
-        :param folders: array with the FULL names/path of the folders to add into ZIP 
-        """
-        with ZipFile(zip_full_path, "w", ZIP_DEFLATED, True) as zip_res:
-            for folder in set(folders):
-                parent_folder, _ = os.path.split(folder)
-                for root, _, files in os.walk(folder):
-                    # NOTE: ignore empty directories
-                    for file_n in files:
-                        abs_file_n = os.path.join(root, file_n)
-                        zip_file_n = abs_file_n[len(parent_folder) + len(os.sep):]
-                        zip_file_n = folder_prefix + zip_file_n
-                        zip_res.write(abs_file_n, zip_file_n)
-
-    @staticmethod
-    def zip_folder(result_name, folder_root):
-        """
-        Given a folder and a ZIP result name, create the corresponding archive.
-        """
-        with ZipFile(result_name, "w", ZIP_DEFLATED, True) as zip_res:
-            for root, _, files in os.walk(folder_root):
-                # NOTE: ignore empty directories
-                for file_n in files:
-                    abs_file_n = os.path.join(root, file_n)
-                    zip_file_n = abs_file_n[len(folder_root) + len(os.sep):]
-                    zip_res.write(abs_file_n, zip_file_n)
-
-        return result_name
-
-    def unpack_zip(self, uploaded_zip, folder_path):
-        """ Simple method to unpack ZIP archive in a given folder. """
-
-        def to_be_excluded(name):
-            excluded_paths = ["__MACOSX/", ".DS_Store"]
-            for excluded in excluded_paths:
-                if name.startswith(excluded) or name.find('/' + excluded) >= 0:
-                    return True
-            return False
-
-        try:
-            result = []
-            with ZipFile(uploaded_zip) as zip_arch:
-                for filename in zip_arch.namelist():
-                    if not to_be_excluded(filename):
-                        result.append(zip_arch.extract(filename, folder_path))
-            return result
-        except BadZipfile as excep:
-            self.logger.exception("Could not process zip file")
-            raise FileStructureException("Invalid ZIP file..." + str(excep))
-        except Exception as excep:
-            self.logger.exception("Could not process zip file")
-            raise FileStructureException("Could not unpack the given ZIP file..." + str(excep))
-
     @staticmethod
     def copy_file(source, dest, dest_postfix, buffer_size):
         """
@@ -399,7 +341,11 @@ class FilesHelper(object):
 
 class TvbZip(ZipFile):
     def __init__(self, dest_path, mode):
-        ZipFile.__init__(self, dest_path, mode, ZIP_DEFLATED, True)
+        try:
+            ZipFile.__init__(self, dest_path, mode, ZIP_DEFLATED, True)
+        except Exception as excep:
+            raise FileStructureException("Could not open the given ZIP file..." + str(excep))
+        self.logger = get_logger(self.__class__.__module__)
 
     def __enter__(self):
         return self
@@ -407,14 +353,17 @@ class TvbZip(ZipFile):
     def __exit__(self, _type, _value, _traceback):
         self.close()
 
-    def write_zip_folder(self, folder, exclude):
+    def write_zip_folder(self, folder, exclude, need_parent_folder=False):
         """
         write folder contents in archive
         :param archive_path_prefix: root folder in archive. Defaults to "" the archive root
         :param exclude: a list of file or folder names that will be recursively excluded
+        :param need_parent_folder: if it is True, the parent_folder will be added as well to the zip file name
+        :
         """
-        if exclude is None:
-            exclude = []
+        parent_folder = folder
+        if need_parent_folder:
+            parent_folder, _ = os.path.split(folder)
 
         for root, dirs, files in os.walk(folder):
             for ex in exclude:
@@ -426,7 +375,38 @@ class TvbZip(ZipFile):
 
             for file_n in files:
                 abs_file_n = os.path.join(root, file_n)
-                zip_file_n = abs_file_n[len(folder) + len(os.sep):]
+                zip_file_n = abs_file_n[len(parent_folder) + len(os.sep):]
                 self.write(abs_file_n, zip_file_n)
 
-    # TODO: move filehelper's zip methods here
+    def write_zip_folders(self, folders, exclude):
+        """
+        This method creates a ZIP file with all folders provided as parameters
+        :param folders: array with the FULL names/path of the folders to add into ZIP
+        :param folder_prefix: root folder in archive. Defaults to "" the archive root
+        :param exclude: a list of file or folder names that will be recursively excluded
+        """
+        for folder in set(folders):
+            self.write_zip_folder(folder, exclude, True)
+
+    def unpack_zip(self, folder_path):
+        """ Simple method to unpack ZIP archive in a given folder. """
+
+        def to_be_excluded(name):
+            excluded_paths = ["__MACOSX/", ".DS_Store"]
+            for excluded in excluded_paths:
+                if name.startswith(excluded) or name.find('/' + excluded) >= 0:
+                    return True
+            return False
+
+        try:
+            result = []
+            for filename in self.namelist():
+                if not to_be_excluded(filename):
+                    result.append(self.extract(filename, folder_path))
+            return result
+        except BadZipfile as excep:
+            self.logger.exception("Could not process zip file")
+            raise FileStructureException("Invalid ZIP file..." + str(excep))
+        except Exception as excep:
+            self.logger.exception("Could not process zip file")
+            raise FileStructureException("Could not unpack the given ZIP file..." + str(excep))

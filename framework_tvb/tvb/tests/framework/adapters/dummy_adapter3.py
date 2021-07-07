@@ -39,6 +39,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import IntField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
+from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
 
 
@@ -117,7 +118,7 @@ class DummyAdapter3(abcadapter.ABCAdapter):
             result.row1 = str(view_model.param_5)
         if view_model.param_6 is not None:
             result.row2 = str(view_model.param_6)
-        return h5.store_complete(result, self.storage_path)
+        return h5.store_complete_to_dir(result, self.get_storage_path())
 
 
 class DummyAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):
@@ -236,7 +237,6 @@ class DummyAdapterHDDRequired(abcadapter.ABCAdapter):
         result = DummyDataTypeIndex()
         result.row1 = 'param_5'
         result.row2 = 'param_6'
-        result.storage_path = self.storage_path
         res_array = []
         for _ in range(int(view_model.test)):
             res_array.append("data")

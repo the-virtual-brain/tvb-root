@@ -32,9 +32,9 @@ import abc
 import json
 import typing
 import uuid
-
 import numpy
 import scipy.sparse
+
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
 from tvb.datatypes import equations
 from tvb.storage.h5.file.exceptions import MissingDataSetException

@@ -124,8 +124,6 @@ class TestLinks(_BaseLinksTest):
         assert self.red_datatype.gid in json
 
     def test_remove_entity_with_links_moves_links(self, initialize_two_projects):
-        project_path = StorageInterface().get_project_folder(self.src_project.name)
-        self.red_datatype.storage_path = project_path
         dest_id = self.dest_project.id
         self.algorithm_service.create_link([self.red_datatype.id], dest_id)
         assert 1 == self.red_datatypes_in(dest_id)
