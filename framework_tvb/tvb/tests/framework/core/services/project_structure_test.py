@@ -316,7 +316,7 @@ class TestProjectStructure(TransactionalTestCase):
             conn_measure.connectivity = h5.load_from_index(conn)
             conn_measure.array_data = numpy.array(conn.number_of_regions)
 
-            conn_measure_db = h5.store_complete_to_op_dir(conn_measure, op.id, project.name)
+            conn_measure_db = h5.store_complete(conn_measure, op.id, project.name)
             conn_measure_db.fk_from_operation = op.id
             dao.store_entity(conn_measure_db)
 

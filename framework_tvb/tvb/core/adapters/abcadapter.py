@@ -568,7 +568,7 @@ class ABCAdapter(object):
 
     def store_complete(self, datatype, generic_attributes=GenericAttributes()):
         project = dao.get_project_by_id(self.current_project_id)
-        return h5.store_complete_to_op_dir(datatype, self.operation_id, project.name, generic_attributes)
+        return h5.store_complete(datatype, self.operation_id, project.name, generic_attributes)
 
     def get_storage_path(self):
         project = dao.get_project_by_id(self.current_project_id)

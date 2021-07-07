@@ -118,7 +118,7 @@ class DummyAdapter3(abcadapter.ABCAdapter):
             result.row1 = str(view_model.param_5)
         if view_model.param_6 is not None:
             result.row2 = str(view_model.param_6)
-        return h5.store_complete(result, self.get_storage_path(), DummyDataTypeH5)
+        return h5.store_complete_to_dir(result, self.get_storage_path())
 
 
 class DummyAdapterHugeMemoryRequiredForm(abcadapter.ABCAdapterForm):

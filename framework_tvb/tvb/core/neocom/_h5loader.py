@@ -89,7 +89,7 @@ class DirLoader(object):
     def _locate(self, gid):
         # type: (uuid.UUID) -> str
         for fname in os.listdir(self.base_dir):
-            if fname.endswith(gid.hex + StorageInterface.H5_EXTENSION):
+            if fname.endswith(gid.hex + StorageInterface.FILE_EXTENSION):
                 fpath = os.path.join(self.base_dir, fname)
                 return fpath
         raise IOError('could not locate h5 with gid {}'.format(gid))
@@ -170,14 +170,14 @@ class DirLoader(object):
 
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = StorageInterface().get_h5_filename(self._get_has_traits_classname(has_traits_class), gid)
+        fname = StorageInterface().get_filename(self._get_has_traits_classname(has_traits_class), gid)
         return os.path.join(self.base_dir, fname)
 
     def find_file_for_has_traits_type(self, has_traits_class):
 
         filename_prefix = self._get_has_traits_classname(has_traits_class)
         for fname in os.listdir(self.base_dir):
-            if fname.startswith(filename_prefix) and fname.endswith(StorageInterface.H5_EXTENSION):
+            if fname.startswith(filename_prefix) and fname.endswith(StorageInterface.FILE_EXTENSION):
                 return fname
         raise IOError('could not locate h5 for {}'.format(has_traits_class.__name__))
 
@@ -201,7 +201,7 @@ class TVBLoader(object):
 
         gid = uuid.UUID(dt_index_instance.gid)
         h5_file_class = self.registry.get_h5file_for_index(dt_index_instance.__class__)
-        fname = self.storage_interface.get_h5_filename(h5_file_class.file_name_base(), gid)
+        fname = self.storage_interface.get_filename(h5_file_class.file_name_base(), gid)
 
         return os.path.join(operation_folder, fname)
 

@@ -63,8 +63,8 @@ class StorageInterface:
 
     ZIP_FILE_EXTENSION = "zip"
 
-    H5_EXTENSION = '.h5'
-    H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
+    FILE_EXTENSION = '.h5'
+    FILE_NAME_STRUCTURE = '{}_{}.h5'
 
     OPERATION_FOLDER_PREFIX = "Operation_"
 
@@ -305,7 +305,7 @@ class StorageInterface:
         self.folders_queue_consumer.join()
 
     # Generic methods start here
-    def get_h5_by_gid(self, project_name, op_id, dt_gid):
+    def get_file_by_gid(self, project_name, op_id, dt_gid):
         op_path = self.files_helper.get_project_folder(project_name, str(op_id))
 
         for f in os.listdir(op_path):
@@ -313,8 +313,8 @@ class StorageInterface:
             if dt_gid in f and os.path.isfile(fp):
                 return fp
 
-    def get_h5_filename(self, class_name, gid):
-        return self.H5_FILE_NAME_STRUCTURE.format(class_name, gid.hex)
+    def get_filename(self, class_name, gid):
+        return self.FILE_NAME_STRUCTURE.format(class_name, gid.hex)
 
     def path_for(self, op_id, h5_file_class, gid, project_name, dt_class):
         operation_dir = self.files_helper.get_project_folder(project_name, str(op_id))
@@ -323,7 +323,7 @@ class StorageInterface:
     def path_by_dir(self, base_dir, h5_file_class, gid, dt_class):
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = self.get_h5_filename(dt_class or h5_file_class.file_name_base(), gid)
+        fname = self.get_filename(dt_class or h5_file_class.file_name_base(), gid)
         return os.path.join(base_dir, fname)
 
     def ends_with_tvb_file_extension(self, file):

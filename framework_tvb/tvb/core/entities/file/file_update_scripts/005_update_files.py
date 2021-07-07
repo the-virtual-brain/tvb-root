@@ -1267,7 +1267,7 @@ def update(input_file, burst_match_dict, op_id):
                             alg.configure()
                             simulation_history = SimulationHistory()
                             simulation_history.populate_from(alg)
-                            history_index = h5.store_complete_to_op_dir(simulation_history, op_id,
+                            history_index = h5.store_complete(simulation_history, op_id,
                                                                         operation.project.name,
                                                                         generic_attributes=vm.generic_attributes)
                             history_index.fk_from_operation = op_id

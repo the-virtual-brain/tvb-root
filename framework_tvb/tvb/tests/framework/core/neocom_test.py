@@ -103,7 +103,7 @@ def test_store_simulator_view_model_eeg(connectivity_index_factory, surface_inde
 
     op = operation_factory()
 
-    prj_db_db = h5.store_complete_to_op_dir(proj, op.id, op.project.name)
+    prj_db_db = h5.store_complete(proj, op.id, op.project.name)
     prj_db_db.fk_from_operation = op.id
     dao.store_entity(prj_db_db)
 
@@ -151,7 +151,7 @@ def test_gather_view_model_and_datatype_references_multiple_monitors(connectivit
     proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
     op = operation_factory()
-    prj_db = h5.store_complete_to_op_dir(proj, op.id, op.project.name)
+    prj_db = h5.store_complete(proj, op.id, op.project.name)
     prj_db.fk_from_operation = op.id
     dao.store_entity(prj_db)
 

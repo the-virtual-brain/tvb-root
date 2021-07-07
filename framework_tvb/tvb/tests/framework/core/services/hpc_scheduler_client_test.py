@@ -164,7 +164,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
         op = operation_factory()
-        prj_db_db = h5.store_complete_to_op_dir(proj, op.id, op.project.name)
+        prj_db_db = h5.store_complete(proj, op.id, op.project.name)
         prj_db_db.fk_from_operation = op.id
         dao.store_entity(prj_db_db)
 
