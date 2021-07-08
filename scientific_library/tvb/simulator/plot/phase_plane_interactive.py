@@ -329,16 +329,16 @@ def plot_pp(model = models_module.Generic2dOscillator(), integrator = integrator
 
             ax_widgets.extend([reset_noise_button, noise_slider, reset_seed_button])
 
-        items = [ax_widgets, sv_widgets, param_widgets]
+        items = [param_widgets, sv_widgets, ax_widgets]
         grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_columns="326px 326px 326px"))
         return grid
 
     def printer(**plot_params):
 
         plot_traj_button = widgets.Button(description='Plot Trajectory')
-        traj_label = widgets.Label('Trajectory Co-ordinates')
-        traj_x = widgets.IntText(placeholder='Enter X Co-ordinate', value=0, continuous_update=False)
-        traj_y = widgets.IntText(placeholder='Enter Y Co-ordinate', value=0, continuous_update=False)
+        traj_label = widgets.Label('Trajectory Co-ordinates (Float)')
+        traj_x = widgets.FloatText(placeholder='Enter X Co-ordinate (Float)', value=0.0, continuous_update=False)
+        traj_y = widgets.FloatText(placeholder='Enter Y Co-ordinate (Float)', value=0.0, continuous_update=False)
 
         traj_box = widgets.VBox([traj_label, traj_x, traj_y], layout=box_layout)
         traj_out = widgets.Textarea(value='', placeholder='Trajectory Co-ordinates output will be shown here')
@@ -387,9 +387,9 @@ def plot_pp(model = models_module.Generic2dOscillator(), integrator = integrator
 
         # Set Mesh Grid
         xlo = plot_params['sl_x_min']#model.state_variable_range[svx][0]
-        xhi = model.state_variable_range[svx][1]
-        ylo = model.state_variable_range[svy][0]
-        yhi = model.state_variable_range[svy][1]
+        xhi = plot_params['sl_x_max']#model.state_variable_range[svx][1]
+        ylo = plot_params['sl_y_min']#model.state_variable_range[svy][0]
+        yhi = plot_params['sl_y_max']#model.state_variable_range[svy][1]
 
         X = np.mgrid[xlo:xhi:(NUMBEROFGRIDPOINTS*1j)]
         Y = np.mgrid[ylo:yhi:(NUMBEROFGRIDPOINTS*1j)]
