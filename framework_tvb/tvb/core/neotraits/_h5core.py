@@ -266,7 +266,7 @@ class H5File(object):
     @staticmethod
     def remove_metadata_param(file_path, param):
         storage_manager = StorageInterface.get_storage_manager(file_path)
-        storage_manager.remove_metadata(param)
+        storage_manager.remove_metadata(param, check_existence=True)
 
     @staticmethod
     def h5_class_from_file(path):
