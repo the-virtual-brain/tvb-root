@@ -149,6 +149,8 @@ class TimeSeriesInteractive(HasTraits):
         self.start_button = None
         self.end_button = None
 
+        self.region_cb_stack = list()
+
     def configure(self):
         #print('Configure')
         """ Seperate configure cause ttraits be busted... """
@@ -301,6 +303,8 @@ class TimeSeriesInteractive(HasTraits):
 
         self.control_box = widgets.GridBox(self.control_widgets,  layout=widgets.Layout(grid_template_columns="290px 350px 290px", border='solid 1px black'))
 
+        #self.add_region_selectall_button()
+        #self.add_region_unselectall_button()
         self.add_region_checkboxes()
 
         self.region_box = widgets.HBox(self.region_cb_box_list, layout=self.box_layout)
@@ -337,8 +341,7 @@ class TimeSeriesInteractive(HasTraits):
 
         self.region_checkboxes = dict()
         self.region_cb_box_list = []
-        region_cb_stack = []
-        cb_mw = 950//(len(self.labels)//10 + 1)
+        cb_mw = 950//((len(self.labels)+2)//10 + 1)
         for i,label in enumerate(self.labels):
             self.region_checkboxes[label] = widgets.Checkbox(value=True,
                                                             description=label,
@@ -348,10 +351,36 @@ class TimeSeriesInteractive(HasTraits):
             self.region_checkboxes[label].observe(self.update_region_plots)
 
             if i and i%10 == 0:
-                self.region_cb_box_list.append(widgets.VBox(region_cb_stack))
-                region_cb_stack = []
-            region_cb_stack.append(self.region_checkboxes[label])
-        self.region_cb_box_list.append(widgets.VBox(region_cb_stack))
+                self.region_cb_box_list.append(widgets.VBox(self.region_cb_stack))
+                self.region_cb_stack = []
+            self.region_cb_stack.append(self.region_checkboxes[label])
+        if len(self.region_cb_stack) > 8:
+            self.region_cb_box_list.append(widgets.VBox(self.region_cb_stack))
+            self.region_cb_stack = []
+        self.add_region_selectall_button(cb_mw)
+        self.add_region_unselectall_button(cb_mw)
+        self.region_cb_box_list.append(widgets.VBox(self.region_cb_stack))
+        
+
+    def add_region_selectall_button(self, mw):
+
+        def update_select_region_selectors(val):
+            for checkbox in self.region_checkboxes:
+                self.region_checkboxes[checkbox].value = True
+
+        self.region_checkbox_select_button = widgets.Button(description='Select All', layout = {'max_width':f'{mw}px'})
+        self.region_checkbox_select_button.on_click(update_select_region_selectors)
+        self.region_cb_stack.append(self.region_checkbox_select_button)
+    
+    def add_region_unselectall_button(self, mw):
+        
+        def update_unselect_region_selectors(val):
+            for checkbox in self.region_checkboxes:
+                self.region_checkboxes[checkbox].value = False
+        
+        self.region_checkbox_unselect_button = widgets.Button(description='Unselect All', layout = {'max_width':f'{mw}px'})
+        self.region_checkbox_unselect_button.on_click(update_unselect_region_selectors)
+        self.region_cb_stack.append(self.region_checkbox_unselect_button)
 
     def add_window_length_slider(self):
         """
@@ -540,64 +569,65 @@ class TimeSeriesInteractive(HasTraits):
             self.ts_ax.autoscale(enable=True, axis='both', tight=True)
 
         self.num_labels = len(self.plot_labels)
-        self.offset = numpy.arange(0, self.num_labels) * step
-        self.ts_ax.set_yticks(self.offset)
-        self.ts_ax.set_yticklabels(self.plot_labels, fontsize=10)
-        # import pdb; pdb.set_trace()
+        if self.num_labels:
+            self.offset = numpy.arange(0, self.num_labels) * step
+            self.ts_ax.set_yticks(self.offset)
+            self.ts_ax.set_yticklabels(self.plot_labels, fontsize=10)
+            # import pdb; pdb.set_trace()
 
-        # Light gray guidelines
-        self.ts_ax.plot([self.num_labels * [self.time[self.time_view[0]]],
-                        self.num_labels * [self.time[self.time_view[-1]]]],
-                        numpy.vstack(2 * (self.offset,)), "0.85")
-        # self.ts_ax.plot([self.nsrs * [self.time[self.time_view[0]]],
-        #                 self.nsrs * [self.time[self.time_view[-1]]]],
-        #                 numpy.vstack(2 * (self.offset,)), "0.85")
+            # Light gray guidelines
+            self.ts_ax.plot([self.num_labels * [self.time[self.time_view[0]]],
+                            self.num_labels * [self.time[self.time_view[-1]]]],
+                            numpy.vstack(2 * (self.offset,)), "0.85")
+            # self.ts_ax.plot([self.nsrs * [self.time[self.time_view[0]]],
+            #                 self.nsrs * [self.time[self.time_view[-1]]]],
+            #                 numpy.vstack(2 * (self.offset,)), "0.85")
 
-        # Determine colors and linestyles for each variable of the Timeseries
-        linestyle = self.ensure_list(kwargs.pop("linestyle", "-"))
-        colors = kwargs.pop("linestyle", None)
-        if colors is not None:
-            colors = self.ensure_list(colors)
-        if self.data.shape[1] > 1:
-            linestyle = self.rotate_n_list_elements(linestyle, self.data.shape[1])
-            if not isinstance(colors, list):
-                colors = (rcParams['axes.prop_cycle']).by_key()['color']
-            colors = self.rotate_n_list_elements(colors, self.data.shape[1])
-        else:
-            # If no color,
-            # or a color sequence is given in the input
-            # but there is only one variable to plot,
-            # choose the black color
-            if colors is None or len(colors) > 1:
-                colors = ["k"]
-            linestyle = linestyle[:1]
+            # Determine colors and linestyles for each variable of the Timeseries
+            linestyle = self.ensure_list(kwargs.pop("linestyle", "-"))
+            colors = kwargs.pop("linestyle", None)
+            if colors is not None:
+                colors = self.ensure_list(colors)
+            if self.data.shape[1] > 1:
+                linestyle = self.rotate_n_list_elements(linestyle, self.data.shape[1])
+                if not isinstance(colors, list):
+                    colors = (rcParams['axes.prop_cycle']).by_key()['color']
+                colors = self.rotate_n_list_elements(colors, self.data.shape[1])
+            else:
+                # If no color,
+                # or a color sequence is given in the input
+                # but there is only one variable to plot,
+                # choose the black color
+                if colors is None or len(colors) > 1:
+                    colors = ["k"]
+                linestyle = linestyle[:1]
 
-        # Determine the alpha value depending on the number of modes/samples of the Timeseries
-        alpha = 1.0
-        if len(self.data.shape) > 3 and self.data.shape[3] > 1:
-            alpha /= self.data.shape[3]
+            # Determine the alpha value depending on the number of modes/samples of the Timeseries
+            alpha = 1.0
+            if len(self.data.shape) > 3 and self.data.shape[3] > 1:
+                alpha /= self.data.shape[3]
 
-        # Plot the timeseries (per variable and sample)
-        if kwargs:
-            self.ts_view = []
-            for variable_value in range(self.data.shape[1]):
-                for sample_value in range(self.data.shape[3]):
-                    self.ts_view.append(self.ts_ax.plot(self.time[self.time_view],
-                                                        self.offset + self.data[self.time_view, variable_value, :,
-                                                                 sample_value],
-                                                        alpha=alpha, color=colors[variable_value],
-                                                        linestyle=linestyle[variable_value],
-                                                        **kwargs))
-        else:
-            self.ts_view = self.ts_ax.plot(self.time[self.time_view],
-                                           self.offset + self.data[self.time_view, 0, :self.num_labels, 0])
+            # Plot the timeseries (per variable and sample)
+            if kwargs:
+                self.ts_view = []
+                for variable_value in range(self.data.shape[1]):
+                    for sample_value in range(self.data.shape[3]):
+                        self.ts_view.append(self.ts_ax.plot(self.time[self.time_view],
+                                                            self.offset + self.data[self.time_view, variable_value, :,
+                                                                    sample_value],
+                                                            alpha=alpha, color=colors[variable_value],
+                                                            linestyle=linestyle[variable_value],
+                                                            **kwargs))
+            else:
+                self.ts_view = self.ts_ax.plot(self.time[self.time_view],
+                                            self.offset + self.data[self.time_view, 0, :self.num_labels, 0])
 
-        self.hereiam[0].remove()
-        self.hereiam = self.whereami_ax.plot(self.time_view,
-                                             numpy.zeros((len(self.time_view),)),
-                                             'b-', linewidth=4)
+            self.hereiam[0].remove()
+            self.hereiam = self.whereami_ax.plot(self.time_view,
+                                                numpy.zeros((len(self.time_view),)),
+                                                'b-', linewidth=4)
 
-        plt.draw()
+            plt.draw()
 
 
 class TimeSeriesInteractivePlotter(TimeSeriesInteractive):
