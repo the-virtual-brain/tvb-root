@@ -318,6 +318,10 @@ class HDF5StorageManager(object):
         :param where: represents the path where dataset is stored (e.g. /data/info)
 
         """
+
+        if meta_key not in self.get_metadata():
+            return
+
         LOG.debug("Deleting metadata: %s for dataset: %s" % (meta_key, dataset_name))
         try:
             # Open file to read data

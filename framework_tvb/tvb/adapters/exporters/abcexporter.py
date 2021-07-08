@@ -173,7 +173,7 @@ class ABCExporter(metaclass=ABCMeta):
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
 
-        return "%s_%s.%s" % (date_str, data_type_name, file_ext)
+        return "%s_%s%s" % (date_str, data_type_name, file_ext)
 
     @abstractmethod
     def get_export_file_extension(self, data):

@@ -55,18 +55,16 @@ class StorageInterface:
     PROJECTS_FOLDER = "PROJECTS"
 
     ROOT_NODE_PATH = "/"
-    TVB_FILE_EXTENSION = XMLWriter.FILE_EXTENSION
     TVB_STORAGE_FILE_EXTENSION = ".h5"
     TVB_ZIP_FILE_EXTENSION = ".zip"
+    TVB_XML_FILE_EXTENSION = ".xml"
 
-    TVB_PROJECT_FILE = "Project" + TVB_FILE_EXTENSION
-
-    ZIP_FILE_EXTENSION = "zip"
-
-    FILE_EXTENSION = '.h5'
+    TVB_PROJECT_FILE = "Project" + TVB_XML_FILE_EXTENSION
     FILE_NAME_STRUCTURE = '{}_{}.h5'
-
     OPERATION_FOLDER_PREFIX = "Operation_"
+
+    EXPORTED_SIMULATION_NAME = "exported_simulation"
+    EXPORTED_SIMULATION_DTS_DIR = "datatypes"
 
     logger = get_logger(__name__)
 
@@ -327,7 +325,7 @@ class StorageInterface:
         return os.path.join(base_dir, fname)
 
     def ends_with_tvb_file_extension(self, file):
-        return file.endswith(self.TVB_FILE_EXTENSION)
+        return file.endswith(self.TVB_XML_FILE_EXTENSION)
 
     def ends_with_tvb_storage_file_extension(self, file):
         return file.endswith(self.TVB_STORAGE_FILE_EXTENSION)
@@ -366,6 +364,8 @@ class StorageInterface:
         self.sync_folders(to_project_path)
         self.set_project_inactive(to_project)
 
+        # Exporting related methods start here
+
     def export_datatypes(self, paths, operation):
         op_folder = self.get_project_folder(operation.project.name, operation.id)
         op_folder_name = os.path.basename(op_folder)
@@ -395,7 +395,7 @@ class StorageInterface:
         # Compute path and name of the zip file
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
-        zip_file_name = "%s_%s.%s" % (date_str, project.name, self.ZIP_FILE_EXTENSION)
+        zip_file_name = "%s_%s.%s" % (date_str, project.name, self.TVB_ZIP_FILE_EXTENSION)
 
         export_folder = self.build_data_export_folder(project, export_folder)
         result_path = os.path.join(export_folder, zip_file_name)
@@ -409,3 +409,35 @@ class StorageInterface:
         self.logger.debug("Done, closing")
 
         return result_path
+
+    def export_simulator_configuration(self, burst, export_folder, all_view_model_paths, all_datatype_paths):
+        tmp_export_folder = self.build_data_export_folder(burst, export_folder)
+        tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
+
+        if not os.path.exists(tmp_sim_folder):
+            os.makedirs(tmp_sim_folder)
+
+        for vm_path in all_view_model_paths:
+            dest = os.path.join(tmp_sim_folder, os.path.basename(vm_path))
+            self.copy_file(vm_path, dest)
+
+        for dt_path in all_datatype_paths:
+            dest = os.path.join(tmp_sim_folder, self.EXPORTED_SIMULATION_DTS_DIR, os.path.basename(dt_path))
+            self.copy_file(dt_path, dest)
+
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d_%H-%M")
+        zip_file_name = "%s_%s.%s" % (date_str, str(burst.id), StorageInterface.TVB_ZIP_FILE_EXTENSION)
+
+        result_path = os.path.join(tmp_export_folder, zip_file_name)
+        self.write_zip_folder(result_path, tmp_sim_folder)
+        self.remove_folder(tmp_sim_folder)
+
+        return result_path
+
+    def copy_dt_to_export_folder_with_links(self, dt_path_list, data_export_folder):
+        for dt_path in dt_path_list:
+            file_destination = os.path.join(data_export_folder, os.path.basename(dt_path))
+            if not os.path.exists(file_destination):
+                self.copy_file(dt_path, file_destination)
+            self.storage_manager.remove_metadata(file_destination, 'parent_burst')

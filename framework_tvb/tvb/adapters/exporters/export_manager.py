@@ -58,8 +58,6 @@ class ExportManager(object):
     all_exporters = {}  # Dictionary containing all available exporters
     export_folder = None
     EXPORT_FOLDER_NAME = "EXPORT_TMP"
-    EXPORTED_SIMULATION_NAME = "exported_simulation"
-    EXPORTED_SIMULATION_DTS_DIR = "datatypes"
     logger = get_logger(__name__)
 
     def __init__(self):
@@ -144,7 +142,8 @@ class ExportManager(object):
 
         return export_data
 
-    def _export_linked_datatypes(self, project):
+    @staticmethod
+    def _get_paths_of_linked_datatypes(project):
         linked_paths = ProjectService().get_linked_datatypes_storage_path(project)
 
         if not linked_paths:
@@ -172,10 +171,10 @@ class ExportManager(object):
             raise ExportException("Please provide project to be exported")
 
         folders_to_exclude = self._get_op_with_errors(project.id)
-        linked_paths, op = self._export_linked_datatypes(project)
+        linked_paths, op = self._get_paths_of_linked_datatypes(project)
 
-        result_path = self.storage_interface.export_project(project, folders_to_exclude,
-                                                            self.export_folder, linked_paths, op)
+        result_path = self.storage_interface.export_project(project, folders_to_exclude, self.export_folder,
+                                                            linked_paths, op)
 
         return result_path
 
@@ -196,34 +195,13 @@ class ExportManager(object):
             raise InvalidExportDataException("Could not find burst with ID " + str(burst_id))
 
         op_folder = self.storage_interface.get_project_folder(burst.project.name, str(burst.fk_simulation))
-        tmp_export_folder = self.storage_interface.build_data_export_folder(burst, self.export_folder)
-        tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
-
-        if not os.path.exists(tmp_sim_folder):
-            os.makedirs(tmp_sim_folder)
 
         all_view_model_paths, all_datatype_paths = h5.gather_references_of_view_model(burst.simulator_gid, op_folder)
 
         burst_path = h5.determine_filepath(burst.gid, op_folder)
         all_view_model_paths.append(burst_path)
 
-        for vm_path in all_view_model_paths:
-            dest = os.path.join(tmp_sim_folder, os.path.basename(vm_path))
-            self.storage_interface.copy_file(vm_path, dest)
-
-        for dt_path in all_datatype_paths:
-            dest = os.path.join(tmp_sim_folder, self.EXPORTED_SIMULATION_DTS_DIR, os.path.basename(dt_path))
-            self.storage_interface.copy_file(dt_path, dest)
-
-        main_vm_path = h5.determine_filepath(burst.simulator_gid, tmp_sim_folder)
-        H5File.remove_metadata_param(main_vm_path, 'history_gid')
-
-        now = datetime.now()
-        date_str = now.strftime("%Y-%m-%d_%H-%M")
-        zip_file_name = "%s_%s.%s" % (date_str, str(burst_id), StorageInterface.ZIP_FILE_EXTENSION)
-
-        result_path = os.path.join(tmp_export_folder, zip_file_name)
-        self.storage_interface.write_zip_folder(result_path, tmp_sim_folder)
-
-        self.storage_interface.remove_folder(tmp_sim_folder)
+        result_path = self.storage_interface.export_simulator_configuration(burst, self.export_folder,
+                                                                                            all_view_model_paths,
+                                                                                            all_datatype_paths)
         return result_path

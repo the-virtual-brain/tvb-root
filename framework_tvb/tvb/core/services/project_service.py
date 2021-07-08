@@ -877,7 +877,6 @@ class ProjectService:
         paths = []
         for lnk_dt in dao.get_linked_datatypes_in_project(project.id):
             # get datatype as a mapped type
-            lnk_dt = dao.get_datatype_by_gid(lnk_dt.gid)
             path = h5.path_for_stored_index(lnk_dt)
             if path is not None:
                 paths.append(path)

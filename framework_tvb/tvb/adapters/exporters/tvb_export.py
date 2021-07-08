@@ -91,6 +91,6 @@ class TVBExporter(ABCExporter):
 
     def get_export_file_extension(self, data):
         if self.is_data_a_group(data):
-            return "zip"
+            return StorageInterface.TVB_ZIP_FILE_EXTENSION
         else:
-            return "h5"
+            return StorageInterface.TVB_STORAGE_FILE_EXTENSION
