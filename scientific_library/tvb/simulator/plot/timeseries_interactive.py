@@ -301,16 +301,23 @@ class TimeSeriesInteractive(HasTraits):
 
         self.add_scaling_slider()
 
-        self.control_box = widgets.GridBox(self.control_widgets,  layout=widgets.Layout(grid_template_columns="290px 350px 290px", border='solid 1px black'))
+        self.control_box = widgets.GridBox(self.control_widgets,  
+                                        layout=widgets.Layout(grid_template_columns="290px 350px 290px", border='solid 1px black'))
 
-        #self.add_region_selectall_button()
-        #self.add_region_unselectall_button()
+        self.region_select_buttons = []
+        self.add_region_selectall_button()
+        self.add_region_unselectall_button()
         self.add_region_checkboxes()
 
-        self.region_box = widgets.HBox(self.region_cb_box_list, layout=self.box_layout)
+        self.space_label = widgets.Label('Space labels selection')
+        
+        self.label_buttons_box = widgets.HBox([self.space_label]+self.region_select_buttons)#, layout=self.outer_box_layout)
 
-        items = [self.tsi_box, self.control_box, self.region_box]
-        grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_rows="570px 75px 335px"))
+        self.region_box = widgets.HBox(self.region_cb_box_list)#, layout=self.outer_box_layout)
+        self.space_labels_box = widgets.VBox([self.label_buttons_box, self.region_box], layout=self.box_layout)
+
+        items = [self.tsi_box, self.control_box, self.space_labels_box]
+        grid = widgets.GridBox(items, layout=widgets.Layout(grid_template_rows="570px 75px 365px"))
         
         return grid
 
@@ -341,7 +348,7 @@ class TimeSeriesInteractive(HasTraits):
 
         self.region_checkboxes = dict()
         self.region_cb_box_list = []
-        cb_mw = 950//((len(self.labels)+2)//10 + 1)
+        cb_mw = 950//(len(self.labels)//10 + 1)
         for i,label in enumerate(self.labels):
             self.region_checkboxes[label] = widgets.Checkbox(value=True,
                                                             description=label,
@@ -354,33 +361,33 @@ class TimeSeriesInteractive(HasTraits):
                 self.region_cb_box_list.append(widgets.VBox(self.region_cb_stack))
                 self.region_cb_stack = []
             self.region_cb_stack.append(self.region_checkboxes[label])
-        if len(self.region_cb_stack) > 8:
-            self.region_cb_box_list.append(widgets.VBox(self.region_cb_stack))
-            self.region_cb_stack = []
-        self.add_region_selectall_button(cb_mw)
-        self.add_region_unselectall_button(cb_mw)
+        # if len(self.region_cb_stack) > 8:
+        #     self.region_cb_box_list.append(widgets.VBox(self.region_cb_stack))
+        #     self.region_cb_stack = []
+        # self.add_region_selectall_button(cb_mw)
+        # self.add_region_unselectall_button(cb_mw)
         self.region_cb_box_list.append(widgets.VBox(self.region_cb_stack))
         
 
-    def add_region_selectall_button(self, mw):
+    def add_region_selectall_button(self):
 
         def update_select_region_selectors(val):
             for checkbox in self.region_checkboxes:
                 self.region_checkboxes[checkbox].value = True
 
-        self.region_checkbox_select_button = widgets.Button(description='Select All', layout = {'max_width':f'{mw}px'})
+        self.region_checkbox_select_button = widgets.Button(description='Select All', layout = {'description':'initial'})
         self.region_checkbox_select_button.on_click(update_select_region_selectors)
-        self.region_cb_stack.append(self.region_checkbox_select_button)
+        self.region_select_buttons.append(self.region_checkbox_select_button)
     
-    def add_region_unselectall_button(self, mw):
+    def add_region_unselectall_button(self):
         
         def update_unselect_region_selectors(val):
             for checkbox in self.region_checkboxes:
                 self.region_checkboxes[checkbox].value = False
         
-        self.region_checkbox_unselect_button = widgets.Button(description='Unselect All', layout = {'max_width':f'{mw}px'})
+        self.region_checkbox_unselect_button = widgets.Button(description='Unselect All', layout = {'description':'initial'})
         self.region_checkbox_unselect_button.on_click(update_unselect_region_selectors)
-        self.region_cb_stack.append(self.region_checkbox_unselect_button)
+        self.region_select_buttons.append(self.region_checkbox_unselect_button)
 
     def add_window_length_slider(self):
         """
