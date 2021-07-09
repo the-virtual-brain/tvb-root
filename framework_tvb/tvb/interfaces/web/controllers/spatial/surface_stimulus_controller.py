@@ -334,7 +334,7 @@ class SurfaceStimulusController(SpatioTemporalController):
             min_time = common.get_from_session(KEY_TMP_FORM).min_tmp_x.value or 0
             max_time = common.get_from_session(KEY_TMP_FORM).max_tmp_x.value or 100
 
-            stimuli_surface = SurfaceStimulusCreator.prepare_stimuli_surface_from_view_model(current_surface_stim, True)
+            stimuli_surface = SurfaceStimulusCreator().prepare_stimuli_surface_from_view_model(current_surface_stim, True)
             stimuli_surface.configure_space()
             time = numpy.arange(min_time, max_time, 1)
             time = time[numpy.newaxis, :]

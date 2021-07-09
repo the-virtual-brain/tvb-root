@@ -54,6 +54,8 @@ setuptools.setup(name='tvb-storage',
                  packages=setuptools.find_packages(),
                  include_package_data=True,
                  install_requires=STORAGE_REQUIRED_PACKAGES,
+                 extras_require={
+                     'test': ["pytest"]},
                  description='A package which handles the storage of TVB data',
                  long_description="",
                  license="GPL-3.0-or-later",

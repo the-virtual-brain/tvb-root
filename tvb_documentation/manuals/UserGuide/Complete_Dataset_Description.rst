@@ -50,26 +50,26 @@ access.
 
 **Complete Structural Dataset**
 
-  in addition to the structures mentioned above, head model surfaces and
-  information about the units (areas, lengths, connectivity strengths). Info
-  about the EEG/MEG/iEEG sensors if users wish to compare simulated data to
+  in addition to the structures mentioned above, a complete structural dataset
+  also contains head model surfaces, information about the units (areas, lengths,
+  connectivity strengths), information about the EEG/MEG/iEEG sensors if users wish to compare simulated data to
   empirical data. *Complete Dataset*   all of the above + functional data (eeg,
   rsfMRI, meg)
 
 
 In general, all the steps in the processing pipeline should be documented, so
 it's possible to apply the same treatment to subsequent datasets.  Sending
-pieces of information in different files without descriptions from where they
+pieces of information to different files without descriptions from where they
 came and how they were processed is a bad practice and only detrimental for your
 own research project (takes a lot of time and it's not reproducible). We can't
 provide any meaningful help to integrate/check or validate incomplete datasets.
 
 
-Ideally, any volumetric data (eg, in NIFTI format), surface data (eg, GIFTI
-format) or combination thereof (eg, CIFTI format) should be provided in their
+Ideally, any volumetric data (e.g., in NIFTI format), surface data (e.g., GIFTI
+format) or combination thereof (e.g., CIFTI format) should be provided in their
 RAW format, and if any pre-processing was performed on the raw data,  associated
 data such as the region centres and parcellation mask should be provided in the
-same coordinate system as the cortical mesh (ie, self-consistent dataset). The
+same coordinate system as the cortical mesh (i.e., self-consistent dataset). The
 meaning of the (x,y,z) coordinates depends entirely on how the volumetric file
 was generated. It is possible to set any coordinate system you want ("native",
 "mni", "talaraich") depending on the processing you apply to your data.  A
@@ -77,7 +77,7 @@ region centre, for example, would be a single spatial location in 3D. This
 location is specified by three numbers (x,y,z), these numbers should ideally
 represent mm and must be relative to an origin (x=0, y=0, z=0). The "same
 coordinate system" means that the origin is in the same location relative to the
-head, and that the axis(x,y,z) point in the same direction with the same
+head, and that the axis(x,y,z) points in the same direction with the same
 orientation.
 
 
@@ -113,7 +113,7 @@ Parcellation Mask
   format (.nii and .nii.gz).I
 
   .. Note::
-    add references to the libraries and software that are available for
+    Add references to the libraries and software that are available for
     NIFTI-1 TVB also has a reader. Not the same case for NIFTI-2 and CIFTI.
     FieldTrip is the only one providing CIFTI i/o functionality.
 
@@ -133,20 +133,20 @@ A list with the region names/labels and corresponding integer index should be pr
   refers to a human readable description. Examples for one region/name would
   be something like 'label: RM-TCpol_R' / 'name: right temporal polar cortex'.
   Ideally, a reference to the original atlas/template should be provided as
-  well. Notice that the correspondence between integers values in the
+  well. Notice that the correspondence between integer values in the
   parcellation mask and anatomical/human readable labels should be provided if
   they are not specified in the volume file.
 
 **Are region labels essential?**
 
-  From the point of view of the  implementation of The Virtual Brain the labels
-  are essential?
+  From view point of the  implementation of The Virtual Brain the labels
+  are essential.
 
 **Are region names essential?**
 
   The region names on the other hand are  primarily a matter of usability,
   though a very valuable one, when you want to identify an area that you wish to
-  modify in a  simulation (eg, modeling lesions). Unless a user is an anatomist
+  modify in a  simulation (e.g., modeling lesions). Unless a user is an anatomist
   and acquainted with the labels, then the names are much clearer.
 
 
@@ -163,12 +163,12 @@ A list with the region names/labels and corresponding integer index should be pr
 
 **Is the parcellation mask unique?**
 
-  No. Currently, there are several parcellation being used in the community.
-  NOTE: REF parcellation papers. One of the main problems is that parcellations
-  are often custom made and subsequently modified, so it becomes very difficult
-  to track the origins.  To begin with, we suggest to use parcellation mask
+  No. Currently, there are several parcellation masks being used in the community.
+  NOTE: REF parcellation papers. One of the main problems is that parcellation
+  masks are often custom made and subsequently modified, so it becomes very difficult
+  to track the origins. To begin with, we suggest to use parcellation masks
   provided by neuroimaging software tools like FSL AAL 90. If you want to use a
-  custom made parcellation, then it should have the characteristics mentioned
+  custom made parcellation mask, then it should have the characteristics mentioned
   above. Also, having the structural raw data it is possible to derive
   connectivity matrices from the same dataset, but at different resolutions.
   NOTE: (reference to Hagmann and Zalesky).
@@ -176,14 +176,14 @@ A list with the region names/labels and corresponding integer index should be pr
 **What is the coordinate system of the parcellation mask?**
 
   It depends on how the parcellation mask was obtained. In principle, it should
-  be registered to a standard space such as MNI. This coordinate systems should
+  be registered to a standard space such as MNI. These coordinate systems should
   be consistent with the surface's coordinate systems.
 
 
 Connectivity and path length data
 ---------------------------------
 
-**What is it required to build a connectivity matrix (parcellated connectome)?**
+**What is required for building a connectivity matrix (parcellated connectome)?**
 
   Diffusion data, a parcellation mask and probably the white matter surface (in
   the same space, aligned). In TVB, we are not providing the tractography tools to
@@ -211,7 +211,7 @@ Connectivity and path length data
   For TVB a Connectivity refers to a set of two matrices (of size "anatomical
   regions x anatomical regions "), one with weights giving the strength of     the
   connections between anatomical regions and a second matrix with the     white
-  matter fibre lengths between regions;
+  matter fibre lengths between regions.
 
 
 Cortical Mesh
@@ -233,7 +233,7 @@ subjects data and extract the corresponding cortical surface.
   necessary to work with neural field modeling and to account for spatial
   inhomogeneities.
 
-  The cortical surface, represents the outer surface of the gray matter. It's
+  The cortical surface represents the outer surface of the gray matter. It's
   often called 'pial surface'.
 
 **How is a surface represented?**
@@ -246,14 +246,11 @@ subjects data and extract the corresponding cortical surface.
   which are indices into the vertex arrays; three indices for each triangle.
 
   Then there are other 'attributes' that can be derived from these two main
-  arrays, for instance 'normals'. A normal determine's the orientation of a vertex.
+  arrays, for instance 'normals'. A normal determines the orientation of a vertex.
 
   All vertex-related/derived information is calculated and stored in separate
   arrays, although bound to the surface instance they were derived from. Read
   more about normals here: http://user.xmission.com/~nate/smooth.html
-
-  .. Note::
-    and the upcoming publication where surface regularization is explained for the case of the pial surface.
 
 
 Region Mapping
@@ -262,17 +259,18 @@ Region Mapping
 **What is the Region Mapping?**
 
   The region mapping is just a relationship between the two pieces of data,
-  mapping regions of a connectivity onto the nodes of a surface simulation, one
-  to  many for the vertices of the cortical surface and one to one for the
-  remaining  non-cortical regions.  NOTE: A region mapping could be between two
-  connectomes of different resolution (eg, the connectomes presented in Hagmann
-  998 to 66 regions).
+  mapping regions of a connectivity onto the nodes of a surface simulation.
+  We are talking about a one to  many relationship for the vertices of the
+  cortical surface and one to one relationship for the remaining  non-cortical
+  regions.  NOTE: A region mapping could be between two connectomes of different
+  resolution (eg, the connectomes presented in Hagmann 998 to 66 regions).
 
 **How is the Region Mapping obtained?**
 
-  Good question!
-
-  TODO: Add links to relevant documentation.
+  It is obtained by combining the lh.aparc.annot and rh.aparc.annot files that
+  FreeSurfer generates for a particular subject. The details of the resulted
+  Region Mapping depend on the preprocessing pipeline used, some of them cut
+  out the regions that do not have any vertices assigned, others keep them etc.
 
 
 Head model
@@ -302,31 +300,31 @@ Head model
 
 **A Minimal Structural Dataset For TVB:**
 
-  All 3D coordinates should be consistent, ie., vertices, parcellation mask, and
+  All 3D coordinates should be consistent, i.e., vertices, parcellation masks, and
   region centres should be in the same units, axis orientations, alignment, etc.
 
 **A minimally-complete connectivity data set for TVB**
 
   should include the following:
 
-* Mesh surface for the cortex (regularised, continuous and complete per
-  hemisphere, that is, there should be no holes in the surface and it should be
-  possible to unambiguously define an inside and an outside, in other words,
-  each hemisphere should be topologically spherical):
+    * Mesh surface for the cortex (regularised, continuous and complete per
+    hemisphere, that is, there should be no holes in the surface and it should be
+    possible to unambiguously define an inside and an outside, in other words,
+    each hemisphere should be topologically spherical):
 
         + vertices (Cartesian (x,y,z))
         + triangles (triplets of indices into the vertices array, TRIANGLES, but not
                 generalised polygons)
 
-* Parcellation:
-   + Spatial mask, 3D, PROPERLY ALIGNED WITH THE SURFACE, ie coordinates,
-     orientation should be IN THE SAME SPACE.
-   + Labels for all regions composing the parcellation/connectivity data.
-   + A clear delineation, if not explicit in the labels, between cortical
-     regions and subcortical structures.
+    * Parcellation:
+        + Spatial mask, 3D, PROPERLY ALIGNED WITH THE SURFACE, i.e. coordinates,
+          orientation should be IN THE SAME SPACE.
+        + Labels for all regions composing the parcellation/connectivity data.
+        + A clear delineation, if not explicit in the labels, between cortical
+          regions and subcortical structures.
 
-* Region centres (Cartesian (x,y,z), consistent with surface, mask, etc), for
-  all regions composing the parcellation/connectivity data.
+    * Region centres (Cartesian (x,y,z), consistent with surface, mask, etc.), for
+      all regions composing the parcellation/connectivity data.
 
 * Connectivity (DSI):
    + Connection strength/s between regions.
@@ -337,21 +335,21 @@ Head model
 
   For a complete structural dataset, we should also have:
 
-  * Connectivity: mainly Connection strength between regions.
-        - This should include information specifying the directionality. That
-          is, if the data is provided as a matrix rather than a file format
-          including meta-data such as graphml, directionality should be clearly
-          and unambiguously specified.
+        * Connectivity: mainly Connection strength between regions.
+            - This should include information specifying the directionality. That
+              is, if the data is provided as a matrix rather than a file format
+              including meta-data such as graphml, directionality should be clearly
+              and unambiguously specified.
 
-  * Mesh surfaces for:
-        - inner-skull: boundary between the brain and the skull,
-        - outer-skull: the boundary of between the skull and the skin
-        - outer-skin:  boundary surface between the skin and the air (for EEG/MEG monitors)
+        * Mesh surfaces for:
+            - inner-skull: boundary between the brain and the skull,
+            - outer-skull: the boundary of between the skull and the skin
+            - outer-skin:  boundary surface between the skin and the air (for EEG/MEG monitors)
 
-  * Basic additional information:
-        - Units: tract lengths, coordinates etc (mm).
-        - Units: strength/weights units, (au) if none.
-        - additional relevant information...
+        * Basic additional information:
+            - Units: tract lengths, coordinates etc (mm).
+            - Units: strength/weights units, (au) if none.
+            - additional relevant information...
 
 
 **Guidelines to import the data into TVB**
@@ -371,11 +369,11 @@ The TVB demonstration dataset
   .. Note::
     **DISCLAIMER:** This dataset was custom made and built to serve the purpose of
     numerically testing the simulator, as well as for theoretical exploration. It
-    does have, however, certain issues with regard to biophysical realism and so
+    does have, however, certain issues with regard to biophysical realism and so it
     shouldn't be used/relied-upon for that purpose. References, where appropriate,
     are given. Also, this is an open source project and contributions are greatly
     appreciated. If you see an error, please leave a comment or make corresponding
-    modifications [please give proper references and argument your corrections].
+    modifications (please give proper references and argument your corrections).
 
 + The parcellation was chosen to be as homologous as possible between Macaque
   and Human. (See the [scalable brain atlas interactive tool]
@@ -450,21 +448,22 @@ We have:
  - An importer for RegionMapping (externally computed);
 
 We need:
- - At least one, preferably multiple, complete datasets to serve as a default
+ - At least one, preferably multiple, complete dataset to serve as a default
    dataset available to users who can't or aren't interested in providing their
    own. Of specific importance here is the Connectivity Parcellation Mask, as
    well as a specification of hemisphere and cortical vs non-cortical regions.
-   If you are interested in contributing a dataset, please contact paupau.
+   If you are interested in contributing to a dataset, please contact the tvb
+   `google group <https://groups.google.com/g/tvb-users?pli=1>`_.
 
  - Algorithm for calculating the region mapping, given a coregistered Cortex
-   and ParcellationMask, including an "island" removal/correction mechanism to
+   and Parcellation Mask, including an "island" removal/correction mechanism to
    deal with the imperfect alignment that will exist, even with coregistered
    data, between an individual's cortical surface and the "generic"
    parcellation mask.
 
     .. Note::
-        Demo data as described in this chapter, can be found on Github:
-        https://github.com/the-virtual-brain/tvb-data, or inside `TVB_Distribution`, under the following path:
+        Demo data as described in this chapter, can be found on Zenodo:
+        https://zenodo.org/record/4263723#.YL9x4jaA7t0, or inside `TVB_Distribution`, under the following path:
         `TVB_Distribution/tvb_data/Lib/site-packages/tvb_data/` on Windows,
         `TVB_Distribution/tvb_data/lib/python3.x/site-packages/tvb_data/` on Linux, or
         `TVB_Distribution/tvb.app/Contents/Resources/lib/python3.x/tvb_data/` on Mac.
@@ -480,29 +479,29 @@ Hagmann
 What has been provided/shown :
 
 * A 998 ROIs connectome (weights + resampled distances)
-* A mapping to the parcellated connectome of 66 regions.
-* Label and anatomical names.
-* Info about the coordinate system: Talaraich.
+* A mapping to the parcellated connectome of 66 regions
+* Label and anatomical names
+* Info about the coordinate system: Talaraich
 
 What's missing:
 
-* The parcellation mask file.
-* The cortical surface.
-* The head model.
+* The parcellation mask file
+* The cortical surface
+* The head model
 
 Permissions:
 
-* On request to the authors.
+* On request to the authors
 
 
 The Human Connectome Project
 ............................
 
 
-So far, the most complete datasets available.  We aim to integrate some of the
-datasets provided by the HCP. Structural connectivity is the fundamental
-substrate for building large-scale brain network models, and being able to use
-these high quality, standardized and equally pre-processed data would be
+So far, it contains the most complete datasets available.  We aim to integrate
+some of the datasets provided by the HCP. Structural connectivity is the
+fundamental substrate for building large-scale brain network models, and being
+able to use these high quality, standardized and equally pre-processed data would be
 ideal.
 
 However, "advanced" HCP datasets will be hopefully released next year.  The HCP
@@ -513,8 +512,8 @@ datasets based on resting state fMRI from individual subjects. However, HCP
 people are still working on improving many of the steps for generating
 structural connectivity datasets, based on diffusion imaging and probabilistic
 tractography. In the future, they will release probabilistic tractography and
-"dense structural connectome" datasets ( perhaps with the Q4 release, Q3 release
-was made available on September 20th, 2013)
+"dense structural connectome" datasets (perhaps with the Q4 release, Q3 release
+was made available on September 20th, 2013).
 
 There are ongoing efforts both within and outside the HCP consortium to
 generate improved methods of brain parcellation, especially cerebral cortex.
@@ -533,7 +532,7 @@ What they have:
 
 What's missing:
 
-* Preprocessed diffusion data (eg, fiber orientation, fiber tracts) and derived
+* Preprocessed diffusion data (e.g., fiber orientation, fiber tracts) and derived
   structural connectomes and individual based parcellations.
 
 Permissions:
@@ -552,7 +551,7 @@ Brain-mapping softwares:
     * CARET: http://brainvis.wustl.edu/wiki/index.php/Caret:About
     * The Human Connectome Toolkit (CMK): http://cmtk.org/
     * NiPy: http://nipy.sourceforge.net/
-    * MRtrix: http://www.brain.org.au/software/mrtrix/
+    * MRtrix:  https://www.mrtrix.org/
     * CAmino: http://cmic.cs.ucl.ac.uk/camino/
     * BrainVisa: http://brainvisa.info/
 

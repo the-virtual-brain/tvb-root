@@ -117,7 +117,6 @@ class TestHPCSchedulerClient(BaseTestCase):
 
     def _do_operation_launch(self, op, sim_gid, mocker, is_pse=False):
         # Prepare encrypted dir
-        self.storage_interface = StorageInterface()
         self.dir_gid = sim_gid
         job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
         self.storage_interface.encrypt_inputs(sim_gid, job_encrypted_inputs)
@@ -165,8 +164,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         proj = ProjectionSurfaceEEG(sensors=sensors, sources=surface, projection_data=numpy.ones(3))
 
         op = operation_factory()
-        storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
-        prj_db_db = h5.store_complete(proj, storage_path)
+        prj_db_db = h5.store_complete(proj, op.id, op.project.name)
         prj_db_db.fk_from_operation = op.id
         dao.store_entity(prj_db_db)
 

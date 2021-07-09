@@ -36,7 +36,7 @@ import tvb_data.regionMapping
 import tvb_data.projectionMatrix
 from os import path
 from uuid import UUID
-from mock import patch
+from unittest.mock import patch
 from datetime import datetime
 from cherrypy.lib.sessions import RamSession
 
@@ -942,7 +942,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         burst_config = dao.store_entity(burst_config)
         burst_config = burst_service.update_simulation_fields(burst_config, op.id,
                                                               self.session_stored_simulator.gid)
-        burst_service.store_burst_configuration(burst_config, storage_path)
+        burst_service.store_burst_configuration(burst_config)
         return burst_config
 
     def test_export(self):

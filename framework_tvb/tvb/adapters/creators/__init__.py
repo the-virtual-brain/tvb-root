@@ -28,4 +28,5 @@
 #
 #
 
-ALL_CREATORS = ["allen_creator", "connectivity_creator", "local_connectivity_creator", "stimulus_creator"]
+ALL_CREATORS = ["allen_creator", "connectivity_creator", "local_connectivity_creator", "stimulus_creator",
+                "tumor_dataset_creator"]

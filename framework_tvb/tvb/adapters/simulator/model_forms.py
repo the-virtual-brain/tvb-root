@@ -31,6 +31,7 @@
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
 from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField
 from tvb.simulator.models import ModelsEnum
+from tvb.simulator.models.base import Model
 
 
 def get_model_to_form_dict():
@@ -108,10 +109,24 @@ class StateVariableRangesForm(Form):
         super(StateVariableRangesForm, self).__init__()
 
 
-class Generic2dOscillatorModelForm(FormWithRanges):
+class ModelForm(FormWithRanges):
 
-    def __init__(self):
-        super(Generic2dOscillatorModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(ModelForm, self).__init__()
+        self.are_voi_disabled = are_voi_disabled
+
+    def fill_from_trait(self, trait):
+        # type: (Model) -> None
+        super(ModelForm, self).fill_from_trait(trait)
+
+        if self.are_voi_disabled:
+            self.variables_of_interest.disabled = True
+
+
+class Generic2dOscillatorModelForm(ModelForm):
+
+    def __init__(self, are_voi_disabled=False):
+        super(Generic2dOscillatorModelForm, self).__init__(are_voi_disabled)
         self.tau = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().tau)
         self.I = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().I)
         self.a = ArrayField(ModelsEnum.GENERIC_2D_OSCILLATOR.get_class().a)
@@ -132,10 +147,10 @@ class Generic2dOscillatorModelForm(FormWithRanges):
         return ['tau', 'a', 'b', 'c', 'I', 'd', 'e', 'f', 'g', 'alpha', 'beta', 'gamma']
 
 
-class KuramotoModelForm(FormWithRanges):
+class KuramotoModelForm(ModelForm):
 
-    def __init__(self):
-        super(KuramotoModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(KuramotoModelForm, self).__init__(are_voi_disabled)
         self.omega = ArrayField(ModelsEnum.KURAMOTO.get_class().omega)
         self.variables_of_interest = MultiSelectField(ModelsEnum.KURAMOTO.get_class().variables_of_interest)
 
@@ -144,10 +159,10 @@ class KuramotoModelForm(FormWithRanges):
         return ['omega']
 
 
-class SupHopfModelForm(FormWithRanges):
+class SupHopfModelForm(ModelForm):
 
-    def __init__(self):
-        super(SupHopfModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(SupHopfModelForm, self).__init__(are_voi_disabled)
         self.a = ArrayField(ModelsEnum.SUP_HOPF.get_class().a)
         self.omega = ArrayField(ModelsEnum.SUP_HOPF.get_class().omega)
         self.variables_of_interest = MultiSelectField(ModelsEnum.SUP_HOPF.get_class().variables_of_interest)
@@ -157,10 +172,10 @@ class SupHopfModelForm(FormWithRanges):
         return ['a', 'omega']
 
 
-class HopfieldModelForm(FormWithRanges):
+class HopfieldModelForm(ModelForm):
 
-    def __init__(self):
-        super(HopfieldModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(HopfieldModelForm, self).__init__(are_voi_disabled)
         self.taux = ArrayField(ModelsEnum.HOPFIELD.get_class().taux)
         self.tauT = ArrayField(ModelsEnum.HOPFIELD.get_class().tauT)
         self.dynamic = ArrayField(ModelsEnum.HOPFIELD.get_class().dynamic)
@@ -171,10 +186,10 @@ class HopfieldModelForm(FormWithRanges):
         return ['taux', 'tauT', 'dynamic']
 
 
-class EpileptorModelForm(FormWithRanges):
+class EpileptorModelForm(ModelForm):
 
-    def __init__(self):
-        super(EpileptorModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(EpileptorModelForm, self).__init__(are_voi_disabled)
         self.a = ArrayField(ModelsEnum.EPILEPTOR.get_class().a)
         self.b = ArrayField(ModelsEnum.EPILEPTOR.get_class().b)
         self.c = ArrayField(ModelsEnum.EPILEPTOR.get_class().c)
@@ -200,10 +215,10 @@ class EpileptorModelForm(FormWithRanges):
         return ["Iext", "Iext2", "r", "x0", "slope"]
 
 
-class Epileptor2DModelForm(FormWithRanges):
+class Epileptor2DModelForm(ModelForm):
 
-    def __init__(self):
-        super(Epileptor2DModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(Epileptor2DModelForm, self).__init__(are_voi_disabled)
         self.a = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().a)
         self.b = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().b)
         self.c = ArrayField(ModelsEnum.EPILEPTOR_2D.get_class().c)
@@ -223,10 +238,10 @@ class Epileptor2DModelForm(FormWithRanges):
         return ["r", "Iext", "x0"]
 
 
-class EpileptorCodim3ModelForm(FormWithRanges):
+class EpileptorCodim3ModelForm(ModelForm):
 
-    def __init__(self):
-        super(EpileptorCodim3ModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(EpileptorCodim3ModelForm, self).__init__(are_voi_disabled)
         self.mu1_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().mu1_start)
         self.mu2_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().mu2_start)
         self.nu_start = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.get_class().nu_start)
@@ -248,10 +263,10 @@ class EpileptorCodim3ModelForm(FormWithRanges):
                 'Ks']
 
 
-class EpileptorCodim3SlowModModelForm(FormWithRanges):
+class EpileptorCodim3SlowModModelForm(ModelForm):
 
-    def __init__(self):
-        super(EpileptorCodim3SlowModModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(EpileptorCodim3SlowModModelForm, self).__init__(are_voi_disabled)
         self.mu1_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu1_Ain)
         self.mu2_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().mu2_Ain)
         self.nu_Ain = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class().nu_Ain)
@@ -282,10 +297,10 @@ class EpileptorCodim3SlowModModelForm(FormWithRanges):
                 'mu1_Bend', 'mu2_Bend', 'nu_Bend', 'b', 'R', 'c', 'dstar', 'N']
 
 
-class EpileptorRestingStateModelForm(FormWithRanges):
+class EpileptorRestingStateModelForm(ModelForm):
 
-    def __init__(self):
-        super(EpileptorRestingStateModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(EpileptorRestingStateModelForm, self).__init__(are_voi_disabled)
         self.a = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().a)
         self.b = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().b)
         self.c = ArrayField(ModelsEnum.EPILEPTOR_RS.get_class().c)
@@ -322,10 +337,10 @@ class EpileptorRestingStateModelForm(FormWithRanges):
                 'alpha_rs', 'beta_rs', 'gamma_rs']
 
 
-class JansenRitModelForm(FormWithRanges):
+class JansenRitModelForm(ModelForm):
 
-    def __init__(self):
-        super(JansenRitModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(JansenRitModelForm, self).__init__(are_voi_disabled)
         self.A = ArrayField(ModelsEnum.JANSEN_RIT.get_class().A)
         self.B = ArrayField(ModelsEnum.JANSEN_RIT.get_class().B)
         self.a = ArrayField(ModelsEnum.JANSEN_RIT.get_class().a)
@@ -348,10 +363,10 @@ class JansenRitModelForm(FormWithRanges):
         return ['A', 'B', 'a', 'b', 'v0', 'nu_max', 'r', 'J', 'a_1', 'a_2', 'a_3', 'a_4', 'p_min', 'p_max', 'mu']
 
 
-class ZetterbergJansenModelForm(FormWithRanges):
+class ZetterbergJansenModelForm(ModelForm):
 
-    def __init__(self):
-        super(ZetterbergJansenModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(ZetterbergJansenModelForm, self).__init__(are_voi_disabled)
         self.He = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().He)
         self.Hi = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().Hi)
         self.ke = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.get_class().ke)
@@ -378,10 +393,10 @@ class ZetterbergJansenModelForm(FormWithRanges):
                 'P', 'U', 'Q']
 
 
-class ReducedWongWangModelForm(FormWithRanges):
+class ReducedWongWangModelForm(ModelForm):
 
-    def __init__(self):
-        super(ReducedWongWangModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(ReducedWongWangModelForm, self).__init__(are_voi_disabled)
         self.a = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().a)
         self.b = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().b)
         self.d = ArrayField(ModelsEnum.REDUCED_WONG_WANG.get_class().d)
@@ -398,10 +413,10 @@ class ReducedWongWangModelForm(FormWithRanges):
         return ['a', 'b', 'd', 'gamma', 'tau_s', 'w', 'J_N', 'I_o']
 
 
-class ReducedWongWangExcInhModelForm(FormWithRanges):
+class ReducedWongWangExcInhModelForm(ModelForm):
 
-    def __init__(self):
-        super(ReducedWongWangExcInhModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(ReducedWongWangExcInhModelForm, self).__init__(are_voi_disabled)
         self.a_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().a_e)
         self.b_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().b_e)
         self.d_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class().d_e)
@@ -429,10 +444,10 @@ class ReducedWongWangExcInhModelForm(FormWithRanges):
                 'W_i', 'J_i', 'I_o', 'G', 'lamda']
 
 
-class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
+class ReducedSetFitzHughNagumoModelForm(ModelForm):
 
-    def __init__(self):
-        super(ReducedSetFitzHughNagumoModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(ReducedSetFitzHughNagumoModelForm, self).__init__(are_voi_disabled)
         self.tau = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().tau)
         self.a = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().a)
         self.b = ArrayField(ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class().b)
@@ -449,10 +464,10 @@ class ReducedSetFitzHughNagumoModelForm(FormWithRanges):
         return ['tau', 'a', 'b', 'K11', 'K12', 'K21', 'sigma', 'mu']
 
 
-class ReducedSetHindmarshRoseModelForm(FormWithRanges):
+class ReducedSetHindmarshRoseModelForm(ModelForm):
 
-    def __init__(self):
-        super(ReducedSetHindmarshRoseModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(ReducedSetHindmarshRoseModelForm, self).__init__(are_voi_disabled)
         self.r = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().r)
         self.a = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().a)
         self.b = ArrayField(ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class().b)
@@ -473,10 +488,10 @@ class ReducedSetHindmarshRoseModelForm(FormWithRanges):
         return ['r', 'a', 'b', 'c', 'd', 's', 'xo', 'K11', 'K12', 'K21', 'sigma', 'mu']
 
 
-class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
+class ZerlautAdaptationFirstOrderModelForm(ModelForm):
 
-    def __init__(self):
-        super(ZerlautAdaptationFirstOrderModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(ZerlautAdaptationFirstOrderModelForm, self).__init__(are_voi_disabled)
         self.g_L = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().g_L)
         self.E_L_e = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().E_L_e)
         self.E_L_i = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.get_class().E_L_i)
@@ -516,14 +531,14 @@ class ZerlautAdaptationFirstOrderModelForm(FormWithRanges):
 
 class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm):
 
-    def __init__(self):
-        super(ZerlautAdaptationSecondOrderModelForm, self).__init__()
-        self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_SECOND_ORDER.get_class().variables_of_interest)
+    def __init__(self, are_voi_disabled=False):
+        super(ZerlautAdaptationSecondOrderModelForm, self).__init__(are_voi_disabled)
 
-class MontbrioPazoRoxinModelForm(FormWithRanges):
 
-    def __init__(self):
-        super(MontbrioPazoRoxinModelForm, self).__init__()
+class MontbrioPazoRoxinModelForm(ModelForm):
+
+    def __init__(self, are_voi_disabled=False):
+        super(MontbrioPazoRoxinModelForm, self).__init__(are_voi_disabled)
         self.tau = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().tau)
         self.I = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().I)
         self.Delta = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class().Delta)
@@ -538,10 +553,11 @@ class MontbrioPazoRoxinModelForm(FormWithRanges):
     def get_params_configurable_in_phase_plane():
         return ['tau', 'I', 'Delta', 'J', 'eta', 'Gamma', 'cr', 'cv']
 
-class CoombesByrneModelForm(FormWithRanges):
 
-    def __init__(self):
-        super(CoombesByrneModelForm, self).__init__()
+class CoombesByrneModelForm(ModelForm):
+
+    def __init__(self, are_voi_disabled=False):
+        super(CoombesByrneModelForm, self).__init__(are_voi_disabled)
         self.Delta = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().Delta)
         self.alpha = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().alpha)
         self.v_syn = ArrayField(ModelsEnum.COOMBES_BYRNE.get_class().v_syn)
@@ -553,10 +569,11 @@ class CoombesByrneModelForm(FormWithRanges):
     def get_params_configurable_in_phase_plane():
         return ['Delta', 'alpha', 'v_syn', 'k', 'eta']
 
-class CoombesByrne2DModelForm(FormWithRanges):
 
-    def __init__(self):
-        super(CoombesByrne2DModelForm, self).__init__()
+class CoombesByrne2DModelForm(ModelForm):
+
+    def __init__(self, are_voi_disabled=False):
+        super(CoombesByrne2DModelForm, self).__init__(are_voi_disabled)
         self.Delta = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().Delta)
         self.v_syn = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().v_syn)
         self.k = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.get_class().k)
@@ -567,10 +584,11 @@ class CoombesByrne2DModelForm(FormWithRanges):
     def get_params_configurable_in_phase_plane():
         return ['Delta', 'v_syn', 'k', 'eta']
 
-class GastSchmidtKnoscheSDModelForm(FormWithRanges):
 
-    def __init__(self):
-        super(GastSchmidtKnoscheSDModelForm, self).__init__()
+class GastSchmidtKnoscheSDModelForm(ModelForm):
+
+    def __init__(self, are_voi_disabled=False):
+        super(GastSchmidtKnoscheSDModelForm, self).__init__(are_voi_disabled)
         self.tau = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().tau)
         self.tau_A = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().tau_A)
         self.alpha = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().alpha)
@@ -580,16 +598,18 @@ class GastSchmidtKnoscheSDModelForm(FormWithRanges):
         self.eta = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().eta)
         self.cr = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().cr)
         self.cv = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().cv)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().variables_of_interest)
+        self.variables_of_interest = MultiSelectField(
+            ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv']
 
-class GastSchmidtKnoscheSFModelForm(FormWithRanges):
 
-    def __init__(self):
-        super(GastSchmidtKnoscheSFModelForm, self).__init__()
+class GastSchmidtKnoscheSFModelForm(ModelForm):
+
+    def __init__(self, are_voi_disabled=False):
+        super(GastSchmidtKnoscheSFModelForm, self).__init__(are_voi_disabled)
         self.tau = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().tau)
         self.tau_A = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().tau_A)
         self.alpha = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().alpha)
@@ -599,16 +619,18 @@ class GastSchmidtKnoscheSFModelForm(FormWithRanges):
         self.eta = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().eta)
         self.cr = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().cr)
         self.cv = ArrayField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().cv)
-        self.variables_of_interest = MultiSelectField(ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().variables_of_interest)
+        self.variables_of_interest = MultiSelectField(
+            ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class().variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
         return ['tau', 'tau_A', 'alpha', 'I', 'Delta', 'J', 'eta', 'cr', 'cv']
 
-class DumontGutkinModelForm(FormWithRanges):
 
-    def __init__(self):
-        super(DumontGutkinModelForm, self).__init__()
+class DumontGutkinModelForm(ModelForm):
+
+    def __init__(self, are_voi_disabled=False):
+        super(DumontGutkinModelForm, self).__init__(are_voi_disabled)
         self.I_e = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().I_e)
         self.Delta_e = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().Delta_e)
         self.eta_e = ArrayField(ModelsEnum.DUMONT_GUTKIN.get_class().eta_e)
@@ -631,10 +653,10 @@ class DumontGutkinModelForm(FormWithRanges):
                 'J_ee', 'J_ei', 'J_ie', 'J_ii', 'Gamma']
 
 
-class LinearModelForm(FormWithRanges):
+class LinearModelForm(ModelForm):
 
-    def __init__(self):
-        super(LinearModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(LinearModelForm, self).__init__(are_voi_disabled)
         self.gamma = ArrayField(ModelsEnum.LINEAR.get_class().gamma)
         self.variables_of_interest = MultiSelectField(ModelsEnum.LINEAR.get_class().variables_of_interest)
 
@@ -643,10 +665,10 @@ class LinearModelForm(FormWithRanges):
         return ['gamma']
 
 
-class WilsonCowanModelForm(FormWithRanges):
+class WilsonCowanModelForm(ModelForm):
 
-    def __init__(self):
-        super(WilsonCowanModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(WilsonCowanModelForm, self).__init__(are_voi_disabled)
         self.c_ee = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ee)
         self.c_ie = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ie)
         self.c_ei = ArrayField(ModelsEnum.WILSON_COWAN.get_class().c_ei)
@@ -677,10 +699,10 @@ class WilsonCowanModelForm(FormWithRanges):
                 'r_i', 'k_e', 'k_i', 'P', 'Q', 'theta_e', 'theta_i', 'alpha_e', 'alpha_i']
 
 
-class LarterBreakspearModelForm(FormWithRanges):
+class LarterBreakspearModelForm(ModelForm):
 
-    def __init__(self):
-        super(LarterBreakspearModelForm, self).__init__()
+    def __init__(self, are_voi_disabled=False):
+        super(LarterBreakspearModelForm, self).__init__(are_voi_disabled)
         self.gCa = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gCa)
         self.gK = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gK)
         self.gL = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.get_class().gL)

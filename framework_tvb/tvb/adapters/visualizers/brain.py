@@ -451,7 +451,6 @@ class DualBrainViewer(BrainViewer):
 
         params = BrainViewer.compute_parameters(self, time_series_index, shell_surface_index)
         eeg_monitor = EegMonitor()
-        eeg_monitor.storage_path = self.storage_path
         params.update(eeg_monitor.compute_parameters(time_series_index, is_extended_view=True))
 
         params['isOneToOneMapping'] = False

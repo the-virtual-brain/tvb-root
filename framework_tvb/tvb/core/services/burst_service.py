@@ -34,6 +34,7 @@ from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -98,7 +99,7 @@ class BurstService(object):
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
             if store_h5_file:
-                self.update_burst_configuration_h5(burst_entity)
+                self.store_burst_configuration(burst_entity)
         except Exception:
             self.logger.exception("Could not correctly update Burst status and meta-data!")
             burst_entity.status = burst_status
@@ -106,7 +107,7 @@ class BurstService(object):
             burst_entity.finish_time = datetime.now()
             dao.store_entity(burst_entity)
             if store_h5_file:
-                self.update_burst_configuration_h5(burst_entity)
+                self.store_burst_configuration(burst_entity)
 
     def persist_operation_state(self, operation, operation_status, message=None):
         """
@@ -138,7 +139,7 @@ class BurstService(object):
         burst = dao.get_burst_by_id(burst_id)
         burst.name = new_name
         dao.store_entity(burst)
-        self.update_burst_configuration_h5(burst)
+        self.store_burst_configuration(burst)
 
     @staticmethod
     def get_available_bursts(project_id):
@@ -189,12 +190,6 @@ class BurstService(object):
         burst = dao.store_entity(burst)
         return burst
 
-    def update_burst_configuration_h5(self, burst_configuration):
-        # type: (BurstConfiguration) -> None
-        project = dao.get_project_by_id(burst_configuration.fk_project)
-        storage_path = self.storage_interface.get_project_folder(project.name, str(burst_configuration.fk_simulation))
-        self.store_burst_configuration(burst_configuration, storage_path)
-
     @staticmethod
     def load_burst_configuration(burst_config_id):
         # type: (int) -> BurstConfiguration
@@ -222,8 +217,9 @@ class BurstService(object):
         return dao.store_entity(burst_config)
 
     @staticmethod
-    def store_burst_configuration(burst_config, storage_path):
-        bc_path = h5.path_for(storage_path, BurstConfigurationH5, burst_config.gid)
+    def store_burst_configuration(burst_config):
+        project = dao.get_project_by_id(burst_config.fk_project)
+        bc_path = h5.path_for(burst_config.fk_simulation, BurstConfigurationH5, burst_config.gid, project.name)
         with BurstConfigurationH5(bc_path) as bc_h5:
             bc_h5.store(burst_config)
 

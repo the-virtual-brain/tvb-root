@@ -42,6 +42,7 @@ from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
+from tvb.basic.neotraits.ex import TraitValueError
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
@@ -274,7 +275,7 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_model(self, **data):
-        session_stored_simulator, is_simulation_copy, is_simulation_load, _ = self.context.get_common_params()
+        session_stored_simulator, is_simulation_copy, is_simulation_load, is_branch = self.context.get_common_params()
 
         if cherrypy.request.method == POST_REQUEST:
             set_next_wizard = True
@@ -287,7 +288,7 @@ class SimulatorController(BurstBaseController):
             form.fill_trait(session_stored_simulator)
 
         form = self.algorithm_service.prepare_adapter_form(
-            form_instance=get_form_for_model(type(session_stored_simulator.model))())
+            form_instance=get_form_for_model(type(session_stored_simulator.model))(is_branch))
         self.range_parameters.model_parameters = form.get_range_parameters()
         form.fill_from_trait(session_stored_simulator.model)
 
@@ -302,7 +303,11 @@ class SimulatorController(BurstBaseController):
 
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
-            form = get_form_for_model(type(session_stored_simulator.model))()
+            form = get_form_for_model(type(session_stored_simulator.model))(is_branch)
+
+            if is_branch:
+                data['variables_of_interest'] = list(session_stored_simulator.model.variables_of_interest)
+
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.model)
 
@@ -318,7 +323,7 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_integrator(self, **data):
-        session_stored_simulator, is_simulation_copy, is_simulation_load, _ = self.context.get_common_params()
+        session_stored_simulator, is_simulation_copy, is_simulation_load, is_branch = self.context.get_common_params()
 
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_PARAMS_URL)
@@ -327,7 +332,7 @@ class SimulatorController(BurstBaseController):
             fragment.fill_trait(session_stored_simulator)
 
         form = self.algorithm_service.prepare_adapter_form(form_instance=get_form_for_integrator(
-            type(session_stored_simulator.integrator))())
+            type(session_stored_simulator.integrator))(is_branch))
 
         if hasattr(form, 'noise'):
             form.noise.display_subform = False
@@ -341,12 +346,17 @@ class SimulatorController(BurstBaseController):
 
     @expose_fragment('simulator_fragment')
     def set_integrator_params(self, **data):
-        session_stored_simulator, is_simulation_copy, is_simulation_load, _ = self.context.get_common_params()
+        session_stored_simulator, is_simulation_copy, is_simulation_load, is_branch = self.context.get_common_params()
 
         if cherrypy.request.method == POST_REQUEST:
-            form = get_form_for_integrator(type(session_stored_simulator.integrator))()
+            form = get_form_for_integrator(type(session_stored_simulator.integrator))(is_branch)
+
+            if is_branch:
+                data['dt'] = str(session_stored_simulator.integrator.dt)
+
             form.fill_from_post(data)
             form.fill_trait(session_stored_simulator.integrator)
+
             if isinstance(session_stored_simulator.integrator, IntegratorStochasticViewModel):
                 self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
             else:
@@ -474,7 +484,13 @@ class SimulatorController(BurstBaseController):
             current_monitor_name, session_stored_simulator)
 
         if cherrypy.request.method == POST_REQUEST:
-            form = get_form_for_monitor(type(current_monitor))(session_stored_simulator)
+            form = get_form_for_monitor(type(current_monitor))(session_stored_simulator, is_branch)
+
+            if is_branch:
+                data['period'] = str(current_monitor.period)
+                data['variables_of_interest'] = [session_stored_simulator.model.variables_of_interest[i] for i
+                                                 in current_monitor.variables_of_interest]
+
             form.fill_from_post(data)
             form.fill_trait(current_monitor)
 
@@ -490,6 +506,7 @@ class SimulatorController(BurstBaseController):
             previous_form_action_url=previous_form_action_url)
 
         form_action_url, if_bold_url = self.get_urls_for_next_monitor_fragment(next_monitor, current_monitor)
+        self.monitors_handler.update_monitor(current_monitor)
         return self.monitors_handler.handle_next_fragment_for_monitors(self.context, rendering_rules, current_monitor,
                                                                        next_monitor, False, form_action_url,
                                                                        if_bold_url)

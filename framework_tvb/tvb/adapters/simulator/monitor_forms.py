@@ -86,9 +86,10 @@ def get_form_for_monitor(monitor_class):
 
 class MonitorForm(Form):
 
-    def __init__(self, session_stored_simulator=None):
+    def __init__(self, session_stored_simulator=None, are_params_disabled=False):
         super(MonitorForm, self).__init__()
         self.session_stored_simulator = session_stored_simulator
+        self.are_params_disabled = are_params_disabled
         self.period = FloatField(Monitor.period)
         self.variables_of_interest_indexes = {}
 
@@ -108,6 +109,10 @@ class MonitorForm(Form):
             # by default we select all variables of interest for the monitor forms
             self.variables_of_interest.data = list(self.variables_of_interest_indexes.keys())
 
+        if self.are_params_disabled:
+            self.period.disabled = True
+            self.variables_of_interest.disabled = True
+
     def fill_trait(self, datatype):
         super(MonitorForm, self).fill_trait(datatype)
         datatype.variables_of_interest = numpy.array(list(self.variables_of_interest_indexes.values()))
@@ -122,8 +127,8 @@ class MonitorForm(Form):
 
 class SpatialAverageMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask)
         self.default_mask = SelectField(SpatialAverage.default_mask)
 
@@ -147,8 +152,8 @@ class SpatialAverageMonitorForm(MonitorForm):
 
 class ProjectionMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(ProjectionMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(ProjectionMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         rm_filter = None
         if session_stored_simulator and session_stored_simulator.is_surface_simulation:
@@ -161,8 +166,8 @@ class ProjectionMonitorForm(MonitorForm):
 
 class EEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(EEGMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(EEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_EEG.value])
@@ -179,8 +184,8 @@ class EEGMonitorForm(ProjectionMonitorForm):
 
 class MEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(MEGMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(MEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_MEG.value])
@@ -195,8 +200,8 @@ class MEGMonitorForm(ProjectionMonitorForm):
 
 class iEEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(iEEGMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(iEEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
                                     values=[SensorTypes.TYPE_INTERNAL.value])
@@ -212,8 +217,8 @@ class iEEGMonitorForm(ProjectionMonitorForm):
 
 class BoldMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(BoldMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(BoldMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
         self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
         default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
 

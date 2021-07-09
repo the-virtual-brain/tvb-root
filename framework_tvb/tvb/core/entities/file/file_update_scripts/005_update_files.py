@@ -40,12 +40,13 @@ import json
 import os
 import sys
 import uuid
-
 import numpy
+
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
+from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration
@@ -1091,8 +1092,8 @@ def _migrate_general_part(input_file):
     root_metadata[TvbProfile.current.version.DATA_VERSION_ATTRIBUTE] = TvbProfile.current.version.DATA_VERSION
 
     # UPDATE CREATION DATE
-    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(string2date(root_metadata[DataTypeMetaData.KEY_DATE],
-                                                                       date_format=DATE_FORMAT_V4_H5))
+    root_metadata[DataTypeMetaData.KEY_DATE] = date2string(
+        string2date(root_metadata[DataTypeMetaData.KEY_DATE], date_format=DATE_FORMAT_V4_H5))
 
     # OBTAIN THE MODULE (for a few data types the old module doesn't exist anymore, in those cases the attr
     # will be set later
@@ -1112,7 +1113,7 @@ def _migrate_general_part(input_file):
     return root_metadata, storage_manager
 
 
-def update(input_file, burst_match_dict):
+def update(input_file, burst_match_dict, op_id):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
@@ -1124,8 +1125,10 @@ def update(input_file, burst_match_dict):
     split_path = input_file.split(os.path.sep)
     storage_migrate = True
     try:
+        if op_id is None:
+            op_id = int(split_path[-2])
+
         # Change file names only for storage migration
-        op_id = int(split_path[-2])
         file_basename = os.path.basename(input_file)
         replaced_basename = file_basename.replace('-', '')
         replaced_basename = replaced_basename.replace('BrainSkull', 'Surface')
@@ -1166,10 +1169,9 @@ def update(input_file, burst_match_dict):
         # Take information out from the Operation.xml file
         if OPERATION_XML in files_in_folder:
             operation_file_path = os.path.join(folder, OPERATION_XML)
-            project = dao.get_project_by_name(split_path[-3])
-            xml_operation, operation_xml_parameters, algorithm = \
-                import_service.build_operation_from_file(project, operation_file_path)
             operation = dao.get_operation_by_id(op_id)
+            xml_operation, operation_xml_parameters, algorithm = \
+                import_service.build_operation_from_file(operation.project, operation_file_path)
             try:
                 operation_xml_parameters = json.loads(operation_xml_parameters)
             except NameError:
@@ -1265,8 +1267,9 @@ def update(input_file, burst_match_dict):
                             alg.configure()
                             simulation_history = SimulationHistory()
                             simulation_history.populate_from(alg)
-                            history_index = h5.store_complete(simulation_history, folder,
-                                                              generic_attributes=vm.generic_attributes)
+                            history_index = h5.store_complete(simulation_history, op_id,
+                                                                        operation.project.name,
+                                                                        generic_attributes=vm.generic_attributes)
                             history_index.fk_from_operation = op_id
                             history_index.fk_parent_burst = burst_config.gid
                             history_index.disk_size = StorageInterface.compute_size_on_disk(

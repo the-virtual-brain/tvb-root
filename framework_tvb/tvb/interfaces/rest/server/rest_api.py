@@ -29,7 +29,7 @@
 #
 import json
 
-from flask_restplus import Api
+from flask_restx import Api
 from keycloak.exceptions import KeycloakError
 from tvb.basic.exceptions import TVBException
 from tvb.interfaces.rest.commons.status_codes import HTTP_STATUS_SERVER_ERROR

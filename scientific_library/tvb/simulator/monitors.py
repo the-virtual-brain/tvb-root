@@ -97,6 +97,10 @@ class Monitor(HasTraits):
         clsname = self.__class__.__name__
         return '%s(period=%f, voi=%s)' % (clsname, self.period, self.variables_of_interest.tolist())
 
+    @property
+    def ui_name(self):
+        return self._ui_name
+
     def _config_vois(self, simulator):
         self.voi = self.variables_of_interest
         if self.voi is None or self.voi.size == 0:

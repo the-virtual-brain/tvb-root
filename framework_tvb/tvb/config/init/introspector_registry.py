@@ -67,7 +67,8 @@ def import_adapters(adapters_top_module, all_adapter_files):
             adapters_module = import_module("." + adapters_file, adapters_top_module.__name__)
             for ad_class in dir(adapters_module):
                 ad_class = adapters_module.__dict__[ad_class]
-                if inspect.isclass(ad_class) and not inspect.isabstract(ad_class) and issubclass(ad_class, ABCAdapter):
+                if inspect.isclass(ad_class) and ad_class.__module__ == adapters_module.__name__ and not \
+                        inspect.isabstract(ad_class) and issubclass(ad_class, ABCAdapter):
                     if ad_class.can_be_active():
                         result.append(ad_class)
                     else:

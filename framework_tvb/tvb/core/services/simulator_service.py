@@ -103,8 +103,7 @@ class SimulatorService(object):
                                                                  view_model=simulator, burst_gid=burst_config.gid,
                                                                  op_group_id=burst_config.fk_operation_group)
             burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id, simulator.gid)
-            storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
-            self.burst_service.store_burst_configuration(burst_config, storage_path)
+            self.burst_service.store_burst_configuration(burst_config)
 
             wf_errs = 0
             try:
@@ -237,10 +236,9 @@ class SimulatorService(object):
                 operations.append(operation)
                 if first_simulator is None:
                     first_simulator = simulator
-                    storage_path = self.storage_interface.get_project_folder(project.name, str(operation.id))
                     burst_config = self.burst_service.update_simulation_fields(burst_config, operation.id,
                                                                                first_simulator.gid)
-                    self.burst_service.store_burst_configuration(burst_config, storage_path)
+                    self.burst_service.store_burst_configuration(burst_config)
                     datatype_group = DataTypeGroup(operation_group, operation_id=operation.id,
                                                    fk_parent_burst=burst_config.gid,
                                                    state=algo_category.defaultdatastate)

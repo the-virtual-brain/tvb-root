@@ -35,6 +35,7 @@
 import os
 import uuid
 import typing
+
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapterModel, \
     TimeseriesMetricsAdapter
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
@@ -43,6 +44,7 @@ from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, SimulatorAdapterModel
 from tvb.basic.neotraits.api import HasTraits
 from tvb.config import ALGORITHMS
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
@@ -104,8 +106,9 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         """
         Update h5 files with generic attributes
         """
-        for file in os.listdir(self._get_output_path()):
-            path = os.path.join(self._get_output_path(), file)
+        storage_path = self._get_output_path()
+        for file in os.listdir(storage_path):
+            path = os.path.join(storage_path, file)
             if issubclass(H5File.h5_class_from_file(path), ViewModelH5):
                 continue
             with H5File.from_file(path) as f:
@@ -136,6 +139,16 @@ class HPCSimulatorAdapter(SimulatorAdapter):
         h5.store_view_model(metric_vm, self._get_output_path())
         metric_adapter = HPCTimeseriesMetricsAdapter(self._get_output_path(), time_series_index)
         metric_adapter._prelaunch(None, metric_vm, self.available_disk_space)
+
+    def path_for(self, h5_file_class, gid, dt_class=None):
+        return h5.path_by_dir(self.storage_path, h5_file_class, gid, dt_class)
+
+    def store_complete(self, datatype, generic_attributes=GenericAttributes()):
+        return h5.store_complete_to_dir(datatype, self.storage_path, generic_attributes)
+
+    def get_storage_path(self):
+        """
+        """
 
 
 class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
@@ -183,3 +196,9 @@ class HPCTimeseriesMetricsAdapter(TimeseriesMetricsAdapter):
 
     def _ensure_enough_resources(self, available_disk_space, view_model):
         return 0
+
+    def path_for(self, h5_file_class, gid, dt_class=None):
+        return h5.path_by_dir(self.storage_path, h5_file_class, gid, dt_class)
+
+    def store_complete(self, datatype, generic_attributes=GenericAttributes()):
+        return h5.store_complete_to_dir(datatype, self.storage_path, generic_attributes)

@@ -116,5 +116,4 @@ class DummyAdapter1(abcadapter.ABCAdapter):
         result = DummyDataTypeIndex()
         result.row1 = 'test'
         result.row2 = 'test'
-        result.storage_path = self.storage_path
         return result

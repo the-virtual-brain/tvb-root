@@ -77,7 +77,7 @@ class TestProjectResource(RestResourceTest):
         self._mock_user(mocker)
         project_gid = "inexistent-gid"
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         with pytest.raises(InvalidIdentifierException): self.operations_resource.get(project_gid=project_gid)
@@ -86,7 +86,7 @@ class TestProjectResource(RestResourceTest):
         self._mock_user(mocker)
         project_gid = self.test_project_without_data.gid
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         result = self.operations_resource.get(project_gid=project_gid)
@@ -97,7 +97,7 @@ class TestProjectResource(RestResourceTest):
         self._mock_user(mocker)
         project_gid = self.test_project_with_data.gid
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         result = self.operations_resource.get(project_gid=project_gid)

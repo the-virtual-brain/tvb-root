@@ -60,12 +60,9 @@ class GIFTIParser(object):
     NAME_ATTR = "Name"
     TIME_STEP_ATTR = "TimeStep"
 
-
-    def __init__(self, storage_path, operation_id):
+    def __init__(self, operation_id):
         self.logger = get_logger(__name__)
-        self.storage_path = storage_path
         self.operation_id = operation_id
-
 
     @staticmethod
     def _get_meta_dict(data_array):
@@ -73,7 +70,6 @@ class GIFTIParser(object):
         if data_array_meta is None or data_array_meta.data is None:
             return {}
         return dict((meta_pair.name, meta_pair.value) for meta_pair in data_array_meta.data)
-
 
     @staticmethod
     def _is_surface_gifti(data_arrays):
@@ -83,13 +79,11 @@ class GIFTIParser(object):
                 and intent_codes.code["NIFTI_INTENT_TRIANGLE"] == data_arrays[1].intent
                 and data_type_codes.code["NIFTI_TYPE_INT32"] == data_arrays[1].datatype)
 
-
     @staticmethod
     def _is_timeseries_gifti(data_arrays):
         return (len(data_arrays) > 1
                 and intent_codes.code["NIFTI_INTENT_TIME_SERIES"] == data_arrays[0].intent
                 and data_type_codes.code["NIFTI_TYPE_FLOAT32"] == data_arrays[0].datatype)
-
 
     def _parse_surface(self, data_arrays, data_arrays_part2, surface_type, should_center):
         meta_dict = self._get_meta_dict(data_arrays[0])
@@ -141,7 +135,6 @@ class GIFTIParser(object):
         surface.triangles = triangles
         surface.number_of_triangles = surface.triangles.shape[0]
         return surface
-
 
     def _parse_timeseries(self, data_arrays):
         # Create TVB time series to be filled
