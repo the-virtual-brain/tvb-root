@@ -34,6 +34,7 @@ This module provides a reference backend implemented with NumPy.
 """
 import numpy
 import numpy as np
+from numba import njit, prange
 from .base import BaseBackend
 
 
