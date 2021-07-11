@@ -163,10 +163,12 @@ class TestCouplingShape(BaseTestCase):
                     )
                     return state
 
+        conn = connectivity.Connectivity.from_file()
         surf = cortex.Cortex.from_file()
+        surf.region_mapping_data.connectivity = conn
         sim = simulator.Simulator(
             model=CouplingShapeTestModel(self, surf.vertices.shape[0]),
-            connectivity=connectivity.Connectivity.from_file(),
+            connectivity=conn,
             surface=surf)
 
         sim.configure()
