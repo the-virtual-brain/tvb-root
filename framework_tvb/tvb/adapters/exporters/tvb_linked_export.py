@@ -55,13 +55,13 @@ class TVBLinkedExporter(ABCExporter):
     def get_label(self):
         return "TVB Format with links"
 
-    def export(self, data, data_export_folder, project):
+    def export(self, data, export_folder, project):
         """
         Exports data type:
         1. If data is a normal data type, simply exports storage file (HDF format)
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
-        self.copy_dt_to_export_folder(data, data_export_folder)
+        data_export_folder = self.copy_dt_to_export_folder(data, export_folder)
         export_data_zip_path = self.get_export_data_zip_path(data, data_export_folder)
         return self.export_data_with_references(export_data_zip_path, data_export_folder)
 
@@ -74,24 +74,24 @@ class TVBLinkedExporter(ABCExporter):
 
         return None, export_data_zip_path, True
 
-    def copy_dt_to_export_folder(self, data, data_export_folder):
+    def __gather_datatypes_for_copy(self, data, data_export_folder, dt_path_list):
         data_path = h5.path_for_stored_index(data)
+        dt_path_list.append(data_path)
         with H5File.from_file(data_path) as f:
-            file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
-            if not os.path.exists(file_destination):
-                self.storage_interface.copy_file(data_path, file_destination)
-
             sub_dt_refs = f.gather_references()
 
             for _, ref_gid in sub_dt_refs:
                 if ref_gid:
                     dt = load.load_entity_by_gid(ref_gid)
-                    self.copy_dt_to_export_folder(dt, data_export_folder)
+                    self.__gather_datatypes_for_copy(dt, data_export_folder, dt_path_list)
 
-        H5File.remove_metadata_param(file_destination, 'parent_burst')
+    def copy_dt_to_export_folder(self, data, data_export_folder):
+        dt_path_list = []
+        self.__gather_datatypes_for_copy(data, data_export_folder, dt_path_list)
+        return self.storage_interface.copy_dt_to_export_folder_with_links(dt_path_list, data, data_export_folder)
 
     def get_export_file_extension(self, data):
-        return "zip"
+        return StorageInterface.TVB_ZIP_FILE_EXTENSION
 
     def skip_group_datatypes(self):
         return True

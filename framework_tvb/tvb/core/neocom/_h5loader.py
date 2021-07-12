@@ -89,7 +89,7 @@ class DirLoader(object):
     def _locate(self, gid):
         # type: (uuid.UUID) -> str
         for fname in os.listdir(self.base_dir):
-            if fname.endswith(gid.hex + StorageInterface.FILE_EXTENSION):
+            if fname.endswith(gid.hex + StorageInterface.TVB_STORAGE_FILE_EXTENSION):
                 fpath = os.path.join(self.base_dir, fname)
                 return fpath
         raise IOError('could not locate h5 with gid {}'.format(gid))
@@ -177,7 +177,7 @@ class DirLoader(object):
 
         filename_prefix = self._get_has_traits_classname(has_traits_class)
         for fname in os.listdir(self.base_dir):
-            if fname.startswith(filename_prefix) and fname.endswith(StorageInterface.FILE_EXTENSION):
+            if fname.startswith(filename_prefix) and fname.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
                 return fname
         raise IOError('could not locate h5 for {}'.format(has_traits_class.__name__))
 
