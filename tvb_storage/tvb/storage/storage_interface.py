@@ -439,13 +439,13 @@ class StorageInterface:
 
         return result_path
 
-    def __copy_dt_to_export_folder_with_links(self, dt_path_list, data, data_export_folder):
+    def copy_dt_to_export_folder_with_links(self, dt_path_list, data, data_export_folder):
         data_export_folder = self.__build_data_export_folder(data, data_export_folder)
         for dt_path in dt_path_list:
             file_destination = os.path.join(data_export_folder, os.path.basename(dt_path))
             if not os.path.exists(file_destination):
                 self.copy_file(dt_path, file_destination)
-            self.get_storage_manager(file_destination).remove_metadata( 'parent_burst', check_existence=True)
+            self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
 
         return data_export_folder
 
