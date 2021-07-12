@@ -75,7 +75,6 @@ class StorageInterface:
 
         # object attributes which have parameters in their constructor will be lazily instantiated
         self.tvb_zip = None
-        self.storage_manager = None
         self.xml_reader = None
         self.xml_writer = None
         self.encryption_handler = None
@@ -170,7 +169,10 @@ class StorageInterface:
 
         self.tvb_zip.close()
 
-    def write_zip_folders(self, all_datatypes, project_name, zip_full_path, exclude=[]):
+    def write_zip_folders(self, all_datatypes, project_name, data, export_folder, download_file_name, exclude=[]):
+        export_folder = self.build_data_export_folder(data, export_folder)
+        zip_full_path = os.path.join(export_folder, download_file_name)
+
         operation_folders = []
         for data_type in all_datatypes:
             operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
@@ -178,6 +180,8 @@ class StorageInterface:
         self.tvb_zip = TvbZip(zip_full_path, "w")
         self.tvb_zip.write_zip_folders(operation_folders, exclude)
         self.tvb_zip.close()
+
+        return zip_full_path
 
     @staticmethod
     def zip_folder(result_name, folder_root):
@@ -435,9 +439,22 @@ class StorageInterface:
 
         return result_path
 
-    def copy_dt_to_export_folder_with_links(self, dt_path_list, data_export_folder):
+    def copy_dt_to_export_folder_with_links(self, dt_path_list, data, data_export_folder):
+        data_export_folder = self.build_data_export_folder(data, data_export_folder)
         for dt_path in dt_path_list:
             file_destination = os.path.join(data_export_folder, os.path.basename(dt_path))
             if not os.path.exists(file_destination):
                 self.copy_file(dt_path, file_destination)
-            self.storage_manager.remove_metadata(file_destination, 'parent_burst')
+            self.get_storage_manager(file_destination).remove_metadata( 'parent_burst', check_existence=True)
+
+        return data_export_folder
+
+    def copy_dt_to_export_folder(self, data, data_path, export_folder):
+        data_export_folder = self.build_data_export_folder(data, export_folder)
+        file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
+        if not os.path.exists(file_destination):
+            self.copy_file(data_path, file_destination)
+        StorageInterface.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+
+        return file_destination
+

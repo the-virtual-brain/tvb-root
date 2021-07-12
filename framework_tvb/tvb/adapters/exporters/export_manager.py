@@ -130,15 +130,12 @@ class ExportManager(object):
 
         # Now compute and create folder where to store exported data
         # This will imply to generate a folder which is unique for each export
-        data_export_folder = None
+        export_data = None
         try:
-            data_export_folder = self.storage_interface.build_data_export_folder(data, self.export_folder)
             self.logger.debug("Start export of data: %s" % data.type)
-            export_data = exporter.export(data, data_export_folder, project)
-        finally:
-            # In case export did not generated any file delete folder
-            if data_export_folder is not None and len(os.listdir(data_export_folder)) == 0:
-                os.rmdir(data_export_folder)
+            export_data = exporter.export(data, self.export_folder, project)
+        except Exception:
+            pass
 
         return export_data
 

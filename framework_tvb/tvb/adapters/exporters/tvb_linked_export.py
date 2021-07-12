@@ -55,13 +55,13 @@ class TVBLinkedExporter(ABCExporter):
     def get_label(self):
         return "TVB Format with links"
 
-    def export(self, data, data_export_folder, project):
+    def export(self, data, export_folder, project):
         """
         Exports data type:
         1. If data is a normal data type, simply exports storage file (HDF format)
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
-        self.copy_dt_to_export_folder(data, data_export_folder)
+        data_export_folder = self.copy_dt_to_export_folder(data, export_folder)
         export_data_zip_path = self.get_export_data_zip_path(data, data_export_folder)
         return self.export_data_with_references(export_data_zip_path, data_export_folder)
 
@@ -85,11 +85,10 @@ class TVBLinkedExporter(ABCExporter):
                     dt = load.load_entity_by_gid(ref_gid)
                     self.__gather_datatypes_for_copy(dt, data_export_folder, dt_path_list)
 
-
     def copy_dt_to_export_folder(self, data, data_export_folder):
         dt_path_list = []
         self.__gather_datatypes_for_copy(data, data_export_folder, dt_path_list)
-        self.storage_interface.copy_dt_export_folder_with_links(dt_list, data_export_folder)
+        return self.storage_interface.copy_dt_to_export_folder_with_links(dt_path_list, data, data_export_folder)
 
     def get_export_file_extension(self, data):
         return StorageInterface.TVB_ZIP_FILE_EXTENSION
