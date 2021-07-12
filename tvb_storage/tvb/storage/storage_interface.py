@@ -165,12 +165,12 @@ class StorageInterface:
         self.logger.debug("Done exporting files, now we will export linked DTs")
 
         if linked_paths is not None:
-            self.export_datatypes(linked_paths, op)
+            self.__export_datatypes(linked_paths, op)
 
         self.tvb_zip.close()
 
     def write_zip_folders(self, all_datatypes, project_name, data, export_folder, download_file_name, exclude=[]):
-        export_folder = self.build_data_export_folder(data, export_folder)
+        export_folder = self.__build_data_export_folder(data, export_folder)
         zip_full_path = os.path.join(export_folder, download_file_name)
 
         operation_folders = []
@@ -370,7 +370,7 @@ class StorageInterface:
 
         # Exporting related methods start here
 
-    def export_datatypes(self, paths, operation):
+    def __export_datatypes(self, paths, operation):
         op_folder = self.get_project_folder(operation.project.name, operation.id)
         op_folder_name = os.path.basename(op_folder)
 
@@ -382,7 +382,7 @@ class StorageInterface:
         # remove these files, since we only want them in export archive
         self.remove_folder(op_folder)
 
-    def build_data_export_folder(self, data, export_folder):
+    def __build_data_export_folder(self, data, export_folder):
         now = datetime.now()
         date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
                                              now.minute, now.second, now.microsecond)
@@ -401,7 +401,7 @@ class StorageInterface:
         date_str = now.strftime("%Y-%m-%d_%H-%M")
         zip_file_name = "%s_%s.%s" % (date_str, project.name, self.TVB_ZIP_FILE_EXTENSION)
 
-        export_folder = self.build_data_export_folder(project, export_folder)
+        export_folder = self.__build_data_export_folder(project, export_folder)
         result_path = os.path.join(export_folder, zip_file_name)
 
         # Pack project [filtered] content into a ZIP file:
@@ -415,7 +415,7 @@ class StorageInterface:
         return result_path
 
     def export_simulator_configuration(self, burst, export_folder, all_view_model_paths, all_datatype_paths):
-        tmp_export_folder = self.build_data_export_folder(burst, export_folder)
+        tmp_export_folder = self.__build_data_export_folder(burst, export_folder)
         tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
 
         if not os.path.exists(tmp_sim_folder):
@@ -439,8 +439,8 @@ class StorageInterface:
 
         return result_path
 
-    def copy_dt_to_export_folder_with_links(self, dt_path_list, data, data_export_folder):
-        data_export_folder = self.build_data_export_folder(data, data_export_folder)
+    def __copy_dt_to_export_folder_with_links(self, dt_path_list, data, data_export_folder):
+        data_export_folder = self.__build_data_export_folder(data, data_export_folder)
         for dt_path in dt_path_list:
             file_destination = os.path.join(data_export_folder, os.path.basename(dt_path))
             if not os.path.exists(file_destination):
@@ -450,7 +450,7 @@ class StorageInterface:
         return data_export_folder
 
     def copy_dt_to_export_folder(self, data, data_path, export_folder):
-        data_export_folder = self.build_data_export_folder(data, export_folder)
+        data_export_folder = self.__build_data_export_folder(data, export_folder)
         file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
         if not os.path.exists(file_destination):
             self.copy_file(data_path, file_destination)

@@ -88,7 +88,7 @@ class TVBLinkedExporter(ABCExporter):
     def copy_dt_to_export_folder(self, data, data_export_folder):
         dt_path_list = []
         self.__gather_datatypes_for_copy(data, data_export_folder, dt_path_list)
-        return self.storage_interface.copy_dt_to_export_folder_with_links(dt_path_list, data, data_export_folder)
+        return self.storage_interface.__copy_dt_to_export_folder_with_links(dt_path_list, data, data_export_folder)
 
     def get_export_file_extension(self, data):
         return StorageInterface.TVB_ZIP_FILE_EXTENSION
