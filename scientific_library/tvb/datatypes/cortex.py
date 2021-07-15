@@ -152,6 +152,14 @@ class Cortex(HasTraits):
                                                self.local_connectivity.matrix.shape[1]))
             self.local_connectivity.matrix = scipy.sparse.vstack([self.local_connectivity.matrix, padding])
 
+    def check_unknown_regions(self):
+        lower_reg_labels = [label.lower() for label in self.region_mapping_data.connectivity.region_labels]
+        nr_regions = len(lower_reg_labels)
+        indexes = [index for index in range(nr_regions) if
+                   'unknown' in lower_reg_labels[index] or 'unkown' in lower_reg_labels[index]]
+
+        return indexes
+
     def compute_local_connectivity(self):
         """
         """
