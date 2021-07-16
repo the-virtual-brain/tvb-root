@@ -153,18 +153,13 @@ class StorageInterface:
 
     # TvbZip methods start here #
 
-    def write_zip_folder(self, dest_path, folder, exclude=[]):
-        self.tvb_zip = TvbZip(dest_path, "w")
-        self.tvb_zip.write_zip_folder(folder, self.OPERATION_FOLDER_PREFIX, exclude)
-        self.tvb_zip.close()
-
-    def write_zip_folder_with_links(self, dest_path, folder, linked_paths, op, exclude=[]):
+    def write_zip_folder(self, dest_path, folder, linked_paths=None, op=None, exclude=[]):
         self.tvb_zip = TvbZip(dest_path, "w")
         self.tvb_zip.write_zip_folder(folder, exclude)
 
         self.logger.debug("Done exporting files, now we will export linked DTs")
 
-        if linked_paths is not None:
+        if linked_paths is not None and op is not None:
             self.__export_datatypes(linked_paths, op)
 
         self.tvb_zip.close()
@@ -407,7 +402,7 @@ class StorageInterface:
         # Pack project [filtered] content into a ZIP file:
         self.logger.debug("Done preparing, now we will write the folder.")
         self.logger.debug(project_folder)
-        self.write_zip_folder_with_links(result_path, project_folder, linked_paths, op, folders_to_exclude)
+        self.write_zip_folder(result_path, project_folder, linked_paths, op, folders_to_exclude)
 
         # Make sure the Project.xml file gets copied:
         self.logger.debug("Done, closing")
