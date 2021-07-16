@@ -32,12 +32,10 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-import os
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
 from tvb.storage.storage_interface import StorageInterface
 
 
@@ -48,49 +46,41 @@ class TVBExporter(ABCExporter):
 
     def __init__(self):
         self.storage_interface = StorageInterface()
-    
+
     def get_supported_types(self):
         return [DataType]
-    
+
     def get_label(self):
         return "TVB Format"
-    
-    def export(self, data, export_folder, project):
+
+    def export(self, data, project):
         """
         Exports data type:
         1. If data is a normal data type, simply exports storage file (HDF format)
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
-        download_file_name = self.get_export_file_name(data)
-         
+        download_file_name = self._get_export_file_name(data)
+
         if self.is_data_a_group(data):
             all_datatypes = self._get_all_data_types_arr(data)
-            
-            if all_datatypes is None or len(all_datatypes) == 0:
-                raise ExportException("Could not export a data type group with no data")    
-            
-            zip_file = os.path.join(export_folder, download_file_name)
 
-            # Create ZIP archive    
-            self.storage_interface.write_zip_folders(all_datatypes, project.name, zip_file)
-                        
+            if all_datatypes is None or len(all_datatypes) == 0:
+                raise ExportException("Could not export a data type group with no data")
+
+            # Create ZIP archive
+            zip_file = self.storage_interface.export_datatypes_structure(all_datatypes, data, download_file_name,
+                                                                         project.name)
+
             return download_file_name, zip_file, True
 
         else:
-            data_file = self.copy_dt_to_export_folder(data, export_folder)
+            data_path = h5.path_for_stored_index(data)
+            data_file = self.storage_interface.export_datatypes([data_path], data, None)
+
             return None, data_file, True
-
-    def copy_dt_to_export_folder(self, data, data_export_folder):
-        data_path = h5.path_for_stored_index(data)
-        file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
-        if not os.path.exists(file_destination):
-            self.storage_interface.copy_file(data_path, file_destination)
-        H5File.remove_metadata_param(file_destination, 'parent_burst')
-
-        return file_destination
 
     def get_export_file_extension(self, data):
         if self.is_data_a_group(data):
-            return "zip"
+            return StorageInterface.TVB_ZIP_FILE_EXTENSION
         else:
-            return "h5"
+            return StorageInterface.TVB_STORAGE_FILE_EXTENSION

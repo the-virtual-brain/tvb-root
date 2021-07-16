@@ -163,7 +163,7 @@ class BaseTestCase(object):
         """
         BaseStorageTestCase.delete_projects_folders()
 
-        for folder in [os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME),
+        for folder in [os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.EXPORT_FOLDER_NAME),
                        os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.TEMP_FOLDER)]:
             if os.path.exists(folder):
                 shutil.rmtree(folder)

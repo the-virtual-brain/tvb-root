@@ -264,12 +264,6 @@ class H5File(object):
         self.storage_manager.set_metadata({key: value})
 
     @staticmethod
-    def remove_metadata_param(file_path, param):
-        storage_manager = StorageInterface.get_storage_manager(file_path)
-        if param in storage_manager.get_metadata():
-            storage_manager.remove_metadata(param)
-
-    @staticmethod
     def h5_class_from_file(path):
         # type: (str) -> typing.Type[H5File]
         h5file_class_fqn = H5File.get_metadata_param(path, H5File.KEY_WRITTEN_BY)

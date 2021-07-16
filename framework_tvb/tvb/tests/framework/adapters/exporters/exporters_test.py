@@ -54,7 +54,7 @@ class TestExporters(TransactionalTestCase):
     Test export functionality.
     """
     TVB_EXPORTER = "TVBExporter"
-    CIFTI_EXPORTER = "CIFTIExporter"
+    TVB_LINKED_EXPORTER = "TVBLinkedExporter"
 
     def transactional_setup_method(self):
         self.export_manager = ExportManager()
@@ -70,7 +70,7 @@ class TestExporters(TransactionalTestCase):
         StorageInterface().remove_project_structure(project.name)
 
         # Remove EXPORT folder
-        export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME)
+        export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.EXPORT_FOLDER_NAME)
         if os.path.exists(export_folder):
             shutil.rmtree(export_folder)
 
@@ -82,7 +82,7 @@ class TestExporters(TransactionalTestCase):
         exporters = self.export_manager.get_exporters_for_data(datatype)
 
         # Only TVB export can export any type of data type
-        assert 1, len(exporters) == "Incorrect number of exporters."
+        assert len(exporters) == 2, "Incorrect number of exporters."
 
     def test_get_exporters_for_data_with_no_data(self):
         """
@@ -101,15 +101,17 @@ class TestExporters(TransactionalTestCase):
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
-    def test_tvb_export_of_datatype_with_storage(self, dummy_datatype_index_factory):
-        """
-        Test export of a data type which has no data stored on file system
-        """
-        datatype = dummy_datatype_index_factory()
-        _, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
+    def test_tvb_linked_export_of_simple_datatype(self, connectivity_index_factory, surface_index_factory,
+                                                  region_mapping_index_factory):
+        conn = connectivity_index_factory()
+        _, surface = surface_index_factory(cortical=True)
+        region_mapping_index = region_mapping_index_factory(conn_gid=conn.gid, surface_gid=surface.gid.hex)
+
+        _, file_path, _ = self.export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER,
+                                                          self.test_project)
 
         assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+        assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
 
     def test_tvb_export_for_datatype_group(self, datatype_group_factory):
         """

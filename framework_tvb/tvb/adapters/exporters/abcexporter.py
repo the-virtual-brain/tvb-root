@@ -33,8 +33,9 @@ Root class for export functionality.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from datetime import datetime
 from abc import ABCMeta, abstractmethod
+from datetime import datetime
+
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.services.project_service import ProjectService
@@ -145,14 +146,11 @@ class ABCExporter(metaclass=ABCMeta):
         return isinstance(data, DataTypeGroup)
 
     @abstractmethod
-    def export(self, data, export_folder, project):
+    def export(self, data, project):
         """
         Actual export method, to be implemented in each sub-class.
 
         :param data: data type to be exported
-
-        :param export_folder: folder where to write results of the export if needed.
-                              This is necessary in case new files are generated.
 
         :param project: project that contains data to be exported
 
@@ -164,16 +162,20 @@ class ABCExporter(metaclass=ABCMeta):
         """
         pass
 
-    def get_export_file_name(self, data):
-        """
-        This method computes the name used to save exported data on user computer
-        """
-        file_ext = self.get_export_file_extension(data)
+    @staticmethod
+    def get_export_file_name(data, file_extension):
         data_type_name = data.__class__.__name__
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
 
-        return "%s_%s.%s" % (date_str, data_type_name, file_ext)
+        return "%s_%s%s" % (date_str, data_type_name, file_extension)
+
+    def _get_export_file_name(self, data):
+        """
+        This method computes the name used to save exported data on user computer
+        """
+        file_ext = self.get_export_file_extension(data)
+        return self.get_export_file_name(data, file_ext)
 
     @abstractmethod
     def get_export_file_extension(self, data):
