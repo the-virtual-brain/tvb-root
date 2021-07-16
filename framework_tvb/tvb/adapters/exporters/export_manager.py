@@ -34,19 +34,15 @@ Class responsible for all TVB exports (datatype or project).
 .. moduleauthor:: Calin Pavel <calin.pavel@codemat.ro
 """
 
-import os
-from datetime import datetime
-
+from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import H5File
 from tvb.core.services.project_service import ProjectService
 from tvb.storage.storage_interface import StorageInterface
 
@@ -56,8 +52,6 @@ class ExportManager(object):
     This class provides basic methods for exporting data types of projects in different formats.
     """
     all_exporters = {}  # Dictionary containing all available exporters
-    export_folder = None
-    EXPORT_FOLDER_NAME = "EXPORT_TMP"
     logger = get_logger(__name__)
 
     def __init__(self):
@@ -65,7 +59,6 @@ class ExportManager(object):
         # If new exporters supported, they should be added here
         self._register_exporter(TVBExporter())
         self._register_exporter(TVBLinkedExporter())
-        self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
         self.storage_interface = StorageInterface()
 
     def _register_exporter(self, exporter):
@@ -133,7 +126,7 @@ class ExportManager(object):
         export_data = None
         try:
             self.logger.debug("Start export of data: %s" % data.type)
-            export_data = exporter.export(data, self.export_folder, project)
+            export_data = exporter.export(data, project)
         except Exception:
             pass
 
@@ -170,8 +163,7 @@ class ExportManager(object):
         folders_to_exclude = self._get_op_with_errors(project.id)
         linked_paths, op = self._get_paths_of_linked_datatypes(project)
 
-        result_path = self.storage_interface.export_project(project, folders_to_exclude, self.export_folder,
-                                                            linked_paths, op)
+        result_path = self.storage_interface.export_project(project, folders_to_exclude, linked_paths, op)
 
         return result_path
 
@@ -198,7 +190,7 @@ class ExportManager(object):
         burst_path = h5.determine_filepath(burst.gid, op_folder)
         all_view_model_paths.append(burst_path)
 
-        result_path = self.storage_interface.export_simulator_configuration(burst, self.export_folder,
-                                                                                            all_view_model_paths,
-                                                                                            all_datatype_paths)
+        zip_filename = ABCExporter.get_export_file_name(burst, self.storage_interface.TVB_ZIP_FILE_EXTENSION)
+        result_path = self.storage_interface.export_simulator_configuration(burst, all_view_model_paths,
+                                                                            all_datatype_paths, zip_filename)
         return result_path

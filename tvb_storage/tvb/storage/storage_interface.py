@@ -34,9 +34,9 @@ All calls to methods from this module must be done through this class.
 
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+import os
 import uuid
 from datetime import datetime
-import os
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -66,6 +66,9 @@ class StorageInterface:
     EXPORTED_SIMULATION_NAME = "exported_simulation"
     EXPORTED_SIMULATION_DTS_DIR = "datatypes"
 
+    export_folder = None
+    EXPORT_FOLDER_NAME = "EXPORT_TMP"
+
     logger = get_logger(__name__)
 
     def __init__(self):
@@ -78,6 +81,7 @@ class StorageInterface:
         self.xml_reader = None
         self.xml_writer = None
         self.encryption_handler = None
+        self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
     # FilesHelper methods start here #
 
@@ -153,7 +157,7 @@ class StorageInterface:
 
     # TvbZip methods start here #
 
-    def write_zip_folder(self, dest_path, folder, linked_paths=None, op=None, exclude=[]):
+    def __write_zip_folder(self, dest_path, folder, linked_paths=None, op=None, exclude=[]):
         self.tvb_zip = TvbZip(dest_path, "w")
         self.tvb_zip.write_zip_folder(folder, exclude)
 
@@ -163,20 +167,6 @@ class StorageInterface:
             self.__export_datatypes(linked_paths, op)
 
         self.tvb_zip.close()
-
-    def write_zip_folders(self, all_datatypes, project_name, data, export_folder, download_file_name, exclude=[]):
-        export_folder = self.__build_data_export_folder(data, export_folder)
-        zip_full_path = os.path.join(export_folder, download_file_name)
-
-        operation_folders = []
-        for data_type in all_datatypes:
-            operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
-            operation_folders.append(operation_folder)
-        self.tvb_zip = TvbZip(zip_full_path, "w")
-        self.tvb_zip.write_zip_folders(operation_folders, exclude)
-        self.tvb_zip.close()
-
-        return zip_full_path
 
     @staticmethod
     def zip_folder(result_name, folder_root):
@@ -387,7 +377,7 @@ class StorageInterface:
 
         return data_export_folder
 
-    def export_project(self, project, folders_to_exclude, export_folder, linked_paths, op):
+    def export_project(self, project, folders_to_exclude, linked_paths, op):
         project_folder = self.get_project_folder(project.name)
         folders_to_exclude.append("TEMP")
 
@@ -396,21 +386,21 @@ class StorageInterface:
         date_str = now.strftime("%Y-%m-%d_%H-%M")
         zip_file_name = "%s_%s.%s" % (date_str, project.name, self.TVB_ZIP_FILE_EXTENSION)
 
-        export_folder = self.__build_data_export_folder(project, export_folder)
+        export_folder = self.__build_data_export_folder(project, self.export_folder)
         result_path = os.path.join(export_folder, zip_file_name)
 
         # Pack project [filtered] content into a ZIP file:
         self.logger.debug("Done preparing, now we will write the folder.")
         self.logger.debug(project_folder)
-        self.write_zip_folder(result_path, project_folder, linked_paths, op, folders_to_exclude)
+        self.__write_zip_folder(result_path, project_folder, linked_paths, op, folders_to_exclude)
 
         # Make sure the Project.xml file gets copied:
         self.logger.debug("Done, closing")
 
         return result_path
 
-    def export_simulator_configuration(self, burst, export_folder, all_view_model_paths, all_datatype_paths):
-        tmp_export_folder = self.__build_data_export_folder(burst, export_folder)
+    def export_simulator_configuration(self, burst, all_view_model_paths, all_datatype_paths, zip_filename):
+        tmp_export_folder = self.__build_data_export_folder(burst, self.export_folder)
         tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
 
         if not os.path.exists(tmp_sim_folder):
@@ -424,32 +414,39 @@ class StorageInterface:
             dest = os.path.join(tmp_sim_folder, self.EXPORTED_SIMULATION_DTS_DIR, os.path.basename(dt_path))
             self.copy_file(dt_path, dest)
 
-        now = datetime.now()
-        date_str = now.strftime("%Y-%m-%d_%H-%M")
-        zip_file_name = "%s_%s.%s" % (date_str, str(burst.id), StorageInterface.TVB_ZIP_FILE_EXTENSION)
-
-        result_path = os.path.join(tmp_export_folder, zip_file_name)
-        self.write_zip_folder(result_path, tmp_sim_folder)
+        result_path = os.path.join(tmp_export_folder, zip_filename)
+        self.__write_zip_folder(result_path, tmp_sim_folder)
         self.remove_folder(tmp_sim_folder)
 
         return result_path
 
-    def copy_dt_to_export_folder_with_links(self, dt_path_list, data, data_export_folder):
-        data_export_folder = self.__build_data_export_folder(data, data_export_folder)
+    def export_datatypes(self, dt_path_list, data, download_file_name):
+        export_folder = self.__build_data_export_folder(data, self.export_folder)
+        file_destination = None
+
         for dt_path in dt_path_list:
-            file_destination = os.path.join(data_export_folder, os.path.basename(dt_path))
+            file_destination = os.path.join(export_folder, os.path.basename(dt_path))
             if not os.path.exists(file_destination):
                 self.copy_file(dt_path, file_destination)
             self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
 
-        return data_export_folder
+        if len(dt_path_list) == 1:
+            return file_destination
 
-    def copy_dt_to_export_folder(self, data, data_path, export_folder):
-        data_export_folder = self.__build_data_export_folder(data, export_folder)
-        file_destination = os.path.join(data_export_folder, os.path.basename(data_path))
-        if not os.path.exists(file_destination):
-            self.copy_file(data_path, file_destination)
-        StorageInterface.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+        export_data_zip_path = os.path.join(os.path.dirname(export_folder), download_file_name)
+        self.__write_zip_folder(export_data_zip_path, export_folder)
+        return export_data_zip_path
 
-        return file_destination
+    def export_datatypes_structure(self, all_datatypes, data, download_file_name, project_name):
+        export_folder = self.__build_data_export_folder(data, self.export_folder)
+        zip_full_path = os.path.join(export_folder, download_file_name)
 
+        operation_folders = []
+        for data_type in all_datatypes:
+            operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
+            operation_folders.append(operation_folder)
+        self.tvb_zip = TvbZip(zip_full_path, "w")
+        self.tvb_zip.write_zip_folders(operation_folders, [])
+        self.tvb_zip.close()
+
+        return zip_full_path
