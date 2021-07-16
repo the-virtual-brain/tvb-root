@@ -374,6 +374,14 @@ class StorageInterface:
         return data_export_folder
 
     def export_project(self, project, folders_to_exclude, linked_paths, op):
+        """
+        This method is used to export a project as a ZIP file.
+        :param project: project to be exported.
+        :param folders_to_exclude: a list of paths to folders inside of a project folder which should not be exported.
+        :param linked_paths: a list of links to datatypes for the project to be exported
+        :param op: operation for links to exported datatypes (if any)
+        """
+
         project_folder = self.get_project_folder(project.name)
         folders_to_exclude.append("TEMP")
 
@@ -396,6 +404,14 @@ class StorageInterface:
         return result_path
 
     def export_simulator_configuration(self, burst, all_view_model_paths, all_datatype_paths, zip_filename):
+        """
+        This method is used to export a simulator configuration as a ZIP file
+        :param burst: BurstConfiguration of the simulation to be exported
+        :param all_view_model_paths: a list of paths to all view model files of the simulation
+        :param all_datatype_paths: a list of paths to all datatype files of the simulation
+        :param zip_filename: name of the file to be exported
+        """
+
         tmp_export_folder = self.__build_data_export_folder(burst, self.EXPORT_FOLDER)
         tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
 
@@ -417,6 +433,13 @@ class StorageInterface:
         return result_path
 
     def export_datatypes(self, dt_path_list, data, download_file_name):
+        """
+        This method is used to export a list of datatypes as a ZIP file.
+        :param dt_path_list: a list of paths to be exported (there are more than one when exporting with links)
+        :param data: data to be exported
+        :param download_file_name: name of the zip file to be downloaded
+        """
+
         export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
         file_destination = None
 
@@ -434,6 +457,15 @@ class StorageInterface:
         return export_data_zip_path
 
     def export_datatypes_structure(self, all_datatypes, data, download_file_name, project_name):
+        """
+        This method is used to export a list of datatypes as a ZIP file, while preserving the folder structure
+        (eg: operation folders). It is only used during normal tvb exporting for datatype groups.
+        :param all_datatypes: list of datatype paths to be exported (more than 1 if we export a datatype group)
+        :param data: data to be exported
+        :param download_file_name: name of the ZIP file to be exported
+        :param project_name: name of the project in which the data to be exported exists
+        """
+
         export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
         zip_full_path = os.path.join(export_folder, download_file_name)
 
