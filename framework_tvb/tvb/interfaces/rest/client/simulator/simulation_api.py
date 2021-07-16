@@ -48,7 +48,7 @@ class SimulationApi(MainApi):
 
         h5.store_view_model(session_stored_simulator, temporary_folder)
         zip_folder_path = os.path.join(temp_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
-        StorageInterface().zip_folder(zip_folder_path, temporary_folder)
+        StorageInterface().write_zip_folder(zip_folder_path, temporary_folder)
         shutil.rmtree(temporary_folder)
 
         file_obj = open(zip_folder_path, 'rb')

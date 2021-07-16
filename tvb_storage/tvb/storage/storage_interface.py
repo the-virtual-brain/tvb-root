@@ -68,6 +68,7 @@ class StorageInterface:
 
     export_folder = None
     EXPORT_FOLDER_NAME = "EXPORT_TMP"
+    EXPORT_FOLDER = os.path.join(TvbProfile.current.TVB_STORAGE, EXPORT_FOLDER_NAME)
 
     logger = get_logger(__name__)
 
@@ -81,7 +82,6 @@ class StorageInterface:
         self.xml_reader = None
         self.xml_writer = None
         self.encryption_handler = None
-        self.export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, self.EXPORT_FOLDER_NAME)
 
     # FilesHelper methods start here #
 
@@ -157,7 +157,7 @@ class StorageInterface:
 
     # TvbZip methods start here #
 
-    def __write_zip_folder(self, dest_path, folder, linked_paths=None, op=None, exclude=[]):
+    def write_zip_folder(self, dest_path, folder, linked_paths=None, op=None, exclude=[]):
         self.tvb_zip = TvbZip(dest_path, "w")
         self.tvb_zip.write_zip_folder(folder, exclude)
 
@@ -167,10 +167,6 @@ class StorageInterface:
             self.__export_datatypes(linked_paths, op)
 
         self.tvb_zip.close()
-
-    @staticmethod
-    def zip_folder(result_name, folder_root):
-        FilesHelper.zip_folder(result_name, folder_root)
 
     def unpack_zip(self, uploaded_zip, folder_path):
         self.tvb_zip = TvbZip(uploaded_zip, "r")
@@ -386,13 +382,13 @@ class StorageInterface:
         date_str = now.strftime("%Y-%m-%d_%H-%M")
         zip_file_name = "%s_%s.%s" % (date_str, project.name, self.TVB_ZIP_FILE_EXTENSION)
 
-        export_folder = self.__build_data_export_folder(project, self.export_folder)
+        export_folder = self.__build_data_export_folder(project, self.EXPORT_FOLDER)
         result_path = os.path.join(export_folder, zip_file_name)
 
         # Pack project [filtered] content into a ZIP file:
         self.logger.debug("Done preparing, now we will write the folder.")
         self.logger.debug(project_folder)
-        self.__write_zip_folder(result_path, project_folder, linked_paths, op, folders_to_exclude)
+        self.write_zip_folder(result_path, project_folder, linked_paths, op, folders_to_exclude)
 
         # Make sure the Project.xml file gets copied:
         self.logger.debug("Done, closing")
@@ -400,7 +396,7 @@ class StorageInterface:
         return result_path
 
     def export_simulator_configuration(self, burst, all_view_model_paths, all_datatype_paths, zip_filename):
-        tmp_export_folder = self.__build_data_export_folder(burst, self.export_folder)
+        tmp_export_folder = self.__build_data_export_folder(burst, self.EXPORT_FOLDER)
         tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
 
         if not os.path.exists(tmp_sim_folder):
@@ -415,13 +411,13 @@ class StorageInterface:
             self.copy_file(dt_path, dest)
 
         result_path = os.path.join(tmp_export_folder, zip_filename)
-        self.__write_zip_folder(result_path, tmp_sim_folder)
+        self.write_zip_folder(result_path, tmp_sim_folder)
         self.remove_folder(tmp_sim_folder)
 
         return result_path
 
     def export_datatypes(self, dt_path_list, data, download_file_name):
-        export_folder = self.__build_data_export_folder(data, self.export_folder)
+        export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
         file_destination = None
 
         for dt_path in dt_path_list:
@@ -434,11 +430,11 @@ class StorageInterface:
             return file_destination
 
         export_data_zip_path = os.path.join(os.path.dirname(export_folder), download_file_name)
-        self.__write_zip_folder(export_data_zip_path, export_folder)
+        self.write_zip_folder(export_data_zip_path, export_folder)
         return export_data_zip_path
 
     def export_datatypes_structure(self, all_datatypes, data, download_file_name, project_name):
-        export_folder = self.__build_data_export_folder(data, self.export_folder)
+        export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
         zip_full_path = os.path.join(export_folder, download_file_name)
 
         operation_folders = []

@@ -70,7 +70,7 @@ class TestExporters(TransactionalTestCase):
         StorageInterface().remove_project_structure(project.name)
 
         # Remove EXPORT folder
-        export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME)
+        export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.EXPORT_FOLDER_NAME)
         if os.path.exists(export_folder):
             shutil.rmtree(export_folder)
 
