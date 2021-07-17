@@ -40,14 +40,12 @@ import setuptools
 
 STORAGE_VERSION = "2.3"
 
-STORAGE_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze, Calin Pavel, Adrian Dordea, Bogdan Neacsa, " \
-               "Ionel Ortelecan"
+STORAGE_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 
 STORAGE_REQUIRED_PACKAGES = ["h5py", "numpy", "scipy"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()
-
 
 setuptools.setup(name='tvb-storage',
                  version=STORAGE_VERSION,
@@ -55,7 +53,8 @@ setuptools.setup(name='tvb-storage',
                  include_package_data=True,
                  install_requires=STORAGE_REQUIRED_PACKAGES,
                  extras_require={
-                     'test': ["pytest"]},
+                     'test': ["pytest"],
+                     'encrypt': ["syncrypto"]},
                  description='A package which handles the storage of TVB data',
                  long_description="",
                  license="GPL-3.0-or-later",
