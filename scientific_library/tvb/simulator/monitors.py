@@ -980,21 +980,31 @@ class BoldRegionROI(Bold):
     def config_for_sim(self, simulator):
         super(BoldRegionROI, self).config_for_sim(simulator)
         self.region_mapping = simulator.surface.region_mapping
+        self.no_regions = simulator.surface.region_mapping_data.connectivity.number_of_regions
 
-    def sample(self, step, state, array=numpy.array):
+    def sample(self, step, state):
         result = super(BoldRegionROI, self).sample(step, state)
         if result:
             t, data = result
             # TODO use reduceat
-            res = array([data.flat[self.region_mapping == i].mean() for i in range(self.region_mapping.max())])
-            res = numpy.reshape(res, [data.shape[0], len(res), data.shape[2]])
-            return [t, res]
+            data = numpy.array([data.flat[self.region_mapping == i].mean()
+                                for i in range(self.no_regions)])
+            return [t, data[numpy.newaxis, :, numpy.newaxis]]
         else:
             return None
 
+    def create_time_series(self, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
+
+        return TimeSeriesRegion(connectivity=connectivity,
+                                region_mapping=region_map,
+                                region_mapping_volume=region_volume_map,
+                                sample_period=self.period,
+                                title='Regions ' + self.__class__.__name__)
+
 
 class ProgressLogger(Monitor):
-    "Logs progress of simulation; only for use in console scripts."
+    """Logs progress of simulation; only for use in console scripts."""
 
     def __init__(self, **kwargs):
         super(ProgressLogger, self).__init__(**kwargs)
