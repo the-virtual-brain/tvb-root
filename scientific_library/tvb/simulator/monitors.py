@@ -987,9 +987,11 @@ class BoldRegionROI(Bold):
         if result:
             t, data = result
             # TODO use reduceat
-            data = numpy.array([data.flat[self.region_mapping == i].mean()
+            data = data[self.voi, :]
+            data = numpy.array([data[:, self.region_mapping == i, :].mean(axis=1)
                                 for i in range(self.no_regions)])
-            return [t, data[numpy.newaxis, :, numpy.newaxis]]
+            data = numpy.swapaxes(data, 0, 1)
+            return [t, data]
         else:
             return None
 
