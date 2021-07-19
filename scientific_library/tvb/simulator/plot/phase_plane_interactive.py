@@ -37,8 +37,9 @@ for visualising the effect of noise on a trajectory.
 
 Demo::
 
-    import tvb.simulator.plot.phase_plane_interactive as ppi
-    ppi.plot_pp()
+    import tvb.simulator.plot.phase_plane_interactive as PhasePlaneInteractive
+    ppi = PhasePlaneInteractive()
+    ppi.show()
 """
 from ipywidgets.widgets.interaction import interactive_output
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List
@@ -147,7 +148,7 @@ class PhasePlaneInteractive:
             self.ax_widgets_list.extend([self.reset_noise_button, self.noise_slider, self.reset_seed_button])
 
         self.ax_widgets = widgets.VBox(self.ax_widgets_list, layout=self.box_layout)
-        self.sv_widgets = widgets.VBox([self.reset_sv_button]+list(self.sv_sliders.values())+[self.traj_label, self.traj_text, self.traj_out], layout=self.box_layout)
+        self.sv_widgets = widgets.VBox([self.reset_sv_button]+list(self.sv_sliders.values())+[self.traj_label, self.traj_x_box, self.traj_y_box, self.plot_traj_button, self.traj_out], layout=self.box_layout)
         self.param_widgets = widgets.VBox([self.reset_param_button]+list(self.param_sliders.values()), layout=self.box_layout)
 
         items = [self.param_widgets, self.sv_widgets, self.ax_widgets]
@@ -308,15 +309,33 @@ class PhasePlaneInteractive:
     
     def add_traj_coords_text(self):
         self.traj_label = widgets.Label('Trajectory Co-ordinates (Float)')
-        self.traj_text = widgets.Text(placeholder='x,y', continuous_update=False)
+        self.plot_traj = widgets.Valid(value=False, description="Just a value!")
+        self.traj_out = widgets.Textarea(value='', placeholder='Trajectory Co-ordinates output will be shown here')
 
         def update_traj_text(val):
-            if len(self.traj_text.value) >= 3 and ',' in self.traj_text.value:
-                self.traj_out.value = f'{self.traj_out.value}\nTrajectory plotted at ({self.traj_text.value}).'
+            self.traj_out.value = f'{self.traj_out.value}Trajectory plotted at ({self.traj_x.value},{self.traj_y.value}).\n'
+            self.plot_traj.value = True
+        
+        def disable_plot_traj(val):
+            self.plot_traj.value = False
+        
+        self.traj_x_label = widgets.Label('X: ')
+        self.traj_x = widgets.FloatText(placeholder='X - Coordinate', continuous_update=False)
+        self.traj_x.observe(disable_plot_traj, 'value')
+        self.traj_x_box = widgets.HBox([self.traj_x_label, self.traj_x])
 
-        self.traj_out = widgets.Textarea(value='', placeholder='Trajectory Co-ordinates output will be shown here')
-        self.params['traj_text'] = self.traj_text
-        self.traj_text.observe(update_traj_text, 'value')
+        self.traj_y_label = widgets.Label('Y: ')
+        self.traj_y = widgets.FloatText(placeholder='Y - Coordinate', continuous_update=False)
+        self.traj_y.observe(disable_plot_traj, 'value')
+        self.traj_y_box = widgets.HBox([self.traj_y_label, self.traj_y])
+
+        self.plot_traj_button = widgets.Button(description='Plot Trajectory')
+        self.plot_traj_button.on_click(update_traj_text)
+        
+        self.params['traj_x'] = self.traj_x
+        self.params['traj_y'] = self.traj_y
+        self.params['plot_traj'] = self.plot_traj
+        
 
     def update_sl_x_range(self, val):
         self.sl_x_min.max = self.sl_x_max.value
@@ -401,9 +420,11 @@ class PhasePlaneInteractive:
             
             mode = plot_params.pop('mode')
 
-            traj_text = plot_params.pop('traj_text')
-            if len(traj_text) >=3 and ',' in traj_text:
-                traj_texts.append(traj_text)
+            traj_x = plot_params.pop('traj_x')
+            traj_y = plot_params.pop('traj_y')
+            plot_traj = plot_params.pop('plot_traj')
+            if plot_traj and (traj_x, traj_y) not in traj_texts:
+                traj_texts.append((traj_x, traj_y))
 
             # set model params
             for k, v in plot_params.items():
@@ -474,10 +495,9 @@ class PhasePlaneInteractive:
 
             if len(traj_texts):
                 for traj_text in traj_texts:
-                    coords = traj_text.split(',')
 
-                    x = float(coords[0])
-                    y = float(coords[1])
+                    x = float(traj_text[0])
+                    y = float(traj_text[1])
                     svx_ind = model.state_variables.index(svx)
                     svy_ind = model.state_variables.index(svy)
 
