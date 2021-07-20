@@ -68,19 +68,26 @@ __global__ void kuramoto(
     const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
 
 
-    curandState crndst;
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
+
+    curandState crndst; /
+    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst); /
 
     float V = 0.0;
 
     float dV = 0.0;
+
+    unsigned int dij_i = 0;
+    float dij = 0.0;
+    float wij = 0.0;
+
+    float V_j = 0.0;
 
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
         tavg(i_node) = 0.0f;
         if (i_step == 0){
-            state(i_step, i_node) = 0.001;
+            state(i_step, i_node) = 0.0f;
         }
     }
 
@@ -91,6 +98,10 @@ __global__ void kuramoto(
         for (int i_node = 0; i_node < n_node; i_node++)
         {
             c_pop1 = 0.0f;
+
+            if (t == (i_step)){
+                tavg(i_node + 0 * n_node) = 0;
+            }
 
             V = state((t) % nh, i_node + 0 * n_node);
 
@@ -105,18 +116,19 @@ __global__ void kuramoto(
                     continue;
 
                 // Get the delay between node i and node j
-                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = dij + 0.5;
+                dij_i = (int)dij;
 
                 //***// Get the state of node j which is delayed by dij
-                float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
+                V_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
                 c_pop1 += wij * a * sin(V_j - V);
-
             } // j_node */
 
-            // rec_n is used for the scaling over nodes
-            c_pop1 *= global_coupling * rec_n;
+            // global coupling handling, rec_n used to scale nodes
+            c_pop1 *= global_coupling;
 
 
             // Integrate with stochastic forward euler
@@ -131,10 +143,8 @@ __global__ void kuramoto(
             // Update the state
             state((t + 1) % nh, i_node + 0 * n_node) = V;
 
-            // Update the observable only for the last timestep
-            if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = V;
-            }
+            // Update the observable
+            tavg(i_node + 0 * n_node) += V/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step
             __syncthreads();

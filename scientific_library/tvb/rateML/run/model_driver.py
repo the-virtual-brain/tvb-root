@@ -8,6 +8,8 @@ import pickle
 from tvb.simulator.lab import *
 from tvb.basic.logger.builder import get_logger
 
+from tvb.rateML.run.regular_run import regularRun
+
 import os.path
 import numpy as np
 import pycuda.autoinit
@@ -36,7 +38,7 @@ class Driver_Setup:
 		self.connectivity = self.tvb_connectivity(self.args.n_regions)
 		self.weights = self.connectivity.weights
 		self.lengths = self.connectivity.tract_lengths
-		self.tavg_period = 10.0
+		self.tavg_period = 1.0
 		self.n_inner_steps = int(self.tavg_period / self.dt)
 
 		# bufferlength is based on the minimum of the first swept parameter (speed for many tvb models)
@@ -96,7 +98,8 @@ class Driver_Setup:
 			raise
 
 	def tvb_connectivity(self, tvbnodes):
-		white_matter = connectivity.Connectivity.from_file(source_file="connectivity_"+str(tvbnodes)+".zip")
+		# white_matter = connectivity.Connectivity.from_file(source_file="connectivity_"+str(tvbnodes)+".zip")
+		white_matter = connectivity.Connectivity.from_file(source_file="paupau.zip")
 		white_matter.configure()
 		return white_matter
 
@@ -108,8 +111,8 @@ class Driver_Setup:
 		parser.add_argument('-s1', '--n_sweep_arg1', default=4, help='num grid points for 2st parameter', type=int)
 		parser.add_argument('-n', '--n_time', default=400, help='number of time steps to do', type=int)
 		parser.add_argument('-v', '--verbose', default=False, help='increase logging verbosity', action='store_true')
-		parser.add_argument('-m', '--model', default='epileptor', help="neural mass model to be used during the simulation")
-		parser.add_argument('-s', '--states', default=6, type=int, help="number of states for model")
+		parser.add_argument('-m', '--model', default='montbrio', help="neural mass model to be used during the simulation")
+		parser.add_argument('-s', '--states', default=2, type=int, help="number of states for model")
 		parser.add_argument('-x', '--exposures', default=2, type=int, help="number of exposures for model")
 		parser.add_argument('-l', '--lineinfo', default=False, help='generate line-number information for device code.', action='store_true')
 		parser.add_argument('-bx', '--blockszx', default=8, type=int, help="gpu block size x")
@@ -120,7 +123,7 @@ class Driver_Setup:
 		parser.add_argument('-w', '--write_data', default=False, help="write output data to file: 'tavg_data", action='store_true')
 		parser.add_argument('-g', '--gpu_info', default=False, help="show gpu info", action='store_true')
 		parser.add_argument('-dt', '--delta_time', default=0.1, type=float, help="dt for simulation")
-		parser.add_argument('-sm', '--speeds_min', default=3e-1, type=float, help="min speed for temporal buffer")
+		parser.add_argument('-sm', '--speeds_min', default=3	, type=float, help="min speed for temporal buffer")
 
 		args = parser.parse_args()
 		return args
@@ -133,8 +136,8 @@ class Driver_Setup:
 		'''
 		This code generates the parameters ranges that need to be set
 		'''
-		sweeparam0 = np.linspace(0.0, 2.0, n0)
-		sweeparam1 = np.linspace(1.6, 3.0, n1)
+		sweeparam0 = np.linspace(1.0, 1.0, n0)
+		sweeparam1 = np.linspace(1.0, 1.0, n1)
 		params = itertools.product(
 		sweeparam0,
 		sweeparam1,
@@ -214,7 +217,8 @@ class Driver_Execute(Driver_Setup):
 		try:
 			with open(source_file, 'r') as fd:
 				source = fd.read()
-				source = source.replace('M_PI_F', '%ff' % (np.pi, ))
+				source = source.replace('pi', '%ff' % (np.pi, ))
+				source = source.replace('inf', 'INFINITY')
 				opts = ['--ptxas-options=-v', '-maxrregcount=32']
 				if lineinfo:
 					opts.append('-lineinfo')
@@ -457,7 +461,48 @@ class Driver_Execute(Driver_Setup):
 		self.logger.info('and in {0:.3f} M step/s'.format(
 			1e-6 * self.args.n_time * self.n_inner_steps * self.n_work_items / elapsed))
 
+		return tavg0
+
 
 if __name__ == '__main__':
 
-	Driver_Execute(Driver_Setup()).run_all()
+	driver_setup = Driver_Setup()
+	tavgGPU = Driver_Execute(driver_setup).run_all()
+
+	simtime = driver_setup.args.n_time
+	# simtime = 10
+	regions = driver_setup.args.n_regions
+	g = 1.0
+	# g = 0.0042
+	s = 1.0
+	dt = driver_setup.dt
+	period = 1
+
+	# generic model definition
+	model = driver_setup.args.model.capitalize()+'T'
+
+	# non generic model names
+	# model = 'MontbrioT'
+	# model = 'RwongwangT'
+	# model = 'OscillatorT'
+	# model = 'DumontGutkin'
+	# model = 'MontbrioPazoRoxin'
+	# model='Generic2dOscillator'
+	(time, tavgCPU) = regularRun(simtime, g, s, dt, period).simulate_python(model)
+
+	print('CPUshape', tavgCPU.shape)
+	print('GPUshape', tavgGPU.shape)
+
+	# check for deviation tolerance between GPU and CPU
+	# for basic coupling and period = 1
+	# using euler deterministic solver
+	max_err = []
+	x = 0
+	for t in range(0, simtime):
+		# print(t, 'tol:', np.max(np.abs(actual[t] - expected[t, :, :, 0])))
+		# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0], tavgGPU[t,:,:,0])))
+		# print(t)
+		# print('C', tavgCPU[t,:,:,0])
+		# print('G', tavgGPU[t,:,:,0])
+		# print(t, 'tol:', np.max(np.abs(tavgCPU[t,:,:,0] - tavgGPU[t,:,:,0])))
+		np.testing.assert_allclose(tavgCPU[t, :, :, 0], tavgGPU[t, :, :, 0], 2e-5 * t * 2, 1e-5 * t * 2)

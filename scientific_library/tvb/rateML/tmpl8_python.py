@@ -42,7 +42,7 @@ class ${modelname}(ModelNumbaDfun):
 ),
         default=(\
 %for defa in (dynamics.state_variables):
-'${choice.name}', \
+'${defa.name}', \
 %endfor
 ),
         doc="Variables to monitor"
@@ -55,7 +55,11 @@ class ${modelname}(ModelNumbaDfun):
 ]
 
     _nvar = ${dynamics.state_variables.__len__()}
-    cvar = numpy.array([0], dtype=numpy.int32)
+    cvar = numpy.array([\
+    % for i, itemF in enumerate(dynamics.state_variables):
+${i},\
+    % endfor
+], dtype = numpy.int32)
 
     def dfun(self, vw, c, local_coupling=0.0):
         ##lc_0 = local_coupling * vw[0, :, 0]
@@ -83,10 +87,9 @@ local_coupling, dx):
     "Gufunc for ${modelname} model equations."
 
     # long-range coupling
-    c_pop1 = coupling[0]
-    c_pop2 = coupling[1]
-    c_pop3 = coupling[2]
-    c_pop4 = coupling[3]
+    % for i, itemF in enumerate(dynamics.state_variables):
+    c_pop${i} = coupling[${i}]
+    % endfor
 
     % for i, itemF in enumerate(dynamics.state_variables):
     ${itemF.name} = vw[${i}]

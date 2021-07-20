@@ -18,19 +18,11 @@
 
 __device__ float wrap_it_r(float r)
 {
-    float rdim[] = {-0.0, 100.0};
+    float rdim[] = {0.0, inf};
     if (r < rdim[0]) r = rdim[0];
     else if (r > rdim[1]) r = rdim[1];
 
     return r;
-}
-__device__ float wrap_it_V(float V)
-{
-    float Vdim[] = {-100.0, 100.0};
-    if (V < Vdim[0]) V = Vdim[0];
-    else if (V > Vdim[1]) V = Vdim[1];
-
-    return V;
 }
 
 __global__ void montbrio(
@@ -68,16 +60,20 @@ __global__ void montbrio(
     const float J = 14.5;
     const float eta = -4.6;
     const float Gamma = 5.0;
+    const float cr = 1.0;
+    const float cv = 1.0;
 
     // coupling constants, coupling itself is hardcoded in kernel
 
     // coupling parameters
-    float r_c = 0.0;
+    float c_pop0 = 0.0;
+    float c_pop1 = 0.0;
 
     // derived parameters
     const float rec_n = 1 / n_node;
-    const float rec_speed_dt = global_speed;
+    const float rec_speed_dt = 1.0f / global_speed / dt;
     const float nsig = 0.01;
+
 
 
 
@@ -87,12 +83,19 @@ __global__ void montbrio(
     float dr = 0.0;
     float dV = 0.0;
 
+    unsigned int dij_i = 0;
+    float dij = 0.0;
+    float wij = 0.0;
+
+    float r_j = 0.0;
+    float V_j = 0.0;
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
         tavg(i_node) = 0.0f;
         if (i_step == 0){
-            state(i_step, i_node) = 0.001;
+            state(i_step, i_node) = 0.0f;
         }
     }
 
@@ -102,7 +105,13 @@ __global__ void montbrio(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            r_c = 0.0f;
+            c_pop0 = 0.0f;
+            c_pop1 = 0.0f;
+
+            if (t == (i_step)){
+                tavg(i_node + 0 * n_node) = 0;
+                tavg(i_node + 1 * n_node) = 0;
+            }
 
             r = state((t) % nh, i_node + 0 * n_node);
             V = state((t) % nh, i_node + 1 * n_node);
@@ -118,23 +127,28 @@ __global__ void montbrio(
                     continue;
 
                 // Get the delay between node i and node j
-                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = dij + 0.5;
+                dij_i = (int)dij;
 
                 //***// Get the state of node j which is delayed by dij
-                float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
+                r_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
+                V_j = state(((t - dij_i + nh) % nh), j_node + 1 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                r_c += wij * 1 * V_j;
+                c_pop0 += wij * 1 * r_j;
 
+                c_pop1 += wij * 1 * V_j;
             } // j_node */
 
-            // rec_n is used for the scaling over nodes
-            r_c *= global_coupling;
+            // global coupling handling, rec_n used to scale nodes
+            c_pop0 *= global_coupling;
+            c_pop1 *= global_coupling;
 
 
             // Integrate with stochastic forward euler
-            dr = dt * (1/tau * (Delta / (M_PI_F * tau) + 2 * V * r));
-            dV = dt * (1/tau * (powf(V, 2) - powf(M_PI_F, 2) * powf(tau, 2) * powf(r, 2) + eta + J * tau * r + I + r_c));
+            dr = dt * (1/tau * (Delta / (pi * tau) + 2 * V * r));
+            dV = dt * (1/tau * (powf(V, 2) - powf(pi, 2) * powf(tau, 2) * powf(r, 2) + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1));
 
             // No noise is added because it is not present in model
             r += dr;
@@ -148,11 +162,9 @@ __global__ void montbrio(
             state((t + 1) % nh, i_node + 0 * n_node) = r;
             state((t + 1) % nh, i_node + 1 * n_node) = V;
 
-            // Update the observable only for the last timestep
-            if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = r;
-                tavg(i_node + 1 * n_node) = V;
-            }
+            // Update the observable
+            tavg(i_node + 0 * n_node) += r/n_step;
+            tavg(i_node + 1 * n_node) += V/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step
             __syncthreads();

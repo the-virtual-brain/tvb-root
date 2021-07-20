@@ -1,5 +1,4 @@
 from tvb.simulator.models.base import Model, ModelNumbaDfun
-import numexpr
 import numpy
 from numpy import *
 from numba import guvectorize, float64
@@ -136,20 +135,21 @@ class RwongwangT(ModelNumbaDfun):
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={"V": numpy.array([0.0, 1.0]), "W": numpy.array([0.0, 1.0]), },
+        default={"V": numpy.array([0.0, 1.0]), 
+				 "W": numpy.array([0.0, 1.0])},
     )
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
         choices=('V', 'W', ),
-        default=('W', 'W', ),
+        default=('V', 'W', ),
         doc="Variables to monitor"
     )
 
     state_variables = ['V', 'W']
 
     _nvar = 2
-    cvar = numpy.array([0], dtype=numpy.int32)
+    cvar = numpy.array([0,1,], dtype = numpy.int32)
 
     def dfun(self, vw, c, local_coupling=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
@@ -163,28 +163,18 @@ def _numba_dfun_RwongwangT(vw, coupling, w_plus, a_E, b_E, d_E, a_I, b_I, d_I, g
     "Gufunc for RwongwangT model equations."
 
     # long-range coupling
-    c_pop1 = coupling[0]
-    c_pop2 = coupling[1]
-    c_pop3 = coupling[2]
-    c_pop4 = coupling[3]
+    c_pop0 = coupling[0]
+    c_pop1 = coupling[1]
 
     V = vw[0]
     W = vw[1]
 
     # derived variables
-    min_d_E = -1.0 * d_E
-    min_d_I = -1.0 * d_I
-    imintau_E = -1.0 / tau_E
-    imintau_I = -1.0 / tau_I
-    w_E__I_0 = w_E * I_0
-    w_I__I_0 = w_I * I_0
-    G_J_NMDA = G*J_NMDA
-    w_plus__J_NMDA = w_plus * J_NMDA
-    tmp_I_E = a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_pop1 - JI*W) - b_E
-    tmp_H_E = tmp_I_E/(1.0-exp(min_d_E * tmp_I_E))
-    tmp_I_I = (a_I*((w_I__I_0+(J_NMDA * V))-W))-b_I
-    tmp_H_I = tmp_I_I/(1.0-exp(min_d_I*tmp_I_I))
+    tmp_I_E = a_E * ((w_E * I_0) + (w_plus * J_NMDA) * V + c_pop0 - JI*W) - b_E
+    tmp_H_E = tmp_I_E/(1.0-exp((-1.0 * d_E) * tmp_I_E))
+    tmp_I_I = (a_I*(((w_I * I_0)+(J_NMDA * V))-W))-b_I
+    tmp_H_I = tmp_I_I/(1.0-exp((-1.0 * d_I)*tmp_I_I))
 
-    dx[0] = (imintau_E* V)+(tmp_H_E*(1-V)*gamma_E)
-    dx[1] = (imintau_I* W)+(tmp_H_I*gamma_I)
+    dx[0] = ((-1.0 / tau_E)* V)+(tmp_H_E*(1-V)*gamma_E)
+    dx[1] = ((-1.0 / tau_I)* W)+(tmp_H_I*gamma_I)
     

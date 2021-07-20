@@ -59,12 +59,19 @@ from tvb.basic.logger.builder import get_logger
 
 from lems.model.model import Model
 
+import argparse
+
 logger = get_logger(__name__)
 
 class RateML:
 
-    def __init__(self, model_filename, language='python', XMLfolder=None, GENfolder=None):
-        self.model_filename = model_filename
+    def __init__(self, model_filename=None, language=None, XMLfolder=None, GENfolder=None):
+
+        self.args = self.parse_args()
+
+        self.model_filename = model_filename or self.args.model
+
+        language = language or self.args.language.lower()
 
         try:
             assert language in ('cuda', 'python', 'Cuda', 'Python', 'CUDA')
@@ -73,8 +80,8 @@ class RateML:
             logger.error('Please choose between Python or Cuda %s', e)
             exit()
 
-        self.XMLfolder = XMLfolder
-        self.GENfolder = GENfolder
+        self.XMLfolder = XMLfolder or self.args.source
+        self.GENfolder = GENfolder or self.args.destination
 
         # set file locations
         self.generated_model_location = self.set_generated_model_location()
@@ -97,6 +104,21 @@ class RateML:
         # if it is a TVB.py model, it should be familiarized
         if self.language.lower()=='python':
             self.familiarize_TVB(model_str)
+
+    def parse_args(self):  # {{{
+        parser = argparse.ArgumentParser(description='Run XML model conversion.')
+
+        parser.add_argument('-m', '--model', default='rwongwang',
+                            help="neural mass model to be converted")
+        parser.add_argument('-l', '--language', default='Python',
+                            help="programming language output")
+        parser.add_argument('-s', '--source', default='',
+                            help="source folder location")
+        parser.add_argument('-d', '--destination', default='',
+                            help="destination folder location")
+
+        args = parser.parse_args()
+        return args
 
     @staticmethod
     def default_XML_folder():
@@ -393,18 +415,20 @@ class RateML:
 
 if __name__ == "__main__":
 
+    RateML()
 
+    # example for direct project implementation
     # set the language for your model
     # language='python'
-    language='Cuda'
+    # language='Cuda'
 
     # choose an example or your own model
-    model_filename = 'montbrio'
+    # model_filename = 'montbrio'
     # model_filename = 'oscillator'
     # model_filename = 'kuramoto'
     # model_filename = 'rwongwang'
     # model_filename = 'epileptor'
 
     # start conversion to default model location
-    RateML(model_filename, language)
+    # RateML(model_filename, language)
 

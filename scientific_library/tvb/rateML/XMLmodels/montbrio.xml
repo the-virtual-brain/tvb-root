@@ -4,13 +4,13 @@
 
         <!-- Powers should be entered as {powee^power} -->
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='2.0, 2.0'/>
-        <Parameter name="global_coupling" dimension='0.1, 0.1'/>
+        <Parameter name="global_speed" dimension='1.0, 1.0'/>
+        <Parameter name="global_coupling" dimension='1.0, 1.0'/>
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
         <!-- The parameters with name 'rec_speed_dt' is conidered to be integral part of tv coupling calculation
          if not present, the delay part of coupling will be 0 for each node -->
-        <DerivedParameter name="rec_speed_dt" value="global_speed"/>
+        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / dt"/>
         <!-- nsig is the default variable for noise amplitude. Is equal to 1 if not defined -->
         <DerivedParameter name="nsig" value="0.01"/>
 
@@ -21,8 +21,8 @@
         <Constant name="J" dimension="lo=-25.0, hi=25.0, step=0.0001" value="14.5" description="Constant parameter to scale the rate of feedback from the slow variable to the firing rate variable."/>
         <Constant name="eta" dimension="lo=-10.0, hi=10.0, step=0.0001" value="-4.6" description="Constant parameter to scale the rate of feedback from the firing rate variable to itself"/>
         <Constant name="Gamma" dimension="lo=0., hi=10.0, step=0.1" value="5.0" description="Derived from eterogeneous currents and synaptic weights (see Montbrio p.12)."/>
-<!--        <Constant name="cr" dimension="lo=0., hi=1, step=0.1" value="0.0" description="It is the weight on Coupling through variable r."/>-->
-<!--        <Constant name="cv" dimension="lo=0., hi=1, step=0.1" value="0.0" description="It is the weight on Coupling through variable V."/>-->
+        <Constant name="cr" dimension="lo=0., hi=1, step=0.1" value="1.0" description="It is the weight on Coupling through variable r."/>
+        <Constant name="cv" dimension="lo=0., hi=1, step=0.1" value="1.0" description="It is the weight on Coupling through variable V."/>
 
         <!-- Exposures are used for observables, for the name enter variable to be observed (usually states)
         and for dimension enter the reduction functionality. Will be represented as variables_of_interest.
@@ -34,8 +34,12 @@
             <!-- "State variable ranges [lo, hi]" values are entered with keyword "default" -->
             <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, i.e. "1.0, None" -->
-            <StateVariable name="r" dimension="0.0" exposure="-0.0, 100.0"/>
-            <StateVariable name="V" dimension="0.0" exposure="-100.0, 100.0"/>
+            <!-- CUDA -->
+            <StateVariable name="r" dimension="0.0" exposure="0.0, inf"/>
+            <StateVariable name="V" dimension="0.0" exposure="none"/>
+            <!-- Python -->
+<!--            <StateVariable name="r" dimension="0., 2.0" exposure="0.0, inf"/>-->
+<!--            <StateVariable name="V" dimension="-2.0, 1.5" exposure="None"/>-->
 
             <!-- Derived variables can be used to simplify the time derivatives, enter the local coupling formulas or any formula -->
             <!-- syntax: [name]=[expression] -->
@@ -45,20 +49,41 @@
 <!--            <DerivedVariable name="Coupling_Term_r" value="Coupling_global + Coupling_local"/>-->
 <!--            <DerivedVariable name="Coupling_Term_V" value="Coupling_global + Coupling_local"/>-->
 
+            <!-- Python -->
+            <TimeDerivative variable="dr" value="1/tau * (Delta / (pi * tau) + 2 * V * r)"/>
+            <TimeDerivative variable="dV" value="1/tau * ({V^2} - {pi^2} * {tau^2} * {r^2} + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1)"/>
+
+            <!-- CUDA -->
             <!-- For conditionals use &lt(=); or &gt;(=) for less- or greater then (equal to)  -->
             <!-- Conditional used for if statement, syntax: if {condition} -> {cases[0]} else {cases[1]}. Cases are separated by (,) -->
-            <TimeDerivative variable="dr" value="1/tau * (Delta / (M_PI_F * tau) + 2 * V * r)"/>
-            <TimeDerivative variable="dV" value="1/tau * ({V^2} - {M_PI_F^2} * {tau^2} * {r^2} + eta + J * tau * r + I + r_c)"/>
+<!--            <TimeDerivative variable="dr" value="1/tau * (Delta / (M_PI_F * tau) + 2 * V * r)"/>-->
+<!--            <TimeDerivative variable="dV" value="1/tau * ({V^2} - {M_PI_F^2} * {tau^2} * {r^2} + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1)"/>-->
 
         </Dynamics>
 
     </ComponentType>
 
-        <ComponentType name="coupling_function">
+    <ComponentType name="coupling_function_0">
 
 <!--        variables for pre synaptic function-->
-        <Parameter name="V_j" dimension='0'/>
-        <DerivedParameter name="r_c" value="global_coupling"/>
+        <Parameter name="r_j" dimension='0'/>
+        <DerivedParameter name="c_pop0" value="global_coupling"/>
+
+        <Dynamics>
+            <DerivedVariable name="pre" value="r_j"/>
+            <DerivedVariable name="post" value="1"/>
+        </Dynamics>
+
+        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
+
+
+    </ComponentType>
+
+    <ComponentType name="coupling_function_1">
+
+<!--        variables for pre synaptic function-->
+        <Parameter name="V_j" dimension='1'/>
+        <DerivedParameter name="c_pop1" value="global_coupling"/>
 
         <Dynamics>
             <DerivedVariable name="pre" value="V_j"/>
@@ -69,6 +94,7 @@
 
 
     </ComponentType>
+
 
     <!-- If noise needs to be present, just specify the component type. Detail might be added later -->
 <!--    <ComponentType name="noise"/>-->

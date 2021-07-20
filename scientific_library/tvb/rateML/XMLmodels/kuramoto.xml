@@ -3,8 +3,8 @@
     <ComponentType name="derivatives">
 
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='0.0, 2.0'/>
-        <Parameter name="global_coupling" dimension='1.6, 3.0'/>
+        <Parameter name="global_speed" dimension='1.0, 1.0'/>
+        <Parameter name="global_coupling" dimension='1.0, 1.0'/>
 
         <DerivedParameter name="rec_n" value="1.0f / n_node"/>
         <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
@@ -26,7 +26,7 @@
 
 <!--        variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
-        <DerivedParameter name="c_pop1" value="global_coupling * rec_n"/>
+        <DerivedParameter name="c_pop1" value="global_coupling"/>
 
         <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
 

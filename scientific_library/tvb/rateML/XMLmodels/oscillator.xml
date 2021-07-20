@@ -3,8 +3,8 @@
     <ComponentType name="derivatives">
 
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='0.0, 2.0'/>
-        <Parameter name="global_coupling" dimension='1.6, 3.0'/>
+        <Parameter name="global_speed" dimension='1.0, 1.0'/>
+        <Parameter name="global_coupling" dimension='1.0, 1.0'/>
 <!--        <Parameter name="global_test" dimension='606, 666'/>-->
 
         <DerivedParameter name="rec_n" value="1 / n_node"/>
@@ -22,7 +22,7 @@
         <Constant name="e" dimension="" value="3.0" description="Coefficient of the quadratic term of the cubic nullcline."/>
         <Constant name="f" dimension="" value="1.0" description="Coefficient of the cubic term of the cubic nullcline."/>
         <Constant name="g" dimension="" value="0.0" description="Coefficient of the linear term of the cubic nullcline."/>
-        <Constant name="alpha" dimension="" value="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to the fast variable."/>
+        <Constant name="alpha" dimension="" value=".5" description="Constant parameter to scale the rate of feedback from the slow variable to the fast variable."/>
         <Constant name="beta" dimension="" value="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to itself"/>
         <Constant name="gamma" dimension="" value="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative.
             It scales both I and the long range coupling term.."/>
@@ -37,10 +37,10 @@
 <!--            <StateVariable name="V" dimension="-2.0, 4.0" exposure="-2.0, 4.0"/>-->
 <!--            <StateVariable name="W" dimension="-6.0, 6.0" exposure="-6.0, 6.0"/>-->
             <!-- For CUDA models a single value for dimension is required -->
-            <StateVariable name="V" dimension="0.0" exposure="-2.0, 4.0"/>
-            <StateVariable name="W" dimension="0.0" exposure="-6.0, 6.0"/>
+            <StateVariable name="V" dimension="-0.0" exposure="-2.0, 4.0"/>
+            <StateVariable name="W" dimension="-0.0" exposure="-6.0, 6.0"/>
 
-            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * c_pop1 + local_coupling * V)"/>
+            <TimeDerivative variable="dV" value="d * tau * (alpha * W - f * {V^3} + e * {V^2} + g * V + gamma * I + gamma * c_pop0 * V)"/>
             <TimeDerivative variable="dW" value="d * (a + b * V + c * {V^2} - beta * W) / tau"/>
         </Dynamics>
 
@@ -52,7 +52,7 @@
         <Parameter name="V_j" dimension='0'/>
 
         <!-- Handle local coupling result, full expression is 'name' *= 'expression'-->
-        <DerivedParameter name="c_pop1" value="global_coupling"/>
+        <DerivedParameter name="c_pop0" value="global_coupling"/>
 
         <!-- Used in coupling -->
         <Constant name="c_a" dimension="" value="1" description="Rescales the connection strength."/>
@@ -60,7 +60,7 @@
         <!-- variables for post synaptic function-->
         <!-- <Requirement name="wij" dimension=''/>-->
         <Dynamics>
-            <DerivedVariable name="pre" value="sin(V_j - V)"/>
+            <DerivedVariable name="pre" value="V_j"/>
             <DerivedVariable name="post" value="c_a"/>
         </Dynamics>
 

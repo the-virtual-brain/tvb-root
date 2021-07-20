@@ -62,7 +62,7 @@ class OscillatorT(ModelNumbaDfun):
         
     alpha = NArray(
         label=":math:`alpha`",
-        default=numpy.array([1.0]),
+        default=numpy.array([.5]),
         doc=""""""
     )    
         
@@ -80,8 +80,8 @@ class OscillatorT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"V": numpy.array([-2.0, 4.0]), 
-				 "W": numpy.array([-6.0, 6.0])},
+        default={"V": numpy.array([-0.0]), 
+				 "W": numpy.array([-0.0])},
         doc="""state variables"""
     )
 
@@ -94,14 +94,14 @@ class OscillatorT(ModelNumbaDfun):
         of=str,
         label="Variables or quantities available to Monitors",
         choices=('V', 'W', ),
-        default=('W', 'W', ),
+        default=('V', 'W', ),
         doc="Variables to monitor"
     )
 
     state_variables = ['V', 'W']
 
     _nvar = 2
-    cvar = numpy.array([0], dtype=numpy.int32)
+    cvar = numpy.array([0,1,], dtype = numpy.int32)
 
     def dfun(self, vw, c, local_coupling=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
@@ -115,15 +115,13 @@ def _numba_dfun_OscillatorT(vw, coupling, tau, I, a, b, c, d, e, f, g, alpha, be
     "Gufunc for OscillatorT model equations."
 
     # long-range coupling
-    c_pop1 = coupling[0]
-    c_pop2 = coupling[1]
-    c_pop3 = coupling[2]
-    c_pop4 = coupling[3]
+    c_pop0 = coupling[0]
+    c_pop1 = coupling[1]
 
     V = vw[0]
     W = vw[1]
 
 
-    dx[0] = d * tau * (alpha * W - f * V ** 3 + e * V ** 2 + g * V + gamma * I + gamma * c_pop1 + local_coupling * V)
+    dx[0] = d * tau * (alpha * W - f * V ** 3 + e * V ** 2 + g * V + gamma * I + gamma * c_pop0 * V)
     dx[1] = d * (a + b * V + c * V ** 2 - beta * W) / tau
     

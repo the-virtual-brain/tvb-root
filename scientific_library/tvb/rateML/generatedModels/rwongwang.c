@@ -84,24 +84,14 @@ __global__ void rwongwang(
     const float JI = 1.0;
 
     // coupling constants, coupling itself is hardcoded in kernel
-    const float a = 1;
 
     // coupling parameters
-    float c_pop1 = 0.0;
+    float c_pop0 = 0.0;
 
     // derived parameters
-    const float rec_n = 1 / n_node;
-    const float rec_speed_dt = 0;
-    const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
+    const float rec_speed_dt = 1.0f / global_speed / dt;
+
     // the dynamic derived variables declarations
-    float min_d_E = 0.0;
-    float min_d_I = 0.0;
-    float imintau_E = 0.0;
-    float imintau_I = 0.0;
-    float w_E__I_0 = 0.0;
-    float w_I__I_0 = 0.0;
-    float G_J_NMDA = 0.0;
-    float w_plus__J_NMDA = 0.0;
     float tmp_I_E = 0.0;
     float tmp_H_E = 0.0;
     float tmp_I_I = 0.0;
@@ -115,12 +105,18 @@ __global__ void rwongwang(
     float dV = 0.0;
     float dW = 0.0;
 
+    unsigned int dij_i = 0;
+    float dij = 0.0;
+    float wij = 0.0;
+
+    float V_j = 0.0;
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
         tavg(i_node) = 0.0f;
         if (i_step == 0){
-            state(i_step, i_node) = 0.001;
+            state(i_step, i_node) = 0.0f;
         }
     }
 
@@ -130,7 +126,12 @@ __global__ void rwongwang(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            c_pop1 = 0.0f;
+            c_pop0 = 0.0f;
+
+            if (t == (i_step)){
+                tavg(i_node + 0 * n_node) = 0;
+                tavg(i_node + 1 * n_node) = 0;
+            }
 
             V = state((t) % nh, i_node + 0 * n_node);
             W = state((t) % nh, i_node + 1 * n_node);
@@ -145,37 +146,30 @@ __global__ void rwongwang(
                 if (wij == 0.0)
                     continue;
 
-                // no delay specified
-                unsigned int dij = 0;
+                // Get the delay between node i and node j
+                dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = dij + 0.5;
+                dij_i = (int)dij;
 
                 //***// Get the state of node j which is delayed by dij
-                float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
+                V_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_pop1 += wij * a * V_j * G_J_NMDA;
-
+                c_pop0 += wij * 1 * V_j;
             } // j_node */
 
-            // rec_n is used for the scaling over nodes
-            c_pop1 *= powf(V, 2);
-            // the dynamic derived variables
-            min_d_E = -1.0 * d_E;
-            min_d_I = -1.0 * d_I;
-            imintau_E = -1.0 / tau_E;
-            imintau_I = -1.0 / tau_I;
-            w_E__I_0 = w_E * I_0;
-            w_I__I_0 = w_I * I_0;
-            G_J_NMDA = G*J_NMDA;
-            w_plus__J_NMDA = w_plus * J_NMDA;
-            tmp_I_E = a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_pop1 - JI*W) - b_E;
-            tmp_H_E = tmp_I_E/(1.0-exp(min_d_E * tmp_I_E));
-            tmp_I_I = (a_I*((w_I__I_0+(J_NMDA * V))-W))-b_I;
-            tmp_H_I = tmp_I_I/(1.0-exp(min_d_I*tmp_I_I));
+            // global coupling handling, rec_n used to scale nodes
+            c_pop0 *= global_coupling;
+            // the dynamic derived variables declarations
+            tmp_I_E = a_E * ((w_E * I_0) + (w_plus * J_NMDA) * V + c_pop0 - JI*W) - b_E;
+            tmp_H_E = tmp_I_E/(1.0-exp((-1.0 * d_E) * tmp_I_E));
+            tmp_I_I = (a_I*(((w_I * I_0)+(J_NMDA * V))-W))-b_I;
+            tmp_H_I = tmp_I_I/(1.0-exp((-1.0 * d_I)*tmp_I_I));
 
 
             // Integrate with stochastic forward euler
-            dV = dt * ((imintau_E* V)+(tmp_H_E*(1-V)*gamma_E));
-            dW = dt * ((imintau_I* W)+(tmp_H_I*gamma_I));
+            dV = dt * (((-1.0 / tau_E)* V)+(tmp_H_E*(1-V)*gamma_E));
+            dW = dt * (((-1.0 / tau_I)* W)+(tmp_H_I*gamma_I));
 
             // No noise is added because it is not present in model
             V += dV;
@@ -189,11 +183,9 @@ __global__ void rwongwang(
             state((t + 1) % nh, i_node + 0 * n_node) = V;
             state((t + 1) % nh, i_node + 1 * n_node) = W;
 
-            // Update the observable only for the last timestep
-            if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = V;
-                tavg(i_node + 1 * n_node) = W;
-            }
+            // Update the observable
+            tavg(i_node + 0 * n_node) += V/n_step;
+            tavg(i_node + 1 * n_node) += W/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step
             __syncthreads();

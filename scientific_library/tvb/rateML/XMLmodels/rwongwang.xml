@@ -5,13 +5,13 @@
     <ComponentType name="derivatives">
 
         <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
-        <Parameter name="global_speed" dimension='0.0, 2.0'/>
-        <Parameter name="global_coupling" dimension='1.6, 3.0'/>
+        <Parameter name="global_speed" dimension='1.0, 1.0'/>
+        <Parameter name="global_coupling" dimension='1.0, 1.0'/>
 
-        <DerivedParameter name="rec_n" value="1 / n_node"/>
-        <!-- If rec_speed_dt not is defined or is zero, then no delays will be fetched -->
-        <DerivedParameter name="rec_speed_dt" value="0"/>
-        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
+<!--        <DerivedParameter name="rec_n" value="1 / n_node"/>-->
+<!--        &lt;!&ndash; If rec_speed_dt not is defined or is zero, then no delays will be fetched &ndash;&gt;-->
+        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / dt"/>
+<!--        <DerivedParameter name="nsigz" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>-->
 
         <Constant name="w_plus" dimension="" value="1.4" description="Excitatory population recurrence weight"/>
         <Constant name="a_E" dimension="" value="310.0" description="[n/C]. Excitatory population input gain parameter, chosen to fit numerical solutions."/>
@@ -44,26 +44,30 @@
         <Exposure name="W" dimension="W"/>
 
         <Dynamics>
+            <!-- Python -->
+<!--            <StateVariable name="V" dimension="0.0, 1.0" exposure="0.0, 1.0"/>-->
+<!--            <StateVariable name="W" dimension="0.0, 1.0" exposure="0.0, 1.0"/>-->
+
+            <!-- CUDA -->
             <StateVariable name="V" dimension="0.0" exposure="0.0, 1.0"/>
             <StateVariable name="W" dimension="0.0" exposure="0.0, 1.0"/>
-            
-                    <!-- Make derived variables -->
-            <DerivedVariable name="min_d_E" value="-1.0 * d_E" />
-            <DerivedVariable name="min_d_I" value="-1.0 * d_I" />
-            <DerivedVariable name="imintau_E" value="-1.0 / tau_E" />
-            <DerivedVariable name="imintau_I" value="-1.0 / tau_I" />
-            <DerivedVariable name="w_E__I_0" value="w_E * I_0" />
-            <DerivedVariable name="w_I__I_0" value="w_I * I_0" />
-            <DerivedVariable name="G_J_NMDA" value="G*J_NMDA"/>
-            <DerivedVariable name="w_plus__J_NMDA" value="w_plus * J_NMDA"/>
 
-            <DerivedVariable name="tmp_I_E" value="a_E * (w_E__I_0 + w_plus__J_NMDA * V + c_pop1 - JI*W) - b_E"/>
-            <DerivedVariable name="tmp_H_E" value="tmp_I_E/(1.0-exp(min_d_E * tmp_I_E))"/>
-            <DerivedVariable name="tmp_I_I" value="(a_I*((w_I__I_0+(J_NMDA * V))-W))-b_I"/>
-            <DerivedVariable name="tmp_H_I" value="tmp_I_I/(1.0-exp(min_d_I*tmp_I_I))"/>
+<!--            <DerivedParameter name="min_d_E" value="-1.0 * d_E" />-->
+<!--            <DerivedParameter name="min_d_I" value="-1.0 * d_I" />-->
+<!--            <DerivedParameter name="imintau_E" value="-1.0 / tau_E" />-->
+<!--            <DerivedParameter name="imintau_I" value="-1.0 / tau_I" />-->
+<!--            <DerivedParameter name="w_E__I_0" value="w_E * I_0" />-->
+<!--            <DerivedParameter name="w_I__I_0" value="w_I * I_0" />-->
+<!--            <DerivedParameter name="G_J_NMDA" value="G*J_NMDA"/>-->
+<!--            <DerivedParameter name="w_plus__J_NMDA" value="w_plus * J_NMDA"/>-->
 
-            <TimeDerivative variable="dV" value="(imintau_E* V)+(tmp_H_E*(1-V)*gamma_E)"/>
-            <TimeDerivative variable="dW" value="(imintau_I* W)+(tmp_H_I*gamma_I)"/>
+            <DerivedVariable name="tmp_I_E" value="a_E * ((w_E * I_0) + (w_plus * J_NMDA) * V + c_pop0 - JI*W) - b_E"/>
+            <DerivedVariable name="tmp_H_E" value="tmp_I_E/(1.0-exp((-1.0 * d_E) * tmp_I_E))"/>
+            <DerivedVariable name="tmp_I_I" value="(a_I*(((w_I * I_0)+(J_NMDA * V))-W))-b_I"/>
+            <DerivedVariable name="tmp_H_I" value="tmp_I_I/(1.0-exp((-1.0 * d_I)*tmp_I_I))"/>
+
+            <TimeDerivative variable="dV" value="((-1.0 / tau_E)* V)+(tmp_H_E*(1-V)*gamma_E)"/>
+            <TimeDerivative variable="dW" value="((-1.0 / tau_I)* W)+(tmp_H_I*gamma_I)"/>
         </Dynamics>
 
     </ComponentType>
@@ -73,13 +77,11 @@
         <!-- variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
         <!--        post coupling expression, needs to be present. If no temporary result needs to be computed enter 'None'-->
-        <DerivedParameter name="c_pop1" value="{V^2}"/>
-
-        <Constant name="a" dimension="" value="1" description="Rescales the connection strength."/>
+        <DerivedParameter name="c_pop0" value="global_coupling"/>
 
     <Dynamics>
-        <DerivedVariable name="pre" value="V_j * G_J_NMDA"/>
-        <DerivedVariable name="post" value="a"/>
+        <DerivedVariable name="pre" value="V_j"/>
+        <DerivedVariable name="post" value="1"/>
     </Dynamics>
 
     </ComponentType>
