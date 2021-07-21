@@ -160,7 +160,7 @@ class TestRemove(TransactionalTestCase):
         conn = h5.load_from_index(conn)
         rm = try_get_last_datatype(self.test_project.id, RegionMappingIndex)
         rm = h5.load_from_index(rm)
-        time_series_region_index_factory(conn, rm)
+        time_series_region_index_factory(conn, rm, test_project=self.test_project)
         series = self.get_all_entities(TimeSeriesRegionIndex)
         assert 1 == len(series), "There should be only one time series"
 

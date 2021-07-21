@@ -370,7 +370,7 @@ class TestProjectService(TransactionalTestCase):
         project_to_link = dao.store_entity(project_to_link)
         exact_data = dao.get_datatype_by_gid(gid)
         assert exact_data is not None, "Initialization problem!"
-        dao.store_entity(model_datatype.Links(exact_data.id, project_to_link.id))
+        link = dao.store_entity(model_datatype.Links(exact_data.id, project_to_link.id))
 
         vw_h5_path = h5.path_for_stored_index(exact_data)
         assert os.path.exists(vw_h5_path)
@@ -380,7 +380,7 @@ class TestProjectService(TransactionalTestCase):
                                                   TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True,
                                                   None))
 
-        self.project_service._remove_project_node_files(inserted_project.id, gid)
+        self.project_service._remove_project_node_files(inserted_project.id, gid, [link])
 
         assert not os.path.exists(vw_h5_path)
         exact_data = dao.get_datatype_by_gid(gid)
@@ -389,7 +389,7 @@ class TestProjectService(TransactionalTestCase):
         assert os.path.exists(vw_h5_path_new)
         assert vw_h5_path_new != vw_h5_path
 
-        self.project_service._remove_project_node_files(project_to_link.id, gid)
+        self.project_service._remove_project_node_files(project_to_link.id, gid, [])
         assert dao.get_datatype_by_gid(gid) is None
 
     def test_update_meta_data_simple(self):

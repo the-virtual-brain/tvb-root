@@ -36,10 +36,13 @@ Service Layer for the Project entity.
 """
 
 import formencode
+import os
 
+from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
+from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
@@ -295,16 +298,23 @@ class ProjectService:
 
             self.logger.debug("Deleting project: id=" + str(project_id) + ' name=' + project2delete.name)
             project_datatypes = dao.get_datatypes_in_project(project_id)
+
+            # Delete datatypes one by one in the reversed order of their creation date
             project_datatypes.sort(key=lambda dt: dt.create_date, reverse=True)
             for one_data in project_datatypes:
                 self.remove_datatype(project_id, one_data.gid, True)
 
-            links = dao.get_links_for_project(project_id)
-            for one_link in links:
-                dao.remove_entity(Links, one_link.id)
-            project_bursts = dao.get_bursts_for_project(project_id)
-            for burst in project_bursts:
-                dao.remove_entity(burst.__class__, burst.id)
+            # Delete any links for datatypes that point to the project they are in because they are redundant.
+            # This can happen when a datatype is linked with more datatypes (e.g. a Connectivity linked to
+            # a Region Mapping and a Time Series
+            projects = dao.get_all_projects()
+            for project in projects:
+                datatypes = dao.get_datatypes_in_project(project.id)
+                for dt in datatypes:
+                    links = dao.get_links_for_datatype(dt.id)
+                    for link in links:
+                        if link.fk_to_project == project.id:
+                            dao.remove_entity(Links, link.id)
 
             self.storage_interface.remove_project(project2delete)
             dao.delete_project(project_id)
@@ -521,7 +531,24 @@ class ProjectService:
             # We ignore exception here (it was logged above, and we want to return no details).
             return meta_atts, states, None
 
-    def _remove_project_node_files(self, project_id, gid, skip_validation=False):
+    @staticmethod
+    def _add_links_for_linked_datatypes(datatype, fk_to_project, link_to_delete):
+        # If we found a datatype that has links, we need to link those as well to the linked project
+        # so they can be also copied
+
+        linked_datatype_paths = []
+        h5_file = h5.h5_file_for_index(datatype)
+        h5.gather_all_references_by_index(h5_file, linked_datatype_paths)
+
+        for h5_path in linked_datatype_paths:
+            dt = h5.load(h5_path)
+            dt_index = h5.load_entity_by_gid(dt.gid)
+            new_link = Links(dt_index.id, fk_to_project)
+            dao.store_entity(new_link)
+
+        dao.remove_entity(Links, link_to_delete)
+
+    def _remove_project_node_files(self, project_id, gid, links, skip_validation=False):
         """
         Delegate removal of a node in the structure of the project.
         In case of a problem will THROW StructureException.
@@ -529,49 +556,45 @@ class ProjectService:
         try:
             project = self.find_project(project_id)
             datatype = dao.get_datatype_by_gid(gid)
-            links = dao.get_links_for_datatype(datatype.id)
 
-            op = dao.get_operation_by_id(datatype.fk_from_operation)
             if links:
-                was_link = False
-                for link in links:
-                    # This means it's only a link and we need to remove it
-                    if link.fk_from_datatype == datatype.id and link.fk_to_project == project.id:
-                        dao.remove_entity(Links, link.id)
-                        was_link = True
-                if not was_link:
-                    # Create a clone of the operation
-                    # There is no view_model so the view_model_gid is None
+                op = dao.get_operation_by_id(datatype.fk_from_operation)
+                # Instead of deleting, we copy the datatype to the linked project
+                # We also clone the operation
+                new_operation = self.__copy_linked_datatype_before_delete(op, datatype, project,
+                                                                          links[0].fk_to_project)
 
-                    new_op = Operation(op.view_model_gid,
-                                       dao.get_system_user().id,
-                                       links[0].fk_to_project,
-                                       datatype.parent_operation.fk_from_algo,
-                                       datatype.parent_operation.status,
-                                       datatype.parent_operation.start_date,
-                                       datatype.parent_operation.completion_date,
-                                       datatype.parent_operation.fk_operation_group,
-                                       datatype.parent_operation.additional_info,
-                                       datatype.parent_operation.user_group,
-                                       datatype.parent_operation.range_values)
-                    new_op = dao.store_entity(new_op)
-                    to_project = self.find_project(links[0].fk_to_project)
-                    to_project_path = self.storage_interface.get_project_folder(to_project.name)
+                # If there is a  datatype group and operation group and they were not moved yet to the linked project,
+                # then do it
+                if datatype.fk_datatype_group is not None:
+                    dt_group_op = dao.get_operation_by_id(datatype.fk_from_operation)
+                    op_group = dao.get_operationgroup_by_id(dt_group_op.fk_operation_group)
+                    op_group.fk_launched_in = links[0].fk_to_project
+                    dao.store_entity(op_group)
 
-                    full_path = h5.path_for_stored_index(datatype)
-                    old_folder = self.storage_interface.get_project_folder(project.name, str(op.id))
-                    vm_full_path = h5.determine_filepath(op.view_model_gid, old_folder)
+                    burst = dao.get_burst_for_operation_id(op.id)
+                    if burst is not None:
+                        burst.fk_project = links[0].fk_to_project
+                        dao.store_entity(burst)
 
-                    self.storage_interface.move_datatype_with_sync(to_project, to_project_path, new_op.id, full_path,
-                                                                   vm_full_path)
+                    dt_group = dao.get_datatypegroup_by_op_group_id(op_group.id)
+                    dt_group.parent_operation = new_operation
+                    dt_group.fk_from_operation = new_operation.id
+                    dao.store_entity(dt_group)
 
-                    datatype.fk_from_operation = new_op.id
-                    datatype.parent_operation = new_op
-                    dao.store_entity(datatype)
-                    dao.remove_entity(Links, links[0].id)
             else:
+                # There is no link for this datatype so it has to be deleted
                 specific_remover = get_remover(datatype.type)(datatype)
                 specific_remover.remove_datatype(skip_validation)
+                h5_path = h5.path_for_stored_index(datatype)
+                self.storage_interface.remove_datatype_file(h5_path)
+
+                # Remove burst if dt has one and it still exists
+                if datatype.fk_parent_burst is not None:
+                    burst = dao.get_burst_for_operation_id(datatype.fk_from_operation)
+
+                    if burst is not None:
+                        dao.remove_entity(BurstConfiguration, burst.id)
 
         except RemoveDataTypeException:
             self.logger.exception("Could not execute operation Node Remove!")
@@ -579,6 +602,49 @@ class ProjectService:
         except FileStructureException:
             self.logger.exception("Remove operation failed")
             raise StructureException("Remove operation failed for unknown reasons.Please contact system administrator.")
+
+    def __copy_linked_datatype_before_delete(self, op, datatype, project, fk_to_project):
+        new_op = Operation(op.view_model_gid,
+                           dao.get_system_user().id,
+                           fk_to_project,
+                           datatype.parent_operation.fk_from_algo,
+                           datatype.parent_operation.status,
+                           datatype.parent_operation.start_date,
+                           datatype.parent_operation.completion_date,
+                           datatype.parent_operation.fk_operation_group,
+                           datatype.parent_operation.additional_info,
+                           datatype.parent_operation.user_group,
+                           datatype.parent_operation.range_values)
+        new_op.visible = datatype.parent_operation.visible
+        new_op = dao.store_entity(new_op)
+        to_project = self.find_project(fk_to_project)
+        to_project_path = self.storage_interface.get_project_folder(to_project.name)
+
+        full_path = h5.path_for_stored_index(datatype)
+        old_folder = self.storage_interface.get_project_folder(project.name, str(op.id))
+        file_paths = h5.gather_references_of_view_model(op.view_model_gid, old_folder, only_view_models=True)[0]
+        file_paths.append(full_path)
+
+        # The BurstConfiguration h5 file has to be moved only when we handle the time series which has the operation
+        # folder containing the file
+        if isinstance(datatype, TimeSeriesIndex) and datatype.fk_parent_burst is not None:
+            bc_path = h5.path_for(datatype.parent_operation.id, BurstConfigurationH5, datatype.fk_parent_burst,
+                                  project.name)
+            if os.path.exists(bc_path):
+                file_paths.append(bc_path)
+
+                bc = dao.get_burst_for_operation_id(op.id)
+                bc.fk_simulation = new_op.id
+                dao.store_entity(bc)
+
+        # Move all files to the new operation folder
+        self.storage_interface.move_datatype_with_sync(to_project, to_project_path, new_op.id, file_paths)
+
+        datatype.fk_from_operation = new_op.id
+        datatype.parent_operation = new_op
+        dao.store_entity(datatype)
+
+        return new_op
 
     def remove_operation(self, operation_id):
         """
@@ -610,11 +676,18 @@ class ProjectService:
             self.logger.warning("Attempt to delete DT[%s] which no longer exists." % datatype_gid)
             return
 
+        if datatype.parent_operation.fk_launched_in != int(project_id):
+            self.logger.warning("Datatype with GUID [%s] has been moved to another project and does "
+                                "not need to be deleted anymore." % datatype_gid)
+            return
+
         is_datatype_group = False
         datatype_group = None
+
+        # Datatype Groups were already handled when the first DatatypeMeasureIndex has been found
         if dao.is_datatype_group(datatype_gid):
-            is_datatype_group = True
-            datatype_group = datatype
+            return
+        # Found the first DatatypeMeasureIndex from a group
         elif datatype.fk_datatype_group is not None:
             is_datatype_group = True
             datatype_group = dao.get_datatype_by_id(datatype.fk_datatype_group)
@@ -627,24 +700,40 @@ class ProjectService:
             self.logger.debug("Removing datatype group %s" % datatype_group)
             if datatype_group.fk_parent_burst:
                 burst = dao.get_generic_entity(BurstConfiguration, datatype_group.fk_parent_burst, 'gid')[0]
-                dao.remove_entity(BurstConfiguration, burst.id)
+
+                # If the link points towards a DatatypeGroup for TimeSeriesIndex and not for DatatypeMeasureIndex,
+                # we still need to take it into consideration when the first DatatypeMeasureIndex is found
+                dt_group_for_op_group = dao.get_datatypegroup_by_op_group_id(burst.fk_operation_group)
+                dt_group_for_metric_op_group = dao.get_datatypegroup_by_op_group_id(burst.fk_metric_operation_group)
+                links = dao.get_links_for_datatype(dt_group_for_op_group.id)
+                links.extend(dao.get_links_for_datatype(dt_group_for_metric_op_group.id))
+
+                if len(links) > 0:
+                    self._add_links_for_linked_datatypes(datatype, links[0].fk_to_project, links[0].id)
+
                 if burst.fk_metric_operation_group:
                     correct = correct and self._remove_operation_group(burst.fk_metric_operation_group, project_id,
-                                                                       skip_validation, operations_set)
+                                                                       skip_validation, operations_set, links)
 
                 if burst.fk_operation_group:
                     correct = correct and self._remove_operation_group(burst.fk_operation_group, project_id,
-                                                                       skip_validation, operations_set)
+                                                                       skip_validation, operations_set, links)
 
             else:
-                self._remove_datatype_group_dts(project_id, datatype_group.id, skip_validation, operations_set)
+                links = dao.get_links_for_datatype(datatype.id)
+                self._remove_datatype_group_dts(project_id, datatype_group.id, skip_validation, operations_set, links)
 
                 datatype_group = dao.get_datatype_group_by_gid(datatype_group.gid)
                 dao.remove_entity(DataTypeGroup, datatype.id)
                 correct = correct and dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
         else:
             self.logger.debug("Removing datatype %s" % datatype)
-            self._remove_project_node_files(project_id, datatype.gid, skip_validation)
+            links = dao.get_links_for_datatype(datatype.id)
+
+            if len(links) > 0:
+                self._add_links_for_linked_datatypes(datatype, links[0].fk_to_project, links[0].id)
+
+            self._remove_project_node_files(project_id, datatype.gid, links, skip_validation)
 
         # Remove Operation entity in case no other DataType needs them.
         project = dao.get_project_by_id(project_id)
@@ -653,9 +742,6 @@ class ProjectService:
             if len(dependent_dt) > 0:
                 # Do not remove Operation in case DataType still exist referring it.
                 continue
-            op_burst = dao.get_burst_for_operation_id(operation_id)
-            if op_burst:
-                correct = correct and dao.remove_entity(BurstConfiguration, op_burst.id)
             correct = correct and dao.remove_entity(Operation, operation_id)
             # Make sure Operation folder is removed
             self.storage_interface.remove_operation_data(project.name, operation_id)
@@ -664,20 +750,26 @@ class ProjectService:
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
 
-    def _remove_operation_group(self, operation_group_id, project_id, skip_validation, operations_set):
+    def _remove_operation_group(self, operation_group_id, project_id, skip_validation, operations_set, links):
         metrics_groups = dao.get_generic_entity(DataTypeGroup, operation_group_id,
                                                 'fk_operation_group')
         if len(metrics_groups) > 0:
             metric_datatype_group_id = metrics_groups[0].id
             self._remove_datatype_group_dts(project_id, metric_datatype_group_id, skip_validation,
-                                            operations_set)
-            dao.remove_entity(DataTypeGroup, metric_datatype_group_id)
-        return dao.remove_entity(OperationGroup, operation_group_id)
+                                            operations_set, links)
+            datatypes = dao.get_datatype_in_group(metric_datatype_group_id)
 
-    def _remove_datatype_group_dts(self, project_id, dt_group_id, skip_validation, operations_set):
+            # If this condition is false, then there is a link for the datatype group and we don't need to delete it
+            if len(datatypes) == 0:
+                dao.remove_entity(DataTypeGroup, metric_datatype_group_id)
+                return dao.remove_entity(OperationGroup, operation_group_id)
+            else:
+                return True
+
+    def _remove_datatype_group_dts(self, project_id, dt_group_id, skip_validation, operations_set, links):
         data_list = dao.get_datatypes_from_datatype_group(dt_group_id)
         for adata in data_list:
-            self._remove_project_node_files(project_id, adata.gid, skip_validation)
+            self._remove_project_node_files(project_id, adata.gid, links, skip_validation)
             if adata.fk_from_operation not in operations_set:
                 operations_set.append(adata.fk_from_operation)
 
