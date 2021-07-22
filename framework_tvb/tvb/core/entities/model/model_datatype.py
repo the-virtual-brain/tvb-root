@@ -203,6 +203,10 @@ class DataType(HasTraitsIndex):
                 pass
         return ret
 
+    @property
+    def is_ts(self):
+        return hasattr(self, 'time_series_type')
+
     def _get_table_columns(self):
         columns = self.__table__.columns.keys()
         if type(self).__bases__[0] is DataType:

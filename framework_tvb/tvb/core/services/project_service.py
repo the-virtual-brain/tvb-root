@@ -301,20 +301,12 @@ class ProjectService:
 
             # Delete datatypes one by one in the reversed order of their creation date
             project_datatypes.sort(key=lambda dt: dt.create_date, reverse=True)
+            links = []
             for one_data in project_datatypes:
-                self.remove_datatype(project_id, one_data.gid, True)
-
-            # Delete any links for datatypes that point to the project they are in because they are redundant.
-            # This can happen when a datatype is linked with more datatypes (e.g. a Connectivity linked to
-            # a Region Mapping and a Time Series
-            projects = dao.get_all_projects()
-            for project in projects:
-                datatypes = dao.get_datatypes_in_project(project.id)
-                for dt in datatypes:
-                    links = dao.get_links_for_datatype(dt.id)
-                    for link in links:
-                        if link.fk_to_project == project.id:
-                            dao.remove_entity(Links, link.id)
+                new_links = self.remove_datatype(project_id, one_data.gid, True, links)
+                if new_links is not None:
+                    # Keep track of links so we don't create the same link more than once
+                    links.extend(new_links)
 
             self.storage_interface.remove_project(project2delete)
             dao.delete_project(project_id)
@@ -532,7 +524,7 @@ class ProjectService:
             return meta_atts, states, None
 
     @staticmethod
-    def _add_links_for_linked_datatypes(datatype, fk_to_project, link_to_delete):
+    def _add_links_for_linked_datatypes(datatype, fk_to_project, link_to_delete, existing_dt_links):
         # If we found a datatype that has links, we need to link those as well to the linked project
         # so they can be also copied
 
@@ -541,12 +533,16 @@ class ProjectService:
         h5.gather_all_references_by_index(h5_file, linked_datatype_paths)
 
         for h5_path in linked_datatype_paths:
+            if h5_path in existing_dt_links:
+                continue
+
             dt = h5.load(h5_path)
             dt_index = h5.load_entity_by_gid(dt.gid)
             new_link = Links(dt_index.id, fk_to_project)
             dao.store_entity(new_link)
 
         dao.remove_entity(Links, link_to_delete)
+        return linked_datatype_paths
 
     def _remove_project_node_files(self, project_id, gid, links, skip_validation=False):
         """
@@ -590,7 +586,7 @@ class ProjectService:
                 self.storage_interface.remove_datatype_file(h5_path)
 
                 # Remove burst if dt has one and it still exists
-                if datatype.fk_parent_burst is not None:
+                if datatype.fk_parent_burst is not None and datatype.is_ts:
                     burst = dao.get_burst_for_operation_id(datatype.fk_from_operation)
 
                     if burst is not None:
@@ -627,7 +623,7 @@ class ProjectService:
 
         # The BurstConfiguration h5 file has to be moved only when we handle the time series which has the operation
         # folder containing the file
-        if isinstance(datatype, TimeSeriesIndex) and datatype.fk_parent_burst is not None:
+        if datatype.is_ts and datatype.fk_parent_burst is not None:
             bc_path = h5.path_for(datatype.parent_operation.id, BurstConfigurationH5, datatype.fk_parent_burst,
                                   project.name)
             if os.path.exists(bc_path):
@@ -665,7 +661,7 @@ class ProjectService:
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
 
-    def remove_datatype(self, project_id, datatype_gid, skip_validation=False):
+    def remove_datatype(self, project_id, datatype_gid, skip_validation=False, existing_dt_links=[]):
         """
         Method used for removing a dataType. If the given dataType is a DatatypeGroup
         or a dataType from a DataTypeGroup than this method will remove the entire group.
@@ -683,6 +679,7 @@ class ProjectService:
 
         is_datatype_group = False
         datatype_group = None
+        new_dt_links = []
 
         # Datatype Groups were already handled when the first DatatypeMeasureIndex has been found
         if dao.is_datatype_group(datatype_gid):
@@ -709,7 +706,10 @@ class ProjectService:
                 links.extend(dao.get_links_for_datatype(dt_group_for_metric_op_group.id))
 
                 if len(links) > 0:
-                    self._add_links_for_linked_datatypes(datatype, links[0].fk_to_project, links[0].id)
+                    # We want to get the links for the TSIndex directly, instead of DatatypeMeasureIndex
+                    ts = h5.load_entity_by_gid(datatype.fk_source_gid)
+                    new_dt_links = self._add_links_for_linked_datatypes(ts, links[0].fk_to_project, links[0].id,
+                                                                        existing_dt_links)
 
                 if burst.fk_metric_operation_group:
                     correct = correct and self._remove_operation_group(burst.fk_metric_operation_group, project_id,
@@ -731,7 +731,8 @@ class ProjectService:
             links = dao.get_links_for_datatype(datatype.id)
 
             if len(links) > 0:
-                self._add_links_for_linked_datatypes(datatype, links[0].fk_to_project, links[0].id)
+                new_dt_links = self._add_links_for_linked_datatypes(datatype, links[0].fk_to_project, links[0].id,
+                                                                    existing_dt_links)
 
             self._remove_project_node_files(project_id, datatype.gid, links, skip_validation)
 
@@ -749,6 +750,7 @@ class ProjectService:
         self.storage_interface.push_folder_to_sync(project.name)
         if not correct:
             raise RemoveDataTypeException("Could not remove DataType " + str(datatype_gid))
+        return new_dt_links
 
     def _remove_operation_group(self, operation_group_id, project_id, skip_validation, operations_set, links):
         metrics_groups = dao.get_generic_entity(DataTypeGroup, operation_group_id,
