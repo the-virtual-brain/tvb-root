@@ -1112,7 +1112,7 @@ def _migrate_general_part(input_file):
     return root_metadata, storage_manager
 
 
-def update(input_file, burst_match_dict, op_id):
+def update(input_file, burst_match_dict):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
@@ -1124,8 +1124,7 @@ def update(input_file, burst_match_dict, op_id):
     split_path = input_file.split(os.path.sep)
     storage_migrate = True
     try:
-        if op_id is None:
-            op_id = int(split_path[-2])
+        op_id = int(split_path[-2])
 
         # Change file names only for storage migration
         file_basename = os.path.basename(input_file)
