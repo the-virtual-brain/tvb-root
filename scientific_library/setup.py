@@ -43,7 +43,7 @@ LIBRARY_VERSION = "2.3"
 
 LIBRARY_TEAM = "Marmaduke Woodman, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
-LIBRARY_REQUIRED_PACKAGES = ["autopep8", "mako", "matplotlib", "networkx", "numba", "numexpr", "numpy", "requests", "scipy", "six", "typing"]
+LIBRARY_REQUIRED_PACKAGES = ["autopep8", "mako", "matplotlib", "networkx", "numba", "numexpr", "numpy", "requests", "scipy", "six"]
 
 LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", "tvb-gdist", "tvb-data"]
 
