@@ -60,26 +60,15 @@ class TVBLinkedExporter(ABCExporter):
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
         if self.is_data_a_group(data):
-            download_file_name = self.get_export_file_name(data)
-            return self.group_export(data, data_export_folder, project, download_file_name, True)
+            download_file_name = self.get_export_file_name(data, StorageInterface.TVB_ZIP_FILE_EXTENSION)
+            return self.group_export(data, project, download_file_name)
         else:
             dt_path_list = []
-            self.__gather_datatypes_for_copy(data, dt_path_list)
+            self.gather_datatypes_for_copy(data, dt_path_list)
 
             download_file_name = self._get_export_file_name(data)
             zip_to_export = self.storage_interface.export_datatypes(dt_path_list, data, download_file_name)
             return None, zip_to_export, True
-
-    def __gather_datatypes_for_copy(self, data, dt_path_list):
-        data_path = h5.path_for_stored_index(data)
-        dt_path_list.append(data_path)
-        with H5File.from_file(data_path) as f:
-            sub_dt_refs = f.gather_references()
-
-            for _, ref_gid in sub_dt_refs:
-                if ref_gid:
-                    dt = load.load_entity_by_gid(ref_gid)
-                    self.__gather_datatypes_for_copy(dt, dt_path_list)
 
     def get_export_file_extension(self, data):
         return StorageInterface.TVB_ZIP_FILE_EXTENSION

@@ -431,6 +431,17 @@ class StorageInterface:
 
         return result_path
 
+    def copy_datatypes(self, dt_path_list, data, download_file_name):
+        export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
+
+        for dt_path in dt_path_list:
+            file_destination = os.path.join(export_folder, os.path.basename(dt_path))
+            if not os.path.exists(file_destination):
+                self.copy_file(dt_path, file_destination)
+            self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+
+        return export_folder
+
     def export_datatypes(self, dt_path_list, data, download_file_name):
         """
         This method is used to export a list of datatypes as a ZIP file.

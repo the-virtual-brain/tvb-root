@@ -39,7 +39,7 @@ from abc import ABCMeta, abstractmethod
 from distutils.dir_util import copy_tree
 
 from tvb.adapters.exporters.exceptions import ExportException
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities import load
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
 from tvb.core.entities.storage import dao
@@ -48,6 +48,8 @@ from tvb.core.neotraits._h5core import H5File
 from tvb.core.services.project_service import ProjectService
 
 # List of DataTypes to be excluded from export due to not having a valid export mechanism implemented yet.
+from tvb.storage.storage_interface import StorageInterface
+
 EXCLUDED_DATATYPES = ['Cortex', 'CortexActivity', 'CapEEGActivity', 'Cap', 'ValueWrapper', 'SpatioTermporalMask']
 
 
@@ -152,38 +154,32 @@ class ABCExporter(metaclass=ABCMeta):
         """
         return isinstance(data, DataTypeGroup)
 
-    def group_export(self, data, export_folder, project, download_file_name, is_linked_export=False):
+    def group_export(self, data, project, download_file_name):
+        storage_interface = StorageInterface()
         all_datatypes = self._get_all_data_types_arr(data)
 
         if all_datatypes is None or len(all_datatypes) == 0:
             raise ExportException("Could not export a data type group with no data")
 
         # Now process each data type from group and add it to ZIP file
-        operation_folders = []
-        sub_dt_refs = None
-        references_folder_path = None
         temp_export_folders = []
 
+        dt_path_list = []
+        data_type = all_datatypes[0]
+        self.gather_datatypes_for_copy(data_type, dt_path_list)
+        export_file_name = self._get_export_file_name(data_type)
+        folder_name = storage_interface.copy_datatypes(dt_path_list, data_type, export_file_name)
+
         for data_type in all_datatypes:
-            if is_linked_export and not sub_dt_refs:
-                references_folder_path = self.copy_ref_files_to_temp_dir(data_type, export_folder, temp_export_folders, references_folder_path)
-
-            operation_folder = FilesHelper().get_operation_folder(project.name, data_type.fk_from_operation)
-            operation_folders.append(operation_folder)
-
-        for operation_folder in operation_folders:
-            tmp_op_folder_path = os.path.join(export_folder, os.path.basename(operation_folder))
+            operation_folder = storage_interface.get_project_folder(project.name, str(data_type.fk_from_operation))
+            tmp_op_folder_path = os.path.join(folder_name, os.path.basename(operation_folder))
             copy_tree(operation_folder, tmp_op_folder_path, preserve_mode=None)
             temp_export_folders.append(tmp_op_folder_path)
 
-        if is_linked_export:
-            operation_folders = temp_export_folders
+        dest_path = os.path.join(os.path.dirname(folder_name), download_file_name)
+        storage_interface.write_zip_folder(dest_path, folder_name)
 
-        # Create ZIP archive
-        zip_file = os.path.join(export_folder, download_file_name)
-        FilesHelper().zip_folders(zip_file, operation_folders, self.OPERATION_FOLDER_PREFIX)
-
-        return download_file_name, zip_file, True
+        return download_file_name, dest_path, True
 
     def copy_ref_files_to_temp_dir(self, data_type, export_folder, temp_export_folders, references_folder_path):
         data_path = h5.path_for_stored_index(data_type)
@@ -208,6 +204,18 @@ class ABCExporter(metaclass=ABCMeta):
                         FilesHelper().copy_file(ref_data_path, ref_file_path)
                     self.copy_ref_files_to_temp_dir(dt, export_folder, temp_export_folders, references_folder_path)
         return references_folder_path
+
+    def gather_datatypes_for_copy(self, data, dt_path_list):
+        data_path = h5.path_for_stored_index(data)
+        dt_path_list.append(data_path)
+        with H5File.from_file(data_path) as f:
+            sub_dt_refs = f.gather_references()
+
+            for _, ref_gid in sub_dt_refs:
+                if ref_gid:
+                    dt = load.load_entity_by_gid(ref_gid)
+                    self.gather_datatypes_for_copy(dt, dt_path_list)
+
 
     @abstractmethod
     def export(self, data, project):

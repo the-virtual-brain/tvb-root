@@ -62,7 +62,7 @@ class TVBExporter(ABCExporter):
         download_file_name = self._get_export_file_name(data)
 
         if self.is_data_a_group(data):
-            return self.group_export(data, export_folder, project, download_file_name, False)
+            return self.group_export(data, project, download_file_name)
         else:
             data_path = h5.path_for_stored_index(data)
             data_file = self.storage_interface.export_datatypes([data_path], data, None)
