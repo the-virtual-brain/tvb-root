@@ -37,6 +37,7 @@ All calls to methods from this module must be done through this class.
 import os
 import uuid
 from datetime import datetime
+from distutils.dir_util import copy_tree
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -431,7 +432,7 @@ class StorageInterface:
 
         return result_path
 
-    def copy_datatypes(self, dt_path_list, data, download_file_name):
+    def copy_datatypes(self, dt_path_list, data):
         export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
         for dt_path in dt_path_list:
@@ -466,7 +467,7 @@ class StorageInterface:
         self.write_zip_folder(export_data_zip_path, export_folder)
         return export_data_zip_path
 
-    def export_datatypes_structure(self, all_datatypes, data, download_file_name, project_name):
+    def export_datatypes_structure(self, all_datatypes, data, download_file_name, project_name, export_folder=None):
         """
         This method is used to export a list of datatypes as a ZIP file, while preserving the folder structure
         (eg: operation folders). It is only used during normal tvb exporting for datatype groups.
@@ -474,17 +475,18 @@ class StorageInterface:
         :param data: data to be exported
         :param download_file_name: name of the ZIP file to be exported
         :param project_name: name of the project in which the data to be exported exists
+        :param export_folder: destination folder where the datatypes will be exported
         """
 
-        export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
-        zip_full_path = os.path.join(export_folder, download_file_name)
+        if export_folder is None:
+            export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
-        operation_folders = []
         for data_type in all_datatypes:
             operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
-            operation_folders.append(operation_folder)
-        self.tvb_zip = TvbZip(zip_full_path, "w")
-        self.tvb_zip.write_zip_folders(operation_folders, [])
-        self.tvb_zip.close()
+            tmp_op_folder_path = os.path.join(export_folder, os.path.basename(operation_folder))
+            copy_tree(operation_folder, tmp_op_folder_path)
 
-        return zip_full_path
+        dest_path = os.path.join(os.path.dirname(export_folder), download_file_name)
+        self.write_zip_folder(dest_path, export_folder)
+
+        return dest_path

@@ -33,6 +33,7 @@
 """
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
+from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities import load
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
@@ -59,9 +60,24 @@ class TVBLinkedExporter(ABCExporter):
         1. If data is a normal data type, simply exports storage file (HDF format)
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
+        download_file_name = self._get_export_file_name(data)
         if self.is_data_a_group(data):
-            download_file_name = self.get_export_file_name(data, StorageInterface.TVB_ZIP_FILE_EXTENSION)
-            return self.group_export(data, project, download_file_name)
+            all_datatypes = self._get_all_data_types_arr(data)
+
+            if all_datatypes is None or len(all_datatypes) == 0:
+                raise ExportException("Could not export a data type group with no data!")
+
+            # Copy the linked datatypes
+            dt_path_list = []
+            data_type = all_datatypes[0]
+            self.gather_datatypes_for_copy(data_type, dt_path_list)
+            export_folder = self.storage_interface.copy_datatypes(dt_path_list, data_type)
+
+            # Create ZIP archive
+            zip_file = self.storage_interface.export_datatypes_structure(all_datatypes, data, download_file_name,
+                                                                         project.name, export_folder)
+
+            return download_file_name, zip_file, True
         else:
             dt_path_list = []
             self.gather_datatypes_for_copy(data, dt_path_list)

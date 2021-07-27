@@ -154,33 +154,6 @@ class ABCExporter(metaclass=ABCMeta):
         """
         return isinstance(data, DataTypeGroup)
 
-    def group_export(self, data, project, download_file_name):
-        storage_interface = StorageInterface()
-        all_datatypes = self._get_all_data_types_arr(data)
-
-        if all_datatypes is None or len(all_datatypes) == 0:
-            raise ExportException("Could not export a data type group with no data")
-
-        # Now process each data type from group and add it to ZIP file
-        temp_export_folders = []
-
-        dt_path_list = []
-        data_type = all_datatypes[0]
-        self.gather_datatypes_for_copy(data_type, dt_path_list)
-        export_file_name = self._get_export_file_name(data_type)
-        folder_name = storage_interface.copy_datatypes(dt_path_list, data_type, export_file_name)
-
-        for data_type in all_datatypes:
-            operation_folder = storage_interface.get_project_folder(project.name, str(data_type.fk_from_operation))
-            tmp_op_folder_path = os.path.join(folder_name, os.path.basename(operation_folder))
-            copy_tree(operation_folder, tmp_op_folder_path, preserve_mode=None)
-            temp_export_folders.append(tmp_op_folder_path)
-
-        dest_path = os.path.join(os.path.dirname(folder_name), download_file_name)
-        storage_interface.write_zip_folder(dest_path, folder_name)
-
-        return download_file_name, dest_path, True
-
     def copy_ref_files_to_temp_dir(self, data_type, export_folder, temp_export_folders, references_folder_path):
         data_path = h5.path_for_stored_index(data_type)
         with H5File.from_file(data_path) as f:
