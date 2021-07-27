@@ -36,6 +36,7 @@ from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities import load
 from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.storage.storage_interface import StorageInterface
@@ -62,10 +63,7 @@ class TVBLinkedExporter(ABCExporter):
         """
         download_file_name = self._get_export_file_name(data)
         if self.is_data_a_group(data):
-            all_datatypes = self._get_all_data_types_arr(data)
-
-            if all_datatypes is None or len(all_datatypes) == 0:
-                raise ExportException("Could not export a data type group with no data!")
+            all_datatypes = self.prepare_datatypes_for_export(data)
 
             # Copy the linked datatypes
             dt_path_list = []

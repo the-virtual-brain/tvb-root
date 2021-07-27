@@ -189,6 +189,22 @@ class ABCExporter(metaclass=ABCMeta):
                     dt = load.load_entity_by_gid(ref_gid)
                     self.gather_datatypes_for_copy(dt, dt_path_list)
 
+    def prepare_datatypes_for_export(self, data):
+        all_datatypes = self._get_all_data_types_arr(data)
+        burst = dao.get_burst_for_operation_id(data.fk_from_operation)
+
+        if data.fk_operation_group == burst.fk_operation_group:
+            data_2 = dao.get_datatypegroup_by_op_group_id(burst.fk_metric_operation_group)
+        else:
+            data_2 = dao.get_datatypegroup_by_op_group_id(burst.fk_operation_group)
+
+        all_datatypes_2 = self._get_all_data_types_arr(data_2)
+        all_datatypes.extend(all_datatypes_2)
+
+        if all_datatypes is None or len(all_datatypes) == 0:
+            raise ExportException("Could not export a data type group with no data!")
+
+        return all_datatypes
 
     @abstractmethod
     def export(self, data, project):

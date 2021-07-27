@@ -62,7 +62,7 @@ class TVBExporter(ABCExporter):
         download_file_name = self._get_export_file_name(data)
 
         if self.is_data_a_group(data):
-            all_datatypes = self._get_all_data_types_arr(data)
+            all_datatypes = self.prepare_datatypes_for_export(data)
 
             if all_datatypes is None or len(all_datatypes) == 0:
                 raise ExportException("Could not export a data type group with no data!")
