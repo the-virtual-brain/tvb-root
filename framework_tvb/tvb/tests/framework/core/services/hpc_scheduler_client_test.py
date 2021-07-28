@@ -35,6 +35,7 @@ import os
 import shutil
 import numpy
 import pytest
+
 from tvb.basic.config.settings import HPCSettings
 from tvb.core.entities.file.simulator.view_model import EEGViewModel
 from tvb.core.entities.storage import dao
@@ -209,5 +210,4 @@ class TestHPCSchedulerClient(BaseTestCase):
         passfile = self.storage_interface.get_password_file(self.dir_gid)
         if os.path.exists(passfile):
             os.remove(passfile)
-        self.storage_interface.remove_project_structure(self.test_project.name)
         self.clean_database()

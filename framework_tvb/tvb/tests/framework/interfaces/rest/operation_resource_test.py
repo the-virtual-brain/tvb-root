@@ -189,6 +189,3 @@ class TestOperationResource(RestResourceTest):
 
         assert type(operation_gid) is str
         assert len(operation_gid) > 0
-
-    def transactional_teardown_method(self):
-        self.storage_interface.remove_project_structure(self.test_project.name)

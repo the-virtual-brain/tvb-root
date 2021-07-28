@@ -78,7 +78,6 @@ class TestCSVConnectivityImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        self.storage_interface.remove_project_structure(self.test_project.name)
 
     def _import_csv_test_connectivity(self, reference_connectivity_gid, subject):
         ### First prepare input data:

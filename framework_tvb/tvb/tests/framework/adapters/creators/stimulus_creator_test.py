@@ -33,6 +33,7 @@ import os
 import numpy
 import tvb_data
 import tvb_data.surfaceData
+
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, SurfaceStimulusCreator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
@@ -60,12 +61,6 @@ class TestStimulusCreator(TransactionalTestCase):
 
         cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
         self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, CORTICAL)
-
-    def transactional_teardown_method(self):
-        """
-        Remove project folders and clean up database.
-        """
-        self.storage_interface.remove_project_structure(self.test_project.name)
 
     def test_create_stimulus_region(self, operation_factory):
         weight_array = numpy.zeros(self.connectivity.number_of_regions)

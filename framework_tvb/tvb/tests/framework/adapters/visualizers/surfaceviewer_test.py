@@ -39,7 +39,6 @@ from uuid import UUID
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
 from tvb.datatypes.surfaces import CORTICAL
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -76,12 +75,6 @@ class TestSurfaceViewers(TransactionalTestCase):
         self.region_mapping = TestFactory.import_region_mapping(test_user, self.test_project, TXT_FILE,
                                                                 self.surface.gid, connectivity_index.gid)
         assert self.region_mapping is not None
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch_surface(self):
         """

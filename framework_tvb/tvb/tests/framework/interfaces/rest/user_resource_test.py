@@ -29,7 +29,6 @@
 #
 
 from tvb.interfaces.rest.server.resources.user.user_resource import GetProjectsListResource
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
@@ -48,6 +47,3 @@ class TestUserResource(RestResourceTest):
         result = self.projects_list_resource.get()
         assert type(result) is list
         assert len(result) == 1
-
-    def transactional_teardown_method(self):
-        StorageInterface().remove_project_structure(self.test_project.name)

@@ -37,6 +37,7 @@ All calls to methods from this module must be done through this class.
 import os
 import uuid
 from datetime import datetime
+import shutil
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -98,9 +99,6 @@ class StorageInterface:
     def get_temp_folder(self, project_name):
         return self.files_helper.get_project_folder(project_name, self.TEMP_FOLDER)
 
-    def remove_project_structure(self, project_name):
-        self.files_helper.remove_project_structure(project_name)
-
     def get_project_meta_file_path(self, project_name):
         return self.files_helper.get_project_meta_file_path(project_name)
 
@@ -116,10 +114,6 @@ class StorageInterface:
     def remove_operation_data(self, project_name, operation_id):
         self.files_helper.remove_operation_data(project_name, operation_id)
 
-    def remove_datatype_file(self, h5_file):
-        self.files_helper.remove_datatype_file(h5_file)
-        self.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(h5_file))
-
     def get_images_folder(self, project_name):
         return self.files_helper.get_images_folder(project_name, self.IMAGES_FOLDER)
 
@@ -128,6 +122,7 @@ class StorageInterface:
 
     def remove_image_metadata(self, figure):
         self.files_helper.remove_image_metadata(figure, self.IMAGES_FOLDER)
+        self.push_folder_to_sync(figure.project.name)
 
     def get_allen_mouse_cache_folder(self, project_name):
         return self.files_helper.get_allen_mouse_cache_folder(project_name)
@@ -332,7 +327,7 @@ class StorageInterface:
 
     def remove_project(self, project):
         project_folder = self.get_project_folder(project.name)
-        self.remove_project_structure(project.name)
+        shutil.rmtree(project_folder)
         encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
         if os.path.exists(encrypted_path):
             self.remove_folder(encrypted_path)

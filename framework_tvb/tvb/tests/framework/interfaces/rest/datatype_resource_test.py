@@ -38,7 +38,6 @@ from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
     GetOperationsForDatatypeResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetDataInProjectResource
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
@@ -92,6 +91,3 @@ class TestDatatypeResource(RestResourceTest):
         result = self.get_operations_resource.get(datatype_gid=datatypes_in_project[0].gid)
         assert type(result) is list
         assert len(result) > 3
-
-    def transactional_teardown_method(self):
-        StorageInterface().remove_project_structure(self.test_project.name)

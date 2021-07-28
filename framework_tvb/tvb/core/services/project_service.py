@@ -532,7 +532,6 @@ class ProjectService:
             links = dao.get_links_for_datatype(datatype.id)
 
             op = dao.get_operation_by_id(datatype.fk_from_operation)
-            adapter = ABCAdapter.build_adapter(op.algorithm)
             if links:
                 was_link = False
                 for link in links:
@@ -573,8 +572,6 @@ class ProjectService:
             else:
                 specific_remover = get_remover(datatype.type)(datatype)
                 specific_remover.remove_datatype(skip_validation)
-                h5_path = h5.path_for_stored_index(datatype)
-                self.storage_interface.remove_datatype_file(h5_path)
 
         except RemoveDataTypeException:
             self.logger.exception("Could not execute operation Node Remove!")

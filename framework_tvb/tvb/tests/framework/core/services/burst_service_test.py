@@ -43,7 +43,6 @@ from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.storage import dao
 from tvb.core.services.algorithm_service import AlgorithmService, GenericAttributes
 from tvb.core.services.project_service import ProjectService
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.datatype1 import Datatype1
@@ -74,9 +73,8 @@ class TestBurstService(BaseTestCase):
 
     def teardown_method(self):
         """
-        Remove project folders and clean up database.
+        Clean up database.
         """
-        StorageInterface().remove_project_structure(self.test_project.name)
         self.clean_database()
 
     def test_clone_burst_configuration(self):

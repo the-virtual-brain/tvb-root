@@ -70,11 +70,8 @@ class TestProjectService(TransactionalTestCase):
 
     def transactional_teardown_method(self):
         """
-        Remove project folders and clean up database.
+        Remove project folders.
         """
-        created_projects = dao.get_projects_for_user(self.test_user.id)
-        for project in created_projects:
-            self.storage_interface.remove_project_structure(project.name)
         self.delete_project_folders()
 
     def test_create_project_happy_flow(self):

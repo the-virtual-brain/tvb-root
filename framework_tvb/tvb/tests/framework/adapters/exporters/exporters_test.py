@@ -65,10 +65,6 @@ class TestExporters(TransactionalTestCase):
         """
         Clean-up tests data
         """
-        user = TestFactory.create_user('Exporter_Tests_User2')
-        project = TestFactory.create_project(user, 'Exporter_Tests_Project2')
-        StorageInterface().remove_project_structure(project.name)
-
         # Remove EXPORT folder
         export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.EXPORT_FOLDER_NAME)
         if os.path.exists(export_folder):

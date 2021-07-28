@@ -37,12 +37,12 @@
 import os
 import shutil
 import pytest
+
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.load import get_filtered_datatypes, load_entity_by_gid
 from tvb.core.services.exceptions import OperationException
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -81,7 +81,6 @@ class TestTVBImporter(BaseTestCase):
         _, self.zip_file_path, _ = export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.test_project)
         assert os.path.exists(self.zip_file_path), "Data type group was not exported correct"
 
-        StorageInterface().remove_project_structure(self.test_project.name)
         self.clean_database(delete_folders=False)
 
         # Recreate project, but a clean one where to import data
@@ -93,7 +92,6 @@ class TestTVBImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_path=None):
 

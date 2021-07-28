@@ -116,21 +116,6 @@ class FilesHelper(object):
             self.logger.exception("Could not rename node!")
             raise FileStructureException("Could not rename to %s" % new_name)
 
-    def remove_project_structure(self, project_name):
-        """ Remove all folders for project or THROW FileStructureException. """
-        try:
-            complete_path = self.get_project_folder(project_name)
-            if os.path.exists(complete_path):
-                if os.path.isdir(complete_path):
-                    shutil.rmtree(complete_path)
-                else:
-                    os.remove(complete_path)
-
-            self.logger.debug("Project folders were removed for " + project_name)
-        except OSError:
-            self.logger.exception("A problem occurred while removing folder.")
-            raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
-
     def get_project_meta_file_path(self, project_name, project_file):
         """
         Retrieve project meta info file path.
@@ -180,19 +165,6 @@ class FilesHelper(object):
             raise FileStructureException("Could not remove files for OP" + str(operation_id))
 
     ####################### DATA-TYPES METHODS Start Here #####################
-    def remove_datatype_file(self, h5_file):
-        """
-        Remove H5 storage fully.
-        """
-        try:
-            if os.path.exists(h5_file):
-                os.remove(h5_file)
-            else:
-                self.logger.warning("Data file already removed:" + str(h5_file))
-        except Exception:
-            self.logger.exception("Could not remove file")
-            raise FileStructureException("Could not remove " + str(h5_file))
-
     def move_datatype(self, new_project_name, new_op_id, full_path):
         """
         Move H5 storage into a new location
@@ -224,11 +196,15 @@ class FilesHelper(object):
 
     def remove_image_metadata(self, figure, images_folder):
         """
-        Remove the file storing image meta data
+        Remove the file storing image and its meta data
         """
-        metadata_file = self._compute_image_metadata_file(figure, images_folder)
-        if os.path.exists(metadata_file):
-            os.remove(metadata_file)
+        figures_folder = self.get_images_folder(figure.project.name, images_folder)
+        path2figure = os.path.join(figures_folder, figure.file_path)
+        if os.path.exists(path2figure):
+            os.remove(path2figure)
+            metadata_file = self._compute_image_metadata_file(figure, images_folder)
+            if os.path.exists(metadata_file):
+                os.remove(metadata_file)
 
     def _compute_image_metadata_file(self, figure, images_folder):
         """
