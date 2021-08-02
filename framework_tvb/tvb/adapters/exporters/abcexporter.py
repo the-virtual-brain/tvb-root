@@ -204,7 +204,21 @@ class ABCExporter(metaclass=ABCMeta):
         if all_datatypes is None or len(all_datatypes) == 0:
             raise ExportException("Could not export a data type group with no data!")
 
-        return all_datatypes
+        op_file_dict = dict()
+        for dt in all_datatypes:
+            h5_path = h5.path_for_stored_index(dt)
+            StorageInterface().get_storage_manager(h5_path).remove_metadata('parent_burst', check_existence=True)
+            op_folder = os.path.dirname(h5_path)
+            op_file_dict[op_folder] = [h5_path]
+
+            op = dao.get_operation_by_id(dt.fk_from_operation)
+            vms = h5.gather_references_of_view_model(op.view_model_gid, os.path.dirname(h5_path), only_view_models=True)
+            op_file_dict[op_folder].extend(vms[0])
+
+            vm_path = h5.determine_filepath(op.view_model_gid, op_folder)
+            StorageInterface().get_storage_manager(vm_path).remove_metadata('parent_burst', check_existence=True)
+
+        return all_datatypes, op_file_dict
 
     @abstractmethod
     def export(self, data, project):

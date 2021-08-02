@@ -380,14 +380,20 @@ class ImportService(object):
         dao.store_entity(operation_entity)
         return view_model
 
-    def import_project_operations(self, project, import_path, is_group=False, importer_operation_id=None, linked_group_op_id=None):
+    def import_project_operations(self, project, import_path, is_group=False, importer_operation_id=None,
+                                  linked_group_op_id=None):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
         all_dts_count = 0
         all_stored_dts_count = 0
         imported_operations = []
-        ordered_operations = self._retrieve_operations_in_order(project, import_path, importer_operation_id, linked_group_op_id)
+        ordered_operations = self._retrieve_operations_in_order(project, import_path,
+                                                                None if is_group else importer_operation_id,
+                                                                linked_group_op_id)
+
+        if is_group and len(ordered_operations) > 0:
+            ordered_operations[0].operation.id = importer_operation_id
 
         for operation_data in ordered_operations:
 
@@ -448,6 +454,10 @@ class ImportService(object):
             else:
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
                                     "operation or DTs inside!" % operation_data.operation_folder)
+
+            # We want importer_operation_id to be kept just for the first operation (the first iteration)
+            if is_group:
+                importer_operation_id = None
 
         self._update_dt_groups(project.id)
         self._update_burst_configurations(project.id)

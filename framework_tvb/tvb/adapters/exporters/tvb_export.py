@@ -62,14 +62,11 @@ class TVBExporter(ABCExporter):
         download_file_name = self._get_export_file_name(data)
 
         if self.is_data_a_group(data):
-            all_datatypes = self.prepare_datatypes_for_export(data)
-
-            if all_datatypes is None or len(all_datatypes) == 0:
-                raise ExportException("Could not export a data type group with no data!")
+            _, op_file_dict = self.prepare_datatypes_for_export(data)
 
             # Create ZIP archive
-            zip_file = self.storage_interface.export_datatypes_structure(all_datatypes, data, download_file_name,
-                                                                         project.name)
+            zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data,
+                                                                         download_file_name, project.name)
             return download_file_name, zip_file, True
         else:
             data_path = h5.path_for_stored_index(data)

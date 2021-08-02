@@ -227,6 +227,7 @@ class SimulatorService(object):
 
                 ranges = json.dumps(ranges)
 
+                simulator.range_values = ranges
                 operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
                                                                      view_model=simulator, ranges=ranges,
                                                                      burst_gid=burst_config.gid,
