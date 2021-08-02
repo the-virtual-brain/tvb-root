@@ -57,6 +57,39 @@ class TestNbSim(BaseTestSim):
 
         np.testing.assert_allclose(raw_d[0,:], pdq_d[0,:], rtol=1e-5)
 
+    def test_local_deterministic_spatial(self):
+        dt = 0.01
+        G = 0.
+        N=300
+
+        sim = simulator.Simulator(
+            model=models.MontbrioPazoRoxin(
+                eta=np.random.uniform(
+                    models.MontbrioPazoRoxin.eta.domain.lo,
+                    models.MontbrioPazoRoxin.eta.domain.hi,
+                    size=N
+                )
+            ),
+            coupling=coupling.Scaling(a=np.array([G])),
+            connectivity=self._random_network(N),
+            conduction_speed=np.inf,
+            monitors=[
+                monitors.Raw()
+            ],
+            integrator=integrators.HeunStochastic( # matching integrator
+                dt=dt, 
+                noise=noise.Additive(
+                    nsig=np.array([0.0, 0.0]),
+                    noise_seed=42
+                )
+            )
+        ).configure()
+
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1)
+        (raw_t, raw_d), = sim.run(simulation_length=1)
+
+        np.testing.assert_allclose(raw_d[0,:], pdq_d[0,:], rtol=1e-5)
+
 
     def test_local_stochastic(self):
         #run_sim = self._get_run_sim(print_source=True)
@@ -227,3 +260,4 @@ class TestNbSim(BaseTestSim):
         # double typed buffer.
         np.testing.assert_allclose(r_pdq_chu, r_tvb, rtol=1e-3)
         np.testing.assert_allclose(V_pdq_chu, V_tvb, rtol=1e-3)
+

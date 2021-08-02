@@ -105,7 +105,10 @@ class NbMPRBackend(MakoUtilMix):
 
     def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
-        content = dict(compatibility_mode=compatibility_mode) 
+        content = dict(
+                compatibility_mode=compatibility_mode, 
+                sim=sim
+        ) 
         integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=True)
 
         horizon = sim.connectivity.horizon
@@ -128,12 +131,7 @@ class NbMPRBackend(MakoUtilMix):
             weights = sim.connectivity.weights, 
             idelays = sim.connectivity.idelays,
             G = sim.coupling.a.item(),
-            I = sim.model.I.item(),
-            Delta = sim.model.Delta.item(), 
-            Gamma = sim.model.Gamma.item(),
-            eta = sim.model.eta.item(),
-            tau = sim.model.tau.item(),
-            J = sim.model.J.item(),       # end of model params
+            parmat = sim.model.spatial_parameter_matrix
         )
         return r[:,horizon:], V[:,horizon:]
 
@@ -143,7 +141,7 @@ class NbMPRBackend(MakoUtilMix):
 
     def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
-        content = dict(compatibility_mode=compatibility_mode) 
+        content = dict(sim=sim, compatibility_mode=compatibility_mode) 
         integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=False)
         # chunksize in number of steps 
         horizon = sim.connectivity.horizon
@@ -174,12 +172,7 @@ class NbMPRBackend(MakoUtilMix):
                 weights = sim.connectivity.weights, 
                 idelays = sim.connectivity.idelays,
                 G = sim.coupling.a.item(),
-                I = sim.model.I.item(),
-                Delta = sim.model.Delta.item(), 
-                Gamma = sim.model.Gamma.item(),
-                eta = sim.model.eta.item(),
-                tau = sim.model.tau.item(),
-                J = sim.model.J.item(),       # end of model params
+                parmat = sim.model.spatial_parameter_matrix
             )
 
             tavg_chunk = chunk * tavg_chunksize
