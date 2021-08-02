@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -178,7 +178,7 @@ class SurfaceStimulusCreator(ABCAdapter):
         """
         self.generic_attributes.user_tag_1 = view_model.display_name
         stimuli_surface = self.prepare_stimuli_surface_from_view_model(view_model, view_model.surface)
-        stimuli_surface_index = h5.store_complete(stimuli_surface, self.storage_path)
+        stimuli_surface_index = self.store_complete(stimuli_surface)
         return stimuli_surface_index
 
     def get_required_memory_size(self, view_model):
@@ -290,7 +290,7 @@ class RegionStimulusCreator(ABCAdapter):
         stimuli_region.temporal = view_model.temporal
         self.generic_attributes.user_tag_1 = view_model.display_name
 
-        stimuli_region_idx = h5.store_complete(stimuli_region, self.storage_path)
+        stimuli_region_idx = self.store_complete(stimuli_region)
         return stimuli_region_idx
 
     def get_required_disk_size(self, view_model):

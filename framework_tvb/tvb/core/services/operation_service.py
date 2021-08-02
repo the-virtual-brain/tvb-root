@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -51,7 +51,6 @@ from tvb.basic.profile import TvbProfile
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS, ALGORITHMS
 from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_burst import PARAM_RANGE_PREFIX, RANGE_PARAMETER_1, RANGE_PARAMETER_2, \
@@ -66,9 +65,12 @@ from tvb.core.services.burst_service import BurstService
 from tvb.core.services.exceptions import OperationException
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.time_series import TimeSeries
+from tvb.storage.storage_interface import StorageInterface
 
 RANGE_PARAMETER_1 = RANGE_PARAMETER_1
 RANGE_PARAMETER_2 = RANGE_PARAMETER_2
+
+GROUP_BURST_PENDING = {}
 
 
 class OperationService:
@@ -81,7 +83,7 @@ class OperationService:
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.file_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     ##########################################################################################
     ######## Methods related to launching operations start here ##############################
@@ -202,9 +204,9 @@ class OperationService:
 
     @staticmethod
     def store_view_model(operation, project, view_model):
-        storage_path = FilesHelper().get_project_folder(project, str(operation.id))
+        storage_path = StorageInterface().get_project_folder(project.name, str(operation.id))
         h5.store_view_model(view_model, storage_path)
-        view_model_size_on_disk = FilesHelper.compute_recursive_h5_disk_usage(storage_path)
+        view_model_size_on_disk = StorageInterface.compute_recursive_h5_disk_usage(storage_path)
         operation.view_model_disk_size = view_model_size_on_disk
         dao.store_entity(operation)
 
@@ -229,7 +231,7 @@ class OperationService:
                 form = form() if isclass(form) else form
                 fields = form.get_upload_field_names()
                 project = dao.get_project_by_id(operation.fk_launched_in)
-                tmp_folder = self.file_helper.get_project_folder(project, self.file_helper.TEMP_FOLDER)
+                tmp_folder = self.storage_interface.get_temp_folder(project.name)
                 for upload_field in fields:
                     if hasattr(view_model, upload_field):
                         file = getattr(view_model, upload_field)
@@ -278,8 +280,7 @@ class OperationService:
     @staticmethod
     def _update_vm_generic_operation_tag(view_model, operation):
         project = dao.get_project_by_id(operation.fk_launched_in)
-        storage_path = FilesHelper().get_project_folder(project, str(operation.id))
-        h5_path = h5.path_for(storage_path, ViewModelH5, view_model.gid, type(view_model).__name__)
+        h5_path = h5.path_for(operation.id, ViewModelH5, view_model.gid, project.name, type(view_model).__name__)
         with ViewModelH5(h5_path, view_model) as vm_h5:
             vm_h5.operation_tag.store(operation.user_group)
 
@@ -391,4 +392,5 @@ class OperationService:
                 ProjectService().remove_operation(operation_id)
                 if burst_config is not None:
                     result = dao.remove_entity(BurstConfiguration, burst_config.id) or result
+
         return result

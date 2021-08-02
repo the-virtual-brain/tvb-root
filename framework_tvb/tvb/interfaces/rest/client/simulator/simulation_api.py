@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,13 +31,13 @@
 import os
 import shutil
 
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.interfaces.rest.client.client_decorators import handle_response
 from tvb.interfaces.rest.client.main_api import MainApi
 from tvb.interfaces.rest.commons.strings import RequestFileKey
 from tvb.interfaces.rest.commons.strings import RestLink, LinkPlaceholder
 from tvb.interfaces.rest.commons.files_helper import create_temp_folder
+from tvb.storage.storage_interface import StorageInterface
 
 
 class SimulationApi(MainApi):
@@ -48,7 +48,7 @@ class SimulationApi(MainApi):
 
         h5.store_view_model(session_stored_simulator, temporary_folder)
         zip_folder_path = os.path.join(temp_folder, RequestFileKey.SIMULATION_FILE_NAME.value)
-        FilesHelper().zip_folder(zip_folder_path, temporary_folder)
+        StorageInterface().write_zip_folder(zip_folder_path, temporary_folder)
         shutil.rmtree(temporary_folder)
 
         file_obj = open(zip_folder_path, 'rb')

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -97,8 +97,9 @@ class ABCUploader(ABCAdapter, metaclass=ABCMeta):
         """
         self.generic_attributes.subject = view_model.data_subject
 
-        trait_upload_field_names = list(self.get_form_class().get_upload_information().keys())
         if view_model.encrypted_aes_key is not None:
+            trait_upload_field_names = list(self.get_form_class().get_upload_information().keys())
+
             for upload_field_name in trait_upload_field_names:
                 self._decrypt_content(view_model, upload_field_name)
 

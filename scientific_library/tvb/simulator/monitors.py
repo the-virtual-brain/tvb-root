@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -96,6 +96,10 @@ class Monitor(HasTraits):
     def __str__(self):
         clsname = self.__class__.__name__
         return '%s(period=%f, voi=%s)' % (clsname, self.period, self.variables_of_interest.tolist())
+
+    @property
+    def ui_name(self):
+        return self._ui_name
 
     def _config_vois(self, simulator):
         self.voi = self.variables_of_interest
@@ -982,8 +986,9 @@ class BoldRegionROI(Bold):
         if result:
             t, data = result
             # TODO use reduceat
-            return [t, array([data.flat[self.region_mapping==i].mean()
-                              for i in range(self.region_mapping.max())])]
+            res = array([data.flat[self.region_mapping == i].mean() for i in range(self.region_mapping.max())])
+            res = numpy.reshape(res, [data.shape[0], len(res), data.shape[2]])
+            return [t, res]
         else:
             return None
 

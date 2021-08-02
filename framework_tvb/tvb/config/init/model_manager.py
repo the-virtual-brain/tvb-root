@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,17 +34,16 @@
 """
 import os
 import shutil
-from sqlalchemy.sql import text
-from sqlalchemy.engine import reflection
-from sqlalchemy.exc import SQLAlchemyError
-from alembic.config import Config
-from alembic import command
 
-from tvb.basic.profile import TvbProfile
+import tvb.config.init.alembic.versions as scripts
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import inspect
+from sqlalchemy.sql import text
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.core.neotraits.db import Base
-import tvb.config.init.alembic.versions as scripts
 
 LOGGER = get_logger(__name__)
 
@@ -53,7 +52,7 @@ def initialize_startup():
     """ Force DB tables create, in case no data is already found."""
     is_db_empty = False
     session = SA_SESSIONMAKER()
-    inspector = reflection.Inspector.from_engine(session.connection())
+    inspector = inspect(session.connection())
     table_names = inspector.get_table_names()
     if len(table_names) < 1:
         LOGGER.debug("Database access exception, maybe DB is empty")
@@ -81,17 +80,20 @@ def initialize_startup():
     else:
         _update_sql_scripts()
 
-        try:
+        if 'migrate_version' in table_names:
             db_version = session.execute(text("""SELECT version from migrate_version""")).fetchone()[0]
 
             if db_version == 18:
                 command.stamp(alembic_cfg, 'head')
                 session.execute(text("""DROP TABLE "migrate_version";"""))
+                session.commit()
 
                 return is_db_empty
 
-        except SQLAlchemyError:
-            pass
+        if 'alembic_version' in table_names:
+            db_version = session.execute(text("""SELECT version_num from alembic_version""")).fetchone()
+            if not db_version:
+                command.stamp(alembic_cfg, 'head')
 
         with session.connection() as connection:
             alembic_cfg.attributes['connection'] = connection
@@ -108,7 +110,7 @@ def reset_database():
     try:
         session = SA_SESSIONMAKER()
         LOGGER.debug("Delete connection initiated.")
-        inspector = reflection.Inspector.from_engine(session.connection())
+        inspector = inspect(session.connection())
         for table in inspector.get_table_names():
             try:
                 LOGGER.debug("Removing:" + table)

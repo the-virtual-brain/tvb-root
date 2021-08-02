@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,13 +36,12 @@
 import os
 from functools import partial
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.data_encryption_handler import encryption_handler
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient, HPCJobStatus
 from tvb.core.services.exceptions import OperationException
+from tvb.storage.storage_interface import StorageInterface
 
 try:
     from pyunicore.client import Job, Transport
@@ -77,10 +76,11 @@ class HPCOperationService(object):
                   op_ident.job_id)
 
         operation = dao.get_operation_by_id(operation.id)
-        folder = HPCSchedulerClient.file_handler.get_project_folder(operation.project)
-        if encryption_handler.encryption_enabled():
-            encryption_handler.inc_project_usage_count(folder)
-            encryption_handler.sync_folders(folder)
+        folder = HPCSchedulerClient.storage_interface.get_project_folder(operation.project.name)
+        storage_interface = StorageInterface()
+        if storage_interface.encryption_enabled():
+            storage_interface.inc_project_usage_count(folder)
+            storage_interface.sync_folders(folder)
 
         try:
             sim_h5_filenames, metric_op, metric_h5_filename = \
@@ -95,9 +95,9 @@ class HPCOperationService(object):
             HPCOperationService._operation_error(operation)
 
         finally:
-            if encryption_handler.encryption_enabled():
-                encryption_handler.sync_folders(folder)
-                encryption_handler.set_project_inactive(operation.project)
+            if storage_interface.encryption_enabled():
+                storage_interface.sync_folders(folder)
+                storage_interface.set_project_inactive(operation.project)
 
     @staticmethod
     def handle_hpc_status_changed(operation, simulator_gid, new_status):
@@ -114,7 +114,7 @@ class HPCOperationService(object):
 
     @staticmethod
     def check_operations_job():
-        operations = dao.get_operations()
+        operations = dao.get_operations_for_hpc_job()
         if operations is None or len(operations) == 0:
             return
 

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -334,7 +334,7 @@ class SurfaceStimulusController(SpatioTemporalController):
             min_time = common.get_from_session(KEY_TMP_FORM).min_tmp_x.value or 0
             max_time = common.get_from_session(KEY_TMP_FORM).max_tmp_x.value or 100
 
-            stimuli_surface = SurfaceStimulusCreator.prepare_stimuli_surface_from_view_model(current_surface_stim, True)
+            stimuli_surface = SurfaceStimulusCreator().prepare_stimuli_surface_from_view_model(current_surface_stim, True)
             stimuli_surface.configure_space()
             time = numpy.arange(min_time, max_time, 1)
             time = time[numpy.newaxis, :]

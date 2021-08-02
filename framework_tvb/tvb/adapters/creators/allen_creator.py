@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -148,7 +148,7 @@ class AllenConnectomeBuilder(ABCAdapter):
         vol_thresh = view_model.vol_thresh
 
         project = dao.get_project_by_id(self.current_project_id)
-        manifest_file = self.file_handler.get_allen_mouse_cache_folder(project.name)
+        manifest_file = self.storage_interface.get_allen_mouse_cache_folder(project.name)
         manifest_file = os.path.join(manifest_file, 'mouse_connectivity_manifest.json')
         cache = MouseConnectivityCache(resolution=resolution, manifest_file=manifest_file)
 
@@ -226,10 +226,10 @@ class AllenConnectomeBuilder(ABCAdapter):
         result_template.weighting = 'T1'
         result_template.volume = result_volume
 
-        connectivity_index = h5.store_complete(result_connectivity, self.storage_path)
-        volume_index = h5.store_complete(result_volume, self.storage_path)
-        rvm_index = h5.store_complete(result_rvm, self.storage_path)
-        template_index = h5.store_complete(result_template, self.storage_path)
+        connectivity_index = self.store_complete(result_connectivity)
+        volume_index = self.store_complete(result_volume)
+        rvm_index = self.store_complete(result_rvm)
+        template_index = self.store_complete(result_template)
 
         return [connectivity_index, volume_index, rvm_index, template_index]
 

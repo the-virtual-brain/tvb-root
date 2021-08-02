@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -28,10 +28,8 @@
 #
 #
 
-import flask
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.interfaces.rest.server.resources.user.user_resource import GetProjectsListResource
-from tvb.tests.framework.core.base_testcase import TransactionalTestCase
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 
@@ -52,4 +50,4 @@ class TestUserResource(RestResourceTest):
         assert len(result) == 1
 
     def transactional_teardown_method(self):
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)

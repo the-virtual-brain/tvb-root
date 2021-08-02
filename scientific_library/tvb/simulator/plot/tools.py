@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -54,7 +54,7 @@ except ImportError:
     IMPORTED_MPL_TOOLKITS = False
     make_axes_locatable = None
     Axes3D = None
-    LOG.warn("You need mpl_toolkits for some axe related features")
+    LOG.warning("You need mpl_toolkits for some axe related features")
 
 
 def _blob(x, y, area, colour):
@@ -321,7 +321,7 @@ def plot_matrix(mat, fig_name='plot_this_matrix', connectivity=None, binary_matr
 
 def plot_3d_centres(xyz):
     if not IMPORTED_MPL_TOOLKITS:
-        LOG.warn("3D axes will be enabled only if you install ")
+        LOG.warning("3D axes will be enabled only if you install ")
         return
 
     fig = pyplot.figure(1)

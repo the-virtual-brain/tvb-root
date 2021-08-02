@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,19 +29,19 @@
 #
 import os
 import uuid
-
 import numpy
 import pytest
 import tvb_data
+
 from tvb.basic.neotraits.api import Attr, Float, Int, NArray, List
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import TraitUploadField, StrField, FloatField, IntField, TraitDataTypeSelectField, \
     BoolField, ArrayField, SelectField, HiddenField, MultiSelectField, FormField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form
+from tvb.storage.storage_interface import StorageInterface
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -57,7 +57,7 @@ class TestForms(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_upload_field(self):
         connectivity_file = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
@@ -288,7 +288,7 @@ class TestForms(BaseTestCase):
         assert hidden_field.label == '', "Hidden field should have empty label!"
 
     def test_form_field(self):
-        form_field = FormField(TestAdapter1Form, self.name)
+        form_field = FormField(DummyAdapter1Form, self.name)
 
         test_val1 = 'test1_val1'
         test_val2 = 'test1_val2'
@@ -301,7 +301,7 @@ class TestForms(BaseTestCase):
             "test1_val2 was not set correctly set on Form!"
 
     def test_form(self):
-        form = TestAdapter1Form()
+        form = DummyAdapter1Form()
 
         test_val1 = 'test1_val1'
         test_val2 = 'test1_val2'

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -38,9 +38,7 @@ import zipfile
 
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.files_update_manager import FilesUpdateManager
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -113,8 +111,8 @@ class TVBImporter(ABCUploader):
             current_op = dao.get_operation_by_id(self.operation_id)
             if zipfile.is_zipfile(view_model.data_file):
                 # Creates a new TMP folder where to extract data
-                tmp_folder = os.path.join(self.storage_path, "tmp_import")
-                FilesHelper().unpack_zip(view_model.data_file, tmp_folder)
+                tmp_folder = os.path.join(self.get_storage_path(), "tmp_import")
+                self.storage_interface.unpack_zip(view_model.data_file, tmp_folder)
                 is_group = False
                 current_op_id = current_op.id
                 for file in os.listdir(tmp_folder):
@@ -146,9 +144,7 @@ class TVBImporter(ABCUploader):
                 file_update_manager = FilesUpdateManager()
                 file_update_manager.upgrade_file(view_model.data_file)
 
-                folder, h5file = os.path.split(view_model.data_file)
-                manager = HDF5StorageManager(folder, h5file)
-                if manager.is_valid_hdf5_file():
+                if self.storage_interface.get_storage_manager(view_model.data_file).is_valid_tvb_file():
                     datatype = None
                     try:
                         datatype = service.load_datatype_from_file(view_model.data_file, self.operation_id)

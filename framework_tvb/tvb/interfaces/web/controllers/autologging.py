@@ -50,7 +50,6 @@ TRACE = 1
 logging.addLevelName(TRACE, "TRACE")
 
 LOGGER = get_logger("tvb_user_actions")
-LOGGER.setLevel(TRACE)
 
 # BEGIN Jython/IronPython detection
 # (this needs to be implemented consistently w/r/t Aglyph's aglyph._compat)
@@ -631,7 +630,6 @@ def traced(*args, **keywords):
         return _install_traceable_methods(obj,
                                           exclude=keywords.get("exclude", False))
     elif isroutine(obj):  # `@traced' function
-        LOGGER.setLevel(TRACE)
         return _make_traceable_function(
             obj, LOGGER)
     elif isinstance(obj, logging.Logger):
@@ -805,7 +803,7 @@ def _make_traceable_function(function, logger):
 
     @wraps(function)
     def autologging_traced_function_delegator(*args, **keywords):
-        if logger.isEnabledFor(TRACE):
+        if TvbProfile.current.TRACE_USER_ACTIONS:
             # don't access the proxy from closure (IronPython does not manage
             # co_freevars/__closure__ correctly for local vars)
             proxy = autologging_traced_function_delegator._tracing_proxy
@@ -875,7 +873,6 @@ def _install_traceable_methods(class_, *method_names, **keywords):
             warnings.warn("tracing not supported for %r" % descriptor_type)
             continue
 
-        LOGGER.setLevel(TRACE)
         tracing_proxy_descriptor = make_traceable_method(descriptor, LOGGER)
 
         # class_.__dict__ is a mappingproxy; direct assignment not supported
@@ -1045,7 +1042,7 @@ def _make_traceable_instancemethod(unbound_function, logger):
     @wraps(unbound_function)
     def autologging_traced_instancemethod_delegator(self_, *args, **keywords):
         method = unbound_function.__get__(self_, self_.__class__)
-        if logger.isEnabledFor(TRACE):
+        if TvbProfile.current.TRACE_USER_ACTIONS:
             # don't access the proxy from closure (IronPython does not manage
             # co_freevars/__closure__ correctly for local vars)
             proxy = \
@@ -1100,7 +1097,7 @@ def _make_traceable_classmethod(method_descriptor, logger):
     @wraps(function)
     def autologging_traced_classmethod_delegator(cls, *args, **keywords):
         method = method_descriptor.__get__(None, cls)
-        if logger.isEnabledFor(TRACE):
+        if TvbProfile.current.TRACE_USER_ACTIONS:
             # don't access the proxy from closure (IronPython does not manage
             # co_freevars/__closure__ correctly for local vars)
             proxy = autologging_traced_classmethod_delegator._tracing_proxy
@@ -1203,6 +1200,7 @@ class _FunctionTracingProxy(object):
             logged_user = None
 
         gid = logged_user.gid if logged_user is not None else ""
+        self.logger.setLevel(TRACE)
         self.logger.log(TRACE, "USER: {} | METHOD: {} | PARAMS: *{} **{}".format(gid, repr(function), args, keywords))
         value = function(*args, **keywords)
 

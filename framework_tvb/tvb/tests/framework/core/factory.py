@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -59,7 +59,6 @@ from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPS
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import DataType
@@ -75,6 +74,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import hash_password
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class TestFactory(object):
@@ -157,7 +157,7 @@ class TestFactory(object):
         operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status)
         dao.store_entity(operation)
-        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
+        op_dir = StorageInterface().get_project_folder(test_project.name, str(operation.id))
         h5.store_view_model(view_model, op_dir)
         return dao.get_operation_by_id(operation.id)
 
@@ -171,8 +171,7 @@ class TestFactory(object):
             test_project = TestFactory.create_project(test_user, 'test_proj')
         operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
         value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
-        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
-        vw_idx = h5.store_complete(value_wrapper, op_dir)
+        vw_idx = h5.store_complete(value_wrapper, operation.id, operation.project.name)
         vw_idx.fk_from_operation = operation.id
         vw_idx = dao.store_entity(vw_idx)
         return test_project, vw_idx.gid, operation
@@ -181,13 +180,12 @@ class TestFactory(object):
     def create_local_connectivity(user, project, surface_gid):
 
         op = TestFactory.create_operation(test_user=user, test_project=project)
-        op_folder = FilesHelper().get_project_folder(project, str(op.id))
 
         wrapper_surf = CorticalSurface()
         wrapper_surf.gid = uuid.UUID(surface_gid)
         lc_ht = LocalConnectivity.from_file()
         lc_ht.surface = wrapper_surf
-        lc_idx = h5.store_complete(lc_ht, op_folder)
+        lc_idx = h5.store_complete(lc_ht, op.id, project.name)
         lc_idx.fk_surface_gid = surface_gid
         lc_idx.fk_from_operation = op.id
         dao.store_entity(lc_idx)
@@ -217,7 +215,7 @@ class TestFactory(object):
             burst.range2 = '["connectivity", null]'
             burst.fk_simulation = operation.id
             burst.simulator_gid = uuid.uuid4().hex
-            BurstService().update_burst_configuration_h5(burst)
+            BurstService().store_burst_configuration(burst)
         return dao.store_entity(burst)
 
     @staticmethod

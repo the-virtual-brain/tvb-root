@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,14 +37,14 @@ When executed on a project already stored, an update in DB references might also
 
 import os
 import shutil
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.xml_metadata_handlers import XMLReader, XMLWriter
+
+from tvb.storage.storage_interface import StorageInterface
 
 
 def _rewrite_img_meta(pth, op_id):
-    figure_dict = XMLReader(pth).read_metadata()
+    figure_dict = StorageInterface().read_metadata_from_xml(pth)
     figure_dict['file_path'] = op_id + '-' + figure_dict['file_path']
-    XMLWriter(figure_dict).write(pth)
+    StorageInterface().write_metadata_in_xml(figure_dict, pth)
 
 
 def _rename_images(op_id, img_path):
@@ -56,7 +56,7 @@ def _rename_images(op_id, img_path):
         src_pth = os.path.join(img_path, f)
         dst_pth = os.path.join(img_path, new_name)
 
-        if f.endswith(FilesHelper.TVB_FILE_EXTENSION):
+        if StorageInterface().ends_with_tvb_file_extension(f):
             _rewrite_img_meta(src_pth, op_id)
         os.rename(src_pth, dst_pth)
 
@@ -71,15 +71,15 @@ def update(project_path):
     Images have been moved in the project folder.
     An associated db migration will update file paths in the db.
     """
-    new_img_folder = os.path.join(project_path, FilesHelper.IMAGES_FOLDER)
-    FilesHelper().check_created(new_img_folder)
+    new_img_folder = os.path.join(project_path, StorageInterface.IMAGES_FOLDER)
+    StorageInterface().check_created(new_img_folder)
 
     for root, dirs, files in os.walk(project_path):
-        in_operation_dir_with_images = FilesHelper.IMAGES_FOLDER in dirs and "Operation.xml" in files
+        in_operation_dir_with_images = StorageInterface.IMAGES_FOLDER in dirs and "Operation.xml" in files
 
         if in_operation_dir_with_images:
             op_id = os.path.basename(root)
-            images_folder = os.path.join(root, FilesHelper.IMAGES_FOLDER)
+            images_folder = os.path.join(root, StorageInterface.IMAGES_FOLDER)
             _rename_images(op_id, images_folder)
             _move_folder_content(images_folder, new_img_folder)
             os.rmdir(images_folder)

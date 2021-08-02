@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -49,9 +49,9 @@ from tvb.core.entities.model.model_operation import has_finished
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.data_encryption_handler import FoldersQueueConsumer
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.burst_service import BurstService
+from tvb.storage.storage_interface import StorageInterface
 
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[2], True)
@@ -108,8 +108,8 @@ def do_operation_launch(operation_id):
 
 if __name__ == '__main__':
     OPERATION_ID = sys.argv[1]
-    queue_consumer = FoldersQueueConsumer()
-    queue_consumer.start()
+    storage_interface = StorageInterface()
+    storage_interface.start()
     do_operation_launch(OPERATION_ID)
-    queue_consumer.mark_stop()
-    queue_consumer.join()
+    storage_interface.mark_stop()
+    storage_interface.join()

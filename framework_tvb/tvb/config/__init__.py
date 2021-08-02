@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -66,7 +66,5 @@ MEASURE_METRICS_CLASS = 'TimeseriesMetricsAdapter'
 MEASURE_METRICS_MODEL_CLASS = 'TimeseriesMetricsAdapterModel'
 
 DEFAULT_PROJECT_GID = '2cc58a73-25c1-11e5-a7af-14109fe3bf71'
-
-DEFAULT_PORTLETS = {0: {0: 'TimeSeries'}}
 
 VIEW_MODEL2ADAPTER = {}

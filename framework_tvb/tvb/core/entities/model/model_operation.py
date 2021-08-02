@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -46,8 +46,7 @@ from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_project import Project, User
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neotraits.db import Base
-from tvb.core.utils import string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
-from tvb.core.utils import string2date, generate_guid
+from tvb.core.utils import generate_guid, string2date, string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
 
 LOG = get_logger(__name__)
 
@@ -253,6 +252,8 @@ class Operation(Base, Exportable):
     range_values = Column(String, default=None)
     estimated_disk_size = Column(Integer)
     view_model_disk_size = Column(Integer, default=0)
+    # This flag is set to true for operations which cannot start a new Thread because of the full LOCKS_QUEUE.
+    queue_full = Column(Boolean, default=False)
 
     algorithm = relationship(Algorithm)
     project = relationship(Project, backref=backref('OPERATIONS', order_by=id, cascade="all,delete"))

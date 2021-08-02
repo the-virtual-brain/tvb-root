@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -154,7 +154,7 @@ class RegionTimeSeriesImporter(ABCUploader):
             ts_idx.fk_region_mapping_gid = region_map_indexes[0].gid
             ts_idx.has_surface_mapping = True
 
-        ts_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, ts_idx.gid)
+        ts_h5_path = self.path_for(TimeSeriesRegionH5, ts_idx.gid)
         ts_h5 = TimeSeriesRegionH5(ts_h5_path)
         ts_h5.connectivity.store(uuid.UUID(connectivity.gid))
 
@@ -168,7 +168,7 @@ class RegionTimeSeriesImporter(ABCUploader):
         ts_idx = TimeSeriesEEGIndex()
         ts_idx.fk_sensors_gid = sensors.gid
 
-        ts_h5_path = h5.path_for(self.storage_path, TimeSeriesEEGH5, ts_idx.gid)
+        ts_h5_path = self.path_for(TimeSeriesEEGH5, ts_idx.gid)
         ts_h5 = TimeSeriesEEGH5(ts_h5_path)
         ts_h5.sensors.store(uuid.UUID(sensors.gid))
 

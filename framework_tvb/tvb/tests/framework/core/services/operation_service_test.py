@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,14 +37,14 @@ import uuid
 
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.operation_service import OperationService
 from tvb.core.services.project_service import initialize_storage, ProjectService
-from tvb.tests.framework.adapters.testadapter2 import TestAdapter2
-from tvb.tests.framework.adapters.testadapter3 import *
+from tvb.storage.storage_interface import StorageInterface
+from tvb.tests.framework.adapters.dummy_adapter2 import DummyAdapter2
+from tvb.tests.framework.adapters.dummy_adapter3 import *
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
@@ -93,15 +93,15 @@ class TestOperationService(BaseTestCase):
         assert len(all_operations) == 0, "There should be no operation"
 
         dt_group = datatype_group_factory(project=self.test_project)
-        model = TestModel()
+        model = DummyModel()
         test_adapter_factory()
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")
 
         operations = dao.get_operations_in_group(dt_group.id)
 
         for op in operations:
             model.gid = uuid.uuid4()
-            op_path = FilesHelper().get_project_folder(self.test_project, str(op.id))
+            op_path = StorageInterface().get_project_folder(self.test_project.name, str(op.id))
             op.view_model_gid = model.gid.hex
             op.algorithm = adapter.stored_adapter
             h5.store_view_model(model, op_path)
@@ -132,8 +132,8 @@ class TestOperationService(BaseTestCase):
         Test the actual operation flow by executing a test adapter.
         """
         test_adapter_factory()
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
-        view_model = TestModel()
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")
+        view_model = DummyModel()
         view_model.test1_val1 = 5
         view_model.test1_val2 = 5
         adapter.generic_attributes.subject = "Test4242"
@@ -152,8 +152,8 @@ class TestOperationService(BaseTestCase):
         """
         Launch two operations and give enough available space for user so that both should finish.
         """
-        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
         view_model = adapter.get_view_model()()
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model))
 
@@ -173,8 +173,8 @@ class TestOperationService(BaseTestCase):
         """
         Launch two operations and give enough available space for user so that both should finish.
         """
-        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
         view_model = adapter.get_view_model()()
         TvbProfile.current.MAX_DISK_SPACE = 2 * float(adapter.get_required_disk_size(view_model))
 
@@ -196,7 +196,7 @@ class TestOperationService(BaseTestCase):
         Launch two operations and give available space for user so that the first should finish,
         but after the update to the user hdd size the second should not.
         """
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
         view_model = adapter.get_view_model()()
 
         TvbProfile.current.MAX_DISK_SPACE = (1 + float(adapter.get_required_disk_size(view_model)))
@@ -218,7 +218,7 @@ class TestOperationService(BaseTestCase):
         """
         Test the actual operation flow by executing a test adapter.
         """
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
         view_model = adapter.get_view_model()()
 
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model))
@@ -230,10 +230,10 @@ class TestOperationService(BaseTestCase):
         """
         Test the actual operation flow by executing a test adapter.
         """
-        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
+        test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
         space_taken_by_started = 100
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
-        form = TestAdapterHDDRequiredForm()
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        form = DummyAdapterHDDRequiredForm()
         adapter.submit_form(form)
         started_operation = model_operation.Operation(None, self.test_user.id, self.test_project.id,
                                                       adapter.stored_adapter.id,
@@ -251,9 +251,9 @@ class TestOperationService(BaseTestCase):
         """
         Test the actual operation flow by executing a test adapter.
         """
-        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
-        form = TestAdapterHDDRequiredForm()
+        test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        form = DummyAdapterHDDRequiredForm()
         adapter.submit_form(form)
         view_model = adapter.get_view_model()()
         TvbProfile.current.MAX_DISK_SPACE = float(adapter.get_required_disk_size(view_model) - 1)
@@ -267,10 +267,10 @@ class TestOperationService(BaseTestCase):
         """
         Test the actual operation flow by executing a test adapter.
         """
-        test_adapter_factory(adapter_class=TestAdapterHDDRequired)
+        test_adapter_factory(adapter_class=DummyAdapterHDDRequired)
         space_taken_by_started = 100
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter3", "TestAdapterHDDRequired")
-        form = TestAdapterHDDRequiredForm()
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter3", "DummyAdapterHDDRequired")
+        form = DummyAdapterHDDRequiredForm()
         adapter.submit_form(form)
         started_operation = model_operation.Operation(None, self.test_user.id, self.test_project.id,
                                                       adapter.stored_adapter.id,
@@ -290,8 +290,8 @@ class TestOperationService(BaseTestCase):
         """
         Test that an operation is successfully stopped.
         """
-        test_adapter_factory(adapter_class=TestAdapter2)
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter2", "TestAdapter2")
+        test_adapter_factory(adapter_class=DummyAdapter2)
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter2", "DummyAdapter2")
         view_model = adapter.get_view_model()()
         view_model.test = 5
         algo = adapter.stored_adapter
@@ -309,7 +309,7 @@ class TestOperationService(BaseTestCase):
         Test that an operation that is already finished is not changed by the stop operation.
         """
         test_adapter_factory()
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")
         view_model = adapter.get_view_model()()
         view_model.test1_val1 = 5
         view_model.test1_val2 = 5
@@ -328,7 +328,7 @@ class TestOperationService(BaseTestCase):
         """
         Test preparation of an adapter and launch mechanism.
         """
-        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.testadapter1", "TestAdapter1")
+        adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")
         test_user = TestFactory.create_user(username="test_user_fire_sim")
         test_project = TestFactory.create_project(admin=test_user, name="test_project_fire_sim")
 

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -136,7 +136,7 @@ class NetworkxConnectivityImporter(ABCUploader):
             parser = NetworkxParser(view_model)
             net = pandas.read_pickle(view_model.data_file)
             connectivity = parser.parse(net)
-            return h5.store_complete(connectivity, self.storage_path)
+            return self.store_complete(connectivity)
         except ParseException as excep:
             self.log.exception("Could not process Connectivity")
             raise LaunchException(excep)

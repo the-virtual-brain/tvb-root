@@ -83,21 +83,22 @@ The command for running our tests has two forms:
   1. Recommendation when working with a git clone of this TVB Github repo:
   
             cd [folder_where_tvb_framework_is]
-            pytest tvb/test/framework [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
+            python -m pytest tvb/test/framework [--profile=TEST_POSTGRES_PROFILE] [--junitxml=path]
             # default profile value is TEST_SQLITE_PROFILE
     
             cd [folder_where_tvb_library_is]
-            pytest tvb/test/library [--junitxml=path]
+            python -m pytest tvb/test/library [--junitxml=path]
 
   2. The second alternative form of running TVB tests, when installing TVB from Pypi, is:
         
             pip install -U tvb-framework
-            pytest --pyargs tvb.tests.framework
+            python -m pytest --pyargs tvb.tests.framework
     
             pip install -U tvb-library
-            pytest --pyargs tvb.tests.library
-
-
+            python -m pytest --pyargs tvb.tests.library
+    
+- In order for all the tests to run correctly, the dependencies specified as LIBRARY_REQUIRED_EXTRA in [setup.py](https://github.com/the-virtual-brain/tvb-root/blob/master/scientific_library/setup.py) should be installed
+- Make sure that tvb-data package is installed from [Zenodo](https://zenodo.org/record/4263723)
 
 ### Coverage
 

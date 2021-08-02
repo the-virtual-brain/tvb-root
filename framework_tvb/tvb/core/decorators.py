@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,33 +34,6 @@
 
 import os
 from tvb.basic.config.environment import Environment
-
-
-
-def synchronized(lock):
-    """ 
-    Synchronization annotation. 
-    We try to mimic the same behavior as Java has with keyword synchronized, for methods.
-    """
-
-
-    def wrap(func):
-        """Wrap current function with a lock mechanism"""
-
-
-        def new_function(*args, **kw):
-            """ New function will actually write the Lock."""
-            lock.acquire()
-            try:
-                return func(*args, **kw)
-            finally:
-                lock.release()
-
-
-        return new_function
-
-
-    return wrap
 
 
 def user_environment_execution(func):

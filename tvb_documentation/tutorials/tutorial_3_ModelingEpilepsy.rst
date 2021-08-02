@@ -22,13 +22,11 @@ propagation of an epileptic seizure in the human brain, electrical stimulation
 of a brain region that can trigger a seizure, or surgical resection of brain
 regions.
 
-In this project, all the data were already generated. You can download the
-ModelingEpilepsy.zip file in the `TVB sharing area
-<http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_.  We’ll only go
-through the necessary steps required to reproduce these simulations, along with
-the relevant outline.  You can always start over, click along and/or try to
-change parameters.  We will use the default subject connectivity matrix and
-surface.
+We will be using the ModelingEpilepsy project. You can download the ModelingEpilepsy.zip file
+in the `TVB sharing area <http://www.thevirtualbrain.org/tvb/zwei/client-area/public>`_.
+We’ll only go through the necessary steps required to reproduce these simulations,
+along with the relevant outline.  You can always start over, click along and/or try to
+change parameters.  We will use the default subject connectivity matrix and surface.
 
 -------------------
 
@@ -41,7 +39,7 @@ epileptic seizure dynamics such as recorded with intracranial EEG electrodes
 the phase space of the Epileptor model to better understand its dynamics. We
 will use the phase plane interactive tool.
 
-1. Go to *simulator >* |burst_menu| *> Phase plane* and select the
+1. Go to *Simulator >* |burst_menu| *> Phase plane* and select the
    :math:`\mathbf{Epileptor}` model.
 
 2. Look at the phase space. We have here the first population (variables
@@ -49,7 +47,7 @@ will use the phase plane interactive tool.
    intersection of the nullcline defines a stable fixed point, representing the
    interictal state,  whereas the rightmost intersection is the center of a
    limit cycle, being the ictal state. Both states are separated by a
-   separatrix, as you can se by drawing different trajectories in this phase
+   separatrix, as you can see by drawing different trajectories in this phase
    space (left click on the figure).
 
 .. figure:: figures/ModelingEpilepsy_PhasePlane.png
@@ -59,9 +57,9 @@ will use the phase plane interactive tool.
 3. You can also look at other variables in the phase space, such as
    the second population :math:`y_3`/:math:`y_4`, responsible for the interictal 
    spikes in the Epileptor model. Change the lower and upper bound of the axis 
-   to see correctly the phase space.
+   to see the phase space correctly.
 
- .. figure:: figures/ModelingEpilepsy_PhasePlane_2.png
+.. figure:: figures/ModelingEpilepsy_PhasePlane_2.png
    :alt: :math:`y_3-y_4` phase plane for the second population.
    :scale: 50%
   
@@ -84,15 +82,14 @@ parahippocampus (rPHC) and amygdala (rAMYG)) as epileptic zones. We will also
 add two lesser epileptogenic regions: the inferior temporal cortex (rTCI) and
 the ventral temporal cortex (rTCV).
 
-1. First, we will configure the different parameter regimes we will use. Go on
+First, we will configure the different parameter regimes we will use. Go to
 the *Simulator* page, click on the |burst_menu| *> Phase plane*, in *Parameter
 configuration name* give the name **Other Nodes**, select the **Epileptor**
-*model*, set :math:`\mathbf{x_0=-2.4}`, and *Save new parameter configuration*
-on the right menu. Dynamic saved you should appear on the top right.  Repeat
-the operation for an **Epileptogenic zone** with :math:`\mathbf{x_0=-1.6}`, and
-a **Propagation zone** with :math:`\mathbf{x_0=-1.8}`. Set
-:math:`\mathbf{R=0.00015}`. All the other model parameters are the default ones
-and are given in the following table.
+*model*, set :math:`\mathbf{x_0=-2.4}`, and click on *Save new parameter configuration*
+on the right menu. Repeat the operation using the name **Epileptogenic zone**
+with :math:`\mathbf{x_0=-1.6}`, and then again using the name **Propagation zone**
+with :math:`\mathbf{x_0=-1.8}`. For each of these set :math:`\mathbf{r=0.00015}`.
+All the other model parameters are the default ones and are given in the following table.
 
 ===============   =======
 Model parameter    Value
@@ -102,91 +99,77 @@ Model parameter    Value
  :math:`slope`      0.0
 ===============   =======
 
-2. Now we will set up the different spatial configurations of these parameters.
-   Go back to *Simulator > Set up region Model*, on the right of *New
-   selection*, choose an name, such as **Epileptogenic Zone** and select the
-   nodes rHC, rPHC, and rAMYG, then *Save*. You can use the
-   |unselect_all_nodes| button to go faster. Add also a *Propagation Zone* with
-   the rTCI and rTCV nodes, and an *Other Nodes* selection with all nodes but
-   rHC, rPHC, rAMYG, rTCI, and rTCV. You can use the
-   |select_all_nodes| button to go faster. 
+1. Now we will set up the different spatial configurations of these parameters.
+   Go back to *Simulator > Simulation Cockpit* and keep clicking on the *Next*
+   button until you reach the model fragment. Click on *Set up region Model*.
+   On the right of *New selection*, choose a name, such as **Epileptogenic Zone**
+   and select the nodes rHC, rPHC, and rAMYG, then click on the  *Save* button.
+   You can use the |unselect_all_nodes| button to unselect all nodes and |select_all_nodes|
+   to select all nodes. Add another new selection having the name *Propagation Zone*
+   with the rTCI and rTCV nodes, and another one with the name *Other Nodes* selection
+   with all nodes but rHC, rPHC, rAMYG, rTCI, and rTCV.
+
  
-3. Now we will assign our parameter configurations to our spatial selections.
+2. Now we will assign our parameter configurations to our spatial selections.
    In the same window, in *Select model configuration* select **Epileptor -
    Epileptogenic Zone**, select you precedent *Epileptogenic Zone*
    configuration, and click on *Apply to selected nodes*. A green label should
    appear on the right of the nodes assigned. Repeat the operation for the
    *Propagation Zone* and *Other Nodes*, then don't forget to *Submit Region
    Parameters* on the right menu, which will bring you back to the Simulator
-   panel. You can check that your choices have been save if you see a list of
+   panel. You can check that your choices have been saved if you see a list of
    parameters in front of the *X0* parameter for the **Epileptor** model.
 
 .. figure:: figures/ModelingEpilepsy_ParameterChoice.png
    :alt: choice of parameters for the Epileptor model
    :scale: 60%
   
-4. We will now configure the simulation parameters.  In the *Simulator* panel,
+3. We will now configure the simulation parameters.  In the *Simulator Cockpit* panel,
    choose a **Difference** *Long-range coupling function* with
-   :math:`\mathbf{a=1.}`. We will add a  permittivity coupling and a coupling
-   on the time scale of spike-wave events. For this set
-   :math:`\mathbf{K_s=-0.2}` and :math:`\mathbf{K_f=0.1}`. Choose a
-   **HeunStochastic** *integration scheme*, set the *integration step size* to
-   **0.05 ms** and an **additive noise** with :math:`\mathbf{D=[0., 0., 0.,
-   0.0003, 0.0003, 0.]}` (we add noise only on the second population).
+   :math:`\mathbf{a=1.0}`. We will add a  permittivity coupling and a coupling
+   on the time scale of spike-wave events. For this set :math:`\mathbf{K_s=-0.2}`
+   and :math:`\mathbf{K_f=0.1}`. As state variables choose :math:`\mathbf{x2-x1;y2}`.
+   Choose a **Stochastic Heun** *integration scheme*, set the *integration step size* to
+   **0.05 ms** and an **additive noise** with :math:`\mathbf{D=[0.0, 0.0, 0.0,
+   0.0003, 0.0003, 0.0]}` (we add noise only on the second population).
   
-5. For the *monitors*, we choose a **Temporal average**, an **EEG** and an
-   **Intracerebral / Stereo EEG** monitor (hit CTRL to select several
-   monitors). For all three *Pre-monitor expressions*, write
-   :math:`mathbf{-y0+y3;y2}` (this corresponds to first LFP signal, and second
+4. For the *monitors*, we choose a **Temporal average**, an **EEG** and an
+   **Intracerebral / Stereo Eeg** monitor. For all three monitors choose the
+   state variables :math:`\mathbf{x2-x1;y2}` (this corresponds to first LFP signal, and second
    the slow dynamics of the Epileptor). Choose also the right *Projection
    matrix*, *Region mapping* and *Sensors* for each monitor, and a *samplng
    period* of **1 ms**. 
    
-6. Choose a *simulation length* of **6000ms**.
+5. Choose a *simulation length* of **6000ms**.
 
-7.   *Configure View* and add a *Brain Visualizer*. *Save your choices*. 
-    
-The results are already computed for you in *Region\_TemporalLobe* simulation.
-
-
-8. Visualize the time series by clicking on the |launch_vis| button. Click on
+6. Visualize the region time series using the *Time SeriesVisualizer (SVG/d3)*. Click on
    *Select Input Signals* and select all the regions. From this same menu, you
    can select which state variables of interest will be displayed. For
-   instance, visualize :math:`-y_0+y_3`. You will need to increase the scaling
-   by clicking on |bm|. You can see a succession of 3 seizures, use the mouse
-   to zoom in and out in the time series area.
+   instance, visualize :math:`x_2-x_1`. You will need to increase the scaling
+   by clicking on |bm|. Use the mouse to zoom in and out in the time series area.
 
 .. figure:: figures/ModelingEpilepsy_tstavg.png
    :alt: Temporal average time series of the simulation 
    :scale: 30%
 
-9. Now click on |bm|, select the EEG time series, and *Update the Visualizer*.
-   Chnage the scaling and the number of channels to see the seizures. 
+7. Now click on |bm|, select the EEG time series, and *Update the Visualizer*.
+   Chnage the scaling and the number of channels.
 
- .. figure:: figures/ModelingEpilepsy_tseeg.png
+.. figure:: figures/ModelingEpilepsy_tseeg.png
    :alt: EEG time series of the simulation 
    :scale: 30%
 
   
-10. Repeat the operation for the SEEG time series, but select only the
-    electrodes TB, A, B, C, and GPH which are in the right temporal lobe. 
+8. Repeat the operation for the SEEG time series, but select only the
+    electrodes TB1, A1, B1, C1, and GPH which are in the right temporal lobe.
 
 .. figure:: figures/ModelingEpilepsy_tsseeg.png
    :alt: SEEG time series of the simulation 
    :scale: 30%
 
-11. Go back to the *Simulator* page and visualize the results in the *Brain
-    Viewer*, you will need to increase the rendering speed (timesteps per Frame)
+9. Visualize the time series using the *Brain Activity Visualizer*.
+    You will need to increase the rendering speed (timesteps per Frame)
     by clicking on |bm|.
-
-
-.. figure:: figures/ModelingEpilepsy_bv.png
-   :alt: time series of the simulation in the Brain Viewer 
-   :scale: 30%
-
-The length of seizures here is not realistic (:math:`\sim 2` s),
-but you can always obtain realistic time by multiplying all the
-derivatives of the model by a small factor.
 
 
 -------------------
@@ -199,14 +182,14 @@ are drug- resistant. We will simulate the hypothetic case of a surgical
 resection of the amygdala and the hippocampus, but leaving the parahippocampal
 cortex.
 
-1. Go to *Connectivity > Large scale Connectivity*. All nodes of the
-   connectivity matrix are already selected.
+1. Go to *Connectivity > Large scale Connectivity*. Click on the *Launch* button.
+   All nodes of the connectivity matrix are already selected.
 
 2. Click  on *Q1* to go to Quadrant 4, and click on rAMYG and rHC to unselect
-   these nodes.  Give the name **Resection** at the right of *Large Scale
-   Matrix* and save it by clicking on |star|. Here we just created a new
-   connectivity matrix while deleting all edges connected to the right amygdala
-   and hippocampus. 
+   these nodes if they are not already unselected.  Give the name **Resection**
+   at the right of *Large Scale Matrix* and save it by clicking on |star|.
+   Here we just created a new connectivity matrix while deleting all edges
+   connected to the right amygdala and hippocampus.
 
 .. figure:: figures/ModelingEpilepsy_ResectedMatrix.png
    :alt: Resected connectivity matrix
@@ -237,13 +220,13 @@ Triggering a seizure by stimulation
 -----------------------------------
 
 We are now going to model an electric stimulation and trigger a seizure. We set
-the whole brain to non-epileptogenic but close to the threshold
+the whole brain to non-epileptogenic but close to the threshold:
 
-#. Go to *stimulus > Region Stimulus*
+1. Go to *stimulus > Region Stimulus*
 
-#. Give a name to the new stimulus
+2. Give a name to the new stimulus
 
-#. Choose a **PulseTrain** stimulation in time with parameters given in the following table:
+3. Choose a **PulseTrain** stimulation in time with parameters given in the following table:
 
 ===================   =======
 Temporal parameters    Value
@@ -261,19 +244,14 @@ Temporal parameters    Value
 
 
 4. Click on *Set Region Scaling*, select the **Propagation Zone** nodes, and
-   apply a scaling of 1., and click on *Save New Stimulus on Region* in the
+   apply a scaling of 1.0 , and click on *Save New Stimulus on Region* in the
    right menu.
 
-The stimulus was already set for you under the name
-*Stim_PropagationZone*
+5.  Go to simulator and copy the former simulation.
 
-6.  Go to simulator and copy the former simulation.
+6.  Choose the *Stim_PropagationZone* stimulus.
 
-7.  Choose the *Stim_PropagationZone* stimulus.
-
-You can see the result of this simulation in *stimulation_Region_TemporalLobe*
-
-8. Visualize the time series, zoom in to better see the effect of the stimulation.
+7. Visualize the time series, zoom in to better see the effect of the stimulation.
 
 .. figure:: figures/ModelingEpilepsy_stimulationts.png
    :alt: Time Series for a stimulation
@@ -292,7 +270,7 @@ For more information on the **Epileptor** model, see Jirsa_et_al_, El_Houssaini_
 Support
 =======
 
-The official TVB webiste is
+The official TVB website is
 `www.thevirtualbrain.org <http://www.thevirtualbrain.org>`__. All the
 documentation and tutorials are hosted on
 `http://docs.thevirtualbrain.org <http://docs.thevirtualbrain.org>`__. You’ll
