@@ -38,6 +38,7 @@ from datetime import datetime
 from abc import ABCMeta, abstractmethod
 from distutils.dir_util import copy_tree
 
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities import load
 from tvb.core.entities.load import load_entity_by_gid
@@ -170,14 +171,15 @@ class ABCExporter(metaclass=ABCMeta):
 
     def prepare_datatypes_for_export(self, data):
         all_datatypes = self._get_all_data_types_arr(data)
-        burst = dao.get_burst_for_operation_id(data.fk_from_operation)
 
-        if data.fk_operation_group == burst.fk_operation_group:
-            data_2 = dao.get_datatypegroup_by_op_group_id(burst.fk_metric_operation_group)
+        # We are exporting a group of datatype measures so we need to find the group of time series
+        if hasattr(all_datatypes[0], 'fk_source_gid'):
+            ts = h5.load_entity_by_gid(all_datatypes[0].fk_source_gid)
+            data_2 = dao.get_datatypegroup_by_op_group_id(ts.parent_operation.fk_operation_group)
             all_datatypes_2 = self._get_all_data_types_arr(data_2)
             all_datatypes = all_datatypes + all_datatypes_2
         else:
-            data_2 = dao.get_datatypegroup_by_op_group_id(burst.fk_operation_group)
+            data_2 = dao.get_datatype_measure_group_from_ts_from_pse(all_datatypes[0].gid, DatatypeMeasureIndex)
             all_datatypes_2 = self._get_all_data_types_arr(data_2)
             all_datatypes = all_datatypes_2 + all_datatypes
 
