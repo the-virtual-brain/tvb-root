@@ -63,16 +63,16 @@ class TVBLinkedExporter(ABCExporter):
         """
         download_file_name = self._get_export_file_name(data)
         if self.is_data_a_group(data):
-            all_datatypes = self.prepare_datatypes_for_export(data)
+            all_datatypes, op_file_dict = self.prepare_datatypes_for_export(data)
 
             # Copy the linked datatypes
             dt_path_list = []
             data_type = all_datatypes[0]
             self.gather_datatypes_for_copy(data_type, dt_path_list)
-            export_folder = self.storage_interface.copy_datatypes(dt_path_list, data_type)
+            export_folder = self.storage_interface.copy_datatypes(dt_path_list[1:], data_type)
 
             # Create ZIP archive
-            zip_file = self.storage_interface.export_datatypes_structure(all_datatypes, data, download_file_name,
+            zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name,
                                                                          project.name, export_folder)
 
             return download_file_name, zip_file, True

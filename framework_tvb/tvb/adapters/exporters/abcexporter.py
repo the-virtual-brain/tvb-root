@@ -154,33 +154,12 @@ class ABCExporter(metaclass=ABCMeta):
         """
         return isinstance(data, DataTypeGroup)
 
-    def copy_ref_files_to_temp_dir(self, data_type, export_folder, temp_export_folders, references_folder_path):
-        data_path = h5.path_for_stored_index(data_type)
-        with H5File.from_file(data_path) as f:
-            sub_dt_refs = f.gather_references()
-
-            for reference in sub_dt_refs:
-                if reference[1]:
-                    dt = dao.get_datatype_by_gid(reference[1].hex)
-                    ref_data_path = h5.path_for_stored_index(dt)
-
-                    # Create folder for references if it's not created already
-                    if not references_folder_path:
-                        reference_folder_name = os.path.basename(os.path.dirname(ref_data_path))
-                        references_folder_path = os.path.join(export_folder, reference_folder_name)
-                        if not os.path.exists(references_folder_path):
-                            os.makedirs(references_folder_path)
-                            temp_export_folders.append(references_folder_path)
-
-                    ref_file_path = os.path.join(references_folder_path, os.path.basename(ref_data_path))
-                    if not os.path.exists(ref_file_path):
-                        FilesHelper().copy_file(ref_data_path, ref_file_path)
-                    self.copy_ref_files_to_temp_dir(dt, export_folder, temp_export_folders, references_folder_path)
-        return references_folder_path
-
     def gather_datatypes_for_copy(self, data, dt_path_list):
         data_path = h5.path_for_stored_index(data)
-        dt_path_list.append(data_path)
+
+        if data_path not in dt_path_list:
+            dt_path_list.append(data_path)
+
         with H5File.from_file(data_path) as f:
             sub_dt_refs = f.gather_references()
 
@@ -195,11 +174,12 @@ class ABCExporter(metaclass=ABCMeta):
 
         if data.fk_operation_group == burst.fk_operation_group:
             data_2 = dao.get_datatypegroup_by_op_group_id(burst.fk_metric_operation_group)
+            all_datatypes_2 = self._get_all_data_types_arr(data_2)
+            all_datatypes = all_datatypes + all_datatypes_2
         else:
             data_2 = dao.get_datatypegroup_by_op_group_id(burst.fk_operation_group)
-
-        all_datatypes_2 = self._get_all_data_types_arr(data_2)
-        all_datatypes.extend(all_datatypes_2)
+            all_datatypes_2 = self._get_all_data_types_arr(data_2)
+            all_datatypes = all_datatypes_2 + all_datatypes
 
         if all_datatypes is None or len(all_datatypes) == 0:
             raise ExportException("Could not export a data type group with no data!")

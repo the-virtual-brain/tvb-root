@@ -85,6 +85,11 @@ class Operation2ImportData(object):
         self.info_from_xml = info_from_xml
 
     @property
+    def is_old_form(self):
+        return (self.operation is not None and hasattr(self.operation, "import_file") and
+                self.operation.import_file is not None and self.main_view_model is None)
+
+    @property
     def order_field(self):
         return self.operation.create_date if (self.operation is not None) else datetime.now()
 
@@ -201,6 +206,28 @@ class ImportService(object):
             self._store_imported_images(project, temp_project_path, project.name)
             if StorageInterface.encryption_enabled():
                 self.storage_interface.remove_project(project, True)
+
+    def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
+        """
+        Loads datatypes from operation folder
+        :returns: Datatype entities as dict {original_path: Dt instance}
+        """
+        all_datatypes = {}
+        for file_name in os.listdir(src_op_path):
+            if self.storage_interface.ends_with_tvb_storage_file_extension(file_name):
+                h5_file = os.path.join(src_op_path, file_name)
+                try:
+                    file_update_manager = FilesUpdateManager()
+                    file_update_manager.upgrade_file(h5_file)
+                    datatype = self.load_datatype_from_file(h5_file, operation_entity.id,
+                                                            datatype_group, operation_entity.fk_launched_in)
+                    all_datatypes[h5_file] = datatype
+
+                except IncompatibleFileManagerException:
+                    os.remove(h5_file)
+                    self.logger.warning("Incompatible H5 file will be ignored: %s" % h5_file)
+                    self.logger.exception("Incompatibility details ...")
+        return all_datatypes
 
     @staticmethod
     def check_import_references(file_path, datatype):
@@ -340,6 +367,7 @@ class ImportService(object):
                     operation = Operation(view_model.gid.hex, project.fk_admin, project.id, alg.id,
                                           status=STATUS_FINISHED,
                                           start_date=datetime.now(), completion_date=datetime.now())
+                    operation.create_date = datetime.min
                     self.logger.debug("Found no ViewModel in folder, so we default to " + str(operation))
 
                     if importer_operation_id:
@@ -393,11 +421,34 @@ class ImportService(object):
                                                                 linked_group_op_id)
 
         if is_group and len(ordered_operations) > 0:
+            first_op = dao.get_operation_by_id(importer_operation_id)
+            vm_path = h5.determine_filepath(first_op.view_model_gid, os.path.dirname(import_path))
+            os.remove(vm_path)
+
             ordered_operations[0].operation.id = importer_operation_id
 
         for operation_data in ordered_operations:
+            if operation_data.is_old_form:
+                operation_entity, datatype_group = self.import_operation(operation_data.operation)
+                new_op_folder = self.storage_interface.get_project_folder(project.name, str(operation_entity.id))
 
-            if operation_data.main_view_model is not None:
+                try:
+                    operation_datatypes = self._load_datatypes_from_operation_folder(operation_data.operation_folder,
+                                                                                     operation_entity, datatype_group)
+                    # Create and store view_model from operation
+                    self.create_view_model(operation_entity, operation_data, new_op_folder)
+
+                    self._store_imported_datatypes_in_db(project, operation_datatypes)
+                    imported_operations.append(operation_entity)
+                except MissingReferenceException:
+                    operation_entity.status = STATUS_ERROR
+                    dao.store_entity(operation_entity)
+
+            elif operation_data.main_view_model is not None:
+                operation_data.operation.create_date = datetime.now()
+                operation_data.operation.start_date = datetime.now()
+                operation_data.operation.completion_date = datetime.now()
+
                 do_merge = False
                 if importer_operation_id or (ordered_operations[0] == (operation_data) and linked_group_op_id):
                     do_merge = True

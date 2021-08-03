@@ -281,6 +281,10 @@ class OperationService:
     def _update_vm_generic_operation_tag(view_model, operation):
         project = dao.get_project_by_id(operation.fk_launched_in)
         h5_path = h5.path_for(operation.id, ViewModelH5, view_model.gid, project.name, type(view_model).__name__)
+
+        if not os.path.exists(h5_path):
+            return
+
         with ViewModelH5(h5_path, view_model) as vm_h5:
             vm_h5.operation_tag.store(operation.user_group)
 
