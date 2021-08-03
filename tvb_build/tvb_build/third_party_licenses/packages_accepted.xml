@@ -2890,26 +2890,6 @@
         <copyright-notice value="Copyright (c) 2013 noamraph"/>
         <description value="progress maker for loops"/>
      </dependency>
-    <dependency env="[win,mac,linux]" name="typing">
-        <full-name value="typing"/>
-        <project-home value="https://docs.python.org/3/library/typing.html"/>
-        <version value="3.7.4.3"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_typing.txt"/>
-        <license-type value="PSF_"/>
-        <copyright-notice value="Copyright (c) 1991 - 1995, Stichting Mathematisch Centrum Amsterdam"/>
-        <description value="Type Hints for Python"/>
-     </dependency>
-    <dependency env="[win,mac,linux]" name="typing-extensions">
-        <full-name value="typing-extensions"/>
-        <project-home value="https://docs.python.org/3/library/typing.html"/>
-        <version value="3.7.4.3"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_typing.txt"/>
-        <license-type value="PSF_"/>
-        <copyright-notice value="Copyright (c) 1991 - 1995, Stichting Mathematisch Centrum Amsterdam"/>
-        <description value="Type Hints for Python"/>
-     </dependency>
     <dependency env="[win,mac,linux]" name="yarl">
         <full-name value="yarl"/>
         <project-home value="https://github.com/aio-libs/yarl/"/>
