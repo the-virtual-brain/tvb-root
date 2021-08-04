@@ -105,23 +105,25 @@ class EpileptorModelPlot:
         self.burster_choice_label = widgets.Label('Burster Choice:')
         self.burster_choice = widgets.Dropdown(options=list(self.default_burster_parameters.keys()), value='default')
         
-        self.burster_label = widgets.Label('Burster Parameters')
-        self.burster_A = widgets.Text(placeholder='Enter the value of burster parameter "A"', value = None, continuous_update=False)
-        self.burster_B = widgets.Text(placeholder='Enter the value of burster parameter "B"', value = None, continuous_update=False)
-        self.burster_c = widgets.Text(placeholder='Enter the value of burster parameter "c"', value = None, continuous_update=False)
+        # self.burster_label = widgets.Label('Burster Parameters')
+        # self.burster_A = widgets.Text(placeholder='Enter the value of burster parameter "A"', value = None, continuous_update=False)
+        # self.burster_B = widgets.Text(placeholder='Enter the value of burster parameter "B"', value = None, continuous_update=False)
+        # self.burster_c = widgets.Text(placeholder='Enter the value of burster parameter "c"', value = None, continuous_update=False)
         
-        self.buster_param_box_items = [self.burster_choice_label, self.burster_choice, self.burster_label, self.burster_A, self.burster_B, self.burster_c]
+        # self.buster_param_box_items = [self.burster_choice_label, self.burster_choice, self.burster_label, self.burster_A, self.burster_B, self.burster_c]
+        # self.burster_param_box = widgets.VBox(self.buster_param_box_items, layout=self.box_layout)
+        self.buster_param_box_items = [self.burster_choice_label, self.burster_choice]
         self.burster_param_box = widgets.VBox(self.buster_param_box_items, layout=self.box_layout)
 
         self.default_widget_values['b_choice'] = self.burster_choice.value
-        self.default_widget_values['b_A'] = self.burster_A.value
-        self.default_widget_values['b_B'] = self.burster_B.value
-        self.default_widget_values['b_c'] = self.burster_c.value
+        # self.default_widget_values['b_A'] = self.burster_A.value
+        # self.default_widget_values['b_B'] = self.burster_B.value
+        # self.default_widget_values['b_c'] = self.burster_c.value
 
         self.burster_choice.observe(self.update_burster_parameters, 'value')
-        self.burster_A.observe(self.update_burster_parameters, 'value')
-        self.burster_B.observe(self.update_burster_parameters, 'value')
-        self.burster_c.observe(self.update_burster_parameters, 'value')
+        # self.burster_A.observe(self.update_burster_parameters, 'value')
+        # self.burster_B.observe(self.update_burster_parameters, 'value')
+        # self.burster_c.observe(self.update_burster_parameters, 'value')
 
     def add_sim_widgets(self):
         self.simulation_label = widgets.Label('Simulation Parameters')
@@ -148,6 +150,11 @@ class EpileptorModelPlot:
         self.dstar_checkbox.observe(self.update_model_parameters,'value')
         self.dstar_value.observe(self.update_model_parameters,'value')
         self.mod_checkbox.observe(self.update_model_parameters,'value')
+
+    def add_new_burster_class(self, burster_name=None, burster_value_A = None, burster_value_B = None, burster_value_c = None, burster_sl=10):
+        if burster_name is not None and burster_value_A is not None and burster_value_B is not None and burster_value_c is not None:
+            self.default_burster_parameters[burster_name] = {'A':burster_value_A, 'B':burster_value_B, 'c':burster_value_c, 'sl': burster_sl}
+            self.burster_choice = widgets.Dropdown(options=list(self.default_burster_parameters.keys()), value='default')
 
     def reset_params(self):
         self.burster_choice.value = self.default_widget_values['b_choice']
@@ -186,12 +193,12 @@ class EpileptorModelPlot:
     def update_burster_parameters(self, val):
         self.burster_parameters = self.default_burster_parameters[self.burster_choice.value]
         
-        if self.burster_A.value:
-            self.burster_parameters['A'] = self.burster_A.value
-        if self.burster_B.value:
-            self.burster_parameters['B'] = self.burster_B.value
-        if self.burster_c.value:
-            self.burster_parameters['c'] = self.burster_c.value
+        # if self.burster_A.value:
+        #     self.burster_parameters['A'] = self.burster_A.value
+        # if self.burster_B.value:
+        #     self.burster_parameters['B'] = self.burster_B.value
+        # if self.burster_c.value:
+        #     self.burster_parameters['c'] = self.burster_c.value
 
         A = self.burster_parameters['A']
         B = self.burster_parameters['B']
@@ -223,13 +230,6 @@ class EpileptorModelPlot:
             self.configure_model()
             self.configure_sim()
             self.plot_model()
-        '''if self.mod_checkbox.value:
-            # RESET PARAMS TO DEFAULT AND DISABLE PARAMS
-            self.reset_params()
-            self.trigger_model_params(disabled=True)
-            self.model.modification = np.array([self.mod_checkbox.value])
-            self.configure_sim()
-            self.plot_model()'''
 
 
     def configure_model(self, slow=False):
