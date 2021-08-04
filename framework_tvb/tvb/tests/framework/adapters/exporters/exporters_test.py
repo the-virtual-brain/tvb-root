@@ -35,8 +35,8 @@ import os.path
 import uuid
 import zipfile
 from contextlib import closing
-
 import pytest
+
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
@@ -151,8 +151,10 @@ class TestExporters(TransactionalTestCase):
         """
         This method checks export of a data type group with Links
         """
-        datatype_group = datatype_group_factory(project=self.test_project, store_vm=True, use_time_series_region=True)
-        file_name, file_path, _ = self.export_manager.export_data(datatype_group, self.TVB_LINKED_EXPORTER, self.test_project)
+        ts_datatype_group, dm_datatype_group = datatype_group_factory(project=self.test_project, store_vm=True,
+                                                                      use_time_series_region=True)
+        file_name, file_path, _ = self.export_manager.export_data(ts_datatype_group, self.TVB_LINKED_EXPORTER,
+                                                                  self.test_project)
 
         assert file_name is not None, "Export process should return a file name"
         assert file_path is not None, "Export process should return path to export file"
@@ -178,20 +180,22 @@ class TestExporters(TransactionalTestCase):
 
             assert links_folder_found is not None, "Links folder was not exported"
 
-            count_datatypes = dao.count_datatypes_in_group(datatype_group.id)
+            count_datatypes = dao.count_datatypes_in_group(ts_datatype_group.id)
+            count_datatypes += dao.count_datatypes_in_group(dm_datatype_group.id)
 
             # Check if ZIP files contains files for data types and view models (multiple H5 files in case of a Sim)
             # +1 For Links folder
             assert count_datatypes + 1 == len(list_of_folders)
             # +3 for the 3 files in Links folder: Connectivity, Surface, Region Mapping
-            assert count_datatypes * 6 + 3 == len(list_of_files)
+            # time series have 6 files, datatype measures have 2 files
+            assert (count_datatypes / 2) * 6 + (count_datatypes / 2) * 2 + 3 == len(list_of_files)
 
     def test_tvb_export_for_datatype_group(self, datatype_group_factory):
         """
         This method checks export of a data type group
         """
-        datatype_group = datatype_group_factory(project=self.test_project, store_vm=True)
-        file_name, file_path, _ = self.export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.test_project)
+        ts_datatype_group, dm_datatype_group = datatype_group_factory(project=self.test_project, store_vm=True)
+        file_name, file_path, _ = self.export_manager.export_data(dm_datatype_group, self.TVB_EXPORTER, self.test_project)
 
         assert file_name is not None, "Export process should return a file name"
         assert file_path is not None, "Export process should return path to export file"
@@ -209,11 +213,12 @@ class TestExporters(TransactionalTestCase):
                 if dir_name not in list_of_folders:
                     list_of_folders.append(dir_name)
 
-            count_datatypes = dao.count_datatypes_in_group(datatype_group.id)
+            count_datatypes = dao.count_datatypes_in_group(ts_datatype_group.id)
+            count_datatypes += dao.count_datatypes_in_group(dm_datatype_group.id)
 
             # Check if ZIP files contains files for data types and view models (multiple H5 files in case of a Sim)
             assert count_datatypes == len(list_of_folders)
-            assert count_datatypes * 6 == len(list_of_files)
+            assert (count_datatypes / 2) * 6 + (count_datatypes / 2) * 2 == len(list_of_files)
 
     def test_export_with_invalid_data(self, dummy_datatype_index_factory):
         """

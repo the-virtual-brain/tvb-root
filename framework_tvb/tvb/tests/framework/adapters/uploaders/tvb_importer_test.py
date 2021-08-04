@@ -79,7 +79,7 @@ class TestTVBImporter(BaseTestCase):
         assert os.path.exists(self.h5_file_path), "Simple data type was not exported correct"
 
         # Generate data type group and export it to ZIP file
-        datatype_group = datatype_group_factory(project=self.test_project)
+        datatype_group, _ = datatype_group_factory(project=self.test_project, store_vm=True)
         _, self.zip_file_path, _ = export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.test_project)
         assert os.path.exists(self.zip_file_path), "Data type group was not exported correct"
 
@@ -139,7 +139,7 @@ class TestTVBImporter(BaseTestCase):
         _, exported_h5_file, _ = export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER, self.test_project)
 
         #Clean DB
-        FilesHelper().remove_project_structure(self.test_project.name)
+        StorageInterface().remove_project_structure(self.test_project.name)
         self.clean_database(delete_folders=False)
 
         # Recreate project, but a clean one where to import data

@@ -39,6 +39,7 @@ from datetime import datetime
 from time import sleep
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -50,6 +51,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.basic.neotraits.api import Range
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure, DatatypeMeasureH5
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.simulator_service import SimulatorService
@@ -423,8 +425,9 @@ def time_series_factory():
 
 @pytest.fixture()
 def time_series_index_factory(time_series_factory, operation_factory):
-    def build(data=None, op=None):
-        ts = time_series_factory(data)
+    def build(ts=None, data=None, op=None):
+        if ts is None:
+            ts = time_series_factory(data)
 
         if op is None:
             op = operation_factory()
@@ -448,8 +451,8 @@ def time_series_index_factory(time_series_factory, operation_factory):
 
 
 @pytest.fixture()
-def time_series_region_index_factory(operation_factory):
-    def build(connectivity, region_mapping, test_user=None, test_project=None, op=None):
+def time_series_region_factory():
+    def build(connectivity, region_mapping):
         time = numpy.linspace(0, 1000, 4000)
         data = numpy.zeros((time.size, 1, 3, 1))
         data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
@@ -459,6 +462,16 @@ def time_series_region_index_factory(operation_factory):
 
         ts = TimeSeriesRegion(time=time, data=data, sample_period=1.0 / 4000, connectivity=connectivity,
                               region_mapping=region_mapping)
+        return ts
+
+    return build
+
+
+@pytest.fixture()
+def time_series_region_index_factory(operation_factory, time_series_region_factory):
+    def build(connectivity, region_mapping, ts=None, test_user=None, test_project=None, op=None):
+        if ts is None:
+            ts = time_series_region_factory(connectivity, region_mapping)
 
         if not op:
             op = operation_factory(test_user=test_user, test_project=test_project)
@@ -528,13 +541,20 @@ def value_wrapper_factory():
 
 @pytest.fixture()
 def datatype_measure_factory():
-    def build(analyzed_entity, operation, datatype_group, metrics='{"v": 3}'):
+    def build(analyzed_entity_index, analyzed_entity, operation, datatype_group, metrics='{"v": 3}'):
         measure = DatatypeMeasureIndex()
         measure.metrics = metrics
-        measure.source = analyzed_entity
+        measure.source = analyzed_entity_index
         measure.fk_from_operation = operation.id
         measure.fk_datatype_group = datatype_group.id
         measure = dao.store_entity(measure)
+
+        dm = DatatypeMeasure(analyzed_datatype=analyzed_entity, metrics=json.loads(metrics))
+        dm_path = h5.path_for_stored_index(measure)
+
+        with DatatypeMeasureH5(dm_path) as dm_h5:
+            dm_h5.store(dm)
+            dm_h5.store_generic_attributes(GenericAttributes())
 
         return measure
 
@@ -542,10 +562,10 @@ def datatype_measure_factory():
 
 
 @pytest.fixture()
-def datatype_group_factory(connectivity_factory, time_series_index_factory, datatype_measure_factory,
-                           project_factory, user_factory, operation_factory, time_series_region_index_factory,
-                           region_mapping_factory, surface_factory, connectivity_index_factory,
-                           region_mapping_index_factory, surface_index_factory):
+def datatype_group_factory(connectivity_factory, time_series_index_factory, time_series_factory,
+                           time_series_region_factory, datatype_measure_factory, project_factory, user_factory,
+                           operation_factory, time_series_region_index_factory, region_mapping_factory, surface_factory,
+                           connectivity_index_factory, region_mapping_index_factory, surface_index_factory):
     def build(project=None, store_vm=False, use_time_series_region=False, status=STATUS_FINISHED):
         # there store the name and the (hi, lo, step) value of the range parameters
         range_1 = ["row1", [1, 2, 6]]
@@ -611,10 +631,13 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                                                         range_2[0]: range_val2}))
                 op = dao.store_entity(op)
                 if use_time_series_region:
-                    ts_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping,
-                                                                test_user=user, test_project=project, op=op)
+                    ts = time_series_region_factory(connectivity=connectivity, region_mapping=region_mapping)
+                    ts_index = time_series_region_index_factory(ts=ts, connectivity=connectivity,
+                                                                region_mapping=region_mapping, test_user=user,
+                                                                test_project=project, op=op)
                 else:
-                    ts_index = time_series_index_factory(op=op)
+                    ts = time_series_factory()
+                    ts_index = time_series_index_factory(ts=ts, op=op)
                 ts_index.fk_datatype_group = datatype_group.id
                 dao.store_entity(ts_index)
 
@@ -623,7 +646,7 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                                   range_values=json.dumps({range_1[0]: range_val1,
                                                            range_2[0]: range_val2}))
                 op_ms = dao.store_entity(op_ms)
-                datatype_measure_factory(ts_index, op_ms, dt_group_ms)
+                datatype_measure_factory(ts_index, ts, op_ms, dt_group_ms)
 
                 if store_vm:
                     view_model = copy.deepcopy(view_model)
@@ -644,7 +667,7 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                     datatype_group = dao.store_entity(datatype_group)
                     dt_group_ms = dao.store_entity(dt_group_ms)
 
-        return datatype_group
+        return datatype_group, dt_group_ms
 
     return build
 

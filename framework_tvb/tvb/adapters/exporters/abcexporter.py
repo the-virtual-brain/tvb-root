@@ -36,7 +36,6 @@ Root class for export functionality.
 import os
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
-from distutils.dir_util import copy_tree
 
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.exporters.exceptions import ExportException
@@ -177,11 +176,11 @@ class ABCExporter(metaclass=ABCMeta):
             ts = h5.load_entity_by_gid(all_datatypes[0].fk_source_gid)
             data_2 = dao.get_datatypegroup_by_op_group_id(ts.parent_operation.fk_operation_group)
             all_datatypes_2 = self._get_all_data_types_arr(data_2)
-            all_datatypes = all_datatypes + all_datatypes_2
+            all_datatypes = all_datatypes_2 + all_datatypes
         else:
             data_2 = dao.get_datatype_measure_group_from_ts_from_pse(all_datatypes[0].gid, DatatypeMeasureIndex)
             all_datatypes_2 = self._get_all_data_types_arr(data_2)
-            all_datatypes = all_datatypes_2 + all_datatypes
+            all_datatypes = all_datatypes + all_datatypes_2
 
         if all_datatypes is None or len(all_datatypes) == 0:
             raise ExportException("Could not export a data type group with no data!")
