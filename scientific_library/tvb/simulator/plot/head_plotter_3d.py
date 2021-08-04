@@ -35,15 +35,9 @@ from tvb.simulator.lab import *
 import ipywidgets as widgets
 from IPython.display import display
 
-class Plotter3D:
+class HeadPlotter3D:
     def __init__(self):
         pass
-        # self.sens_meg = sensors.SensorsMEG.from_file()
-        # self.conn = connectivity.Connectivity.from_file()
-        # self.skin = surfaces.SkinAir.from_file()
-        # self.sens_eeg = sensors.SensorsEEG.from_file()
-        # self.ctx = cortex.Cortex.from_file()
-        # self.loc_conn = local_connectivity.LocalConnectivity(cutoff=20.0, surface=self.ctx.region_mapping_data.surface)
 
     def display_source_sensor_geometry(self, meg_sensors = sensors.SensorsMEG.from_file(),
                                         eeg_sensors = sensors.SensorsEEG.from_file(),
