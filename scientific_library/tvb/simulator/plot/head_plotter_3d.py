@@ -39,17 +39,32 @@ class HeadPlotter3D:
     def __init__(self):
         pass
 
-    def display_source_sensor_geometry(self, meg_sensors = sensors.SensorsMEG.from_file(),
-                                        eeg_sensors = sensors.SensorsEEG.from_file(),
-                                        conn = connectivity.Connectivity.from_file(),
-                                        skin = surfaces.SkinAir.from_file()):
-        box_layout = widgets.Layout(border='solid 1px black', margin='3px 3px 3px 3px', padding='2px 2px 2px 2px')
+    def display_source_sensor_geometry(self, meg_sensors = None, eeg_sensors = None, conn = None, skin = None):
+        # type: (sensors.SensorsMEG, sensors.SensorsEEG, connectivity.Connectivity, surfaces.SkinAir) -> None
+        """
+        :param meg_sensors: Optional sensors.SensorsMEG instance. When none, we will try loading a default
+        :param eeg_sensors: Optional sensors.SensorsEEG instance. When none, we will try loading a default
+        :param conn: Optional connectivity.Connectivity instance. When none, we will try loading a default
+        :param skin: Optional surfaces.SkinAir instance. When none, we will try loading a default
+        """
+
+        if meg_sensors is None:
+            meg_sensors = sensors.SensorsMEG.from_file()
+        if eeg_sensors is None:
+            eeg_sensors = sensors.SensorsEEG.from_file()
+        if conn is None:
+            conn = connectivity.Connectivity.from_file()
+        if skin is None:
+            skin = surfaces.SkinAir.from_file()
         
+        # Configure Skin Surface
         skin.configure()
-        
+
+        # Configure EEG Sensors
         eeg_sensors.configure()
 
-        # CONTROLS
+        # WIDGET Controls and Layout
+        box_layout = widgets.Layout(border='solid 1px black', margin='3px 3px 3px 3px', padding='2px 2px 2px 2px')
         params = dict()
         roi_checkbox = widgets.Checkbox(description="Show ROI Centers", value=False)
         eeg_checkbox = widgets.Checkbox(description="Show EEG Sensors", value=False)
@@ -57,10 +72,12 @@ class HeadPlotter3D:
 
         control_box = widgets.HBox([roi_checkbox,eeg_checkbox,meg_checkbox], layout=box_layout)
 
+        # Connecting widgets with plot parameters
         params['ROI'] = roi_checkbox
         params['EEG'] = eeg_checkbox
         params['MEG'] = meg_checkbox        
 
+        # Plotter Function
         def plot(**plot_params):
             ax = plt.subplot(111, projection='3d')
 
@@ -79,6 +96,7 @@ class HeadPlotter3D:
                 ax.plot(x, y, z, 'bx')
 
             if plot_params['MEG']:
+                # MEG sensors as red +'s
                 x, y, z = meg_sensors.locations.T
                 ax.plot(x, y, z, 'r+')
         plt.figure()
@@ -86,16 +104,24 @@ class HeadPlotter3D:
         out = widgets.interactive_output(plot, params)
         display(control_box,out)
 
-    def display_surface_local_connectivity(self, ctx = cortex.Cortex.from_file()):
-
-        # configure cortical surface
-        loc_conn = local_connectivity.LocalConnectivity(cutoff=20.0, surface=ctx.region_mapping_data.surface)
-        loc_conn.equation.parameters['sigma'] = 10.0
-        loc_conn.equation.parameters['amp'] = 1.0
-        ctx.local_connectivity = loc_conn
-        ctx.coupling_strength = np.array([0.0115])
+    def display_surface_local_connectivity(self, ctx=None, loc_conn=None):
+        # type: (cortex.Cortex, local_connectivity.LocalConnectivity) -> None
+        """
+        :param cortex: Optional cortex.Cortex instance. When none, we will try loading a default
+        :param loc_conn: Optional. If None, and
+        """
+        # Start by configuring the cortical surface
+        if ctx is None:
+            ctx = cortex.Cortex.from_file()
+        if ctx.local_connectivity is None:
+            if loc_conn is None:
+                loc_conn = local_connectivity.LocalConnectivity(cutoff=20.0, surface=ctx.region_mapping_data.surface)
+            loc_conn.equation.parameters['sigma'] = 10.0
+            loc_conn.equation.parameters['amp'] = 1.0
+            ctx.local_connectivity = loc_conn
+        ctx.coupling_strength = np.array([0.0115])        
         ctx.configure()
-
+        
         # plot 
         plt.figure()
         ax = plt.subplot(111, projection='3d')
