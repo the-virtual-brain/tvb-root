@@ -46,7 +46,6 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexVie
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration
@@ -1166,7 +1165,7 @@ def update(input_file, burst_match_dict):
 
     try:
         # Take information out from the Operation.xml file
-        if OPERATION_XML in files_in_folder:
+        if op_id is not None:
             operation_file_path = os.path.join(folder, OPERATION_XML)
             operation = dao.get_operation_by_id(op_id)
             xml_operation, operation_xml_parameters, algorithm = \

@@ -42,10 +42,10 @@ from cgi import FieldStorage
 from datetime import datetime
 
 from cherrypy._cpreqbody import Part
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.attributes import manager_of_class
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.ex import TraitTypeError
+from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.basic.profile import TvbProfile
 from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
@@ -64,7 +64,8 @@ from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
+from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException, \
+    DatatypeGroupImportException
 from tvb.storage.h5.file.exceptions import MissingDataSetException, FileStructureException, \
     IncompatibleFileManagerException
 from tvb.storage.storage_interface import StorageInterface
@@ -376,7 +377,8 @@ class ImportService(object):
                         operation.id = linked_group_op_id
                         # Set the create of op to that of the first dt because otherwise the Links operation will be
                         # older then the operations that need the links since it was just created
-                        operation.create_date = self.load_datatype_from_file(dt_paths[0], linked_group_op_id).create_date
+                        operation.create_date = self.load_datatype_from_file(dt_paths[0],
+                                                                             linked_group_op_id).create_date
 
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
@@ -392,10 +394,11 @@ class ImportService(object):
                 setattr(key_attr, element[1], element[2])
 
         view_model.range_values = operation_entity.range_values
-        if operation_entity.operation_group:
-            view_model.operation_group_gid = uuid.UUID(operation_entity.operation_group.gid)
-            view_model.ranges = json.dumps(operation_entity.operation_group.range_references)
-            view_model.is_metric_operation = 'DatatypeMeasure' in operation_entity.operation_group.name
+        op_group = dao.get_operationgroup_by_id(operation_entity.fk_operation_group)
+        if op_group:
+            view_model.operation_group_gid = uuid.UUID(op_group.gid)
+            view_model.ranges = json.dumps(op_group.range_references)
+            view_model.is_metric_operation = 'DatatypeMeasure' in op_group.name
 
         if generic_attributes is not None:
             view_model.generic_attributes = generic_attributes
@@ -486,7 +489,8 @@ class ImportService(object):
                     # TODO: TVB-2849 to reveiw these flags and simplify condition
                     if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group) or importer_operation_id is not None:
                         imported_operations.append(operation_entity)
-                        new_op_folder = self.storage_interface.get_project_folder(project.name, str(operation_entity.id))
+                        new_op_folder = self.storage_interface.get_project_folder(project.name,
+                                                                                  str(operation_entity.id))
                         view_model_disk_size = 0
                         for h5_file in operation_data.all_view_model_files:
                             view_model_disk_size += StorageInterface.compute_size_on_disk(h5_file)
@@ -517,7 +521,8 @@ class ImportService(object):
     @staticmethod
     def _get_new_form_view_model(operation, xml_parameters):
         # type (Operation) -> ViewModel
-        ad = ABCAdapter.build_adapter(operation.algorithm)
+        algo = dao.get_algorithm_by_id(operation.fk_from_algo)
+        ad = ABCAdapter.build_adapter(algo)
         view_model = ad.get_view_model_class()()
 
         if xml_parameters:
@@ -527,13 +532,13 @@ class ImportService(object):
                 xml_parameters = json.loads(xml_parameters)
             for param in xml_parameters:
                 new_param_name = param
-                if param[0] == "_":
+                if param != '' and param[0] == "_":
                     new_param_name = param[1:]
                 new_param_name = new_param_name.lower()
                 if new_param_name in declarative_attrs:
                     try:
                         setattr(view_model, new_param_name, xml_parameters[param])
-                    except TraitTypeError:
+                    except (TraitTypeError, TraitAttributeError):
                         pass
         return view_model
 
@@ -579,10 +584,25 @@ class ImportService(object):
             result = burst
         else:
             datatype, generic_attributes = h5.load_with_links(current_file)
+
+            already_existing_datatype = h5.load_entity_by_gid(datatype.gid)
+            if already_existing_datatype is not None:
+                raise DatatypeGroupImportException("The datatype group that you are trying to import"
+                                                   " already exists!")
             index_class = h5.REGISTRY.get_index_for_datatype(datatype.__class__)
             datatype_index = index_class()
             datatype_index.fill_from_has_traits(datatype)
             datatype_index.fill_from_generic_attributes(generic_attributes)
+
+            if datatype_group is not None and hasattr(datatype_index, 'fk_source_gid') and \
+                    datatype_index.fk_source_gid is not None:
+                ts = h5.load_entity_by_gid(datatype_index.fk_source_gid)
+
+                if ts is None:
+                    dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
+                    dao.remove_entity(DataTypeGroup, datatype_group.id)
+                    raise DatatypeGroupImportException("Please import the time series group before importing the"
+                                                       " datatype measure group!")
 
             # Add all the required attributes
             if datatype_group:
@@ -655,20 +675,22 @@ class ImportService(object):
         """
         Store a Operation entity.
         """
-        operation_entity = dao.store_entity(operation_entity)
+        do_merge = False
+        if operation_entity.id:
+            do_merge = True
+        operation_entity = dao.store_entity(operation_entity, merge=do_merge)
         operation_group_id = operation_entity.fk_operation_group
         datatype_group = None
 
         if operation_group_id is not None:
-            try:
-                datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
-            except SQLAlchemyError:
+            datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
+
+            if datatype_group is None and migration is False:
                 # If no dataType group present for current op. group, create it.
-                if migration is False:
-                    operation_group = dao.get_operationgroup_by_id(operation_group_id)
-                    datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
-                    datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
-                    datatype_group = dao.store_entity(datatype_group)
+                operation_group = dao.get_operationgroup_by_id(operation_group_id)
+                datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
+                datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
+                datatype_group = dao.store_entity(datatype_group)
 
         return operation_entity, datatype_group
 

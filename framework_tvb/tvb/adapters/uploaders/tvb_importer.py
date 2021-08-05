@@ -44,7 +44,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
-from tvb.core.services.exceptions import ImportException
+from tvb.core.services.exceptions import ImportException, DatatypeGroupImportException
 from tvb.core.services.import_service import ImportService
 
 
@@ -138,6 +138,9 @@ class TVBImporter(ABCUploader):
                     elif stored_dts_count < all_dts:
                         current_op.additional_info = 'Part of the chosen datatypes already exist!'
                         dao.store_entity(current_op)
+                except DatatypeGroupImportException as excep:
+                    dao.store_entity(current_op)
+                    raise LaunchException(str(excep))
                 except ImportException as excep:
                     self.log.exception(excep)
                     current_op.additional_info = excep.message
