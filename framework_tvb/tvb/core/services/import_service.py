@@ -189,9 +189,9 @@ class ImportService(object):
             update_manager = ProjectUpdateManager(temp_project_path)
 
             if update_manager.checked_version < 3:
-                raise ImportException('Importing projects with older versions is unsupported! Please import the '
-                                      'project in TVB 1.5.8 and then launch the current version of TVB and the files '
-                                      'are going to be upgraded!')
+                raise ImportException('Importing projects with versions older than 3 is not supported in TVB 2! '
+                                      'Please import the project in TVB 1.5.8 and then launch the current version of '
+                                      'TVB in order to upgrade this project!')
 
             update_manager.run_all_updates()
             project = self.__populate_project(temp_project_path)
