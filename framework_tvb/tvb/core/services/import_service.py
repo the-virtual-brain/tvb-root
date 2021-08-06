@@ -202,7 +202,7 @@ class ImportService(object):
             project_path = self.storage_interface.get_project_folder(project.name)
             shutil.move(os.path.join(temp_project_path, StorageInterface.TVB_PROJECT_FILE), project_path)
             # Now import project operations with their results
-            self.import_project_operations(project, temp_project_path)
+            self.import_list_of_operations(project, temp_project_path)
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
             if StorageInterface.encryption_enabled():
@@ -299,7 +299,7 @@ class ImportService(object):
             view_model2adapter[view_model_class] = algo
         return view_model2adapter
 
-    def _retrieve_operations_in_order(self, project, import_path, importer_operation_id=None, linked_group_op_id=None):
+    def _retrieve_operations_in_order(self, project, import_path, importer_operation_id=None):
         # type: (Project, str, int) -> list[Operation2ImportData]
         retrieved_operations = []
 
@@ -373,12 +373,6 @@ class ImportService(object):
 
                     if importer_operation_id:
                         operation.id = importer_operation_id
-                    elif linked_group_op_id:
-                        operation.id = linked_group_op_id
-                        # Set the create of op to that of the first dt because otherwise the Links operation will be
-                        # older then the operations that need the links since it was just created
-                        operation.create_date = self.load_datatype_from_file(dt_paths[0],
-                                                                             linked_group_op_id).create_date
 
                     retrieved_operations.append(
                         Operation2ImportData(operation, root, view_model, dt_paths, all_view_model_files, True))
@@ -411,8 +405,7 @@ class ImportService(object):
         dao.store_entity(operation_entity)
         return view_model
 
-    def import_project_operations(self, project, import_path, is_group=False, importer_operation_id=None,
-                                  linked_group_op_id=None):
+    def import_list_of_operations(self, project, import_path, is_group=False, importer_operation_id=None):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
@@ -420,8 +413,7 @@ class ImportService(object):
         all_stored_dts_count = 0
         imported_operations = []
         ordered_operations = self._retrieve_operations_in_order(project, import_path,
-                                                                None if is_group else importer_operation_id,
-                                                                linked_group_op_id)
+                                                                None if is_group else importer_operation_id)
 
         if is_group and len(ordered_operations) > 0:
             first_op = dao.get_operation_by_id(importer_operation_id)
@@ -453,7 +445,7 @@ class ImportService(object):
                 operation_data.operation.completion_date = datetime.now()
 
                 do_merge = False
-                if importer_operation_id or (ordered_operations[0] == (operation_data) and linked_group_op_id):
+                if importer_operation_id:
                     do_merge = True
                 operation_entity = dao.store_entity(operation_data.operation, merge=do_merge)
                 dt_group = None
@@ -486,22 +478,15 @@ class ImportService(object):
                     if operation_data.main_view_model.is_metric_operation:
                         self._update_burst_metric(operation_entity)
 
-                    # TODO: TVB-2849 to reveiw these flags and simplify condition
-                    if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group) or importer_operation_id is not None:
-                        imported_operations.append(operation_entity)
-                        new_op_folder = self.storage_interface.get_project_folder(project.name,
-                                                                                  str(operation_entity.id))
-                        view_model_disk_size = 0
-                        for h5_file in operation_data.all_view_model_files:
-                            view_model_disk_size += StorageInterface.compute_size_on_disk(h5_file)
-                            shutil.move(h5_file, new_op_folder)
-                        operation_entity.view_model_disk_size = view_model_disk_size
-                        dao.store_entity(operation_entity)
-                    else:
-                        # In case all Dts under the current operation were Links and the ViewModel is dummy,
-                        # don't keep the Operation empty in DB
-                        dao.remove_entity(Operation, operation_entity.id)
-                        self.storage_interface.remove_operation_data(project.name, operation_entity.id)
+                    imported_operations.append(operation_entity)
+                    new_op_folder = self.storage_interface.get_project_folder(project.name,
+                                                                              str(operation_entity.id))
+                    view_model_disk_size = 0
+                    for h5_file in operation_data.all_view_model_files:
+                        view_model_disk_size += StorageInterface.compute_size_on_disk(h5_file)
+                        shutil.move(h5_file, new_op_folder)
+                    operation_entity.view_model_disk_size = view_model_disk_size
+                    dao.store_entity(operation_entity)
                 except MissingReferenceException as excep:
                     dao.remove_entity(Operation, operation_entity.id)
                     self.storage_interface.remove_operation_data(project.name, operation_entity.id)
@@ -586,7 +571,7 @@ class ImportService(object):
             datatype, generic_attributes = h5.load_with_links(current_file)
 
             already_existing_datatype = h5.load_entity_by_gid(datatype.gid)
-            if already_existing_datatype is not None:
+            if datatype_group is not None and already_existing_datatype is not None:
                 raise DatatypeGroupImportException("The datatype group that you are trying to import"
                                                    " already exists!")
             index_class = h5.REGISTRY.get_index_for_datatype(datatype.__class__)

@@ -114,23 +114,16 @@ class TVBImporter(ABCUploader):
                 tmp_folder = os.path.join(self.get_storage_path(), "tmp_import")
                 self.storage_interface.unpack_zip(view_model.data_file, tmp_folder)
                 is_group = False
-                linked_group_op_id = None
                 current_op_id = current_op.id
                 for _, dirs, _ in os.walk(tmp_folder):
                     # In case we import a DatatypeGroup, we want the default import flow
                     if dirs:
                         is_group = True
-                    # We check for 3 folders because in the case of group simulation with links zip the first folder
-                    # contains the links which will need the current op id and the rest are from the normal
-                    # group simulation (a minimum of 2 for PSE) => at least 3 folders in the zip pse with links
-                    if len(dirs) >= 3 and self.LINKS in dirs:
-                        linked_group_op_id = current_op.id
                     break
                 try:
-                    operations, all_dts, stored_dts_count = service.import_project_operations(current_op.project,
+                    operations, all_dts, stored_dts_count = service.import_list_of_operations(current_op.project,
                                                                                               tmp_folder, is_group,
-                                                                                              current_op_id,
-                                                                                              linked_group_op_id)
+                                                                                              current_op_id)
                     self.nr_of_datatypes += stored_dts_count
                     if stored_dts_count == 0:
                         current_op.additional_info = 'All chosen datatypes already exist!'
