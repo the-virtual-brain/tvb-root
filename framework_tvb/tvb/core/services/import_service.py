@@ -599,6 +599,9 @@ class ImportService(object):
                 ts = h5.load_entity_by_gid(datatype_index.fk_source_gid)
 
                 if ts is None:
+                    op = dao.get_operations_in_group(datatype_group.fk_operation_group, only_first_operation=True)
+                    op.fk_operation_group = None
+                    dao.store_entity(op)
                     dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
                     dao.remove_entity(DataTypeGroup, datatype_group.id)
                     raise DatatypeGroupImportException("Please import the time series group before importing the"

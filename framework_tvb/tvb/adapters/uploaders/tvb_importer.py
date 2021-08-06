@@ -139,7 +139,6 @@ class TVBImporter(ABCUploader):
                         current_op.additional_info = 'Part of the chosen datatypes already exist!'
                         dao.store_entity(current_op)
                 except DatatypeGroupImportException as excep:
-                    dao.store_entity(current_op)
                     raise LaunchException(str(excep))
                 except ImportException as excep:
                     self.log.exception(excep)
