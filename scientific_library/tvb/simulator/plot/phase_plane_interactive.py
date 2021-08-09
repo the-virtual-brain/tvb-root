@@ -43,7 +43,6 @@ Demo::
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from tvb.simulator.lab import integrators
 import colorsys
 
 import ipywidgets as widgets
