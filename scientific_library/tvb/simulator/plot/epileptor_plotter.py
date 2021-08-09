@@ -28,35 +28,85 @@
 #
 #
 
+"""
+An interactive Epileptor Model Visualiser.
+
+Usage
+::
+
+    # Create and launch the interactive visualiser
+    from tvb.simulator.plot.epileptor_plotter import EpileptorModelPlot
+    ep = EpileptorModelPlot()
+    ep.show()
+
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from tvb.simulator.lab import *
+
 import ipywidgets as widgets
 from IPython.display import display
+
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.simulator.lab import *
 from tvb.simulator.models.epileptorcodim3 import EpileptorCodim3, EpileptorCodim3SlowMod
 
-class EpileptorModelPlot:
-    def __init__(self,
-                conn = connectivity.Connectivity.from_file(), 
-                coupling = coupling.Linear(a=np.array([0.0152])),
-                integrator = integrators.HeunDeterministic(dt=2 ** -4),
-                monitors = (monitors.TemporalAverage(period=2 ** -2),),
-                sim_length = 2**10):
-        
-        self.conn = conn
-        self.coupling = coupling
-        self.integrator = integrator
-        self.monitors = monitors
-        self.sim_length = sim_length
-        self.simulator_bursters = ['default','c0']
+class EpileptorModelPlot(HasTraits):
+    """
+    The graphical interface for visualising the epileptor model, provide controls for setting:
+
+        - select burster class of Epileptor [List]
+        - select Simulation Length [slider]
+        - select Epileptor Codim Slow Model [binary]
+        - select dstar[binary]
+        - specify dstar value [float]
+        - select modification [binary]
+
+    """
+
+    conn = Attr(
+        field_type=connectivity.Connectivity,
+        label="Connectivity",
+        default=connectivity.Connectivity.from_file(),
+        doc=""" The surface connectvity to be used to simulate the model. """)
+    
+    coupling = Attr(
+        field_type=coupling.Linear,
+        label="Coupling",
+        default=coupling.Linear(a=np.array([0.0152])),
+        doc=""" The type of coupling to be used to simulate the model. """)
+
+    integrator = Attr(
+        field_type=integrators.HeunDeterministic,
+        label="Integrator",
+        default=integrators.HeunDeterministic(dt=2 ** -4),
+        doc=""" The integrator to be used to simulate the model. """)
+
+    monitors = Attr(
+        field_type=tuple,
+        label="Monitors",
+        default=(monitors.TemporalAverage(period=2 ** -2),),
+        doc=""" The tuple of monitors to be used to monitor the model. """)
+    
+    sim_length = Attr(
+        field_type=int,
+        label="Simulation Length",
+        default=2**10,
+        doc=""" The period for which the model should be simulated. """)
+
+    
+    def __init__(self, **kwargs):
+        """ Initialise based on provided keywords or their traited defaults. """
+
+        super(EpileptorModelPlot, self).__init__(**kwargs)
+
         self.burster_parameters = dict()
         self.default_burster_parameters = dict()
         self.default_widget_values = dict()
 
-
     def show(self):
+        """ Generate the interactive Epileptor Model Simulator. """
+
         self.set_default_burster_parameters()
         ui = self.create_ui()
         self.configure_model(slow=False)
@@ -66,17 +116,22 @@ class EpileptorModelPlot:
         display(ui)
 
     def create_ui(self):
+        """ Create the UI for the Interactive Plotter. """
+
+        # Default Box Layout
         self.box_layout = widgets.Layout(border='solid 1px black',
                                         margin='0px 5px 5px 0px',
                                         padding='2px 2px 2px 2px')
 
+        # Create desired UI and add Widgets
         self.add_burster_widgets()
         self.add_sim_widgets()
         self.add_model_widgets()
         
-        self.control_box = widgets.HBox([self.burster_param_box, self.sim_param_box, self.model_param_box], layout=self.box_layout)
+        # Final control widget box
+        self.control_box = widgets.HBox([self.burster_param_box, self.sim_param_box ,self.model_param_box], layout=self.box_layout)
         
-
+        # Output Widget
         op = widgets.Output()
         with op:
             self.fig = plt.figure(figsize=(9,5))
@@ -86,10 +141,13 @@ class EpileptorModelPlot:
         self.output_box = op
         self.output_box.layout = self.box_layout
 
+        # Widget and Output Grid 
         grid = widgets.GridBox([self.control_box, self.output_box], layout={'grid_template_rows':'225px 625px'})
         return grid
 
     def set_default_burster_parameters(self):
+        """ Define default Bursters and their parameters. """
+
         self.default_burster_parameters['default'] = {'A':None, 'B':None, 'c':None}
         self.default_burster_parameters['c0'] = {'A':[0.2649, -0.05246, 0.2951], 'B':[0.2688, 0.05363, 0.2914], 'c':0.001, 'sl':11}
         self.default_burster_parameters['c2s'] = {'A':[0.3448,0.02285,0.2014], 'B':[0.3351,0.07465,0.2053], 'c':0.001, 'sl':10}
@@ -102,41 +160,35 @@ class EpileptorModelPlot:
         self.default_burster_parameters['c16b'] = {'A':[0.04098,-0.07373,-0.391], 'B':[-0.01301,-0.03242,-0.3985], 'c':0.004, 'sl':10}
 
     def add_burster_widgets(self):
+        """ Add the Dropdown Widget to select desired Burster. """
+        
         self.burster_choice_label = widgets.Label('Burster Choice:')
         self.burster_choice = widgets.Dropdown(options=list(self.default_burster_parameters.keys()), value='default')
-        
-        # self.burster_label = widgets.Label('Burster Parameters')
-        # self.burster_A = widgets.Text(placeholder='Enter the value of burster parameter "A"', value = None, continuous_update=False)
-        # self.burster_B = widgets.Text(placeholder='Enter the value of burster parameter "B"', value = None, continuous_update=False)
-        # self.burster_c = widgets.Text(placeholder='Enter the value of burster parameter "c"', value = None, continuous_update=False)
-        
-        # self.buster_param_box_items = [self.burster_choice_label, self.burster_choice, self.burster_label, self.burster_A, self.burster_B, self.burster_c]
-        # self.burster_param_box = widgets.VBox(self.buster_param_box_items, layout=self.box_layout)
+
         self.buster_param_box_items = [self.burster_choice_label, self.burster_choice]
         self.burster_param_box = widgets.VBox(self.buster_param_box_items, layout=self.box_layout)
 
         self.default_widget_values['b_choice'] = self.burster_choice.value
-        # self.default_widget_values['b_A'] = self.burster_A.value
-        # self.default_widget_values['b_B'] = self.burster_B.value
-        # self.default_widget_values['b_c'] = self.burster_c.value
 
         self.burster_choice.observe(self.update_burster_parameters, 'value')
-        # self.burster_A.observe(self.update_burster_parameters, 'value')
-        # self.burster_B.observe(self.update_burster_parameters, 'value')
-        # self.burster_c.observe(self.update_burster_parameters, 'value')
 
     def add_sim_widgets(self):
+        """ Add the slider for Simulation Length. """
+
         self.simulation_label = widgets.Label('Simulation Parameters')
         self.simulation_length_label = widgets.Label('Simulation Length: (in powers of 2)')
         self.simulation_length_slider = widgets.IntSlider(value=10, min=10, max=15, continuous_update=False)
         
-        self.sim_param_box = widgets.VBox([self.simulation_length_label, self.simulation_length_slider], layout=self.box_layout)
+        self.sim_param_box_items = [self.simulation_label, self.simulation_length_label, self.simulation_length_slider]
+        self.sim_param_box = widgets.VBox(self.sim_param_box_items, layout=self.box_layout)
 
         self.default_widget_values['s_l'] = self.simulation_length_slider.value
 
         self.simulation_length_slider.observe(self.update_sim_parameters, 'value')
 
     def add_model_widgets(self):
+        """ Add widgets to specify Model Parameters. """
+
         self.model_parameter_label = widgets.Label('Model Parameters')
         self.slowmod_checkbox = widgets.Checkbox(description='Slow Transition', value=False)
         self.dstar_checkbox = widgets.Checkbox(description='dstar', value=False)
@@ -151,38 +203,34 @@ class EpileptorModelPlot:
         self.dstar_value.observe(self.update_model_parameters,'value')
         self.mod_checkbox.observe(self.update_model_parameters,'value')
 
-    def add_new_burster_class(self, burster_name=None, burster_value_A = None, burster_value_B = None, burster_value_c = None, burster_sl=10):
-        if burster_name is not None and burster_value_A is not None and burster_value_B is not None and burster_value_c is not None:
+    def add_new_burster_class(self, burster_name=None,
+                             burster_value_A = None, burster_value_B = None,
+                             burster_value_c = None, burster_sl=10):
+        """ Function to add a new desired burster class with specific parameters. """
+
+        if burster_name is not None and burster_value_A is not None and \
+           burster_value_B is not None and burster_value_c is not None:
             self.default_burster_parameters[burster_name] = {'A':burster_value_A, 'B':burster_value_B, 'c':burster_value_c, 'sl': burster_sl}
             self.burster_choice = widgets.Dropdown(options=list(self.default_burster_parameters.keys()), value='default')
 
-    def reset_params(self):
-        self.burster_choice.value = self.default_widget_values['b_choice']
-        self.burster_A.value = self.default_widget_values['b_A']
-        self.burster_B.value = self.default_widget_values['b_B']
-        self.burster_c.value = self.default_widget_values['b_c']
-
-        self.simulation_length_slider = self.default_widget_values['s_l']
-
-    def trigger_model_params(self, disabled=True):
-        self.burster_choice.disabled = disabled
-        self.burster_A.disabled = disabled
-        self.burster_B.disabled = disabled
-        self.burster_c.disabled = disabled
-
     def update_to_slow_model(self, val):
+        """ Toggle Model to Epileptor Codim Slow Model. """
+
         if self.slowmod_checkbox.value:
-            self.trigger_model_params(True)
+            self.burster_choice.value = 'default'
+            self.burster_choice.disabled = True
             self.configure_model(slow=True)
 
             self.simulation_length_slider.value = 14
         else:
-            self.trigger_model_params(False)
+            self.burster_choice.disabled = False
             self.configure_model(slow=False)
             self.configure_sim()
             self.plot_model()
 
     def update_sim_parameters(self, val):
+        """ Update Simulation Length and Simulate Model. """
+
         self.sim_length = 2**int(self.simulation_length_slider.value)
         self.configure_sim()
         if self.slow_model:
@@ -191,14 +239,9 @@ class EpileptorModelPlot:
             self.plot_model()
 
     def update_burster_parameters(self, val):
+        """ Update the Burster Parameters of Model, configure and simulate model. """
+
         self.burster_parameters = self.default_burster_parameters[self.burster_choice.value]
-        
-        # if self.burster_A.value:
-        #     self.burster_parameters['A'] = self.burster_A.value
-        # if self.burster_B.value:
-        #     self.burster_parameters['B'] = self.burster_B.value
-        # if self.burster_c.value:
-        #     self.burster_parameters['c'] = self.burster_c.value
 
         A = self.burster_parameters['A']
         B = self.burster_parameters['B']
@@ -217,22 +260,24 @@ class EpileptorModelPlot:
         self.plot_model()
 
     def update_model_parameters(self, val):
+        """ Update Model Parameters, configure and simulate Model. """
+
         if self.dstar_checkbox.value or self.mod_checkbox.value:
-            # RESET PARAMS TO DEFAULT AND DISABLE PARAMS
-            self.reset_params()
-            self.trigger_model_params(disabled=True)
+            self.burster_choice.disabled = True
             self.model.dstar = np.array([self.dstar_value.value])
             self.model.modification = np.array([self.mod_checkbox.value])
             self.configure_sim()
             self.plot_model()
         else:
-            self.trigger_model_params(disabled=False)
+            self.burster_choice.disabled = False
             self.configure_model()
             self.configure_sim()
             self.plot_model()
 
 
     def configure_model(self, slow=False):
+        """ Configure Model according to desired choice. (Normal/Slow) """
+
         if slow:
             self.slow_model = True
             self.model = EpileptorCodim3SlowMod()
@@ -241,6 +286,8 @@ class EpileptorModelPlot:
             self.model = EpileptorCodim3(variables_of_interest=['x', 'y', 'z'])
 
     def configure_sim(self):
+        """ Configure Simulation Parameters and run Simulation. """
+
         self.sim = simulator.Simulator(
             model=self.model,
             connectivity=self.conn,
@@ -254,6 +301,8 @@ class EpileptorModelPlot:
         (self.tavg_time, self.tavg_data), = self.sim.run()
 
     def plot_model(self):
+        """ Plot Normal Model Simulation Output. """
+
         self.fig.clear()
         self.fig1 = self.fig.add_subplot(121)
         self.fig2 = self.fig.add_subplot(122, projection='3d')
@@ -273,6 +322,8 @@ class EpileptorModelPlot:
         plt.ylabel('y')
 
     def plot_slow_model(self):
+        """ Plot Slow Model Simulation Output. """
+
         self.fig.clear()
         
         plt.plot(self.tavg_time, self.tavg_data[:, 0, 0, 0], label='x')
