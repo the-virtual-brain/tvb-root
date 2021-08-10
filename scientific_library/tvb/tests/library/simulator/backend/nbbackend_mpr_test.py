@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import numpy
 import numpy as np
 import scipy.sparse as ss
 
@@ -192,15 +192,16 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        r_pdq, V_pdq = run_sim(sim, nstep=1)
+        with numpy.errstate(all='ignore'):
+            r_pdq, V_pdq = run_sim(sim, nstep=1)
 
-        np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,0])
-        np.testing.assert_allclose(sim.current_state[1,:,0], V_pdq[:,0])
-        r_pdq = r_pdq[:,1] # we include initial state, TVB doesn't
-        V_pdq = V_pdq[:,1]
+            np.testing.assert_allclose(sim.current_state[0,:,0], r_pdq[:,0])
+            np.testing.assert_allclose(sim.current_state[1,:,0], V_pdq[:,0])
+            r_pdq = r_pdq[:,1] # we include initial state, TVB doesn't
+            V_pdq = V_pdq[:,1]
 
-        (raw_t, raw_d), = sim.run(simulation_length=1)
-        r_tvb, V_tvb = raw_d[0,:,:,0]
+            (raw_t, raw_d), = sim.run(simulation_length=1)
+            r_tvb, V_tvb = raw_d[0, :, :, 0]
 
         np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-4)
         np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4)

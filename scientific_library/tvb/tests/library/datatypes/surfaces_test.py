@@ -51,7 +51,10 @@ class TestSurfaces(BaseTestCase):
         dt = surfaces.Surface(valid_for_simulations=True)
         dt.vertices = numpy.array(list(range(30))).reshape(10, 3).astype(numpy.float64)
         dt.triangles = numpy.array(list(range(9))).reshape(3, 3)
-        dt.configure()
+
+        with numpy.errstate(all='ignore'):
+            dt.configure()
+
         summary_info = dt.summary_info()
         assert summary_info['Number of edges'] == 9
         assert summary_info['Number of triangles'] == 3
@@ -117,7 +120,9 @@ class TestSurfaces(BaseTestCase):
         dt = surfaces.Surface()
         dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 2]]).astype(numpy.float64)
         dt.triangles = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
-        dt.configure()
+
+        with numpy.errstate(all='ignore'):
+            dt.configure()
 
         euler, isolated, pinched_off, holes = dt.compute_topological_constants()
         assert 3 == euler
