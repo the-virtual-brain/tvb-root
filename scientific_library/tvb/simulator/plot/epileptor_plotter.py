@@ -104,18 +104,22 @@ class EpileptorModelPlot(HasTraits):
         self.default_burster_parameters = dict()
         self.default_widget_values = dict()
 
-    def show(self):
-        """ Generate the interactive Epileptor Model Simulator. """
+    def show(self, burster_class='default'):
+        """ Generate the interactive Epileptor Model Simulator with the desired burster class. """
 
         self.set_default_burster_parameters()
-        ui = self.create_ui()
+        ui = self.create_ui(burster_class = burster_class)
         self.configure_model(slow=False)
-        self.configure_sim()
+        
+        if burster_class == 'default':
+            self.configure_sim()
+        else:
+            self.update_burster_parameters(burster_class)
         
         self.plot_model()
         display(ui)
 
-    def create_ui(self):
+    def create_ui(self, burster_class):
         """ Create the UI for the Interactive Plotter. """
 
         # Default Box Layout
@@ -124,7 +128,7 @@ class EpileptorModelPlot(HasTraits):
                                         padding='2px 2px 2px 2px')
 
         # Create desired UI and add Widgets
-        self.add_burster_widgets()
+        self.add_burster_widgets(burster_class = burster_class)
         self.add_sim_widgets()
         self.add_model_widgets()
         
@@ -159,11 +163,11 @@ class EpileptorModelPlot(HasTraits):
         self.default_burster_parameters['c14b'] = {'A':[0.3216,0.0454,-0.2335], 'B':[0.106,0.005238,-0.3857], 'c':0.002, 'sl':12}
         self.default_burster_parameters['c16b'] = {'A':[0.04098,-0.07373,-0.391], 'B':[-0.01301,-0.03242,-0.3985], 'c':0.004, 'sl':10}
 
-    def add_burster_widgets(self):
+    def add_burster_widgets(self, burster_class='default'):
         """ Add the Dropdown Widget to select desired Burster. """
         
         self.burster_choice_label = widgets.Label('Burster Choice:')
-        self.burster_choice = widgets.Dropdown(options=list(self.default_burster_parameters.keys()), value='default')
+        self.burster_choice = widgets.Dropdown(options=list(self.default_burster_parameters.keys()), value=burster_class)
 
         self.buster_param_box_items = [self.burster_choice_label, self.burster_choice]
         self.burster_param_box = widgets.VBox(self.buster_param_box_items, layout=self.box_layout)
@@ -177,7 +181,7 @@ class EpileptorModelPlot(HasTraits):
 
         self.simulation_label = widgets.Label('Simulation Parameters')
         self.simulation_length_label = widgets.Label('Simulation Length: (in powers of 2)')
-        self.simulation_length_slider = widgets.IntSlider(value=10, min=10, max=15, continuous_update=False)
+        self.simulation_length_slider = widgets.IntSlider(value=10, min=1, max=30, continuous_update=False)
         
         self.sim_param_box_items = [self.simulation_label, self.simulation_length_label, self.simulation_length_slider]
         self.sim_param_box = widgets.VBox(self.sim_param_box_items, layout=self.box_layout)
@@ -247,14 +251,18 @@ class EpileptorModelPlot(HasTraits):
         B = self.burster_parameters['B']
         c = self.burster_parameters['c']
         
-        self.model.mu1_start=np.array([-A[1]]) 
-        self.model.mu2_start=np.array([A[0]]) 
-        self.model.nu_start=np.array([A[2]])
-        self.model.mu1_stop=np.array([-B[1]]) 
-        self.model.mu2_stop=np.array([B[0]]) 
-        self.model.nu_stop=np.array([B[2]]) 
-        self.model.c=np.array([c])
-        self.simulation_length_slider.value = int(self.burster_parameters['sl'])
+        if self.burster_choice.value != 'default':
+            self.model.mu1_start=np.array([-A[1]]) 
+            self.model.mu2_start=np.array([A[0]]) 
+            self.model.nu_start=np.array([A[2]])
+            self.model.mu1_stop=np.array([-B[1]]) 
+            self.model.mu2_stop=np.array([B[0]]) 
+            self.model.nu_stop=np.array([B[2]]) 
+            self.model.c=np.array([c])
+            self.simulation_length_slider.value = int(self.burster_parameters['sl'])
+        else:
+            self.simulation_length_slider.value = 10
+            self.configure_model(slow=False)
         
         self.configure_sim()
         self.plot_model()
