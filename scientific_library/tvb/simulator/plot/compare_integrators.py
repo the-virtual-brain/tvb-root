@@ -28,12 +28,28 @@
 #
 #
 
-from IPython.core.display import clear_output
+"""
+An interactive visualiser to compare different Integrators.
+
+Usage
+::
+
+    #Create and launch the interactive visualiser
+    from tvb.simulator.plot.compare_integrators import CompareIntegrators
+    ci = CompareIntegrators()
+    ci.show()
+
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.simulator.lab import *
-from IPython.display import display
+
 import ipywidgets as widgets
+from IPython.display import display
+from IPython.core.display import clear_output
 
 default_base_dt = 0.1
 default_var_order_dt = 5.0
@@ -43,27 +59,61 @@ default_methods = [
     (integrators.HeunDeterministic, 2*default_base_dt),
     (integrators.Dop853, default_var_order_dt),
     (integrators.Dopri5, default_var_order_dt),
-    #(integrators.RungeKutta4thOrderDeterministic, 4*default_base_dt),
+    # (integrators.RungeKutta4thOrderDeterministic, 4*default_base_dt),
     (integrators.VODE, default_var_order_dt),
 ]
 
-class CompareIntegrators:
-    def __init__(self, 
-                methods = default_methods, 
-                conn = connectivity.Connectivity.from_file(),
-                model = models.Generic2dOscillator(a=np.array([0.1])),
-                coupling = coupling.Linear(a=np.array([0.0])),
-                monitors = (monitors.TemporalAverage(period=5.0),)):
+class CompareIntegrators(HasTraits):
+    """
+    The graphical interface for comparing different integrators 
+    provide controls for setting:
         
-        self.methods = methods
-        self.conn = conn
-        self.fig_size = (9,9)
-        self.model = model
-        self.coupling = coupling
-        self.monitors = monitors
+        - how to compare integrators
+        - which integrators to compare
+
+    """
+
+    conn = Attr(
+        field_type=connectivity.Connectivity,
+        label="Connectivity",
+        default=connectivity.Connectivity.from_file(),
+        doc=""" The connectivity required to compare integrators. """)
+
+    model = Attr(
+        field_type=models,
+        label="Model",
+        default=models.Generic2dOscillator(a=np.array([0.1])),
+        doc=""" The model required to compare integrators. """)
+    
+    coupling = Attr(
+        field_type=coupling,
+        label="Coupling",
+        default=coupling.Linear(a=np.array([0.0])),
+        doc=""" The desired coupling required to compare integrators. """)
+
+    monitors = Attr(
+        field_type=tuple,
+        label="Monitors",
+        default=(monitors.TemporalAverage(period=5.0),),
+        doc=""" The monitors required to monitor the compared integrators. """)
+
+    methods = Attr(
+        field_type=list,
+        label="Integrators to compare",
+        default=default_methods,
+        doc=""" The desired integrators to compare. Pass it in a list. E.g. [(Integrator, default_dt), ]. """)
+    
+    def __init__(self, **kwargs):
+        """ Initialise based on provided keywords or their traited defaults. """
+
+        super(CompareIntegrators, self).__init__(**kwargs)
+        
         self.plot_params = dict()
     
     def create_ui(self):
+        """ Create Interactive UI to compare integrators. """
+
+        self.fig_size = (9,9)
         self.select_comparison_label = widgets.Label('Compare: ')
         self.select_comparison = widgets.Dropdown(options = ['Default', 'Pairwise', 'dt Growth'], default='Default')
         controls = widgets.HBox([self.select_comparison_label, self.select_comparison])
@@ -73,6 +123,8 @@ class CompareIntegrators:
         return output
     
     def show(self):
+        """ Generate interactive Compare Integrators Figure. """
+
         ui = self.create_ui()
         
         def plotter(**plot_params):
@@ -89,6 +141,8 @@ class CompareIntegrators:
 
 
     def compare(self, sim_length=1000.0):
+        """ Compare Integrators Simulation. """
+
         clear_output()
         plt.figure(figsize=self.fig_size)
         plt.rcParams["font.size"] = "10"
@@ -122,6 +176,8 @@ class CompareIntegrators:
             plt.grid(True)
 
     def compare_pairwise(self, sim_length=200.0):
+        """ Compare Integrators Simulation Pairwise. """
+
         clear_output()
         raws = []
         names = []
@@ -168,6 +224,8 @@ class CompareIntegrators:
         plt.tight_layout()
 
     def grow_dt(self, sim_length=1200.0):
+        """ Compare single Integrator with Dt Growth. """
+
         clear_output()
         dts = [float(10**e) for e in np.r_[-2:0:10j]]
 
