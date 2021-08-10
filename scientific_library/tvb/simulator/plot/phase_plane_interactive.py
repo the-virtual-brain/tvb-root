@@ -37,7 +37,7 @@ for visualising the effect of noise on a trajectory.
 
 Demo::
 
-    import tvb.simulator.plot.phase_plane_interactive as PhasePlaneInteractive
+    from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
     ppi = PhasePlaneInteractive()
     ppi.show()
 """
@@ -60,9 +60,25 @@ def get_color(num_colours):
         yield "#{0:02x}{1:02x}{2:02x}".format(*col)
 
 class PhasePlaneInteractive(HasTraits):
+    """
+    The GUI for the interactive phase-plane viewer provides sliders for setting:
+        - The value of all parameters of the Model.
+        - The extent of the axes.
+        - A fixed value for the state-variables which aren't currently selected.
+        - The noise strength, if a stocahstic integrator is specified.
+
+    and dropdown lists for selecting:
+        - Which state-variables to show on each axis.
+        - Which mode to show, if the Model has them.
+
+    Entering the coordinates in the X,Y Coordinate Boxes will generate a sample 
+    trajectory, originating from the coordinates entered.
+
+    """
+
+    # Set the resolution of the phase-plane and sample trajectories.
     NUMBEROFGRIDPOINTS = 42
     TRAJ_STEPS = 4096
-    exclude_sliders = None
 
     model = Attr(
         field_type=models_module.Model,
@@ -80,7 +96,8 @@ class PhasePlaneInteractive(HasTraits):
         the phase-plane itself, ie the vector field and nulclines.""")
 
     def __init__(self, **kwargs):
-        # Get the Model and Integrator Parameters.
+        """ Initialise based on provided keywords or their traited defaults. """
+
         super(PhasePlaneInteractive, self).__init__(**kwargs)
 
         # Parameters to be passed to plotter
