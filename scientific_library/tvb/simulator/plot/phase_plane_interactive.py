@@ -167,11 +167,18 @@ class PhasePlaneInteractive(HasTraits):
             
             mode = plot_params.pop('mode')
 
+            # Fetching Trajectory Coordinates and storing in a list.
             traj_x = plot_params.pop('traj_x')
             traj_y = plot_params.pop('traj_y')
             plot_traj = plot_params.pop('plot_traj')
+
             if plot_traj and (traj_x, traj_y) not in traj_texts:
                 traj_texts.append((traj_x, traj_y))
+
+            # Clearing Plotted Trajectories.
+            clear_traj = plot_params.pop('clear_traj')
+            if clear_traj:
+                traj_texts.clear()
 
             # Set Model Parameters
             for k, v in plot_params.items():
@@ -323,7 +330,8 @@ class PhasePlaneInteractive(HasTraits):
 
         # Widget Group 2
         self.sv_widgets = widgets.VBox([self.reset_sv_button]+list(self.sv_sliders.values())+
-                                       [self.traj_label, self.traj_x_box, self.traj_y_box, self.plot_traj_button, self.traj_out], 
+                                       [self.traj_label, self.traj_x_box, self.traj_y_box, 
+                                        self.plot_traj_button, self.traj_out, self.clear_traj_button], 
                                        layout=self.box_layout)
 
         # Widget Group 3
@@ -549,17 +557,27 @@ class PhasePlaneInteractive(HasTraits):
         self.params['svy'] = self.state_variable_y
     
     def add_traj_coords_text(self):
-        """ Add a Textbox to enter coordinate values for plotting trajectory. """
+        """ 
+        Add a Textbox to enter coordinate values for plotting trajectories.
+        Add a button to clear trajectories.
+        """
         
         self.traj_label = widgets.Label('Trajectory Co-ordinates (Float)')
-        self.plot_traj = widgets.Valid(value=False, description="Hidden Field")
+        self.plot_traj = widgets.Valid(value=False, description="Hidden Field for Plotting Trajectory")
+        self.clear_traj = widgets.Valid(value=False, description="Hidden Field for Clearing Trajectory")
         self.traj_out = widgets.Textarea(value='', placeholder='Trajectory Co-ordinates output will be shown here')
 
         def update_traj_text(val):
             self.traj_out.value = f'{self.traj_out.value}Trajectory plotted at ({self.traj_x.value},{self.traj_y.value}).\n'
             self.plot_traj.value = True
+            self.clear_traj.value = False
         
         def disable_plot_traj(val):
+            self.plot_traj.value = False
+
+        def clear_plotted_traj(val):
+            self.traj_out.value = ''
+            self.clear_traj.value = True
             self.plot_traj.value = False
         
         self.traj_x_label = widgets.Label('X: ')
@@ -574,10 +592,14 @@ class PhasePlaneInteractive(HasTraits):
 
         self.plot_traj_button = widgets.Button(description='Plot Trajectory')
         self.plot_traj_button.on_click(update_traj_text)
+
+        self.clear_traj_button = widgets.Button(description='Clear Trajectory')
+        self.clear_traj_button.on_click(clear_plotted_traj)
         
         self.params['traj_x'] = self.traj_x
         self.params['traj_y'] = self.traj_y
         self.params['plot_traj'] = self.plot_traj
+        self.params['clear_traj'] = self.clear_traj
 
     def set_state_vector(self):
         """ Set up the default state-variable values. """
