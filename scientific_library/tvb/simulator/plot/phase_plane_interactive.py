@@ -79,6 +79,7 @@ class PhasePlaneInteractive(HasTraits):
     # Set the resolution of the phase-plane and sample trajectories.
     NUMBEROFGRIDPOINTS = 42
     TRAJ_STEPS = 4096
+    exclude_sliders = None
 
     model = Attr(
         field_type=models_module.Model,
