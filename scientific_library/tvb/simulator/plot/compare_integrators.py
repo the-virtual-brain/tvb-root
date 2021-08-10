@@ -46,6 +46,8 @@ import matplotlib.pyplot as plt
 
 from tvb.basic.neotraits.api import HasTraits, Attr
 from tvb.simulator.lab import *
+import tvb.simulator.models as models_module
+import tvb.simulator.coupling as coupling_module
 
 import ipywidgets as widgets
 from IPython.display import display
@@ -80,13 +82,13 @@ class CompareIntegrators(HasTraits):
         doc=""" The connectivity required to compare integrators. """)
 
     model = Attr(
-        field_type=models,
+        field_type=models_module.Model,
         label="Model",
         default=models.Generic2dOscillator(a=np.array([0.1])),
         doc=""" The model required to compare integrators. """)
     
     coupling = Attr(
-        field_type=coupling,
+        field_type=coupling_module.Coupling,
         label="Coupling",
         default=coupling.Linear(a=np.array([0.0])),
         doc=""" The desired coupling required to compare integrators. """)
