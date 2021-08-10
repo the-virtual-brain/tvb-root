@@ -28,6 +28,23 @@
 #
 #
 
+"""
+An interactive 3D head visualiser.
+
+Usage
+::
+
+    #Create and launch the interactive visualiser
+    from tvb.simulator.plot.head_plotter_3d import HeadPlotter3D
+    hp = HeadPlotter3D()
+    
+    # To visualise the sensors and surface
+    hp.display_source_sensor_geometry(surface, connectivity, meg_sensors, eeg_sensors)
+
+    # To visualise the sensors and surface
+    hp.display_surface_local_connectivity(cortex, local_connectivity)
+
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,13 +56,13 @@ class HeadPlotter3D:
     def __init__(self):
         pass
 
-    def display_source_sensor_geometry(self, meg_sensors = None, eeg_sensors = None, conn = None, skin = None):
-        # type: (sensors.SensorsMEG, sensors.SensorsEEG, connectivity.Connectivity, surfaces.SkinAir) -> None
+    def display_source_sensor_geometry(self, surface = None, conn = None, meg_sensors = None, eeg_sensors = None):
+        # type: (surfaces.SkinAir, connectivity.Connectivity, sensors.SensorsMEG, sensors.SensorsEEG ) -> None
         """
+        :param surface: Optional surfaces.SkinAir instance. When none, we will try loading a default
+        :param conn: Optional connectivity.Connectivity instance. When none, we will try loading a default
         :param meg_sensors: Optional sensors.SensorsMEG instance. When none, we will try loading a default
         :param eeg_sensors: Optional sensors.SensorsEEG instance. When none, we will try loading a default
-        :param conn: Optional connectivity.Connectivity instance. When none, we will try loading a default
-        :param skin: Optional surfaces.SkinAir instance. When none, we will try loading a default
         """
 
         if meg_sensors is None:
@@ -54,11 +71,11 @@ class HeadPlotter3D:
             eeg_sensors = sensors.SensorsEEG.from_file()
         if conn is None:
             conn = connectivity.Connectivity.from_file()
-        if skin is None:
-            skin = surfaces.SkinAir.from_file()
+        if surface is None:
+            surface = surfaces.SkinAir.from_file()
         
-        # Configure Skin Surface
-        skin.configure()
+        # Configure Surface
+        surface.configure()
 
         # Configure EEG Sensors
         eeg_sensors.configure()
@@ -82,8 +99,8 @@ class HeadPlotter3D:
             ax = plt.subplot(111, projection='3d')
 
             # Plot boundary surface
-            x, y, z = skin.vertices.T
-            ax.plot_trisurf(x, y, z, triangles=skin.triangles, alpha=0.1, edgecolor='none')
+            x, y, z = surface.vertices.T
+            ax.plot_trisurf(x, y, z, triangles=surface.triangles, alpha=0.1, edgecolor='none')
 
             if plot_params['ROI']:
                 # ROI centers as black circles
@@ -92,7 +109,7 @@ class HeadPlotter3D:
             
             if plot_params['EEG']:
                 # EEG sensors as blue x's
-                x, y, z = eeg_sensors.sensors_to_surface(skin).T
+                x, y, z = eeg_sensors.sensors_to_surface(surface).T
                 ax.plot(x, y, z, 'bx')
 
             if plot_params['MEG']:
@@ -108,7 +125,7 @@ class HeadPlotter3D:
         # type: (cortex.Cortex, local_connectivity.LocalConnectivity) -> None
         """
         :param cortex: Optional cortex.Cortex instance. When none, we will try loading a default
-        :param loc_conn: Optional. If None, and
+        :param loc_conn: Optional. If None, and cortex local connectivity is None, we will try loading a default.
         """
         # Start by configuring the cortical surface
         if ctx is None:
