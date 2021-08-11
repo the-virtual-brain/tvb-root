@@ -61,7 +61,7 @@ default_methods = [
     (integrators.HeunDeterministic, 2*default_base_dt),
     (integrators.Dop853, default_var_order_dt),
     (integrators.Dopri5, default_var_order_dt),
-    # (integrators.RungeKutta4thOrderDeterministic, 4*default_base_dt),
+    (integrators.RungeKutta4thOrderDeterministic, 4*default_base_dt),
     (integrators.VODE, default_var_order_dt),
 ]
 
@@ -112,22 +112,22 @@ class CompareIntegrators(HasTraits):
         
         self.plot_params = dict()
     
-    def create_ui(self):
+    def create_ui(self, comparison):
         """ Create Interactive UI to compare integrators. """
 
         self.fig_size = (9,9)
         self.select_comparison_label = widgets.Label('Compare: ')
-        self.select_comparison = widgets.Dropdown(options = ['Default', 'Pairwise', 'dt Growth'], default='Default')
+        self.select_comparison = widgets.Dropdown(options = ['Default', 'Pairwise', 'dt Growth'], value=comparison)
         controls = widgets.HBox([self.select_comparison_label, self.select_comparison])
         self.plot_params['comparison'] = self.select_comparison
 
         output = widgets.VBox([controls])
         return output
     
-    def show(self):
+    def show(self, comparison='Default'):
         """ Generate interactive Compare Integrators Figure. """
 
-        ui = self.create_ui()
+        ui = self.create_ui(comparison)
         
         def plotter(**plot_params):
             val = plot_params['comparison']
