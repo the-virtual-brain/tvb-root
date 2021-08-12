@@ -156,11 +156,8 @@ class FilesHelper(object):
         try:
             complete_path = self.get_project_folder(project_name, str(operation_id))
             self.logger.debug("Removing: " + str(complete_path))
-            if os.path.isdir(complete_path):
-                shutil.rmtree(complete_path)
-            elif os.path.exists(complete_path):
-                os.remove(complete_path)
-        except Exception:
+            self.remove_folder(complete_path)
+        except FileStructureException:
             self.logger.exception("Could not remove files")
             raise FileStructureException("Could not remove files for OP" + str(operation_id))
 
@@ -194,17 +191,14 @@ class FilesHelper(object):
         _, dict_data = figure.to_dict()
         XMLWriter(meta_entity).write_metadata_in_xml(self._compute_image_metadata_file(figure, images_folder))
 
-    def remove_image_metadata(self, figure, images_folder):
+    def remove_figure(self, figure, images_folder):
         """
         Remove the file storing image and its meta data
         """
         figures_folder = self.get_images_folder(figure.project.name, images_folder)
         path2figure = os.path.join(figures_folder, figure.file_path)
-        if os.path.exists(path2figure):
-            os.remove(path2figure)
-            metadata_file = self._compute_image_metadata_file(figure, images_folder)
-            if os.path.exists(metadata_file):
-                os.remove(metadata_file)
+        metadata_file = self._compute_image_metadata_file(figure, images_folder)
+        self.remove_files([path2figure, metadata_file])
 
     def _compute_image_metadata_file(self, figure, images_folder):
         """
@@ -226,7 +220,8 @@ class FilesHelper(object):
         self.check_created(folder)
         return folder
 
-            ######################## GENERIC METHODS Start Here #######################
+        ######################## GENERIC METHODS Start Here #######################
+
     @staticmethod
     def copy_file(source, dest, dest_postfix, buffer_size):
         """
@@ -258,17 +253,18 @@ class FilesHelper(object):
                 dest.close()
 
     @staticmethod
-    def remove_files(file_list, ignore_exception):
+    def remove_files(file_list, ignore_exception=False):
         """
         :param file_list: list of file paths to be removed.
         :param ignore_exception: When True and one of the specified files could not be removed, an exception is raised.  
         """
         for file_ in file_list:
             try:
-                if os.path.isfile(file_):
-                    os.remove(file_)
-                if os.path.isdir(file_):
-                    shutil.rmtree(file_)
+                if os.path.exists(file_):
+                    if os.path.isfile(file_):
+                        os.remove(file_)
+                    if os.path.isdir(file_):
+                        shutil.rmtree(file_)
             except Exception:
                 logger = get_logger(__name__)
                 logger.exception("Could not remove " + str(file_))
