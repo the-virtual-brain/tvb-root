@@ -92,11 +92,15 @@ class HeadPlotter3D:
         # Connecting widgets with plot parameters
         params['ROI'] = roi_checkbox
         params['EEG'] = eeg_checkbox
-        params['MEG'] = meg_checkbox        
+        params['MEG'] = meg_checkbox
+
+        fig = plt.figure()
 
         # Plotter Function
         def plot(**plot_params):
-            ax = plt.subplot(111, projection='3d')
+            #ax = plt.subplot(111, projection='3d')
+            fig.clf()
+            ax = fig.add_subplot(111, projection='3d')
 
             # Plot boundary surface
             x, y, z = surface.vertices.T
@@ -116,7 +120,8 @@ class HeadPlotter3D:
                 # MEG sensors as red +'s
                 x, y, z = meg_sensors.locations.T
                 ax.plot(x, y, z, 'r+')
-        plt.figure()
+        #plt.figure()
+        fig.show()
 
         out = widgets.interactive_output(plot, params)
         display(control_box,out)
