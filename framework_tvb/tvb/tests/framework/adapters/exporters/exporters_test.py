@@ -32,9 +32,8 @@
 .. moduleauthor:: calin.pavel <calin.pavel@codemart.ro>
 """
 import os.path
-import shutil
-import zipfile
 import uuid
+import zipfile
 from contextlib import closing
 
 import pytest
@@ -67,8 +66,7 @@ class TestExporters(TransactionalTestCase):
         """
         # Remove EXPORT folder
         export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.EXPORT_FOLDER_NAME)
-        if os.path.exists(export_folder):
-            shutil.rmtree(export_folder)
+        StorageInterface.remove_folder(export_folder, True)
 
     def test_get_exporters_for_data(self, dummy_datatype_index_factory):
         """

@@ -39,7 +39,6 @@ Module in charge with Launching an operation (creating the Operation entity as w
 
 import json
 import os
-import shutil
 import sys
 import uuid
 import zipfile
@@ -327,7 +326,7 @@ class OperationService:
                     if os.path.exists(pth) and os.path.isfile(pth):
                         os.remove(pth)
                         if len(os.listdir(os.path.dirname(pth))) == 0:
-                            shutil.rmtree(os.path.dirname(pth))
+                            self.storage_interface.remove_folder(os.path.dirname(pth))
                         self.logger.debug("We no longer need file:" + pth + " => deleted")
                     else:
                         self.logger.warning("Trying to remove not existent file:" + pth)

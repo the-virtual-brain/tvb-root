@@ -34,26 +34,27 @@
 """
 
 import os
-import tvb_data
-import shutil
-import pytest
-from PIL import Image
 from time import sleep
+
+import pytest
+import tvb_data
+from PIL import Image
 from tvb.adapters.datatypes.db.mapped_value import ValueWrapperIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.core import utils
+from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
-from tvb.core.entities.load import try_get_last_datatype
+from tvb.core.services.exceptions import ImportException
 from tvb.core.services.figure_service import FigureService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.project_service import ProjectService
-from tvb.core.services.exceptions import ImportException
 from tvb.core.utils import no_matlab
-from tvb.tests.framework.core.factory import TestFactory
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
+from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.figure_service_test import IMG_DATA
 
 
@@ -75,12 +76,11 @@ class TestImportService(BaseTestCase):
         Reset the database when test is done.
         """
         # Delete TEMP folder
-        if os.path.exists(TvbProfile.current.TVB_TEMP_FOLDER):
-            shutil.rmtree(TvbProfile.current.TVB_TEMP_FOLDER)
+        StorageInterface.remove_folder(TvbProfile.current.TVB_TEMP_FOLDER)
 
         # Delete folder where data was exported
-        if self.zip_path and os.path.exists(self.zip_path):
-            shutil.rmtree(os.path.split(self.zip_path)[0])
+        if self.zip_path:
+            StorageInterface.remove_folder(os.path.split(self.zip_path)[0])
 
         self.delete_project_folders()
 

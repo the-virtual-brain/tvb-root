@@ -32,8 +32,6 @@
 .. moduleauthor:: Calin Pavel
 """
 
-import os
-import shutil
 import tempfile
 import zipfile
 
@@ -141,8 +139,7 @@ class RegionMappingImporter(ABCUploader):
                     raise LaunchException("Please upload a ZIP file containing only one file.")
                 array_data = self.read_list_data(files[0], dtype=numpy.int32)
             finally:
-                if os.path.exists(tmp_folder):
-                    shutil.rmtree(tmp_folder)
+                self.storage_interface.remove_folder(tmp_folder, True)
         else:
             array_data = self.read_list_data(view_model.mapping_file, dtype=numpy.int32)
 

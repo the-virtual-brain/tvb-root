@@ -324,8 +324,10 @@ class StorageInterface:
                 self.get_project_folder(new_name))
             os.rename(encrypted_path, new_encrypted_path)
 
-    def remove_project(self, project):
+    def remove_project(self, project, sync_for_encryption=False):
         project_folder = self.get_project_folder(project.name)
+        if sync_for_encryption:
+            self.sync_folders(project_folder)
         try:
             self.remove_folder(project_folder)
             self.logger.debug("Project folders were removed for " + project.name)

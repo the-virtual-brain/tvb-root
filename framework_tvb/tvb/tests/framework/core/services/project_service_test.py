@@ -33,18 +33,17 @@
 """
 
 import os
-import shutil
+
 import pytest
 import tvb_data
-
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.dummy_adapter3 import DummyAdapter3
@@ -241,8 +240,8 @@ class TestProjectService(TransactionalTestCase):
 
         for folder in os.listdir(TvbProfile.current.TVB_STORAGE):
             full_path = os.path.join(TvbProfile.current.TVB_STORAGE, folder)
-            if os.path.isdir(full_path) and folder.startswith('Generated'):
-                shutil.rmtree(full_path)
+            if folder.startswith('Generated'):
+                self.storage_interface.remove_folder(full_path)
 
     def test_retrieve_projects_page2(self):
         """

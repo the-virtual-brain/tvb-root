@@ -156,7 +156,7 @@ class FilesHelper(object):
         try:
             complete_path = self.get_project_folder(project_name, str(operation_id))
             self.logger.debug("Removing: " + str(complete_path))
-            self.remove_folder(complete_path)
+            self.remove_folder(complete_path, False)
         except FileStructureException:
             self.logger.exception("Could not remove files")
             raise FileStructureException("Could not remove files for OP" + str(operation_id))

@@ -33,7 +33,6 @@
 """
 
 import os
-import shutil
 import zipfile
 
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
@@ -138,7 +137,7 @@ class TVBImporter(ABCUploader):
                     current_op.status = STATUS_ERROR
                     raise LaunchException("Invalid file received as input. " + str(excep))
                 finally:
-                    shutil.rmtree(tmp_folder)
+                    self.storage_interface.remove_folder(tmp_folder)
             else:
                 # upgrade file if necessary
                 file_update_manager = FilesUpdateManager()
@@ -158,8 +157,7 @@ class TVBImporter(ABCUploader):
                         self.log.exception(excep)
                         if datatype is not None:
                             target_path = h5.path_for_stored_index(datatype)
-                            if os.path.exists(target_path):
-                                os.remove(target_path)
+                            self.storage_interface.remove_files([target_path])
                         raise LaunchException("Invalid file received as input. " + str(excep))
                 else:
                     raise LaunchException("Uploaded file: %s is neither in ZIP or HDF5 format" % view_model.data_file)
