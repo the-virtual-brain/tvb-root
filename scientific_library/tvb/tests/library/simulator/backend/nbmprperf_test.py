@@ -59,22 +59,6 @@ def test_tvb_100ms(benchmark):
     benchmark(lambda : sim.run())
 
 
-def test_nb_pdq_10ms(benchmark):
-    sim = make_sim(10.0)
-    run_sim = NbMPRBackend().build_py_func(
-        '<%include file="nb-montbrio.py.mako"/>', {}, name='run_sim')
-    nstep = int(sim.simulation_length / sim.integrator.dt)
-    benchmark(lambda : run_sim(sim, nstep))
-
-
-def test_nb_pdq_100ms(benchmark):
-    sim = make_sim(100.0)
-    run_sim = NbMPRBackend().build_py_func(
-        '<%include file="nb-montbrio.py.mako"/>', {}, name='run_sim')
-    nstep = int(sim.simulation_length / sim.integrator.dt)
-    benchmark(lambda : run_sim(sim, nstep))
-
-
 def test_nb_mako_10ms(benchmark):
     sim = make_sim(10.0)
     template = '<%include file="nb-sim.py.mako"/>'
@@ -89,3 +73,69 @@ def test_nb_mako_100ms(benchmark):
     content = dict(sim=sim, np=np, debug_nojit=False)
     kernel = NbBackend().build_py_func(template, content, print_source=True, name='run_sim')
     benchmark(lambda : kernel(sim))
+
+def test_nb_mako_1000ms(benchmark):
+    sim = make_sim(1000.0)
+    template = '<%include file="nb-sim.py.mako"/>'
+    content = dict(sim=sim, np=np, debug_nojit=False)
+    kernel = NbBackend().build_py_func(template, content, print_source=True, name='run_sim')
+    benchmark(lambda : kernel(sim))
+
+def run_sim_pdq(sim, integrate):
+    nstep = int(np.ceil(sim.simulation_length/sim.integrator.dt))
+    horizon = sim.connectivity.horizon
+    buf_len = horizon + nstep
+    N = sim.connectivity.number_of_regions
+    gf = sim.integrator.noise.gfun(None)
+
+    r, V = sim.integrator.noise.generate( shape=(2,N,buf_len) ) * gf
+    r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
+    V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
+
+
+    r, V = integrate(
+        N = N,
+        dt = sim.integrator.dt,
+        nstep = nstep,
+        i0 = horizon,
+        r=r,
+        V=V,
+        weights = sim.connectivity.weights, 
+        idelays = sim.connectivity.idelays,
+        G = sim.coupling.a.item(),
+        parmat = sim.model.spatial_parameter_matrix
+    )
+    return r[:,horizon:], V[:,horizon:]
+
+def test_nb_pdq_10ms(benchmark):
+    sim = make_sim(10.0)
+    template = '<%include file="nb-montbrio.py.mako"/>'
+    content = dict(
+            compatibility_mode=False, 
+            sim=sim
+    ) 
+    integrate = NbMPRBackend().build_py_func(template, content, name='_mpr_integrate', print_source=True)
+
+    benchmark(lambda : run_sim_pdq(sim, integrate))
+
+def test_nb_pdq_100ms(benchmark):
+    sim = make_sim(100.0)
+    template = '<%include file="nb-montbrio.py.mako"/>'
+    content = dict(
+            compatibility_mode=False, 
+            sim=sim
+    ) 
+    integrate = NbMPRBackend().build_py_func(template, content, name='_mpr_integrate', print_source=True)
+
+    benchmark(lambda : run_sim_pdq(sim, integrate))
+
+def test_nb_pdq_1000ms(benchmark):
+    sim = make_sim(1000.0)
+    template = '<%include file="nb-montbrio.py.mako"/>'
+    content = dict(
+            compatibility_mode=False, 
+            sim=sim
+    ) 
+    integrate = NbMPRBackend().build_py_func(template, content, name='_mpr_integrate', print_source=True)
+
+    benchmark(lambda : run_sim_pdq(sim, integrate))
