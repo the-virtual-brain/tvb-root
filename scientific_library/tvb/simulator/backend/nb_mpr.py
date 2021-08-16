@@ -131,7 +131,7 @@ class NbMPRBackend(MakoUtilMix):
             weights = sim.connectivity.weights, 
             idelays = sim.connectivity.idelays,
             G = sim.coupling.a.item(),
-            parmat = sim.model.spatial_parameter_matrix
+            parmat = sim.model.spatial_parameter_matrix.T
         )
         return r[:,horizon:], V[:,horizon:]
 

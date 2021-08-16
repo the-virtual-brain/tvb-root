@@ -67,7 +67,7 @@ class TestNbSim(BaseTestSim):
 
         sim = simulator.Simulator(
             model=models.MontbrioPazoRoxin(),
-            coupling=coupling.Scaling(a=np.array([G])),
+            coupling=coupling.Linear(a=np.array([G])),
             connectivity=self._random_network(),
             conduction_speed=np.inf,
             monitors=[
@@ -100,7 +100,7 @@ class TestNbSim(BaseTestSim):
                     size=N
                 )
             ),
-            coupling=coupling.Scaling(a=np.array([G])),
+            coupling=coupling.Linear(a=np.array([G])),
             connectivity=self._random_network(N),
             conduction_speed=np.inf,
             monitors=[
@@ -128,7 +128,7 @@ class TestNbSim(BaseTestSim):
 
         sim = simulator.Simulator(
             model=models.MontbrioPazoRoxin(),
-            coupling=coupling.Scaling(a=np.array([G])),
+            coupling=coupling.Linear(a=np.array([G])),
             connectivity=self._random_network(),
             conduction_speed=np.inf,
             monitors=[
@@ -145,7 +145,7 @@ class TestNbSim(BaseTestSim):
 
         sim_det = simulator.Simulator(
             model=models.MontbrioPazoRoxin(),
-            coupling=coupling.Scaling(a=np.array([G])),
+            coupling=coupling.Linear(a=np.array([G])),
             connectivity=self._random_network(),
             conduction_speed=np.inf,
             monitors=[
@@ -192,7 +192,7 @@ class TestNbSim(BaseTestSim):
 
         sim = simulator.Simulator(
             model=models.MontbrioPazoRoxin(),
-            coupling=coupling.Scaling(a=np.array([G])),
+            coupling=coupling.Linear(a=np.array([G])),
             connectivity=self._random_network(),
             conduction_speed=np.inf,
             monitors=[
@@ -223,7 +223,7 @@ class TestNbSim(BaseTestSim):
 
         sim = simulator.Simulator(
             model=models.MontbrioPazoRoxin(),
-            coupling=coupling.Scaling(a=np.array([G])),
+            coupling=coupling.Linear(a=np.array([G])),
             connectivity=self._random_network(speed=speed),
             conduction_speed=speed,
             monitors=[
@@ -254,7 +254,7 @@ class TestNbSim(BaseTestSim):
 
         sim = simulator.Simulator(
             model=models.MontbrioPazoRoxin(),
-            coupling=coupling.Scaling(a=np.array([G])),
+            coupling=coupling.Linear(a=np.array([G])),
             connectivity=self._random_network(speed=speed),
             conduction_speed=speed,
             monitors=[
