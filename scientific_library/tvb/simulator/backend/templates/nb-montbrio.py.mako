@@ -35,6 +35,32 @@ import numba as nb
 <%include file="nb-dfuns.py.mako" />
 
 
+<%
+    cvars = [sim.model.state_variables[i] for i in sim.model.cvar]
+%>
+
+${'' if debug_nojit else '@nb.njit(inline="always")'}
+def cx(t, i, N, weights, ${','.join(cvars)}, idelays):
+% for par in sim.coupling.parameter_names:
+    ${par} = ${getattr(sim.coupling, par)[0]}
+% endfor
+
+% for cterm in sim.model.coupling_terms:
+    ${cterm} = 0.0
+% endfor
+    for j in range(N):
+% for cterm, cvar in zip(sim.model.coupling_terms, cvars):
+        x_j = ${cvar}[j, t - idelays[i,j]]
+        ${cterm} +=  weights[i, j]* ${sim.coupling.pre_expr}
+% endfor
+% for cterm, cvar in zip(sim.model.coupling_terms, cvars):
+    gx = ${cterm}
+    x_i = ${cvar}[i, t]
+    ${cterm} = ${sim.coupling.post_expr}
+% endfor
+    return ${','.join(sim.model.coupling_terms)}
+
+
 @nb.njit
 def _mpr_integrate(
         N,       # number of regions
@@ -48,25 +74,13 @@ def _mpr_integrate(
         G,       # coupling scaling
         parmat   # spatial parameters [nparams, nnodes]
 ):
-        ## unpack global parameters
-        ##% for par in sim.model.global_parameter_names:
-        ##    ${par} = ${getattr(sim.model, par).item()}
-        ##% endfor
-
 
     def r_bound(r):
         return r if r >= 0. else 0. # max(0., r) is faster?
 
     for i in range(i0, i0 + nstep):
         for n in range(N):
-            # coupling
-            r_c = 0
-            V_c = 0
-            for m in range(N):
-                r_c += weights[n,m] * r[m, i - idelays[n, m] - 1]
-                V_c += weights[n,m] * V[m, i - idelays[n, m] - 1]
-            r_c = r_c * G # post
-            V_c = V_c * G # post
+            r_c, V_c = cx(i-1, n, N, weights, ${','.join(cvars)}, idelays)
 
             # precomputed additive noise 
             r_noise = r[n,i]
@@ -82,13 +96,7 @@ def _mpr_integrate(
 
 % if not compatibility_mode:
             # coupling
-            r_c = 0
-            V_c = 0
-            for m in range(N):
-                r_c += weights[n,m] * r[m, i - idelays[n, m]]
-                V_c += weights[n,m] * V[m, i - idelays[n, m] - 1]
-            r_c = r_c * G # post
-            V_c = V_c * G # post
+            r_c, V_c = cx(i, n, N, weights, ${','.join(cvars)}, idelays)
 % endif
             r[n,i] = r[n,i-1] + dt*(dr_0 + dx_r(r_int, V_int, r_c, V_c, parmat[n]  ))/2.0 + r_noise
             V[n,i] = V[n,i-1] + dt*(dV_0 + dx_V(r_int, V_int, r_c, V_c, parmat[n]))/2.0 + V_noise
