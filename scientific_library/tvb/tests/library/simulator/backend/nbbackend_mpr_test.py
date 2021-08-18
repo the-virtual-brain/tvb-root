@@ -368,3 +368,93 @@ class TestNbSim(BaseTestSim):
         np.testing.assert_allclose(raw_d, pdq_d, rtol=1e-4)
 
 
+    def test_stim_chunked(self):
+        G = 0.525
+        nsigma = 0.0
+        conn_speed=2.
+        transient = 0
+
+        conn = connectivity.Connectivity()
+        conn.motif_all_to_all(number_of_regions=3)
+        conn.speed = np.r_[conn_speed]
+        conn.weights[:] = 0.
+        conn.weights[0,1] = 1.
+        conn.weights[1,2] = 1.
+        conn.weights[2,0] = 1.
+        conn.centres_spherical(number_of_regions=conn.number_of_regions)
+        conn.create_region_labels(mode='alphabetic')
+
+        conn.weights = conn.weights/np.max(conn.weights)
+        np.fill_diagonal(conn.weights, 0.)
+        conn.configure()
+
+        weighting = np.zeros((conn.number_of_regions, ))
+        weighting[[1]] = 5.0
+
+        # temporary fix
+        from tvb.basic.neotraits.api import Final, Attr
+        class PulseTrain(equations.TemporalApplicableEquation):
+
+            equation = Final(
+                label="Pulse Train",
+                default="where((var>onset)&(((var-onset) % T) < tau), amp, 0)"
+            )
+
+            parameters = Attr(
+                field_type=dict,
+                default=lambda: {"T": 42.0, "tau": 13.0, "amp": 1.0, "onset": 30.0},
+                label="Pulse Train Parameters")
+        eqn_t = PulseTrain(
+            parameters={
+                'onset': 50,
+                'T': 10000.0 ,
+                'tau': 10.0,
+                'amp': 1.
+            }
+        )
+
+        stimulus = patterns.StimuliRegion(
+            temporal=eqn_t,
+            connectivity=conn,
+            weight=weighting)
+
+
+        simulation_length = 150
+        seed=42
+
+        ic = np.zeros( (1, 2, 3, 1))
+        ic[:,1,:,:] = -2.
+
+        sim = simulator.Simulator(
+            model=models.MontbrioPazoRoxin(
+                eta   = np.r_[-5.0],
+                J     = np.r_[15.],
+                Delta = np.r_[1.],
+            ),
+            connectivity=conn,
+            coupling=coupling.Linear(
+                a=np.array([G])
+            ),
+            conduction_speed=conn_speed,
+            integrator=integrators.HeunStochastic(
+                dt=0.01,
+                noise=noise.Additive(
+                    nsig=np.array(
+                        [nsigma,nsigma*2]
+                    ),
+                    noise_seed=seed)
+            ),
+            monitors=[
+                monitors.TemporalAverage(period=1.0)
+            ],
+            initial_conditions=ic,
+            stimulus=stimulus,
+            simulation_length=simulation_length
+        ).configure()
+
+
+        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, simulation_length=simulation_length, compatibility_mode=True, chunksize=5000)
+
+        (tvb_t, tvb_d), = sim.run(simulation_length=simulation_length)
+
+        np.testing.assert_allclose(tvb_d, pdq_d, rtol=1e-4)
