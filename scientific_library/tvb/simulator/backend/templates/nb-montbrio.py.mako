@@ -72,7 +72,8 @@ def _mpr_integrate(
         weights, 
         idelays,
         G,       # coupling scaling
-        parmat   # spatial parameters [nparams, nnodes]
+        parmat,  # spatial parameters [nparams, nnodes]
+        stimulus # stimulus [nnodes, ntimes] or None
 ):
 
     def r_bound(r):
@@ -85,21 +86,26 @@ def _mpr_integrate(
             # precomputed additive noise 
             r_noise = r[n,i]
             V_noise = V[n,i]
-
+% if sim.stimulus is not None:
+            # stimulus TODO reflect stvar
+            r_stim = 0.0
+            V_stim = stimulus[n,i-i0]
+% endif
             # Heun integration step
             dr_0 = dx_r(r[n,i-1], V[n,i-1], r_c, V_c, parmat[n] ) 
             dV_0 = dx_V(r[n,i-1], V[n,i-1], r_c, V_c, parmat[n] ) 
 
-            r_int = r[n,i-1] + dt*dr_0 + r_noise
-            V_int = V[n,i-1] + dt*dV_0 + V_noise
+            r_int = r[n,i-1] + dt*dr_0 + r_noise ${'' if sim.stimulus is None else '+dt*r_stim'}
+            V_int = V[n,i-1] + dt*dV_0 + V_noise ${'' if sim.stimulus is None else '+dt*V_stim'}
             r_int = r_bound(r_int)
 
 % if not compatibility_mode:
             # coupling
             r_c, V_c = cx(i, n, N, weights, ${','.join(cvars)}, idelays)
 % endif
-            r[n,i] = r[n,i-1] + dt*(dr_0 + dx_r(r_int, V_int, r_c, V_c, parmat[n]  ))/2.0 + r_noise
-            V[n,i] = V[n,i-1] + dt*(dV_0 + dx_V(r_int, V_int, r_c, V_c, parmat[n]))/2.0 + V_noise
+            r[n,i] = r[n,i-1] + dt*(dr_0 + dx_r(r_int, V_int, r_c, V_c, parmat[n]  ))/2.0 + r_noise ${'' if sim.stimulus is None else '+dt*r_stim'}
+
+            V[n,i] = V[n,i-1] + dt*(dV_0 + dx_V(r_int, V_int, r_c, V_c, parmat[n]))/2.0 + V_noise ${'' if sim.stimulus is None else '+dt*V_stim'}
             r[n,i] = r_bound(r[n,i])
 
     return r, V

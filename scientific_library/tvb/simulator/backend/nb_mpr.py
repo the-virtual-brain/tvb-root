@@ -120,6 +120,12 @@ class NbMPRBackend(MakoUtilMix):
         r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
         V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
 
+        if sim.stimulus is None:
+            stimulus = None
+        else:
+            sim.stimulus.configure_space()
+            sim.stimulus.configure_time(np.arange(nstep)*sim.integrator.dt)
+            stimulus = sim.stimulus()
 
         r, V = integrate(
             N = N,
@@ -131,7 +137,8 @@ class NbMPRBackend(MakoUtilMix):
             weights = sim.connectivity.weights, 
             idelays = sim.connectivity.idelays,
             G = sim.coupling.a.item(),
-            parmat = sim.model.spatial_parameter_matrix.T
+            parmat = sim.model.spatial_parameter_matrix.T,
+            stimulus = stimulus
         )
         return r[:,horizon:], V[:,horizon:]
 
@@ -161,7 +168,16 @@ class NbMPRBackend(MakoUtilMix):
         r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
         V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
 
+
         for chunk, _ in enumerate(range(horizon, nstep+horizon, chunksize)):
+            if sim.stimulus is None:
+                stimulus = None
+            else:
+                sim.stimulus.configure_space()
+                sim.stimulus.configure_time(
+                        np.arange(chunk*chunksize, (chunk+1)*chunksize)*sim.integrator.dt
+                )
+                stimulus = sim.stimulus()
             r, V = integrate(
                 N = N,
                 dt = sim.integrator.dt,
@@ -172,7 +188,8 @@ class NbMPRBackend(MakoUtilMix):
                 weights = sim.connectivity.weights, 
                 idelays = sim.connectivity.idelays,
                 G = sim.coupling.a.item(),
-                parmat = sim.model.spatial_parameter_matrix
+                parmat = sim.model.spatial_parameter_matrix,
+                stimulus = stimulus
             )
 
             tavg_chunk = chunk * tavg_chunksize
@@ -192,5 +209,6 @@ class NbMPRBackend(MakoUtilMix):
             r_noise, V_noise = sim.integrator.noise.generate( shape=(2,N,chunksize) ) * gf
             r[:,horizon:] = r_noise
             V[:,horizon:] = V_noise
+
 
         return r_out, V_out
