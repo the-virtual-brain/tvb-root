@@ -38,12 +38,12 @@ import json
 import os
 import shutil
 import uuid
-from datetime import datetime
 from cgi import FieldStorage
+from datetime import datetime
+
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm.attributes import manager_of_class
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.ex import TraitTypeError
 from tvb.basic.profile import TvbProfile
@@ -163,17 +163,12 @@ class ImportService(object):
             # Removing from DB is not necessary because in transactional env a simple exception throw
             # will erase everything to be inserted.
             for project in self.created_projects:
-                project_path = self.storage_interface.get_project_folder(project.name)
-                shutil.rmtree(project_path)
+                self.storage_interface.remove_project(project)
             raise ImportException(str(excep))
 
         finally:
-            # Now delete uploaded file
-            if os.path.exists(uq_file_name):
-                os.remove(uq_file_name)
-            # Now delete temporary folder where uploaded ZIP was exploded.
-            if os.path.exists(temp_folder):
-                shutil.rmtree(temp_folder)
+            # Now delete uploaded file and temporary folder where uploaded ZIP was exploded.
+            self.storage_interface.remove_files([uq_file_name, temp_folder])
 
     def _import_project_from_folder(self, temp_folder):
         """
@@ -205,8 +200,7 @@ class ImportService(object):
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
             if StorageInterface.encryption_enabled():
-                StorageInterface.sync_folders(project_path)
-                shutil.rmtree(project_path)
+                self.storage_interface.remove_project(project, True)
 
     @staticmethod
     def check_import_references(file_path, datatype):
@@ -656,4 +650,3 @@ class ImportService(object):
         for burst_config in burst_configs:
             burst_config.datatypes_number = dao.count_datatypes_in_burst(burst_config.gid)
             dao.store_entity(burst_config)
-

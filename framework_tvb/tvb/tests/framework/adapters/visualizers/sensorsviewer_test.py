@@ -42,7 +42,6 @@ from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.datatypes.sensors import SensorTypes
 from tvb.datatypes.surfaces import EEG_CAP
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -70,12 +69,6 @@ class TestSensorViewers(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user('Sensors_Viewer_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Sensors_Viewer_Project')
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch_eeg(self):
         """

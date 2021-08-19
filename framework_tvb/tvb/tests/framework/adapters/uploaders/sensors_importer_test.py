@@ -38,7 +38,6 @@ import tvb_data.sensors as demo_data
 from tvb.adapters.uploaders.sensors_importer import SensorsImporter, SensorsImporterModel
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -64,7 +63,6 @@ class TestSensorsImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_import_eeg_sensors(self):
         """

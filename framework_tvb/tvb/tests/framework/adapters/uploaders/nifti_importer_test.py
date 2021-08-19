@@ -46,7 +46,6 @@ from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -74,7 +73,6 @@ class TestNIFTIImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_path=None, expected_result_class=StructuralMRIIndex, connectivity_gid=None):
         """

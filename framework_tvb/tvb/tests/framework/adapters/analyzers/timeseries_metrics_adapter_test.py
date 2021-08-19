@@ -35,9 +35,9 @@
 import os
 import tvb_data
 import json
+
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.config import ALGORITHMS
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel
 from tvb.tests.framework.core.factory import TestFactory
@@ -57,12 +57,6 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         self.test_project = TestFactory.create_project(self.test_user)
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
-
-    def transactional_teardown_method(self):
-        """
-        Remove project folders and clean up database.
-        """
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_adapter_launch(self, connectivity_factory, region_mapping_factory,
                             time_series_region_index_factory, operation_from_existing_op_factory):

@@ -36,7 +36,6 @@ from os import path
 
 import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -58,7 +57,6 @@ class TestConnectivityZipImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_happy_flow_import(self):
         """

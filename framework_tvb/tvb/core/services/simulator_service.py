@@ -34,10 +34,9 @@
 
 import copy
 import json
-import shutil
 import uuid
-import numpy
 
+import numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import load
 from tvb.core.entities.filters.chain import FilterChain
@@ -137,7 +136,7 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
         finally:
-            shutil.rmtree(zip_folder_path)
+            self.storage_interface.remove_folder(zip_folder_path)
 
     @staticmethod
     def _set_range_param_in_dict(param_value):

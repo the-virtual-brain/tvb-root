@@ -40,7 +40,6 @@ from tvb.core.neotraits.forms import TraitUploadField, StrField, FloatField, Int
     BoolField, ArrayField, SelectField, HiddenField, MultiSelectField, FormField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -57,7 +56,6 @@ class TestForms(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_upload_field(self):
         connectivity_file = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')

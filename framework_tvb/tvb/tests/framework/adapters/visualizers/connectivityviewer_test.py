@@ -33,8 +33,8 @@
 
 import os
 import tvb_data
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.tests.framework.core.factory import TestFactory
@@ -59,12 +59,6 @@ class TestConnectivityViewer(TransactionalTestCase):
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
         self.connectivity_index = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert self.connectivity_index is not None
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch(self):
         """
