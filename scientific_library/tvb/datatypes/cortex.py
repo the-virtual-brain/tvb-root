@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
-# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,10 +29,11 @@
 #
 
 import os
+
 import numpy
 import scipy.sparse
-from tvb.datatypes import local_connectivity, region_mapping, surfaces
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
+from tvb.datatypes import local_connectivity, region_mapping, surfaces
 
 
 class Cortex(HasTraits):
@@ -72,6 +73,13 @@ class Cortex(HasTraits):
         if self.region_mapping_data is None:
             return None
         return self.region_mapping_data.array_data
+
+    @property
+    def surface(self):
+        """
+        Define shortcut for retrieving the surface held by a RegionMapping.
+        """
+        return self.region_mapping_data.surface
 
     @property
     def number_of_vertices(self):
@@ -163,6 +171,32 @@ class Cortex(HasTraits):
         self.log.debug("%s: %s dtype: %s" % (sts, name, dtype))
         self.log.debug("%s: %s maximum: %s" % (sts, name, array_max))
         self.log.debug("%s: %s minimum: %s" % (sts, name, array_min))
+
+    def prepare_local_coupling(self, number_of_nodes):
+        "Prepare the concrete local coupling matrix used for simulation."
+        if self.coupling_strength.size == 1:
+            local_coupling = (self.coupling_strength[0] *
+                              self.local_connectivity.matrix)
+        elif self.coupling_strength.size == self.number_of_vertices:
+            ind = numpy.arange(number_of_nodes, dtype=numpy.intc)
+            vec_cs = numpy.zeros((number_of_nodes,))
+            vec_cs[:self.number_of_vertices] = self.coupling_strength
+            sp_cs = scipy.sparse.csc_matrix((vec_cs, (ind, ind)),
+                                            shape=(number_of_nodes, number_of_nodes))
+            local_coupling = sp_cs * self.local_connectivity.matrix
+        else:
+            raise RuntimeError("cortex.coupling_strength must be size 1 or number_of_vertices")
+        if local_coupling.shape[1] < number_of_nodes:
+            # must match unmapped indices handling in preconfigure
+            # TODO refactor the region mapping convention here
+            from scipy.sparse import csr_matrix, vstack, hstack
+            nn = number_of_nodes
+            npad = nn - local_coupling.shape[0]
+            rpad = csr_matrix((local_coupling.shape[0], npad))
+            bpad = csr_matrix((npad, nn))
+            local_coupling = vstack([hstack([local_coupling, rpad]), bpad])
+        return local_coupling
+
 
     @classmethod
     def from_file(cls, source_file='cortex_16384.zip', region_mapping_file=os.path.join("regionMapping_16k_76.txt"),

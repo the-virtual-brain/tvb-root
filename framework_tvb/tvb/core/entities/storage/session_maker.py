@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -38,6 +38,7 @@ from types import FunctionType
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.pool import NullPool
 
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
@@ -50,32 +51,41 @@ from tvb.core.entities.storage.exceptions import NestedTransactionUnsupported, I
 
 LOGGER = get_logger(__name__)
 
-if TvbProfile.current.db.SELECTED_DB == 'postgres':
-    ### Control the pool size for PostgreSQL, otherwise we might end with multiple 
-    ### concurrent Python processes failing because of too many opened connections.
-    DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, max_overflow=1,
-                              pool_size=TvbProfile.current.db.MAX_CONNECTIONS)
-else:
-    ### SqlLite does not support pool-size
-    DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5)
 
-    def __have_journal_in_memory(con, con_record):
-        con.execute("PRAGMA journal_mode = MEMORY")
-        con.execute("PRAGMA synchronous = OFF")
-        con.execute("PRAGMA temp_store = MEMORY")
-        con.execute("PRAGMA cache_size = 500000")
-
-    def __have_journal_WAL(con, con_record):
-        con.execute("PRAGMA journal_mode=WAL")
-
-    if getattr(TvbProfile.current, "TRADE_CRASH_SAFETY_FOR_SPEED", False):
-        # use for speed, but without crash safety; use only in development
-        LOGGER.warning("TRADE_CRASH_SAFETY_FOR_SPEED is on")
-        event.listen(DB_ENGINE, 'connect', __have_journal_in_memory)
+def build_db_engine():
+    if TvbProfile.current.db.SELECTED_DB == 'postgres':
+        if TvbProfile.current.db.MAX_CONNECTIONS == 0:
+            # Disable psycopg pooling if MAX_CONNECTIONS flag is set to 0. In this case we will use an external pooling tool.
+            DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, poolclass=NullPool)
+        else:
+            ### Control the pool size for PostgreSQL, otherwise we might end with multiple
+            ### concurrent Python processes failing because of too many opened connections.
+            DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5, max_overflow=1,
+                                      pool_size=TvbProfile.current.db.MAX_CONNECTIONS)
     else:
-        event.listen(DB_ENGINE, 'connect', __have_journal_WAL)
+        ### SqlLite does not support pool-size
+        DB_ENGINE = create_engine(TvbProfile.current.db.DB_URL, pool_recycle=5)
 
-SA_SESSIONMAKER = sessionmaker(bind=DB_ENGINE, expire_on_commit=False)
+        def __have_journal_in_memory(con, con_record):
+            con.execute("PRAGMA journal_mode = MEMORY")
+            con.execute("PRAGMA synchronous = OFF")
+            con.execute("PRAGMA temp_store = MEMORY")
+            con.execute("PRAGMA cache_size = 500000")
+
+        def __have_journal_WAL(con, con_record):
+            con.execute("PRAGMA journal_mode=WAL")
+
+        if getattr(TvbProfile.current, "TRADE_CRASH_SAFETY_FOR_SPEED", False):
+            # use for speed, but without crash safety; use only in development
+            LOGGER.warning("TRADE_CRASH_SAFETY_FOR_SPEED is on")
+            event.listen(DB_ENGINE, 'connect', __have_journal_in_memory)
+        else:
+            event.listen(DB_ENGINE, 'connect', __have_journal_WAL)
+
+    return DB_ENGINE
+
+
+SA_SESSIONMAKER = sessionmaker(bind=build_db_engine(), expire_on_commit=False)
 
 # expire_on_commit – Defaults to True. When True, all instances will be fully expired after each commit(),
 #           so that all attribute/object access subsequent to a completed transaction will need to load
@@ -395,4 +405,3 @@ SESSION_META_CLASS = MetaClassFactory([add_session], {'session': SessionMaker()}
 
 
 
-      

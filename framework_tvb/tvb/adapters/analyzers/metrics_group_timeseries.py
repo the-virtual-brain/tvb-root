@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -38,25 +38,22 @@ Analyzer used to calculate a single measure for TimeSeries.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 
 """
-import json
-import uuid
-
 import numpy
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
+from tvb.basic.neotraits.api import Int, Float
 from tvb.basic.neotraits.api import List
-from tvb.config import choices, ALGORITHMS
+from tvb.config import ALGORITHMS
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField, MultiSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, MultiSelectField, FloatField, IntField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries
 
 
-class TimeseriesMetricsAdapterModel(ViewModel, BaseTimeseriesMetricAlgorithm):
+class TimeseriesMetricsAdapterModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
@@ -66,10 +63,26 @@ class TimeseriesMetricsAdapterModel(ViewModel, BaseTimeseriesMetricAlgorithm):
 
     algorithms = List(
         of=str,
-        choices=tuple(choices.values()),
+        choices=tuple(ALGORITHMS.keys()),
         label='Selected metrics to be applied',
         doc='The selected algorithms will all be applied on the input TimeSeries'
     )
+
+    start_point = Float(
+        label="Start point (ms)",
+        default=500.0,
+        required=False,
+        doc=""" The start point determines how many points of the TimeSeries will
+        be discarded before computing the metric. By default it drops the
+        first 500 ms.""")
+
+    segment = Int(
+        label="Segmentation factor",
+        default=4,
+        required=False,
+        doc=""" Divide the input time-series into discrete equally sized sequences and
+        use the last segment to compute the metric. It is only used when
+        the start point is larger than the time-series length.""")
 
 
 class TimeseriesMetricsAdapterForm(ABCAdapterForm):
@@ -79,12 +92,12 @@ class TimeseriesMetricsAdapterForm(ABCAdapterForm):
         return {"KuramotoIndex": FilterChain(fields=[FilterChain.datatype + '.data_length_2d'], operations=[">="],
                                              values=[2])}
 
-    def __init__(self, prefix='', project_id=None):
-        super(TimeseriesMetricsAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, self, name="time_series")
-        self.start_point = ScalarField(TimeseriesMetricsAdapterModel.start_point, self)
-        self.segment = ScalarField(TimeseriesMetricsAdapterModel.segment, self)
-        self.algorithms = MultiSelectField(TimeseriesMetricsAdapterModel.algorithms, self, name="algorithms")
+    def __init__(self):
+        super(TimeseriesMetricsAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(TimeseriesMetricsAdapterModel.time_series, name="time_series")
+        self.start_point = FloatField(TimeseriesMetricsAdapterModel.start_point)
+        self.segment = IntField(TimeseriesMetricsAdapterModel.segment)
+        self.algorithms = MultiSelectField(TimeseriesMetricsAdapterModel.algorithms, name="algorithms")
 
     @staticmethod
     def get_view_model():
@@ -149,12 +162,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
         # type: (TimeseriesMetricsAdapterModel) -> [DatatypeMeasureIndex]
         """ 
         Launch algorithm and build results.
-
-        :param time_series: the time series on which the algorithms are run
-        :param algorithms:  the algorithms to be run for computing measures on the time series
-        :type  algorithms:  any subclass of BaseTimeseriesMetricAlgorithm
-                            (KuramotoIndex, GlobalVariance, VarianceNodeVariance)
-        :rtype: `DatatypeMeasureIndex`
+        :param view_model: the ViewModel keeping the algorithm inputs
         """
         algorithms = view_model.algorithms
         if algorithms is None or len(algorithms) == 0:
@@ -166,11 +174,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
         metrics_results = {}
         for algorithm_name in algorithms:
 
-            algorithm = ALGORITHMS[algorithm_name](time_series=dt_timeseries)
-            if view_model.segment is not None:
-                algorithm.segment = view_model.segment
-            if view_model.start_point is not None:
-                algorithm.start_point = view_model.start_point
+            algorithm_func = ALGORITHMS[algorithm_name]
 
             # Validate that current algorithm's filter is valid.
             algorithm_filter = TimeseriesMetricsAdapterForm.get_extra_algorithm_filters().get(algorithm_name)
@@ -182,21 +186,16 @@ class TimeseriesMetricsAdapter(ABCAdapter):
             else:
                 self.log.debug("Applying measure: " + str(algorithm_name))
 
-            unstored_result = algorithm.evaluate()
+            unstored_result = algorithm_func({'time_series': dt_timeseries, 'start_point': view_model.start_point,
+                                              'segment': view_model.segment})
             # ----------------- Prepare a Float object(s) for result ----------------##
             if isinstance(unstored_result, dict):
                 metrics_results.update(unstored_result)
             else:
                 metrics_results[algorithm_name] = unstored_result
 
-        result = DatatypeMeasureIndex()
-        result.fk_source_gid = self.input_time_series_index.gid
-        result.metrics = json.dumps(metrics_results)
+        dt_metric = DatatypeMeasure(analyzed_datatype=dt_timeseries, metrics=metrics_results)
 
-        result_path = h5.path_for(self._get_output_path(), DatatypeMeasureH5, result.gid)
-        with DatatypeMeasureH5(result_path) as result_h5:
-            result_h5.metrics.store(metrics_results)
-            result_h5.analyzed_datatype.store(dt_timeseries)
-            result_h5.gid.store(uuid.UUID(result.gid))
+        result = self.store_complete(dt_metric)
 
         return result

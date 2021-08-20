@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -70,11 +70,11 @@ class EegMonitorModel(ViewModel):
 
 class EegMonitorForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(EegMonitorForm, self).__init__(prefix, project_id)
-        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, self, name='input_data')
-        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, self, name='data_2')
-        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, self, name='data_3')
+    def __init__(self):
+        super(EegMonitorForm, self).__init__()
+        self.input_data = TraitDataTypeSelectField(EegMonitorModel.input_data, name='input_data')
+        self.data_2 = TraitDataTypeSelectField(EegMonitorModel.data_2, name='data_2')
+        self.data_3 = TraitDataTypeSelectField(EegMonitorModel.data_3, name='data_3')
 
     @staticmethod
     def get_view_model():
@@ -245,14 +245,6 @@ class EegMonitor(ABCSpaceDisplayer):
         if view_model.data_3:
             time_series_index3 = self.load_entity_by_gid(view_model.data_3)
         return main_time_series_index, time_series_index2, time_series_index3
-
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (EegMonitorModel, list) -> dict
-        main_time_series_index, time_series_index2, time_series_index3 = self._load_input_indexes(view_model)
-        params = self.compute_parameters(main_time_series_index, time_series_index2, time_series_index3,
-                                         is_preview=True)
-        pages = dict(channelsPage=None)
-        return self.build_display_result("eeg/preview", params, pages)
 
     def launch(self, view_model):
         # type: (EegMonitorModel) -> dict

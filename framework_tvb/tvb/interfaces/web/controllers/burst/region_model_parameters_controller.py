@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,17 +36,18 @@
 """
 
 import json
+
 import cherrypy
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.entities import load
 from tvb.core.entities.storage import dao
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
-
 from tvb.interfaces.web.controllers.decorators import expose_page, handle_error, check_user
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController, SimulatorWizzardURLs
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorWizzardURLs
+from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 
 
 @traced
@@ -54,6 +55,10 @@ class RegionsModelParametersController(BurstBaseController):
     """
     Controller class for placing model parameters in nodes.
     """
+
+    def __init__(self):
+        super(RegionsModelParametersController, self).__init__()
+        self.simulator_context = SimulatorContext()
 
     @staticmethod
     def _dynamics_json(dynamics):
@@ -63,7 +68,7 @@ class RegionsModelParametersController(BurstBaseController):
             ret[d.id] = {
                 'id': d.id,
                 'name': d.name,
-                'model_class' : d.model_class
+                'model_class': d.model_class
             }
         return json.dumps(ret)
 
@@ -76,14 +81,14 @@ class RegionsModelParametersController(BurstBaseController):
 
     @expose_page
     def index(self):
-        current_user_id = common.get_logged_user().id
+        current_user_id = self.simulator_context.logged_user.id
         # In case the number of dynamics gets big we should add a filter in the ui.
         dynamics = dao.get_dynamics_for_user(current_user_id)
 
         if not dynamics:
             return self.no_dynamics_page()
 
-        sim_config = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+        sim_config = self.simulator_context.simulator
         connectivity = sim_config.connectivity
 
         if connectivity is None:
@@ -92,12 +97,10 @@ class RegionsModelParametersController(BurstBaseController):
             raise ValueError(msg)
 
         current_project = common.get_current_project()
-        file_handler = FilesHelper()
-        conn_idx = dao.get_datatype_by_gid(connectivity.hex)
-        conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
-
-        params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
+        conn_idx = load.load_entity_by_gid(connectivity)
+        params = ConnectivityViewer.get_connectivity_parameters(conn_idx, current_project.name,
+                                                                str(conn_idx.fk_from_operation))
+        burst_config = self.simulator_context.burst_config
 
         params.update({
             'title': 'Model parameters',
@@ -110,7 +113,6 @@ class RegionsModelParametersController(BurstBaseController):
         })
 
         return self.fill_default_attributes(params, 'regionmodel')
-
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -128,8 +130,8 @@ class RegionsModelParametersController(BurstBaseController):
                 raise Exception("All dynamics must have the same model type")
 
         model_name = dynamics[0].model_class
-        burst_config = common.get_from_session(common.KEY_BURST_CONFIG)
-        simulator_config = common.get_from_session(common.KEY_SIMULATOR_CONFIG)
+        burst_config = self.simulator_context.burst_config
+        simulator_config = self.simulator_context.simulator
 
         # update model parameters in burst config
         des = SerializationManager(simulator_config)
@@ -140,6 +142,6 @@ class RegionsModelParametersController(BurstBaseController):
         burst_config.dynamic_ids = json.dumps(dynamic_ids)
 
         # Update in session the simulator configuration and the current form URL in wizzard for burst-page.
-        common.add2session(common.KEY_BURST_CONFIG, burst_config)
-        common.add2session(common.KEY_LAST_LOADED_FORM_URL, SimulatorWizzardURLs.SET_INTEGRATOR_URL)
+        self.simulator_context.set_burst_config(burst_config)
+        self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
         raise cherrypy.HTTPRedirect("/burst/")

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,19 +34,21 @@ Manager for the file storage version updates.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
+.. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-
-import os
-import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from datetime import datetime
+import os
+
+import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException
+from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
-
+from tvb.core.neotraits.h5 import H5File
+from tvb.core.utils import string2date
+from tvb.storage.h5.file.exceptions import FileStructureException, MissingDataFileException, FileMigrationException
+from tvb.storage.storage_interface import StorageInterface
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
@@ -63,24 +65,21 @@ class FilesUpdateManager(UpdateManager):
     STATUS = True
     MESSAGE = "Done"
 
-
     def __init__(self):
         super(FilesUpdateManager, self).__init__(file_update_scripts,
                                                  TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
                                                  TvbProfile.current.version.DATA_VERSION)
-        self.files_helper = FilesHelper()
-
+        self.storage_interface = StorageInterface()
 
     def get_file_data_version(self, file_path):
         """
         Return the data version for the given file.
-        
+
         :param file_path: the path on disk to the file for which you need the TVB data version
         :returns: a number representing the data version for which the input file was written
         """
-        manager = self._get_manager(file_path)
-        return manager.get_file_data_version()
-
+        data_version = TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
+        return self.storage_interface.get_storage_manager(file_path).get_file_data_version(data_version)
 
     def is_file_up_to_date(self, file_path):
         """
@@ -100,112 +99,80 @@ class FilesUpdateManager(UpdateManager):
             return True
         return False
 
-
-    def upgrade_file(self, input_file_name, datatype=None):
+    def upgrade_file(self, input_file_name, datatype=None, burst_match_dict=None):
         """
         Upgrades the given file to the latest data version. The file will be upgraded
         sequentially, up until the current version from tvb.basic.config.settings.VersionSettings.DB_STRUCTURE_VERSION
-        
-        :param input_file_name the path to the file which needs to be upgraded
-        :return True, when update was needed and running it was successful.
-        False, the the file is already up to date.
 
+        :param input_file_name the path to the file which needs to be upgraded
+        :return True when update was successful and False when it resulted in an error.
         """
         if self.is_file_up_to_date(input_file_name):
             # Avoid running the DB update of size, when H5 is not being changed, to speed-up
-            return False
+            return True
 
         file_version = self.get_file_data_version(input_file_name)
         self.log.info("Updating from version %s , file: %s " % (file_version, input_file_name))
         for script_name in self.get_update_scripts(file_version):
-            self.run_update_script(script_name, input_file=input_file_name)
+            temp_file_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
+                                          os.path.basename(input_file_name) + '.tmp')
+            self.storage_interface.copy_file(input_file_name, temp_file_path)
+            try:
+                self.run_update_script(script_name, input_file=input_file_name, burst_match_dict=burst_match_dict)
+            except FileMigrationException as excep:
+                self.storage_interface.copy_file(temp_file_path, input_file_name)
+                os.remove(temp_file_path)
+                self.log.error(excep)
+                return False
 
         if datatype:
             # Compute and update the disk_size attribute of the DataType in DB:
-            datatype.disk_size = self.files_helper.compute_size_on_disk(input_file_name)
+            datatype.disk_size = self.storage_interface.compute_size_on_disk(input_file_name)
             dao.store_entity(datatype)
 
         return True
 
-
-    def __upgrade_datatype_list(self, datatypes):
+    def __upgrade_h5_list(self, h5_files):
         """
         Upgrade a list of DataTypes to the current version.
-        
-        :param datatypes: The list of DataTypes that should be upgraded.
 
-        :returns: (nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault) a two-tuple of integers representing
+        :returns: (nr_of_dts_upgraded_fine, nr_of_dts_ignored) a two-tuple of integers representing
             the number of DataTypes for which the upgrade worked fine, and the number of DataTypes for which
-            some kind of fault occurred
+            the upgrade has failed.
         """
         nr_of_dts_upgraded_fine = 0
-        nr_of_dts_upgraded_fault = 0
-        no_of_dts_ignored = 0
+        nr_of_dts_failed = 0
 
-        for datatype in datatypes:
-            try:
-                from tvb.basic.traits.types_mapped import MappedType
+        burst_match_dict = {}
+        for path in h5_files:
+            update_result = self.upgrade_file(path, burst_match_dict=burst_match_dict)
 
-                specific_datatype = dao.get_datatype_by_gid(datatype.gid, load_lazy=False)
+            if update_result:
+                nr_of_dts_upgraded_fine += 1
+            else:
+                nr_of_dts_failed += 1
 
-                if specific_datatype is None:
-                    datatype.invalid = True
-                    dao.store_entity(datatype)
-                    nr_of_dts_upgraded_fault += 1
-                elif isinstance(specific_datatype, MappedType):
-                    update_was_needed = self.upgrade_file(specific_datatype.get_storage_file_path(), specific_datatype)
-                    if update_was_needed:
-                        nr_of_dts_upgraded_fine += 1
-                    else:
-                        no_of_dts_ignored += 1
-                else:
-                    # Ignore DataTypeGroups
-                    self.log.debug("We will ignore, due to type: " + str(specific_datatype))
-                    no_of_dts_ignored += 1
+        return nr_of_dts_upgraded_fine, nr_of_dts_failed
 
-            except Exception as ex:
-                # The file/class is missing for some reason. Just mark the DataType as invalid.
-                datatype.invalid = True
-                dao.store_entity(datatype)
-                nr_of_dts_upgraded_fault += 1
-                self.log.exception(ex)
-
-        return nr_of_dts_upgraded_fine, nr_of_dts_upgraded_fault, no_of_dts_ignored
-
-
+    # TO DO: We should migrate the older scripts to Python 3 if we want to support migration for versions < 4
     def run_all_updates(self):
         """
         Upgrades all the data types from TVB storage to the latest data version.
-        
+
         :returns: a two entry tuple (status, message) where status is a boolean that is True in case
             the upgrade was successfully for all DataTypes and False otherwise, and message is a status
             update message.
         """
         if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
-            total_count = dao.count_all_datatypes()
-
-            self.log.info("Starting to run H5 file updates from version %d to %d, for %d datatypes" % (
-                TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
-                TvbProfile.current.version.DATA_VERSION, total_count))
-
-            # Keep track of how many DataTypes were properly updated and how many 
-            # were marked as invalid due to missing files or invalid manager.
-            no_ok = 0
-            no_error = 0
-            no_ignored = 0
             start_time = datetime.now()
 
-            # Read DataTypes in pages to limit the memory consumption
-            for current_idx in range(0, total_count, self.DATA_TYPES_PAGE_SIZE):
-                datatypes_for_page = dao.get_all_datatypes(current_idx, self.DATA_TYPES_PAGE_SIZE)
-                count_ok, count_error, count_ignored = self.__upgrade_datatype_list(datatypes_for_page)
-                no_ok += count_ok
-                no_error += count_error
-                no_ignored += count_ignored
+            file_paths = self.get_all_h5_paths()
+            total_count = len(file_paths)
+            no_ok, no_error = self.__upgrade_h5_list(file_paths)
 
-                self.log.info("Updated H5 files so far: %d [fine:%d, error:%d, ignored:%d of total:%d, in: %s min]" % (
-                    current_idx + len(datatypes_for_page), no_ok, no_error, no_ignored, total_count,
-                    int((datetime.now() - start_time).seconds / 60)))
+            self.log.info("Updated H5 files in total: %d [fine:%d, failed:%d in: %s min]" % (
+                total_count, no_ok, no_error, int((datetime.now() - start_time).seconds / 60)))
+            delete_old_burst_table_after_migration()
 
             # Now update the configuration file since update was done
             config_file_update_dict = {stored.KEY_LAST_CHECKED_FILE_VERSION: TvbProfile.current.version.DATA_VERSION}
@@ -218,7 +185,8 @@ class FilesUpdateManager(UpdateManager):
                                               "Thank you for your patience!" % total_count)
                 self.log.info(FilesUpdateManager.MESSAGE)
             else:
-                # Something went wrong
+                # Keep track of how many DataTypes were properly updated and how many
+                # were marked as invalid due to missing files or invalid manager.
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_INVALID
                 FilesUpdateManager.STATUS = False
                 FilesUpdateManager.MESSAGE = ("Out of %s stored DataTypes, %s were upgraded successfully, but %s had "
@@ -228,11 +196,51 @@ class FilesUpdateManager(UpdateManager):
             TvbProfile.current.version.DATA_CHECKED_TO_VERSION = TvbProfile.current.version.DATA_VERSION
             TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
 
+    @staticmethod
+    def get_all_h5_paths():
+        """
+        This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
+        The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).
+        """
+        h5_files = []
+        projects_folder = StorageInterface().get_projects_folder()
+
+        for project_path in os.listdir(projects_folder):
+            # Getting operation folders inside the current project
+            project_full_path = os.path.join(projects_folder, project_path)
+            try:
+                project_operations = os.listdir(project_full_path)
+            except NotADirectoryError:
+                continue
+            project_operations_base_names = [os.path.basename(op) for op in project_operations]
+
+            for op_folder in project_operations_base_names:
+                try:
+                    int(op_folder)
+                    op_folder_path = os.path.join(project_full_path, op_folder)
+                    for file in os.listdir(op_folder_path):
+                        if StorageInterface().ends_with_tvb_storage_file_extension(file):
+                            h5_file = os.path.join(op_folder_path, file)
+                            try:
+                                if FilesUpdateManager._is_empty_file(h5_file):
+                                    continue
+                                h5_files.append(h5_file)
+                            except FileStructureException:
+                                continue
+                except ValueError:
+                    pass
+
+        # Sort all h5 files based on their creation date stored in the files themselves
+        sorted_h5_files = sorted(h5_files, key=lambda h5_path: FilesUpdateManager._get_create_date_for_sorting(
+            h5_path) or datetime.now())
+        return sorted_h5_files
 
     @staticmethod
-    def _get_manager(file_path):
-        """
-        Returns a storage manager.
-        """
-        folder, file_name = os.path.split(file_path)
-        return HDF5StorageManager(folder, file_name)
+    def _is_empty_file(h5_file):
+        return H5File.get_metadata_param(h5_file, 'Create_date') is None
+
+    @staticmethod
+    def _get_create_date_for_sorting(h5_file):
+        create_date_str = str(H5File.get_metadata_param(h5_file, 'Create_date'), 'utf-8')
+        create_date = string2date(create_date_str, date_format='datetime:%Y-%m-%d %H:%M:%S.%f')
+        return create_date

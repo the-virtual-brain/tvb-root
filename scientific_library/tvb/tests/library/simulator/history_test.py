@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,20 +39,21 @@ import numpy
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.basic.neotraits.api import List
 from tvb.datatypes.connectivity import Connectivity
-from tvb.simulator.coupling import Coupling
+from tvb.simulator.coupling import Coupling, SparseCoupling
 from tvb.simulator.integrators import Identity
 from tvb.simulator.models.base import Model
 from tvb.simulator.monitors import Raw
 from tvb.simulator.simulator import Simulator
 
 
-class IdCoupling(Coupling):
+class IdCoupling(SparseCoupling):
     """Implements an identity coupling function."""
 
-    def __call__(self, step, history):
-        g_ij = history.es_weights
-        x_i, x_j = history.query(step)
-        return (g_ij * x_j).sum(axis=2).transpose((1, 0, 2))
+    def pre(self, x_i, x_j):
+        return x_j
+
+    def post(self, gx):
+        return gx
 
 
 class Sum(Model):

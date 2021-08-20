@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -94,16 +94,15 @@ class NetworkxImporterModel(UploaderViewModel):
 
 class NetworkxConnectivityImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(NetworkxConnectivityImporterForm, self).__init__(prefix, project_id)
-        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', self, name='data_file')
-        self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, self, name='key_edge_weight')
-        self.key_edge_tract = StrField(NetworkxImporterModel.key_edge_tract, self, name='key_edge_tract')
-        self.key_node_coordinates = StrField(NetworkxImporterModel.key_node_coordinates, self,
-                                             name='key_node_coordinates')
-        self.key_node_label = StrField(NetworkxImporterModel.key_node_label, self, name='key_node_label')
-        self.key_node_region = StrField(NetworkxImporterModel.key_node_region, self, name='key_node_region')
-        self.key_node_hemisphere = StrField(NetworkxImporterModel.key_node_hemisphere, self, name='key_node_hemisphere')
+    def __init__(self):
+        super(NetworkxConnectivityImporterForm, self).__init__()
+        self.data_file = TraitUploadField(NetworkxImporterModel.data_file, '.gpickle', 'data_file')
+        self.key_edge_weight = StrField(NetworkxImporterModel.key_edge_weight, 'key_edge_weight')
+        self.key_edge_tract = StrField(NetworkxImporterModel.key_edge_tract, name='key_edge_tract')
+        self.key_node_coordinates = StrField(NetworkxImporterModel.key_node_coordinates, name='key_node_coordinates')
+        self.key_node_label = StrField(NetworkxImporterModel.key_node_label, name='key_node_label')
+        self.key_node_region = StrField(NetworkxImporterModel.key_node_region, name='key_node_region')
+        self.key_node_hemisphere = StrField(NetworkxImporterModel.key_node_hemisphere, name='key_node_hemisphere')
 
     @staticmethod
     def get_view_model():
@@ -137,7 +136,7 @@ class NetworkxConnectivityImporter(ABCUploader):
             parser = NetworkxParser(view_model)
             net = pandas.read_pickle(view_model.data_file)
             connectivity = parser.parse(net)
-            return h5.store_complete(connectivity, self.storage_path)
+            return self.store_complete(connectivity)
         except ParseException as excep:
             self.log.exception("Could not process Connectivity")
             raise LaunchException(excep)

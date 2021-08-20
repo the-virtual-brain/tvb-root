@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,17 +35,18 @@
 """
 
 import os
-import shutil
 import sys
 from functools import wraps
 from types import FunctionType
-from tvb.config.init.model_manager import reset_database
+
 from tvb.config.init.initializer import initialize
+from tvb.config.init.model_manager import reset_database
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype2_index import DummyDataType2Index
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
 from tvb.tests.framework.datatypes.dummy_datatype_index import DummyDataTypeIndex
+from tvb.tests.storage.storage_test import BaseStorageTestCase
 
 
 def init_test_env():
@@ -79,9 +80,8 @@ if "TEST_INITIALIZATION_DONE" not in globals():
     init_test_env()
     TEST_INITIALIZATION_DONE = True
 
-from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.core.services.operation_service import OperationService
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.storage.storage_interface import StorageInterface
 from tvb.core.entities.storage import dao
 from tvb.core.entities.storage.session_maker import SessionMaker
 from tvb.core.entities.model.model_project import *
@@ -96,8 +96,7 @@ class BaseTestCase(object):
     """
     This class should implement basic functionality which is common to all TVB tests.
     """
-    EXCLUDE_TABLES = ["ALGORITHMS", "ALGORITHM_CATEGORIES", "PORTLETS",
-                      "MAPPED_INTERNAL__CLASS", "MAPPED_MAPPED_TEST_CLASS"]
+    EXCLUDE_TABLES = ["ALGORITHMS", "ALGORITHM_CATEGORIES"]
 
     def assertEqual(self, expected, actual, message=""):
         assert expected == actual, message + " Expected %s but got %s." % (expected, actual)
@@ -154,40 +153,18 @@ class BaseTestCase(object):
                 # Ignore potential wrongly written operations by other unit-tests
                 pass
 
-    def delete_project_folders(self):
+    @staticmethod
+    def delete_project_folders():
         """
         This method deletes folders for all projects from TVB folder.
         This is done without any check on database. You might get projects in DB but no folder for them on disk.
         """
-        projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
-        if os.path.exists(projects_folder):
-            for current_file in os.listdir(projects_folder):
-                full_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, current_file)
-                if os.path.isdir(full_path):
-                    shutil.rmtree(full_path, ignore_errors=True)
+        BaseStorageTestCase.delete_projects_folders()
 
-        for folder in [os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME),
-                       os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.TEMP_FOLDER)]:
-            if os.path.exists(folder):
-                shutil.rmtree(folder, ignore_errors=True)
+        for folder in [os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.EXPORT_FOLDER_NAME),
+                       os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.TEMP_FOLDER)]:
+            StorageInterface.remove_folder(folder, True)
             os.makedirs(folder)
-
-    @staticmethod
-    def compute_recursive_h5_disk_usage(start_path='.'):
-        """
-        Computes the disk usage of all h5 files under the given directory.
-        :param start_path:
-        :return: A tuple of size in kiB and number of files
-        """
-        total_size = 0
-        n_files = 0
-        for dir_path, _, file_names in os.walk(start_path):
-            for f in file_names:
-                if f.endswith('.h5'):
-                    fp = os.path.join(dir_path, f)
-                    total_size += os.path.getsize(fp)
-                    n_files += 1
-        return int(round(total_size / 1024.)), n_files
 
     def count_all_entities(self, entity_type):
         """
@@ -264,7 +241,7 @@ def transactional_test(func, callback=None):
                         LOGGER.debug(args[0].__class__.__name__ + "->" + func.__name__
                                      + "- Transactional TEARDOWN starting...")
                         args[0].transactional_teardown_method_TVB()
-                        args[0].delete_project_folders()
+                    args[0].delete_project_folders()
             finally:
                 session_maker.rollback_transaction()
                 session_maker.close_transaction()

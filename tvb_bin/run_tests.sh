@@ -39,6 +39,9 @@ fi
 echo 'Starting TVB Scientific Library tests'
 pytest --pyargs tvb.tests.library --junitxml=TEST_OUTPUT/results_lib.xml > TEST_OUTPUT/lib.out 2>&1
 
+echo 'Starting TVB Storage tests'
+pytest --pyargs tvb.tests.storage --junitxml=TEST_OUTPUT/results_sto.xml > TEST_OUTPUT/sto.out 2>&1
+
 echo 'Tests done.'
 
 exit 0

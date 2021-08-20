@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -175,6 +175,10 @@ class RawViewModel(MonitorViewModel, Raw):
     @property
     def linked_has_traits(self):
         return Raw
+
+    def __str__(self):
+        clsname = self.__class__.__name__
+        return '%s(period=%f)' % (clsname, self.period)
 
 
 class SubSampleViewModel(MonitorViewModel, SubSample):
@@ -367,3 +371,29 @@ class SimulatorAdapterModel(ViewModel, Simulator):
         self.model = type(self.model)()
         self.integrator = type(self.integrator)()
         self.monitors = (type(self.monitors[0])(),)
+
+    @property
+    def first_monitor(self):
+        if isinstance(self.monitors[0], RawViewModel):
+            if len(self.monitors) > 1:
+                return self.monitors[1]
+            else:
+                return None
+        return self.monitors[0]
+
+    def determine_indexes_for_chosen_vars_of_interest(self):
+        all_variables = self.model.__class__.variables_of_interest.element_choices
+        chosen_variables = self.model.variables_of_interest
+        indexes = self.get_variables_of_interest_indexes(all_variables, chosen_variables)
+        return indexes
+
+    @staticmethod
+    def get_variables_of_interest_indexes(all_variables, chosen_variables):
+        variables_of_interest_indexes = {}
+
+        if not isinstance(chosen_variables, (list, tuple)):
+            chosen_variables = [chosen_variables]
+
+        for variable in chosen_variables:
+            variables_of_interest_indexes[variable] = all_variables.index(variable)
+        return variables_of_interest_indexes

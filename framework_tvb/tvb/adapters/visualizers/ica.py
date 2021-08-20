@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -68,12 +68,11 @@ class ICAModel(ViewModel):
 
 class ICAForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ICAForm, self).__init__(prefix, project_id)
-        self.datatype = TraitDataTypeSelectField(ICAModel.datatype, self, name='datatype',
-                                                 conditions=self.get_filters())
-        self.i_svar = IntField(ICAModel.i_svar, self, name='i_svar')
-        self.i_mode = IntField(ICAModel.i_mode, self, name='i_mode')
+    def __init__(self):
+        super(ICAForm, self).__init__()
+        self.datatype = TraitDataTypeSelectField(ICAModel.datatype, name='datatype', conditions=self.get_filters())
+        self.i_svar = IntField(ICAModel.i_svar, name='i_svar')
+        self.i_mode = IntField(ICAModel.i_mode, name='i_mode')
 
     @staticmethod
     def get_view_model():

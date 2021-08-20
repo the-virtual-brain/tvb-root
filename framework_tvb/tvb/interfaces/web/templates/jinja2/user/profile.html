@@ -57,15 +57,10 @@
             	</dd>
 				{% endif %}
 
-				{% if user.is_administrator() %}
+				{% if user.is_administrator() and keycloakConfigWebFile is not defined %}
             		<dt>Settings</dt>
-				{% endif %}
-
-				{% if user.is_administrator() %}
             		<dd tabindex='3' onkeypress="redirectToHrefChild(this)">
-						{% if user.is_administrator() %}
-                			<a href='/settings/settings/' tabindex="-1"><u>TVB Settings</u></a>
-						{% endif %}
+						<a href='/settings/settings/' tabindex="-1"><u>TVB Settings</u></a>
             		</dd>
 				{% endif %}
 

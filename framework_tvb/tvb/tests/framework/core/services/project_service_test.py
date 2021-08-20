@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,20 +33,20 @@
 """
 
 import os
-import shutil
+
 import pytest
 import tvb_data
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
-from tvb.tests.framework.adapters.testadapter3 import TestAdapter3
+from tvb.storage.storage_interface import StorageInterface
+from tvb.tests.framework.adapters.dummy_adapter3 import DummyAdapter3
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory, ExtremeTestFactory
 
@@ -64,16 +64,13 @@ class TestProjectService(TransactionalTestCase):
         Reset the database before each test.
         """
         self.project_service = ProjectService()
-        self.structure_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.test_user = TestFactory.create_user()
 
     def transactional_teardown_method(self):
         """
-        Remove project folders and clean up database.
+        Remove project folders.
         """
-        created_projects = dao.get_projects_for_user(self.test_user.id)
-        for project in created_projects:
-            self.structure_helper.remove_project_structure(project.name)
         self.delete_project_folders()
 
     def test_create_project_happy_flow(self):
@@ -94,7 +91,8 @@ class TestProjectService(TransactionalTestCase):
         users_for_project = dao.get_members_of_project(project.id)
         for user in users_for_project:
             assert user.id in [user1.id, user2.id, self.test_user.id], "Users not stored properly."
-        assert os.path.exists(os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER,
+        assert os.path.exists(os.path.join(TvbProfile.current.TVB_STORAGE,
+                                           StorageInterface.PROJECTS_FOLDER,
                                            "test_project")), "Folder for project was not created"
 
     def test_create_project_empty_name(self):
@@ -112,14 +110,14 @@ class TestProjectService(TransactionalTestCase):
         Standard flow for editing an existing project.
         """
         selected_project = TestFactory.create_project(self.test_user, 'test_proj')
-        proj_root = self.structure_helper.get_project_folder(selected_project)
+        proj_root = self.storage_interface.get_project_folder(selected_project.name)
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 1, "Database initialization probably failed!"
 
         edited_data = dict(name="test_project", description="test_description", users=[])
         edited_project = self.project_service.store_project(self.test_user, False, selected_project.id, **edited_data)
         assert not os.path.exists(proj_root), "Previous folder not deleted"
-        proj_root = self.structure_helper.get_project_folder(edited_project)
+        proj_root = self.storage_interface.get_project_folder(edited_project.name)
         assert os.path.exists(proj_root), "New folder not created!"
         assert selected_project.name != edited_project.name, "Project was no changed!"
 
@@ -128,7 +126,7 @@ class TestProjectService(TransactionalTestCase):
         Trying to edit an un-existing project.
         """
         selected_project = TestFactory.create_project(self.test_user, 'test_proj')
-        self.structure_helper.get_project_folder(selected_project)
+        self.storage_interface.get_project_folder(selected_project.name)
         initial_projects = dao.get_projects_for_user(self.test_user.id)
         assert len(initial_projects) == 1, "Database initialization probably failed!"
         data = dict(name="test_project", description="test_description", users=[])
@@ -242,8 +240,8 @@ class TestProjectService(TransactionalTestCase):
 
         for folder in os.listdir(TvbProfile.current.TVB_STORAGE):
             full_path = os.path.join(TvbProfile.current.TVB_STORAGE, folder)
-            if os.path.isdir(full_path) and folder.startswith('Generated'):
-                shutil.rmtree(full_path)
+            if folder.startswith('Generated'):
+                self.storage_interface.remove_folder(full_path)
 
     def test_retrieve_projects_page2(self):
         """
@@ -295,12 +293,12 @@ class TestProjectService(TransactionalTestCase):
             assert 0 != project.disk_size
             assert '0.0 KiB' != project.disk_size_human
 
-            prj_folder = self.structure_helper.get_project_folder(project)
-            actual_disk_size = self.compute_recursive_h5_disk_usage(prj_folder)[0]
+            prj_folder = self.storage_interface.get_project_folder(project.name)
+            actual_disk_size = self.storage_interface.compute_recursive_h5_disk_usage(prj_folder)
 
             ratio = float(actual_disk_size) / project.disk_size
             msg = "Real disk usage: %s The one recorded in the db : %s" % (actual_disk_size, project.disk_size)
-            assert ratio < 1.7, msg
+            assert ratio < 1.1, msg
 
     def test_get_linkable_projects(self):
         """
@@ -329,7 +327,7 @@ class TestProjectService(TransactionalTestCase):
         Standard flow for deleting a project.
         """
         inserted_project = TestFactory.create_project(self.test_user, 'test_proj')
-        project_root = self.structure_helper.get_project_folder(inserted_project)
+        project_root = self.storage_interface.get_project_folder(inserted_project.name)
         projects = dao.get_projects_for_user(self.test_user.id)
         assert len(projects) == 1, "Initializations failed!"
         assert os.path.exists(project_root), "Something failed at insert time!"
@@ -411,12 +409,13 @@ class TestProjectService(TransactionalTestCase):
         new_datatype_h5 = h5.h5_file_for_index(new_datatype)
         assert new_datatype_h5.subject.load() == 'new subject', 'UserGroup not updated!'
 
-    def test_update_meta_data_group(self, test_adapter_factory):
+    def test_update_meta_data_group(self, test_adapter_factory, datatype_group_factory):
         """
         Test the new update metaData for a group of dataTypes.
         """
-        test_adapter_factory(adapter_class=TestAdapter3)
-        op_group_id = TestFactory.create_group(test_user=self.test_user)[1]
+        test_adapter_factory(adapter_class=DummyAdapter3)
+        group = datatype_group_factory()
+        op_group_id = group.fk_operation_group
 
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
                          DataTypeOverlayDetails.DATA_STATE: "updated_state",

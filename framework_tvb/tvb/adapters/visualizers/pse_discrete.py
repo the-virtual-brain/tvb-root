@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -53,10 +53,10 @@ class DiscretePSEAdapterModel(ViewModel):
 
 class DiscretePSEAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(DiscretePSEAdapterForm, self).__init__(prefix, project_id)
-        self.datatype_group = TraitDataTypeSelectField(DiscretePSEAdapterModel.datatype_group, self,
-                                                       name='datatype_group', conditions=self.get_filters())
+    def __init__(self):
+        super(DiscretePSEAdapterForm, self).__init__()
+        self.datatype_group = TraitDataTypeSelectField(DiscretePSEAdapterModel.datatype_group, name='datatype_group',
+                                                       conditions=self.get_filters())
 
     @staticmethod
     def get_view_model():

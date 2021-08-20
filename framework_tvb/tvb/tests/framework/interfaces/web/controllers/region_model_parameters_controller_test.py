@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,15 +34,14 @@
 
 import json
 import pytest
-import cherrypy
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.model.model_burst import Dynamic
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.simulator.integrators import HeunDeterministic
 from tvb.simulator.models import ModelsEnum
-import tvb.interfaces.web.controllers.common as common
 
 
 class TestRegionsModelParametersController(BaseTransactionalControllerTest):
@@ -55,8 +54,9 @@ class TestRegionsModelParametersController(BaseTransactionalControllerTest):
         """
         self.init()
         self.region_m_p_c = RegionsModelParametersController()
-        SimulatorController().index()
-        self.simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
+        simulator_controller = SimulatorController()
+        simulator_controller.index()
+        self.simulator = simulator_controller.context.simulator
         self._setup_dynamic()
 
     def transactional_teardown_method(self):

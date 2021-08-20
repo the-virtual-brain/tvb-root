@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,7 +36,6 @@ Adapter that uses the traits module to generate interfaces for BalloonModel Anal
 """
 
 import uuid
-
 import numpy
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
@@ -46,7 +45,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField, StrField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 
@@ -66,6 +65,21 @@ class BalloonModelAdapterModel(ViewModel):
         doc="""The integration time step size for the balloon model (s).
             If none is provided, by default, the TimeSeries sample period is used."""
     )
+
+    tau_s = Float(
+        label=r":math:`\tau_s`",
+        default=1.54,
+        required=True,
+        doc="""Balloon model parameter. Time of signal decay (s)""")
+
+    tau_f = Float(
+        label=r":math:`\tau_f`",
+        default=1.44,
+        required=True,
+        doc=""" Balloon model parameter. Time of flow-dependent elimination or
+            feedback regulation (s). The average  time blood take to traverse the
+            venous compartment. It is the  ratio of resting blood volume (V0) to
+            resting blood flow (F0).""")
 
     neural_input_transformation = Attr(
         field_type=str,
@@ -99,15 +113,16 @@ class BalloonModelAdapterModel(ViewModel):
 
 class BalloonModelAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(BalloonModelAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, self,
-                                                    name=self.get_input_name(),
+    def __init__(self):
+        super(BalloonModelAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(BalloonModelAdapterModel.time_series, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.dt = ScalarField(BalloonModelAdapterModel.dt, self)
-        self.neural_input_transformation = ScalarField(BalloonModelAdapterModel.neural_input_transformation, self)
-        self.bold_model = ScalarField(BalloonModelAdapterModel.bold_model, self)
-        self.RBM = ScalarField(BalloonModelAdapterModel.RBM, self)
+        self.dt = FloatField(BalloonModelAdapterModel.dt)
+        self.tau_s = FloatField(BalloonModelAdapterModel.tau_s)
+        self.tau_f = FloatField(BalloonModelAdapterModel.tau_f)
+        self.neural_input_transformation = StrField(BalloonModelAdapterModel.neural_input_transformation)
+        self.bold_model = StrField(BalloonModelAdapterModel.bold_model)
+        self.RBM = BoolField(BalloonModelAdapterModel.RBM)
 
     @staticmethod
     def get_view_model():
@@ -124,9 +139,6 @@ class BalloonModelAdapterForm(ABCAdapterForm):
     @staticmethod
     def get_input_name():
         return 'time_series'
-
-    def get_traited_datatype(self):
-        return BalloonModel()
 
 
 class BalloonModelAdapter(ABCAdapter):
@@ -165,6 +177,10 @@ class BalloonModelAdapter(ABCAdapter):
         else:
             algorithm.dt = self.input_time_series_index.sample_period / 1000.
 
+        if view_model.tau_s is not None:
+            algorithm.tau_s = view_model.tau_s
+        if view_model.tau_f is not None:
+            algorithm.tau_f = view_model.tau_f
         if view_model.bold_model is not None:
             algorithm.bold_model = view_model.bold_model
         if view_model.RBM is not None:
@@ -196,16 +212,14 @@ class BalloonModelAdapter(ABCAdapter):
         # type: (BalloonModelAdapterModel) -> [TimeSeriesRegionIndex]
         """
         Launch algorithm and build results.
-
-        :param time_series: the input time-series used as neural activation in the Balloon Model
-        :returns: the simulated BOLD signal
-        :rtype: `TimeSeries`
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the simulated BOLD signal
         """
         input_time_series_h5 = h5.h5_file_for_index(self.input_time_series_index)
         time_line = input_time_series_h5.read_time_page(0, self.input_shape[0])
 
         bold_signal_index = TimeSeriesRegionIndex()
-        bold_signal_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, bold_signal_index.gid)
+        bold_signal_h5_path = self.path_for(TimeSeriesRegionH5, bold_signal_index.gid)
         bold_signal_h5 = TimeSeriesRegionH5(bold_signal_h5_path)
         bold_signal_h5.gid.store(uuid.UUID(bold_signal_index.gid))
         self._fill_result_h5(bold_signal_h5, input_time_series_h5)
@@ -225,11 +239,12 @@ class BalloonModelAdapter(ABCAdapter):
             partial_bold = self.algorithm.evaluate()
             bold_signal_h5.write_data_slice_on_grow_dimension(partial_bold.data, grow_dimension=2)
 
+        input_time_series_h5.close()
+
         bold_signal_h5.write_time_slice(time_line)
         bold_signal_shape = bold_signal_h5.data.shape
         bold_signal_h5.nr_dimensions.store(len(bold_signal_shape))
         bold_signal_h5.close()
-        input_time_series_h5.close()
 
         self._fill_result_index(bold_signal_index, bold_signal_shape)
         return bold_signal_index

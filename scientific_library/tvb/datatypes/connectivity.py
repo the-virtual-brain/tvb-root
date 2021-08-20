@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -316,6 +316,11 @@ class Connectivity(HasTraits):
         """
         # Express delays in integration steps
         self.idelays = numpy.rint(self.delays / dt).astype(numpy.int32)
+        self.has_delays = self.idelays.any()
+        self._horizon = self.idelays.max() + 1
+        nn = self.idelays.shape[0]
+        self.inodes = numpy.tile(numpy.r_[:nn], (nn, 1))
+        self.delay_indices = self.idelays * nn + self.inodes
 
     def compute_tract_lengths(self):
         """
@@ -725,3 +730,8 @@ class Connectivity(HasTraits):
             result.tract_lengths = reader.read_array_from_file("tract_lengths")
 
         return result
+
+    @property
+    def horizon(self):
+        "The horizon is the maximum number of steps required in memory for simulation."
+        return self._horizon

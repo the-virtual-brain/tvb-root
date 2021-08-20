@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -41,11 +41,12 @@ from PIL import Image
 import base64
 import xml.dom.minidom
 from io import BytesIO
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
 from tvb.core.entities.model.model_operation import ResultFigure
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.storage.storage_interface import StorageInterface
 
 
 class FigureService:
@@ -63,7 +64,7 @@ class FigureService:
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.file_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def _write_png(self, store_path, export_data):
         img_data = base64.b64decode(export_data)                        # decode the image
@@ -105,7 +106,7 @@ class FigureService:
 
     def _image_path(self, project_name, img_type):
         "Generate path where to store image"
-        images_folder = self.file_helper.get_images_folder(project_name)
+        images_folder = self.storage_interface.get_images_folder(project_name)
         file_name = FigureService._DEFAULT_IMAGE_FILE_NAME + img_type
         return utils.get_unique_file_name(images_folder, file_name)
 
@@ -136,8 +137,10 @@ class FigureService:
 
         # Load instance from DB to have lazy fields loaded
         figure = dao.load_figure(entity.id)
-        # Write image meta data to disk  
-        self.file_helper.write_image_metadata(figure)
+        # Write image meta data to disk
+        _, meta_data = figure.to_dict()
+        self.storage_interface.write_image_metadata(figure, meta_data)
+        self.storage_interface.push_folder_to_sync(project.name)
 
     def retrieve_result_figures(self, project, user, selected_session_name='all_sessions'):
         """
@@ -147,7 +150,7 @@ class FigureService:
         result, previews_info = dao.get_previews(project.id, user.id, selected_session_name)
         for name in result:
             for figure in result[name]:
-                figures_folder = self.file_helper.get_images_folder(project.name)
+                figures_folder = self.storage_interface.get_images_folder(project.name)
                 figure_full_path = os.path.join(figures_folder, figure.file_path)
                 # Compute the path 
                 figure.file_path = utils.path2url_part(figure_full_path)
@@ -172,21 +175,16 @@ class FigureService:
         # Load instance from DB to have lazy fields loaded.
         figure = dao.load_figure(figure_id)
         # Store figure meta data in an XML attached to the image.
-        self.file_helper.write_image_metadata(figure)
+        _, meta_data = figure.to_dict()
+        self.storage_interface.write_image_metadata(figure, meta_data)
+        self.storage_interface.push_folder_to_sync(figure.project.name)
 
     def remove_result_figure(self, figure_id):
         """
         Remove figure from DB and file storage.
         """
         figure = dao.load_figure(figure_id)
-
-        # Delete all figure related files from disk.
-        figures_folder = self.file_helper.get_images_folder(figure.project.name)
-        path2figure = os.path.join(figures_folder, figure.file_path)
-        if os.path.exists(path2figure):
-            os.remove(path2figure)
-            self.file_helper.remove_image_metadata(figure)
-
+        self.storage_interface.remove_figure(figure)
         # Remove figure reference from DB.
         result = dao.remove_entity(ResultFigure, figure_id)
         return result

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -72,7 +72,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         model.connectivity = connectivity_index_factory(self.CONNECTIVITY_NODES).gid
         model.simulation_length = 32
 
-        TestFactory.launch_synchronously(self.test_user, self.test_project, self.simulator_adapter, model)
+        TestFactory.launch_synchronously(self.test_user.id, self.test_project, self.simulator_adapter, model)
         sim_result = dao.get_generic_entity(TimeSeriesRegionIndex, 'TimeSeriesRegion', 'time_series_type')[0]
         assert (sim_result.data_length_1d, sim_result.data_length_2d, sim_result.data_length_3d,
                 sim_result.data_length_4d) == (32, 1, self.CONNECTIVITY_NODES, 1)

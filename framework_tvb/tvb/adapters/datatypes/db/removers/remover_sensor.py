@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -51,15 +51,15 @@ class SensorRemover(ABCRemover):
             ts_meg = dao.get_generic_entity(TimeSeriesMEGIndex, self.handled_datatype.gid, key)
             ts_eeg = dao.get_generic_entity(TimeSeriesEEGIndex, self.handled_datatype.gid, key)
 
-            error_msg = "Cannot be removed as it is used by at least one "
+            error_msg = "Cannot be removed as it is used by %d %s entities."
 
             if len(ts_seeg) > 0:
-                raise RemoveDataTypeException(error_msg + " TimeSeriesMEG.")
+                raise RemoveDataTypeException(error_msg % (len(ts_seeg),"TimeSeriesSEEG"))
             if len(ts_meg) > 0:
-                raise RemoveDataTypeException(error_msg + " TimeSeriesEEG.")
+                raise RemoveDataTypeException(error_msg % (len(ts_meg),"TimeSeriesMEG"))
             if len(ts_eeg) > 0:
-                raise RemoveDataTypeException(error_msg + " Source.")
+                raise RemoveDataTypeException(error_msg % (len(ts_eeg),"TimeSeriesEEG"))
             if len(projection_matrices_sensors) > 0:
-                raise RemoveDataTypeException(error_msg % len(projection_matrices_sensors))
+                raise RemoveDataTypeException(error_msg % (len(projection_matrices_sensors),"ProjectionMatrix"))
 
         ABCRemover.remove_datatype(self, skip_validation)

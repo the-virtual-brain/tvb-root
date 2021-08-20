@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -192,13 +192,13 @@ class TopographicViewerModel(ViewModel):
 
 class TopographicViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TopographicViewerForm, self).__init__(prefix, project_id)
-        self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, self, name='data_0',
+    def __init__(self):
+        super(TopographicViewerForm, self).__init__()
+        self.data_0 = TraitDataTypeSelectField(TopographicViewerModel.data_0, name='data_0',
                                                conditions=self.get_filters())
-        self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, self, name='data_1',
+        self.data_1 = TraitDataTypeSelectField(TopographicViewerModel.data_1, name='data_1',
                                                conditions=self.get_filters())
-        self.data_2 = TraitDataTypeSelectField(TopographicViewerModel.data_2, self, name='data_2',
+        self.data_2 = TraitDataTypeSelectField(TopographicViewerModel.data_2, name='data_2',
                                                conditions=self.get_filters())
 
     @staticmethod
@@ -235,10 +235,6 @@ class TopographicViewer(ABCDisplayer):
         Return the required memory to run this algorithm.
         """
         return -1
-
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (TopographicViewerModel, list) -> dict
-        return self.launch(view_model)
 
     def launch(self, view_model):
         # type: (TopographicViewerModel) -> dict
@@ -277,6 +273,13 @@ class TopographicViewer(ABCDisplayer):
         for i, array_data in enumerate(arrays):
             try:
                 data_array = TopographyCalculations.compute_topography_data(array_data, sensor_locations)
+
+                # We always access the first element because only one connectivity can be used at one time
+                first_label = h5.load_from_index(connectivities_idx[0]).hemispheres[0]
+                if first_label:
+                    data_array = numpy.rot90(data_array, k=1, axes=(0, 1))
+                else:
+                    data_array = numpy.rot90(data_array, k=-1, axes=(0, 1))
                 if numpy.any(numpy.isnan(array_data)):
                     titles[i] = titles[i] + " - Topography contains nan"
                 if not numpy.any(array_data):

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,12 +32,15 @@
 A tracts visualizer
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 """
+from tvb.adapters.datatypes.db.tracts import TractsIndex
+from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.adapters.datatypes.db.tracts import TractsIndex
+from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.entities import load
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.surfaces import CorticalSurface, Surface
+from tvb.datatypes.surfaces import Surface, FACE
 from tvb.datatypes.tracts import Tracts
 
 
@@ -57,10 +60,10 @@ class TractViewerModel(ViewModel):
 
 class TractViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(TractViewerForm, self).__init__(prefix, project_id)
-        self.tracts = TraitDataTypeSelectField(TractViewerModel.tracts, self, name='tracts')
-        self.shell_surface = TraitDataTypeSelectField(TractViewerModel.shell_surface, self, name='shell_surface')
+    def __init__(self):
+        super(TractViewerForm, self).__init__()
+        self.tracts = TraitDataTypeSelectField(TractViewerModel.tracts, name='tracts')
+        self.shell_surface = TraitDataTypeSelectField(TractViewerModel.shell_surface, name='shell_surface')
 
     @staticmethod
     def get_view_model():
@@ -89,25 +92,25 @@ class TractViewer(ABCSpaceDisplayer):
     def get_form_class(self):
         return TractViewerForm
 
-    # TODO: migrate to neotraits
     def launch(self, view_model):
         # type: (TractViewerModel) -> dict
-        from tvb.adapters.visualizers.surface_view import prepare_shell_surface_urls
+        tracts_index = load.load_entity_by_gid(view_model.tracts)
+        region_volume_mapping_index = load.load_entity_by_gid(tracts_index.fk_region_volume_map_gid)
 
-        url_track_starts, url_track_vertices = view_model.tracts.get_urls_for_rendering()
+        shell_surface_index = None
+        if view_model.shell_surface:
+            shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
-        if view_model.tracts.region_volume_map is None:
-            raise Exception('only tracts with an associated region volume map are supported at this moment')
+        shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index, FACE)
 
-        connectivity = view_model.tracts.region_volume_map.connectivity
+        tracts_starts = URLGenerator.build_h5_url(tracts_index.gid, 'get_line_starts')
+        tracts_vertices = URLGenerator.build_binary_datatype_attribute_url(tracts_index.gid, 'get_vertices')
 
         params = dict(title="Tract Visualizer",
-                      shelfObject=prepare_shell_surface_urls(self.current_project_id, view_model.shell_surface,
-                                                             preferred_type=CorticalSurface),
+                      shellObject=self.prepare_shell_surface_params(shell_surface_index, SurfaceURLGenerator),
+                      urlTrackStarts=tracts_starts, urlTrackVertices=tracts_vertices)
 
-                      urlTrackStarts=url_track_starts,
-                      urlTrackVertices=url_track_vertices)
-
+        connectivity = self.load_traited_by_gid(region_volume_mapping_index.fk_connectivity_gid)
         params.update(self.build_params_for_selectable_connectivity(connectivity))
 
         return self.build_display_result("tract/tract_view", params,

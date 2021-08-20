@@ -1,10 +1,10 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -49,9 +49,9 @@ function _VSI_init_sphericalMeasurePoints(){
 }
 
 function VSI_StartInternalSensorViewer(urlMeasurePoints,  noOfMeasurePoints, urlMeasurePointsLabels,
-                                       shelfObject, minMeasure, maxMeasure, measure){
+                                       shellObject, minMeasure, maxMeasure, measure){
     _VS_static_entrypoint('', '[]', '', '', urlMeasurePoints, noOfMeasurePoints, '', urlMeasurePointsLabels, '',
-                          shelfObject, null, false, true, minMeasure, maxMeasure, measure);
+                          shellObject, null, false, true, minMeasure, maxMeasure, measure);
     isInternalSensorView = true;
     displayMeasureNodes = true;
 
@@ -62,12 +62,12 @@ function VSI_StartInternalSensorViewer(urlMeasurePoints,  noOfMeasurePoints, url
 function VSI_StartInternalActivityViewer(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                     urlRegionMapList, minActivity, maxActivity,
-                    oneToOneMapping, doubleView, shelfObject, urlMeasurePointsLabels, boundaryURL) {
+                    oneToOneMapping, doubleView, shellObject, urlMeasurePointsLabels, boundaryURL) {
 
     _VS_movie_entrypoint(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                     urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                     urlRegionMapList, minActivity, maxActivity,
-                    oneToOneMapping, doubleView, shelfObject, null, urlMeasurePointsLabels, boundaryURL);
+                    oneToOneMapping, doubleView, shellObject, null, urlMeasurePointsLabels, boundaryURL);
     isInternalSensorView = true;
     displayMeasureNodes = true;
     isFaceToDisplay = true;

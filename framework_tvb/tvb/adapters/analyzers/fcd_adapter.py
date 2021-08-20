@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,9 +35,9 @@ Adapter that uses the traits model to generate interfaces for FCD Analyzer.
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
-
 import json
 import uuid
+
 import numpy as np
 from scipy import linalg
 from scipy.spatial.distance import pdist
@@ -47,28 +47,26 @@ from tvb.adapters.datatypes.db.fcd import FcdIndex
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.datatypes.h5.fcd_h5 import FcdH5
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.api import Float
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.fcd import Fcd
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.time_series import TimeSeriesRegion
 
 
-class FcdCalculator(HasTraits):
-    """
-    Model class defining the traited attributes used by the FcdAdapter.
-    """
-    time_series = Attr(
-        field_type=TimeSeriesRegion,
+class FCDAdapterModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeriesRegion,
         label="Time Series",
         required=True,
-        doc="""The time-series for which the fcd matrices are calculated.""")
+        doc="""The time-series for which the fcd matrices are calculated."""
+    )
 
     sw = Float(
         label="Sliding window length (ms)",
@@ -89,22 +87,13 @@ class FcdCalculator(HasTraits):
         between FC(ti) and FC(tj) arranged in a vector""")
 
 
-class FCDAdapterModel(ViewModel, FcdCalculator):
-    time_series = DataTypeGidAttr(
-        linked_datatype=TimeSeriesRegion,
-        label="Time Series",
-        required=True,
-        doc="""The time-series for which the fcd matrices are calculated."""
-    )
-
-
 class FCDAdapterForm(ABCAdapterForm):
-    def __init__(self, prefix='', project_id=None):
-        super(FCDAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, self, name=self.get_input_name(),
+    def __init__(self):
+        super(FCDAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(FCDAdapterModel.time_series, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
-        self.sw = ScalarField(FCDAdapterModel.sw, self)
-        self.sp = ScalarField(FCDAdapterModel.sp, self)
+        self.sw = FloatField(FCDAdapterModel.sw)
+        self.sp = FloatField(FCDAdapterModel.sp)
 
     @staticmethod
     def get_view_model():
@@ -121,9 +110,6 @@ class FCDAdapterForm(ABCAdapterForm):
     @staticmethod
     def get_input_name():
         return "time_series"
-
-    def get_traited_datatype(self):
-        return FcdCalculator()
 
 
 class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
@@ -172,15 +158,9 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
     def configure(self, view_model):
         # type: (FCDAdapterModel) -> None
         """
-        Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
+        Store the input shape to be later used to estimate memory usage
+        """
 
-        :param time_series: the input time-series for which fcd matrix should be computed
-        :param sw: length of the sliding window
-        :param sp: spanning time: distance between two consecutive sliding window
-        """
-        """
-        Store the input shape to be later used to estimate memory usage. Also create the algorithm instance.
-        """
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
                             self.input_time_series_index.data_length_2d,
@@ -206,14 +186,10 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         # type: (FCDAdapterModel) -> int
         return 0
 
-    @staticmethod
-    def _populate_fcd_index(fcd_index, source_gid, fcd_data, metadata):
+    def _populate_fcd_index(self, fcd_index, source_gid, fcd_h5):
         fcd_index.fk_source_gid = source_gid
         fcd_index.labels_ordering = json.dumps(Fcd.labels_ordering.default)
-        fcd_index.ndim = fcd_data.ndim
-        fcd_index.array_data_min = metadata.min
-        fcd_index.array_data_max = metadata.max
-        fcd_index.array_data_mean = metadata.mean
+        self.fill_index_from_h5(fcd_index, fcd_h5)
 
     @staticmethod
     def _populate_fcd_h5(fcd_h5, fcd_data, gid, source_gid, sw, sp):
@@ -223,18 +199,13 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
         fcd_h5.sw.store(sw)
         fcd_h5.sp.store(sp)
         fcd_h5.labels_ordering.store(json.dumps(Fcd.labels_ordering.default))
-        return fcd_h5.array_data.get_cached_metadata()
 
     def launch(self, view_model):
-        # type: (FCDAdapterModel) -> [FcdIndex]
+        # type: (FCDAdapterModel) -> [FcdIndex, ConnectivityMeasureIndex]
         """
         Launch algorithm and build results.
-
-        :param time_series: the input time-series index for which fcd matrix should be computed
-        :param sw: length of the sliding window
-        :param sp: spanning time: distance between two consecutive sliding window
-        :returns: the fcd index for the computed fcd matrix on the given time-series, with that sw and that sp
-        :rtype: `FcdIndex`,`ConnectivityMeasureIndex`
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the fcd index for the computed fcd matrix on the given time-series, with that sw and that sp
         """
         with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             [fcd, fcd_segmented, eigvect_dict, eigval_dict] = self._compute_fcd_matrix(ts_h5)
@@ -245,23 +216,23 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
 
         # Create an index for the computed fcd.
         fcd_index = FcdIndex()
-        fcd_h5_path = h5.path_for(self.storage_path, FcdH5, fcd_index.gid)
+        fcd_h5_path = self.path_for(FcdH5, fcd_index.gid)
         with FcdH5(fcd_h5_path) as fcd_h5:
-            fcd_array_metadata = self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, self.input_time_series_index.gid,
-                                                       view_model.sw, view_model.sp)
-        self._populate_fcd_index(fcd_index, self.input_time_series_index.gid, fcd, fcd_array_metadata)
+            self._populate_fcd_h5(fcd_h5, fcd, fcd_index.gid, self.input_time_series_index.gid,
+                                  view_model.sw, view_model.sp)
+            self._populate_fcd_index(fcd_index, self.input_time_series_index.gid, fcd_h5)
         result.append(fcd_index)
 
         if np.amax(fcd_segmented) == 1.1:
             result_fcd_segmented_index = FcdIndex()
-            result_fcd_segmented_h5_path = h5.path_for(self.storage_path, FcdH5, result_fcd_segmented_index.gid)
+            result_fcd_segmented_h5_path = self.path_for(FcdH5, result_fcd_segmented_index.gid)
             with FcdH5(result_fcd_segmented_h5_path) as result_fcd_segmented_h5:
-                fcd_segmented_metadata = self._populate_fcd_h5(result_fcd_segmented_h5, fcd_segmented,
-                                                               result_fcd_segmented_index.gid,
-                                                               self.input_time_series_index.gid, view_model.sw,
-                                                               view_model.sp)
-            self._populate_fcd_index(result_fcd_segmented_index, self.input_time_series_index.id, fcd_segmented,
-                                     fcd_segmented_metadata)
+                self._populate_fcd_h5(result_fcd_segmented_h5, fcd_segmented,
+                                      result_fcd_segmented_index.gid,
+                                      self.input_time_series_index.gid, view_model.sw,
+                                      view_model.sp)
+                self._populate_fcd_index(result_fcd_segmented_index, self.input_time_series_index.gid,
+                                         result_fcd_segmented_h5)
             result.append(result_fcd_segmented_index)
 
         for mode in eigvect_dict.keys():
@@ -274,7 +245,7 @@ class FunctionalConnectivityDynamicsAdapter(ABCAdapter):
                         measure.array_data = cm_data
                         measure.title = "Epoch # %d, eigenvalue = %s, variable = %s, " \
                                         "mode = %s." % (ep, eigval_dict[mode][var][ep][eig], var, mode)
-                        cm_index = h5.store_complete(measure, self.storage_path)
+                        cm_index = self.store_complete(measure)
                         result.append(cm_index)
         return result
 

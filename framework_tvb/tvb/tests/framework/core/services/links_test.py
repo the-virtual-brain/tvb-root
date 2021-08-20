@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,13 +40,13 @@ import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.core.entities.file.files_helper import TvbZip, FilesHelper
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
 from tvb.datatypes.sensors import SensorTypes
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -124,8 +124,6 @@ class TestLinks(_BaseLinksTest):
         assert self.red_datatype.gid in json
 
     def test_remove_entity_with_links_moves_links(self, initialize_two_projects):
-        project_path = FilesHelper().get_project_folder(self.src_project)
-        self.red_datatype.storage_path = project_path
         dest_id = self.dest_project.id
         self.algorithm_service.create_link([self.red_datatype.id], dest_id)
         assert 1 == self.red_datatypes_in(dest_id)
@@ -155,9 +153,9 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
 
     def test_export(self, initialize_linked_projects):
         export_file = self.export_mng.export_project(self.dest_project)
-        with TvbZip(export_file) as z:
-            assert sum('links-to-external-projects' in s for s in z.namelist()) == 2,\
-                "Two linked datatypes should have been created!"
+        storage_interface = StorageInterface()
+        assert sum('links-to-external-projects' in s for s in storage_interface.get_filenames_in_zip(export_file)) \
+               == 2, "Two linked datatypes should have been created!"
 
     def _export_and_remove(self, project):
         """export the project and remove it"""

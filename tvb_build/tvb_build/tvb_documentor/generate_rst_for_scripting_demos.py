@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -38,7 +38,7 @@ import glob
 here = os.path.abspath(os.path.dirname(__file__))
 demo_folder = os.path.sep.join([here, '..', '..', '..', 'tvb_documentation', 'demos'])
 
-nburl = 'https://nbviewer.codemart.ro/url/docs.thevirtualbrain.org/demos'
+nburl = 'https://nbviewer.thevirtualbrain.org/url/docs.thevirtualbrain.org/demos'
 
 demos = []
 for ipynb_fname in glob.glob(os.path.join(demo_folder, '*.ipynb')):

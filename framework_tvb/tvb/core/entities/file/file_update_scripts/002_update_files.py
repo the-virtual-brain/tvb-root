@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,17 +31,16 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+from datetime import datetime
 import os
 import sys
 import importlib
 import tables
 import h5py
 import numpy
-from datetime import datetime
 from tvb.basic.profile import TvbProfile
-from tvb.core.utils import string2date, date2string, string2bool
-from tvb.core.entities.file.exceptions import FileVersioningException
+from tvb.core.utils import string2bool, string2date, date2string
+from tvb.storage.h5.file.exceptions import FileVersioningException
 
 PYTHON_EXE_PATH = TvbProfile.current.PYTHON_INTERPRETER_PATH
 DATA_BUFFER_SIZE = 50000000 / 8  # 500 MB maximum read at once (just assume worst case float64)
@@ -185,7 +184,7 @@ def __upgrade_file(input_file_name, output_file_name):
     h5py_h5_file.close()
     
 
-def update(input_file):
+def update(input_file, burst_match_dict=None):
     """
     In order to avoid segmentation faults when updating a batch of files just
     start every conversion on a different Python process.
@@ -225,7 +224,3 @@ if __name__ == '__main__':
     input_file = sys.argv[1]
     output_file = sys.argv[2]
     __upgrade_file(input_file, output_file)
-    
-    
-    
-    

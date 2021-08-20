@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -66,13 +66,13 @@ class ObjSurfaceImporterModel(UploaderViewModel):
 
 class ObjSurfaceImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ObjSurfaceImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(ObjSurfaceImporterForm, self).__init__()
 
-        self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, self, name='surface_type',
+        self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, name='surface_type',
                                         choices=ALL_SURFACES_SELECTION)
-        self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', self, name='data_file')
-        self.should_center = BoolField(ObjSurfaceImporterModel.should_center, self, name='should_center')
+        self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', 'data_file')
+        self.should_center = BoolField(ObjSurfaceImporterModel.should_center, name='should_center')
 
     @staticmethod
     def get_view_model():
@@ -138,7 +138,7 @@ class ObjSurfaceImporter(ABCUploader):
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
 
-            return h5.store_complete(surface, self.storage_path)
+            return self.store_complete(surface)
 
         except ParseException as excep:
             self.log.exception(excep)

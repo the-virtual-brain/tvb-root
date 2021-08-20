@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,9 +29,6 @@
 
 var sessionStoredBurstID = "";
 
-//A list of selected portlets id. Used to correctly change/update the portlet checkboxes for each tab.
-var selectedPortlets;
-
 // Class mapping to the active burst entry
 var ACTIVE_BURST_CLASS = 'burst-active';
 // Class mapping to a workflow from a group launch
@@ -49,7 +46,7 @@ function clone(object_) {
  *************************************************************************************************************************/
 
 /*
- * When clicking on the New Burst Button reset to defaults for simulator interface and portlets.
+ * When clicking on the New Burst Button reset to defaults for simulator interface.
  */
 function resetToNewBurst() {
     doAjaxCall({
@@ -62,9 +59,43 @@ function resetToNewBurst() {
             displayMessage("Completely new configuration loaded!");
             changeBurstHistory(null, true);
             $("button.btn-next").first().focus();
+            setupMenuEvents();
         },
         error: function () {
             displayMessage("We encountered an error while generating the new simulation. Please try reload and then check the logs!", "errorMessage");
+        }
+    });
+}
+
+/*
+ * When clicking the branch button on a burst-history entry, a clone of that burst is prepared.
+ */
+function branchBurst(burstID, first_wizzard_form_url) {
+    doAjaxCall({
+        type: "POST",
+        url: '/burst/get_last_fragment_url/' + burstID,
+        showBlockerOverlay: true,
+        success: function (response) {
+            stop_at_url = response;
+            doAjaxCall({
+                type: "POST",
+                url: '/burst/branch_simulator_configuration/' + burstID,
+                showBlockerOverlay: true,
+                success: function (response) {
+                    let simParamElem = $("#div-simulator-parameters");
+                    simParamElem.html(response);
+                    renderAllSimulatorForms(first_wizzard_form_url, stop_at_url, function() {
+                        const newName = $("#input_simulation_name_id").val();
+                        fill_burst_name(newName, false);
+                    });
+                    changeBurstHistory(null, true);
+                    displayBurstTree(undefined);
+                    displayMessage("A copy of previous simulation was prepared for you!");
+                },
+                error: function () {
+                    displayMessage("We encountered an error while generating a copy of the simulation. Please try reload and then check the logs!", "errorMessage");
+                }
+            });
         }
     });
 }
@@ -125,15 +156,16 @@ function renderAllSimulatorForms(url, stop_at_url = '', onFinishFunction = null)
             onFinishFunction();
         }
     }
+    setupMenuEvents();
 }
 
 /*
  * Reload entire Burst-History column.
  */
-function loadBurstHistory() {
+function loadBurstHistory(initBurst = false) {
     doAjaxCall({
         type: "POST",
-        url: '/burst/load_burst_history',
+        url: '/burst/load_burst_history/' + (initBurst ? initBurst : ''),
         cache: false,
         async: false,
         success: function (r) {
@@ -212,7 +244,7 @@ function _updateBurstHistoryElapsedTime(result) {
 function scheduleNewUpdate(withFullUpdate, refreshCurrent) {
     if ($('#burst-history').length !== 0) {
         if (withFullUpdate) {
-            loadBurstHistory();
+            loadBurstHistory(true);
             changeBurstHistory(sessionStoredBurstID, false);
             if (refreshCurrent) {
                 loadBurstReadOnly(sessionStoredBurstID,  '/burst/set_connectivity');
@@ -380,7 +412,8 @@ function _computeRangeNumberForParamPrefix(prefix){
         return _getRangeValueForGuidParameter(pse_param_guid);
     }
 
-    return 1;
+    // We don't have a value chosen for this range param
+    return 0;
 }
 
 function _displayPseSimulationMessage() {
@@ -391,6 +424,19 @@ function _displayPseSimulationMessage() {
     pse_param2_number = _computeRangeNumberForParamPrefix('pse_param2');
 
     let nrOps = pse_param1_number * pse_param2_number;
+
+    // Only the first range been chosen
+    if(nrOps == 0){
+        nrOps = pse_param1_number;
+    }else{
+        if(pse_param1_number == 1 || pse_param2_number == 1){
+            message = "Can't launch PSE when one of the parameters has only one value," +
+                " instead of a range of values!";
+            displayMessage(message, "errorMessage");
+            throw message;
+        }
+    }
+
     let className = "infoMessage";
 
     if (nrOps > THREASHOLD_WARNING) {
@@ -402,6 +448,10 @@ function _displayPseSimulationMessage() {
     if (nrOps > 1) {
         // Unless greater than 1, it is not a range, so do not display a possible confusing message.
         displayMessage("Range configuration: " + nrOps + " operations.", className);
+    }else{
+        message = "Can't launch PSE with only one  operation!"
+        displayMessage(message, "errorMessage");
+        throw message;
     }
 }
 
@@ -430,10 +480,11 @@ function setPseRangeParameters(){
 function initBurstConfiguration(currentBurstID, currentBurstName, selectedTab) {
     setPseRangeParameters();
 
-    loadBurstHistory();
+    loadBurstHistory(true);
     changeBurstHistory(currentBurstID, true);
     fill_burst_name(currentBurstName, currentBurstID !== "");
     toggleConfigSurfaceModelParamsButton();
+
 
     if ('-1' === selectedTab) {
         $("#tab-burst-tree").click();
@@ -479,26 +530,21 @@ function fill_burst_name(burstName, isReadOnly) {
     const inputBurstName = $("#input-burst-name-id");
     const titleSimulation = $("#title-simulation");
     const titlePSE = $("#title-pse");
-    const titlePortlets = $("#title-visualizers");
 
     inputBurstName.val(burstName);
     titleSimulation.empty();
-    titlePortlets.empty();
     titlePSE.empty();
 
     if (isReadOnly) {
         titleSimulation.append("<mark>Review</mark> Simulation configuration for " + burstName);
-        titlePortlets.append(burstName);
         titlePSE.append(burstName);
         inputBurstName.parent().parent().removeClass('is-created');
     } else {
         if (burstName !== '') {
             titleSimulation.append("<mark>Edit</mark> Simulation configuration for " + burstName);
-            titlePortlets.append(burstName);
             titlePSE.append(burstName);
         } else {
             titleSimulation.append("<mark>Configure</mark> New simulation");
-            titlePortlets.append("New simulation");
             titlePSE.append("New simulation");
         }
         inputBurstName.parent().parent().addClass('is-created');
@@ -582,6 +628,11 @@ function setInitialFocusOnButton(simulator_params) {
 }
 
 function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
+    $.ajax({
+        url: '/burst/set_fragment_url',
+        type: 'POST',
+        data: {"url": previous_action},
+    });
     const simulator_params = document.getElementById(div_id);
     simulator_params.removeChild(currentForm);
 
@@ -624,15 +675,30 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     if (config_branch_button != null){
         config_branch_button.style.visibility = 'visible';
     }
-    fieldset.disabled = false;
+    if (fieldset.className == "") {
+        fieldset.disabled = false;
+    }
     setInitialFocusOnButton(simulator_params);
 }
 
-function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters') {
+function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters', keep_same_wizard = false) {
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
+    var fieldset = currentForm.elements[0];
+    var disabledFieldset = false
+    if (fieldset.hasAttribute('disabled')) {
+        disabledFieldset = true
+        $(fieldset).removeAttr('disabled')
+    }
     var form_data = $(currentForm).serialize(); //Encode form elements for submission
+    if (keep_same_wizard) {
+        form_data += "&keep_same_wizard=True"
+    }
+
+    if (disabledFieldset){
+        $(fieldset).attr('disabled', 'disabled')
+    }
     var next_button = currentForm.elements.namedItem('next');
     var previous_button = currentForm.elements.namedItem('previous');
     var config_region_param_button = currentForm.elements.namedItem('configRegionModelParam');
@@ -685,6 +751,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 simulator_params.appendChild(t);
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
                 setInitialFocusOnButton(simulator_params);
+                setupMenuEvents();
             }
         }
     })
@@ -696,8 +763,5 @@ function displayBurstTree(selectedBurstID) {
         filterValue = {'type': 'from_burst', 'value': "0"};
     }
     updateTree("#treeOverlay", null, JSON.stringify(filterValue));
-    $("#portlets-display").hide();
-    $("#portlets-configure").hide();
-    $("#portlet-param-config").hide();
     $("#div-burst-tree").show();
 }

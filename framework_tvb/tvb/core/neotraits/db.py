@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -112,12 +112,12 @@ def from_ndarray(array):
     if array.dtype.kind in 'iufc' and array.size != 0:
         # we compute these simple statistics for integer unsigned float or complex
         # arrays that are not empty
-        minvalue, maxvalue = ensure_float(array.min()), ensure_float(array.max())
-        median = numpy.median(array)
+        min_value, max_value, mean_value = ensure_float(array.min()), ensure_float(array.max()),\
+                                       ensure_float(array.mean())
     else:
-        minvalue, maxvalue, median = None, None, None
+        min_value, max_value, mean_value = None, None, None
 
-    return minvalue, maxvalue, median
+    return min_value, max_value, mean_value
 
 
 def prepare_array_shape_meta(shape_array):

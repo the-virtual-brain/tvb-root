@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,6 +36,7 @@
 """
 import json
 import numpy
+
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
@@ -56,9 +57,9 @@ class FourierSpectrumModel(ViewModel):
 
 class FourierSpectrumForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(FourierSpectrumForm, self).__init__(prefix, project_id)
-        self.input_data = TraitDataTypeSelectField(FourierSpectrumModel.input_data, self, name='input_data',
+    def __init__(self):
+        super(FourierSpectrumForm, self).__init__()
+        self.input_data = TraitDataTypeSelectField(FourierSpectrumModel.input_data, name='input_data',
                                                    conditions=self.get_filters())
 
     @staticmethod
@@ -75,9 +76,6 @@ class FourierSpectrumForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None
-
-    def get_traited_datatype(self):
         return None
 
 
@@ -101,23 +99,18 @@ class FourierSpectrumDisplay(ABCDisplayer):
         fs_input_index = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(fs_input_index.get_data_shape()) * 8
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (FourierSpectrumModel, (int,int)) -> dict
-        return self.launch(view_model)
-
     def launch(self, view_model):
         # type: (FourierSpectrumModel) -> dict
 
         self.log.debug("Plot started...")
         # these partial loads are dangerous for TS and FS instances, but efficient
-        fs_input_index = self.load_entity_by_gid(view_model.input_data)
         fourier_spectrum = FourierSpectrum()
-        with h5.h5_file_for_index(fs_input_index) as input_h5:
+        with h5.h5_file_for_gid(view_model.input_data) as input_h5:
             shape = list(input_h5.array_data.shape)
             fourier_spectrum.segment_length = input_h5.segment_length.load()
             fourier_spectrum.windowing_function = input_h5.windowing_function.load()
+            ts_index = self.load_entity_by_gid(input_h5.source.load())
 
-        ts_index = self.load_entity_by_gid(fs_input_index.fk_source_gid)
         state_list = ts_index.get_labels_for_dimension(1)
         if len(state_list) == 0:
             state_list = list(range(shape[1]))

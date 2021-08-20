@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -28,7 +28,7 @@
 #
 #
 
-from ._h5accessors import DataSet, DataSetMetaData
+from ._h5accessors import DataSet, DataSetMetaData, Uuid, JsonRange
 from ._h5accessors import Scalar, Reference, Accessor, ReferenceList
 from ._h5accessors import SparseMatrix, SparseMatrixMetaData
 from ._h5accessors import Json, JsonFinal, EquationScalar

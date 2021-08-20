@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -27,26 +27,26 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from datetime import datetime
 import importlib
-import typing
 import os.path
+import typing
 import uuid
 import numpy
 import scipy.sparse
-from datetime import datetime
+
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits._attr import Final
-from tvb.basic.neotraits.ex import TraitFinalAttributeError
-from tvb.core.entities.file.exceptions import MissingDataSetException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
+from tvb.basic.neotraits.api import Final
 from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
+from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.neotraits._h5accessors import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
-from tvb.core.neotraits._h5accessors import EquationScalar, SparseMatrix, ReferenceList
+from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
+from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
 from tvb.core.neotraits.view_model import DataTypeGidAttr
-from tvb.core.utils import date2string, string2date
+from tvb.core.utils import string2date, date2string
 from tvb.datatypes.equations import Equation
+from tvb.storage.h5.file.exceptions import MissingDataSetException
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 
@@ -63,8 +63,7 @@ class H5File(object):
     def __init__(self, path):
         # type: (str) -> None
         self.path = path
-        storage_path, file_name = os.path.split(path)
-        self.storage_manager = HDF5StorageManager(storage_path, file_name)
+        self.storage_manager = StorageInterface.get_storage_manager(self.path)
         # would be nice to have an opened state for the chunked api instead of the close_file=False
 
         # common scalar headers
@@ -88,9 +87,11 @@ class H5File(object):
         self.parent_burst = Uuid(Attr(uuid.UUID, required=False), self, name='parent_burst')
         self.visible = Scalar(Attr(bool), self, name='visible')
         self.metadata_cache = None
+        # Keep a list with datasets for which we should write metadata before closing the file
+        self.expandable_datasets = []
 
-        if not self.storage_manager.is_valid_hdf5_file():
-            self.written_by.store(self.__class__.__module__ + '.' + self.__class__.__name__)
+        if not self.storage_manager.is_valid_tvb_file():
+            self.written_by.store(self.get_class_path())
             self.is_new_file = True
 
     @classmethod
@@ -99,6 +100,9 @@ class H5File(object):
 
     def read_subtype_attr(self):
         return None
+
+    def get_class_path(self):
+        return self.__class__.__module__ + '.' + self.__class__.__name__
 
     def iter_accessors(self):
         # type: () -> typing.Generator[Accessor]
@@ -118,6 +122,8 @@ class H5File(object):
         self.close()
 
     def close(self):
+        for dataset in self.expandable_datasets:
+            self.storage_manager.set_metadata(dataset.meta.to_dict(), dataset.field_name)
         self.storage_manager.close_file()
 
     def store(self, datatype, scalars_only=False, store_references=True):
@@ -251,10 +257,11 @@ class H5File(object):
 
     @staticmethod
     def get_metadata_param(path, param):
-        base_dir, fname = os.path.split(path)
-        storage_manager = HDF5StorageManager(base_dir, fname)
-        meta = storage_manager.get_metadata()
+        meta = StorageInterface.get_storage_manager(path).get_metadata()
         return meta.get(param)
+
+    def store_metadata_param(self, key, value):
+        self.storage_manager.set_metadata({key: value})
 
     @staticmethod
     def h5_class_from_file(path):
@@ -322,17 +329,17 @@ class ViewModelH5(H5File):
                 ref = Accessor(attr, self)
             setattr(self, attr.field_name, ref)
 
-    def gather_references_by_uuid(self):
+    def gather_datatypes_references(self):
         """
         Mind that ViewModelH5 stores references towards ViewModel objects (eg. Coupling) as Reference attributes, and
         references towards existent Datatypes (eg. Connectivity) as Uuid.
         Thus, the method gather_references will return only references towards other ViewModels, and we need this
-        method to gather also the other references.
+        method to gather also datatypes references.
         """
         ret = []
         for accessor in self.iter_accessors():
             if isinstance(accessor, Uuid) and not isinstance(accessor, Reference):
-                if accessor.field_name is 'gid':
+                if accessor.field_name in ('gid', 'parent_burst', 'operation_group_gid'):
                     continue
                 ret.append((accessor.trait_attribute, accessor.load()))
         return ret

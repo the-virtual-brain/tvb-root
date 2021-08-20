@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -63,10 +63,10 @@ import tvb.datatypes.sensors as sensors_module
 import tvb.datatypes.projections as projections_module
 from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
-from tvb.simulator.common import iround, numpy_add_at
+from tvb.simulator.common import numpy_add_at
+from tvb.simulator.backend.ref import ReferenceBackend
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
-
-
+from .backend import ReferenceBackend
 
 class Monitor(HasTraits):
     """
@@ -97,6 +97,19 @@ class Monitor(HasTraits):
         clsname = self.__class__.__name__
         return '%s(period=%f, voi=%s)' % (clsname, self.period, self.variables_of_interest.tolist())
 
+    @property
+    def ui_name(self):
+        return self._ui_name
+
+    def _config_vois(self, simulator):
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
+
+    def _config_time(self, simulator):
+        self.dt = simulator.integrator.dt
+        self.istep = ReferenceBackend.iround(self.period / self.dt)
+
     def config_for_sim(self, simulator):
         """Configure monitor for given simulator.
 
@@ -108,11 +121,8 @@ class Monitor(HasTraits):
         the the Simulator's configure() method.
 
         """
-        self.dt = simulator.integrator.dt
-        self.istep = iround(self.period / self.dt)
-        self.voi = self.variables_of_interest
-        if self.voi is None or self.voi.size == 0:
-            self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
+        self._config_vois(simulator)
+        self._config_time(simulator)
 
     def record(self, step, observed):
         """Record a sample of the observed state at given step.
@@ -174,17 +184,41 @@ class Raw(Monitor):
         required=False)
     # order = -1
 
-    def config_for_sim(self, simulator):
+    def _config_vois(self, simulator):
+        self.voi = numpy.arange(len(simulator.model.variables_of_interest))
+
+    def _config_time(self, simulator):
+        self.dt = simulator.integrator.dt
         if self.period != simulator.integrator.dt:
             self.log.debug('Raw period not equal to integration time step, overriding')
         self.period = simulator.integrator.dt
-        super(Raw, self).config_for_sim(simulator)
         self.istep = 1
-        self.voi = numpy.arange(len(simulator.model.variables_of_interest))
 
     def sample(self, step, state):
         time = step * self.dt
         return [time, state]
+
+
+class RawVoi(Raw):
+    """
+        A monitor that records the output raw data from a tvb simulation:
+        It collects:
+
+            - selected state variables of all modes from class :Model:
+            - all nodes of a region or surface based
+            - all the integration time steps
+
+        """
+
+    _ui_name = "Selected State Variables' Raw recording"
+
+    def _config_vois(self, simulator):
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.variables_of_interest)]
+
+    def sample(self, step, state):
+        return super(RawVoi, self).sample(step, state[self.voi])
 
 
 class SubSample(Monitor):
@@ -238,7 +272,9 @@ class SpatialAverage(Monitor):
         doc=("Fallback in case spatial mask is none and no surface provided" 
              "to use either connectivity hemispheres or cortical attributes."))
         # order = -1)
-
+    
+    backend = ReferenceBackend()
+    
     def _support_bool_mask(self, mask):
         """
         Ensure we support also the case of a boolean mask (eg: connectivity.cortical) with all values being 1,
@@ -261,8 +297,8 @@ class SpatialAverage(Monitor):
         # setup given spatial mask or default to region mapping
         if self.spatial_mask is None:
             self.is_default_special_mask = True
-            if not (simulator.surface is None):
-                self.spatial_mask = simulator.surface.region_mapping
+            if simulator.surface is not None:
+                self.spatial_mask, _, _ = self.backend.full_region_map(simulator.surface, simulator.connectivity)
             else:
                 conn = simulator.connectivity
                 if self.default_mask == self.CORTICAL:
@@ -297,7 +333,6 @@ class SpatialAverage(Monitor):
         self.spatial_mean = spatial_sum / nodes_per_area
         self.log.debug("spatial_mean")
         self.log.debug(narray_describe(self.spatial_mean))
-
 
     def sample(self, step, state):
         if step % self.istep == 0:
@@ -351,14 +386,13 @@ class TemporalAverage(Monitor):
     """
     _ui_name = "Temporal average"
 
-    def config_for_sim(self, simulator):
-        super(TemporalAverage, self).config_for_sim(simulator)
+    def _config_time(self, simulator):
+        super(TemporalAverage, self)._config_time(simulator)
         stock_size = (self.istep, self.voi.shape[0],
                       simulator.number_of_nodes,
                       simulator.model.number_of_modes)
-        self.log.debug("Temporal average stock_size is %s" % (str(stock_size), ))
+        self.log.debug("Temporal average stock_size is %s" % (str(stock_size),))
         self._stock = numpy.zeros(stock_size)
-
 
     def sample(self, step, state):
         """
@@ -372,6 +406,49 @@ class TemporalAverage(Monitor):
             avg_stock = numpy.mean(self._stock, axis=0)
             time = (step - self.istep / 2.0) * self.dt
             return [time, avg_stock]
+
+
+class AfferentCoupling(RawVoi):
+    """
+    A monitor that records the variables_of_interest from node_coupling data from a tvb simulation
+    for all the integration time steps.
+
+    """
+
+    _ui_name = "Coupling recording"
+
+    variables_of_interest = NArray(
+        dtype=int,
+        label="Indices of coupling variables to record",
+        required=False)
+
+    def _config_vois(self, simulator):
+        self.voi = self.variables_of_interest
+        if self.voi is None or self.voi.size == 0:
+            self.voi = numpy.r_[:len(simulator.model.cvar)]
+
+    def sample(self, step, node_coupling):
+        return super(AfferentCoupling, self).sample(step, node_coupling)
+
+
+class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
+    """
+    Monitors the averaged value for the model's coupling variable/s of interest over all
+    the nodes at each sampling period. Time steps that are not modulo ``istep``
+    are stored temporarily in the ``_stock`` attribute and then that temporary
+    store is averaged and returned when time step is modulo ``istep``.
+
+    """
+    _ui_name = "Coupling Temporal average"
+
+    def _config_vois(self, simulator):
+        AfferentCoupling._config_vois(self, simulator)
+
+    def _config_time(self, simulator):
+        TemporalAverage._config_time(self, simulator)
+
+    def sample(self, step, node_coupling):
+        return TemporalAverage.sample(self, step, node_coupling)
 
 
 # mhtodo: this is not a proper superclass but a mixin, it refers to fields that don't exist
@@ -514,10 +591,8 @@ class Projection(Monitor):
 
         self.log.info('Projection configured gain shape %s', self.gain.shape)
 
-
     def configure(self, *args, **kwargs):
         self.sensors.configure()
-
 
     def sample(self, step, state):
         "Record state, returning sample at sampling frequency / period."
@@ -563,7 +638,6 @@ class Projection(Monitor):
             self._rmap = self._reg_map_data(self.region_mapping)
 
 
-
 class EEG(Projection):
     """
     Forward solution monitor for electroencephalogy (EEG). If a
@@ -600,7 +674,6 @@ class EEG(Projection):
         doc='When a projection matrix is not used, this provides '
             'the value of conductivity in the formula for the single '
             'sphere approximation of the head (Sarvas 1987).')
-
 
     @classmethod
     def from_file(cls, sensors_fname='eeg_brainstorm_65.txt', projection_fname='projection_eeg_65_surface_16k.npy', **kwargs):
@@ -738,7 +811,7 @@ class iEEG(Projection):
         return Projection.from_file.__func__(cls, sensors_fname, projection_fname, **kwargs)
 
     def analytic(self, loc, ori):
-        """Compute the projection matrix -- simple distance weight for now.
+        r"""Compute the projection matrix -- simple distance weight for now.
         Equation 12 from sarvas1987basic (point dipole in homogeneous space):
           V(r) = 1/(4*pi*\sigma)*Q*(r-r_0)/|r-r_0|^3
         """
@@ -854,17 +927,19 @@ class Bold(Monitor):
         self.log.debug('Bold HRF shape %s, interim period & istep %d & %d',
                   self.hemodynamic_response_function.shape, self._interim_period, self._interim_istep)
 
-    def config_for_sim(self, simulator):
-        super(Bold, self).config_for_sim(simulator)
+    def _config_time(self, simulator):
+        super(Bold, self)._config_time(simulator)
         self.compute_hrf()
         sample_shape = self.voi.shape[0], simulator.number_of_nodes, simulator.model.number_of_modes
         self._interim_stock = numpy.zeros((self._interim_istep,) + sample_shape)
         self.log.debug("BOLD inner buffer %s %.2f MB" % (
-            self._interim_stock.shape, self._interim_stock.nbytes/2**20))
+            self._interim_stock.shape, self._interim_stock.nbytes / 2 ** 20))
         self._stock = numpy.zeros((self._stock_steps,) + sample_shape)
         self.log.debug("BOLD outer buffer %s %.2f MB" % (
-            self._stock.shape, self._stock.nbytes/2**20))
+            self._stock.shape, self._stock.nbytes / 2 ** 20))
 
+    def config_for_sim(self, simulator):
+        super(Bold, self).config_for_sim(simulator)
 
     def sample(self, step, state):
         # Update the interim-stock at every step
@@ -905,20 +980,33 @@ class BoldRegionROI(Bold):
     def config_for_sim(self, simulator):
         super(BoldRegionROI, self).config_for_sim(simulator)
         self.region_mapping = simulator.surface.region_mapping
+        self.no_regions = simulator.surface.region_mapping_data.connectivity.number_of_regions
 
-    def sample(self, step, state, array=numpy.array):
+    def sample(self, step, state):
         result = super(BoldRegionROI, self).sample(step, state)
         if result:
             t, data = result
             # TODO use reduceat
-            return [t, array([data.flat[self.region_mapping==i].mean()
-                              for i in range(self.region_mapping.max())])]
+            data = data[self.voi, :]
+            data = numpy.array([data[:, self.region_mapping == i, :].mean(axis=1)
+                                for i in range(self.no_regions)])
+            data = numpy.swapaxes(data, 0, 1)
+            return [t, data]
         else:
             return None
 
+    def create_time_series(self, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
+
+        return TimeSeriesRegion(connectivity=connectivity,
+                                region_mapping=region_map,
+                                region_mapping_volume=region_volume_map,
+                                sample_period=self.period,
+                                title='Regions ' + self.__class__.__name__)
+
 
 class ProgressLogger(Monitor):
-    "Logs progress of simulation; only for use in console scripts."
+    """Logs progress of simulation; only for use in console scripts."""
 
     def __init__(self, **kwargs):
         super(ProgressLogger, self).__init__(**kwargs)

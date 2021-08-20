@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,71 +31,38 @@
 """
 Create TVB distribution package for Mac OS.
 
-Execute in root SVN:
+Execute in root:
 
-    python tvb_build/setup_mac.py py2app
+    python tvb_build/setup_mac.py
 
 """
 
 import os
-import sys
 import shutil
-import setuptools
 import locale
 import importlib
 import tvb_bin
 from glob import glob
 from zipfile import ZipFile, ZIP_DEFLATED
+
+from conda_env_to_app import create_app, create_dmg, APP_NAME, APP_FILE
 from tvb.basic.profile import TvbProfile
 from tvb.basic.config.environment import Environment
 from tvb_build.third_party_licenses.build_licenses import generate_artefact
-
 
 BIN_FOLDER = os.path.dirname(tvb_bin.__file__)
 TVB_ROOT = os.path.dirname(os.path.dirname(__file__))
 DIST_FOLDER = os.path.join(TVB_ROOT, "dist")
 DIST_FOLDER_FINAL = "TVB_Distribution"
 STEP1_RESULT = os.path.join(TVB_ROOT, "tvb_build", "build", "TVB_build_step1.zip")
-
+APP = APP_NAME + u'.app'
 FW_FOLDER = os.path.join(TVB_ROOT, "framework_tvb")
 VERSION = TvbProfile.current.version.BASE_VERSION
 
 FOLDERS_TO_DELETE = ['.svn', '.project', '.settings']
 FILES_TO_DELETE = ['.DS_Store', 'dev_logger_config.conf']
-EXCLUDED_DYNAMIC_LIBS = []
 
-# Modules to be copied manually into "packages" locations, as they are not found by py2app.
-# These are six modules.
 EXTRA_MODULES = ['six.moves.BaseHTTPServer']
-
-# --------------------------- PY2APP specific configurations--------------------------------------------
-
-PY2APP_PACKAGES = ['cherrypy', 'email', 'h5py', 'IPython', 'ipykernel', 'ipykernel_launcher', 'nbformat',
-                   'lib2to3', "llvmlite", 'migrate', 'numba', 'notebook', 'numpy', 'pkg_resources',
-                   'PyObjCTools', 'scipy', 'sklearn', 'tables', 'tornado', 'tvb']
-
-PY2APP_INCLUDES = ['allensdk', 'cfflib', 'cmath', 'contextlib', 'formencode', 'gdist',
-                   'jinja2', 'jinja2.ext', 'jsonschema',
-                   'logging.config', 'markupsafe', 'matplotlib', 'mpl_toolkits.axes_grid', 'nibabel',
-                   'numexpr', 'os', 'pandas._libs.skiplist', 'psycopg2',
-                   'pygments.formatters.html', 'pygments.lexers.python', 'runpy', 'sqlite3', 'sqlalchemy',
-                   'sqlalchemy.dialects.sqlite', 'sqlalchemy.dialects.postgresql', 'sqlalchemy.sql.default_comparator',
-                   'simplejson', 'six', 'StringIO', 'xml.dom', 'xml.dom.minidom', 'zlib', 'zmq']
-
-PY2APP_EXCLUDES = ['_markerlib', 'altgraph', 'coverage', 'cython', 'Cython', 'tvb_data', 'docutils',
-                   'macholib', 'modulegraph', 'nose', 'OpenGL', 'py2app', 'PyOpenGL', 'PyQt4',
-                   'sphinx', 'test', 'testpath', 'wx']
-
-PY2APP_OPTIONS = {'iconfile': 'tvb_build/icon.icns',
-                  'plist': 'tvb_build/info.plist',
-                  'packages': PY2APP_PACKAGES,
-                  'includes': PY2APP_INCLUDES,
-                  'frameworks': ['Tcl', 'Tk'],
-                  'resources': [],
-                  'excludes': PY2APP_EXCLUDES,
-                  'argv_emulation': True,
-                  'strip': True,  # TRUE is the default
-                  'optimize': '0'}
 
 
 # --------------------------- Start defining functions: --------------------------------------------
@@ -242,6 +209,7 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     online_help_dst = os.path.join(library_abs_path, "tvb", "interfaces", "web", "static", "help")
     print("- Moving " + online_help_src + " to " + online_help_dst)
     os.rename(online_help_src, online_help_dst)
+    create_dmg()
 
     print("- Cleaning up non-required files...")
     _clean_up(DIST_FOLDER, False)
@@ -265,6 +233,9 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
             extra_licensing_check[idx] = os.path.join(final_name, DIST_FOLDER_FINAL, extra_licensing_check[idx])
     _introspect_licenses(os.path.join(final_name, DIST_FOLDER_FINAL, 'THIRD_PARTY_LICENSES'),
                          os.path.join(final_name, DIST_FOLDER_FINAL, library_path), extra_licensing_check)
+    print("- Deleting {}. We will use it from the DMG volume.".format(APP_NAME))
+    if os.path.exists(os.path.join(final_name, DIST_FOLDER_FINAL, APP)):
+        shutil.rmtree(os.path.join(final_name, DIST_FOLDER_FINAL, APP))
     print("- Creating the ZIP folder of the distribution...")
     zip_name = final_name + "_" + version + ".zip"
     if os.path.exists(zip_name):
@@ -275,8 +246,8 @@ def _generate_distribution(final_name, library_path, version, extra_licensing_ch
     print('- Finish creation of distribution ZIP')
 
 
-def prepare_py2app_dist():
-    print("Running pre-py2app:")
+def prepare_mac_dist():
+    print("Running pre creating app operations:")
     print(" - Cleaning old builds")
 
     if os.path.exists('build'):
@@ -296,34 +267,13 @@ def prepare_py2app_dist():
     # bin dir is initially empty, step1 does not support empty dirs in the zip
     os.mkdir(os.path.join(DIST_FOLDER, 'bin'))
 
-    print("PY2APP starting ...")
-    # Log everything from py2app in a log file
-    real_stdout, real_stderr = sys.stdout, sys.stderr
-    sys.stdout = open('PY2APP.log', 'w')
-    sys.stderr = open('PY2APP_ERR.log', 'w')
+    create_app()
 
-    fw_name = "framework_tvb"
-
-    setuptools.setup(name="tvb",
-                     version=VERSION,
-                     packages=setuptools.find_packages(fw_name),
-                     package_dir={'': fw_name},
-                     license="GPL-3.0-or-later",
-                     options={'py2app': PY2APP_OPTIONS},
-                     include_package_data=True,
-                     extras_require={'postgres': ["psycopg2"]},
-                     app=['tvb_bin/tvb_bin/app.py'],
-                     setup_requires=['py2app'])
-
-    sys.stdout = real_stdout
-    sys.stderr = real_stderr
-    print("PY2APP finished.")
-
-    print("Running post-py2app build operations:")
+    print("Running post creating app operations:")
     print("- Start creating startup scripts...")
 
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'distribution'),
-                         '../tvb.app/Contents/MacOS/tvb $@', '')
+                         '/Applications/{}/Contents/MacOS/{} $@'.format(APP, APP_NAME), '')
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_start'),
                          'source ./distribution.command start', 'Starting TVB Web Interface')
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_clean'),
@@ -331,20 +281,12 @@ def prepare_py2app_dist():
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'tvb_stop'),
                          'source ./distribution.command stop', 'Stopping TVB related processes.', True)
 
-    jupyter_command = 'export PYTHONPATH=../tvb.app/Contents/Resources/lib/' + Environment.PYTHON_FOLDER + ':' \
-                      '../tvb.app/Contents/Resources/lib/' + Environment.PYTHON_FOLDER + '/site-packages.zip:' \
-                      '../tvb.app/Contents/Resources/lib/' + Environment.PYTHON_FOLDER + '/lib-dynload\n' \
-                      '../tvb.app/Contents/MacOS/python -m tvb_bin.run_jupyter notebook '
+    jupyter_command = '/Applications/{}/Contents/Resources/bin/jupyter notebook '.format(APP)
     _create_command_file(os.path.join(DIST_FOLDER, "bin", 'jupyter_notebook'),
                          jupyter_command + '../demo_scripts', 'Launching IPython Notebook from TVB Distribution')
 
-    # py2app should have a --exclude-dynamic parameter but it doesn't seem to work until now
-    for entry in EXCLUDED_DYNAMIC_LIBS:
-        path = os.path.join(DIST_FOLDER, "tvb.app", "Contents", "Frameworks", entry)
-        if os.path.exists(path):
-            os.remove(path)
 
-    destination_sources = os.path.join("tvb.app", "Contents", "Resources", "lib", Environment.PYTHON_FOLDER)
+    destination_sources = os.path.join(APP, "Contents", "Resources", "lib", Environment.PYTHON_FOLDER)
     _generate_distribution("TVB_MacOS", destination_sources, VERSION)
 
     # cleanup after install
@@ -352,4 +294,4 @@ def prepare_py2app_dist():
 
 
 if __name__ == '__main__':
-    prepare_py2app_dist()
+    prepare_mac_dist()

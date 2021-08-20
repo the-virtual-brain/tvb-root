@@ -7,14 +7,14 @@
                 <div class="extension">
                     <div class="dropdown-pane">
                         <mark>{{ inputRow.label if 'label' in inputRow else inputRow.name }}</mark>
-                        <div class="dropdown-pane-overlay">{{ inputRow.description | replace('\n', '<br/>') | safe }}</div>
+                        <div class="dropdown-pane-overlay">{{ inputRow.description }}</div>
                     </div>
                 </div>
             </nav>
         {% endif %}
 
         {% if inputRow.get('inline_description') is not none %}
-            <nav class="inline-description">{{ inputRow.inline_description | replace('\n', '<br/>') | safe }}</nav>
+            <nav class="inline-description">{{ inputRow.inline_description }}</nav>
         {% endif %}
     {% endif %}
 {%- endmacro %}

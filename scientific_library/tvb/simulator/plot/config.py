@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -45,6 +45,7 @@ class FiguresConfig(object):
     LARGE_SIZE = (20, 15)
     SMALL_SIZE = (15, 10)
     NOTEBOOK_SIZE = (20, 10)
+    DEFAULT_SIZE = SMALL_SIZE
     FIG_FORMAT = 'png'
     SAVE_FLAG = True
     SHOW_FLAG = False

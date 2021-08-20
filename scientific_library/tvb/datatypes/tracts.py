@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
-# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -42,8 +42,6 @@ TRACTS_CHUNK_SIZE = 100
 class Tracts(HasTraits):
     """Datatype for results of diffusion imaging tractography."""
 
-    MAX_N_VERTICES = 2 ** 16
-
     vertices = NArray(
         label="Vertex positions",
         doc="""An array specifying coordinates for the tracts vertices."""
@@ -68,7 +66,6 @@ class Tracts(HasTraits):
     region_volume_map = Attr(
         field_type=RegionVolumeMapping,
         label="Region volume Mapping used to create the tract_region index",
-        required=False
     )
 
     @property

@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -59,12 +59,12 @@ function _STIM_server_update_scaling() {
 /**
  * Saves the given weight for all the selected nodes.
  */
-function _STIM_saveWeightForSelectedNodes() {
+function _STIM_saveWeightForSelectedNodes(selected_indices) {
     const weightElement = $("#current_weight");
     let newWeight = parseFloat(weightElement.val());
     if (!isNaN(newWeight)) {
-        for (let i = 0; i < GVAR_interestAreaNodeIndexes.length; i++) {
-            const nodeIndex = GVAR_interestAreaNodeIndexes[i];
+        for (let i = 0; i < selected_indices.length; i++) {
+            const nodeIndex = selected_indices[i];
             updatedRegionStimulusWeights[nodeIndex] = newWeight;
         }
         weightElement.val("");

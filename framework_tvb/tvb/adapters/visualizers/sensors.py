@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,13 +34,13 @@
 """
 
 import json
-from tvb.basic.logger.builder import get_logger
+
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
+from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -104,11 +104,8 @@ def function_sensors_to_surface(sensors_gid, surface_to_map_gid):
     Assumes coordinate systems are aligned, i.e. common x,y,z and origin.
 
     """
-    index = load_entity_by_gid(sensors_gid)
-    sensors_dt = h5.load_from_index(index)
-
-    index = load_entity_by_gid(surface_to_map_gid)
-    surface_dt = h5.load_from_index(index)
+    sensors_dt = h5.load_from_gid(sensors_gid)
+    surface_dt = h5.load_from_gid(surface_to_map_gid)
 
     return sensors_dt.sensors_to_surface(surface_dt).tolist()
 
@@ -140,13 +137,13 @@ class SensorsViewerModel(ViewModel):
 
 class SensorsViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SensorsViewerForm, self).__init__(prefix, project_id)
-        self.sensors = TraitDataTypeSelectField(SensorsViewerModel.sensors, self, name='sensors',
+    def __init__(self):
+        super(SensorsViewerForm, self).__init__()
+        self.sensors = TraitDataTypeSelectField(SensorsViewerModel.sensors, name='sensors',
                                                 conditions=self.get_filters())
-        self.projection_surface = TraitDataTypeSelectField(SensorsViewerModel.projection_surface, self,
+        self.projection_surface = TraitDataTypeSelectField(SensorsViewerModel.projection_surface,
                                                            name='projection_surface')
-        self.shell_surface = TraitDataTypeSelectField(SensorsViewerModel.shell_surface, self, name='shell_surface')
+        self.shell_surface = TraitDataTypeSelectField(SensorsViewerModel.shell_surface, name='shell_surface')
 
     @staticmethod
     def get_view_model():
@@ -204,24 +201,13 @@ class SensorsViewer(ABCDisplayer):
 
         raise LaunchException("Unknown sensors type!")
 
-    def _prepare_shell_surface_params(self, shell_surface):
-        if shell_surface:
-            shell_h5_class, shell_h5_path = self._load_h5_of_gid(shell_surface.gid)
-            with shell_h5_class(shell_h5_path) as shell_h5:
-                shell_vertices, shell_normals, _, shell_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(
-                    shell_h5)
-                shelfObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
-
-            return shelfObject
-        return None
-
     def _params_internal_sensors(self, internal_sensors, shell_surface=None):
 
         params = prepare_sensors_as_measure_points_params(internal_sensors)
 
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface, CORTICAL)
 
-        params['shelfObject'] = self._prepare_shell_surface_params(shell_surface)
+        params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
 
         return self.build_display_result('sensors/sensors_internal', params,
                                          pages={"controlPage": "sensors/sensors_controls"})
@@ -236,13 +222,12 @@ class SensorsViewer(ABCDisplayer):
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
 
         params.update({
-            'shelfObject': self._prepare_shell_surface_params(shell_surface),
+            'shellObject': self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
             'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': ''
         })
 
         if eeg_cap is not None:
-            eeg_cap_h5_class, eeg_cap_h5_path = self._load_h5_of_gid(eeg_cap.gid)
-            with eeg_cap_h5_class(eeg_cap_h5_path) as eeg_cap_h5:
+            with h5.h5_file_for_gid(eeg_cap.gid) as eeg_cap_h5:
                 params.update(self._compute_surface_params(eeg_cap_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,
@@ -255,13 +240,12 @@ class SensorsViewer(ABCDisplayer):
         shell_surface = ensure_shell_surface(self.current_project_id, shell_surface)
 
         params.update({
-            'shelfObject': self._prepare_shell_surface_params(shell_surface),
+            'shellObject': self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator),
             'urlVertices': '', 'urlTriangles': '', 'urlLines': '[]', 'urlNormals': '',
             'boundaryURL': '', 'urlRegionMap': ''})
 
         if projection_surface is not None:
-            projection_surface_h5_class, projection_surface_h5_path = self._load_h5_of_gid(projection_surface.gid)
-            with projection_surface_h5_class(projection_surface_h5_path) as projection_surface_h5:
+            with h5.h5_file_for_gid(projection_surface.gid) as projection_surface_h5:
                 params.update(self._compute_surface_params(projection_surface_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,

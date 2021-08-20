@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -46,8 +46,7 @@ from tvb.core.entities.exportable import Exportable
 from tvb.core.entities.model.model_project import Project, User
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neotraits.db import Base
-from tvb.core.utils import string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
-from tvb.core.utils import string2date, generate_guid
+from tvb.core.utils import generate_guid, string2date, string2bool, date2string, LESS_COMPLEX_TIME_FORMAT
 
 LOG = get_logger(__name__)
 
@@ -171,7 +170,7 @@ class OperationGroup(Base, Exportable):
     fk_launched_in = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
     project = relationship(Project, backref=backref('OPERATION_GROUPS', order_by=id, cascade="all,delete"))
 
-    def __init__(self, project_id, name='incomplete', ranges=None):
+    def __init__(self, project_id, name='incomplete', ranges=None, gid=None):
         self.name = name
         if ranges:
             if len(ranges) > 0:
@@ -180,7 +179,7 @@ class OperationGroup(Base, Exportable):
                 self.range2 = ranges[1]
             if len(ranges) > 2:
                 self.range3 = ranges[2]
-        self.gid = generate_guid()
+        self.gid = gid or generate_guid()
         self.fk_launched_in = project_id
 
     def __repr__(self):
@@ -252,6 +251,9 @@ class Operation(Base, Exportable):
     user_group = Column(String, default=None)
     range_values = Column(String, default=None)
     estimated_disk_size = Column(Integer)
+    view_model_disk_size = Column(Integer, default=0)
+    # This flag is set to true for operations which cannot start a new Thread because of the full LOCKS_QUEUE.
+    queue_full = Column(Boolean, default=False)
 
     algorithm = relationship(Algorithm)
     project = relationship(Project, backref=backref('OPERATIONS', order_by=id, cascade="all,delete"))
@@ -385,7 +387,7 @@ class Operation(Base, Exportable):
         self.additional_info = dictionary['additional_info']
         self.gid = dictionary['gid']
 
-        return self, dictionary['parameters']
+        return self, dictionary['parameters'], dictionary['fk_from_algo']
 
     def _parse_status(self, status):
         """

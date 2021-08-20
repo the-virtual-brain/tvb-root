@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,12 +37,11 @@ from tvb.core.entities.generic_attributes import GenericAttributes
 
 
 class ViewModel(HasTraits):
-    """
-    TODO: just inherit HT and override attrs or support automated way to generate VM from existent HT. Needed changes:
-        - HT objects that are going to DTSF should be kept as GID on VM
-        - Equations can be kept the same
-        - support UI names for attrs with choices
-    """
+    operation_group_gid = Attr(field_type=uuid.UUID, required=False)
+    ranges = Attr(str, required=False)
+    range_values = Attr(str, required=False)
+    is_metric_operation = Attr(bool, default=False)
+
     def __init__(self, **kwargs):
         super(ViewModel, self).__init__(**kwargs)
         self.create_date = datetime.now()

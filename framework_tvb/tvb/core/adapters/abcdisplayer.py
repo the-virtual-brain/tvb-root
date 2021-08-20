@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -51,6 +51,7 @@ class URLGenerator(object):
     INVOKE_ADAPTER = 'invoke_adapter'
     H5_FILE = 'read_from_h5_file'
     DATATYPE_ATTRIBUTE = 'read_datatype_attribute'
+    BINARY_DATATYPE_ATTRIBUTE = 'read_binary_datatype_attribute'
 
     @staticmethod
     def build_base_h5_url(entity_gid):
@@ -97,6 +98,17 @@ class URLGenerator(object):
             url += "?" + str(parameter)
         return url
 
+    @staticmethod
+    def build_binary_datatype_attribute_url(datatype_gid, attribute_name, parameter=None):
+        if isinstance(datatype_gid, UUID):
+            datatype_gid = datatype_gid.hex
+        url_regex = '/{}/{}/{}/{}'
+        url = url_regex.format(URLGenerator.FLOW, URLGenerator.BINARY_DATATYPE_ATTRIBUTE,
+                               datatype_gid, attribute_name)
+        if parameter is not None:
+            url += "?" + str(parameter)
+        return url
+
 
 @add_metaclass(ABCMeta)
 class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
@@ -111,20 +123,12 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
     def get_output(self):
         return []
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (ViewModel, (int,int)) -> dict
-        """
-        Should be implemented by all visualizers that can be used by portlets.
-        """
-        raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
-
-    def _prelaunch(self, operation, view_model, uid=None, available_disk_space=0):
+    def _prelaunch(self, operation, view_model, available_disk_space=0):
         """
         Shortcut in case of visualization calls.
         """
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
-        self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
         return self.launch(view_model=view_model), 0
 
     def get_required_disk_size(self, view_model):
@@ -183,8 +187,15 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         format_str = "%0." + str(precision) + "g"
         return "[" + ",".join(format_str % s for s in xs) + "]"
 
-    def _load_h5_of_gid(self, entity_gid):
-        entity_index = self.load_entity_by_gid(entity_gid)
-        entity_h5_class = h5.REGISTRY.get_h5file_for_index(type(entity_index))
-        entity_h5_path = h5.path_for_stored_index(entity_index)
-        return entity_h5_class, entity_h5_path
+    @staticmethod
+    def prepare_shell_surface_params(shell_surface, surface_url_generator):
+        """
+        Prepares urls that are necessary for a shell surface.
+        """
+        if shell_surface:
+            shell_h5 = h5.h5_file_for_index(shell_surface)
+            shell_vertices, shell_normals, _, shell_triangles, _ = surface_url_generator.get_urls_for_rendering(shell_h5)
+            shellObject = json.dumps([shell_vertices, shell_normals, shell_triangles])
+            shell_h5.close()
+            return shellObject
+        return None

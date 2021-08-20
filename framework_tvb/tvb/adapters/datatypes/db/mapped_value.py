@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,10 +33,12 @@
 """
 
 import json
-from sqlalchemy.orm import relationship
+
 from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy.orm import relationship
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.mapped_value_h5 import ValueWrapper
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure
 from tvb.core.entities.model.model_datatype import DataType
 
 
@@ -85,3 +87,9 @@ class DatatypeMeasureIndex(DataType):
                 result = result + " -- " + entry + ' : ' + str(metric_value)
 
         return result
+
+    def fill_from_has_traits(self, datatype):
+        # type: (DatatypeMeasure)  -> None
+        super(DatatypeMeasureIndex, self).fill_from_has_traits(datatype)
+        self.metrics = json.dumps(datatype.metrics)
+        self.fk_source_gid = datatype.analyzed_datatype.gid.hex

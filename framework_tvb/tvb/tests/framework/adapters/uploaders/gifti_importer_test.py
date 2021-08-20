@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,8 +36,8 @@ import os
 
 import tvb_data.gifti as demo_data
 from tvb.adapters.uploaders.gifti.parser import GIFTIParser
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.services.exceptions import OperationException
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -54,13 +54,13 @@ class TestGIFTISurfaceImporter(BaseTestCase):
     def setup_method(self):
         self.test_user = TestFactory.create_user('Gifti_User')
         self.test_project = TestFactory.create_project(self.test_user, "Gifti_Project")
+        self.storage_interface = StorageInterface()
 
     def teardown_method(self):
         """
         Clean-up tests data
         """
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_import_surface_gifti_data(self, operation_factory):
         """
@@ -70,9 +70,8 @@ class TestGIFTISurfaceImporter(BaseTestCase):
                 normals needs to be calculated.
         """
         operation_id = operation_factory().id
-        storage_path = FilesHelper().get_operation_folder(self.test_project.name, operation_id)
 
-        parser = GIFTIParser(storage_path, operation_id)
+        parser = GIFTIParser(operation_id)
         surface = parser.parse(self.GIFTI_SURFACE_FILE)
 
         assert 131342 == len(surface.vertices)
@@ -86,9 +85,8 @@ class TestGIFTISurfaceImporter(BaseTestCase):
             normals needs to be calculated.
         """
         operation_id = operation_factory().id
-        storage_path = FilesHelper().get_operation_folder(self.test_project.name, operation_id)
 
-        parser = GIFTIParser(storage_path, operation_id)
+        parser = GIFTIParser(operation_id)
         time_series = parser.parse(self.GIFTI_TIME_SERIES_FILE)
 
         data_shape = time_series[1]

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -53,12 +53,10 @@ class ConnectivityEdgeBundleModel(ViewModel):
 
 class ConnectivityEdgeBundleForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityEdgeBundleForm, self).__init__(prefix)
-        self.connectivity = TraitDataTypeSelectField(ConnectivityEdgeBundleModel.connectivity, self,
-                                                     name="connectivity", conditions=self.get_filters(),
-                                                     has_all_option=False)
-        self.project_id = project_id
+    def __init__(self):
+        super(ConnectivityEdgeBundleForm, self).__init__()
+        self.connectivity = TraitDataTypeSelectField(ConnectivityEdgeBundleModel.connectivity, name="connectivity",
+                                                     conditions=self.get_filters(), has_all_option=False)
 
     @staticmethod
     def get_required_datatype():

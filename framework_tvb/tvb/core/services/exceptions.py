@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -75,15 +75,15 @@ class ImportException(ServicesBaseException):
     """
 
 
+class MissingReferenceException(ImportException):
+    """
+    Exception to be thrown in case there are missing references when importing a H5 file.
+    """
+
+
 class BurstServiceException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.
-    """
-
-
-class InvalidPortletConfiguration(ServicesBaseException):
-    """
-    Exception thrown in cases related to wrong portlet configurations.
     """
 
 

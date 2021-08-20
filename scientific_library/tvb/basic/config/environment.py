@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -76,19 +76,12 @@ class Environment(object):
         except Exception:
             pass
 
-        if os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb_bin.__file__)))),
-                        "externals"):
+        externals_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(tvb_bin.__file__)))),
+            "externals")
+        if os.path.exists(externals_path):
             # usage from GitHub clone without got cmd or inside a Docker container (as a mounted volume)
             return False
-
-        try:
-            _proc = Popen(["svnversion", "."], stdout=PIPE, stderr=PIPE)
-            version = VersionSettings.parse_svn_version(_proc.communicate()[0])
-            if version:
-                # usage from SVN (deprecated)
-                return False
-        except Exception:
-            pass
 
         # We default as usage from TVB_Distribution
         return True

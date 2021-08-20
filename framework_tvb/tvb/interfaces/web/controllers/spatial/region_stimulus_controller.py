@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,6 +34,7 @@
 """
 
 import json
+
 import cherrypy
 import numpy
 from tvb.adapters.creators.stimulus_creator import *
@@ -43,7 +44,6 @@ from tvb.adapters.simulator.subform_helper import SubformHelper
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
@@ -95,7 +95,7 @@ class RegionStimulusController(SpatioTemporalController):
     @cherrypy.expose
     def set_connectivity(self, **param):
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
-        connectivity_form_field = RegionStimulusCreatorForm(common.get_current_project().id).connectivity
+        connectivity_form_field = RegionStimulusCreatorForm().connectivity
         connectivity_form_field.fill_from_post(param)
         current_region_stim.connectivity = connectivity_form_field.value
         conn_index = load_entity_by_gid(connectivity_form_field.value)
@@ -103,7 +103,7 @@ class RegionStimulusController(SpatioTemporalController):
 
     @cherrypy.expose
     def set_display_name(self, **param):
-        display_name_form_field = StimulusRegionSelectorForm(common.get_current_project().id).display_name
+        display_name_form_field = StimulusRegionSelectorForm().display_name
         display_name_form_field.fill_from_post(param)
         if display_name_form_field.value is not None:
             current_stimulus_region = common.get_from_session(KEY_REGION_STIMULUS)
@@ -138,11 +138,13 @@ class RegionStimulusController(SpatioTemporalController):
         current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
         selected_stimulus_gid = current_stimuli_region.gid.hex
         project_id = common.get_current_project().id
-        region_stim_selector_form = StimulusRegionSelectorForm(project_id)
+        region_stim_selector_form = self.algorithm_service.prepare_adapter_form(
+            form_instance=StimulusRegionSelectorForm(), project_id=common.get_current_project().id)
         region_stim_selector_form.region_stimulus.data = selected_stimulus_gid
         region_stim_selector_form.display_name.data = current_stimuli_region.display_name
 
-        region_stim_creator_form = RegionStimulusCreatorForm(project_id)
+        region_stim_creator_form = self.algorithm_service.prepare_adapter_form(
+            form_instance=RegionStimulusCreatorForm(), project_id=common.get_current_project().id)
         if not hasattr(current_stimuli_region, 'connectivity') or not current_stimuli_region.connectivity:
             conn = try_get_last_datatype(project_id, ConnectivityIndex)
             if conn is None:
@@ -173,7 +175,8 @@ class RegionStimulusController(SpatioTemporalController):
         Generate the required template dictionary for the second step.
         """
         current_region_stimulus = common.get_from_session(KEY_REGION_STIMULUS)
-        region_stim_selector_form = StimulusRegionSelectorForm(common.get_current_project().id)
+        region_stim_selector_form = self.algorithm_service.prepare_adapter_form(
+            form_instance=StimulusRegionSelectorForm(), project_id=common.get_current_project().id)
         region_stim_selector_form.region_stimulus.data = current_region_stimulus.gid.hex
         region_stim_selector_form.display_name.data = current_region_stimulus.display_name
 
@@ -251,8 +254,8 @@ class RegionStimulusController(SpatioTemporalController):
         if connectivity is None:
             raise MissingDataException(RegionStimulusController.MSG_MISSING_CONNECTIVITY + "!!")
         current_project = common.get_current_project()
-        conn_path = FilesHelper().get_project_folder(current_project, str(connectivity.fk_from_operation))
-        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, conn_path)
+        connectivity_viewer_params = ConnectivityViewer.get_connectivity_parameters(connectivity, current_project.name,
+                                                                                    str(connectivity.fk_from_operation))
 
         template_specification = dict()
         template_specification['isSingleMode'] = True

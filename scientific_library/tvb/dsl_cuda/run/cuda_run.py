@@ -10,6 +10,7 @@ import time
 
 here = os.path.dirname(os.path.abspath(__file__))
 
+
 class CudaRun:
 
 	def make_kernel(self, source_file, warp_size, block_dim_x, args, lineinfo=False, nh='nh'):

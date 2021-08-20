@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -213,7 +213,8 @@ class SettingsService(object):
         first_run = TvbProfile.is_first_run()
         if first_run:
             data[stored.KEY_LAST_CHECKED_FILE_VERSION] = TvbProfile.current.version.DATA_VERSION
-            data[stored.KEY_LAST_CHECKED_CODE_VERSION] = TvbProfile.current.version.SVN_VERSION
+            data[stored.KEY_LAST_CHECKED_CODE_VERSION] = TvbProfile.current.version.REVISION_NUMBER
+            data[stored.KEY_FILE_STORAGE] = TvbProfile.current.file_storage
             file_data = data
             if self.KEY_ADMIN_PWD in data:
                 data[self.KEY_ADMIN_PWD] = hash_password(data[self.KEY_ADMIN_PWD])

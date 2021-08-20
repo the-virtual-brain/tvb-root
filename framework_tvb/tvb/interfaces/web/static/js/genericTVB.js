@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -53,7 +53,6 @@ function displayMessage(msg, className) {
             messageDivParent.removeClass('no-message');
             messageDivParent[0].className = 'generic-message ' + className;
         }
-        // else we are in the portlets
     }
 }
 
@@ -138,7 +137,7 @@ function fireOnClick(redirectElem) {
 // ---------- Function on the top left call-out
 function updateCallOutProject() {
     doAjaxCall({
-        async: false,
+        async: true,
         type: 'GET',
         url: "/project/generate_call_out_control/",
         success: function (r) {
@@ -1205,6 +1204,7 @@ function refreshSubform(currentElem, elementType, subformDiv) {
             $('#' + subformDiv).html(r);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, subformDiv]);
             setEventsOnFormFields(elementType, subformDiv);
+            setupMenuEvents();
             plotEquation(subformDiv);
         }
     })

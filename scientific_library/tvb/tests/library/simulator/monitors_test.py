@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -61,9 +61,18 @@ class TestMonitors(BaseTestCase):
     def test_monitor_raw(self):
         monitors.Raw()
 
+    def test_monitor_rawvoi(self):
+        monitors.RawVoi()
+
     def test_monitor_tavg(self):
         monitor = monitors.TemporalAverage()
         assert monitor.period == self.default_period
+
+    def test_monitor_afferentcoupling(self):
+        monitors.AfferentCoupling()
+
+    def test_monitor_afferentcouplingtavg(self):
+        monitors.AfferentCouplingTemporalAverage()
 
     def test_monitor_gavg(self):
         monitor = monitors.GlobalAverage()

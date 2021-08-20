@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,19 +39,16 @@ E.g. A list with all the modules where adapters are implemented.
 
 from collections import OrderedDict
 # Import metrics here, so that Traits will find them and return them as known subclasses
-import tvb.analyzers.metric_kuramoto_index
-import tvb.analyzers.metric_proxy_metastability
-import tvb.analyzers.metric_variance_global
-import tvb.analyzers.metric_variance_of_node_variance
-from tvb.analyzers.metrics_base import BaseTimeseriesMetricAlgorithm
+from tvb.analyzers.metric_kuramoto_index import compute_kuramoto_index_metric
+from tvb.analyzers.metric_proxy_metastability import compute_proxy_metastability_metric
+from tvb.analyzers.metric_variance_global import compute_variance_global_metric
+from tvb.analyzers.metric_variance_of_node_variance import compute_variance_of_node_variance_metric
 
-ALGORITHMS = BaseTimeseriesMetricAlgorithm.get_known_subclasses(include_itself=False)
+ALGORITHMS = {'GlobalVariance': compute_variance_global_metric,
+              'KuramotoIndex': compute_kuramoto_index_metric,
+              'ProxyMetastabilitySynchrony': compute_proxy_metastability_metric,
+              'VarianceNodeVariance': compute_variance_of_node_variance_metric}
 
-algo_names = list(ALGORITHMS)
-algo_names.sort()
-choices = OrderedDict()
-for name in algo_names:
-    choices[name] = name
 
 SIMULATION_DATATYPE_CLASS = "SimulationState"
 
@@ -69,7 +66,5 @@ MEASURE_METRICS_CLASS = 'TimeseriesMetricsAdapter'
 MEASURE_METRICS_MODEL_CLASS = 'TimeseriesMetricsAdapterModel'
 
 DEFAULT_PROJECT_GID = '2cc58a73-25c1-11e5-a7af-14109fe3bf71'
-
-DEFAULT_PORTLETS = {0: {0: 'TimeSeries'}}
 
 VIEW_MODEL2ADAPTER = {}

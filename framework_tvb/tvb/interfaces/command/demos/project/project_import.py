@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,15 +35,11 @@ Later on, this project will be available from the web-interface.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
+from sys import argv
 
 from tvb.core.entities import model
-from tvb.core.services.user_service import UserService
 from tvb.core.services.import_service import ImportService
-from sys import argv
+from tvb.core.services.user_service import UserService
 
 
 def run_import(project_path):
@@ -68,6 +64,9 @@ def run_import(project_path):
 
 
 if __name__ == '__main__':
+    from tvb.config.init.initializer import command_initializer
+
+    command_initializer(skip_import=True)
 
     if len(argv) < 2:
         print("No Project path given!!!")

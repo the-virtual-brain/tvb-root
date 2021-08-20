@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,6 +33,7 @@
 """
 
 import json
+
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.visualizers.surface_view import ABCSurfaceDisplayer, SurfaceURLGenerator
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
@@ -71,15 +72,15 @@ class ConnectivityAnnotationsViewModel(ViewModel):
 
 class ConnectivityAnnotationsViewForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityAnnotationsViewForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(ConnectivityAnnotationsViewForm, self).__init__()
         # Used for filtering
-        self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index, self,
+        self.connectivity_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.connectivity_index,
                                                            'connectivity_index')
-        self.annotations_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.annotations_index, self,
+        self.annotations_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.annotations_index,
                                                           'annotations_index', conditions=self.get_filters())
         self.region_mapping_index = TraitDataTypeSelectField(ConnectivityAnnotationsViewModel.region_mapping_index,
-                                                             self, 'region_mapping_index')
+                                                             'region_mapping_index')
 
     @staticmethod
     def get_view_model():
@@ -145,8 +146,7 @@ class ConnectivityAnnotationsView(ABCSurfaceDisplayer):
                                                                          region_mapping_index.gid,
                                                                          self.stored_adapter.id)
 
-        surface_index = self.load_entity_by_gid(region_mapping_index.fk_surface_gid)
-        surface_h5 = h5.h5_file_for_index(surface_index)
+        surface_h5 = h5.h5_file_for_gid(region_mapping_index.fk_surface_gid)
         assert isinstance(surface_h5, SurfaceH5)
         url_vertices_pick, url_normals_pick, url_triangles_pick = SurfaceURLGenerator.get_urls_for_pick_rendering(
             surface_h5)

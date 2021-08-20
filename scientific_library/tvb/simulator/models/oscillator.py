@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,10 +32,10 @@ Oscillator models.
 """
 
 from .base import Model, ModelNumbaDfun
-import numexpr
 import numpy
 from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
+from tvb.simulator.backend.ref import RefBase
 
 
 class Generic2dOscillator(ModelNumbaDfun):
@@ -328,7 +328,7 @@ class Generic2dOscillator(ModelNumbaDfun):
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0, ev=numexpr.evaluate):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         V = state_variables[0, :]
         W = state_variables[1, :]
 
@@ -354,6 +354,7 @@ class Generic2dOscillator(ModelNumbaDfun):
         # This avoids an expensive array concatenation
         derivative = numpy.empty_like(state_variables)
 
+        ev = RefBase.evaluate
         ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)', out=derivative[0])
         ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=derivative[1])
 
@@ -388,7 +389,7 @@ class Generic2dOscillator(ModelNumbaDfun):
 
 @guvectorize([(float64[:],) * 16], '(n),(m)' + ',()'*13 + '->(n)', nopython=True)
 def _numba_dfun_g2d(vw, c_0, tau, I, a, b, c, d, e, f, g, beta, alpha, gamma, lc_0, dx):
-    "Gufunc for reduced Wong-Wang model equations."
+    "Gufunc for Generic2dOscillator model equations."
     V = vw[0]
     V2 = V * V
     W = vw[1]
@@ -430,7 +431,7 @@ class Kuramoto(Model):
         label=r":math:`\omega`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.01, hi=200.0, step=0.1),
-        doc=""":math:`\omega` sets the base line frequency for the
+        doc=""":math:`\\omega` sets the base line frequency for the
             Kuramoto oscillator in [rad/ms]""")
 
     state_variable_range = Final(
@@ -457,7 +458,7 @@ class Kuramoto(Model):
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0,
-             ev=numexpr.evaluate, sin=numpy.sin, pi2=numpy.pi * 2):
+             ev=RefBase.evaluate, sin=numpy.sin, pi2=numpy.pi * 2):
         r"""
         The :math:`\theta` variable is the phase angle of the oscillation.
 

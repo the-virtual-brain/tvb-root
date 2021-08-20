@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -55,9 +55,9 @@ class HistogramViewerModel(ViewModel):
 
 class HistogramViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(HistogramViewerForm, self).__init__(prefix, project_id)
-        self.input_data = TraitDataTypeSelectField(HistogramViewerModel.input_data, self, name='input_data',
+    def __init__(self):
+        super(HistogramViewerForm, self).__init__()
+        self.input_data = TraitDataTypeSelectField(HistogramViewerModel.input_data, name='input_data',
                                                    conditions=self.get_filters())
 
     @staticmethod
@@ -104,13 +104,6 @@ class HistogramViewer(ABCDisplayer):
         """
         input_data = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(input_data.shape) * 2
-
-    def generate_preview(self, view_model, figure_size=None):
-        """
-        The preview for the burst page.
-        """
-        params = self.prepare_parameters(view_model.input_data)
-        return self.build_display_result("histogram/view", params)
 
     def prepare_parameters(self, connectivity_measure_gid):
         """

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,9 +39,11 @@ Compute cross coherence between all nodes in a time series.
 import numpy
 import matplotlib.mlab as mlab
 from matplotlib.pylab import detrend_linear
-import tvb.datatypes.time_series as time_series
 import tvb.datatypes.spectral as spectral
-from tvb.basic.neotraits.api import HasTraits, Attr, Int, narray_describe
+from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import narray_describe
+
+log = get_logger(__name__)
 
 
 # TODO: Should do this properly, ie not with mlab, returning both coherence and
@@ -49,7 +51,7 @@ from tvb.basic.neotraits.api import HasTraits, Attr, Int, narray_describe
 #      coherence, etc in a similar fashion to the FourierSpectrum datatype...
 
 
-def hamming(M, sym=True):
+def _hamming(M, sym=True):
     """
     The M-point Hamming window.
     From scipy.signal
@@ -88,7 +90,7 @@ def coherence_mlab(data, sample_rate, nfft=256):
     return coh, freq
 
 
-def coherence(data, sample_rate, nfft=256, imag=False):
+def _coherence(data, sample_rate, nfft=256, imag=False):
     "Vectorized coherence calculation by windowed FFT"
     nt, ns, nn, nm = data.shape
     nwin = nt // nfft
@@ -101,7 +103,7 @@ def coherence(data, sample_rate, nfft=256, imag=False):
         .copy()\
         .transpose((2, 1, 3, 0))\
         .reshape((nn, ns, nm, nwin, nfft))
-    wins *= hamming(nfft)
+    wins *= _hamming(nfft)
     F = numpy.fft.fft(wins)
     fs = numpy.fft.fftfreq(nfft, 1e3 / sample_rate)
     # broadcasts to [node_i, node_j, ..., window, time]
@@ -115,58 +117,32 @@ def coherence(data, sample_rate, nfft=256, imag=False):
     return numpy.transpose(C[..., mask], (4, 0, 1, 2, 3)), fs[mask]
 
 
-class NodeCoherence(HasTraits):
-    "Adapter for cross-coherence algorithm(s)"
+def calculate_cross_coherence(time_series, nfft):
+    """
+    # type: (TimeSeries, int)  -> CoherenceSpectrum
+    # Adapter for cross-coherence algorithm(s)
+    # Evaluate coherence on time series.
 
-    time_series = Attr(
-        field_type=time_series.TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The timeseries to which the FFT is to be applied.""")
+    Parameters
+    __________
+    time_series : TimeSeries
+    The TimeSeries to which the Cross Coherence is to be applied.
 
-    nfft = Int(
-        label="Data-points per block",
-        default=256,
-        doc="""Should be a power of 2...""")
+    nfft : int
+    Data-points per block (should be a power of 2).
+    """
 
-    def evaluate(self):
-        "Evaluate coherence on time series."
-        cls_attr_name = self.__class__.__name__+".time_series"
-        # self.time_series.trait["data"].log_debug(owner=cls_attr_name)
-        srate = self.time_series.sample_rate
-        coh, freq = coherence(self.time_series.data, srate, nfft=self.nfft)
-        self.log.debug("coherence")
-        self.log.debug(narray_describe(coh))
-        self.log.debug("freq")
-        self.log.debug(narray_describe(freq))
+    srate = time_series.sample_rate
+    coh, freq = _coherence(time_series.data, srate, nfft=nfft)
+    log.debug("coherence")
+    log.debug(narray_describe(coh))
+    log.debug("freq")
+    log.debug(narray_describe(freq))
 
-        spec = spectral.CoherenceSpectrum(
-            source=self.time_series,
-            nfft=self.nfft,
-            array_data=coh.astype(numpy.float),
-            frequency=freq)
-        return spec
+    spec = spectral.CoherenceSpectrum(
+        source=time_series,
+        nfft=nfft,
+        array_data=coh.astype(numpy.float),
+        frequency=freq)
+    return spec
 
-    def result_shape(self, input_shape):
-        """Returns the shape of the main result of NodeCoherence."""
-        freq_len = self.nfft/2 + 1
-        freq_shape = (freq_len,)
-        result_shape = (freq_len, input_shape[2], input_shape[2], input_shape[1], input_shape[3])
-        return [result_shape, freq_shape]
-
-    def result_size(self, input_shape):
-        """
-        Returns the storage size in Bytes of the main result of NodeCoherence.
-        """
-        # TODO This depends on input array dtype!
-        result_size = numpy.sum(list(map(numpy.prod, self.result_shape(input_shape)))) * 8.0 #Bytes
-        return result_size
-
-    def extended_result_size(self, input_shape):
-        """
-        Returns the storage size in Bytes of the extended result of the FFT.
-        That is, it includes storage of the evaluated FourierSpectrum attributes
-        such as power, phase, amplitude, etc.
-        """
-        extend_size = self.result_size(input_shape) #Currently no derived attributes.
-        return extend_size

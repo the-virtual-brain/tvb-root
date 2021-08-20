@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -68,7 +68,7 @@ class BalloonModel(HasTraits):
     object of TVB and returning another TimeSeries object.
 
     The haemodynamic model parameters based on constants for a 1.5 T scanner.
-        
+
     """
 
     # NOTE: a potential problem when the input is a TimeSeriesSurface.
@@ -126,13 +126,13 @@ class BalloonModel(HasTraits):
 
     tau_s = Float(
         label=r":math:`\tau_s`",
-        default=0.65,
+        default=1.54,
         required=True,
         doc="""Balloon model parameter. Time of signal decay (s)""")
 
     tau_f = Float(
         label=r":math:`\tau_f`",
-        default=0.41,
+        default=1.44,
         required=True,
         doc=""" Balloon model parameter. Time of flow-dependent elimination or
         feedback regulation (s). The average  time blood take to traverse the

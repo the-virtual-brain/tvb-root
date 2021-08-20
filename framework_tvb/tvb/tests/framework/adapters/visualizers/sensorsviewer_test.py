@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,7 +40,6 @@ from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.datatypes.sensors import SensorTypes
 from tvb.datatypes.surfaces import EEG_CAP
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -53,7 +52,7 @@ class TestSensorViewers(TransactionalTestCase):
     """
 
     EXPECTED_KEYS_INTERNAL = {'urlMeasurePoints': None, 'urlMeasurePointsLabels': None, 'noOfMeasurePoints': 103,
-                              'minMeasure': 0, 'maxMeasure': 103, 'urlMeasure': None, 'shelfObject': None}
+                              'minMeasure': 0, 'maxMeasure': 103, 'urlMeasure': None, 'shellObject': None}
 
     EXPECTED_KEYS_EEG = EXPECTED_KEYS_INTERNAL.copy()
     EXPECTED_KEYS_EEG.update({'urlVertices': None, 'urlTriangles': None, 'urlLines': None, 'urlNormals': None,
@@ -70,12 +69,6 @@ class TestSensorViewers(TransactionalTestCase):
         """
         self.test_user = TestFactory.create_user('Sensors_Viewer_User')
         self.test_project = TestFactory.create_project(self.test_user, 'Sensors_Viewer_Project')
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
 
     def test_launch_eeg(self):
         """

@@ -1,16 +1,56 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 2.1 - build 10***
- Release Date: ** June 2020
- Description: TVB_Distribution with Python 3
+ Version: 2.* - build 16***
+ Release Date: ** ** 2021
+ Description: ****
 ======================================================================================================================================
-    * Add a REST API (server in tvb-framework and tvb-rest-client separately)
-    * Make tvb-framework code also compatible with Python 3 and Neo-Traits
+    * ...
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.3 - build 16440
+ Release Date: 28 June 2021
+ Description: Framework optimizations, Brain Tumor dataset import button, tvb-storage module
+======================================================================================================================================
+    * Optimizations in framework: simulation run, Operations and Data structure page load
+    * Start support for BIDS data: new button on Data structure page to import the Brain Tumor dataset from EBRAINS
+    * Improve mechanism to cancel/delete PSE operations
+    * Separate tvb-storage as a module on pypi
+    * Bug fixing
+    * Update documentation
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.2.2 - build 16153
+ Release Date: 23 April 2021
+ Description: Bug fixing related to H5 migration
+======================================================================================================================================
+    * Fix migration of H5 files to work in case truncated files are present
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.2.1 - build 16148
+ Release Date: 5 April 2021
+ Description: Bug fixing related to alembic migration
+======================================================================================================================================
+    * Fix second startup with SQLite after migrating data from 1.5.8
+    * Fix second startup with PostgreSQL with clean storage
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.2 - build 16145
+ Release Date: 30 March 2021
+ Description: TVB_Distribution with Python 3, REST API, encryption mechanisms
+======================================================================================================================================
+    * Make code compatible with Python 3
+    * Neotraits (splitting the aspects of: datatypes, storage, indexing, web forms)
+    * Add a REST API
+    * Support authentication in web with a Keycloak server
+    * Added encryption mechanism for the TVB storage
+    * Added encryption mechanism for uploaded data
+    * Support an HPC backend to run heavy simulations with secured data
+    * Change the Simulator configuration page towards a wizard structure
+    * The command API has been improved and can be used individually from the web GUI now
     * Use Jinja instead of Genshi for tvb web GUI
-    * Improve the Simulator page
-    * CFF import was removed
-    * tvb-contrib is a package on Pypi
-
+    * CFF importer was removed
+    * New export button on datatypes to allow exporting a datatype together with its references.
+    * Data migration from version 1.5.8 is supported. For data generated with older versions, users should first install 1.5.8 to update their data, and then install 2.2
 ======================================================================================================================================
  The Virtual Brain (TVB) tvb-library
  Version: 2.0 - build 8898

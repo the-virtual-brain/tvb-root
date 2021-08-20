@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -149,6 +149,11 @@ class DataType(HasTraitsIndex):
         self.disk_size = disk_size
         self.fk_parent_burst = fk_parent_burst
 
+    def fill_from_h5(self, h5_file):
+        LOG.warning("fill_from_h5 for: {}".format(type(self)))
+        self.gid = h5_file.gid.load().hex
+
+
     def after_store(self):
         """
         Put here code (as a trigger after storage) to be executed by
@@ -248,6 +253,8 @@ class DataTypeMatrix(DataType):
     array_has_complex = Column(Boolean, default=False)
     # has_volume_mapping will currently be changed for ConnectivityMeasureIndex subclass
     has_volume_mapping = Column(Boolean, nullable=False, default=False)
+    # currently has_valid_time_series is False only when importing Correlation Coefficients via BIDS
+    has_valid_time_series = Column(Boolean, nullable=False, default=True)
 
     def fill_from_has_traits(self, datatype):
         super(DataTypeMatrix, self).fill_from_has_traits(datatype)
@@ -284,12 +291,11 @@ class DataTypeGroup(DataType):
 
     parent_operation_group = relationship(OperationGroup, backref=backref("DATA_TYPES_GROUPS", cascade="delete"))
 
-
     def __init__(self, operation_group, **kwargs):
-
         super(DataTypeGroup, self).__init__(**kwargs)
 
         self.fk_operation_group = operation_group.id
+        self.count_results = 0
 
         if operation_group.range3 is not None:
             self.no_of_ranges = 3
@@ -299,7 +305,6 @@ class DataTypeGroup(DataType):
             self.no_of_ranges = 1
         else:
             self.no_of_ranges = 0
-
 
 
 class Links(Base):

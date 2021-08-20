@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,18 +35,16 @@ from uuid import UUID
 import flask
 import pytest
 import tvb_data
-from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
-from tvb.analyzers.fft import SUPPORTED_WINDOWING_FUNCTIONS
+from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, SUPPORTED_WINDOWING_FUNCTIONS
 from tvb.basic.exceptions import TVBException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
-from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.operation_service import OperationService
-from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, BadRequestException
+from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.strings import Strings, RequestFileKey
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory, OperationPossibleStatus
 from tvb.tests.framework.interfaces.rest.base_resource_test import RestResourceTest
 from werkzeug.datastructures import FileStorage
@@ -61,7 +59,7 @@ class TestOperationResource(RestResourceTest):
         self.status_resource = GetOperationStatusResource()
         self.results_resource = GetOperationResultsResource()
         self.launch_resource = LaunchOperationResource()
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def test_server_get_operation_status_inexistent_gid(self, mocker):
         self._mock_user(mocker)
@@ -73,7 +71,7 @@ class TestOperationResource(RestResourceTest):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         operations_and_pages = self.operations_resource.get(project_gid=self.test_project.gid)
@@ -92,7 +90,7 @@ class TestOperationResource(RestResourceTest):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         operations_and_pages = self.operations_resource.get(project_gid=self.test_project.gid)
@@ -107,7 +105,7 @@ class TestOperationResource(RestResourceTest):
         with pytest.raises(TVBException):
             TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.args = {Strings.PAGE_NUMBER: '1'}
 
         operations_and_pages = self.operations_resource.get(project_gid=self.test_project.gid)
@@ -119,7 +117,7 @@ class TestOperationResource(RestResourceTest):
     def test_server_launch_operation_no_file(self, mocker):
         self._mock_user(mocker)
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {}
 
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid='', algorithm_module='',
@@ -129,7 +127,7 @@ class TestOperationResource(RestResourceTest):
         self._mock_user(mocker)
         dummy_file = FileStorage(BytesIO(b"test"), 'test.txt')
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid='', algorithm_module='',
@@ -140,7 +138,7 @@ class TestOperationResource(RestResourceTest):
         project_gid = "inexistent-gid"
         dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: dummy_file}
 
         with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid=project_gid,
@@ -153,12 +151,12 @@ class TestOperationResource(RestResourceTest):
 
         dummy_file = FileStorage(BytesIO(b"test"), 'test.h5')
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         request_mock.files = {RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: dummy_file}
 
-        with pytest.raises(InvalidIdentifierException): self.launch_resource.post(project_gid=self.test_project.gid,
-                                                                                  algorithm_module=inexistent_algorithm,
-                                                                                  algorithm_classname='')
+        with pytest.raises(ServiceException): self.launch_resource.post(project_gid=self.test_project.gid,
+                                                                        algorithm_module=inexistent_algorithm,
+                                                                        algorithm_classname='')
 
     def test_server_launch_operation(self, mocker, time_series_index_factory):
         self._mock_user(mocker)
@@ -171,15 +169,11 @@ class TestOperationResource(RestResourceTest):
         fft_model.time_series = UUID(input_ts_index.gid)
         fft_model.window_function = list(SUPPORTED_WINDOWING_FUNCTIONS)[0]
 
-        input_folder = self.files_helper.get_project_folder(self.test_project)
-        view_model_h5_path = h5.path_for(input_folder, ViewModelH5, fft_model.gid)
-
-        view_model_h5 = ViewModelH5(view_model_h5_path, fft_model)
-        view_model_h5.store(fft_model)
-        view_model_h5.close()
+        input_folder = self.storage_interface.get_project_folder(self.test_project.name)
+        view_model_h5_path = h5.store_view_model(fft_model, input_folder)
 
         # Mock flask.request.files to return a dictionary
-        request_mock = mocker.patch.object(flask, 'request')
+        request_mock = mocker.patch.object(flask, 'request', spec={})
         fp = open(view_model_h5_path, 'rb')
         request_mock.files = {
             RequestFileKey.LAUNCH_ANALYZERS_MODEL_FILE.value: FileStorage(fp, os.path.basename(view_model_h5_path))}
@@ -195,6 +189,3 @@ class TestOperationResource(RestResourceTest):
 
         assert type(operation_gid) is str
         assert len(operation_gid) > 0
-
-    def transactional_teardown_method(self):
-        self.files_helper.remove_project_structure(self.test_project.name)

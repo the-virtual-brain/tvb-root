@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,17 +34,13 @@ Launch an operation from the command line
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-if __name__ == "__main__":
-    from tvb.basic.profile import TvbProfile
-    TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
-
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
-from .new_importer import FooDataImporter
+from tvb.interfaces.command.demos.importers.new_importer import FooDataImporter, FooDataImporterModel
 
-# Before starting this, we need to have TVB web interface launched at least once (to have a default project, user, etc)
 if __name__ == "__main__":
+    from tvb.interfaces.command.lab import *
 
     operation_service = OperationService()
 
@@ -65,12 +61,12 @@ if __name__ == "__main__":
 
     adapter_instance.stored_adapter = algorithm
 
-    # Prepare the input algorithms as if they were coming from web UI submit:
-    # launch_args = {"array_data": "[1, 2, 3, 4, 5]"}
-    launch_args = {"array_data": "demo_array.txt"}
+    # Prepare view model
+    view_model = FooDataImporterModel()
+    view_model.array_data = "demo_array.txt"
 
     # launch an operation and have the results stored both in DB and on disk
     launched_operations = operation_service.fire_operation(adapter_instance,
                                                            project.administrator,
                                                            project.id,
-                                                           **launch_args)
+                                                           view_model=view_model)

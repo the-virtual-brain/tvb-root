@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -63,12 +63,11 @@ class SensorsImporterModel(UploaderViewModel):
 
 class SensorsImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(SensorsImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(SensorsImporterForm, self).__init__()
 
-        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, ('.txt', '.bz2'), self,
-                                             name='sensors_file')
-        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, self, name='sensors_type',
+        self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, ('.txt', '.bz2'), 'sensors_file')
+        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, name='sensors_type',
                                         choices=SensorsImporterModel.OPTIONS)
 
     @staticmethod
@@ -143,4 +142,4 @@ class SensorsImporter(ABCUploader):
         sensors_inst.configure()
         self.logger.debug("Sensors instance ready to be stored")
 
-        return h5.store_complete(sensors_inst, self.storage_path)
+        return self.store_complete(sensors_inst)

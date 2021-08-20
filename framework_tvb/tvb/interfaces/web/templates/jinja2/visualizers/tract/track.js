@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -14,14 +14,6 @@
  * PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  * You should have received a copy of the GNU General Public License along with this
  * program.  If not, see <http://www.gnu.org/licenses/>.
- *
- *   CITATION:
- * When using The Virtual Brain for scientific publications, please cite it as follows:
- *
- *   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
- *   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
- *       The Virtual Brain: a simulator of primate brain network dynamics.
- *   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
  *
  * .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
  **/
@@ -34,7 +26,7 @@ var chunks_tract_offsets;
 
 var tracts_loaded = false;
 
-var TRACK_shelfDisplayBuffers = [];
+var TRACK_shellDisplayBuffers = [];
 
 var drawingMode;
 
@@ -215,20 +207,20 @@ function _bindEvents(canvas){
     });
 }
 
-function TRACK_webGLStart(urlTrackStarts, urlTrackVertices, shelfObject) {
+function TRACK_webGLStart(urlTrackStarts, urlTrackVertices, shellObject) {
     var canvas = document.getElementById(BRAIN_CANVAS_ID);
-    shelfObject = $.parseJSON(shelfObject);
+    shellObject = $.parseJSON(shellObject);
 
     _customInitGL(canvas);
     _initShaders();
 
     displayMessage("Start loading surface data!", "infoMessage");
-    downloadBrainGeometry($.toJSON(shelfObject[0]), $.toJSON(shelfObject[2]), $.toJSON(shelfObject[1]),
+    downloadBrainGeometry($.toJSON(shellObject[0]), $.toJSON(shellObject[2]), $.toJSON(shellObject[1]),
         function(drawingBrain){
             displayMessage("Finished loading surface data!", "infoMessage");
-            // Finished downloading buffer data. Initialize TRACK_shelfDisplayBuffers
-            TRACK_shelfDisplayBuffers = drawingBrainUploadGeometryBuffers(drawingBrain);
-            drawingBrainUploadDefaultColorBuffer(drawingBrain.vertices, TRACK_shelfDisplayBuffers);
+            // Finished downloading buffer data. Initialize TRACK_shellDisplayBuffers
+            TRACK_shellDisplayBuffers = drawingBrainUploadGeometryBuffers(drawingBrain);
+            drawingBrainUploadDefaultColorBuffer(drawingBrain.vertices, TRACK_shellDisplayBuffers);
             drawScene();
         }
     );
@@ -257,7 +249,7 @@ function TRACK_webGLStart(urlTrackStarts, urlTrackVertices, shelfObject) {
  * Redraw from buffers.
  */
 function drawScene() {
-    if (TRACK_shelfDisplayBuffers.length === 0) {
+    if (TRACK_shellDisplayBuffers.length === 0) {
         displayMessage("The load operation for the surface data is not completed yet!", "infoMessage");
         return;
     }
@@ -284,7 +276,7 @@ function drawScene() {
 
     if (isFaceToDisplay) {
         gl.uniform1i(GL_shaderProgram.useActivity, true);
-        drawBuffers(drawingMode, TRACK_shelfDisplayBuffers, true, gl.FRONT);
+        drawBuffers(drawingMode, TRACK_shellDisplayBuffers, true, gl.FRONT);
     }
 
     mvPopMatrix();

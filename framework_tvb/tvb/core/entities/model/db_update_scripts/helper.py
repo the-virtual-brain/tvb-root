@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,12 +35,12 @@ This modules holds helping function for DB update scripts
 """
 
 from sqlalchemy import text
-from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.basic.logger.builder import get_logger
-
+from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.storage import SA_SESSIONMAKER, dao
+from tvb.core.utils import string2date
 
 LOGGER = get_logger(__name__)
-
 
 
 def change_algorithm(module, classname, new_module, new_class):
@@ -60,3 +60,68 @@ def change_algorithm(module, classname, new_module, new_class):
         session.close()
 
 
+def get_burst_for_migration(burst_id, burst_match_dict, date_format, selected_db):
+    """
+    This method is supposed to only be used when migrating from version 4 to version 5.
+    It finds a BurstConfig in the old format (when it did not inherit from HasTraitsIndex), deletes it
+    and returns its parameters.
+    """
+    session = SA_SESSIONMAKER()
+    burst_params = session.execute("""SELECT * FROM "BURST_CONFIGURATION" WHERE id = """ + burst_id).fetchone()
+    session.close()
+
+    if burst_params is None:
+        return None, False
+
+    burst_params_dict = {'datatypes_number': burst_params['datatypes_number'],
+                         'dynamic_ids': burst_params['dynamic_ids'], 'range_1': burst_params['range1'],
+                         'range_2': burst_params['range2'], 'fk_project': burst_params['fk_project'],
+                         'name': burst_params['name'], 'status': burst_params['status'],
+                         'error_message': burst_params['error_message'], 'start_time': burst_params['start_time'],
+                         'finish_time': burst_params['finish_time'], 'fk_simulation': burst_params['fk_simulation'],
+                         'fk_operation_group': burst_params['fk_operation_group'],
+                         'fk_metric_operation_group': burst_params['fk_metric_operation_group']}
+
+    if selected_db == 'sqlite':
+        burst_params_dict['start_time'] = string2date(burst_params_dict['start_time'], date_format=date_format)
+        burst_params_dict['finish_time'] = string2date(burst_params_dict['finish_time'], date_format=date_format)
+
+    if burst_id not in burst_match_dict:
+        burst_config = BurstConfiguration(burst_params_dict['fk_project'])
+        burst_config.datatypes_number = burst_params_dict['datatypes_number']
+        burst_config.dynamic_ids = burst_params_dict['dynamic_ids']
+        burst_config.error_message = burst_params_dict['error_message']
+        burst_config.finish_time = burst_params_dict['finish_time']
+        burst_config.fk_metric_operation_group = burst_params_dict['fk_metric_operation_group']
+        burst_config.fk_operation_group = burst_params_dict['fk_operation_group']
+        burst_config.fk_project = burst_params_dict['fk_project']
+        burst_config.fk_simulation = burst_params_dict['fk_simulation']
+        burst_config.name = burst_params_dict['name']
+        burst_config.range1 = burst_params_dict['range_1']
+        burst_config.range2 = burst_params_dict['range_2']
+        burst_config.start_time = burst_params_dict['start_time']
+        burst_config.status = burst_params_dict['status']
+        new_burst = True
+    else:
+        burst_config = dao.get_burst_by_id(burst_match_dict[burst_id])
+        new_burst = False
+
+    return burst_config, new_burst
+
+
+def delete_old_burst_table_after_migration():
+    session = SA_SESSIONMAKER()
+    try:
+        session.execute(text("""DROP TABLE "BURST_CONFIGURATION"; """))
+        session.commit()
+    except Exception as excep:
+        session.close()
+        session = SA_SESSIONMAKER()
+        LOGGER.exception(excep)
+        try:
+            session.execute(text("""DROP TABLE if exists "BURST_CONFIGURATION" cascade; """))
+            session.commit()
+        except Exception as excep:
+            LOGGER.exception(excep)
+    finally:
+        session.close()

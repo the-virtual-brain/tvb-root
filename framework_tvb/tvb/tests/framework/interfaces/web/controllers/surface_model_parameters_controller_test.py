@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,7 +34,7 @@
 
 import cherrypy
 from tvb.core.entities.file.simulator.view_model import CortexViewModel
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import SurfaceModelParametersController
 import tvb.interfaces.web.controllers.common as common
@@ -49,8 +49,9 @@ class TestSurfaceModelParametersController(BaseTransactionalControllerTest):
     def test_edit_model_parameters(self, region_mapping_index_factory):
         self.init()
         surface_m_p_c = SurfaceModelParametersController()
-        SimulatorController().index()
-        simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
+        simulator_controller = SimulatorController()
+        simulator_controller.index()
+        simulator = simulator_controller.context.simulator
         region_mapping_index = region_mapping_index_factory()
         simulator.connectivity = region_mapping_index.fk_connectivity_gid
         simulator.surface = CortexViewModel()

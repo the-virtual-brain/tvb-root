@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,10 +37,12 @@ A contributed model: Hindmarsh-Rose
 """
 
 import numpy
-from tvb.simulator.common import psutil, get_logger
-LOG = get_logger(__name__)
-from tvb.basic.neotraits.api import NArray, Range, Final
+
+from tvb.simulator.common import get_logger
+from tvb.basic.neotraits.api import NArray, Range, Final, List
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
 
 
 class HindmarshRose(models.Model):
@@ -126,42 +128,19 @@ class HindmarshRose(models.Model):
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.""")
 
-    variables_of_interest = NArray(
-        dtype=numpy.int,
+    variables_of_interest = List(
+        of=str,
         label="Variables watched by Monitors",
-        domain=Range(lo=0, hi=3, step=1),
-        default=numpy.array([0], dtype=numpy.int32),
+        choices=("x", "y", "z"),
+        default="x",
         doc="""This represents the default state-variables of this Model to be
         monitored. It can be overridden for each Monitor if desired. The 
         corresponding state-variable indices for this model are :math:`x = 0`,
         :math:`y = 1`,and :math:`z = 2`.""")
 
-#    coupling_variables = arrays.IntegerArray(
-#        label = "Variables to couple activity through",
-#        default = numpy.array([0], dtype=numpy.int32))
-
-#    nsig = arrays.FloatArray(
-#        label = "Noise dispersion",
-#        default = numpy.array([0.0]),
-#        range = basic.Range(lo = 0.0, hi = 1.0))
-
-
-    def __init__(self, **kwargs):
-        """
-        Initialize the HindmarshRose model's traited attributes, any provided
-        as keywords will overide their traited default.
-        
-        """
-        LOG.info('%s: initing...' % str(self))
-        super(HindmarshRose, self).__init__(**kwargs)
-
-        self._state_variables = ["x", "y", "z"]
-        self._nvar = 3
-
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        LOG.debug('%s: inited.' % repr(self))
-
+    state_variables = ["x", "y", "z"]
+    _nvar = 3
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
@@ -196,4 +175,3 @@ class HindmarshRose(models.Model):
         derivative = numpy.array([dx, dy, dz])
 
         return derivative
-

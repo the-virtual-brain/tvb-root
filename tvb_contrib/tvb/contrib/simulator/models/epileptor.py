@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,10 +34,12 @@ The Epileptor model
 """
 
 import numpy
-from tvb.simulator.common import psutil, get_logger
-LOG = get_logger(__name__)
+
+from tvb.simulator.common import get_logger
 from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
 
 
 class HMJEpileptor(models.Model):
@@ -154,29 +156,9 @@ class HMJEpileptor(models.Model):
         default=("y0", "y3"),
         doc="""default state variables to be monitored""")
 
-#    variables_of_interest = arrays.IntegerArray(
-#        label="Variables watched by Monitors",
-#        range=basic.Range(lo=0.0, hi=6.0, step=1.0),
-#        default=numpy.array([0], dtype=numpy.int32),
-#        doc="default state variables to be monitored",
-#        order=10)
-
-
-    def __init__(self, **kwargs):
-        """
-        """
-
-        LOG.info("%s: init'ing..." % (str(self),))
-
-        super(HMJEpileptor, self).__init__(**kwargs)
-
-        #self._state_variables = ["y%d" % i for i in range(6)]
-        #self._state_variables = ["y%d" % i for i in range(6)]
-        self._nvar = 6
-        self.cvar = numpy.array([0,3], dtype=numpy.int32)
-
-
-        LOG.debug("%s: init'ed." % (repr(self),))
+    state_variables = ["y%d" % i for i in range(6)]
+    _nvar = 6
+    cvar = numpy.array([0, 3], dtype=numpy.int32)
 
     def dfun(self, state_variables, coupling, local_coupling=0.0,
              array=numpy.array, where=numpy.where, concat=numpy.concatenate):
@@ -211,11 +193,11 @@ class HMJEpileptor(models.Model):
         #     ydot2 = c-d*y(1)^2-y(2); 
         #     ydot3 =  r*(s*(y(1)-x0)  - y(3));   % energy consumption = 1 - available energy
 
-        if_y1_lt_0 = concat([ (y[1] - self.a*y[0]**3 + self.b*y[0]**2 - y[2] + Iext).reshape((1, n, 1)),
+        if_y1_lt_0 = concat([(y[1] - self.a*y[0]**3 + self.b*y[0]**2 - y[2] + Iext).reshape((1, n, 1)),
                               (self.c - self.d*y[0]**2 - y[1]).reshape((1, n, 1)),
                               (self.r*(self.s*(y[0] - self.x0) - y[2] - self.Kpop1 * (c_pop1 - y[0]) )).reshape((1, n, 1)) ])
 
-         # else
+        # else
         # %    ydot1 = y(2) + (slope - y(4) -1.0*(y(3)-4))*y(1) - y(3)+iext; % this is just an
         # %    alternative representation, which worked well
         #     ydot1 = y(2) + (slope - y(4) + 0.6*(y(3)-4)^2)*y(1) -y(3)+iext; 
@@ -228,9 +210,10 @@ class HMJEpileptor(models.Model):
         #     ydot3 =   r*(s*(y(1)-x0)  - y(3));
         # end
 
-        else_pop1 = concat([ (y[1] + (self.slope - y[3] + 0.6*(y[2]-4.0)**2)*y[0] - y[2] + Iext).reshape((1, n, 1)),
-                         (self.c - self.d*y[0]**2 - y[1]).reshape((1, n, 1)),
-                         (self.r*(self.s*(y[0] - self.x0) - y[2] - self.Kpop1 * (c_pop1 - y[0]))).reshape((1, n, 1)) ])
+        else_pop1 = concat(
+            [(y[1] + (self.slope - y[3] + 0.6 * (y[2] - 4.0) ** 2) * y[0] - y[2] + Iext).reshape((1, n, 1)),
+             (self.c - self.d * y[0] ** 2 - y[1]).reshape((1, n, 1)),
+             (self.r * (self.s * (y[0] - self.x0) - y[2] - self.Kpop1 * (c_pop1 - y[0]))).reshape((1, n, 1))])
 
         pop1 = where(y[0] < 0., if_y1_lt_0, else_pop1)
 
@@ -245,21 +228,21 @@ class HMJEpileptor(models.Model):
         #     % y(6) turns the oscillator on and off, whereas the y(3) term helps it to become precritical (critical fluctuations). 
         #     ydot5 = -y(5)/tau ;
 
-        if_ = concat([ (-y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kpop2 * (c_pop2 - y[3])).reshape((1, n, 1)), (-y[4]/self.tau).reshape((1, n, 1)) ])
+        if_ = concat([(-y[4] + y[3] - y[3] ** 3 + self.Iext2 + 2 * y[5] - 0.3 * (y[2] - 3.5) + self.Kpop2 * (
+                c_pop2 - y[3])).reshape((1, n, 1)), (-y[4] / self.tau).reshape((1, n, 1))])
         # else
         #     ydot4 = -y(5)+ y(4)-y(4)^3 + iext2+ 2*y(6)-0.3*(y(3)-3.5); 
         #     ydot5 = (-y(5) + aa*(y(4)+0.25))/tau;   % here is the mlj structure
         # end
-
-        else_pop2 = concat([ (-y[4] + y[3] - y[3]**3 + self.Iext2 + 2*y[5] - 0.3*(y[2] - 3.5) + self.Kpop2 * (c_pop2 - y[3])).reshape((1, n, 1)), ((-y[4] + self.aa*(y[3] + 0.25))/self.tau).reshape((1, n, 1)) ])
-
-
+        else_pop2 = concat([(-y[4] + y[3] - y[3] ** 3 + self.Iext2 + 2 * y[5] - 0.3 * (y[2] - 3.5) + self.Kpop2 * (
+                c_pop2 - y[3])).reshape((1, n, 1)),
+                            ((-y[4] + self.aa * (y[3] + 0.25)) / self.tau).reshape((1, n, 1))])
         pop2 = where(y[3] < -0.25, if_, else_pop2)
 
         # 
         #  ydot6 = -0.01*(y(6)-0.1*y(1)) ;
 
-        energy = array([ -0.01*(y[5] - 0.1*y[0])])
+        energy = array([-0.01 * (y[5] - 0.1 * y[0])])
 
         # 
         # ydot = [ydot1;ydot2;ydot3;ydot4;ydot5;ydot6];

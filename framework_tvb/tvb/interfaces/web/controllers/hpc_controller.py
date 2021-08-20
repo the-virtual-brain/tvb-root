@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -43,10 +43,10 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import OperationPossibleStatus
 from tvb.core.entities.storage import dao
 from tvb.core.operation_hpc_launcher import UPDATE_STATUS_KEY
-from tvb.core.services.encryption_handler import EncryptionHandler
 from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.decorators import expose_endpoint
+from tvb.storage.storage_interface import StorageInterface
 
 
 @traced
@@ -97,7 +97,6 @@ class HPCController(object):
 
         self._validate_request_params(simulator_gid, operation_id)
 
-        encryption_handler = EncryptionHandler(simulator_gid)
-        file_path = encryption_handler.get_password_file()
+        file_path = StorageInterface().get_password_file(simulator_gid)
 
         return serve_file(file_path, "application/x-download", "attachment", os.path.basename(file_path))

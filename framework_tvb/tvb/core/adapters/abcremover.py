@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,17 +33,16 @@
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.storage import dao
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ABCRemover(object):
     
     def __init__(self, handled_datatype):
-        self.structure_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.handled_datatype = handled_datatype
-        
-        
+
     def remove_datatype(self, skip_validation=False):
         """
         Perform basic operation, should overwrite in specific implementations.

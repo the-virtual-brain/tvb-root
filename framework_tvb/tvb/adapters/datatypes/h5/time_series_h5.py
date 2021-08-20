@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,10 +34,11 @@
 """
 
 import json
+
 from tvb.basic.neotraits.api import Int
 from tvb.core.adapters.arguments_serialisation import *
-from tvb.core.utils import prepare_time_slice
 from tvb.core.neotraits.h5 import H5File, Scalar, DataSet, Reference, Json
+from tvb.core.utils import prepare_time_slice
 from tvb.datatypes.time_series import *
 
 NO_OF_DEFAULT_SELECTED_CHANNELS = 20
@@ -177,16 +178,16 @@ class TimeSeriesH5(H5File):
         """
         Append a new value to the ``time`` attribute.
         """
-        self.time.append(partial_result)
+        self.time.append(partial_result, False)
 
     def write_data_slice(self, partial_result):
         """
         Append a chunk of time-series data to the ``data`` attribute.
         """
-        self.data.append(partial_result)
+        self.data.append(partial_result, False)
 
     def write_data_slice_on_grow_dimension(self, partial_result, grow_dimension=0):
-        self.data.append(partial_result, grow_dimension=grow_dimension)
+        self.data.append(partial_result, grow_dimension=grow_dimension, close_file=False)
 
     def get_min_max_values(self):
         """
@@ -319,7 +320,7 @@ class TimeSeriesVolumeH5(TimeSeriesH5):
 
         return [slicex, slicey, slicez]
 
-    def get_voxel_time_series(self, x, y, z, **kwargs):
+    def get_voxel_time_series(self, x_plane, y_plane, z_plane, **kwargs):
         """
         Retrieve for a given voxel (x,y,z) the entire timeline.
 
@@ -332,7 +333,8 @@ class TimeSeriesVolumeH5(TimeSeriesH5):
         """
 
         overall_shape = self.data.shape
-        x, y, z = preprocess_space_parameters(x, y, z, overall_shape[1], overall_shape[2], overall_shape[3])
+        x, y, z = preprocess_space_parameters(x_plane, y_plane, z_plane, overall_shape[1], overall_shape[2],
+                                              overall_shape[3])
 
         slices = prepare_time_slice(overall_shape[0]), slice(x, x + 1), slice(y, y + 1), slice(z, z + 1)
 

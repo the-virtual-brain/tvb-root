@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -45,12 +45,15 @@ class Model(HasTraits):
     """
 
     state_variables = ()  # type: typing.Tuple[str]
+    non_integrated_variables = None  # type: typing.Tuple[str]
     variables_of_interest = ()
     _nvar = None   # todo make this a prop len(state_variables)
+    _nintvar = _nvar
     number_of_modes = 1
     cvar = None
     stvar = None
     state_variable_boundaries = None
+    state_variable_mask = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -90,19 +93,39 @@ class Model(HasTraits):
         if self.stvar is None:
             self.stvar = self.cvar.copy()
         super(Model, self).configure()
-        self.update_derived_parameters()
-        self._build_observer()
         # Make sure that if there are any state variable boundaries, ...
         if isinstance(self.state_variable_boundaries, dict):
             self._setup_sv_boundaries()
         elif self.state_variable_boundaries is not None:
             self.state_variable_boundaries = None
             Warning("Non dict model state variable boundaries ignored!: %s" % str(self.state_variable_boundaries))
+        self.state_variable_mask = numpy.array([True] * self.nvar)
+        if self.non_integrated_variables is not None:
+            for var in self.non_integrated_variables:
+                self.state_variable_mask[self.state_variables.index(var)] = False
+        self._nintvar = numpy.sum(self.state_variable_mask)
+        self.update_derived_parameters()
+        self._build_observer()
 
     @property
     def nvar(self):
         """ The number of state variables in this model. """
         return self._nvar
+
+    @property
+    def nintvar(self):
+        """ The number of integrated state variables in this model. """
+        return self._nintvar
+
+    @property
+    def nnonintvar(self):
+        """ The number of non integrated state variables in this model. """
+        return self._nvar - self._nintvar
+
+    @property
+    def has_nonint_vars(self):
+        """ Flag to determine if there are any non integrated state variables. """
+        return self.nnonintvar > 0
 
     def update_derived_parameters(self):
         """
@@ -126,6 +149,12 @@ class Model(HasTraits):
         for i, (lo, hi) in enumerate([svr[sv[i]] for i in range(nvar)]):
             ic[:, i] = rng.uniform(low=lo, high=hi, size=block)
         return ic
+
+    def initial_for_simulator(self, integrator, shape):
+        "Generate initial conditions with integrator and shape."
+        rng = integrator.noise.random_stream if hasattr(integrator, 'noise') else numpy.random
+        dt = integrator.dt
+        return self.initial(dt, shape, rng)
 
     @abc.abstractmethod
     def dfun(self, state_variables, coupling, local_coupling=0.0):
@@ -173,6 +202,8 @@ class Model(HasTraits):
         state = state[:, numpy.newaxis]
 
         out = [state.copy()]
+        if self.number_of_modes == 3:
+            coupling = numpy.tile(coupling, (1,1,3))
         for i in range(n_step):
             state += dt * self.dfun(state, coupling)
             if i % n_skip == 0:
@@ -184,6 +215,53 @@ class Model(HasTraits):
     def spatial_param_reshape(self):
         "Returns reshape argument for a spatialized parameter."
         return -1, 1
+
+    def _spatialize_model_parameters(self, sim):
+        # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
+        # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
+        excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
+                           "noise", "psi_table", "nerf_table", "gid", "state_variable_dfuns",
+                           "parameter_names", "coupling_terms")
+        spatial_reshape = self.spatial_param_reshape
+        for param in type(self).declarative_attrs:
+            if param in excluded_params:
+                continue
+            region_parameters = getattr(self, param)
+            self._map_roi_param_to_surface(sim, param, region_parameters, spatial_reshape)
+            self._reshape_model_param_for_modes(sim, param, spatial_reshape)
+
+    def _reshape_model_param_for_modes(self, sim, param, spatial_reshape):
+        region_parameters = getattr(self, param)
+        if region_parameters.size == sim.number_of_nodes:
+            new_parameters = region_parameters.reshape(spatial_reshape)
+            setattr(self, param, new_parameters)
+
+    def _map_roi_param_to_surface(self, sim, param, region_parameters, spatial_reshape):
+        if sim.surface is not None:
+            if region_parameters.size == sim.connectivity.number_of_regions:
+                new_parameters = region_parameters[sim.surface.region_mapping].reshape(spatial_reshape)
+                setattr(self, param, new_parameters)
+
+    def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0):
+        return state_variables
+
+    def update_state_variables_after_integration(self, state_variables):
+        return state_variables
+
+    @property
+    def spatial_parameter_names(self):
+        return [_ for _ in self.parameter_names if getattr(self, _).size != 1]
+    
+    @property
+    def global_parameter_names(self):
+        return [_ for _ in self.parameter_names if getattr(self, _).size == 1]
+
+    @property
+    def spatial_parameter_matrix(self):
+        names = self.spatial_parameter_names
+        matrix = numpy.array([getattr(self,_).reshape((-1,)) for _ in names])
+        return matrix
+    
 
 
 class ModelNumbaDfun(Model):

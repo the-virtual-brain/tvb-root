@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,15 +36,17 @@ from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment
 from tvb.basic.neotraits.api import HasTraits, NArray
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapter, ABCAdapterForm
+from tvb.core.entities.model.model_project import User
 from tvb.core.neotraits.forms import ArrayField
 from tvb.interfaces.web.controllers.decorators import using_template
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorFragmentRenderingRules, SimulatorWizzardURLs
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorFragmentRenderingRules, \
+    SimulatorWizzardURLs
 from tvb.simulator.models import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 
-class TestTrait(HasTraits):
+class DummyTrait(HasTraits):
     """ Test class with traited attributes"""
 
     test_array = NArray(label="State Variables range [[lo],[hi]]",
@@ -55,7 +57,7 @@ class TraitAdapterForm(ABCAdapterForm):
 
     def __init__(self):
         super(TraitAdapterForm, self).__init__()
-        self.test_array = ArrayField(TestTrait.test_array, self, name='test_array')
+        self.test_array = ArrayField(DummyTrait.test_array, name='test_array')
 
 
 class TraitAdapter(ABCAdapter):
@@ -90,7 +92,7 @@ class Jinja2Test(BaseTestCase):
         TvbProfile.current.web.RENDER_HTML = False
 
 
-class TestTraitAdapterForm(Jinja2Test):
+class DummyTraitAdapterForm(Jinja2Test):
     """
     Test HTML generation for a traited form.
     """
@@ -98,7 +100,7 @@ class TestTraitAdapterForm(Jinja2Test):
     @using_template('form_fields/form')
     def prepare_adapter_for_rendering(self):
         adapter = TraitAdapter()
-        datatype = TestTrait()
+        datatype = DummyTrait()
 
         form = adapter.get_form_class()()
         form.fill_from_trait(datatype)
@@ -107,7 +109,7 @@ class TestTraitAdapterForm(Jinja2Test):
 
     def test_multidimensional_array(self):
         html = self.prepare_adapter_for_rendering()
-        soup = BeautifulSoup(html)
+        soup = BeautifulSoup(html, features="html.parser")
 
         array_entry = soup.find_all('input', attrs=dict(name='test_array'))
         assert len(array_entry) == 1, 'Array entry not found'
@@ -118,20 +120,30 @@ class TestJinja2Simulator(Jinja2Test):
 
     @using_template('simulator_fragment')
     def dummy_renderer(self, template_dict):
+        template_dict['showOnlineHelp'] = True
         return template_dict
 
-    def prepare_simulator_form_for_search(self, rendering_rules, form=None):
-        # type: (SimulatorFragmentRenderingRules, ABCAdapterForm) -> BeautifulSoup
+    def prepare_simulator_form_for_search(self, mocker, rendering_rules, form=None):
+        # type: (MockerFixture, SimulatorFragmentRenderingRules, ABCAdapterForm) -> BeautifulSoup
         if form is None:
-            form = SimulatorAdapterForm(project_id=1)
+            form = SimulatorAdapterForm()
             form.fill_from_trait(Simulator())
         rendering_rules.form = form
 
+        def _is_online_help_active(self):
+            return True
+
+        def _get_logged_user():
+            return User('test', 'test', 'test')
+
+        mocker.patch('tvb.interfaces.web.controllers.common.get_logged_user', _get_logged_user)
+        mocker.patch.object(User, 'is_online_help_active', _is_online_help_active)
+
         html = self.dummy_renderer(rendering_rules.to_dict())
-        soup = BeautifulSoup(html)
+        soup = BeautifulSoup(html, features="html.parser")
         return soup
 
-    def test_models_list(self):
+    def test_models_list(self, mocker):
         all_models_for_ui = get_ui_name_to_model()
         models_form = SimulatorModelFragment()
         simulator = Simulator()
@@ -139,7 +151,7 @@ class TestJinja2Simulator(Jinja2Test):
         models_form.fill_from_trait(simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(is_model_fragment=True)
-        soup = self.prepare_simulator_form_for_search(rendering_rules, form=models_form)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules, form=models_form)
 
         select_field = soup.find_all('select')
         assert len(select_field) == 1, 'Number of select inputs is different than 1'
@@ -149,9 +161,9 @@ class TestJinja2Simulator(Jinja2Test):
         assert len(select_field_choice) == 1
         assert 'Epileptor' in select_field_choice[0].attrs['value']
 
-    def test_simulator_adapter_form(self):
+    def test_simulator_adapter_form(self, mocker):
         rendering_rules = SimulatorFragmentRenderingRules()
-        soup = self.prepare_simulator_form_for_search(rendering_rules)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         connectivity_select_field = soup.find_all('select', attrs=dict(name='connectivity'))
         assert len(connectivity_select_field) == 1, 'Number of connectivity select inputs is different than 1'
@@ -160,10 +172,10 @@ class TestJinja2Simulator(Jinja2Test):
         coupling_select_filed = soup.find_all('select', attrs=dict(name='coupling'))
         assert len(coupling_select_filed) == 1, 'Number of coupling select inputs is different than 1'
 
-    def test_buttons_first_fragment(self):
+    def test_buttons_first_fragment(self, mocker):
         rendering_rules = SimulatorFragmentRenderingRules(form_action_url=SimulatorWizzardURLs.SET_CONNECTIVITY_URL,
                                                           is_first_fragment=True)
-        soup = self.prepare_simulator_form_for_search(rendering_rules)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 1
@@ -171,9 +183,9 @@ class TestJinja2Simulator(Jinja2Test):
         hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
         assert len(hidden_buttons) == 0
 
-    def test_buttons_first_fragment_copy(self):
+    def test_buttons_first_fragment_copy(self, mocker):
         rendering_rules = SimulatorFragmentRenderingRules(is_first_fragment=True, is_simulation_copy=True)
-        soup = self.prepare_simulator_form_for_search(rendering_rules)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 1
@@ -181,50 +193,50 @@ class TestJinja2Simulator(Jinja2Test):
         hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
         assert len(hidden_buttons) == 1
 
-    def test_buttons_last_fragment(self):
+    def test_buttons_last_fragment(self, mocker):
         rendering_rules = SimulatorFragmentRenderingRules(form_action_url=SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           last_form_url=SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           is_launch_fragment=True)
-        soup = self.prepare_simulator_form_for_search(rendering_rules)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 3
         hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
         assert len(hidden_buttons) == 0
 
-    def test_buttons_last_fragment_copy(self):
+    def test_buttons_last_fragment_copy(self, mocker):
         rendering_rules = SimulatorFragmentRenderingRules(is_launch_fragment=True, is_simulation_copy=True,
                                                           form_action_url=SimulatorWizzardURLs.SETUP_PSE_URL,
                                                           last_form_url=SimulatorWizzardURLs.SETUP_PSE_URL)
-        soup = self.prepare_simulator_form_for_search(rendering_rules)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         all_buttons = soup.find_all('button')
-        assert len(all_buttons) == 4
+        assert len(all_buttons) == 3
         hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
         assert len(hidden_buttons) == 0
 
-    def test_buttons_last_fragment_readonly(self):
+    def test_buttons_last_fragment_readonly(self, mocker):
         rendering_rules = SimulatorFragmentRenderingRules(is_launch_fragment=True, is_simulation_readonly_load=True)
-        soup = self.prepare_simulator_form_for_search(rendering_rules)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 1
         hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
         assert len(hidden_buttons) == 1
 
-    def test_buttons_model_fragment(self):
+    def test_buttons_model_fragment(self, mocker):
         rendering_rules = SimulatorFragmentRenderingRules(form_action_url='dummy_url', last_form_url='dummy_url',
                                                           is_model_fragment=True, is_surface_simulation=True)
-        soup = self.prepare_simulator_form_for_search(rendering_rules)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 4
         hidden_buttons = soup.find_all('button', attrs=dict(style="visibility: hidden"))
         assert len(hidden_buttons) == 0
 
-    def test_buttons_middle_fragment(self):
+    def test_buttons_middle_fragment(self, mocker):
         rendering_rules = SimulatorFragmentRenderingRules(form_action_url='dummy_url', last_form_url='dummy_url')
-        soup = self.prepare_simulator_form_for_search(rendering_rules)
+        soup = self.prepare_simulator_form_for_search(mocker, rendering_rules)
 
         all_buttons = soup.find_all('button')
         assert len(all_buttons) == 2

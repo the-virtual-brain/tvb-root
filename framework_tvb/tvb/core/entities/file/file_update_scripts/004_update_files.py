@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,18 +32,20 @@
 Upgrade script from H5 version 3 to version 4 (for tvb release 1.4.1)
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
+.. creationdate:: August of 2015
 """
 
 import os
 import json
+
 from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.exceptions import IncompatibleFileManagerException
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
 from tvb.datatypes.projections import ProjectionsType
+from tvb.storage.h5.file.exceptions import IncompatibleFileManagerException
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger(__name__)
 FIELD_PROJECTION_TYPE = "Projection_type"
@@ -51,7 +53,7 @@ FIELD_SURFACE_MAPPING = "Has_surface_mapping"
 FIELD_VOLUME_MAPPING = "Has_volume_mapping"
 
 
-def update(input_file):
+def update(input_file, burst_match_dict=None):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
@@ -61,7 +63,7 @@ def update(input_file):
                                                "valid file on the disk." % input_file)
 
     folder, file_name = os.path.split(input_file)
-    storage_manager = HDF5StorageManager(folder, file_name)
+    storage_manager = StorageInterface.get_storage_manager(input_file)
 
     root_metadata = storage_manager.get_metadata()
     if DataTypeMetaData.KEY_CLASS_NAME not in root_metadata:
@@ -69,6 +71,7 @@ def update(input_file):
                                                "metadata: %s" % (input_file, DataTypeMetaData.KEY_CLASS_NAME))
     class_name = root_metadata[DataTypeMetaData.KEY_CLASS_NAME]
 
+    class_name = str(class_name, 'utf-8')
     if "ProjectionSurface" in class_name and FIELD_PROJECTION_TYPE not in root_metadata:
         LOGGER.info("Updating ProjectionSurface %s from %s" % (file_name, folder))
 
@@ -85,9 +88,12 @@ def update(input_file):
         LOGGER.info("Updating TS %s from %s" % (file_name, folder))
 
         service = ImportService()
-        operation_id = int(os.path.split(folder)[1])
-        dt = service.load_datatype_from_file(os.path.join(folder, file_name), operation_id)
-        dt_db = dao.get_datatype_by_gid(dt.gid)
+        try:
+            operation_id = int(os.path.split(folder)[1])
+            dt = service.load_datatype_from_file(os.path.join(folder, file_name), operation_id)
+            dt_db = dao.get_datatype_by_gid(dt.gid)
+        except ValueError:
+            dt_db = None
 
         if dt_db is not None:
             # DT already in DB (update of own storage, by making sure all fields are being correctly populated)

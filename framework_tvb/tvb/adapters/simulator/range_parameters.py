@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -53,11 +53,9 @@ class SimulatorRangeParameters(object):
                                           Range(lo=0.01, hi=100.0, step=1.0),
                                           isinstance(Simulator.conduction_speed, NArray))
         connectivity = RangeParameter(Simulator.connectivity.field_name, Connectivity, self.connectivity_filters)
-        surface = RangeParameter(Simulator.surface.field_name, Surface, self.connectivity_filters)
 
         return OrderedDict({Simulator.conduction_speed.field_name: conduction_speed,
-                            Simulator.connectivity.field_name: connectivity,
-                            Simulator.surface.field_name: surface})
+                            Simulator.connectivity.field_name: connectivity})
 
     def _ensure_correct_prefix_for_param_name(self, prefix, param):
         prefix = prefix + '.'

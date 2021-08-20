@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -70,6 +70,13 @@ def get_ui_name_to_noise_dict():
     return ui_name_to_noise
 
 
+def get_integrator_name_list():
+    return ['Heun', 'Stochastic Heun', 'Euler', 'Euler-Maruyama', 'Runge-Kutta 4th order', 'Difference equation',
+            'Variable-order Adams / BDF', 'Stochastic variable-order Adams / BDF', 'Dormand-Prince, order (4, 5)',
+            'Stochastic Dormand-Prince, order (4, 5)', 'Stochastic Dormand-Prince, order (4, 5)',
+            'Stochastic Dormand-Prince, order 8 (5, 3)']
+
+
 def get_ui_name_to_integrator_dict():
     ui_name_to_integrator = {
         'Heun': HeunDeterministicViewModel,
@@ -77,9 +84,9 @@ def get_ui_name_to_integrator_dict():
         'Euler': EulerDeterministicViewModel,
         'Euler-Maruyama': EulerStochasticViewModel,
         'Runge-Kutta 4th order': RungeKutta4thOrderDeterministicViewModel,
-        '"Difference equation': IdentityViewModel,
-        'Variable-order Adams / BDF': VODEViewModel,
-        'Stochastic variable-order Adams / BDF': VODEStochasticViewModel,
+        'Difference equation': IdentityViewModel,
+        'Variable-order Adams (BDF)': VODEViewModel,
+        'Stochastic variable-order Adams (BDF)': VODEStochasticViewModel,
         'Dormand-Prince, order (4, 5)': Dopri5ViewModel,
         'Stochastic Dormand-Prince, order (4, 5)': Dopri5StochasticViewModel,
         'Dormand-Prince, order 8 (5, 3)': Dop853ViewModel,

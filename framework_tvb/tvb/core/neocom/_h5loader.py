@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -27,28 +27,21 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+from datetime import datetime
 import os
-import uuid
 import typing
-from uuid import UUID
+import uuid
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
-from tvb.core.neotraits.h5 import H5File
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom._registry import Registry
-
-H5_EXTENSION = '.h5'
-
-H5_FILE_NAME_STRUCTURE = '{}_{}.h5'
-
-
-def get_h5_filename(class_name, gid):
-    # type: (str, UUID) -> str
-    return H5_FILE_NAME_STRUCTURE.format(class_name, gid.hex)
+from tvb.core.neotraits.h5 import H5File, ViewModelH5
+from tvb.core.neotraits.view_model import ViewModel
+from tvb.core.utils import string2date, date2string
+from tvb.storage.storage_interface import StorageInterface
 
 
 class Loader(object):
@@ -96,17 +89,18 @@ class DirLoader(object):
     def _locate(self, gid):
         # type: (uuid.UUID) -> str
         for fname in os.listdir(self.base_dir):
-            if fname.endswith(gid.hex + H5_EXTENSION):
-                return fname
+            if fname.endswith(gid.hex + StorageInterface.TVB_STORAGE_FILE_EXTENSION):
+                fpath = os.path.join(self.base_dir, fname)
+                return fpath
         raise IOError('could not locate h5 with gid {}'.format(gid))
 
-    def find_file_name(self, gid):
+    def find_file_by_gid(self, gid):
         # type: (typing.Union[uuid.UUID, str]) -> str
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = self._locate(gid)
-        self.log.debug("Computed path for H5 is: {}".format(fname))
-        return fname
+        fpath = self._locate(gid)
+        self.log.debug("Computed path for H5 is: {}".format(fpath))
+        return fpath
 
     def load(self, gid=None, fname=None):
         # type: (typing.Union[uuid.UUID, str], str) -> HasTraits
@@ -120,11 +114,11 @@ class DirLoader(object):
         if fname is None:
             if gid is None:
                 raise ValueError("Neither gid nor filename is provided to load!")
-            fname = self.find_file_name(gid)
+            fname = self.find_file_by_gid(gid)
 
         sub_dt_refs = []
 
-        with H5File.from_file(os.path.join(self.base_dir, fname)) as f:
+        with H5File.from_file(fname) as f:
             datatype_cls = self.registry.get_datatype_for_h5file(f)
             datatype = datatype_cls()
             f.load_into(datatype)
@@ -176,14 +170,14 @@ class DirLoader(object):
 
         if isinstance(gid, str):
             gid = uuid.UUID(gid)
-        fname = get_h5_filename(self._get_has_traits_classname(has_traits_class), gid)
+        fname = StorageInterface().get_filename(self._get_has_traits_classname(has_traits_class), gid)
         return os.path.join(self.base_dir, fname)
 
     def find_file_for_has_traits_type(self, has_traits_class):
 
         filename_prefix = self._get_has_traits_classname(has_traits_class)
         for fname in os.listdir(self.base_dir):
-            if fname.startswith(filename_prefix) and fname.endswith(H5_EXTENSION):
+            if fname.startswith(filename_prefix) and fname.endswith(StorageInterface.TVB_STORAGE_FILE_EXTENSION):
                 return fname
         raise IOError('could not locate h5 for {}'.format(has_traits_class.__name__))
 
@@ -191,26 +185,31 @@ class DirLoader(object):
 class TVBLoader(object):
 
     def __init__(self, registry):
-        self.file_handler = FilesHelper()
+        self.storage_interface = StorageInterface()
         self.registry = registry
 
     def path_for_stored_index(self, dt_index_instance):
         # type: (DataType) -> str
         """ Given a Datatype(HasTraitsIndex) instance, build where the corresponding H5 should be or is stored"""
-        operation = dao.get_operation_by_id(dt_index_instance.fk_from_operation)
-        operation_folder = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        if hasattr(dt_index_instance, 'fk_simulation'):
+            # In case of BurstConfiguration the operation id is on fk_simulation
+            op_id = dt_index_instance.fk_simulation
+        else:
+            op_id = dt_index_instance.fk_from_operation
+        operation = dao.get_operation_by_id(op_id)
+        operation_folder = self.storage_interface.get_project_folder(operation.project.name, str(operation.id))
 
         gid = uuid.UUID(dt_index_instance.gid)
         h5_file_class = self.registry.get_h5file_for_index(dt_index_instance.__class__)
-        fname = get_h5_filename(h5_file_class.file_name_base(), gid)
+        fname = self.storage_interface.get_filename(h5_file_class.file_name_base(), gid)
 
         return os.path.join(operation_folder, fname)
 
-    def path_for(self, operation_dir, h5_file_class, gid, dt_class=None):
-        if isinstance(gid, str):
-            gid = uuid.UUID(gid)
-        fname = get_h5_filename(dt_class or h5_file_class.file_name_base(), gid)
-        return os.path.join(operation_dir, fname)
+    def path_for(self, op_id, h5_file_class, gid, project_name, dt_class):
+        return self.storage_interface.path_for(op_id, h5_file_class, gid, project_name, dt_class)
+
+    def path_by_dir(self, base_dir, h5_file_class, gid, dt_class):
+        return self.storage_interface.path_by_dir(base_dir, h5_file_class, gid, dt_class)
 
     def load_from_index(self, dt_index):
         # type: (DataType) -> HasTraits
@@ -265,3 +264,97 @@ class TVBLoader(object):
             return ref_ht
 
         return self.load_complete_by_function(file_path, load_ht_function)
+
+
+class ViewModelLoader(DirLoader):
+
+    def __init__(self, base_dir):
+        super().__init__(base_dir, None)
+
+    def get_class_path(self, vm):
+        return vm.__class__.__module__ + '.' + vm.__class__.__name__
+
+    def store(self, view_model, fname=None):
+        # type: (ViewModel, str) -> str
+        """
+        Completely store any ViewModel object to the directory specified by self.base_dir.
+        Works recursively for view models that are serialized in multiple files (eg. SimulatorAdapterModel)
+        """
+        if fname is None:
+            h5_path = self.path_for_has_traits(type(view_model), view_model.gid)
+        else:
+            h5_path = os.path.join(self.base_dir, fname)
+        with ViewModelH5(h5_path, view_model) as h5_file:
+            h5_file.store(view_model)
+            h5_file.type.store(self.get_class_path(view_model))
+            h5_file.create_date.store(date2string(datetime.now()))
+            if hasattr(view_model, "generic_attributes"):
+                h5_file.store_generic_attributes(view_model.generic_attributes)
+            else:
+                # For HasTraits not inheriting from ViewModel (e.g. Linear)
+                h5_file.store_generic_attributes(GenericAttributes())
+
+            references = h5_file.gather_references()
+            for trait_attr, gid in references:
+                if not gid:
+                    continue
+                model_attr = getattr(view_model, trait_attr.field_name)
+                if isinstance(gid, list):
+                    for idx, sub_gid in enumerate(gid):
+                        self.store(model_attr[idx])
+                else:
+                    self.store(model_attr)
+        return h5_path
+
+    def load(self, gid=None, fname=None):
+        # type: (typing.Union[uuid.UUID, str], str) -> ViewModel
+        """
+        Load a ViewModel object by reading the H5 file with the given GID, from the directory self.base_dir
+        """
+        if fname is None:
+            if gid is None:
+                raise ValueError("Neither gid nor filename is provided to load!")
+            fname = self.find_file_by_gid(gid)
+        else:
+            fname = os.path.join(self.base_dir, fname)
+
+        view_model_class = H5File.determine_type(fname)
+        view_model = view_model_class()
+
+        with ViewModelH5(fname, view_model) as h5_file:
+            h5_file.load_into(view_model)
+            references = h5_file.gather_references()
+            view_model.create_date = string2date(h5_file.create_date.load())
+            view_model.generic_attributes = h5_file.load_generic_attributes()
+            for trait_attr, gid in references:
+                if not gid:
+                    continue
+                if isinstance(gid, list):
+                    loaded_ref = []
+                    for idx, sub_gid in enumerate(gid):
+                        ref = self.load(sub_gid)
+                        loaded_ref.append(ref)
+                else:
+                    loaded_ref = self.load(gid)
+                setattr(view_model, trait_attr.field_name, loaded_ref)
+        return view_model
+
+    def gather_reference_files(self, gid, vm_ref_files, dt_ref_files, load_dts=None):
+        vm_path = self.find_file_by_gid(gid)
+        vm_ref_files.append(vm_path)
+        view_model_class = H5File.determine_type(vm_path)
+        view_model = view_model_class()
+
+        with ViewModelH5(vm_path, view_model) as vm_h5:
+            references = vm_h5.gather_references()
+
+            for _, gid in references:
+                if not gid:
+                    continue
+                if isinstance(gid, (list, tuple)):
+                    for list_gid in gid:
+                        self.gather_reference_files(list_gid, vm_ref_files, dt_ref_files, load_dts)
+                else:
+                    self.gather_reference_files(gid, vm_ref_files, dt_ref_files, load_dts)
+            if load_dts:
+                load_dts(vm_h5, dt_ref_files)

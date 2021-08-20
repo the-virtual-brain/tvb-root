@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,9 +31,12 @@
 """
 .. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 """
-
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.config import SIMULATOR_CLASS, SIMULATOR_MODULE
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.load import get_class_by_name
+from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.backend_clients.cluster_scheduler_client import ClusterSchedulerClient
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
@@ -46,9 +49,12 @@ LOGGER = get_logger(__name__)
 class BackendClientFactory(object):
 
     @staticmethod
-    def _get_backend_client():
-        # type: () -> BackendClient
-        if TvbProfile.current.hpc.IS_HPC_RUN:
+    def _get_backend_client(adapter_instance):
+        # type: (ABCAdapter) -> BackendClient
+
+        # For the moment run only simulations on HPC
+        if TvbProfile.current.hpc.IS_HPC_RUN and type(adapter_instance) is get_class_by_name(
+                "{}.{}".format(SIMULATOR_MODULE, SIMULATOR_CLASS)):
             if not TvbProfile.current.hpc.CAN_RUN_HPC:
                 raise InvalidSettingsException("We can not enable HPC run. Most probably pyunicore is not installed!")
             # Return an entity capable to submit jobs to HPC.
@@ -61,10 +67,13 @@ class BackendClientFactory(object):
 
     @staticmethod
     def execute(operation_id, user_name_label, adapter_instance):
-        backend_client = BackendClientFactory._get_backend_client()
+        backend_client = BackendClientFactory._get_backend_client(adapter_instance)
         backend_client.execute(operation_id, user_name_label, adapter_instance)
 
     @staticmethod
     def stop_operation(operation_id):
-        backend_client = BackendClientFactory._get_backend_client()
+        operation = dao.get_operation_by_id(operation_id)
+        algorithm = operation.algorithm
+        adapter_instance = ABCAdapter.build_adapter(algorithm)
+        backend_client = BackendClientFactory._get_backend_client(adapter_instance)
         return backend_client.stop_operation(operation_id)

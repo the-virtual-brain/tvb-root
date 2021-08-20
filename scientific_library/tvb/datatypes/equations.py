@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,9 +36,9 @@ The Equation datatypes.
 
 """
 import numpy
-import numexpr
 from scipy.special import gamma as sp_gamma
 from tvb.basic.neotraits.api import HasTraits, Attr, Final
+from tvb.simulator.backend.ref import RefBase
 
 
 # In how many points should the equation be evaluated for the plot. Increasing this will
@@ -89,7 +89,9 @@ class Equation(HasTraits):
         ?scipy.sparse_matrix? TODO: think this last one is true, need to check
         as we need it for LocalConnectivity...
         """
-        return numexpr.evaluate(self.equation, global_dict=self.parameters)
+        ns = {'var': var}
+        ns.update(self.parameters)
+        return RefBase.evaluate(self.equation, ns)
 
     def get_series_data(self, min_range=0, max_range=100, step=None):
         """
@@ -339,7 +341,7 @@ class PulseTrain(TemporalApplicableEquation):
         off = var < onset
         var = numpy.roll(var, off.sum() + 1)
         var[..., off] = 0.0
-        _pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
+        _pattern = RefBase.evaluate(self.equation, global_dict=self.parameters)
         _pattern[..., off] = 0.0
         return _pattern
 
@@ -406,7 +408,7 @@ class Gamma(HRFKernelEquation):
             product *= i + 1
 
         self.parameters["factorial"] = product
-        _pattern = numexpr.evaluate(self.equation,
+        _pattern = RefBase.evaluate(self.equation,
                                          global_dict=self.parameters)
         _pattern /= max(_pattern)
         _pattern *= self.parameters["a"]
@@ -458,7 +460,7 @@ class DoubleExponential(HRFKernelEquation):
         Generate a discrete representation of the equation for the space
         represented by ``var``.
         """
-        _pattern = numexpr.evaluate(self.equation, global_dict=self.parameters)
+        _pattern = RefBase.evaluate(self.equation, global_dict=self.parameters)
         _pattern /= max(_pattern)
 
         _pattern *= self.parameters["a"]
@@ -495,7 +497,7 @@ class FirstOrderVolterra(HRFKernelEquation):
         default="1/3. * exp(-0.5*(var / tau_s)) * (sin(sqrt(1./tau_f - 1./(4.*tau_s**2)) * var)) / (sqrt(1./tau_f - 1./(4.*tau_s**2)))",
         doc=""":math:`G(t - t^{\\prime}) =
              e^{\\frac{1}{2} \\left(\\frac{t - t^{\\prime}}{\\tau_s} \\right)}
-             \\frac{\sin\\left((t - t^{\\prime})
+             \\frac{\\sin\\left((t - t^{\\prime})
              \\sqrt{\\frac{1}{\\tau_f} - \\frac{1}{4 \\tau_s^2}}\\right)}
              {\\sqrt{\\frac{1}{\\tau_f} - \\frac{1}{4 \\tau_s^2}}}
              \\; \\; \\; \\; \\; \\;  for \\; \\; \\; t \\geq t^{\\prime}
@@ -578,5 +580,5 @@ class MixtureOfGammas(HRFKernelEquation):
         self.parameters["gamma_a_1"] = sp_gamma(self.parameters["a_1"])
         self.parameters["gamma_a_2"] = sp_gamma(self.parameters["a_2"])
 
-        return numexpr.evaluate(self.equation, global_dict=self.parameters)
+        return RefBase.evaluate(self.equation, global_dict=self.parameters)
 

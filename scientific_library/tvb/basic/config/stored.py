@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -58,6 +58,8 @@ KEY_IP = 'SERVER_IP'
 KEY_PORT = 'WEB_SERVER_PORT'
 KEY_SELECTED_DB = 'SELECTED_DB'
 KEY_DB_URL = 'URL_VALUE'
+KEY_MAX_CONNECTIONS = 'MAX_CONNECTIONS'
+KEY_MAX_ASYNC_CONNECTIONS = 'MAX_ASYNC_CONNECTIONS'
 KEY_URL_VERSION = 'URL_TVB_VERSION'
 KEY_CLUSTER = 'DEPLOY_CLUSTER'
 KEY_CLUSTER_SCHEDULER = 'CLUSTER_SCHEDULER'
@@ -67,12 +69,21 @@ KEY_CRYPT_PASSDIR = 'CRYPT_PASSDIR'
 KEY_CRYPT_DATADIR = 'CRYPT_DATADIR'
 KEY_HPC_COMPUTE_SITE = 'HPC_COMPUTE_SITE'
 KEY_MAX_THREAD_NR = 'MAXIMUM_NR_OF_THREADS'
+KEY_OP_BACKGROUND_INTERVAL = 'OP_BACKGROUND_JOB_INTERVAL'
 KEY_MAX_RANGE_NR = 'MAXIMUM_NR_OF_OPS_IN_RANGE'
 KEY_MAX_NR_SURFACE_VERTEX = 'MAXIMUM_NR_OF_VERTICES_ON_SURFACE'
 KEY_LAST_CHECKED_FILE_VERSION = 'LAST_CHECKED_FILE_VERSION'
 KEY_LAST_CHECKED_CODE_VERSION = 'LAST_CHECKED_CODE_VERSION'
 KEY_FILE_STORAGE_UPDATE_STATUS = 'FILE_STORAGE_UPDATE_STATUS'
 KEY_TRACE_USER_ACTIONS = "TRACE_USER_ACTIONS"
+KEY_ENCRYPT_STORAGE = "ENCRYPT_STORAGE"
+KEY_DECRYPT_PATH = "DECRYPT_PATH"
+KEY_FILE_STORAGE = "FILE_STORAGE"
+KEY_OPENSHIFT_DEPLOY = "OPENSHIFT_DEPLOY"
+KEY_OPENSHIFT_NAMESPACE = "OPENSHIFT_NAMESPACE"
+KEY_OPENSHIFT_APPLICATION = "OPENSHIFT_APPLICATION"
+KEY_PROCESSING_OPERATIONS_APPLICATION = "PROCESSING_OPERATIONS_APPLICATION"
+
 
 class SettingsManager(object):
     def __init__(self, config_file_location):
@@ -96,6 +107,14 @@ class SettingsManager(object):
                 config_dict[name] = value
         return config_dict
 
+    def _store_config_file(self, config_dict):
+
+        with open(self.config_file_location, 'w') as file_writer:
+            for key in config_dict:
+                file_writer.write(key + '=' + str(config_dict[key]) + '\n')
+
+        self.stored_settings = self._read_config_file()
+
     def add_entries_to_config_file(self, input_data):
         """
         Add to the dictionary of settings already existent in the settings file.
@@ -109,11 +128,21 @@ class SettingsManager(object):
         for entry in input_data:
             config_dict[entry] = input_data[entry]
 
-        with open(self.config_file_location, 'w') as file_writer:
-            for key in config_dict:
-                file_writer.write(key + '=' + str(config_dict[key]) + '\n')
+        self._store_config_file(config_dict)
 
-        self.stored_settings = self._read_config_file()
+    def delete_entries_from_config_file(self, data_to_be_deleted):
+        """
+        Delete from the dictionary of settings existent in the settings file.
+
+        :param data_to_be_deleted: A list of attributes that need to be deleted from the config file.
+        """
+        config_dict = self._read_config_file()
+
+        for entry in data_to_be_deleted:
+            if entry in config_dict:
+                config_dict.pop(entry)
+
+        self._store_config_file(config_dict)
 
     def write_config_data(self, config_dict):
         """

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,7 +37,6 @@ Adapter that uses the traits module to generate interfaces for ... Analyzer.
 
 """
 
-import json
 import uuid
 
 import numpy
@@ -47,31 +46,20 @@ from tvb.adapters.datatypes.db.temporal_correlations import CrossCorrelationInde
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex, TimeSeriesEEGIndex, TimeSeriesMEGIndex, \
     TimeSeriesSEEGIndex
 from tvb.adapters.datatypes.h5.temporal_correlations_h5 import CrossCorrelationH5
-from tvb.basic.neotraits.api import HasTraits, Attr, Float
+from tvb.basic.neotraits.api import Float
 from tvb.basic.neotraits.info import narray_describe
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
-from tvb.core.neotraits.forms import ScalarField, TraitDataTypeSelectField
+from tvb.core.neotraits.forms import FloatField, TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import CorrelationCoefficients
 from tvb.datatypes.temporal_correlations import CrossCorrelation
 from tvb.datatypes.time_series import TimeSeries
 
 
-class CrossCorrelate(HasTraits):
-    """
-    Model class defining the traited attributes used by the CrossCorrelateAdapter.
-    """
-    time_series = Attr(
-        field_type=TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The time-series for which the cross correlation sequences are calculated.""")
-
-
-class CrossCorrelateAdapterModel(ViewModel, CrossCorrelate):
+class CrossCorrelateAdapterModel(ViewModel):
     time_series = DataTypeGidAttr(
         linked_datatype=TimeSeries,
         label="Time Series",
@@ -82,10 +70,9 @@ class CrossCorrelateAdapterModel(ViewModel, CrossCorrelate):
 
 class CrossCorrelateAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(CrossCorrelateAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, self,
-                                                    name=self.get_input_name(),
+    def __init__(self):
+        super(CrossCorrelateAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(CrossCorrelateAdapterModel.time_series, name=self.get_input_name(),
                                                     conditions=self.get_filters(), has_all_option=True)
 
     @staticmethod
@@ -121,8 +108,6 @@ class CrossCorrelateAdapter(ABCAdapter):
         # type: (CrossCorrelateAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
-
-        :param time_series: the input time-series index for which cross correlation should be computed
         """
         self.input_time_series_index = self.load_entity_by_gid(view_model.time_series)
         self.input_shape = (self.input_time_series_index.data_length_1d,
@@ -160,13 +145,13 @@ class CrossCorrelateAdapter(ABCAdapter):
 
         See: http://www.scipy.org/doc/api_docs/SciPy.signal.signaltools.html#correlate
 
-        :param time_series: the input time series index for which the correlation should be computed
-        :returns: the cross correlation index for the given time series
+        :param view_model: the ViewModel keeping the algorithm inputs
+        :return: the cross correlation index for the given time series
         :rtype: `CrossCorrelationIndex`
         """
         # --------- Prepare CrossCorrelationIndex and CrossCorrelationH5 objects for result ------------##
         cross_corr_index = CrossCorrelationIndex()
-        cross_corr_h5_path = h5.path_for(self.storage_path, CrossCorrelationH5, cross_corr_index.gid)
+        cross_corr_h5_path = self.path_for(CrossCorrelationH5, cross_corr_index.gid)
         cross_corr_h5 = CrossCorrelationH5(cross_corr_h5_path)
 
         node_slice = [slice(self.input_shape[0]), None, slice(self.input_shape[2]), slice(self.input_shape[3])]
@@ -177,30 +162,21 @@ class CrossCorrelateAdapter(ABCAdapter):
             small_ts.sample_period = ts_h5.sample_period.load()
             small_ts.sample_period_unit = ts_h5.sample_period_unit.load()
             partial_cross_corr = None
-            labels_ordering = ts_h5.labels_ordering.load()
             for var in range(self.input_shape[1]):
                 node_slice[1] = slice(var, var + 1)
                 small_ts.data = ts_h5.read_data_slice(tuple(node_slice))
                 partial_cross_corr = self._compute_cross_correlation(small_ts, ts_h5)
                 cross_corr_h5.write_data_slice(partial_cross_corr)
-            ts_array_metadata = cross_corr_h5.array_data.get_cached_metadata()
 
-        cross_corr_h5.time.store(partial_cross_corr.time)
-        cross_corr_labels_ordering = list(partial_cross_corr.labels_ordering)
-        cross_corr_labels_ordering[1] = labels_ordering[2]
-        cross_corr_labels_ordering[2] = labels_ordering[2]
-        cross_corr_h5.labels_ordering.store(json.dumps(tuple(cross_corr_labels_ordering)))
-        cross_corr_h5.source.store(uuid.UUID(self.input_time_series_index.gid))
-        cross_corr_h5.gid.store(uuid.UUID(cross_corr_index.gid))
+        partial_cross_corr.source.gid = view_model.time_series
+        partial_cross_corr.gid = uuid.UUID(cross_corr_index.gid)
 
-        cross_corr_index.fk_source_gid = self.input_time_series_index.gid
-        cross_corr_index.labels_ordering = cross_corr_h5.labels_ordering.load()
-        cross_corr_index.type = type(cross_corr_index).__name__
-        cross_corr_index.array_data_min = ts_array_metadata.min
-        cross_corr_index.array_data_max = ts_array_metadata.max
-        cross_corr_index.array_data_mean = ts_array_metadata.mean
+        cross_corr_index.fill_from_has_traits(partial_cross_corr)
+        self.fill_index_from_h5(cross_corr_index, cross_corr_h5)
 
+        cross_corr_h5.store(partial_cross_corr, scalars_only=True)
         cross_corr_h5.close()
+
         return cross_corr_index
 
     def _compute_cross_correlation(self, small_ts, input_ts_h5):
@@ -249,16 +225,13 @@ class CrossCorrelateAdapter(ABCAdapter):
         return result_size
 
 
-class CorrelationCoefficient(HasTraits):
-    """
-    Model class defining the traited attributes used by the CorrelationCoefficientAdapter.
-    """
-    time_series = Attr(
-        field_type=TimeSeries,
+class PearsonCorrelationCoefficientAdapterModel(ViewModel):
+    time_series = DataTypeGidAttr(
+        linked_datatype=TimeSeries,
         label="Time Series",
         required=True,
-        doc="""The time-series for which the cross correlation matrices are
-        calculated.""")
+        doc="""The time-series for which the cross correlation matrices are calculated."""
+    )
 
     t_start = Float(
         label=":math:`t_{start}`",
@@ -274,25 +247,15 @@ class CorrelationCoefficient(HasTraits):
         doc=""" End time point (ms) """)
 
 
-class PearsonCorrelationCoefficientAdapterModel(ViewModel, CorrelationCoefficient):
-    time_series = DataTypeGidAttr(
-        linked_datatype=TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The time-series for which the cross correlation matrices are
-            calculated."""
-    )
-
-
 class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(PearsonCorrelationCoefficientAdapterForm, self).__init__(prefix, project_id)
-        self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series, self,
+    def __init__(self):
+        super(PearsonCorrelationCoefficientAdapterForm, self).__init__()
+        self.time_series = TraitDataTypeSelectField(PearsonCorrelationCoefficientAdapterModel.time_series,
                                                     name=self.get_input_name(), conditions=self.get_filters(),
                                                     has_all_option=True)
-        self.t_start = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_start, self)
-        self.t_end = ScalarField(PearsonCorrelationCoefficientAdapterModel.t_end, self)
+        self.t_start = FloatField(PearsonCorrelationCoefficientAdapterModel.t_start)
+        self.t_end = FloatField(PearsonCorrelationCoefficientAdapterModel.t_end)
 
     @staticmethod
     def get_view_model():
@@ -309,9 +272,6 @@ class PearsonCorrelationCoefficientAdapterForm(ABCAdapterForm):
     @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.data_ndim'], operations=["=="], values=[4])
-
-    def get_traited_datatype(self):
-        return CorrelationCoefficient()
 
 
 class PearsonCorrelationCoefficientAdapter(ABCAdapter):
@@ -331,10 +291,6 @@ class PearsonCorrelationCoefficientAdapter(ABCAdapter):
         # type: (PearsonCorrelationCoefficientAdapterModel) -> None
         """
         Store the input shape to be later used to estimate memory usage.
-
-        :param time_series: the input time-series index for which correlation coefficient should be computed
-        :param t_start: the physical time interval start for the analysis
-        :param t_end: physical time, interval end
         """
         if view_model.t_start >= view_model.t_end or view_model.t_start < 0:
             raise LaunchException("Can not launch operation without monitors selected !!!")
@@ -371,11 +327,8 @@ class PearsonCorrelationCoefficientAdapter(ABCAdapter):
 
         The result will contain values between -1 and 1, inclusive.
 
-        :param time_series: the input time-series for which correlation coefficient should be computed
-        :param t_start: the physical time interval start for the analysis
-        :param t_end: physical time, interval end
+        :param view_model: the ViewModel keeping the algorithm inputs
         :returns: the correlation coefficient for the given time series
-        :rtype: `CorrelationCoefficients`
         """
         with h5.h5_file_for_index(self.input_time_series_index) as ts_h5:
             ts_labels_ordering = ts_h5.labels_ordering.load()
@@ -395,7 +348,7 @@ class PearsonCorrelationCoefficientAdapter(ABCAdapter):
         corr_coef.source = TimeSeries(gid=view_model.time_series)
         corr_coef.labels_ordering = labels_ordering
 
-        return h5.store_complete(corr_coef, self.storage_path)
+        return self.store_complete(corr_coef)
 
     def _compute_correlation_coefficients(self, ts_h5, t_start, t_end):
         """

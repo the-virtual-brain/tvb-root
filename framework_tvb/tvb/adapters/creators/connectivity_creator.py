@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,10 +35,8 @@
 import numpy
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
-from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.basic.neotraits.api import Attr, NArray
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ArrayField, BoolField, TraitDataTypeSelectField
@@ -83,15 +81,15 @@ class ConnectivityCreatorModel(ViewModel):
 
 class ConnectivityCreatorForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityCreatorForm, self).__init__(prefix, project_id)
-        self.original_connectivity = TraitDataTypeSelectField(ConnectivityCreatorModel.original_connectivity, self,
+    def __init__(self):
+        super(ConnectivityCreatorForm, self).__init__()
+        self.original_connectivity = TraitDataTypeSelectField(ConnectivityCreatorModel.original_connectivity,
                                                               name='original_connectivity',
                                                               conditions=self.get_filters())
-        self.new_weights = ArrayField(ConnectivityCreatorModel.new_weights, self)
-        self.new_tracts = ArrayField(ConnectivityCreatorModel.new_tracts, self)
-        self.interest_area_indexes = ArrayField(ConnectivityCreatorModel.interest_area_indexes, self)
-        self.is_branch = BoolField(ConnectivityCreatorModel.is_branch, self)
+        self.new_weights = ArrayField(ConnectivityCreatorModel.new_weights)
+        self.new_tracts = ArrayField(ConnectivityCreatorModel.new_tracts)
+        self.interest_area_indexes = ArrayField(ConnectivityCreatorModel.interest_area_indexes)
+        self.is_branch = BoolField(ConnectivityCreatorModel.is_branch)
 
     @staticmethod
     def get_view_model():
@@ -138,15 +136,14 @@ class ConnectivityCreator(ABCAdapter):
         linked_region_mappings = dao.get_generic_entity(RegionMappingIndex, original_conn_gid, 'fk_connectivity_gid')
         for mapping in linked_region_mappings:
             original_rm = h5.load_from_index(mapping)
-            surface_idx = dao.get_generic_entity(SurfaceIndex, mapping.fk_surface_gid, 'gid')[0]
-            surface = h5.load_from_index(surface_idx)
+            surface = self.load_traited_by_gid(mapping.fk_surface_gid)
 
             new_rm = RegionMapping()
             new_rm.connectivity = new_connectivity_ht
             new_rm.surface = surface
             new_rm.array_data = original_rm.array_data
 
-            result_rm_index = h5.store_complete(new_rm, self.storage_path)
+            result_rm_index = self.store_complete(new_rm)
             result.append(result_rm_index)
 
         return result
@@ -156,23 +153,21 @@ class ConnectivityCreator(ABCAdapter):
         Method to be called when user submits changes on the
         Connectivity matrix in the Visualizer.
         """
-        # note: is_branch is missing instead of false because browsers only send checked boxes in forms.
-        original_connectivity_index = load_entity_by_gid(view_model.original_connectivity.hex)
-        original_conn_ht = h5.load_from_index(original_connectivity_index)
+        original_conn_ht = self.load_traited_by_gid(view_model.original_connectivity)
         assert isinstance(original_conn_ht, Connectivity)
 
         if not view_model.is_branch:
             new_conn_ht = self._cut_connectivity(original_conn_ht, view_model.new_weights,
                                                  view_model.interest_area_indexes, view_model.new_tracts)
-            return [h5.store_complete(new_conn_ht, self.storage_path)]
+            return [self.store_complete(new_conn_ht)]
 
         else:
             result = []
             new_conn_ht = self._branch_connectivity(original_conn_ht, view_model.new_weights,
                                                     view_model.interest_area_indexes, view_model.new_tracts)
-            new_conn_index = h5.store_complete(new_conn_ht, self.storage_path)
+            new_conn_index = self.store_complete(new_conn_ht)
             result.append(new_conn_index)
-            result.extend(self._store_related_region_mappings(view_model.original_connectivity.gid, new_conn_ht))
+            result.extend(self._store_related_region_mappings(view_model.original_connectivity.hex, new_conn_ht))
             return result
 
     @staticmethod

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,11 +33,10 @@
 """
 
 import json
-import cherrypy
+
 from tvb.core.entities.file.simulator.view_model import HeunStochasticViewModel
-from tvb.interfaces.web.controllers.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.burst.noise_configuration_controller import NoiseConfigurationController
 
 
@@ -49,8 +48,9 @@ class TestNoiseConfigurationController(BaseTransactionalControllerTest):
         """
         self.init()
         noise_controller = NoiseConfigurationController()
-        SimulatorController().index()
-        simulator = cherrypy.session[common.KEY_SIMULATOR_CONFIG]
+        simulator_controller = SimulatorController()
+        simulator_controller.index()
+        simulator = simulator_controller.context.simulator
         connectivity = connectivity_factory()
         simulator.connectivity = connectivity.gid
         simulator.integrator = HeunStochasticViewModel()

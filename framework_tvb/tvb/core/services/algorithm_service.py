@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,16 +35,21 @@ Code related to launching/duplicating operations is placed here.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+import os
 from inspect import getmro
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcuploader import ABCUploaderForm
 from tvb.core.entities.filters.chain import FilterChain, InvalidFilterChainInput
 from tvb.core.entities.model.model_datatype import *
 from tvb.core.entities.model.model_operation import AlgorithmTransientGroup
 from tvb.core.entities.storage import dao
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, TraitUploadField, TEMPORARY_PREFIX
 from tvb.core.services.exceptions import OperationException
+from tvb.core.utils import date2string
+from tvb.storage.storage_interface import StorageInterface
 
 
 class AlgorithmService(object):
@@ -54,7 +59,7 @@ class AlgorithmService(object):
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
-        self.file_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     @staticmethod
     def get_category_by_id(identifier):
@@ -87,14 +92,85 @@ class AlgorithmService(object):
         """ Count total number of operations started for current project. """
         return dao.get_operation_numbers(proj_id)
 
-    def prepare_adapter_form(self, adapter_instance, project_id):
-        form = adapter_instance.get_form()(project_id=project_id)
-        try:
-            dt = form.get_traited_datatype()
-            if dt is not None:
-                form.fill_from_trait(dt)
-        except NotImplementedError:
-            self.logger.info('This form does not take defaults from a HasTraits entity')
+    def _prepare_dt_display_name(self, dt_index, dt):
+        # dt is a result of the get_values_of_datatype function
+        db_dt = dao.get_generic_entity(dt_index, dt[2], "gid")
+        display_name = db_dt[0].display_name
+        display_name += ' - ' + (dt[3] or "None ")  # Subject
+        if dt[5]:
+            display_name += ' - From: ' + str(dt[5])
+        else:
+            display_name += date2string(dt[4])
+        if dt[6]:
+            display_name += ' - ' + str(dt[6])
+        display_name += ' - ID:' + str(dt[0])
+
+        return display_name
+
+    def fill_selectfield_with_datatypes(self, field, project_id, extra_conditions=None):
+        # type: (TraitDataTypeSelectField, int, list) -> None
+        filtering_conditions = FilterChain()
+        filtering_conditions += field.conditions
+        filtering_conditions += extra_conditions
+        datatypes, _ = dao.get_values_of_datatype(project_id, field.datatype_index, filtering_conditions)
+        datatype_options = []
+        for datatype in datatypes:
+            display_name = self._prepare_dt_display_name(field.datatype_index, datatype)
+            datatype_options.append((datatype, display_name))
+        field.datatype_options = datatype_options
+
+    def _fill_form_with_datatypes(self, form, project_id, extra_conditions=None):
+        for form_field in form.trait_fields:
+            if isinstance(form_field, TraitDataTypeSelectField):
+                self.fill_selectfield_with_datatypes(form_field, project_id, extra_conditions)
+        return form
+
+    def prepare_adapter_form(self, adapter_instance=None, form_instance=None, project_id=None, extra_conditions=None):
+        # type: (ABCAdapter, ABCAdapterForm, int, []) -> ABCAdapterForm
+        form = None
+        if form_instance is not None:
+            form = form_instance
+        elif adapter_instance is not None:
+            form = adapter_instance.get_form()()
+
+        if form is None:
+            raise OperationException("Cannot prepare None form")
+
+        form = self._fill_form_with_datatypes(form, project_id, extra_conditions)
+        return form
+
+    def _prepare_upload_post_data(self, form, post_data, project_id):
+        for form_field in form.trait_fields:
+            if isinstance(form_field, TraitUploadField) and form_field.name in post_data:
+                field = post_data[form_field.name]
+                file_name = None
+                if hasattr(field, 'file') and field.file is not None:
+                    project = dao.get_project_by_id(project_id)
+                    temporary_storage = self.storage_interface.get_temp_folder(project.name)
+                    try:
+                        uq_name = date2string(datetime.now(), True) + '_' + str(0)
+                        file_name = TEMPORARY_PREFIX + uq_name + '_' + field.filename
+                        file_name = os.path.join(temporary_storage, file_name)
+
+                        with open(file_name, 'wb') as file_obj:
+                            file_obj.write(field.file.read())
+                    except Exception as excep:
+                        # TODO: is this handled properly?
+                        self.storage_interface.remove_files([file_name])
+                        excep.message = 'Could not continue: Invalid input files'
+                        raise excep
+                post_data[form_field.name] = file_name
+
+    def fill_adapter_form(self, adapter_instance, post_data, project_id):
+        # type: (ABCAdapter, dict, int) -> ABCAdapterForm
+        form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id)
+        if isinstance(form, ABCUploaderForm):
+            self._prepare_upload_post_data(form, post_data, project_id)
+
+        if 'fill_defaults' in post_data:
+            form.fill_from_post_plus_defaults(post_data)
+        else:
+            form.fill_from_post(post_data)
 
         return form
 
@@ -187,16 +263,6 @@ class AlgorithmService(object):
         categories = dao.get_launchable_categories()
         datatype_instance, filtered_adapters, has_operations_warning = self._get_launchable_algorithms(datatype_gid,
                                                                                                        categories)
-
-        if isinstance(datatype_instance, DataTypeGroup):
-            # If part of a group, update also with specific analyzers of the child datatype
-            dt_group = dao.get_datatype_group_by_gid(datatype_gid)
-            datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
-            if len(datatypes):
-                datatype = datatypes[-1]
-                analyze_category = dao.get_launchable_categories(True)
-                _, inner_analyzers, _ = self._get_launchable_algorithms(datatype.gid, analyze_category)
-                filtered_adapters.extend(inner_analyzers)
 
         categories_dict = dict()
         for c in categories:

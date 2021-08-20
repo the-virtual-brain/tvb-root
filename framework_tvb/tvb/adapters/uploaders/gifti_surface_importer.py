@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -40,7 +40,6 @@ from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
 from tvb.core.neotraits.forms import SelectField, TraitUploadField, BoolField
-from tvb.core.neocom import h5
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
 
@@ -75,15 +74,14 @@ class GIFTISurfaceImporterModel(UploaderViewModel):
 
 class GIFTISurfaceImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(GIFTISurfaceImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(GIFTISurfaceImporterForm, self).__init__()
 
-        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, self, name='file_type',
+        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, name='file_type',
                                      choices=GIFTISurfaceImporterModel.surface_types)
-        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', self, name='data_file')
-        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', self,
-                                                name='data_file_part2')
-        self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, self, name='should_center')
+        self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', 'data_file')
+        self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', 'data_file_part2')
+        self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, name='should_center')
 
     @staticmethod
     def get_view_model():
@@ -117,7 +115,7 @@ class GIFTISurfaceImporter(ABCUploader):
         """
         Execute import operations:
         """
-        parser = GIFTIParser(self.storage_path, self.operation_id)
+        parser = GIFTIParser(self.operation_id)
         try:
             surface = parser.parse(view_model.data_file, view_model.data_file_part2, view_model.file_type,
                                    should_center=view_model.should_center)
@@ -127,7 +125,7 @@ class GIFTISurfaceImporter(ABCUploader):
 
             if validation_result.warnings:
                 self.add_operation_additional_info(validation_result.summary())
-            surface_idx = h5.store_complete(surface, self.storage_path)
+            surface_idx = self.store_complete(surface)
             return [surface_idx]
         except ParseException as excep:
             logger = get_logger(__name__)

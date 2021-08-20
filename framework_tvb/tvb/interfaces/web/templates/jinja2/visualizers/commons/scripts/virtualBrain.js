@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -103,7 +103,7 @@ var isPreview = false;
  */
 var brainBuffers = [];
 var brainLinesBuffers = [];
-var shelfBuffers = [];
+var shellBuffers = [];
 var measurePointsBuffers = [];
 
 var regionBoundariesController = null;
@@ -185,55 +185,8 @@ function VS_SetHemisphere(h) {
     }
 }
 
-function VS_StartPortletPreview(urlBaseAdapter, urlVerticesList, urlTrianglesList, urlNormalsList, noOfMeasurePoints,
-                                urlRegionMapList, boundaryURL, minActivity, maxActivity, oneToOneMapping) {
-    isPreview = true;
-    pageSize = 1;
-    activitiesData = HLPR_readJSONfromFile(readDataSplitPageURL(urlBaseAdapter, 0, 1, selectedStateVar, selectedMode, TIME_STEP));
-    if (oneToOneMapping === 'True') {
-        isOneToOneMapping = true;
-    }
-    activityMin = parseFloat(minActivity);
-    activityMax = parseFloat(maxActivity);
-
-    NO_OF_MEASURE_POINTS = noOfMeasurePoints;
-    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        VS_selectedRegions.push(i);
-    }
-
-    const canvas = document.getElementById(BRAIN_CANVAS_ID);
-    customInitGL(canvas);
-    initShaders();
-    if (urlVerticesList) {
-        brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList),
-            $.parseJSON(urlRegionMapList), false);
-    }
-
-    ColSch_initColorSchemeComponent(activityMin, activityMax);
-    LEG_initMinMax(activityMin, activityMax);
-    LEG_generateLegendBuffers();
-
-    VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
-    regionBoundariesController = new RB_RegionBoundariesController(boundaryURL);
-
-    // Enable keyboard and mouse interaction
-    canvas.onkeydown = GL_handleKeyDown;
-    canvas.onkeyup = GL_handleKeyUp;
-    canvas.onmousedown = customMouseDown;
-    canvas.oncontextmenu = function () {
-        return false;
-    };
-    $(document).on('mousemove', GL_handleMouseMove);
-    $(document).on('mouseup', customMouseUp);
-    // We use drawScene instead of tick because tick's performance is worse.
-    // Portlet previews are static, not movies. Tick's movie update is not required.
-    // A call to updateColors has to be made to initialize the color buffer.
-    updateColors(0);
-    setInterval(drawScene, TICK_STEP);
-}
-
 function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-                               noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels, boundaryURL, shelfObject,
+                               noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels, boundaryURL, shellObject,
                                hemisphereChunkMask, argDisplayMeasureNodes, argIsFaceToDisplay,
                                minMeasure, maxMeasure, urlMeasure) {
     // initialize global configuration
@@ -289,7 +242,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
 
     const canvas = document.getElementById(BRAIN_CANVAS_ID);
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-        urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
+        urlRegionMapList, urlLinesList, boundaryURL, shellObject, hemisphereChunkMask);
 
     _bindEvents(canvas);
 
@@ -302,7 +255,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
 function _VS_movie_entrypoint(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                               urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                               urlRegionMapList, minActivity, maxActivity, oneToOneMapping, doubleView,
-                              shelfObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
+                              shellObject, hemisphereChunkMask, urlMeasurePointsLabels, boundaryURL) {
     // initialize global configuration
     isDoubleView = doubleView;
     if (oneToOneMapping === 'True') {
@@ -328,7 +281,7 @@ function _VS_movie_entrypoint(baseAdapterURL, onePageSize, urlTimeList, urlVerti
     const canvas = document.getElementById(BRAIN_CANVAS_ID);
 
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-        urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphereChunkMask);
+        urlRegionMapList, urlLinesList, boundaryURL, shellObject, hemisphereChunkMask);
 
     _bindEvents(canvas);
 
@@ -363,10 +316,10 @@ function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, 
 
 function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
                                  noOfMeasurePoints, urlMeasurePointsLabels,
-                                 shelfObject, minMeasure, maxMeasure, urlMeasure) {
+                                 shellObject, minMeasure, maxMeasure, urlMeasure) {
     isEEGView = true;
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
-        noOfMeasurePoints, '', urlMeasurePointsLabels, '', shelfObject, null, true, true,
+        noOfMeasurePoints, '', urlMeasurePointsLabels, '', shellObject, null, true, true,
         minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
 }
@@ -374,12 +327,12 @@ function VS_StartEEGSensorViewer(urlVerticesList, urlLinesList, urlTrianglesList
 function VS_StartBrainActivityViewer(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
                                      urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
                                      urlRegionMapList, minActivity, maxActivity,
-                                     oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
+                                     oneToOneMapping, doubleView, shellObject, hemisphereChunkMask,
                                      urlMeasurePointsLabels, boundaryURL, measurePointsSelectionGID) {
     _VS_movie_entrypoint(baseAdapterURL, onePageSize, urlTimeList, urlVerticesList, urlLinesList,
         urlTrianglesList, urlNormalsList, urlMeasurePoints, noOfMeasurePoints,
         urlRegionMapList, minActivity, maxActivity,
-        oneToOneMapping, doubleView, shelfObject, hemisphereChunkMask,
+        oneToOneMapping, doubleView, shellObject, hemisphereChunkMask,
         urlMeasurePointsLabels, boundaryURL);
     _VS_init_cubicalMeasurePoints();
 
@@ -413,7 +366,7 @@ function _isValidActivityData() {
  * Scene setup common to all webgl brain viewers
  */
 function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-                       urlRegionMapList, urlLinesList, boundaryURL, shelfObject, hemisphere_chunk_mask) {
+                       urlRegionMapList, urlLinesList, boundaryURL, shellObject, hemisphere_chunk_mask) {
     customInitGL(canvas);
     GL_initColorPickFrameBuffer();
     initShaders();
@@ -440,9 +393,9 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
     brainLinesBuffers = HLPR_getDataBuffers(gl, $.parseJSON(urlLinesList), isDoubleView, true);
     regionBoundariesController = new RB_RegionBoundariesController(boundaryURL);
 
-    if (shelfObject) {
-        shelfObject = $.parseJSON(shelfObject);
-        shelfBuffers = initBuffers(shelfObject[0], shelfObject[1], shelfObject[2], false, true);
+    if (shellObject) {
+        shellObject = $.parseJSON(shellObject);
+        shellBuffers = initBuffers(shellObject[0], shellObject[1], shellObject[2], false, true);
     }
 
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
@@ -1117,7 +1070,7 @@ function drawScene() {
             const faceDrawMode = isInternalSensorView ? drawingMode : gl.TRIANGLES;
             mvPushMatrix();
             mvTranslate(VB_BrainNavigator.getPosition());
-            drawBuffers(faceDrawMode, shelfBuffers, null, true, gl.FRONT);
+            drawBuffers(faceDrawMode, shellBuffers, null, true, gl.FRONT);
             mvPopMatrix();
         }
 

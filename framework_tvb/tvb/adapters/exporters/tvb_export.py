@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,61 +32,55 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-import os
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
+from tvb.storage.storage_interface import StorageInterface
 
 
 class TVBExporter(ABCExporter):
     """ 
     This exporter simply provides for download data in TVB format
     """
-    OPERATION_FOLDER_PREFIX = "Operation_"
-    
+
+    def __init__(self):
+        self.storage_interface = StorageInterface()
+
     def get_supported_types(self):
         return [DataType]
-    
+
     def get_label(self):
         return "TVB Format"
-    
-    def export(self, data, export_folder, project):
+
+    def export(self, data, project):
         """
         Exports data type:
         1. If data is a normal data type, simply exports storage file (HDF format)
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
-        download_file_name = self.get_export_file_name(data)
-        files_helper = FilesHelper()
-         
+        download_file_name = self._get_export_file_name(data)
+
         if self.is_data_a_group(data):
             all_datatypes = self._get_all_data_types_arr(data)
-            
+
             if all_datatypes is None or len(all_datatypes) == 0:
-                raise ExportException("Could not export a data type group with no data")    
-            
-            zip_file = os.path.join(export_folder, download_file_name)
-            
-            # Now process each data type from group and add it to ZIP file
-            operation_folders = []
-            for data_type in all_datatypes:
-                operation_folder = files_helper.get_operation_folder(project.name, data_type.fk_from_operation)
-                operation_folders.append(operation_folder)
-                
-            # Create ZIP archive    
-            files_helper.zip_folders(zip_file, operation_folders, self.OPERATION_FOLDER_PREFIX)
-                        
+                raise ExportException("Could not export a data type group with no data")
+
+            # Create ZIP archive
+            zip_file = self.storage_interface.export_datatypes_structure(all_datatypes, data, download_file_name,
+                                                                         project.name)
+
             return download_file_name, zip_file, True
 
         else:
-            data_file = h5.path_for_stored_index(data)
-            return download_file_name, data_file, False
+            data_path = h5.path_for_stored_index(data)
+            data_file = self.storage_interface.export_datatypes([data_path], data, None)
 
+            return None, data_file, True
 
     def get_export_file_extension(self, data):
         if self.is_data_a_group(data):
-            return "zip"
+            return StorageInterface.TVB_ZIP_FILE_EXTENSION
         else:
-            return "h5"
+            return StorageInterface.TVB_STORAGE_FILE_EXTENSION

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,20 +32,18 @@
 .. moduleauthor:: Calin Pavel
 """
 
-import os
-import numpy
-import shutil
-import zipfile
 import tempfile
+import zipfile
+
+import numpy
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -74,16 +72,16 @@ class RegionMappingImporterModel(UploaderViewModel):
 
 class RegionMappingImporterForm(ABCUploaderForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(RegionMappingImporterForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(RegionMappingImporterForm, self).__init__()
 
-        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'), self,
-                                             name='mapping_file')
+        self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'),
+                                             'mapping_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
                                          values=[CORTICAL])
-        self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, self, name='surface',
+        self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, name='surface',
                                                 conditions=surface_conditions)
-        self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, self, name='connectivity')
+        self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, name='connectivity')
 
     @staticmethod
     def get_view_model():
@@ -136,13 +134,12 @@ class RegionMappingImporter(ABCUploader):
         if zipfile.is_zipfile(view_model.mapping_file):
             tmp_folder = tempfile.mkdtemp(prefix='region_mapping_zip_', dir=TvbProfile.current.TVB_TEMP_FOLDER)
             try:
-                files = FilesHelper().unpack_zip(view_model.mapping_file, tmp_folder)
+                files = self.storage_interface.unpack_zip(view_model.mapping_file, tmp_folder)
                 if len(files) > 1:
                     raise LaunchException("Please upload a ZIP file containing only one file.")
                 array_data = self.read_list_data(files[0], dtype=numpy.int32)
             finally:
-                if os.path.exists(tmp_folder):
-                    shutil.rmtree(tmp_folder)
+                self.storage_interface.remove_folder(tmp_folder, True)
         else:
             array_data = self.read_list_data(view_model.mapping_file, dtype=numpy.int32)
 
@@ -151,26 +148,27 @@ class RegionMappingImporter(ABCUploader):
             raise LaunchException("Uploaded file does not contains any data. Please initiate upload with another file.")
 
         # Check if we have a mapping for each surface vertex.
-        surface_index = self.load_entity_by_gid(view_model.surface)
-        if len(array_data) != surface_index.number_of_vertices:
+        surface_idx = self.load_entity_by_gid(view_model.surface)
+        if len(array_data) != surface_idx.number_of_vertices:
             msg = "Imported file contains a different number of values than the number of surface vertices. " \
                   "Imported: %d values while surface has: %d vertices." % (
-                      len(array_data), surface_index.number_of_vertices)
+                      len(array_data), surface_idx.number_of_vertices)
             raise LaunchException(msg)
 
         # Now check if the values from imported file correspond to connectivity regions
         if array_data.min() < 0:
             raise LaunchException("Imported file contains negative values. Please fix problem and re-import file")
 
-        connectivity_index = self.load_entity_by_gid(view_model.connectivity)
-        if array_data.max() >= connectivity_index.number_of_regions:
+        conn_idx = self.load_entity_by_gid(view_model.connectivity)
+        if array_data.max() >= conn_idx.number_of_regions:
             msg = "Imported file contains invalid regions. Found region: %d while selected connectivity has: %d " \
-                  "regions defined (0 based)." % (array_data.max(), connectivity_index.number_of_regions)
+                  "regions defined (0 based)." % (array_data.max(), conn_idx.number_of_regions)
             raise LaunchException(msg)
 
         self.logger.debug("Creating RegionMapping instance")
 
-        connectivity_ht = h5.load_from_index(connectivity_index)
-        surface_ht = h5.load_from_index(surface_index)
+        surface_ht = h5.load_from_index(surface_idx)
+        connectivity_ht = h5.load_from_index(conn_idx)
+
         region_mapping = RegionMapping(surface=surface_ht, connectivity=connectivity_ht, array_data=array_data)
-        return h5.store_complete(region_mapping, self.storage_path)
+        return self.store_complete(region_mapping)

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,14 +32,16 @@
 .. moduleauthor:: bogdan.neacsa <bogdan.neacsa@codemart.ro>
 """
 
+import os
 from uuid import UUID
+
+from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.services.burst_service import BurstService
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.model.model_burst import *
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.algorithm_service import AlgorithmService, GenericAttributes
 from tvb.core.services.project_service import ProjectService
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -71,9 +73,8 @@ class TestBurstService(BaseTestCase):
 
     def teardown_method(self):
         """
-        Remove project folders and clean up database.
+        Clean up database.
         """
-        FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database()
 
     def test_clone_burst_configuration(self):
@@ -172,7 +173,7 @@ class TestBurstService(BaseTestCase):
         simulation = SimulatorAdapterModel()
         simulation.connectivity = UUID(connectivity.gid)
 
-        burst_config = self.burst_service.update_simulation_fields(stored_burst.id, op.id, simulation.gid)
+        burst_config = self.burst_service.update_simulation_fields(stored_burst, op.id, simulation.gid)
         assert burst_config.id == stored_burst.id, "The loaded burst does not have the same ID"
         assert burst_config.fk_simulation == op.id, "The loaded burst does not have the fk simulation that it was given"
         assert burst_config.simulator_gid == simulation.gid.hex, "The loaded burst does not have the simulation gid that it was given"
@@ -182,14 +183,14 @@ class TestBurstService(BaseTestCase):
         Test prepare burst name
         """
         stored_burst = TestFactory.store_burst(self.test_project.id)
-        simulation_tuple = self.burst_service.prepare_name(stored_burst, self.test_project.id)
+        simulation_tuple = self.burst_service.prepare_simulation_name(stored_burst, self.test_project.id)
         assert simulation_tuple[0] == 'simulation_' + str(dao.get_number_of_bursts(self.test_project.id) + 1), \
             "The default simulation name is not the defined one"
 
         busrt_test_name = "Burst Test Name"
         stored_burst.name = busrt_test_name
         stored_burst = dao.store_entity(stored_burst)
-        simulation_tuple = self.burst_service.prepare_name(stored_burst, self.test_project.id)
+        simulation_tuple = self.burst_service.prepare_simulation_name(stored_burst, self.test_project.id)
         assert simulation_tuple[0] == busrt_test_name, "The burst name is not the given one"
 
     def test_prepare_burst_for_pse(self):
@@ -221,3 +222,46 @@ class TestBurstService(BaseTestCase):
         datatype2_stored = self.count_all_entities(Datatype2)
         assert 0 == datatype1_stored, "Specific datatype entries for DataType1 were not deleted."
         assert 0 == datatype2_stored, "Specific datatype entries for DataType2 were not deleted."
+
+    def test_prepare_indexes_for_simulation_results(self, time_series_factory, operation_factory, simulator_factory):
+        ts_1 = time_series_factory()
+        ts_2 = time_series_factory()
+        ts_3 = time_series_factory()
+
+        operation = operation_factory(test_user=self.test_user, test_project=self.test_project)
+        sim_folder, sim_gid = simulator_factory(op=operation)
+
+        path_1 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_1.gid.hex))
+        path_2 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_2.gid.hex))
+        path_3 = os.path.join(sim_folder, "Time_Series_{}.h5".format(ts_3.gid.hex))
+
+        with TimeSeriesH5(path_1) as f:
+            f.store(ts_1)
+            f.sample_rate.store(ts_1.sample_rate)
+            f.store_generic_attributes(GenericAttributes())
+
+        with TimeSeriesH5(path_2) as f:
+            f.store(ts_2)
+            f.sample_rate.store(ts_2.sample_rate)
+            f.store_generic_attributes(GenericAttributes())
+
+        with TimeSeriesH5(path_3) as f:
+            f.store(ts_3)
+            f.sample_rate.store(ts_3.sample_rate)
+            f.store_generic_attributes(GenericAttributes())
+
+        burst_configuration = BurstConfiguration(self.test_project.id)
+        burst_configuration.fk_simulation = operation.id
+        burst_configuration.simulator_gid = operation.view_model_gid
+        burst_configuration = dao.store_entity(burst_configuration)
+
+        file_names = [path_1, path_2, path_3]
+        ts_datatypes = [ts_1, ts_2, ts_3]
+        indexes = self.burst_service.prepare_indexes_for_simulation_results(operation, file_names, burst_configuration)
+
+        for i in range(len(indexes)):
+            assert indexes[i].gid == ts_datatypes[i].gid.hex, "Gid was not set correctly on index."
+            assert indexes[i].sample_period == ts_datatypes[i].sample_period
+            assert indexes[i].sample_period_unit == ts_datatypes[i].sample_period_unit
+            assert indexes[i].sample_rate == ts_datatypes[i].sample_rate
+

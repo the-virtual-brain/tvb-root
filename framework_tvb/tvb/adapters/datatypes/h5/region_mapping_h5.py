@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -61,3 +61,15 @@ class RegionVolumeMappingH5(VolumetricDataMixin, DataTypeMatrixH5):
         self.array_data = DataSet(RegionVolumeMapping.array_data, self)
         self.connectivity = Reference(RegionVolumeMapping.connectivity, self)
         self.volume = Reference(RegionVolumeMapping.volume, self)
+
+    def read_data_shape(self):
+        """
+        The shape of the data
+        """
+        return self.array_data.shape
+
+    def read_data_slice(self, data_slice):
+        """
+        Expose chunked-data access.
+        """
+        return self.array_data[data_slice]

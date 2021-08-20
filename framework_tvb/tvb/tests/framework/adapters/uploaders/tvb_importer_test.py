@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,10 +37,10 @@
 import os
 import shutil
 import pytest
+
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.basic.profile import TvbProfile
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import get_filtered_datatypes, load_entity_by_gid
 from tvb.core.services.exceptions import OperationException
 from tvb.tests.framework.core.base_testcase import BaseTestCase
@@ -81,7 +81,6 @@ class TestTVBImporter(BaseTestCase):
         _, self.zip_file_path, _ = export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.test_project)
         assert os.path.exists(self.zip_file_path), "Data type group was not exported correct"
 
-        FilesHelper().remove_project_structure(self.test_project.name)
         self.clean_database(delete_folders=False)
 
         # Recreate project, but a clean one where to import data
@@ -93,7 +92,6 @@ class TestTVBImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        FilesHelper().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_path=None):
 

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,6 +37,7 @@ import json
 import math
 import numpy
 from copy import copy
+
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.basic.neotraits.api import Attr
@@ -46,7 +47,6 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField
 from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
@@ -54,6 +54,7 @@ from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.surfaces import Surface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ConnectivityViewerModel(ViewModel):
@@ -111,32 +112,24 @@ class ConnectivityViewerModel(ViewModel):
 
 class ConnectivityViewerForm(ABCAdapterForm):
 
-    def __init__(self, prefix='', project_id=None):
-        super(ConnectivityViewerForm, self).__init__(prefix, project_id)
+    def __init__(self):
+        super(ConnectivityViewerForm, self).__init__()
 
-        # filters_ui = [UIFilter(linked_elem_name="colors",
-        #                        linked_elem_field=FilterChain.datatype + "._connectivity"),
-        #               UIFilter(linked_elem_name="rays",
-        #                        linked_elem_field=FilterChain.datatype + "._connectivity")]
-        # json_ui_filter = json.dumps([ui_filter.to_dict() for ui_filter in filters_ui])
-        # KWARG_FILTERS_UI: json_ui_filter
-
-        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, self, name='input_data',
+        self.connectivity = TraitDataTypeSelectField(ConnectivityViewerModel.connectivity, name='input_data',
                                                      conditions=self.get_filters())
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                                          values=['Cortical Surface'])
-        self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, self, name='surface_data',
+        self.surface_data = TraitDataTypeSelectField(ConnectivityViewerModel.surface_data, name='surface_data',
                                                      conditions=surface_conditions)
 
-        self.step = FloatField(ConnectivityViewerModel.step, self, name='step')
+        self.step = FloatField(ConnectivityViewerModel.step, name='step')
 
         colors_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, self, name='colors',
+        self.colors = TraitDataTypeSelectField(ConnectivityViewerModel.colors, name='colors',
                                                conditions=colors_conditions)
 
         rays_conditions = FilterChain(fields=[FilterChain.datatype + '.ndim'], operations=["=="], values=[1])
-        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, self, name='rays',
-                                             conditions=rays_conditions)
+        self.rays = TraitDataTypeSelectField(ConnectivityViewerModel.rays, name='rays', conditions=rays_conditions)
 
     @staticmethod
     def get_view_model():
@@ -203,9 +196,8 @@ class ConnectivityViewer(ABCSpaceDisplayer):
 
         global_params, global_pages = self._compute_connectivity_global_params(connectivity)
         if view_model.surface_data is not None:
-            surface_index = load_entity_by_gid(view_model.surface_data.hex)
-            surface_h5 = h5.h5_file_for_index(surface_index)
-            url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
+            with h5.h5_file_for_gid(view_model.surface_data) as surface_h5:
+                url_vertices, url_normals, _, url_triangles, _ = SurfaceURLGenerator.get_urls_for_rendering(surface_h5)
         else:
             url_vertices, url_normals, url_triangles = [], [], []
 
@@ -223,19 +215,6 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         result_pages.update(_pages)
 
         return self.build_display_result("connectivity/main_connectivity", result_params, result_pages)
-
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (ConnectivityViewerModel, (int,int)) -> dict
-        """
-        Generate the preview for the BURST cockpit.
-
-        see `launch_`
-        """
-        connectivity, colors, rays = self._load_input_data(view_model)
-
-        parameters, _ = Connectivity2DViewer().compute_preview_parameters(connectivity, figure_size[0],
-                                                                          figure_size[1], colors, rays, view_model.step)
-        return self.build_display_result("connectivity/portlet_preview", parameters)
 
     @staticmethod
     def _compute_matrix_extrema(m):
@@ -291,10 +270,11 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         return global_params, global_pages
 
     @staticmethod
-    def get_connectivity_parameters(input_connectivity, conn_path):
+    def get_connectivity_parameters(input_connectivity, project_name, op_id):
         """
         Returns a dictionary which contains all the needed data for drawing a connectivity.
         """
+        conn_path = StorageInterface().get_project_folder(project_name, op_id)
         viewer = ConnectivityViewer()
         viewer.storage_path = conn_path
         conn_dt = h5.load_from_index(input_connectivity)
@@ -380,14 +360,20 @@ class Connectivity2DViewer(object):
         norm_rays, min_ray, max_ray = self._normalize_rays(rays, input_data.number_of_regions)
         colors, step = self._prepare_colors(colors, input_data.number_of_regions, step)
 
-        right_json = self._get_json(input_data.ordered_labels[input_data.hemispheres],
-                                    input_data.ordered_centres[input_data.hemispheres], weights[1],
-                                    math.pi, 1, 2, numpy.asarray(norm_rays)[input_data.hemispheres],
-                                    numpy.asarray(colors)[input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
-        left_json = self._get_json(input_data.ordered_labels[~input_data.hemispheres],
-                                   input_data.ordered_centres[~input_data.hemispheres], weights[0],
-                                   math.pi, 1, 2, numpy.asarray(norm_rays)[~input_data.hemispheres],
-                                   numpy.asarray(colors)[~input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
+        if numpy.all((input_data.hemispheres == False)):
+            right_json = ""
+        else:
+            right_json = self._get_json(input_data.ordered_labels[input_data.hemispheres],
+                                        input_data.ordered_centres[input_data.hemispheres], weights[1],
+                                        math.pi, 1, 2, numpy.asarray(norm_rays)[input_data.hemispheres],
+                                        numpy.asarray(colors)[input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
+        if numpy.all((input_data.hemispheres == True)):
+            left_json = ""
+        else:
+            left_json = self._get_json(input_data.ordered_labels[~input_data.hemispheres],
+                                       input_data.ordered_centres[~input_data.hemispheres], weights[0],
+                                       math.pi, 1, 2, numpy.asarray(norm_rays)[~input_data.hemispheres],
+                                       numpy.asarray(colors)[~input_data.hemispheres], X_CANVAS_SMALL, Y_CANVAS_SMALL)
         full_json = self._get_json(input_data.ordered_labels, input_data.ordered_centres, normalized_weights,
                                    math.pi, 0, 1, norm_rays, colors, X_CANVAS_FULL, Y_CANVAS_FULL)
 

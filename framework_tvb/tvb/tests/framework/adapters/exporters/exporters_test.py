@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,17 +31,19 @@
 """
 .. moduleauthor:: calin.pavel <calin.pavel@codemart.ro>
 """
-import pytest
 import os.path
-import shutil
+import uuid
 import zipfile
 from contextlib import closing
-from tvb.adapters.exporters.export_manager import ExportManager
+
+import pytest
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
+from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
-from tvb.core.entities.file.files_helper import FilesHelper
+from tvb.core.services.burst_service import BurstService
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -51,7 +53,7 @@ class TestExporters(TransactionalTestCase):
     Test export functionality.
     """
     TVB_EXPORTER = "TVBExporter"
-    CIFTI_EXPORTER = "CIFTIExporter"
+    TVB_LINKED_EXPORTER = "TVBLinkedExporter"
 
     def transactional_setup_method(self):
         self.export_manager = ExportManager()
@@ -62,14 +64,9 @@ class TestExporters(TransactionalTestCase):
         """
         Clean-up tests data
         """
-        user = TestFactory.create_user('Exporter_Tests_User2')
-        project = TestFactory.create_project(user, 'Exporter_Tests_Project2')
-        FilesHelper().remove_project_structure(project.name)
-
         # Remove EXPORT folder
-        export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, ExportManager.EXPORT_FOLDER_NAME)
-        if os.path.exists(export_folder):
-            shutil.rmtree(export_folder)
+        export_folder = os.path.join(TvbProfile.current.TVB_STORAGE, StorageInterface.EXPORT_FOLDER_NAME)
+        StorageInterface.remove_folder(export_folder, True)
 
     def test_get_exporters_for_data(self, dummy_datatype_index_factory):
         """
@@ -79,7 +76,7 @@ class TestExporters(TransactionalTestCase):
         exporters = self.export_manager.get_exporters_for_data(datatype)
 
         # Only TVB export can export any type of data type
-        assert 1, len(exporters) == "Incorrect number of exporters."
+        assert len(exporters) == 2, "Incorrect number of exporters."
 
     def test_get_exporters_for_data_with_no_data(self):
         """
@@ -93,22 +90,22 @@ class TestExporters(TransactionalTestCase):
         Test export of a data type which has no data stored on file system
         """
         datatype = dummy_datatype_index_factory()
-        file_name, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
+        _, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
 
-        assert file_name is not None, "Export process should return a file name"
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
-    def test_tvb_export_of_datatype_with_storage(self, dummy_datatype_index_factory):
-        """
-        Test export of a data type which has no data stored on file system
-        """
-        datatype = dummy_datatype_index_factory()
-        file_name, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project)
+    def test_tvb_linked_export_of_simple_datatype(self, connectivity_index_factory, surface_index_factory,
+                                                  region_mapping_index_factory):
+        conn = connectivity_index_factory()
+        _, surface = surface_index_factory(cortical=True)
+        region_mapping_index = region_mapping_index_factory(conn_gid=conn.gid, surface_gid=surface.gid.hex)
 
-        assert file_name is not None, "Export process should return a file name"
+        _, file_path, _ = self.export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER,
+                                                          self.test_project)
+
         assert file_path is not None, "Export process should return path to export file"
-        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+        assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
 
     def test_tvb_export_for_datatype_group(self, datatype_group_factory):
         """
@@ -179,16 +176,21 @@ class TestExporters(TransactionalTestCase):
         # Now check if the generated file is a correct ZIP file
         assert zipfile.is_zipfile(export_file), "Generated file is not a valid ZIP file"
 
-    def test_export_simulator_configuration(self, operation_factory):
+    def test_export_simulator_configuration(self, operation_factory, connectivity_index_factory):
         """
         Test export of a simulator configuration
         """
-        operation = operation_factory(is_simulation=True, store_vm=True)
+        conn_gid = uuid.UUID(connectivity_index_factory().gid)
+        operation = operation_factory(is_simulation=True, store_vm=True, test_project=self.test_project,
+                                      conn_gid=conn_gid)
 
         burst_configuration = BurstConfiguration(self.test_project.id)
         burst_configuration.fk_simulation = operation.id
         burst_configuration.simulator_gid = operation.view_model_gid
+        burst_configuration.name = "Test_burst"
         burst_configuration = dao.store_entity(burst_configuration)
+
+        BurstService().store_burst_configuration(burst_configuration)
 
         export_file = self.export_manager.export_simulator_configuration(burst_configuration.id)
 

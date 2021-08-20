@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -95,7 +95,7 @@ class TestSQLiteProfile(WebSettingsProfile):
 
     DEFAULT_STORAGE = os.path.expanduser(os.path.join('~', 'TVB_TEST'))
 
-    SVN_VERSION = 1
+    REVISION_NUMBER = 1
     CODE_CHECKED_TO_VERSION = sys.maxsize
     TRADE_CRASH_SAFETY_FOR_SPEED = True
 
@@ -118,6 +118,8 @@ class TestSQLiteProfile(WebSettingsProfile):
                                                             os.path.join(self.TVB_STORAGE, '.data'))
         self.hpc.CRYPT_PASSDIR = self.manager.get_attribute(stored.KEY_CRYPT_PASSDIR,
                                                             os.path.join(self.TVB_STORAGE, '.pass'))
+
+        self.file_storage = self.manager.get_attribute(stored.KEY_FILE_STORAGE, 'h5')
 
     def initialize_profile(self, change_logger_in_dev=False):
         super(TestSQLiteProfile, self).initialize_profile(change_logger_in_dev=change_logger_in_dev)

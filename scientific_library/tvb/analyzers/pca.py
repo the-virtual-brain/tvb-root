@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,143 +37,100 @@ a PrincipalComponents datatype.
 """
 
 import numpy
-import tvb.datatypes.time_series as time_series
 import tvb.datatypes.mode_decompositions as mode_decompositions
+from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits, Attr, narray_describe
 
+log = get_logger(__name__)
 
-class PCA_mlab(object):
+
+def _compute_weights_and_fractions(data):
     """
-    The code for this method has been taken and adapted from Matplotlib 2.1.0
+    The code for this function has been taken and adapted from Matplotlib 2.1.0
     Aug 2019
     """
+    n, m = data.shape
+    if n < m:
+        raise RuntimeError('we assume data in input is organized with '
+                            'numrows>numcols')
 
-    def __init__(self, data):
-        n, m = data.shape
-        if n < m:
-            raise RuntimeError('we assume data in input is organized with '
-                               'numrows>numcols')
+    mu = data.mean(axis=0)
+    sigma = data.std(axis=0)
 
-        self.mu = data.mean(axis=0)
-        self.sigma = data.std(axis=0)
+    a = (data - mu) / sigma
+    U, s, Vh = numpy.linalg.svd(a, full_matrices=False)
+    Wt = Vh
+    s = s ** 2
 
-        a = (data - self.mu) / self.sigma
+    vars = s / len(s)
+    fracs = vars / vars.sum()
 
-        U, s, Vh = numpy.linalg.svd(a, full_matrices=False)
+    return fracs, Wt
 
-        self.Wt = Vh
-
-        Y = numpy.dot(Vh, a.T).T
-        self.Y = Y
-
-        self.s = s ** 2
-
-        vars = self.s / len(s)
-        self.fracs = vars / vars.sum()
-
-
-class PCA(HasTraits):
-    """
-    Return principal component weights and the fraction of the variance that 
-    they explain. 
+"""
+Return principal component weights and the fraction of the variance that 
+they explain. 
     
-    PCA takes time-points as observations and nodes as variables.
+PCA takes time-points as observations and nodes as variables.
     
-    NOTE: The TimeSeries must be longer(more time-points) than the number of
-          nodes -- Mostly a problem for TimeSeriesSurface datatypes, which, if 
-          sampled at 1024Hz, would need to be greater than 16 seconds long.
+NOTE: The TimeSeries must be longer(more time-points) than the number of
+        nodes -- Mostly a problem for TimeSeriesSurface datatypes, which, if 
+        sampled at 1024Hz, would need to be greater than 16 seconds long.
+"""
+
+
+# # TODO: Maybe should support first N components or neccessary components to
+# #      explain X% of the variance. NOTE: For default surface the weights
+# #      matrix has a size ~ 2GB * modes * vars...
+def compute_pca(time_series):
+    """
+    # type: (TimeSeries)  -> PrincipalComponents
+    Compute the temporal covariance between nodes in the time_series.
+
+    Parameters
+    __________
+    time_series : TimeSeries
+    The timeseries to which the PCA is to be applied.
     """
 
-    time_series = Attr(
-        field_type=time_series.TimeSeries,
-        label="Time Series",
-        required=True,
-        doc="""The timeseries to which the PCA is to be applied. NOTE: The 
-            TimeSeries must be longer(more time-points) than the number of nodes
-            -- Mostly a problem for surface times-series, which, if sampled at
-            1024Hz, would need to be greater than 16 seconds long.""")
+    ts_shape = time_series.data.shape
 
-    # TODO: Maybe should support first N components or neccessary components to
-    #      explain X% of the variance. NOTE: For default surface the weights
-    #      matrix has a size ~ 2GB * modes * vars...
+    # Need more measurements than variables
+    if ts_shape[0] < ts_shape[2]:
+        msg = "PCA requires a longer timeseries (tpts > number of nodes)."
+        log.error(msg)
+        raise Exception(msg)
 
-    def evaluate(self):
-        """
-        Compute the temporal covariance between nodes in the time_series. 
-        """
-        cls_attr_name = self.__class__.__name__ + ".time_series"
-        # self.time_series.trait["data"].log_debug(owner = cls_attr_name)
+    # (nodes, nodes, state-variables, modes)
+    weights_shape = (ts_shape[2], ts_shape[2], ts_shape[1], ts_shape[3])
+    log.info("weights shape will be: %s" % str(weights_shape))
 
-        ts_shape = self.time_series.data.shape
+    fractions_shape = (ts_shape[2], ts_shape[1], ts_shape[3])
+    log.info("fractions shape will be: %s" % str(fractions_shape))
 
-        # Need more measurements than variables
-        if ts_shape[0] < ts_shape[2]:
-            msg = "PCA requires a longer timeseries (tpts > number of nodes)."
-            self.log.error(msg)
-            raise Exception(msg)
+    weights = numpy.zeros(weights_shape)
+    fractions = numpy.zeros(fractions_shape)
 
-        # (nodes, nodes, state-variables, modes)
-        weights_shape = (ts_shape[2], ts_shape[2], ts_shape[1], ts_shape[3])
-        self.log.info("weights shape will be: %s" % str(weights_shape))
+    # One inter-node temporal covariance matrix for each state-var & mode.
+    for mode in range(ts_shape[3]):
+        for var in range(ts_shape[1]):
+            data = time_series.data[:, var, :, mode]
 
-        fractions_shape = (ts_shape[2], ts_shape[1], ts_shape[3])
-        self.log.info("fractions shape will be: %s" % str(fractions_shape))
+            fracts, w = _compute_weights_and_fractions(data)
+            fractions[:, var, mode] = fracts
+            weights[:, :, var, mode] = w
 
-        weights = numpy.zeros(weights_shape)
-        fractions = numpy.zeros(fractions_shape)
+    log.debug("fractions")
+    log.debug(narray_describe(fractions))
+    log.debug("weights")
+    log.debug(narray_describe(weights))
 
-        # One inter-node temporal covariance matrix for each state-var & mode.
-        for mode in range(ts_shape[3]):
-            for var in range(ts_shape[1]):
-                data = self.time_series.data[:, var, :, mode]
+    pca_result = mode_decompositions.PrincipalComponents(
+        source=time_series,
+        fractions=fractions,
+        weights=weights,
+        norm_source=numpy.array([]),
+        component_time_series=numpy.array([]),
+        normalised_component_time_series=numpy.array([]))
 
-                data_pca = PCA_mlab(data)
-                fractions[:, var, mode] = data_pca.fracs
-
-                weights[:, :, var, mode] = data_pca.Wt
-
-        self.log.debug("fractions")
-        self.log.debug(narray_describe(fractions))
-        self.log.debug("weights")
-        self.log.debug(narray_describe(weights))
-
-        pca_result = mode_decompositions.PrincipalComponents(
-            source=self.time_series,
-            fractions=fractions,
-            weights=weights,
-            norm_source=numpy.array([]),
-            component_time_series=numpy.array([]),
-            normalised_component_time_series=numpy.array([]))
-
-        return pca_result
-
-    def result_shape(self, input_shape):
-        """
-        Returns the shape of the main result of the PCA analysis -- compnnent 
-        weights matrix and a vector of fractions.
-        """
-        weights_shape = (input_shape[2], input_shape[2], input_shape[1],
-                         input_shape[3])
-        fractions_shape = (input_shape[2], input_shape[1], input_shape[3])
-        return [weights_shape, fractions_shape]
-
-    def result_size(self, input_shape):
-        """
-        Returns the storage size in Bytes of the results of the PCA analysis.
-        """
-        result_size = numpy.sum(list(map(numpy.prod,
-                                         self.result_shape(input_shape)))) * 8.0  # Bytes
-        return result_size
-
-    def extended_result_size(self, input_shape):
-        """
-        Returns the storage size in Bytes of the extended result of the PCA.
-        That is, it includes storage of the evaluated PrincipleComponents
-        attributes such as norm_source, component_time_series, etc.
-        """
-        result_size = self.result_size(input_shape)
-        extend_size = result_size  # Main arrays
-        extend_size = extend_size + numpy.prod(input_shape) * 8.0  # norm_source
-        extend_size = extend_size + numpy.prod(input_shape) * 8.0  # component_time_series
-        extend_size = extend_size + numpy.prod(input_shape) * 8.0  # normalised_component_time_series
-        return extend_size
+    return pca_result
