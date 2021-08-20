@@ -122,10 +122,6 @@ class SimulatorAdapter(ABCAdapter):
     algorithm = None
     branch_simulation_state_gid = None
 
-    # This is a list with the monitors that actually return multi dimensions for the state variable dimension.
-    # We exclude from this for example EEG, MEG or Bold which return 
-    HAVE_STATE_VARIABLES = ["GlobalAverage", "SpatialAverage", "Raw", "SubSample", "TemporalAverage"]
-
     def __init__(self):
         super(SimulatorAdapter, self).__init__()
         self.log.debug("%s: Initialized..." % str(self))
@@ -289,8 +285,8 @@ class SimulatorAdapter(ABCAdapter):
             ts_index.data_ndim = 4
             ts_index.state = 'INTERMEDIATE'
 
-            state_variable_dimension_name = ts.labels_ordering[1]
-            if m_name in self.HAVE_STATE_VARIABLES:
+            if monitor.voi is not None:
+                state_variable_dimension_name = ts.labels_ordering[1]
                 selected_vois = [self.algorithm.model.variables_of_interest[idx] for idx in monitor.voi]
                 ts.labels_dimensions[state_variable_dimension_name] = selected_vois
                 ts_index.labels_dimensions = json.dumps(ts.labels_dimensions)

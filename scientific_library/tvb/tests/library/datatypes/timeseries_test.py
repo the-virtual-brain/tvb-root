@@ -63,7 +63,7 @@ class TestTimeseries(BaseTestCase):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesEEG(data=data, sensors=SensorsEEG())
         assert dt.data.shape == (10, 10)
-        assert ('Time', '1', 'EEG Sensor', '1') == dt.labels_ordering
+        assert ("Time", "SV", "EEG Sensor", "Mode") == dt.labels_ordering
         assert dt.sample_period == 1.0
         assert dt.sample_rate == 1000
         assert dt.sensors is not None
@@ -74,7 +74,7 @@ class TestTimeseries(BaseTestCase):
         data = numpy.random.random((10, 10))
         dt = time_series.TimeSeriesMEG(data=data, sensors=SensorsMEG(orientations=numpy.array([])))
         assert dt.data.shape == (10, 10)
-        assert ('Time', '1', 'MEG Sensor', '1') == dt.labels_ordering
+        assert ("Time", "SV", "MEG Sensor", "Mode") == dt.labels_ordering
         assert dt.sample_period == 1.0
         assert dt.sample_rate == 1000
         assert dt.sensors is not None
