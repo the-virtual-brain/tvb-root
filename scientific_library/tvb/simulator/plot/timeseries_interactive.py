@@ -480,7 +480,7 @@ class TimeSeriesInteractive(HasTraits):
             self.ts_ax.autoscale(enable=True, axis='both', tight=True)
 
         self.ts_ax.set_yticks(offset)
-        self.ts_ax.set_yticklabels(self.labels, fontsize=10)
+        self.ts_ax.set_yticklabels(self.labels[:-1], fontsize=10) #JC: fix labels error
         # import pdb; pdb.set_trace()
 
         # Light gray guidelines
