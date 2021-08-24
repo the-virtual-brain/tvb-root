@@ -158,7 +158,11 @@ class PowerSpectraInteractive(HasTraits):
         LOG.debug("time_series shape: %s" % str(self.time_series.data.shape))
         #TODO: if isinstance(self.time_series, TimeSeriesSurface) and self.first_n == -1: #LOG.error, return.
         self.data = self.time_series.data[:, :, :self.first_n, :]
-        self.period = self.time_series.sample_period/1000  #JC: convert sampling period of time_series.data in second
+        if self.time_series.sample_period_unit == "s":
+            self.period = self.time_series.sample_period
+        else 
+            self.period = 1 / self.time_series.sample_rate  #JC: convert sampling period of time_series.data in second
+        self.period_unit = "s"
         self.max_freq = 0.5 / self.period
         self.units = "Hz"
         self.tpts = self.data.shape[0]
