@@ -34,15 +34,16 @@ It is private only to shield public usage of the imports and logger.
 """
 
 import uuid
+from enum import Enum
 import numpy
 import typing
 from six import add_metaclass
+
 from ._attr import Attr
 from ._declarative_base import _Property, MetaType
 from .info import trait_object_str, trait_object_repr_html, narray_summary_info
 from .ex import TraitAttributeError, TraitTypeError, TraitError
 from tvb.basic.logger.builder import get_logger
-
 
 
 class CachedTraitProperty(_Property):
@@ -131,6 +132,23 @@ def cached_trait_property(attr):
     def deco(func):
         return CachedTraitProperty(func, attr)
     return deco
+
+
+class HasTraitsEnum(Enum):
+
+    @property
+    def value(self):
+        tuple_value = super(HasTraitsEnum, self).value
+        return tuple_value[0]
+
+    def __str__(self):
+        tuple_value = super(HasTraitsEnum, self).value
+        return tuple_value[1]
+
+
+class BaseTypeEnum(Enum):
+    def __str__(self):
+        return str(self.value)
 
 
 @add_metaclass(MetaType)

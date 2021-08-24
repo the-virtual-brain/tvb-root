@@ -37,7 +37,9 @@ Calculate an FFT on a TimeSeries DataType and return a FourierSpectrum DataType.
 
 import numpy
 import scipy.signal
+
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import BaseTypeEnum
 from tvb.basic.neotraits.info import narray_describe
 from tvb.datatypes.spectral import FourierSpectrum
 
@@ -50,6 +52,8 @@ SUPPORTED_WINDOWING_FUNCTIONS = {
     'blackman': numpy.blackman,
     'hanning': numpy.hanning
 }
+
+
 
 """
 A module for calculating the FFT of a TimeSeries object of TVB and returning
@@ -110,7 +114,7 @@ def compute_fast_fourier_transform(time_series, segment_length, window_function,
 
     # Apply windowing function
     if window_function is not None:
-        wf = SUPPORTED_WINDOWING_FUNCTIONS[window_function]
+        wf = SUPPORTED_WINDOWING_FUNCTIONS[window_function.value]
         window_mask = numpy.reshape(wf(int(seg_tpts)),
                                     (int(seg_tpts), 1, 1, 1, 1))
         ts = ts * window_mask

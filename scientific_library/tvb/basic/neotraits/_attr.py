@@ -35,12 +35,14 @@ import collections.abc
 import numpy
 import types
 import typing
+from enum import Enum
+
 from ._declarative_base import _Attr, MetaType
 from .ex import TraitValueError, TraitTypeError, TraitAttributeError, TraitFinalAttributeError
 from tvb.basic.logger.builder import get_logger
 
 if typing.TYPE_CHECKING:
-    from ._core import HasTraits
+    from ._core import HasTraits, HasTraitsEnum
 
 # a logger for the whole traits system
 log = get_logger('tvb.traits')
@@ -548,6 +550,62 @@ class NArray(Attr):
             self.ndim,
             self.required,
         )
+
+
+class EnumAttr(Attr):
+    def __init__(self, field_type=None, default=None, doc='', label='', required=True):
+        """
+        :param default: The default enum value
+        """
+
+        if field_type is None and default is not None:
+            field_type = type(default)
+
+        if default is None and field_type is None:
+            raise ValueError('Either a default or a field_type is required')
+
+        super(EnumAttr, self).__init__(
+            field_type=field_type, default=default, doc=doc, label=label, required=required, choices=tuple(field_type)
+        )
+
+    def __validate(self, value):
+        """
+        value either has to be in the enum choices or its tpye has to be in the value list of enum choices
+        """
+        if value in self.choices:
+            return
+
+        if type(value) in [choice.value for choice in self.choices]:
+            return
+
+        raise TraitTypeError("Attribute can't be set to an instance of {}".format(type(value)), attr=self)
+
+    def _validate_set(self, instance, value):
+        # type: ('HasTraits', typing.Any) -> typing.Any
+        """
+        Same method as in Attr.
+        The reason we override it is to not call the __validate method from the superclass.
+        """
+        if value is None:
+            if self.required:
+                raise TraitValueError("Attribute is required. Can't set to None", attr=self)
+            else:
+                return value
+
+        self.__validate(value)
+        return value
+
+    def _post_bind_validate(self):
+        if self.default is not None:
+            self.__validate(self.default)
+
+    # def __get__(self, instance, owner):
+    #     # type: (typing.Optional['HasTraitsEnum'], 'MetaType') -> typing.Union[Enum, 'Enum']
+    #     return super(EnumAttr).__get__(instance, owner)
+    #
+    # def __set__(self, instance, value):
+    #     # type: (HasTraitsEnum, Enum) -> None
+    #     super(EnumAttr).__set__(instance, value)
 
 
 class Range(object):

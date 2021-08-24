@@ -40,9 +40,10 @@ Specific noises inherit from the abstract class Noise
 """
 import abc
 import numpy
-from tvb.datatypes import equations
+from tvb.datatypes.equations import TemporalEquationsEnum
+
 from .common import simple_gen_astr
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Int, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Int, Float, EnumAttr
 
 
 class Noise(HasTraits):
@@ -263,10 +264,10 @@ class Multiplicative(Noise):
             state variables."""
     )
 
-    b = Attr(
-        field_type=equations.TemporalApplicableEquation,
+    b = EnumAttr(
+        field_type=TemporalEquationsEnum,
         label=":math:`b`",
-        default=equations.Linear(parameters={"a": 1.0, "b": 0.0}),
+        default=TemporalEquationsEnum.LINEAR.value(),
         doc="""A function evaluated on the state-variables, the result of which enters as the diffusion coefficient.""")
 
     def gfun(self, state_variables):

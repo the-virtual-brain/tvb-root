@@ -70,7 +70,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors, SensorsEEG
-from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
+from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL, SurfaceTypesEnum
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.simulator import Simulator
 from tvb.storage.storage_interface import StorageInterface
@@ -290,7 +290,7 @@ def surface_factory():
             edge_max_length=2.0,
             zero_based_triangles=False,
             bi_hemispheric=False,
-            surface_type=CORTICAL,
+            surface_type=SurfaceTypesEnum.CORTICAL_SURFACE.value,
             valid_for_simulations=valid_for_simulation)
 
     return build
@@ -359,7 +359,6 @@ def sensors_factory():
     def build(type="EEG", nr_sensors=3):
         if type == "EEG":
             return SensorsEEG(
-                sensors_type=type,
                 labels=numpy.array(["s"] * nr_sensors),
                 locations=numpy.ones((nr_sensors, 3)),
                 number_of_sensors=nr_sensors,

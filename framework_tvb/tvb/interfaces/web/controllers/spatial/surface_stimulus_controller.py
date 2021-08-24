@@ -243,8 +243,8 @@ class SurfaceStimulusController(SpatioTemporalController):
 
     def _reset_session_stimuli(self):
         new_surface_stim = SurfaceStimulusCreatorModel()
-        new_surface_stim.temporal = SurfaceStimulusCreatorForm.default_temporal()
-        new_surface_stim.spatial = SurfaceStimulusCreatorForm.default_spatial()
+        new_surface_stim.temporal = SurfaceStimulusCreatorForm.default_temporal
+        new_surface_stim.spatial = SurfaceStimulusCreatorForm.default_spatial
         self._reset_focal_points(new_surface_stim)
         common.add2session(KEY_SURFACE_STIMULI, new_surface_stim)
         common.add2session(KEY_TMP_FORM, EquationTemporalPlotForm())
@@ -392,7 +392,7 @@ class SurfaceStimulusController(SpatioTemporalController):
 
             min_x, max_x, ui_message = self.get_x_axis_range(temporal_form.min_tmp_x.value,
                                                              temporal_form.max_tmp_x.value)
-            equation = common.get_from_session(KEY_SURFACE_STIMULI).temporal
+            equation = common.get_from_session(KEY_SURFACE_STIMULI).temporal.value
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
             all_series = self.get_series_json(series_data, "Temporal")
 
@@ -421,7 +421,7 @@ class SurfaceStimulusController(SpatioTemporalController):
 
             min_x, max_x, ui_message = self.get_x_axis_range(spatial_form.min_space_x.value,
                                                              spatial_form.max_space_x.value)
-            equation = common.get_from_session(KEY_SURFACE_STIMULI).spatial
+            equation = common.get_from_session(KEY_SURFACE_STIMULI).spatial.value
             series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
             all_series = self.get_series_json(series_data, "Spatial")
 

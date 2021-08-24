@@ -36,8 +36,16 @@ The Spectral datatypes.
 
 """
 import numpy
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Float
+
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Float, EnumAttr, BaseTypeEnum
 from tvb.datatypes import time_series
+
+
+class WindowingFunctionsEnum(BaseTypeEnum):
+    HAMMING = "hamming"
+    BARTLETT = "bartlett"
+    BLACKMAN = "blackman"
+    HANNING = "hanning"
 
 
 class FourierSpectrum(HasTraits):
@@ -59,8 +67,8 @@ class FourierSpectrum(HasTraits):
             The segement length determines the frequency resolution of the
             resulting spectra.""")
 
-    windowing_function = Attr(
-        field_type=str,
+    windowing_function = EnumAttr(
+        default=WindowingFunctionsEnum.HAMMING,
         required=False,
         label="Windowing function",
         doc="""The windowing function applied to each time segment prior to

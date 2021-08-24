@@ -337,7 +337,7 @@ class LocalConnectivityController(SpatioTemporalController):
             max_x = current_lconn.cutoff
             if max_x <= 0:
                 max_x = 50
-            equation = current_lconn.equation
+            equation = current_lconn.equation.value()
             # What we want
             ideal_case_series, _ = equation.get_series_data(0, 2 * max_x)
 

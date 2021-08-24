@@ -50,7 +50,7 @@ Specific models inherit from the abstract class Model.
 from enum import Enum
 
 
-class ModelsEnum(Enum):
+class ModelsOldEnum(Enum):
     BASE_MODEL = "Model"
     EPILEPTOR = "Epileptor"
     EPILEPTOR_2D = "Epileptor2D"
@@ -79,40 +79,23 @@ class ModelsEnum(Enum):
     GAST_SCHMIDT_KNOSCHE_SF = "GastSchmidtKnosche_SF"
     DUMONT_GUTKIN = "DumontGutkin"
 
-    def get_class(self):
-        return _get_imported_model(self.value)
-
-    @staticmethod
-    def get_base_model_subclasses():
-        return [model.get_class() for model in list(ModelsEnum) if model != ModelsEnum.BASE_MODEL]
-
-
-def _get_imported_model(model):
-    import sys
-    # Imported modules
-    imported_modules = sys.modules['tvb.simulator.models']
-    try:
-        return getattr(imported_modules, model)
-    except AttributeError:
-        return None
-
 
 _module_models = {
-    'base': [ModelsEnum.BASE_MODEL],
-    'epileptor': [ModelsEnum.EPILEPTOR, ModelsEnum.EPILEPTOR_2D],
-    'epileptor_rs': [ModelsEnum.EPILEPTOR_RS],
-    'epileptorcodim3': [ModelsEnum.EPILEPTOR_CODIM_3, ModelsEnum.EPILEPTOR_CODIM_3_SLOW],
-    'hopfield': [ModelsEnum.HOPFIELD],
-    'jansen_rit': [ModelsEnum.JANSEN_RIT, ModelsEnum.ZETTERBERG_JANSEN],
-    'larter_breakspear': [ModelsEnum.LARTER_BREAKSPEAR],
-    'linear': [ModelsEnum.LINEAR],
-    'oscillator': [ModelsEnum.GENERIC_2D_OSCILLATOR, ModelsEnum.KURAMOTO, ModelsEnum.SUP_HOPF],
-    'stefanescu_jirsa': [ModelsEnum.REDUCED_SET_HINDMARSH_ROSE, ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO],
-    'wilson_cowan': [ModelsEnum.WILSON_COWAN],
-    'wong_wang': [ModelsEnum.REDUCED_WONG_WANG],
-    'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXCH_INH],
-    'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
-    'infinite_theta': [ModelsEnum.MONTBRIO_PAZO_ROXIN, ModelsEnum.COOMBES_BYRNE, ModelsEnum.COOMBES_BYRNE_2D, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD, ModelsEnum.DUMONT_GUTKIN],
+    'base': [ModelsOldEnum.BASE_MODEL],
+    'epileptor': [ModelsOldEnum.EPILEPTOR, ModelsOldEnum.EPILEPTOR_2D],
+    'epileptor_rs': [ModelsOldEnum.EPILEPTOR_RS],
+    'epileptorcodim3': [ModelsOldEnum.EPILEPTOR_CODIM_3, ModelsOldEnum.EPILEPTOR_CODIM_3_SLOW],
+    'hopfield': [ModelsOldEnum.HOPFIELD],
+    'jansen_rit': [ModelsOldEnum.JANSEN_RIT, ModelsOldEnum.ZETTERBERG_JANSEN],
+    'larter_breakspear': [ModelsOldEnum.LARTER_BREAKSPEAR],
+    'linear': [ModelsOldEnum.LINEAR],
+    'oscillator': [ModelsOldEnum.GENERIC_2D_OSCILLATOR, ModelsOldEnum.KURAMOTO, ModelsOldEnum.SUP_HOPF],
+    'stefanescu_jirsa': [ModelsOldEnum.REDUCED_SET_HINDMARSH_ROSE, ModelsOldEnum.REDUCED_SET_FITZ_HUGH_NAGUMO],
+    'wilson_cowan': [ModelsOldEnum.WILSON_COWAN],
+    'wong_wang': [ModelsOldEnum.REDUCED_WONG_WANG],
+    'wong_wang_exc_inh': [ModelsOldEnum.REDUCED_WONG_WANG_EXCH_INH],
+    'zerlaut': [ModelsOldEnum.ZERLAUT_FIRST_ORDER, ModelsOldEnum.ZERLAUT_SECOND_ORDER],
+    'infinite_theta': [ModelsOldEnum.MONTBRIO_PAZO_ROXIN, ModelsOldEnum.COOMBES_BYRNE, ModelsOldEnum.COOMBES_BYRNE_2D, ModelsOldEnum.GAST_SCHMIDT_KNOSCHE_SF, ModelsOldEnum.GAST_SCHMIDT_KNOSCHE_SD, ModelsOldEnum.DUMONT_GUTKIN],
 }
 
 
@@ -163,4 +146,3 @@ def _delay_model_imports():
 
 
 _delay_model_imports()
-

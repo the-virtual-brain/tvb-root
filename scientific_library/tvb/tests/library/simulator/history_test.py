@@ -36,8 +36,9 @@ Test history in simulator.
 """
 
 import numpy
+
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.basic.neotraits.api import List
+from tvb.basic.neotraits.api import List, EnumAttr, HasTraitsEnum
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.coupling import Coupling, SparseCoupling
 from tvb.simulator.integrators import Identity
@@ -69,6 +70,7 @@ class Sum(Model):
 
 
 class TestsExactPropagation(BaseTestCase):
+
     def build_simulator(self, n=4):
 
         self.conn = numpy.zeros((n, n))  # , numpy.int32)
@@ -78,7 +80,26 @@ class TestsExactPropagation(BaseTestCase):
         self.dist = numpy.r_[:n * n].reshape((n, n))
         self.dist = numpy.array(self.dist, dtype=float)
 
-        self.sim = Simulator(
+        class ExactPropagationCouplingTestEnum(HasTraitsEnum):
+            ID_COUPLING = (IdCoupling, "IdCoupling")
+
+        class ExactPropagationModelTestEnum(HasTraitsEnum):
+            SUM_MODEL = (Sum, "Sum")
+
+        class ExactPropagationTestSimulator(Simulator):
+            coupling = EnumAttr(
+                field_type=ExactPropagationCouplingTestEnum,
+                label="Long-range coupling function",
+                default=ExactPropagationCouplingTestEnum.ID_COUPLING.value(),
+                required=True)
+
+            model = EnumAttr(
+                field_type=ExactPropagationModelTestEnum,
+                label="Local dynamic model",
+                default=ExactPropagationModelTestEnum.SUM_MODEL.value(),
+                required=True)
+
+        self.sim = ExactPropagationTestSimulator(
             conduction_speed=1.0,
             coupling=IdCoupling(),
             surface=None,
@@ -86,10 +107,12 @@ class TestsExactPropagation(BaseTestCase):
             integrator=Identity(dt=1.0),
             initial_conditions=numpy.ones((n * n, 1, n, 1)),
             simulation_length=10.0,
-            connectivity=Connectivity(region_labels=numpy.array(['']),weights=self.conn, tract_lengths=self.dist, speed=numpy.array([1.0]), centres=numpy.array([0.0])),
+            connectivity=Connectivity(region_labels=numpy.array(['']), weights=self.conn, tract_lengths=self.dist,
+                                      speed=numpy.array([1.0]), centres=numpy.array([0.0])),
             model=Sum(),
             monitors=(Raw(),),
         )
+
         self.sim.configure()
 
     def test_propagation(self):

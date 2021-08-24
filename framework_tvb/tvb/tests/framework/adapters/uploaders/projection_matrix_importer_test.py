@@ -39,9 +39,10 @@ import tvb_data.projectionMatrix as dataset
 import tvb_data.sensors
 import tvb_data.surfaceData
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
-from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.core.services.exceptions import OperationException
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.sensors import SensorTypesEnum
+from tvb.datatypes.surfaces import SurfaceTypesEnum
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -60,10 +61,11 @@ class TestProjectionMatrix(BaseTestCase):
 
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_brainstorm_65.txt')
         self.sensors = TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
-                                                  SensorsImporterModel.OPTIONS['EEG Sensors'])
+                                                  SensorTypesEnum.TYPE_EEG)
 
         zip_path = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path, CORTICAL, True)
+        self.surface = TestFactory.import_surface_zip(self.test_user, self.test_project, zip_path,
+                                                      SurfaceTypesEnum.CORTICAL_SURFACE, True)
 
     def teardown_method(self):
         """

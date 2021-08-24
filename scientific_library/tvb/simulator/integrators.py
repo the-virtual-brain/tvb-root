@@ -50,7 +50,7 @@ import numpy
 import scipy.integrate
 from . import noise
 from .common import get_logger, simple_gen_astr
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float
+from tvb.basic.neotraits.api import HasTraits, HasTraitsEnum, Attr, NArray, Float
 
 LOG = get_logger(__name__)
 
@@ -296,7 +296,6 @@ class HeunDeterministic(Integrator):
 
     """
 
-    _ui_name = "Heun"
     n_dx = 2
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
@@ -331,7 +330,6 @@ class HeunStochastic(IntegratorStochastic):
 
     """
 
-    _ui_name = "Stochastic Heun"
     n_dx = 2
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
@@ -378,7 +376,6 @@ class EulerDeterministic(Integrator):
 
     """
 
-    _ui_name = "Euler"
     n_dx = 1
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
@@ -408,7 +405,6 @@ class EulerStochastic(IntegratorStochastic):
 
     """
 
-    _ui_name = "Euler-Maruyama"
     n_dx = 1
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
@@ -441,7 +437,6 @@ class RungeKutta4thOrderDeterministic(Integrator):
 
     """
 
-    _ui_name = "Runge-Kutta 4th order"
     n_dx = 4
 
     def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0):
@@ -501,7 +496,6 @@ class Identity(Integrator):
 
     """
 
-    _ui_name = "Difference equation"
     n_dx = 1
 
     def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
@@ -525,7 +519,6 @@ class IdentityStochastic(IntegratorStochastic):
     with time delays, this allows for MVAR models. 
     """
 
-    _ui_name = "Stochastic difference equation (MVAR)"
     n_dx = 1
 
     def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
@@ -594,27 +587,23 @@ class SciPySDE(SciPyODEBase):
 
 class VODE(SciPyODE, Integrator):
     _scipy_ode_integrator_name = "vode"
-    _ui_name = "Variable-order Adams / BDF"
 
 
 class VODEStochastic(SciPySDE, IntegratorStochastic):
     _scipy_ode_integrator_name = "vode"
-    _ui_name = "Stochastic variable-order Adams / BDF"
 
 
 class Dopri5(SciPyODE, Integrator):
     _scipy_ode_integrator_name = "dopri5"
-    _ui_name = "Dormand-Prince, order (4, 5)"
 
 
 class Dopri5Stochastic(SciPySDE, IntegratorStochastic):
     _scipy_ode_integrator_name = "dopri5"
-    _ui_name = "Stochastic Dormand-Prince, order (4, 5)"
+
 
 class Dop853(SciPyODE, Integrator):
     _scipy_ode_integrator_name = "dop853"
-    _ui_name = "Dormand-Prince, order 8 (5, 3)"
+
 
 class Dop853Stochastic(SciPySDE, IntegratorStochastic):
     _scipy_ode_integrator_name = "dop853"
-    _ui_name = "Stochastic Dormand-Prince, order 8 (5, 3)"

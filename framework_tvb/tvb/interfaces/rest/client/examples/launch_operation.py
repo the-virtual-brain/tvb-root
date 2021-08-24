@@ -40,7 +40,6 @@ from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporter
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel, ZIPSurfaceImporter
 from tvb.basic.logger.builder import get_logger
-from tvb.datatypes.surfaces import CORTICAL
 from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
@@ -71,7 +70,7 @@ def launch_operation_examples(tvb_client_instance):
     logger.info("Importing a surface from ZIP...")
     zip_surface_importer_model = ZIPSurfaceImporterModel()
     zip_surface_importer_model.uploaded = compute_tvb_data_path('surfaceData', 'cortex_16384.zip')
-    zip_surface_importer_model.surface_type = CORTICAL
+    zip_surface_importer_model.surface_type = SurfaceTypesEnum.CORTICAL_SURFACE
     zip_surface_importer_model.should_center = False
     operation_gid = tvb_client_instance.launch_operation(project_gid, ZIPSurfaceImporter, zip_surface_importer_model)
     monitor_operation(tvb_client_instance, operation_gid)

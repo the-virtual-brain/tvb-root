@@ -222,7 +222,7 @@ class RegionStimulusController(SpatioTemporalController):
 
     def _reset_region_stimulus(self):
         new_region_stimulus = RegionStimulusCreatorModel()
-        new_region_stimulus.temporal = RegionStimulusCreatorForm.default_temporal()
+        new_region_stimulus.temporal = RegionStimulusCreatorForm.default_temporal.value()
         # TODO: proper init
         new_region_stimulus.weight = numpy.array([])
         common.add2session(KEY_REGION_STIMULUS, new_region_stimulus)
@@ -299,8 +299,8 @@ class RegionStimulusController(SpatioTemporalController):
 
             min_x, max_x, ui_message = self.get_x_axis_range(plot_form.min_x.value, plot_form.max_x.value)
             current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
-            series_data, display_ui_message = current_stimuli_region.temporal.get_series_data(min_range=min_x,
-                                                                                              max_range=max_x)
+            series_data, display_ui_message = current_stimuli_region.temporal.value.get_series_data(min_range=min_x,
+                                                                                                    max_range=max_x)
             all_series = self.get_series_json(series_data, 'Temporal')
 
             if display_ui_message:

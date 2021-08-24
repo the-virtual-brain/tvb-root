@@ -38,19 +38,18 @@ data using their SDK.
 """
 
 import os.path
-
 import numpy
 import numpy as np
 from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Float, Int
+from tvb.basic.neotraits.api import Float, Int, EnumAttr, BaseTypeEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import SelectField, FloatField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.datatypes.connectivity import Connectivity
@@ -60,32 +59,28 @@ from tvb.datatypes.volumes import Volume
 
 LOGGER = get_logger(__name__)
 
-RESOLUTION_OPTIONS = {
-    '25': 25,
-    '50': 50,
-    '100': 100
-}
 
-WEIGHTS_OPTIONS = {
-    '(projection density)/(injection density)': 1,
-    'projection density': 2,
-    'projection energy': 3
-}
+class ResolutionOptionsEnum(BaseTypeEnum):
+    TWENTY_FIVE = 25
+    FIFTY = 50
+    ONE_HUNDRED = 100
+
+
+class WeightsOptionsEnum(BaseTypeEnum):
+    PROJECTION_DENSITY_INJECTION_DENSITY = 1
+    PROJECTION_DENSITY = 2
+    PROJECTION_ENERGY = 3
 
 
 class AllenConnectModel(ViewModel):
-    resolution = Int(
+    resolution = EnumAttr(
         label="Spatial resolution (micron)",
-        default=list(RESOLUTION_OPTIONS.values())[2],
-        choices=RESOLUTION_OPTIONS.values(),
-        required=True,
+        default=ResolutionOptionsEnum.ONE_HUNDRED,
         doc="""Definition of the weights of the connectivity :""")
 
-    weighting = Int(
+    weighting = EnumAttr(
         label="Definition of the weights of the connectivity :",
-        default=list(WEIGHTS_OPTIONS.values())[0],
-        choices=WEIGHTS_OPTIONS.values(),
-        required=True,
+        default=WeightsOptionsEnum.PROJECTION_DENSITY_INJECTION_DENSITY,
         doc="""""")
 
     inj_f_thresh = Float(
@@ -107,8 +102,8 @@ class AllenConnectomeBuilderForm(ABCAdapterForm):
 
     def __init__(self):
         super(AllenConnectomeBuilderForm, self).__init__()
-        self.resolution = SelectField(AllenConnectModel.resolution, choices=RESOLUTION_OPTIONS)
-        self.weighting = SelectField(AllenConnectModel.weighting, choices=WEIGHTS_OPTIONS)
+        self.resolution = SelectField(AllenConnectModel.resolution)
+        self.weighting = SelectField(AllenConnectModel.weighting)
         self.inj_f_thresh = FloatField(AllenConnectModel.inj_f_thresh)
         self.vol_thresh = FloatField(AllenConnectModel.vol_thresh)
 

@@ -86,7 +86,7 @@ class TestSurfaces(BaseTestCase):
         assert summary_info['Number of edges'] == 49140
         assert summary_info['Number of triangles'] == 32760
         assert summary_info['Number of vertices'] == 16384
-        assert dt.surface_type == surfaces.CORTICAL
+        assert dt.surface_type == SurfaceTypesEnum.CORTICAL_SURFACE.value
         assert len(dt.vertex_neighbours) == 16384
         assert isinstance(dt.vertex_neighbours[0], frozenset)
         assert len(dt.vertex_triangles) == 16384

@@ -29,14 +29,15 @@
 
 import numpy
 
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
+from tvb.basic.neotraits.api import EnumAttr
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField, FloatField, StrField
 from tvb.core.neotraits.forms import SelectField, TraitDataTypeSelectField
-from tvb.datatypes.projections import ProjectionsType
-from tvb.datatypes.sensors import SensorTypes
+from tvb.datatypes.projections import ProjectionsTypeEnum
+from tvb.datatypes.sensors import SensorTypesEnum
+from tvb.simulator.monitors import BoldMonitorEquationsEnum, DefaultMasks
 
 
 def get_monitor_to_form_dict():
@@ -137,16 +138,16 @@ class SpatialAverageMonitorForm(MonitorForm):
         connectivity_index = load_entity_by_gid(self.session_stored_simulator.connectivity)
 
         if self.session_stored_simulator.is_surface_simulation is False:
-            self.default_mask.choices.pop(SpatialAverage.REGION_MAPPING)
+            self.default_mask.choices.remove(DefaultMasks.REGION_MAPPING)
 
             if connectivity_index.has_cortical_mask is False:
-                self.default_mask.choices.pop(SpatialAverage.CORTICAL)
+                self.default_mask.choices.remove(DefaultMasks.CORTICAL)
 
             if connectivity_index.has_hemispheres_mask is False:
-                self.default_mask.choices.pop(SpatialAverage.HEMISPHERES)
+                self.default_mask.choices.remove(DefaultMasks.HEMISPHERES)
 
         else:
-            self.default_mask.data = SpatialAverage.REGION_MAPPING
+            self.default_mask.data = DefaultMasks.REGION_MAPPING
             self.default_mask.disabled = True
 
 
@@ -170,10 +171,10 @@ class EEGMonitorForm(ProjectionMonitorForm):
         super(EEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_EEG.value])
+                                    values=[SensorTypesEnum.TYPE_EEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.EEG.value])
+                                        values=[ProjectionsTypeEnum.EEG.value])
 
         self.projection = TraitDataTypeSelectField(EEGViewModel.projection, name='projection',
                                                    conditions=projection_filter)
@@ -188,10 +189,10 @@ class MEGMonitorForm(ProjectionMonitorForm):
         super(MEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_MEG.value])
+                                    values=[SensorTypesEnum.TYPE_MEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.MEG.value])
+                                        values=[ProjectionsTypeEnum.MEG.value])
 
         self.projection = TraitDataTypeSelectField(MEGViewModel.projection, name='projection',
                                                    conditions=projection_filter)
@@ -204,10 +205,10 @@ class iEEGMonitorForm(ProjectionMonitorForm):
         super(iEEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_INTERNAL.value])
+                                    values=[SensorTypesEnum.TYPE_INTERNAL.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.SEEG.value])
+                                        values=[ProjectionsTypeEnum.SEEG.value])
 
         self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, name='projection',
                                                    conditions=projection_filter)
@@ -219,18 +220,17 @@ class BoldMonitorForm(MonitorForm):
 
     def __init__(self, session_stored_simulator=None, is_period_disabled=False):
         super(BoldMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
-        self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
-        default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
+        default_hrf_kernel = BoldMonitorEquationsEnum.Gamma_KERNEL
 
         self.period = FloatField(Bold.period)
-        self.hrf_kernel = SelectField(Attr(HRFKernelEquation, label='Equation', default=default_hrf_kernel),
-                                      name='hrf_kernel', choices=self.hrf_kernel_choices)
+        self.hrf_kernel = SelectField(EnumAttr(label='Equation', default=default_hrf_kernel),
+                                      name='hrf_kernel')
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)
         datatype.period = self.period.data
-        if type(datatype.hrf_kernel) != self.hrf_kernel.data:
-            datatype.hrf_kernel = self.hrf_kernel.data()
+        if type(datatype.hrf_kernel) != self.hrf_kernel.data.value:
+            datatype.hrf_kernel = self.hrf_kernel.data.value()
 
     def fill_from_trait(self, trait):
         super(BoldMonitorForm, self).fill_from_trait(trait)

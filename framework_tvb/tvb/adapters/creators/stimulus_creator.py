@@ -38,18 +38,18 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subforms_mapping import DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION
-from tvb.basic.neotraits.api import Attr
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
+from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, TraitDataTypeSelectField, SelectField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.equations import Sigmoid, PulseTrain, TemporalApplicableEquation, FiniteSupportEquation
+from tvb.datatypes.equations import Sigmoid, PulseTrain, Gaussian, DoubleGaussian, Linear, GeneralizedSigmoid, Cosine,\
+    Sinusoid, Alpha, SpatialEquationsEnum, TemporalEquationsEnum
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
-from tvb.datatypes.surfaces import CorticalSurface, CORTICAL
+from tvb.datatypes.surfaces import CorticalSurface
 
 
 class StimulusSurfaceSelectorForm(ABCAdapterForm):
@@ -65,8 +65,10 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
 
 
 class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
-    spatial = Attr(field_type=FiniteSupportEquation, label="Spatial Equation", default=Sigmoid())
-    temporal = Attr(field_type=TemporalApplicableEquation, label="Temporal Equation", default=PulseTrain())
+    spatial = EnumAttr(field_type=SpatialEquationsEnum, label="Spatial Equation",
+                       default=SpatialEquationsEnum.SIGMOID.value())
+    temporal = EnumAttr(field_type=TemporalEquationsEnum, label="Temporal Equation",
+                        default=TemporalEquationsEnum.PULSETRAIN.value())
 
     surface = DataTypeGidAttr(
         linked_datatype=CorticalSurface,
@@ -82,23 +84,18 @@ class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
 class SurfaceStimulusCreatorForm(ABCAdapterForm):
     NAME_SPATIAL_PARAMS_DIV = 'spatial_params'
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
-    default_spatial = Sigmoid
-    default_temporal = PulseTrain
-    choices_temporal = get_ui_name_to_equation_dict()
-    choices_spatial = {GAUSSIAN_EQUATION: choices_temporal.get(GAUSSIAN_EQUATION),
-                       DOUBLE_GAUSSIAN_EQUATION: choices_temporal.get(DOUBLE_GAUSSIAN_EQUATION),
-                       SIGMOID_EQUATION: choices_temporal.get(SIGMOID_EQUATION)}
+    default_spatial = SpatialEquationsEnum.SIGMOID
+    default_temporal = TemporalEquationsEnum.PULSETRAIN
 
     def __init__(self):
         super(SurfaceStimulusCreatorForm, self).__init__()
 
         self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, name='surface',
                                                 conditions=self.get_filters())
-        self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, name='spatial', choices=self.choices_spatial,
-                                   subform=get_form_for_equation(self.default_spatial))
+        self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, name='spatial',
+                                   subform=get_form_for_equation(self.default_spatial.value))
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, name='temporal',
-                                    choices=self.choices_temporal,
-                                    subform=get_form_for_equation(self.default_temporal))
+                                    subform=get_form_for_equation(self.default_temporal.value))
 
     @staticmethod
     def get_view_model():
@@ -115,16 +112,17 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
     @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
-                           values=[CORTICAL])
+                           values=[SurfaceTypesEnum.CORTICAL_SURFACE.value])
 
     def fill_from_trait(self, trait):
         self.surface.data = trait.surface.hex
-        self.spatial.data = type(trait.spatial)
-        self.temporal.data = type(trait.temporal)
-        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)),
+        self.spatial.data = trait.spatial.value
+        self.temporal.data = trait.temporal.value
+        self.temporal.subform_field = FormField(get_form_for_equation(trait.temporal.value),
                                                 self.NAME_TEMPORAL_PARAMS_DIV)
         self.temporal.subform_field.form.fill_from_trait(trait.temporal)
-        self.spatial.subform_field = FormField(get_form_for_equation(type(trait.spatial)), self.NAME_SPATIAL_PARAMS_DIV)
+        self.spatial.subform_field = FormField(get_form_for_equation(trait.spatial.value),
+                                               self.NAME_SPATIAL_PARAMS_DIV)
         self.spatial.subform_field.form.fill_from_trait(trait.spatial)
 
     def get_rendering_dict(self):
@@ -209,7 +207,8 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
 
 
 class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
-    temporal = Attr(field_type=TemporalApplicableEquation, label="Temporal Equation", default=PulseTrain())
+    temporal = EnumAttr(field_type=TemporalEquationsEnum, label="Temporal Equation",
+                        default=TemporalEquationsEnum.PULSETRAIN.value())
 
     connectivity = DataTypeGidAttr(
         field_type=uuid.UUID,
@@ -225,14 +224,14 @@ class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
 
 class RegionStimulusCreatorForm(ABCAdapterForm):
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
-    default_temporal = PulseTrain
+    default_temporal = TemporalEquationsEnum.PULSETRAIN
     choices = get_ui_name_to_equation_dict()
 
     def __init__(self):
         super(RegionStimulusCreatorForm, self).__init__()
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, name='connectivity')
-        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, name='temporal', choices=self.choices,
-                                    subform=get_form_for_equation(self.default_temporal))
+        self.temporal = SelectField(RegionStimulusCreatorModel.temporal, name='temporal',
+                                    subform=get_form_for_equation(type(self.default_temporal.value)))
 
     @staticmethod
     def get_view_model():

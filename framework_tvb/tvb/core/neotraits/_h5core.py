@@ -29,22 +29,20 @@
 #
 from datetime import datetime
 import importlib
-import os.path
 import typing
 import uuid
 import numpy
 import scipy.sparse
 
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Final
-from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
+from tvb.basic.neotraits.api import HasTraits, HasTraitsEnum, Attr, List, NArray, Range, EnumAttr, Final, BaseTypeEnum
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
-from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
+from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, Enum
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import string2date, date2string
-from tvb.datatypes.equations import Equation
+from tvb.datatypes.equations import Equation, EquationsEnum
 from tvb.storage.h5.file.exceptions import MissingDataSetException
 from tvb.storage.storage_interface import StorageInterface
 
@@ -315,14 +313,16 @@ class ViewModelH5(H5File):
                     continue
                 elif attr.field_type is uuid.UUID:
                     ref = Uuid(attr, self)
-                elif issubclass(attr.field_type, Equation):
+                elif issubclass(attr.field_type, (Equation, EquationsEnum)):
                     ref = EquationScalar(attr, self)
                 elif attr.field_type is Range:
                     ref = JsonRange(attr, self)
                 elif isinstance(attr, Final) and attr.field_type == dict:
                     ref = JsonFinal(attr, self)
-                elif issubclass(attr.field_type, HasTraits):
+                elif issubclass(attr.field_type, (HasTraits, HasTraitsEnum)):
                     ref = Reference(attr, self)
+                elif issubclass(attr.field_type, BaseTypeEnum):
+                    ref = Enum(attr, self)
                 else:
                     ref = Scalar(attr, self)
             else:

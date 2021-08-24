@@ -77,3 +77,6 @@ class RangeParameter(object):
         # type: (RangeParameter) -> None
         self.type = range_param.type
         self.is_array = range_param.is_array
+
+    def __str__(self):
+        return self.name

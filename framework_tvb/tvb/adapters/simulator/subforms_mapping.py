@@ -30,6 +30,7 @@
 from enum import Enum
 from functools import partial
 
+from tvb.basic.neotraits.api import HasTraitsEnum
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
     EulerDeterministicViewModel, EulerStochasticViewModel, RungeKutta4thOrderDeterministicViewModel, IdentityViewModel, \
     VODEViewModel, VODEStochasticViewModel, Dopri5ViewModel, Dopri5StochasticViewModel, Dop853ViewModel, \
@@ -62,19 +63,17 @@ def get_ui_name_to_equation_dict():
     return eq_name_to_class
 
 
+class NoiseTypesEnum(HasTraitsEnum):
+    ADDITIVE = (AdditiveNoiseViewModel, "Additive")
+    MULTIPLICATIVE = (MultiplicativeNoiseViewModel, "Multiplicative")
+
+
 def get_ui_name_to_noise_dict():
     ui_name_to_noise = {
         'Additive': AdditiveNoiseViewModel,
         'Multiplicative': MultiplicativeNoiseViewModel
     }
     return ui_name_to_noise
-
-
-def get_integrator_name_list():
-    return ['Heun', 'Stochastic Heun', 'Euler', 'Euler-Maruyama', 'Runge-Kutta 4th order', 'Difference equation',
-            'Variable-order Adams / BDF', 'Stochastic variable-order Adams / BDF', 'Dormand-Prince, order (4, 5)',
-            'Stochastic Dormand-Prince, order (4, 5)', 'Stochastic Dormand-Prince, order (4, 5)',
-            'Stochastic Dormand-Prince, order 8 (5, 3)']
 
 
 def get_ui_name_to_integrator_dict():

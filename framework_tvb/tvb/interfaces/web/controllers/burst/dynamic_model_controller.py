@@ -33,17 +33,16 @@
 """
 import json
 import threading
-
 import cherrypy
 import numpy
+
 import tvb.core.entities.model.model_burst as model_burst
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
-from tvb.adapters.simulator.model_forms import get_ui_name_to_model, get_form_for_model
+from tvb.adapters.simulator.model_forms import get_form_for_model
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
 from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
 from tvb.core import utils
@@ -52,7 +51,7 @@ from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewMod
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import StrField
 from tvb.core.neotraits.view_model import Str
-from tvb.core.utils import TVBJSONEncoder
+from tvb.core.utils import TVBJSONEncoder, enum_str_to_enum_value
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
@@ -60,6 +59,7 @@ from tvb.interfaces.web.controllers.burst.matjax import configure_matjax_doc
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
 from tvb.simulator import models
+from tvb.simulator.models.models_enum import ModelsEnum
 
 
 class Dynamic(object):
@@ -121,8 +121,6 @@ class DynamicModelController(BurstBaseController):
 
     def __init__(self):
         BurstBaseController.__init__(self)
-        self.available_models = get_ui_name_to_model()
-        self.available_integrators = get_ui_name_to_integrator_dict()
         self.cache = SessionCache()
         # Work around a numexpr thread safety issue. See TVB-1639.
         self.traj_lock = threading.Lock()
@@ -145,7 +143,7 @@ class DynamicModelController(BurstBaseController):
         model_name_fragment = _InputTreeFragment()
         model_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorModelFragment())
         integrator_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorIntegratorFragment())
-        model_description = configure_matjax_doc(self.available_models)
+        model_description = configure_matjax_doc()
 
         params = {
             'title': "Dynamic model",
@@ -171,7 +169,7 @@ class DynamicModelController(BurstBaseController):
         Resets the phase plane and returns the ui model for the slider area.
         """
         dynamic = self.get_cached_dynamic(dynamic_gid)
-        dynamic.model = self.available_models[name]()
+        dynamic.model = enum_str_to_enum_value(ModelsEnum, name).value()
         dynamic.model.configure()
         self._configure_integrator_noise(dynamic.integrator, dynamic.model)
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
@@ -182,25 +180,6 @@ class DynamicModelController(BurstBaseController):
             'model_param_sliders_fragment': self._model_param_sliders_fragment(dynamic_gid),
             'axis_sliders_fragment': self._axis_sliders_fragment(dynamic_gid)
         }
-
-    @expose_json
-    def integrator_changed(self, dynamic_gid, **kwargs):
-        # TODO: display form for integrator configuration
-        # adapter = _IntegratorFragmentAdapter()
-        # tree = adapter.convert_ui_inputs(kwargs, validation_required=False)
-        # integrator_name = tree['integrator']
-        # integrator_parameters = tree['integrator_parameters']
-
-        # noise_framework.build_noise(integrator_parameters)
-        integrator = self.available_integrators[kwargs['integrator']]()
-
-        dynamic = self.get_cached_dynamic(dynamic_gid)
-        dynamic.integrator = integrator
-        dynamic.model.integrator = integrator
-        dynamic.model.configure()
-        self._configure_integrator_noise(integrator, dynamic.model)
-
-        dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
 
     def _update_integrator(self, dynamic, integrator):
         dynamic.integrator = integrator

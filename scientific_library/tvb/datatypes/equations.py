@@ -37,7 +37,8 @@ The Equation datatypes.
 """
 import numpy
 from scipy.special import gamma as sp_gamma
-from tvb.basic.neotraits.api import HasTraits, Attr, Final
+
+from tvb.basic.neotraits.api import HasTraits, HasTraitsEnum, Attr, Final
 from tvb.simulator.backend.ref import RefBase
 
 
@@ -48,6 +49,7 @@ DEFAULT_PLOT_GRANULARITY = 1024
 
 # class Equation(basic.MapAsJson, core.Type):
 # todo: handle the MapAsJson functionality
+
 
 class Equation(HasTraits):
     """Base class for Equation data types."""
@@ -109,30 +111,7 @@ class Equation(HasTraits):
         return result, False
 
 
-class TemporalApplicableEquation(Equation):
-    """
-    Abstract class introduced just for filtering what equations to be displayed in UI,
-    for setting the temporal component in Stimulus on region and surface.
-    """
-
-
-class FiniteSupportEquation(TemporalApplicableEquation):
-    """
-    Equations that decay to zero as the variable moves away from zero. It is
-    necessary to restrict spatial equation evaluated on a surface to this
-    class, are . The main purpose of this class is to facilitate filtering in the UI,
-    for patters on surface (stimuli surface and localConnectivity).
-    """
-
-
-class SpatialApplicableEquation(Equation):
-    """
-    Abstract class introduced just for filtering what equations to be displayed in UI,
-    for setting model parameters on the Surface level.
-    """
-
-
-class DiscreteEquation(FiniteSupportEquation):
+class DiscreteEquation(Equation):
     """
     A special case for 'discrete' spaces, such as the regions, where each point
     in the space is effectively just assigned a value.
@@ -146,7 +125,9 @@ class DiscreteEquation(FiniteSupportEquation):
         doc="""The equation defines a function of :math:`x`""")
 
 
-class Linear(TemporalApplicableEquation):
+
+
+class Linear(Equation):
     """
     A linear equation.
 
@@ -163,7 +144,7 @@ class Linear(TemporalApplicableEquation):
         default=lambda: {"a": 1.0, "b": 0.0})
 
 
-class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
+class Gaussian(Equation):
     """
     A Gaussian equation.
     offset: parameter to extend the behaviour of this function
@@ -184,7 +165,7 @@ class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
         default=lambda: {"amp": 1.0, "sigma": 1.0, "midpoint": 0.0, "offset": 0.0})
 
 
-class DoubleGaussian(FiniteSupportEquation):
+class DoubleGaussian(Equation):
     """
     A Mexican-hat function approximated by the difference of Gaussians functions.
 
@@ -207,7 +188,7 @@ class DoubleGaussian(FiniteSupportEquation):
                          "amp_2": 1.0, "sigma_2": 10.0, "midpoint_2": 0.0})
 
 
-class Sigmoid(SpatialApplicableEquation, FiniteSupportEquation):
+class Sigmoid(Equation):
     """
     A Sigmoid equation.
     offset: parameter to extend the behaviour of this function
@@ -226,7 +207,7 @@ class Sigmoid(SpatialApplicableEquation, FiniteSupportEquation):
         default=lambda: {"amp": 1.0, "radius": 5.0, "sigma": 1.0, "offset": 0.0}) #"pi": numpy.pi,
 
 
-class GeneralizedSigmoid(TemporalApplicableEquation):
+class GeneralizedSigmoid(Equation):
     """
     A General Sigmoid equation.
     """
@@ -244,7 +225,7 @@ class GeneralizedSigmoid(TemporalApplicableEquation):
     #"pi": numpy.pi})
 
 
-class Sinusoid(TemporalApplicableEquation):
+class Sinusoid(Equation):
     """
     A Sinusoid equation.
     """
@@ -260,7 +241,7 @@ class Sinusoid(TemporalApplicableEquation):
         default=lambda: {"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
 
 
-class Cosine(TemporalApplicableEquation):
+class Cosine(Equation):
     """
     A Cosine equation.
     """
@@ -276,7 +257,7 @@ class Cosine(TemporalApplicableEquation):
         default=lambda: {"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
 
 
-class Alpha(TemporalApplicableEquation):
+class Alpha(Equation):
     """
     An Alpha function belonging to the Exponential function family.
     """
@@ -293,7 +274,7 @@ class Alpha(TemporalApplicableEquation):
         default=lambda: {"onset": 0.5, "alpha": 13.0, "beta": 42.0})
 
 
-class PulseTrain(TemporalApplicableEquation):
+class PulseTrain(Equation):
     """
     A pulse train , offset with respect to the time axis.
 
@@ -556,3 +537,27 @@ class MixtureOfGammas(HRFKernelEquation):
 
         return RefBase.evaluate(self.equation, global_dict=self.parameters)
 
+
+class EquationsEnum(HasTraitsEnum):
+    """
+    Superclass of all enums that have equations as values
+    """
+
+
+class SpatialEquationsEnum(EquationsEnum):
+    GAUSSIAN = (Gaussian, "Gaussian")
+    MEXICAN_HAT = (DoubleGaussian, "Mexican-Hat")
+    SIGMOID = (Sigmoid, "Sigmoid")
+    DISCRETE = (DiscreteEquation, "Discrete Equation")
+
+
+class TemporalEquationsEnum(EquationsEnum):
+    LINEAR = (Linear, "Linear")
+    GAUSSIAN = (Gaussian, "Gaussian")
+    MEXICAN_HAT = (DoubleGaussian, "Mexican-Hat")
+    SIGMOID = (Sigmoid, "Sigmoid")
+    GENERALIZEDSIGMOID = (GeneralizedSigmoid, "Generalizedsigmoid")
+    SINUSOID = (Sinusoid, "Sinusoid")
+    COSINE = (Cosine, "Cosine")
+    ALPHA = (Alpha, "Alpha")
+    PULSETRAIN = (PulseTrain, "Pulsetrain")

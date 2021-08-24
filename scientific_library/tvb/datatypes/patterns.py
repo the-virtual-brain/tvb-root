@@ -37,8 +37,10 @@ The Pattern datatypes.
 """
 
 import numpy
+
 from tvb.datatypes import surfaces, volumes, connectivity, equations
-from tvb.basic.neotraits.api import HasTraits, NArray, Attr
+from tvb.basic.neotraits.api import HasTraits, NArray, Attr, EnumAttr
+from tvb.datatypes.equations import SpatialEquationsEnum, TemporalEquationsEnum
 
 
 class SpatialPattern(HasTraits):
@@ -46,7 +48,8 @@ class SpatialPattern(HasTraits):
     Equation for space variation.
     """
 
-    spatial = Attr(field_type=equations.FiniteSupportEquation, label="Spatial Equation")
+    spatial = EnumAttr(field_type=SpatialEquationsEnum, label="Spatial Equation",
+                       default=SpatialEquationsEnum.GAUSSIAN.value())  # fixed_type=True, order=-1)
 
     space = None
     _spatial_pattern = None
@@ -87,7 +90,8 @@ class SpatioTemporalPattern(SpatialPattern):
     Combine space and time equations.
     """
 
-    temporal = Attr(field_type=equations.TemporalApplicableEquation, label="Temporal Equation")
+    temporal = EnumAttr(field_type=TemporalEquationsEnum,
+                        default=TemporalEquationsEnum.GAUSSIAN.value(), label="Temporal Equation")
     # space must be shape (x, 1); time must be shape (1, t)
     time = None
     _temporal_pattern = None
@@ -153,9 +157,9 @@ class StimuliRegion(SpatioTemporalPattern):
     """
     connectivity = Attr(field_type=connectivity.Connectivity, label="Connectivity")
 
-    spatial = Attr(field_type=equations.DiscreteEquation,
+    spatial = EnumAttr(field_type=SpatialEquationsEnum,
                    label="Spatial Equation",
-                   default=equations.DiscreteEquation())  # fixed_type=True, order=-1)
+                   default=SpatialEquationsEnum.DISCRETE.value())  # fixed_type=True, order=-1)
 
     weight = NArray(label="scaling")  # , locked=True, order=4)
 

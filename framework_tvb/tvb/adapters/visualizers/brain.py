@@ -49,7 +49,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
-from tvb.datatypes.surfaces import CORTICAL, EEG_CAP, Surface
+from tvb.datatypes.surfaces import Surface
 
 MAX_MEASURE_POINTS_LENGTH = 600
 
@@ -407,7 +407,7 @@ class DualBrainViewer(BrainViewer):
         self.connectivity_index = None
 
         if self.surface_index is None:
-            eeg_cap = dao.get_generic_entity(SurfaceIndex, EEG_CAP, "surface_type")
+            eeg_cap = dao.get_generic_entity(SurfaceIndex, SurfaceTypesEnum.EEG_CAP_SURFACE.value, "surface_type")
             if len(eeg_cap) < 1:
                 raise Exception("No EEG Cap Surface found for display!")
             self.surface_index = eeg_cap[0]
@@ -447,7 +447,8 @@ class DualBrainViewer(BrainViewer):
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         if isinstance(time_series_index, TimeSeriesSEEGIndex):
-            shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index, CORTICAL)
+            shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index,
+                                                       SurfaceTypesEnum.CORTICAL_SURFACE)
 
         params = BrainViewer.compute_parameters(self, time_series_index, shell_surface_index)
         eeg_monitor = EegMonitor()

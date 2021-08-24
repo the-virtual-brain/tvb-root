@@ -34,19 +34,19 @@
 """
 
 import json
-
 import cherrypy
+
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, SIGMOID_EQUATION
-from tvb.basic.neotraits.api import Attr, Float
+from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
+from tvb.basic.neotraits.api import Attr, Float, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities import load
-from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField
+from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
-from tvb.datatypes.equations import Gaussian, SpatialApplicableEquation
+from tvb.datatypes.equations import Gaussian, SpatialEquationsEnum
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -63,18 +63,16 @@ KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
 
 class SurfaceModelParametersForm(ABCAdapterForm):
     NAME_EQATION_PARAMS_DIV = 'equation_params'
-    default_equation = Gaussian
+    default_equation = SpatialEquationsEnum.GAUSSIAN
     ui_name_to_equation_dict = get_ui_name_to_equation_dict()
-    equation_choices = {GAUSSIAN_EQUATION: ui_name_to_equation_dict.get(GAUSSIAN_EQUATION),
-                        SIGMOID_EQUATION: ui_name_to_equation_dict.get(SIGMOID_EQUATION)}
 
     def __init__(self, model_params):
         super(SurfaceModelParametersForm, self).__init__()
 
-        self.model_param = SelectField(Str(label='Model parameter'), choices=model_params, name='model_param')
-        self.equation = SelectField(Attr(SpatialApplicableEquation, label='Equation', default=self.default_equation),
-                                    choices=self.equation_choices, name='equation',
-                                    subform=get_form_for_equation(self.default_equation))
+        self.model_param = DynamicSelectField(Str(label='Model parameter'), choices=model_params, name='model_param')
+        self.equation = SelectField(EnumAttr(label='Equation', default=self.default_equation),
+                                    name='equation',
+                                    subform=get_form_for_equation(self.default_equation.value))
 
     @staticmethod
     def get_required_datatype():
@@ -149,16 +147,13 @@ class SurfaceModelParametersController(SpatioTemporalController):
         cortex = des.conf.surface
         return model, cortex
 
-    def _prepare_model_params_dict(self, model):
+    def _prepare_model_params_list(self, model):
         model_form = get_model_to_form_dict().get(type(model))
         model_params = model_form.get_params_configurable_in_phase_plane()
         if len(model_params) == 0:
             self.logger.warning("The list with configurable parameters for the current model is empty!")
-        model_params_dict = {}
 
-        for param in model_params:
-            model_params_dict.update({param: param})
-        return model_params_dict
+        return model_params
 
     def _fill_form_from_context(self, config_form, context):
         if context.current_model_param in context.applied_equations:
@@ -168,7 +163,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             config_form.equation.subform_field.form = get_form_for_equation(type(current_equation))()
             config_form.equation.subform_field.form.fill_from_trait(current_equation)
         else:
-            context.current_equation = SurfaceModelParametersForm.default_equation()
+            context.current_equation = SurfaceModelParametersForm.default_equation.value()
             config_form.equation.data = type(context.current_equation)
             config_form.equation.subform_field.form.fill_from_trait(context.current_equation)
 
@@ -179,7 +174,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         }
         template_specification.update({'applied_equations': context.get_configure_info()})
 
-        config_form = SurfaceModelParametersForm(self.model_params_dict)
+        config_form = SurfaceModelParametersForm(self.model_params_list)
         config_form.model_param.data = context.current_model_param
         self._fill_form_from_context(config_form, context)
         template_specification.update({'adapter_form': self.render_adapter_form(config_form)})
@@ -197,16 +192,16 @@ class SurfaceModelParametersController(SpatioTemporalController):
         surface_gid = cortex.surface_gid
         surface_index = load.load_entity_by_gid(surface_gid)
 
-        self.model_params_dict = self._prepare_model_params_dict(model)
+        self.model_params_list = self._prepare_model_params_list(model)
         context_model_parameters = SurfaceContextModelParameters(surface_index, model,
-                                                                 SurfaceModelParametersForm.default_equation(),
-                                                                 list(self.model_params_dict.values())[0])
+                                                                 SurfaceModelParametersForm.default_equation,
+                                                                 self.model_params_list[0])
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")
         template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data))
 
-        dummy_form_for_initialization = SurfaceModelParametersForm(self.model_params_dict)
+        dummy_form_for_initialization = SurfaceModelParametersForm(self.model_params_list)
         self.plotted_equation_prefixes = {
             self.MODEL_PARAM_FIELD: dummy_form_for_initialization.model_param.name,
             self.EQUATION_FIELD: dummy_form_for_initialization.equation.name,
@@ -310,7 +305,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
             simulator = self.simulator_context.simulator
 
-            for param_name in self.model_params_dict.values():
+            for param_name in self.model_params_list.values():
                 param_data = context_model_parameters.get_data_for_model_param(param_name)
                 if param_data is None:
                     continue
@@ -346,7 +341,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             context_mps = common.get_from_session(KEY_CONTEXT_MPS)
 
             equation = context_mps.current_equation
-            series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
+            series_data, display_ui_message = equation.value.get_series_data(min_range=min_x, max_range=max_x)
             all_series = self.get_series_json(series_data, "Spatial")
 
             ui_message = ''

@@ -39,9 +39,9 @@ schemes (region and surface based simulations).
 """
 
 import itertools
-
 import numpy
 import pytest
+
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.equations import Linear
@@ -51,7 +51,7 @@ from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator import simulator, coupling, integrators, monitors, noise
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic
-from tvb.simulator.models import ModelsEnum
+from tvb.simulator.models.models_enum import ModelsEnum
 from tvb.tests.library.base_testcase import BaseTestCase
 
 MODEL_CLASSES = ModelsEnum.get_base_model_subclasses()
@@ -108,7 +108,7 @@ class Simulator(object):
 
         return results
 
-    def configure(self, dt=2 ** -3, model=ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(), speed=4.0,
+    def configure(self, dt=2 ** -3, model=ModelsEnum.GENERIC_2D_OSCILLATOR.value, speed=4.0,
                   coupling_strength=0.00042, method=HeunDeterministic,
                   surface_sim=False,
                   default_connectivity=True,
@@ -215,8 +215,8 @@ class TestSimulator(BaseTestCase):
         assert len(test_simulator.monitors) == len(result)
 
     def test_integrator_boundaries_config(self):
-        from .models_test import TestBoundsModel
-        test_simulator = simulator.Simulator()
+        from .models_test import TestBoundsModel, TestUpdateVariablesBoundsSimulator
+        test_simulator = TestUpdateVariablesBoundsSimulator()
         test_simulator.model = TestBoundsModel()
         test_simulator.model.configure()
         test_simulator.integrator = HeunDeterministic()
@@ -244,8 +244,8 @@ class TestSimulator(BaseTestCase):
             assert test_simulator.current_state[sv_ind, :, :].max() <= sv_boundaries[1]
 
     def test_history_bound_and_clamp_only_bound(self):
-        from .models_test import TestBoundsModel
-        test_simulator = simulator.Simulator()
+        from .models_test import TestBoundsModel, TestUpdateVariablesBoundsSimulator
+        test_simulator = TestUpdateVariablesBoundsSimulator()
         test_simulator.model = TestBoundsModel()
         test_simulator.model.configure()
         test_simulator.integrator = HeunDeterministic()
@@ -261,8 +261,8 @@ class TestSimulator(BaseTestCase):
         self._assert_history_inside_boundaries(test_simulator)
 
     def test_history_bound_and_clamp(self):
-        from .models_test import TestBoundsModel
-        test_simulator = simulator.Simulator()
+        from .models_test import TestBoundsModel, TestUpdateVariablesBoundsSimulator
+        test_simulator = TestUpdateVariablesBoundsSimulator()
         test_simulator.model = TestBoundsModel()
         test_simulator.model.configure()
         self._config_connectivity(test_simulator)
@@ -278,8 +278,8 @@ class TestSimulator(BaseTestCase):
         assert numpy.array_equal(test_simulator.current_state[1:3, :, :], value_for_clamp)
 
     def test_integrator_update_variables_config(self):
-        from .models_test import TestUpdateVariablesModel
-        test_simulator = simulator.Simulator()
+        from .models_test import TestUpdateVariablesModel, TestUpdateVariablesBoundsSimulator
+        test_simulator = TestUpdateVariablesBoundsSimulator()
         test_simulator.model = TestUpdateVariablesModel()
         test_simulator.model.configure()
         test_simulator.integrator.configure()
@@ -294,8 +294,8 @@ class TestSimulator(BaseTestCase):
                (test_simulator.model.nvar - numpy.sum(test_simulator.model.state_variable_mask)) == 2
 
     def test_integrator_update_variables_with_boundaries_and_clamp_config(self):
-        from .models_test import TestUpdateVariablesBoundsModel
-        test_simulator = simulator.Simulator()
+        from .models_test import TestUpdateVariablesBoundsModel, TestUpdateVariablesBoundsSimulator
+        test_simulator = TestUpdateVariablesBoundsSimulator()
         test_simulator.model = TestUpdateVariablesBoundsModel()
         test_simulator.model.configure()
         test_simulator.integrator.clamped_state_variable_indices = numpy.array([0, 4])

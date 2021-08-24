@@ -29,13 +29,13 @@
 #
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
-from tvb.basic.neotraits.api import Attr, Range
+from tvb.adapters.simulator.subforms_mapping import SubformsEnum
+from tvb.basic.neotraits.api import Attr, EnumAttr, Range
 from tvb.core.entities.file.simulator.view_model import NoiseViewModel, AdditiveNoiseViewModel, \
     MultiplicativeNoiseViewModel
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neotraits.forms import ArrayField, SelectField, FloatField, IntField
-from tvb.datatypes.equations import Equation
+from tvb.datatypes.equations import Equation, TemporalEquationsEnum
 
 
 def get_form_for_noise(noise_class):
@@ -76,19 +76,17 @@ class MultiplicativeNoiseForm(NoiseForm):
 
     def __init__(self):
         super(MultiplicativeNoiseForm, self).__init__()
-        self.equation_choices = get_ui_name_to_equation_dict()
-        default_equation = list(self.equation_choices.values())[0]
+        default_equation = TemporalEquationsEnum.LINEAR
 
         self.nsig = ArrayField(MultiplicativeNoiseViewModel.nsig)
-        self.equation = SelectField(Attr(Equation, label='Equation', default=default_equation),
-                                    name='equation', choices=self.equation_choices,
-                                    subform=get_form_for_equation(default_equation))
+        self.equation = SelectField(EnumAttr(label='Equation', default=default_equation),
+                                    name='equation', subform=get_form_for_equation(default_equation.value))
 
     def fill_trait(self, datatype):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)
         datatype.nsig = self.nsig.data
-        if type(datatype.b) != self.equation.data:
-            datatype.b = self.equation.data()
+        if type(datatype.b) != self.equation.data.value:
+            datatype.b = self.equation.data.value()
 
     def fill_from_trait(self, trait):
         # type: (NoiseViewModel) -> None

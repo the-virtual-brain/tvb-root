@@ -46,14 +46,6 @@ def get_coupling_to_form_dict():
     return coupling_class_to_form
 
 
-def get_ui_name_to_coupling_dict():
-    ui_name_to_coupling = {}
-    for coupling_class in get_coupling_to_form_dict():
-        ui_name_to_coupling.update({coupling_class.__name__: coupling_class})
-
-    return ui_name_to_coupling
-
-
 def get_form_for_coupling(coupling_class):
     return get_coupling_to_form_dict().get(coupling_class)
 

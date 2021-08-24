@@ -31,9 +31,11 @@
 
 import numpy
 import scipy.sparse
+
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import equations, surfaces
-from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_summary_info
+from tvb.basic.neotraits.api import HasTraits, Attr, EnumAttr, Float, narray_summary_info
+from tvb.datatypes.equations import SpatialEquationsEnum
 
 
 class LocalConnectivity(HasTraits):
@@ -44,11 +46,11 @@ class LocalConnectivity(HasTraits):
 
     matrix = Attr(field_type=scipy.sparse.spmatrix, required=False)
 
-    equation = Attr(
-        field_type=equations.FiniteSupportEquation,
+    equation = EnumAttr(
+        field_type=SpatialEquationsEnum,
         label="Spatial",
         required=False,
-        default=equations.Gaussian())
+        default=SpatialEquationsEnum.GAUSSIAN.value())
 
     cutoff = Float(
         label="Cutoff distance (mm)",

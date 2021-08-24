@@ -55,18 +55,21 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 """
 
 import abc
-
 import numpy
-import tvb.datatypes.equations as equations
-import tvb.datatypes.projections as projections_module
-import tvb.datatypes.sensors as sensors_module
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
-from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.equations import Gamma, DoubleExponential, FirstOrderVolterra, MixtureOfGammas, EquationsEnum
+
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG,
                                        TimeSeriesSurface)
 from tvb.simulator import noise
-from tvb.simulator.backend.ref import ReferenceBackend
+import tvb.datatypes.sensors as sensors_module
+import tvb.datatypes.projections as projections_module
+from tvb.datatypes.region_mapping import RegionMapping
+import tvb.datatypes.equations as equations
 from tvb.simulator.common import numpy_add_at
+from tvb.simulator.backend.ref import ReferenceBackend
+from tvb.basic.neotraits.api import HasTraits, HasTraitsEnum, BaseTypeEnum, Attr, NArray, Float, EnumAttr,\
+    narray_describe
+from .backend import ReferenceBackend
 
 
 class Monitor(HasTraits):
@@ -97,10 +100,6 @@ class Monitor(HasTraits):
     def __str__(self):
         clsname = self.__class__.__name__
         return '%s(period=%f, voi=%s)' % (clsname, self.period, self.variables_of_interest.tolist())
-
-    @property
-    def ui_name(self):
-        return self._ui_name
 
     def _config_vois(self, simulator):
         self.voi = self.variables_of_interest
@@ -174,7 +173,6 @@ class Raw(Monitor):
         - all the integration time steps
 
     """
-    _ui_name = "Raw recording"
 
     period = Float(default=0.0, label="Sampling period is ignored for Raw Monitor")
 
@@ -209,8 +207,6 @@ class RawVoi(Raw):
 
         """
 
-    _ui_name = "Selected State Variables' Raw recording"
-
     def _config_vois(self, simulator):
         self.voi = self.variables_of_interest
         if self.voi is None or self.voi.size == 0:
@@ -225,12 +221,17 @@ class SubSample(Monitor):
     Sub-samples or decimates the solution in time.
 
     """
-    _ui_name = "Temporally sub-sample"
 
     def sample(self, step, state):
         if step % self.istep == 0:
             time = step * self.dt
             return [time, state[self.voi, :]]
+
+
+class DefaultMasks(BaseTypeEnum):
+    CORTICAL = "cortical"
+    HEMISPHERES = "hemispheres"
+    REGION_MAPPING = "region_mapping"
 
 
 class SpatialAverage(Monitor):
@@ -248,10 +249,6 @@ class SpatialAverage(Monitor):
     integration steps.
 
     """
-    _ui_name = "Spatial average with temporal sub-sample"
-    CORTICAL = "cortical"
-    HEMISPHERES = "hemispheres"
-    REGION_MAPPING = "region mapping"
 
     spatial_mask = NArray(  # TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
@@ -262,10 +259,8 @@ class SpatialAverage(Monitor):
             for mapping a surface based simulation back to the regions used in 
             its `Long-range Connectivity.`""")
 
-    default_mask = Attr(
-        str,
-        choices=(CORTICAL, HEMISPHERES, REGION_MAPPING),
-        default=HEMISPHERES,
+    default_mask = EnumAttr(
+        default=DefaultMasks.CORTICAL,
         label="Default Mask",
         required=False,
         doc=("Fallback in case spatial mask is none and no surface provided"
@@ -357,7 +352,6 @@ class GlobalAverage(Monitor):
     monitor for quickly checking the "global" state of a simulation.
 
     """
-    _ui_name = "Global average"
 
     def sample(self, step, state):
         """Records if integration step corresponds to sampling period."""
@@ -380,7 +374,6 @@ class TemporalAverage(Monitor):
     store is averaged and returned when time step is modulo ``istep``.
 
     """
-    _ui_name = "Temporal average"
 
     def _config_time(self, simulator):
         super(TemporalAverage, self)._config_time(simulator)
@@ -411,8 +404,6 @@ class AfferentCoupling(RawVoi):
 
     """
 
-    _ui_name = "Coupling recording"
-
     variables_of_interest = NArray(
         dtype=int,
         label="Indices of coupling variables to record",
@@ -435,7 +426,6 @@ class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
     store is averaged and returned when time step is modulo ``istep``.
 
     """
-    _ui_name = "Coupling Temporal average"
 
     def _config_vois(self, simulator):
         AfferentCoupling._config_vois(self, simulator)
@@ -451,7 +441,6 @@ class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
 
 class Projection(Monitor):
     "Base class monitor providing lead field suppport."
-    _ui_name = "Projection matrix"
 
     region_mapping = Attr(
         RegionMapping,
@@ -648,7 +637,6 @@ class EEG(Projection):
         Biology, 1987.
 
     """
-    _ui_name = "EEG"
 
     projection = Attr(
         projections_module.ProjectionSurfaceEEG,
@@ -724,7 +712,6 @@ class EEG(Projection):
 
 class MEG(Projection):
     "Forward solution monitor for magnetoencephalography (MEG)."
-    _ui_name = "MEG"
 
     projection = Attr(
         projections_module.ProjectionSurfaceMEG,
@@ -787,8 +774,6 @@ class MEG(Projection):
 class iEEG(Projection):
     "Forward solution for intracranial EEG (not ECoG!)."
 
-    _ui_name = "Intracerebral / Stereo EEG"
-
     projection = Attr(
         projections_module.ProjectionSurfaceSEEG,
         default=None, label='Projection matrix',
@@ -824,6 +809,13 @@ class iEEG(Projection):
         return TimeSeriesSEEG(sensors=self.sensors,
                               sample_period=self.period,
                               title=' ' + self.__class__.__name__)
+
+
+class BoldMonitorEquationsEnum(EquationsEnum):
+    Gamma_KERNEL = (Gamma, "Hrf Kernel: Gamma Kernel")
+    DOUBLE_EXPONENTIAL_KERNEL = (DoubleExponential, "Hrf Kernel: Difference of Exponentials")
+    VOLTERRA_KERNEL = (FirstOrderVolterra, "Hrf Kernel: Volterra Kernel")
+    MOG_KERNEL = (MixtureOfGammas, "Hrf Kernel: Mixture Of Gammas")
 
 
 class Bold(Monitor):
@@ -867,7 +859,6 @@ class Bold(Monitor):
     .. note:: see Tutorial_Exploring_The_Bold_Monitor
 
     """
-    _ui_name = "BOLD"
 
     period = Float(
         label="Sampling period (ms)",
@@ -876,10 +867,10 @@ class Bold(Monitor):
         an integral multiple of 500. Typical measurment interval (repetition
         time TR) is between 1-3 s. If TR is 2s, then Bold period is 2000ms.""")
 
-    hrf_kernel = Attr(
-        equations.HRFKernelEquation,
+    hrf_kernel = EnumAttr(
+        field_type=BoldMonitorEquationsEnum,
         label="Haemodynamic Response Function",
-        default=equations.FirstOrderVolterra(),
+        default=BoldMonitorEquationsEnum.VOLTERRA_KERNEL.value(),
         required=True,
         doc="""A tvb.datatypes.equation object which describe the haemodynamic
         response function used to compute the BOLD signal.""")
@@ -970,7 +961,6 @@ class BoldRegionROI(Bold):
     simulation.
 
     """
-    _ui_name = "BOLD Region ROI (only with surface)"
 
     def config_for_sim(self, simulator):
         super(BoldRegionROI, self).config_for_sim(simulator)

@@ -81,8 +81,10 @@ following:
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """
+
 import numpy
-from tvb.basic.neotraits.api import HasTraits, NArray, Attr, Range
+
+from tvb.basic.neotraits.api import HasTraits, HasTraitsEnum, NArray, Attr, Range
 from .history import SparseHistory
 from .common import simple_gen_astr
 
@@ -509,3 +511,14 @@ class Kuramoto(SparseCoupling):
 
     def post(self, gx):
         return self.a / gx.shape[0] * gx
+
+
+class CouplingFunctionsEnum(HasTraitsEnum):
+    LINEAR = (Linear, "Linear")
+    SCALING = (Scaling, "Scaling")
+    HYPERBOLIC_TANGENT = (HyperbolicTangent, "Hyperbolictangent")
+    SIGMOIDAL = (Sigmoidal, "Sigmoidal")
+    SIGMOIDAL_JANSEN_RIT = (SigmoidalJansenRit, "Sigmoidaljansenrit")
+    PRESIGMOIDAL = (PreSigmoidal, "Presigmoidal")
+    DIFFERENCE = (Difference, "Difference")
+    KURAMOTO = (Kuramoto, "Kuramoto")

@@ -47,10 +47,6 @@ class TestEquations(BaseTestCase):
         dt = equations.Equation()
         assert dt.parameters == {}
 
-    def test_finitesupportequation(self):
-        dt = equations.FiniteSupportEquation()
-        assert dt.parameters == {}
-
     def test_discrete(self):
         dt = equations.DiscreteEquation()
         assert dt.parameters == {}

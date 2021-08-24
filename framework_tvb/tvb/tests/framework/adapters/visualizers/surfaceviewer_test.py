@@ -36,9 +36,11 @@ import os
 import tvb_data.surfaceData
 import tvb_data.regionMapping as demo_data
 from uuid import UUID
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import SurfaceTypesEnum
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -63,7 +65,8 @@ class TestSurfaceViewers(TransactionalTestCase):
         self.test_project = TestFactory.create_project(test_user, 'Surface_Viewer_Project')
 
         surf_skull = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        self.surface = TestFactory.import_surface_zip(test_user, self.test_project, surf_skull, CORTICAL)
+        self.surface = TestFactory.import_surface_zip(test_user, self.test_project, surf_skull,
+                                                      SurfaceTypesEnum.CORTICAL_SURFACE)
         assert self.surface is not None
 
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_76.zip')
