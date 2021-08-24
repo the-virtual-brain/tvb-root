@@ -35,15 +35,16 @@ Usage
 ::
 
     #Load the demo data
-    #import numpy
-    #data = numpy.load("demos/demo_data_region_16s_2048Hz.npy")
-    #period = 0.48828125 #NOTE: Providing period in ms
+    import numpy
+    data = numpy.load("demos/demo_data_region_16s_2048Hz.npy")
+    period = 0.00048828125 #NOTE: Providing period in seconds
 
     #Create a tvb TimeSeries object
     import tvb.datatypes.time_series
     tsr = tvb.datatypes.time_series.TimeSeriesRegion()
     tsr.data = data
     tsr.sample_period = period
+    tsr.sample_period_unit = 's'
 
     #Create and launch the interactive visualiser
     import tvb.simulator.power_spectra_interactive as ps_int
@@ -488,10 +489,11 @@ if __name__ == "__main__":
         LOG.error("Can't load demo data. Run demos/generate_region_demo_data.py")
         raise
 
-    period = 0.48828125 #NOTE: Providing period in ms
+    period = 0.00048828125 #NOTE: Providing period in seconds
     tsr = time_series_datatypes.TimeSeriesRegion()
     tsr.data = data
     tsr.sample_period = period
+    tsr.sample_period_unit = 's'
 
     psi = PowerSpectraInteractive()
     psi.time_series = tsr
