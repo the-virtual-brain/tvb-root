@@ -158,10 +158,7 @@ class PowerSpectraInteractive(HasTraits):
         LOG.debug("time_series shape: %s" % str(self.time_series.data.shape))
         #TODO: if isinstance(self.time_series, TimeSeriesSurface) and self.first_n == -1: #LOG.error, return.
         self.data = self.time_series.data[:, :, :self.first_n, :]
-        if self.time_series.sample_period_unit == "s":
-            self.period = self.time_series.sample_period
-        else 
-            self.period = 1 / self.time_series.sample_rate  #JC: convert sampling period of time_series.data in second
+        self.period = 1 / self.time_series.sample_rate  
         self.period_unit = "s"
         self.max_freq = 0.5 / self.period
         self.units = "Hz"
@@ -331,7 +328,7 @@ class PowerSpectraInteractive(HasTraits):
             seg_tpts = self.window_length / self.period
             overlap = ((seg_tpts * nseg) - self.tpts) / (nseg-1)
             starts = [max(seg*(seg_tpts - overlap), 0) for seg in range(nseg)]
-            segments = [self.data[int(start):int(start+seg_tpts)] for start in starts] #JC: convert float in int
+            segments = [self.data[int(start):int(start+seg_tpts)] for start in starts] 
             segments = [segment[:, :, :, numpy.newaxis] for segment in segments]
             time_series = numpy.concatenate(segments, axis=4)
         else:
@@ -355,7 +352,7 @@ class PowerSpectraInteractive(HasTraits):
         self.frequency = numpy.arange(0, self.max_freq, self.freq_step)
         LOG.debug("frequency shape: %s" % str(self.frequency.shape))
 
-        self.spectra = numpy.mean(numpy.abs(result[1:int(nfreq)+1])**2, axis=-1) #JC: convert float in int
+        self.spectra = numpy.mean(numpy.abs(result[1:int(nfreq)+1])**2, axis=-1) 
         LOG.debug("spectra shape: %s" % str(self.spectra.shape))
 
         self.spectra_norm = (self.spectra / numpy.sum(self.spectra, axis=0))
