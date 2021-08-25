@@ -44,10 +44,12 @@ Usage
     tsr = tvb.datatypes.time_series.TimeSeriesRegion()
     tsr.data = data
     tsr.sample_period = period
+    tsr.sample_period_unit = 's'
 
     #Create and launch the interactive visualiser
     import tvb.simulator.power_spectra_interactive as ps_int
-    psi = ps_int.PowerSpectraInteractive(time_series=tsr)
+    psi = ps_int.PowerSpectraInteractive()
+    psi.time_series = tsr
     psi.show()
 
 
@@ -156,7 +158,8 @@ class PowerSpectraInteractive(HasTraits):
         LOG.debug("time_series shape: %s" % str(self.time_series.data.shape))
         #TODO: if isinstance(self.time_series, TimeSeriesSurface) and self.first_n == -1: #LOG.error, return.
         self.data = self.time_series.data[:, :, :self.first_n, :]
-        self.period = self.time_series.sample_period
+        self.period = 1 / self.time_series.sample_rate  
+        self.period_unit = "s"
         self.max_freq = 0.5 / self.period
         self.units = "Hz"
         self.tpts = self.data.shape[0]
@@ -325,7 +328,7 @@ class PowerSpectraInteractive(HasTraits):
             seg_tpts = self.window_length / self.period
             overlap = ((seg_tpts * nseg) - self.tpts) / (nseg-1)
             starts = [max(seg*(seg_tpts - overlap), 0) for seg in range(nseg)]
-            segments = [self.data[start:start+seg_tpts] for start in starts] 
+            segments = [self.data[int(start):int(start+seg_tpts)] for start in starts] 
             segments = [segment[:, :, :, numpy.newaxis] for segment in segments]
             time_series = numpy.concatenate(segments, axis=4)
         else:
@@ -349,7 +352,7 @@ class PowerSpectraInteractive(HasTraits):
         self.frequency = numpy.arange(0, self.max_freq, self.freq_step)
         LOG.debug("frequency shape: %s" % str(self.frequency.shape))
 
-        self.spectra = numpy.mean(numpy.abs(result[1:nfreq+1])**2, axis=-1)
+        self.spectra = numpy.mean(numpy.abs(result[1:int(nfreq)+1])**2, axis=-1) 
         LOG.debug("spectra shape: %s" % str(self.spectra.shape))
 
         self.spectra_norm = (self.spectra / numpy.sum(self.spectra, axis=0))
@@ -491,7 +494,9 @@ if __name__ == "__main__":
     tsr = time_series_datatypes.TimeSeriesRegion()
     tsr.data = data
     tsr.sample_period = period
+    tsr.sample_period_unit = 's'
 
-    psi = PowerSpectraInteractive(time_series=tsr)
+    psi = PowerSpectraInteractive()
+    psi.time_series = tsr
     psi.show()
 
