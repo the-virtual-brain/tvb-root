@@ -481,6 +481,7 @@ class TimeSeriesInteractive(HasTraits):
 
         self.ts_ax.set_yticks(offset)
         self.ts_ax.set_yticklabels(self.labels[:-1], fontsize=10) #JC: fix labels error
+        self.ts_ax.set_yticklabels(self.labels[:self.first_n], fontsize=10) #JC: fix labels error
         # import pdb; pdb.set_trace()
 
         # Light gray guidelines
