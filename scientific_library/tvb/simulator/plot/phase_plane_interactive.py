@@ -139,7 +139,7 @@ class PhasePlaneInteractive(HasTraits):
         # figure
         self.ipp_fig = None
 
-        # p hase-plane
+        # phase-plane
         self.pp_ax = None
         self.X = None
         self.Y = None
@@ -401,8 +401,7 @@ class PhasePlaneInteractive(HasTraits):
         pos_shp = [0.825, 0.1, 0.125, 0.025]
         sax = self.ipp_fig.add_axes(pos_shp, facecolor=AXCOLOUR)
 
-        self.noise_slider = widgets.Slider(sax, "Log Noise", -9.0, 1.0,
-                                           valinit=self.integrator.noise.nsig)
+        self.noise_slider = widgets.Slider(sax, "Log Noise", numpy.array([-9.0,]), numpy.array([1.0,]), valinit=self.integrator.noise.nsig)
         self.noise_slider.on_changed(self.update_noise)
 
     def add_reset_param_button(self):
@@ -597,7 +596,7 @@ class PhasePlaneInteractive(HasTraits):
 
     def update_noise(self, nsig):
         """ Update integrator noise based on the noise slider value. """
-        self.integrator.noise.nsig = numpy.array([10 ** nsig, ])
+        self.integrator.noise.nsig = numpy.array([10**nsig, ])
 
     def update_range(self, val):
         """
