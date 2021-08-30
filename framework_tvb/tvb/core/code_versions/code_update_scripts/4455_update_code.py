@@ -41,6 +41,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.core.services.operation_service import OperationService
 from tvb.core.utils import get_matlab_executable
 from tvb.core.entities.storage import dao
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 
 DATA_FILE_EEG_CAP = os.path.join(os.path.dirname(tvb_data.obj.__file__), "eeg_cap.obj")
 DATA_FILE_FACE = os.path.join(os.path.dirname(tvb_data.obj.__file__), "face_surface.obj")
@@ -68,7 +69,7 @@ def update():
                                                   data_file=DATA_FILE_EEG_CAP)
                 adapter = ObjSurfaceImporter()
                 OperationService().fire_operation(adapter, user, project.id, visible=False,
-                                                  surface_type=SurfaceTypesEnum.FACE.value, data_file=DATA_FILE_FACE)
+                                                  surface_type=SurfaceTypesEnum.FACE_SURFACE.value, data_file=DATA_FILE_FACE)
             except Exception as excep:
                 LOGGER.exception(excep)
 

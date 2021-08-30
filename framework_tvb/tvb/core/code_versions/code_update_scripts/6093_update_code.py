@@ -39,6 +39,7 @@ from tvb.adapters.uploaders.obj_importer import ObjSurfaceImporter
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
 from tvb.core.services.operation_service import OperationService
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 
 DATA_FILE_FACE = os.path.join(os.path.dirname(tvb_data.obj.__file__), "face_surface.obj")
 
@@ -61,7 +62,7 @@ def update():
                 user = dao.get_system_user()
                 adapter = ObjSurfaceImporter()
                 OperationService().fire_operation(adapter, user, project.id, visible=False,
-                                                  surface_type=SurfaceTypesEnum.FACE.value,
+                                                  surface_type=SurfaceTypesEnum.FACE_SURFACE.value,
                                                   data_file=DATA_FILE_FACE)
             except Exception:
                 LOGGER.exception("could not migrate project id: %s, name %s" % (project.id, project.name))

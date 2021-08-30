@@ -40,7 +40,7 @@ from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.entities import load
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 from tvb.datatypes.tracts import Tracts
 
 
@@ -102,7 +102,7 @@ class TractViewer(ABCSpaceDisplayer):
             shell_surface_index = self.load_entity_by_gid(view_model.shell_surface)
 
         shell_surface_index = ensure_shell_surface(self.current_project_id, shell_surface_index,
-                                                   SurfaceTypesEnum.FACE.value)
+                                                   SurfaceTypesEnum.FACE_SURFACE.value)
 
         tracts_starts = URLGenerator.build_h5_url(tracts_index.gid, 'get_line_starts')
         tracts_vertices = URLGenerator.build_binary_datatype_attribute_url(tracts_index.gid, 'get_vertices')

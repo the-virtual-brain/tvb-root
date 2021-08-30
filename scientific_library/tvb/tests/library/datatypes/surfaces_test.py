@@ -32,16 +32,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import sys
-
 import numpy
 import pytest
-from tvb.datatypes import surfaces
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.surfaces import CorticalSurface, SurfaceTypesEnum
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes import surfaces
 
 
 class TestSurfaces(BaseTestCase):

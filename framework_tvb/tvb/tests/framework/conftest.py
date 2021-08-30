@@ -70,7 +70,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.sensors import Sensors, SensorsEEG
-from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL, SurfaceTypesEnum
+from tvb.datatypes.surfaces import Surface, CorticalSurface, SurfaceTypesEnum
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.simulator import Simulator
 from tvb.storage.storage_interface import StorageInterface
