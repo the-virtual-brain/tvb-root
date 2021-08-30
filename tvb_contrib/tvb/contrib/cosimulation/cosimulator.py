@@ -33,13 +33,26 @@ It inherits the Simulator class.
 
 import numpy
 
-from tvb.basic.neotraits.api import Attr, NArray, Float, List
+from tvb.basic.neotraits.api import Attr, NArray, Float, List, HasTraitsEnum, EnumAttr
+from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
-
 from tvb.contrib.cosimulation.cosim_history import CosimHistory
 from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor, CosimMonitorFromCoupling
 from tvb.contrib.cosimulation.exception import NumericalInstability
+
+
+class ContribModelsEnum(HasTraitsEnum):
+    REDUCED_WONG_WANG_PROXY = (ReducedWongWangProxy, "Reduced Wong-Wang Proxy")
+
+
+# This class exists only for testing purposes
+class ContribTestSimulator(Simulator):
+    model = EnumAttr(
+        field_type=ContribModelsEnum,
+        label="Local dynamic model",
+        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.value(),
+        required=True)
 
 
 class CoSimulator(Simulator):
@@ -74,6 +87,12 @@ class CoSimulator(Simulator):
         doc="""Cosimulation synchronization time for exchanging data 
                in milliseconds, must be an integral multiple
                of integration-step size. It defaults to simulator.integrator.dt""")
+
+    model = EnumAttr(
+        field_type=ContribModelsEnum,
+        label="Local dynamic model",
+        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.value(),
+        required=True)
 
     synchronization_n_step = 0
     good_cosim_update_values_shape = (0, 0, 0, 0)
