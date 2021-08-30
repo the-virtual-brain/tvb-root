@@ -28,8 +28,7 @@
 #
 #
 
-from tvb.datatypes.surfaces import Surface, \
-    SurfaceTypesEnum
+from tvb.datatypes.surfaces import Surface
 from sqlalchemy import Column, Integer, ForeignKey, Float, Boolean, String
 from tvb.core.entities.model.model_datatype import DataType
 

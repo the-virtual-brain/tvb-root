@@ -45,7 +45,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, SelectField, TraitDataTypeSelectField, FloatField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):

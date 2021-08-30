@@ -42,7 +42,6 @@ from tvb.adapters.visualizers.sensors import SensorsViewer
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.datatypes.sensors import SensorTypesEnum
 from tvb.datatypes.surfaces import SurfaceTypesEnum
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -78,9 +77,9 @@ class TestSensorViewers(TransactionalTestCase):
         # Import Sensors
         zip_path = os.path.join(os.path.dirname(tvb_data.sensors.__file__), 'eeg_unitvector_62.txt.bz2')
         TestFactory.import_sensors(self.test_user, self.test_project, zip_path,
-                                   SensorsImporterModel.OPTIONS['EEG Sensors'])
+                                   SensorTypesEnum.TYPE_EEG)
         field = FilterChain.datatype + '.sensors_type'
-        filters = FilterChain('', [field], [SensorTypes.TYPE_EEG.value], ['=='])
+        filters = FilterChain('', [field], [SensorTypesEnum.TYPE_EEG.value], ['=='])
         sensors_index = TestFactory.get_entity(self.test_project, SensorsIndex, filters)
 
         # Import EEGCap

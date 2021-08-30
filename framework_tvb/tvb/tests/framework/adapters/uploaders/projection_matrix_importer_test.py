@@ -42,7 +42,6 @@ from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.core.services.exceptions import OperationException
 from tvb.datatypes.sensors import SensorTypesEnum
 from tvb.datatypes.surfaces import SurfaceTypesEnum
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

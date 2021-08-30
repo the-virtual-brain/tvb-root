@@ -48,7 +48,7 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 
 class RegionMappingImporterModel(UploaderViewModel):

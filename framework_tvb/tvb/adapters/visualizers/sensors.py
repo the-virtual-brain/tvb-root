@@ -45,7 +45,7 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG, Sensors
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 LOG = get_logger(__name__)
 

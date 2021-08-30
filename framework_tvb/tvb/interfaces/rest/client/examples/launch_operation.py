@@ -40,6 +40,7 @@ from tvb.adapters.uploaders.region_mapping_importer import RegionMappingImporter
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel, ZIPConnectivityImporter
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporterModel, ZIPSurfaceImporter
 from tvb.basic.logger.builder import get_logger
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.interfaces.rest.client.examples.utils import compute_tvb_data_path, monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 

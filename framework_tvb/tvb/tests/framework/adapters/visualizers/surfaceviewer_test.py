@@ -40,7 +40,6 @@ from uuid import UUID
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.visualizers.surface_view import SurfaceViewer, RegionMappingViewer
 from tvb.datatypes.surfaces import SurfaceTypesEnum
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 

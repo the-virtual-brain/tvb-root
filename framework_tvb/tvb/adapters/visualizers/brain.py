@@ -49,7 +49,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
-from tvb.datatypes.surfaces import Surface
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 MAX_MEASURE_POINTS_LENGTH = 600
 

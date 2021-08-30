@@ -49,6 +49,7 @@ from tvb.core.neotraits.forms import ArrayField, SelectField, MultiSelectField, 
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.simulator.models.models_enum import ModelsEnum
 
 

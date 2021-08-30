@@ -69,7 +69,8 @@ def update():
                                                   data_file=DATA_FILE_EEG_CAP)
                 adapter = ObjSurfaceImporter()
                 OperationService().fire_operation(adapter, user, project.id, visible=False,
-                                                  surface_type=SurfaceTypesEnum.FACE_SURFACE.value, data_file=DATA_FILE_FACE)
+                                                  surface_type=SurfaceTypesEnum.FACE_SURFACE.value,
+                                                  data_file=DATA_FILE_FACE)
             except Exception as excep:
                 LOGGER.exception(excep)
 

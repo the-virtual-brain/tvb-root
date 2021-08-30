@@ -49,7 +49,7 @@ from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.equations import Sigmoid, PulseTrain, Gaussian, DoubleGaussian, Linear, GeneralizedSigmoid, Cosine,\
     Sinusoid, Alpha, SpatialEquationsEnum, TemporalEquationsEnum
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
-from tvb.datatypes.surfaces import CorticalSurface
+from tvb.datatypes.surfaces import CorticalSurface, SurfaceTypesEnum
 
 
 class StimulusSurfaceSelectorForm(ABCAdapterForm):
