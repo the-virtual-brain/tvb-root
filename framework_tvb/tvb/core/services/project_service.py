@@ -582,8 +582,6 @@ class ProjectService:
                 # There is no link for this datatype so it has to be deleted
                 specific_remover = get_remover(datatype.type)(datatype)
                 specific_remover.remove_datatype(skip_validation)
-                h5_path = h5.path_for_stored_index(datatype)
-                self.storage_interface.remove_datatype_file(h5_path)
 
                 # Remove burst if dt has one and it still exists
                 if datatype.fk_parent_burst is not None and datatype.is_ts:

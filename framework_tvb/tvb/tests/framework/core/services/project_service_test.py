@@ -476,7 +476,8 @@ class TestProjectService(TransactionalTestCase):
         expected_links.append(dt_group.gid)
 
         # Actually create the links from Prj1 into Prj2
-        AlgorithmService().create_link(link_ids, project2.id)
+        for link_id in link_ids:
+            AlgorithmService().create_link(link_id, project2.id)
 
         # Retrieve the raw data used to compose the tree (for easy parsing)
         dts_in_tree = dao.get_data_in_project(project2.id)

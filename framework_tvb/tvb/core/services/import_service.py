@@ -262,9 +262,9 @@ class ImportService(object):
             self.store_datatype(datatype, dt_path)
             stored_dt_count = 1
         elif datatype_already_in_tvb.parent_operation.project.id != project_id:
-            AlgorithmService.create_link([datatype_already_in_tvb.id], project_id)
+            AlgorithmService.create_link(datatype_already_in_tvb.id, project_id)
             if datatype_already_in_tvb.fk_datatype_group:
-                AlgorithmService.create_link([datatype_already_in_tvb.fk_datatype_group], project_id)
+                AlgorithmService.create_link(datatype_already_in_tvb.fk_datatype_group, project_id)
         return stored_dt_count
 
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
