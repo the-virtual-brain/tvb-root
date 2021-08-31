@@ -116,12 +116,12 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
 
     def fill_from_trait(self, trait):
         self.surface.data = trait.surface.hex
-        self.spatial.data = trait.spatial.value
-        self.temporal.data = trait.temporal.value
-        self.temporal.subform_field = FormField(get_form_for_equation(trait.temporal.value),
+        self.spatial.data = trait.spatial
+        self.temporal.data = trait.temporal
+        self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)),
                                                 self.NAME_TEMPORAL_PARAMS_DIV)
         self.temporal.subform_field.form.fill_from_trait(trait.temporal)
-        self.spatial.subform_field = FormField(get_form_for_equation(trait.spatial.value),
+        self.spatial.subform_field = FormField(get_form_for_equation(type(trait.spatial)),
                                                self.NAME_SPATIAL_PARAMS_DIV)
         self.spatial.subform_field.form.fill_from_trait(trait.spatial)
 

@@ -380,6 +380,9 @@ class SimulatorAdapterModel(ViewModel, Simulator):
 
     def __init__(self):
         super(SimulatorAdapterModel, self).__init__()
+        self.coupling = type(self.coupling)()
+        self.model = type(self.model)()
+        self.integrator = type(self.integrator)()
         self.monitors = (type(self.monitors[0])(),)
 
     @property
