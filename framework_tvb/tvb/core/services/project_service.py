@@ -681,7 +681,8 @@ class ProjectService:
 
         # Datatype Groups were already handled when the first DatatypeMeasureIndex has been found
         if dao.is_datatype_group(datatype_gid):
-            return
+            is_datatype_group = True
+            datatype_group = datatype
         # Found the first DatatypeMeasureIndex from a group
         elif datatype.fk_datatype_group is not None:
             is_datatype_group = True
@@ -704,8 +705,12 @@ class ProjectService:
                 links.extend(dao.get_links_for_datatype(dt_group_for_metric_op_group.id))
 
                 if len(links) > 0:
-                    # We want to get the links for the TSIndex directly, instead of DatatypeMeasureIndex
-                    ts = h5.load_entity_by_gid(datatype.fk_source_gid)
+                    # We want to get the links for the first TSIndex directly
+                    # This code works for all cases
+                    dt_group = dao.get_datatypegroup_by_op_group_id(burst.fk_operation_group)
+                    datatypes = dao.get_datatype_in_group(dt_group.id)
+                    ts = datatypes[0]
+
                     new_dt_links = self._add_links_for_linked_datatypes(ts, links[0].fk_to_project, links[0].id,
                                                                         existing_dt_links)
 
