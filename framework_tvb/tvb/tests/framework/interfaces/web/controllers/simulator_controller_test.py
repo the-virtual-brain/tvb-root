@@ -46,8 +46,6 @@ from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
 from tvb.adapters.simulator.model_forms import get_form_for_model
-from tvb.adapters.simulator.subforms_mapping import NoiseTypesEnum
-from tvb.adapters.uploaders.sensors_importer import SensorsImporterModel
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao

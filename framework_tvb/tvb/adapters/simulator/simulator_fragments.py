@@ -151,23 +151,21 @@ class SimulatorModelFragment(ABCAdapterForm):
 
     def fill_trait(self, datatype):
         if type(datatype.model) != self.model.value.value:
-            datatype.model = self.model.value()
+            datatype.model = self.model.value.value()
 
 
 class SimulatorIntegratorFragment(ABCAdapterForm):
 
     def __init__(self):
         super(SimulatorIntegratorFragment, self).__init__()
-        default_integrator = IntegratorViewModelsEnum.HEUN
-
         self.integrator = SelectField(
-            EnumAttr(default=default_integrator, label=SimulatorAdapterModel.integrator.label,
+            EnumAttr(default=IntegratorViewModelsEnum.HEUN, label=SimulatorAdapterModel.integrator.label,
                      doc=SimulatorAdapterModel.integrator.doc), name='integrator',
-            subform=get_form_for_integrator(default_integrator.value))
+            subform=get_form_for_integrator(IntegratorViewModelsEnum.HEUN.value))
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None
-        self.integrator.data = trait.integrator.__class__
+        self.integrator.data = type(trait.integrator)
 
     def fill_trait(self, datatype):
         datatype.integrator = self.integrator.value.value()
@@ -301,18 +299,10 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
         return pse_uuid_list
 
     @staticmethod
-    def __get_range_param_by_name(param_name, all_range_parameters):
-        for range_param in all_range_parameters:
-            if param_name == range_param.name:
-                return range_param
-
-        return None
-
-    @staticmethod
     def _fill_param_from_post(all_range_parameters, param_key, **data):
         # type: (dict, str, dict) -> RangeParameter
         param_name = data.get(SimulatorPSERangeFragment.NAME_FIELD.format(param_key))
-        param = SimulatorPSERangeFragment.__get_range_param_by_name(param_name, all_range_parameters)
+        param = BurstService.get_range_param_by_name(param_name, all_range_parameters)
         if param.type is float:
             param_lo = data.get(SimulatorPSERangeFragment.LO_FIELD.format(param_key))
             param_hi = data.get(SimulatorPSERangeFragment.HI_FIELD.format(param_key))

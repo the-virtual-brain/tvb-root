@@ -29,7 +29,6 @@
 #
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum
 from tvb.basic.neotraits.api import Attr, EnumAttr, Range
 from tvb.core.entities.file.simulator.view_model import NoiseViewModel, AdditiveNoiseViewModel, \
     MultiplicativeNoiseViewModel
@@ -50,7 +49,7 @@ def get_form_for_noise(noise_class):
 class NoiseForm(FormWithRanges):
 
     def get_subform_key(self):
-        return SubformsEnum.NOISE.name
+        return 'NOISE'
 
     def __init__(self):
         super(NoiseForm, self).__init__()
@@ -76,11 +75,9 @@ class MultiplicativeNoiseForm(NoiseForm):
 
     def __init__(self):
         super(MultiplicativeNoiseForm, self).__init__()
-        default_equation = TemporalEquationsEnum.LINEAR
-
         self.nsig = ArrayField(MultiplicativeNoiseViewModel.nsig)
-        self.equation = SelectField(EnumAttr(label='Equation', default=default_equation),
-                                    name='equation', subform=get_form_for_equation(default_equation.value))
+        self.equation = SelectField(EnumAttr(label='Equation', default=TemporalEquationsEnum.LINEAR),
+                                    name='equation', subform=get_form_for_equation(TemporalEquationsEnum.LINEAR.value))
 
     def fill_trait(self, datatype):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)
@@ -91,4 +88,4 @@ class MultiplicativeNoiseForm(NoiseForm):
     def fill_from_trait(self, trait):
         # type: (NoiseViewModel) -> None
         super(MultiplicativeNoiseForm, self).fill_from_trait(trait)
-        self.equation.data = trait.b.__class__
+        self.equation.data = type(trait.b)

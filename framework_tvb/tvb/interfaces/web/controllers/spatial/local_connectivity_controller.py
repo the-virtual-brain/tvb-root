@@ -42,11 +42,11 @@ from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
+from tvb.core.utils import enum_str_to_enum_value
+from tvb.datatypes.equations import SpatialEquationsEnum
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -138,12 +138,12 @@ class LocalConnectivityController(SpatioTemporalController):
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def refresh_subform(self, equation, mapping_key):
-        eq_class = get_ui_name_to_equation_dict().get(equation)
+    def refresh_subform(self, equation):
+        eq_class = enum_str_to_enum_value(SpatialEquationsEnum, equation).value
         current_lconn = common.get_from_session(KEY_LCONN)
         current_lconn.equation = eq_class()
 
-        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
+        eq_params_form = get_form_for_equation(eq_class)()
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
@@ -337,7 +337,7 @@ class LocalConnectivityController(SpatioTemporalController):
             max_x = current_lconn.cutoff
             if max_x <= 0:
                 max_x = 50
-            equation = current_lconn.equation.value()
+            equation = current_lconn.equation
             # What we want
             ideal_case_series, _ = equation.get_series_data(0, 2 * max_x)
 

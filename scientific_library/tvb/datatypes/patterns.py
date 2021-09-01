@@ -159,7 +159,7 @@ class StimuliRegion(SpatioTemporalPattern):
 
     spatial = EnumAttr(field_type=SpatialEquationsEnum,
                    label="Spatial Equation",
-                   default=SpatialEquationsEnum.DISCRETE.value())  # fixed_type=True, order=-1)
+                   default=SpatialEquationsEnum.GAUSSIAN.value())  # fixed_type=True, order=-1)
 
     weight = NArray(label="scaling")  # , locked=True, order=4)
 

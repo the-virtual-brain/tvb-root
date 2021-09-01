@@ -34,19 +34,19 @@
 """
 
 import json
-
 import cherrypy
 import numpy
+
 from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
+from tvb.core.utils import enum_str_to_enum_value
+from tvb.datatypes.equations import TemporalEquationsEnum
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -113,12 +113,12 @@ class RegionStimulusController(SpatioTemporalController):
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def refresh_subform(self, temporal_equation, mapping_key):
-        eq_class = get_ui_name_to_equation_dict().get(temporal_equation)
+    def refresh_subform(self, temporal_equation):
+        eq_class = enum_str_to_enum_value(TemporalEquationsEnum, temporal_equation).value
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
         current_region_stim.temporal = eq_class()
 
-        eq_params_form = SubformHelper.get_subform_for_field_value(temporal_equation, mapping_key)
+        eq_params_form = get_form_for_equation(eq_class)()
         # TODO: check eqPrefixes
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
@@ -299,8 +299,8 @@ class RegionStimulusController(SpatioTemporalController):
 
             min_x, max_x, ui_message = self.get_x_axis_range(plot_form.min_x.value, plot_form.max_x.value)
             current_stimuli_region = common.get_from_session(KEY_REGION_STIMULUS)
-            series_data, display_ui_message = current_stimuli_region.temporal.value.get_series_data(min_range=min_x,
-                                                                                                    max_range=max_x)
+            series_data, display_ui_message = current_stimuli_region.temporal.get_series_data(min_range=min_x,
+                                                                                              max_range=max_x)
             all_series = self.get_series_json(series_data, 'Temporal')
 
             if display_ui_message:

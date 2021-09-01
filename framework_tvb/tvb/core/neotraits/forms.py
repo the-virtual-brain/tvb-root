@@ -492,7 +492,7 @@ class Form(object):
 
     def get_subform_key(self):
         """
-        If the current form can be used as subform, this method should return the proper value from SubformsEnum.
+        If the current form can be used as subform, this method should return the proper value.
         """
         raise NotImplementedError
 

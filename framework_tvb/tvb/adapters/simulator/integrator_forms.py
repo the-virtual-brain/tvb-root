@@ -28,12 +28,11 @@
 #
 #
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, NoiseTypesEnum
 from tvb.basic.neotraits.api import HasTraitsEnum, EnumAttr
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
     EulerDeterministicViewModel, EulerStochasticViewModel, RungeKutta4thOrderDeterministicViewModel, IdentityViewModel, \
     VODEViewModel, VODEStochasticViewModel, Dopri5ViewModel, Dopri5StochasticViewModel, Dop853ViewModel, \
-    Dop853StochasticViewModel, IntegratorViewModel
+    Dop853StochasticViewModel, IntegratorViewModel, AdditiveNoiseViewModel, MultiplicativeNoiseViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.neotraits.forms import Form, SelectField, FloatField
 
@@ -60,11 +59,15 @@ def get_form_for_integrator(integrator_class):
     return get_integrator_to_form_dict().get(integrator_class)
 
 
+class NoiseTypesEnum(HasTraitsEnum):
+    ADDITIVE = (AdditiveNoiseViewModel, "Additive")
+    MULTIPLICATIVE = (MultiplicativeNoiseViewModel, "Multiplicative")
+
+
 class IntegratorForm(Form):
 
     def get_subform_key(self):
-        return SubformsEnum.INTEGRATOR.name
-
+        return 'INTEGRATOR'
     def __init__(self, is_dt_disabled=False):
         super(IntegratorForm, self).__init__()
         self.is_dt_disabled = is_dt_disabled
@@ -83,10 +86,9 @@ class IntegratorStochasticForm(IntegratorForm):
 
     def __init__(self, is_dt_disabled=False):
         super(IntegratorStochasticForm, self).__init__(is_dt_disabled)
-        default_noise = NoiseTypesEnum.ADDITIVE
 
-        self.noise = SelectField(EnumAttr(label='Noise', default=default_noise), name='noise',
-                                 subform=get_form_for_noise(default_noise))
+        self.noise = SelectField(EnumAttr(label='Noise', default=NoiseTypesEnum.ADDITIVE), name='noise',
+                                 subform=get_form_for_noise(NoiseTypesEnum.ADDITIVE.value))
 
     def fill_trait(self, datatype):
         super(IntegratorStochasticForm, self).fill_trait(datatype)

@@ -68,7 +68,6 @@ class Equation(HasTraits):
                 should be able to take defaults and sensible ranges from any
                 traited information that was provided.""")
 
-
     def summary_info(self):
         """
         Gather scientifically interesting summary information from an instance
@@ -125,8 +124,6 @@ class DiscreteEquation(Equation):
         doc="""The equation defines a function of :math:`x`""")
 
 
-
-
 class Linear(Equation):
     """
     A linear equation.
@@ -170,7 +167,6 @@ class DoubleGaussian(Equation):
     A Mexican-hat function approximated by the difference of Gaussians functions.
 
     """
-    _ui_name = "Mexican-hat"
 
     equation = Final(
         label="Double Gaussian Equation",
@@ -301,12 +297,7 @@ class PulseTrain(Equation):
 
 
 
-
-class HRFKernelEquation(Equation):
-    "Base class for hemodynamic response functions."
-
-
-class Gamma(HRFKernelEquation):
+class Gamma(Equation):
     """
     A Gamma function for the bold monitor. It belongs to the family of Exponential functions.
 
@@ -328,8 +319,6 @@ class Gamma(HRFKernelEquation):
     .. note:: might be filtered from the equations used in Stimulus and Local Connectivity.
 
     """
-
-    _ui_name = "HRF kernel: Gamma kernel"
 
     # TODO: Introduce a time delay in the equation (shifts the hrf onset)
     # """:math:`h(t) = \frac{(\frac{t-\delta}{\tau})^{(n-1)} e^{-(\frac{t-\delta}{\tau})}}{\tau(n-1)!}"""
@@ -370,8 +359,7 @@ class Gamma(HRFKernelEquation):
         return _pattern
 
 
-
-class DoubleExponential(HRFKernelEquation):
+class DoubleExponential(Equation):
     """
     A difference of two exponential functions to define a kernel for the bold monitor.
 
@@ -393,8 +381,6 @@ class DoubleExponential(HRFKernelEquation):
         perception during binocular rivalry. Nature Neuroscience 3: 1153-1159
 
     """
-
-    _ui_name = "HRF kernel: Difference of Exponentials"
 
     equation = Final(
         label="Double Exponential Equation",
@@ -422,8 +408,7 @@ class DoubleExponential(HRFKernelEquation):
         return _pattern
 
 
-
-class FirstOrderVolterra(HRFKernelEquation):
+class FirstOrderVolterra(Equation):
     """
     Integral form of the first Volterra kernel of the three used in the
     Ballon Windekessel model for computing the Bold signal.
@@ -445,8 +430,6 @@ class FirstOrderVolterra(HRFKernelEquation):
 
     """
 
-    _ui_name = "HRF kernel: Volterra Kernel"
-
     equation = Final(
         label="First Order Volterra Kernel",
         default="1/3. * exp(-0.5*(var / tau_s)) * (sin(sqrt(1./tau_f - 1./(4.*tau_s**2)) * var)) / (sqrt(1./tau_f - 1./(4.*tau_s**2)))",
@@ -464,7 +447,7 @@ class FirstOrderVolterra(HRFKernelEquation):
         default=lambda: {"tau_s": 0.8, "tau_f": 0.4, "k_1": 5.6, "V_0": 0.02})
 
 
-class MixtureOfGammas(HRFKernelEquation):
+class MixtureOfGammas(Equation):
     """
     A mixture of two gamma distributions to create a kernel similar to the one used in SPM.
 
@@ -511,8 +494,6 @@ class MixtureOfGammas(HRFKernelEquation):
 
     """
 
-    _ui_name = "HRF kernel: Mixture of Gammas"
-
     equation = Final(
         label="Mixture of Gammas",
         default="(l * var)**(a_1-1) * exp(-l*var) / gamma_a_1 - c * (l*var)**(a_2-1) * exp(-l*var) / gamma_a_2",
@@ -546,18 +527,18 @@ class EquationsEnum(HasTraitsEnum):
 
 class SpatialEquationsEnum(EquationsEnum):
     GAUSSIAN = (Gaussian, "Gaussian")
-    MEXICAN_HAT = (DoubleGaussian, "Mexican-Hat")
+    MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
     SIGMOID = (Sigmoid, "Sigmoid")
-    DISCRETE = (DiscreteEquation, "Discrete Equation")
+    # DISCRETE = (DiscreteEquation, "Discrete Equation")
 
 
 class TemporalEquationsEnum(EquationsEnum):
     LINEAR = (Linear, "Linear")
     GAUSSIAN = (Gaussian, "Gaussian")
-    MEXICAN_HAT = (DoubleGaussian, "Mexican-Hat")
+    MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
     SIGMOID = (Sigmoid, "Sigmoid")
-    GENERALIZEDSIGMOID = (GeneralizedSigmoid, "Generalizedsigmoid")
+    GENERALIZEDSIGMOID = (GeneralizedSigmoid, "GeneralizedSigmoid")
     SINUSOID = (Sinusoid, "Sinusoid")
     COSINE = (Cosine, "Cosine")
     ALPHA = (Alpha, "Alpha")
-    PULSETRAIN = (PulseTrain, "Pulsetrain")
+    PULSETRAIN = (PulseTrain, "PulseTrain")

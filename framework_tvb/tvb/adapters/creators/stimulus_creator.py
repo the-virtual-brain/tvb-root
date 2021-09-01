@@ -38,7 +38,6 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
@@ -116,8 +115,8 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
 
     def fill_from_trait(self, trait):
         self.surface.data = trait.surface.hex
-        self.spatial.data = trait.spatial
-        self.temporal.data = trait.temporal
+        self.spatial.data = type(trait.spatial)
+        self.temporal.data = type(trait.temporal)
         self.temporal.subform_field = FormField(get_form_for_equation(type(trait.temporal)),
                                                 self.NAME_TEMPORAL_PARAMS_DIV)
         self.temporal.subform_field.form.fill_from_trait(trait.temporal)
@@ -225,13 +224,12 @@ class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
 class RegionStimulusCreatorForm(ABCAdapterForm):
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
     default_temporal = TemporalEquationsEnum.PULSETRAIN
-    choices = get_ui_name_to_equation_dict()
 
     def __init__(self):
         super(RegionStimulusCreatorForm, self).__init__()
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, name='connectivity')
         self.temporal = SelectField(RegionStimulusCreatorModel.temporal, name='temporal',
-                                    subform=get_form_for_equation(type(self.default_temporal.value)))
+                                    subform=get_form_for_equation(self.default_temporal.value))
 
     @staticmethod
     def get_view_model():

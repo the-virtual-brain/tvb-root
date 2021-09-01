@@ -27,15 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
+
 from tvb.datatypes.equations import *
 from tvb.core.neotraits.forms import Form, FloatField, StrField
 from tvb.basic.neotraits.api import Float
-
-
-def get_ui_name_for_equation(equation_class):
-    equation_to_ui_name = dict((v, k) for k, v in get_ui_name_to_equation_dict().items())
-    return equation_to_ui_name.get(equation_class)
 
 
 def get_ui_name_to_monitor_equation_dict():
@@ -75,7 +70,7 @@ def get_form_for_equation(equation_class):
 class EquationForm(Form):
 
     def get_subform_key(self):
-        return SubformsEnum.EQUATION.name
+        return 'EQUATION'
 
     def get_traited_equation(self):
         return Equation

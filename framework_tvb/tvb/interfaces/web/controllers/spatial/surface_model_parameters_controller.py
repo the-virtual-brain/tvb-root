@@ -38,15 +38,14 @@ import cherrypy
 
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
-from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
-from tvb.basic.neotraits.api import Attr, Float, EnumAttr
+from tvb.basic.neotraits.api import Attr, Float, EnumAttr, HasTraitsEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities import load
 from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
-from tvb.datatypes.equations import Gaussian, SpatialEquationsEnum
+from tvb.core.utils import enum_str_to_enum_value
+from tvb.datatypes.equations import Gaussian, SpatialEquationsEnum, Sigmoid
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -61,10 +60,14 @@ from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
 
 
+class SurfaceModelEquationsEnum(HasTraitsEnum):
+    GAUSSIAN = (Gaussian, "Gaussian")
+    SIGMOID = (Sigmoid, "Sigmoid")
+
+
 class SurfaceModelParametersForm(ABCAdapterForm):
     NAME_EQATION_PARAMS_DIV = 'equation_params'
-    default_equation = SpatialEquationsEnum.GAUSSIAN
-    ui_name_to_equation_dict = get_ui_name_to_equation_dict()
+    default_equation = SurfaceModelEquationsEnum.GAUSSIAN
 
     def __init__(self, model_params):
         super(SurfaceModelParametersForm, self).__init__()
@@ -227,12 +230,12 @@ class SurfaceModelParametersController(SpatioTemporalController):
     @using_template("form_fields/form_field")
     @handle_error(redirect=False)
     @check_user
-    def refresh_subform(self, equation, mapping_key):
-        eq_class = get_ui_name_to_equation_dict().get(equation)
+    def refresh_subform(self, equation):
+        eq_class = enum_str_to_enum_value(SurfaceModelEquationsEnum, equation).value
         context = common.get_from_session(KEY_CONTEXT_MPS)
         context.current_equation = eq_class()
 
-        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
+        eq_params_form = get_form_for_equation(eq_class)()
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
@@ -341,7 +344,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             context_mps = common.get_from_session(KEY_CONTEXT_MPS)
 
             equation = context_mps.current_equation
-            series_data, display_ui_message = equation.value.get_series_data(min_range=min_x, max_range=max_x)
+            series_data, display_ui_message = equation.get_series_data(min_range=min_x, max_range=max_x)
             all_series = self.get_series_json(series_data, "Spatial")
 
             ui_message = ''

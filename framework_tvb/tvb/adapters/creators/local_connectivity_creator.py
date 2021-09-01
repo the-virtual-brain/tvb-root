@@ -36,8 +36,6 @@
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
-from tvb.adapters.simulator.subforms_mapping import GAUSSIAN_EQUATION, get_ui_name_to_equation_dict, \
-    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
 from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
