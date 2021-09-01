@@ -419,7 +419,7 @@ class Simulator(HasTraits):
         elif nsig.shape == (self.number_of_nodes,):
             nsig = nsig.reshape((1, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nvar, self.number_of_nodes):
-            nsig = nsig[self.model.state_variable_mask].reshape((self.n_intvar, self.number_of_nodes, 1))
+            nsig = nsig[self.model.state_variable_mask].reshape((self.model.nintvar, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nintvar, self.number_of_nodes):
             nsig = nsig.reshape((self.model.nintvar, self.number_of_nodes, 1))
         else:
