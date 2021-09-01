@@ -870,7 +870,7 @@ class Bold(Monitor):
     hrf_kernel = EnumAttr(
         field_type=BoldMonitorEquationsEnum,
         label="Haemodynamic Response Function",
-        default=BoldMonitorEquationsEnum.VOLTERRA_KERNEL.value(),
+        default=BoldMonitorEquationsEnum.VOLTERRA_KERNEL.instance,
         required=True,
         doc="""A tvb.datatypes.equation object which describe the haemodynamic
         response function used to compute the BOLD signal.""")

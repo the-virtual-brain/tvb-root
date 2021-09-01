@@ -49,7 +49,7 @@ class SpatialPattern(HasTraits):
     """
 
     spatial = EnumAttr(field_type=SpatialEquationsEnum, label="Spatial Equation",
-                       default=SpatialEquationsEnum.GAUSSIAN.value())  # fixed_type=True, order=-1)
+                       default=SpatialEquationsEnum.GAUSSIAN.instance)  # fixed_type=True, order=-1)
 
     space = None
     _spatial_pattern = None
@@ -91,7 +91,7 @@ class SpatioTemporalPattern(SpatialPattern):
     """
 
     temporal = EnumAttr(field_type=TemporalEquationsEnum,
-                        default=TemporalEquationsEnum.GAUSSIAN.value(), label="Temporal Equation")
+                        default=TemporalEquationsEnum.GAUSSIAN.instance, label="Temporal Equation")
     # space must be shape (x, 1); time must be shape (1, t)
     time = None
     _temporal_pattern = None
@@ -159,7 +159,7 @@ class StimuliRegion(SpatioTemporalPattern):
 
     spatial = EnumAttr(field_type=SpatialEquationsEnum,
                    label="Spatial Equation",
-                   default=SpatialEquationsEnum.GAUSSIAN.value())  # fixed_type=True, order=-1)
+                   default=SpatialEquationsEnum.GAUSSIAN.instance)  # fixed_type=True, order=-1)
 
     weight = NArray(label="scaling")  # , locked=True, order=4)
 

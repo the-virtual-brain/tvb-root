@@ -65,9 +65,9 @@ class StimulusSurfaceSelectorForm(ABCAdapterForm):
 
 class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
     spatial = EnumAttr(field_type=SpatialEquationsEnum, label="Spatial Equation",
-                       default=SpatialEquationsEnum.SIGMOID.value())
+                       default=SpatialEquationsEnum.SIGMOID.instance)
     temporal = EnumAttr(field_type=TemporalEquationsEnum, label="Temporal Equation",
-                        default=TemporalEquationsEnum.PULSETRAIN.value())
+                        default=TemporalEquationsEnum.PULSETRAIN.instance)
 
     surface = DataTypeGidAttr(
         linked_datatype=CorticalSurface,
@@ -207,7 +207,7 @@ class StimulusRegionSelectorForm(ABCAdapterForm):
 
 class RegionStimulusCreatorModel(ViewModel, StimuliRegion):
     temporal = EnumAttr(field_type=TemporalEquationsEnum, label="Temporal Equation",
-                        default=TemporalEquationsEnum.PULSETRAIN.value())
+                        default=TemporalEquationsEnum.PULSETRAIN.instance)
 
     connectivity = DataTypeGidAttr(
         field_type=uuid.UUID,

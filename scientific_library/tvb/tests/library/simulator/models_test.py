@@ -133,7 +133,7 @@ class TestUpdateVariablesBoundsSimulator(Simulator):
     model = EnumAttr(
         field_type=TestUpdateVariablesBoundsModelEnum,
         label="Local dynamic model",
-        default=TestUpdateVariablesBoundsModelEnum.UPDATE_VARIABLES_BOUNDS_MODEL.value(),
+        default=TestUpdateVariablesBoundsModelEnum.UPDATE_VARIABLES_BOUNDS_MODEL.instance,
         required=True)
 
 

@@ -225,7 +225,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
         view_model = region_stimulus_creator.get_view_model_class()()
         view_model.connectivity = UUID(connectivity_index.gid)
         view_model.weight = weight_array
-        view_model.temporal = TemporalEquationsEnum.LINEAR.value()
+        view_model.temporal = TemporalEquationsEnum.LINEAR.instance
         view_model.temporal.parameters['a'] = 1.0
         view_model.temporal.parameters['b'] = 2.0
 
@@ -368,7 +368,7 @@ class TestSimulationController(BaseTransactionalControllerTest):
 
         self.session_stored_simulator.integrator = Dopri5StochasticViewModel()
         self.session_stored_simulator.integrator.noise = MultiplicativeNoiseViewModel()
-        self.session_stored_simulator.integrator.noise.b = TemporalEquationsEnum.GENERALIZEDSIGMOID.value()
+        self.session_stored_simulator.integrator.noise.b = TemporalEquationsEnum.GENERALIZEDSIGMOID.instance
 
         with patch('cherrypy.session', self.sess_mock, create=True):
             self.simulator_controller.context.set_simulator(self.session_stored_simulator)

@@ -50,7 +50,7 @@ class LocalConnectivity(HasTraits):
         field_type=SpatialEquationsEnum,
         label="Spatial",
         required=False,
-        default=SpatialEquationsEnum.GAUSSIAN.value())
+        default=SpatialEquationsEnum.GAUSSIAN.instance)
 
     cutoff = Float(
         label="Cutoff distance (mm)",

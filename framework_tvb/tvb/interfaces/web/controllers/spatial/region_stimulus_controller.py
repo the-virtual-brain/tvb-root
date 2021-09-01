@@ -222,7 +222,7 @@ class RegionStimulusController(SpatioTemporalController):
 
     def _reset_region_stimulus(self):
         new_region_stimulus = RegionStimulusCreatorModel()
-        new_region_stimulus.temporal = RegionStimulusCreatorForm.default_temporal.value()
+        new_region_stimulus.temporal = RegionStimulusCreatorForm.default_temporal.instance
         # TODO: proper init
         new_region_stimulus.weight = numpy.array([])
         common.add2session(KEY_REGION_STIMULUS, new_region_stimulus)

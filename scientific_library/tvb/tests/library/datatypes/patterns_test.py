@@ -46,7 +46,7 @@ class TestPatterns(BaseTestCase):
 
     def test_spatialpattern(self):
         dt = patterns.SpatialPattern()
-        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.value()
+        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
         summary = dt.summary_info()
@@ -57,8 +57,8 @@ class TestPatterns(BaseTestCase):
 
     def test_spatiotemporalpattern(self):
         dt = patterns.SpatioTemporalPattern()
-        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.value()
-        dt.temporal = SpatialEquationsEnum.GAUSSIAN.value()
+        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
+        dt.temporal = SpatialEquationsEnum.GAUSSIAN.instance
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
         summary = dt.summary_info()
@@ -75,8 +75,8 @@ class TestPatterns(BaseTestCase):
         conn.configure()
         dt = patterns.StimuliRegion()
         dt.connectivity = conn
-        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.value()
-        dt.temporal = SpatialEquationsEnum.GAUSSIAN.value()
+        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
+        dt.temporal = SpatialEquationsEnum.GAUSSIAN.instance
         dt.weight = numpy.array([0 for _ in range(conn.number_of_regions)])
         dt.configure_space()
         assert dt.summary_info()['Type'] == 'StimuliRegion'
@@ -92,8 +92,8 @@ class TestPatterns(BaseTestCase):
         srf.configure()
         dt = patterns.StimuliSurface()
         dt.surface = srf
-        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.value()
-        dt.temporal = SpatialEquationsEnum.GAUSSIAN.value()
+        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
+        dt.temporal = SpatialEquationsEnum.GAUSSIAN.instance
         dt.focal_points_triangles = numpy.array([0, 1, 2])
         dt.configure()
         dt.configure_space()
@@ -108,7 +108,7 @@ class TestPatterns(BaseTestCase):
         assert dt.time is None
 
     def test_spatialpatternvolume(self):
-        dt = patterns.SpatialPatternVolume(spatial=SpatialEquationsEnum.GAUSSIAN.value(),
+        dt = patterns.SpatialPatternVolume(spatial=SpatialEquationsEnum.GAUSSIAN.instance,
                                            volume=Volume(origin=numpy.array([]), voxel_size=numpy.array([])),
                                            focal_points_volume=numpy.array([1]))
         assert dt.space is None

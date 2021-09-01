@@ -109,13 +109,13 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model = surface_stimulus_creator.get_view_model_class()()
         view_model.surface = self.surface.gid
         view_model.focal_points_triangles = numpy.array([1, 2, 3])
-        view_model.spatial = SpatialEquationsEnum.MEXICAN_HAT.value()
+        view_model.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
         view_model.spatial.parameters['amp_1'] = 0.75
         view_model.spatial.parameters['amp_2'] = 1.25
         view_model.spatial_amp = 1.0
         view_model.spatial_sigma = 1.0
         view_model.spatial_offset = 0.0
-        view_model.temporal = TemporalEquationsEnum.SINUSOID.value()
+        view_model.temporal = TemporalEquationsEnum.SINUSOID.instance
         view_model.temporal.parameters['amp'] = 1.1
         view_model.temporal.parameters['frequency'] = 0.025
 
@@ -141,13 +141,13 @@ class TestStimulusCreator(TransactionalTestCase):
         view_model = surface_stimulus_creator.get_view_model_class()()
         view_model.surface = self.surface.gid
         view_model.focal_points_triangles = numpy.array([1, 2, 3])
-        view_model.spatial = SpatialEquationsEnum.SIGMOID.value()
+        view_model.spatial = SpatialEquationsEnum.SIGMOID.instance
         view_model.spatial.parameters['radius'] = 5.5
         view_model.spatial.parameters['offset'] = 0.1
         view_model.spatial_amp = 1.0
         view_model.spatial_sigma = 1.0
         view_model.spatial_offset = 0.0
-        view_model.temporal = TemporalEquationsEnum.ALPHA.value()
+        view_model.temporal = TemporalEquationsEnum.ALPHA.instance
         view_model.temporal.parameters['alpha'] = 15.0
         view_model.temporal.parameters['beta'] = 40.0
 

@@ -267,7 +267,7 @@ class Multiplicative(Noise):
     b = EnumAttr(
         field_type=TemporalEquationsEnum,
         label=":math:`b`",
-        default=TemporalEquationsEnum.LINEAR.value(),
+        default=TemporalEquationsEnum.LINEAR.instance,
         doc="""A function evaluated on the state-variables, the result of which enters as the diffusion coefficient.""")
 
     def gfun(self, state_variables):

@@ -146,7 +146,7 @@ class TestJinja2Simulator(Jinja2Test):
     def test_models_list(self, mocker):
         models_form = SimulatorModelFragment()
         simulator = Simulator()
-        simulator.model = ModelsEnum.EPILEPTOR.value()
+        simulator.model = ModelsEnum.EPILEPTOR.instance
         models_form.fill_from_trait(simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(is_model_fragment=True)

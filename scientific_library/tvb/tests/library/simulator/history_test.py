@@ -90,13 +90,13 @@ class TestsExactPropagation(BaseTestCase):
             coupling = EnumAttr(
                 field_type=ExactPropagationCouplingTestEnum,
                 label="Long-range coupling function",
-                default=ExactPropagationCouplingTestEnum.ID_COUPLING.value(),
+                default=ExactPropagationCouplingTestEnum.ID_COUPLING.instance,
                 required=True)
 
             model = EnumAttr(
                 field_type=ExactPropagationModelTestEnum,
                 label="Local dynamic model",
-                default=ExactPropagationModelTestEnum.SUM_MODEL.value(),
+                default=ExactPropagationModelTestEnum.SUM_MODEL.instance,
                 required=True)
 
         self.sim = ExactPropagationTestSimulator(

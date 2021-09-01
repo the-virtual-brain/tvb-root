@@ -172,7 +172,7 @@ class TestCouplingShape(BaseTestCase):
             model = EnumAttr(
                 field_type=CouplingShapeTestEnum,
                 label="Local dynamic model",
-                default=CouplingShapeTestEnum.COUPLING_SHAPE_TEST_MODEL.value(),
+                default=CouplingShapeTestEnum.COUPLING_SHAPE_TEST_MODEL.instance,
                 required=True)
 
         surf = cortex.Cortex.from_file()

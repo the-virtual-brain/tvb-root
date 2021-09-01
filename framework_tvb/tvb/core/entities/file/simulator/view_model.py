@@ -366,7 +366,7 @@ class SimulatorAdapterModel(ViewModel, Simulator):
     integrator = EnumAttr(
         field_type=IntegratorViewModelsEnum,
         label=Simulator.integrator.label,
-        default=IntegratorViewModelsEnum.HEUN.value(),
+        default=IntegratorViewModelsEnum.HEUN.instance,
         required=Simulator.integrator.required,
         doc=Simulator.integrator.doc
     )

@@ -92,7 +92,7 @@ class ContribSimulator(Simulator):
     model = EnumAttr(
         field_type=ModelsEnum,
         label="Local dynamic model",
-        default=ModelsEnum.GENERIC_2D_OSCILLATOR.value(),
+        default=ModelsEnum.GENERIC_2D_OSCILLATOR.instance,
         required=True,
         doc="""A tvb.simulator.Model object which describe the local dynamic
         equations, their parameters, and, to some extent, where connectivity

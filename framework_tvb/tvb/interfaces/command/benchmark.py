@@ -146,7 +146,7 @@ def main():
     prj, connectivities = _create_bench_project()
 
     g2d_epi = Bench(
-        models=[ModelsEnum.GENERIC_2D_OSCILLATOR.value(), ModelsEnum.EPILEPTOR.value()],
+        models=[ModelsEnum.GENERIC_2D_OSCILLATOR.instance, ModelsEnum.EPILEPTOR.instance],
         connectivities=connectivities,
         conductions=[30.0, 3.0],
         int_dts=[0.1, 0.05],
@@ -154,7 +154,7 @@ def main():
     )
 
     larter = Bench(
-        models=[ModelsEnum.LARTER_BREAKSPEAR.value()],
+        models=[ModelsEnum.LARTER_BREAKSPEAR.instance],
         connectivities=connectivities,
         conductions=[10.0],
         int_dts=[0.2, 0.1],

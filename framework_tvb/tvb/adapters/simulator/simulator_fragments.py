@@ -150,8 +150,8 @@ class SimulatorModelFragment(ABCAdapterForm):
         self.model.data = type(trait.model)
 
     def fill_trait(self, datatype):
-        if type(datatype.model) != self.model.value.value:
-            datatype.model = self.model.value.value()
+        if type(datatype.model) != type(self.model.value.instance):
+            datatype.model = self.model.value.instance
 
 
 class SimulatorIntegratorFragment(ABCAdapterForm):
@@ -168,7 +168,7 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
         self.integrator.data = type(trait.integrator)
 
     def fill_trait(self, datatype):
-        datatype.integrator = self.integrator.value.value()
+        datatype.integrator = self.integrator.value.instance
 
 
 class SimulatorMonitorFragment(ABCAdapterForm):

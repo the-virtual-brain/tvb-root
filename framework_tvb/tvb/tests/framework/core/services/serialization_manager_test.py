@@ -53,7 +53,7 @@ class TestSerializationManager(TransactionalTestCase):
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
         self.connectivity = TestFactory.get_entity(self.test_project, ConnectivityIndex)
 
-        sim_conf = Simulator(model=ModelsEnum.HOPFIELD.value(), integrator=HeunStochastic())
+        sim_conf = Simulator(model=ModelsEnum.HOPFIELD.instance, integrator=HeunStochastic())
 
         self.s_manager = SerializationManager(sim_conf)
         self.empty_manager = SerializationManager(None)

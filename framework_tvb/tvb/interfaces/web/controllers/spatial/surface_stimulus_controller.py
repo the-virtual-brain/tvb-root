@@ -242,8 +242,8 @@ class SurfaceStimulusController(SpatioTemporalController):
 
     def _reset_session_stimuli(self):
         new_surface_stim = SurfaceStimulusCreatorModel()
-        new_surface_stim.temporal = SurfaceStimulusCreatorForm.default_temporal.value()
-        new_surface_stim.spatial = SurfaceStimulusCreatorForm.default_spatial.value()
+        new_surface_stim.temporal = SurfaceStimulusCreatorForm.default_temporal.instance
+        new_surface_stim.spatial = SurfaceStimulusCreatorForm.default_spatial.instance
         self._reset_focal_points(new_surface_stim)
         common.add2session(KEY_SURFACE_STIMULI, new_surface_stim)
         common.add2session(KEY_TMP_FORM, EquationTemporalPlotForm())

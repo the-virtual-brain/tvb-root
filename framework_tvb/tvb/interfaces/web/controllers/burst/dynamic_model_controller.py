@@ -171,7 +171,7 @@ class DynamicModelController(BurstBaseController):
         Resets the phase plane and returns the ui model for the slider area.
         """
         dynamic = self.get_cached_dynamic(dynamic_gid)
-        dynamic.model = TVBEnum.string_to_enum(list(ModelsEnum), name).value()
+        dynamic.model = TVBEnum.string_to_enum(list(ModelsEnum), name).instance
         dynamic.model.configure()
         self._configure_integrator_noise(dynamic.integrator, dynamic.model)
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
@@ -191,17 +191,17 @@ class DynamicModelController(BurstBaseController):
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
 
     def _change_integrator(self, dynamic, field_value):
-        integrator = TVBEnum.string_to_enum(list(IntegratorViewModelsEnum), field_value).value()
+        integrator = TVBEnum.string_to_enum(list(IntegratorViewModelsEnum), field_value).instance
         self._update_integrator(dynamic, integrator)
 
     def _change_noise(self, dynamic, field_value):
-        noise = TVBEnum.string_to_enum(list(NoiseTypesEnum), field_value).value()
+        noise = TVBEnum.string_to_enum(list(NoiseTypesEnum), field_value).instance
         integrator = dynamic.integrator
         integrator.noise = noise
         self._update_integrator(dynamic, integrator)
 
     def _change_equation(self, dynamic, field_value):
-        equation = TVBEnum.string_to_enum(list(TemporalEquationsEnum), field_value).value()
+        equation = TVBEnum.string_to_enum(list(TemporalEquationsEnum), field_value).instance
         integrator = dynamic.integrator
         integrator.noise.b = equation
         self._update_integrator(dynamic, integrator)

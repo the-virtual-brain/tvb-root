@@ -51,7 +51,7 @@ class ContribTestSimulator(Simulator):
     model = EnumAttr(
         field_type=ContribModelsEnum,
         label="Local dynamic model",
-        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.value(),
+        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.instance,
         required=True)
 
 
@@ -91,7 +91,7 @@ class CoSimulator(Simulator):
     model = EnumAttr(
         field_type=ContribModelsEnum,
         label="Local dynamic model",
-        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.value(),
+        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.instance,
         required=True)
 
     synchronization_n_step = 0

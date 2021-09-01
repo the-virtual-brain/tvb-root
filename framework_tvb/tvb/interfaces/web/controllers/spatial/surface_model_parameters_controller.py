@@ -165,7 +165,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             config_form.equation.subform_field.form = get_form_for_equation(type(current_equation))()
             config_form.equation.subform_field.form.fill_from_trait(current_equation)
         else:
-            context.current_equation = SurfaceModelParametersForm.default_equation.value()
+            context.current_equation = SurfaceModelParametersForm.default_equation.instance
             config_form.equation.data = type(context.current_equation)
             config_form.equation.subform_field.form.fill_from_trait(context.current_equation)
 
@@ -307,7 +307,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
             simulator = self.simulator_context.simulator
 
-            for param_name in self.model_params_list.values():
+            for param_name in self.model_params_list:
                 param_data = context_model_parameters.get_data_for_model_param(param_name)
                 if param_data is None:
                     continue

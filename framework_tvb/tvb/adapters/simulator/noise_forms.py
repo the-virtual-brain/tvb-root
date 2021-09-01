@@ -83,7 +83,7 @@ class MultiplicativeNoiseForm(NoiseForm):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)
         datatype.nsig = self.nsig.data
         if type(datatype.b) != self.equation.data.value:
-            datatype.b = self.equation.data.value()
+            datatype.b = self.equation.data.instance
 
     def fill_from_trait(self, trait):
         # type: (NoiseViewModel) -> None

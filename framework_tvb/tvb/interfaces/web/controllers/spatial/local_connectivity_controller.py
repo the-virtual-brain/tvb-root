@@ -111,7 +111,7 @@ class LocalConnectivityController(SpatioTemporalController):
             form_instance=LocalConnectivityCreatorForm(),
             project_id=common.get_current_project().id)
         configure_lcon_form.fill_from_trait(current_lconn)
-        current_lconn.equation = configure_lcon_form.spatial.value()
+        current_lconn.equation = configure_lcon_form.spatial.value
 
         template_specification = dict(title="Surface - Local Connectivity")
         template_specification['mainContent'] = 'spatial/local_connectivity_step1_main'

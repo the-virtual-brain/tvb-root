@@ -82,7 +82,7 @@ class Simulator(HasTraits):
     coupling = EnumAttr(
         field_type=CouplingFunctionsEnum,
         label="Long-range coupling function",
-        default=CouplingFunctionsEnum.LINEAR.value(),
+        default=CouplingFunctionsEnum.LINEAR.instance,
         required=True,
         doc="""The coupling function is applied to the activity propagated
         between regions by the ``Long-range connectivity`` before it enters the local
@@ -117,7 +117,7 @@ class Simulator(HasTraits):
     model: Model = EnumAttr(
         field_type=ModelsEnum,
         label="Local dynamic model",
-        default=ModelsEnum.GENERIC_2D_OSCILLATOR.value(),
+        default=ModelsEnum.GENERIC_2D_OSCILLATOR.instance,
         required=True,
         doc="""A tvb.simulator.Model object which describe the local dynamic
         equations, their parameters, and, to some extent, where connectivity

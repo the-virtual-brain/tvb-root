@@ -154,6 +154,10 @@ class HasTraitsEnum(TVBEnum):
         tuple_value = super(HasTraitsEnum, self).value
         return tuple_value[1]
 
+    @property
+    def instance(self):
+        return self.value()
+
 
 class BaseTypeEnum(TVBEnum):
     def __str__(self):
