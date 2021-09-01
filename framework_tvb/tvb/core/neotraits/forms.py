@@ -32,10 +32,11 @@ import json
 import uuid
 from collections import namedtuple
 import numpy
+
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
-from tvb.basic.neotraits.api import List, Attr
+from tvb.basic.neotraits.api import List, Attr, TVBEnum
 # TODO: remove dependency
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
@@ -336,19 +337,13 @@ class SelectField(TraitField):
     def _from_post(self):
         super(SelectField, self)._from_post()
 
-        data_as_enum = self.__string_to_enum()
+        data_as_enum = TVBEnum.string_to_enum(self.choices, self.unvalidated_data)
         if self.unvalidated_data != self.missing_value and data_as_enum is None \
                 and (self.unvalidated_data is not None or self.display_none_choice is False):
 
             raise ValueError("the entered value is not among the choices for this field!")
 
         self.data = data_as_enum
-
-    def __string_to_enum(self):
-        for choice in self.choices:
-            if self.unvalidated_data == str(choice):
-                return choice
-        return None
 
 
 class DynamicSelectField(TraitField):

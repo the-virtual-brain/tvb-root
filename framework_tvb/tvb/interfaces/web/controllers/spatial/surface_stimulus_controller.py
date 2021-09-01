@@ -41,12 +41,11 @@ import numpy
 from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliSurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.basic.neotraits.api import Float
+from tvb.basic.neotraits.api import Float, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import Form, FloatField
-from tvb.core.utils import enum_str_to_enum_value
 from tvb.datatypes.equations import TemporalEquationsEnum
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -114,7 +113,7 @@ class SurfaceStimulusController(SpatioTemporalController):
     @check_user
     def refresh_subform(self, subform_div, equation):
         # TODO: nicer way to differentiate between temporal and spatial equations
-        eq_class = enum_str_to_enum_value(TemporalEquationsEnum, equation).value
+        eq_class = TVBEnum.string_to_enum(list(TemporalEquationsEnum), equation).value
         current_surface_stim = common.get_from_session(KEY_SURFACE_STIMULI)
         if 'temporal' in subform_div:
             current_surface_stim.temporal = eq_class()

@@ -35,8 +35,7 @@ import uuid
 import numpy
 import scipy.sparse
 
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
-from tvb.core.utils import enum_str_to_enum_value
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, TVBEnum
 from tvb.datatypes import equations
 from tvb.storage.h5.file.exceptions import MissingDataSetException
 
@@ -133,7 +132,7 @@ class Enum(Scalar):
     def load(self):
         metadata = self.owner.storage_manager.get_metadata()
         if self.field_name in metadata:
-            return enum_str_to_enum_value(self.trait_attribute.field_type, metadata[self.field_name])
+            return TVBEnum.string_to_enum(list(self.trait_attribute.field_type), metadata[self.field_name])
 
 
 class DataSetMetaData(object):

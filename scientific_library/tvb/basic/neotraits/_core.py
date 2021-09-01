@@ -134,7 +134,16 @@ def cached_trait_property(attr):
     return deco
 
 
-class HasTraitsEnum(Enum):
+class TVBEnum(Enum):
+
+    @staticmethod
+    def string_to_enum(choices, data):
+        for choice in choices:
+            if data == str(choice):
+                return choice
+        return None
+
+class HasTraitsEnum(TVBEnum):
 
     @property
     def value(self):
@@ -146,7 +155,7 @@ class HasTraitsEnum(Enum):
         return tuple_value[1]
 
 
-class BaseTypeEnum(Enum):
+class BaseTypeEnum(TVBEnum):
     def __str__(self):
         return str(self.value)
 

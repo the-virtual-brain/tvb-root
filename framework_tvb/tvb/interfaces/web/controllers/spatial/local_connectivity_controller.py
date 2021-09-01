@@ -42,10 +42,10 @@ from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
-from tvb.core.utils import enum_str_to_enum_value
 from tvb.datatypes.equations import SpatialEquationsEnum
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -139,7 +139,7 @@ class LocalConnectivityController(SpatioTemporalController):
     @handle_error(redirect=False)
     @check_user
     def refresh_subform(self, equation):
-        eq_class = enum_str_to_enum_value(SpatialEquationsEnum, equation).value
+        eq_class = TVBEnum.string_to_enum(list(SpatialEquationsEnum), equation).value
         current_lconn = common.get_from_session(KEY_LCONN)
         current_lconn.equation = eq_class()
 

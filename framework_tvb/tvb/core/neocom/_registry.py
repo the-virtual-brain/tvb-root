@@ -31,11 +31,10 @@
 import typing
 from enum import Enum
 
-from tvb.basic.neotraits.api import HasTraits
+from tvb.basic.neotraits.api import HasTraits, TVBEnum
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.h5 import H5File
-from tvb.core.utils import enum_str_to_enum_value
 
 
 class Registry(object):
@@ -73,7 +72,7 @@ class Registry(object):
         if subtype:
             index = self.get_index_for_datatype(base_dt)
             function, enum_class = self._index_to_subtype_factory[index]
-            subtype_as_enum = enum_str_to_enum_value(enum_class, subtype)
+            subtype_as_enum = TVBEnum.string_to_enum(list(enum_class), subtype)
             return type(function(subtype_as_enum.value))
         return base_dt
 
@@ -92,7 +91,7 @@ class Registry(object):
         subtype = index.get_subtype_attr()
         if subtype:
             function, enum_class = self._index_to_subtype_factory[type(index)]
-            subtype_as_enum = enum_str_to_enum_value(enum_class, subtype)
+            subtype_as_enum = TVBEnum.string_to_enum(list(enum_class), subtype)
             return type(function(subtype_as_enum.value))
         return self._datatype_for_index[type(index)]
 

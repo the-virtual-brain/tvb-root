@@ -41,11 +41,11 @@ from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.core.utils import enum_str_to_enum_value
 from tvb.datatypes.equations import TemporalEquationsEnum
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
@@ -114,7 +114,7 @@ class RegionStimulusController(SpatioTemporalController):
     @handle_error(redirect=False)
     @check_user
     def refresh_subform(self, temporal_equation):
-        eq_class = enum_str_to_enum_value(TemporalEquationsEnum, temporal_equation).value
+        eq_class = TVBEnum.string_to_enum(list(TemporalEquationsEnum), temporal_equation).value
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
         current_region_stim.temporal = eq_class()
 

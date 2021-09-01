@@ -370,9 +370,3 @@ def prepare_time_slice(total_time_length, max_length=10 ** 4):
 
 def hash_password(pass_string):
     return md5(pass_string.encode('utf-8')).hexdigest()
-
-
-def enum_str_to_enum_value(enum, enum_str):
-    for enum_member in list(enum):
-        if str(enum_member) == enum_str:
-            return enum_member

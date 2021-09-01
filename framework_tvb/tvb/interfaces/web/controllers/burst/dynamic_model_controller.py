@@ -37,13 +37,14 @@ import cherrypy
 import numpy
 
 import tvb.core.entities.model.model_burst as model_burst
-from tvb.adapters.simulator.equation_forms import get_form_for_equation, EquationForm
-from tvb.adapters.simulator.integrator_forms import get_form_for_integrator, NoiseTypesEnum, IntegratorForm
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.integrator_forms import get_form_for_integrator, NoiseTypesEnum
 from tvb.adapters.simulator.model_forms import get_form_for_model
-from tvb.adapters.simulator.noise_forms import get_form_for_noise, NoiseForm
+from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel, \
@@ -51,7 +52,7 @@ from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewMod
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import StrField
 from tvb.core.neotraits.view_model import Str
-from tvb.core.utils import TVBJSONEncoder, enum_str_to_enum_value
+from tvb.core.utils import TVBJSONEncoder
 from tvb.datatypes.equations import TemporalEquationsEnum
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -170,7 +171,7 @@ class DynamicModelController(BurstBaseController):
         Resets the phase plane and returns the ui model for the slider area.
         """
         dynamic = self.get_cached_dynamic(dynamic_gid)
-        dynamic.model = enum_str_to_enum_value(ModelsEnum, name).value()
+        dynamic.model = TVBEnum.string_to_enum(list(ModelsEnum), name).value()
         dynamic.model.configure()
         self._configure_integrator_noise(dynamic.integrator, dynamic.model)
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
@@ -190,17 +191,17 @@ class DynamicModelController(BurstBaseController):
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
 
     def _change_integrator(self, dynamic, field_value):
-        integrator = enum_str_to_enum_value(IntegratorViewModelsEnum, field_value).value()
+        integrator = TVBEnum.string_to_enum(list(IntegratorViewModelsEnum), field_value).value()
         self._update_integrator(dynamic, integrator)
 
     def _change_noise(self, dynamic, field_value):
-        noise = enum_str_to_enum_value(NoiseTypesEnum, field_value).value()
+        noise = TVBEnum.string_to_enum(list(NoiseTypesEnum), field_value).value()
         integrator = dynamic.integrator
         integrator.noise = noise
         self._update_integrator(dynamic, integrator)
 
     def _change_equation(self, dynamic, field_value):
-        equation = enum_str_to_enum_value(TemporalEquationsEnum, field_value).value()
+        equation = TVBEnum.string_to_enum(list(TemporalEquationsEnum), field_value).value()
         integrator = dynamic.integrator
         integrator.noise.b = equation
         self._update_integrator(dynamic, integrator)
@@ -223,7 +224,7 @@ class DynamicModelController(BurstBaseController):
     @check_user
     def refresh_subform(self, dynamic_gid, field_value):
         enum_class, get_form_method = self._update_integrator_on_dynamic(dynamic_gid, field_value)
-        integrator_class = enum_str_to_enum_value(enum_class, field_value).value
+        integrator_class = TVBEnum.string_to_enum(list(enum_class), field_value).value
         subform = get_form_method(integrator_class)()
         return {'adapter_form': subform}
 

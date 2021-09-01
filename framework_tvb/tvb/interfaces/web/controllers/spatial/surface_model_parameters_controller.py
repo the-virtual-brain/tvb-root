@@ -38,13 +38,12 @@ import cherrypy
 
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
-from tvb.basic.neotraits.api import Attr, Float, EnumAttr, HasTraitsEnum
+from tvb.basic.neotraits.api import Attr, Float, EnumAttr, HasTraitsEnum, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities import load
 from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
-from tvb.core.utils import enum_str_to_enum_value
 from tvb.datatypes.equations import Gaussian, SpatialEquationsEnum, Sigmoid
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -231,7 +230,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
     @handle_error(redirect=False)
     @check_user
     def refresh_subform(self, equation):
-        eq_class = enum_str_to_enum_value(SurfaceModelEquationsEnum, equation).value
+        eq_class = TVBEnum.string_to_enum(list(SurfaceModelEquationsEnum), equation).value
         context = common.get_from_session(KEY_CONTEXT_MPS)
         context.current_equation = eq_class()
 
