@@ -116,21 +116,6 @@ class FilesHelper(object):
             self.logger.exception("Could not rename node!")
             raise FileStructureException("Could not rename to %s" % new_name)
 
-    def remove_project_structure(self, project_name):
-        """ Remove all folders for project or THROW FileStructureException. """
-        try:
-            complete_path = self.get_project_folder(project_name)
-            if os.path.exists(complete_path):
-                if os.path.isdir(complete_path):
-                    shutil.rmtree(complete_path)
-                else:
-                    os.remove(complete_path)
-
-            self.logger.debug("Project folders were removed for " + project_name)
-        except OSError:
-            self.logger.exception("A problem occurred while removing folder.")
-            raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
-
     def get_project_meta_file_path(self, project_name, project_file):
         """
         Retrieve project meta info file path.
@@ -171,28 +156,12 @@ class FilesHelper(object):
         try:
             complete_path = self.get_project_folder(project_name, str(operation_id))
             self.logger.debug("Removing: " + str(complete_path))
-            if os.path.isdir(complete_path):
-                shutil.rmtree(complete_path)
-            elif os.path.exists(complete_path):
-                os.remove(complete_path)
-        except Exception:
+            self.remove_folder(complete_path, False)
+        except FileStructureException:
             self.logger.exception("Could not remove files")
             raise FileStructureException("Could not remove files for OP" + str(operation_id))
 
     ####################### DATA-TYPES METHODS Start Here #####################
-    def remove_datatype_file(self, h5_file):
-        """
-        Remove H5 storage fully.
-        """
-        try:
-            if os.path.exists(h5_file):
-                os.remove(h5_file)
-            else:
-                self.logger.warning("Data file already removed:" + str(h5_file))
-        except Exception:
-            self.logger.exception("Could not remove file")
-            raise FileStructureException("Could not remove " + str(h5_file))
-
     def move_datatype(self, new_project_name, new_op_id, full_path):
         """
         Move H5 storage into a new location
@@ -222,13 +191,14 @@ class FilesHelper(object):
         _, dict_data = figure.to_dict()
         XMLWriter(meta_entity).write_metadata_in_xml(self._compute_image_metadata_file(figure, images_folder))
 
-    def remove_image_metadata(self, figure, images_folder):
+    def remove_figure(self, figure, images_folder):
         """
-        Remove the file storing image meta data
+        Remove the file storing image and its meta data
         """
+        figures_folder = self.get_images_folder(figure.project.name, images_folder)
+        path2figure = os.path.join(figures_folder, figure.file_path)
         metadata_file = self._compute_image_metadata_file(figure, images_folder)
-        if os.path.exists(metadata_file):
-            os.remove(metadata_file)
+        self.remove_files([path2figure, metadata_file])
 
     def _compute_image_metadata_file(self, figure, images_folder):
         """
@@ -250,7 +220,8 @@ class FilesHelper(object):
         self.check_created(folder)
         return folder
 
-            ######################## GENERIC METHODS Start Here #######################
+        ######################## GENERIC METHODS Start Here #######################
+
     @staticmethod
     def copy_file(source, dest, dest_postfix, buffer_size):
         """
@@ -282,17 +253,18 @@ class FilesHelper(object):
                 dest.close()
 
     @staticmethod
-    def remove_files(file_list, ignore_exception):
+    def remove_files(file_list, ignore_exception=False):
         """
         :param file_list: list of file paths to be removed.
         :param ignore_exception: When True and one of the specified files could not be removed, an exception is raised.  
         """
         for file_ in file_list:
             try:
-                if os.path.isfile(file_):
-                    os.remove(file_)
-                if os.path.isdir(file_):
-                    shutil.rmtree(file_)
+                if os.path.exists(file_):
+                    if os.path.isfile(file_):
+                        os.remove(file_)
+                    if os.path.isdir(file_):
+                        shutil.rmtree(file_)
             except Exception:
                 logger = get_logger(__name__)
                 logger.exception("Could not remove " + str(file_))

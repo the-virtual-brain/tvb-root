@@ -32,19 +32,20 @@
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
-import tvb_data
 import os
+
 import pyAesCrypt
 import pytest
+import tvb_data
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcuploader import ABCUploader, ENCRYPTED_PASSWORD_NAME, ENCRYPTED_DATA_SUFFIX, \
     DECRYPTED_DATA_SUFFIX
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.basic.profile import TvbProfile
 
 
 class TestEncryptionDecryption(TransactionalTestCase):
@@ -113,7 +114,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
                     original_content_chunk = f_original.read(buffer_size)
                     decrypted_content_chunk = f_decrypted.read(buffer_size)
 
-                    assert original_content_chunk == decrypted_content_chunk,\
+                    assert original_content_chunk == decrypted_content_chunk, \
                         "Original and Decrypted chunks are not equal, so decryption hasn't been done correctly!"
 
                     # check if EOF was reached
@@ -121,7 +122,5 @@ class TestEncryptionDecryption(TransactionalTestCase):
                         break
 
         # Clean-up
-        os.remove(encrypted_file_path)
-        os.remove(decrypted_file_path)
-        os.remove(private_key_path)
-        os.remove(path_to_encrypted_password)
+        StorageInterface.remove_files(
+            [encrypted_file_path, decrypted_file_path, private_key_path, path_to_encrypted_password])

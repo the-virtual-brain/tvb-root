@@ -43,7 +43,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer, \
     encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
-from tvb.storage.h5.file.exceptions import RenameWhileSyncEncryptingException
+from tvb.storage.h5.file.exceptions import RenameWhileSyncEncryptingException, FileStructureException
 from tvb.storage.h5.file.files_helper import FilesHelper, TvbZip
 from tvb.storage.h5.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.storage.h5.file.xml_metadata_handlers import XMLReader, XMLWriter
@@ -98,9 +98,6 @@ class StorageInterface:
     def get_temp_folder(self, project_name):
         return self.files_helper.get_project_folder(project_name, self.TEMP_FOLDER)
 
-    def remove_project_structure(self, project_name):
-        self.files_helper.remove_project_structure(project_name)
-
     def get_project_meta_file_path(self, project_name):
         return self.files_helper.get_project_meta_file_path(project_name)
 
@@ -116,18 +113,15 @@ class StorageInterface:
     def remove_operation_data(self, project_name, operation_id):
         self.files_helper.remove_operation_data(project_name, operation_id)
 
-    def remove_datatype_file(self, h5_file):
-        self.files_helper.remove_datatype_file(h5_file)
-        self.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(h5_file))
-
     def get_images_folder(self, project_name):
         return self.files_helper.get_images_folder(project_name, self.IMAGES_FOLDER)
 
     def write_image_metadata(self, figure, meta_entity):
         self.files_helper.write_image_metadata(figure, meta_entity, self.IMAGES_FOLDER)
 
-    def remove_image_metadata(self, figure):
-        self.files_helper.remove_image_metadata(figure, self.IMAGES_FOLDER)
+    def remove_figure(self, figure):
+        self.files_helper.remove_figure(figure, self.IMAGES_FOLDER)
+        self.push_folder_to_sync(figure.project.name)
 
     def get_allen_mouse_cache_folder(self, project_name):
         return self.files_helper.get_allen_mouse_cache_folder(project_name)
@@ -330,14 +324,19 @@ class StorageInterface:
                 self.get_project_folder(new_name))
             os.rename(encrypted_path, new_encrypted_path)
 
-    def remove_project(self, project):
+    def remove_project(self, project, sync_for_encryption=False):
         project_folder = self.get_project_folder(project.name)
-        self.remove_project_structure(project.name)
+        if sync_for_encryption:
+            self.sync_folders(project_folder)
+        try:
+            self.remove_folder(project_folder)
+            self.logger.debug("Project folders were removed for " + project.name)
+        except OSError:
+            self.logger.exception("A problem occurred while removing folder.")
+            raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
+
         encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
-        if os.path.exists(encrypted_path):
-            self.remove_folder(encrypted_path)
-        if os.path.exists(DataEncryptionHandler.project_key_path(project.id)):
-            os.remove(DataEncryptionHandler.project_key_path(project.id))
+        FilesHelper.remove_files([encrypted_path, DataEncryptionHandler.project_key_path(project.id)], True)
 
     def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, full_path, vm_full_path):
         self.set_project_active(to_project)

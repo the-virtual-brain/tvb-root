@@ -37,7 +37,6 @@ import tvb_data.surfaceData
 import tvb_data.regionMapping
 
 from tvb.core.neocom import h5
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.datatypes.surfaces import CORTICAL
 from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex
@@ -79,12 +78,6 @@ class TestBrainViewer(TransactionalTestCase):
                                                            connectivity_idx.gid)
         self.connectivity = h5.load_from_index(connectivity_idx)
         self.region_mapping = h5.load_from_index(region_mapping)
-
-    def transactional_teardown_method(self):
-        """
-        Clean-up tests data
-        """
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_launch(self, time_series_region_index_factory):
         """

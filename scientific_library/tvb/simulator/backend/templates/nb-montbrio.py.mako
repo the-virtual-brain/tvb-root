@@ -36,6 +36,7 @@ import numba as nb
 
 
 <%
+    from tvb.simulator.integrators import IntegratorStochastic
     cvars = [sim.model.state_variables[i] for i in sim.model.cvar]
     stochastic = isinstance(sim.integrator, IntegratorStochastic)
 %>

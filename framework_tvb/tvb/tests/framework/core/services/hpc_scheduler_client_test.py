@@ -32,7 +32,7 @@
 .. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
 """
 import os
-import shutil
+
 import numpy
 import pytest
 from tvb.basic.config.settings import HPCSettings
@@ -204,10 +204,6 @@ class TestHPCSchedulerClient(BaseTestCase):
 
     def teardown_method(self):
         encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)
-        if os.path.isdir(encrypted_dir):
-            shutil.rmtree(encrypted_dir)
         passfile = self.storage_interface.get_password_file(self.dir_gid)
-        if os.path.exists(passfile):
-            os.remove(passfile)
-        self.storage_interface.remove_project_structure(self.test_project.name)
+        self.storage_interface.remove_files([encrypted_dir, passfile])
         self.clean_database()

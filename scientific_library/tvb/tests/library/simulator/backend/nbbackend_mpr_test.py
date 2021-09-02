@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import numpy
 import numpy as np
 import scipy.sparse as ss
 
@@ -38,11 +38,11 @@ from tvb.simulator.lab import *
 
 class TestNbSim(BaseTestSim):
 
-    def _get_run_sim_chunked(self, print_source=False):
-        template = '<%include file="nb-montbrio.py.mako"/>'
-        content = dict(foo='bar')
+    #def get_run_sim_chunked(self, print_source=False):
+    #    template = '<%include file="nb-montbrio.py.mako"/>'
+    #    content = dict(foo='bar')
 
-        return NbMPRBackend().build_py_func(template, content, name='run_sim_tavg_chunked', print_source=print_source)
+    #    return NbMPRBackend().build_py_func(template, content, name='run_sim_tavg_chunked', print_source=print_source)
 
     def _random_network(self, N=300, density=0.1, low=5, high=250, speed=np.inf):
         weights = ss.random(N,N, density=density, format='lil')
@@ -186,7 +186,6 @@ class TestNbSim(BaseTestSim):
         )
 
     def test_network_deterministic_nodelay(self):
-        #run_sim = self._get_run_sim(print_source=True)
         dt = 0.01
         G = 0.8
 
@@ -207,11 +206,12 @@ class TestNbSim(BaseTestSim):
             )
         ).configure()
 
-        (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1, compatibility_mode=True)
-        r_pdq, V_pdq = pdq_d[0,:,:,0] 
+        with numpy.errstate(all='ignore'):
+            (pdq_t, pdq_d), = NbMPRBackend().run_sim(sim, nstep=1, compatibility_mode=True)
+            r_pdq, V_pdq = pdq_d[0,:,:,0] 
 
-        (raw_t, raw_d), = sim.run(simulation_length=1)
-        r_tvb, V_tvb = raw_d[0,:,:,0]
+            (raw_t, raw_d), = sim.run(simulation_length=1)
+            r_tvb, V_tvb = raw_d[0, :, :, 0]
 
         np.testing.assert_allclose(r_tvb, r_pdq, rtol=1e-4)
         np.testing.assert_allclose(V_tvb, V_pdq, rtol=1e-4)

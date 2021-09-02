@@ -33,21 +33,21 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
-import json
 import copy
-import shutil
+import json
+import os
 from pathlib import Path
-
-import pytest
-import cherrypy
 from time import sleep
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.basic.profile import TvbProfile
+
+import cherrypy
+import pytest
 from tvb.basic.config import stored
+from tvb.basic.profile import TvbProfile
 from tvb.core.utils import get_matlab_executable, hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
+from tvb.storage.storage_interface import StorageInterface
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
 
 class TestSettingsController(BaseTransactionalControllerTest):
@@ -92,9 +92,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         """ Cleans the testing environment """
         self.cleanup()
         self.clean_database()
-
-        if os.path.exists(self.VALID_SETTINGS['TVB_STORAGE']):
-            shutil.rmtree(self.VALID_SETTINGS['TVB_STORAGE'])
+        StorageInterface.remove_folder(self.VALID_SETTINGS['TVB_STORAGE'], True)
 
     def test_with_invalid_admin_settings(self):
 

@@ -111,6 +111,3 @@ class TestSimulationResource(RestResourceTest):
 
         assert type(operation_gid) is str
         assert status == 201
-
-    def transactional_teardown_method(self):
-        self.storage_interface.remove_project_structure(self.test_project.name)
