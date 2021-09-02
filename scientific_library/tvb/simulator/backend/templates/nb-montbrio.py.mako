@@ -36,11 +36,13 @@ import numba as nb
 
 
 <%
+    import numpy as np
     from tvb.simulator.integrators import IntegratorStochastic
     cvars = [sim.model.state_variables[i] for i in sim.model.cvar]
     stochastic = isinstance(sim.integrator, IntegratorStochastic)
 %>
 
+# Coupling
 ${'' if debug_nojit else '@nb.njit(inline="always")'}
 def cx(t, i, N, weights, ${','.join(cvars)}, idelays):
 % for par in sim.coupling.parameter_names:
@@ -62,6 +64,32 @@ def cx(t, i, N, weights, ${','.join(cvars)}, idelays):
 % endfor
     return ${','.join(sim.model.coupling_terms)}
 
+# svar bound functions
+% if sim.model.state_variable_boundaries is not None:
+% for svar, (lo, hi) in sim.model.state_variable_boundaries.items():
+${'' if debug_nojit else '@nb.njit(inline="always")'}
+def bound_${svar}(x):
+% if lo > -np.inf: # this doesn't work, fix later
+    x = x if x >= ${lo} else ${lo} 
+% endif
+% if hi < np.inf:
+    x = x if x <= ${hi} else ${hi}
+% endif
+    return x
+% endfor
+% endif
+
+## this is fragile due to fixed intentation
+<%def name='call_bound_svars(svars)'>
+% if sim.model.state_variable_boundaries is not None:
+% for svar, lsvar in zip(sim.model.state_variables, svars):
+% if svar in sim.model.state_variable_boundaries.keys():
+            ${lsvar} = bound_${svar}(${lsvar})
+% endif
+% endfor    
+% endif
+</%def>
+
 
 @nb.njit
 def _mpr_integrate(
@@ -78,21 +106,17 @@ def _mpr_integrate(
         stimulus # stimulus [nnodes, ntimes] or None
 ):
 
-    def r_bound(r):
-        return r if r >= 0. else 0. # max(0., r) is faster?
-
     for i in range(i0, i0 + nstep):
         for n in range(N):
             r_c, V_c = cx(i-1, n, N, weights, ${','.join(cvars)}, idelays)
 
 % if stochastic:
+            # precomputed additive noise 
 % for svar in sim.model.state_variables:
             ${svar}_noise = ${svar}[n,i]
 % endfor
 % endif
-            # precomputed additive noise 
-            #r_noise = r[n,i]
-            #V_noise = V[n,i]
+
 % if sim.stimulus is not None:
             # stimulus TODO reflect stvar
             r_stim = 0.0
@@ -104,15 +128,17 @@ def _mpr_integrate(
 
             r_int = r[n,i-1] + dt*dr_0 + r_noise ${'' if sim.stimulus is None else '+dt*r_stim'}
             V_int = V[n,i-1] + dt*dV_0 + V_noise ${'' if sim.stimulus is None else '+dt*V_stim'}
-            r_int = r_bound(r_int)
+            ${call_bound_svars(['r_int','V_int'])}
 
 % if not compatibility_mode:
             # coupling
             r_c, V_c = cx(i, n, N, weights, ${','.join(cvars)}, idelays)
 % endif
-            r[n,i] = r[n,i-1] + dt*(dr_0 + dx_r(r_int, V_int, r_c, V_c, parmat[n]  ))/2.0 + r_noise ${'' if sim.stimulus is None else '+dt*r_stim'}
+            r_n = r[n,i-1] + dt*(dr_0 + dx_r(r_int, V_int, r_c, V_c, parmat[n]  ))/2.0 + r_noise ${'' if sim.stimulus is None else '+dt*r_stim'}
 
-            V[n,i] = V[n,i-1] + dt*(dV_0 + dx_V(r_int, V_int, r_c, V_c, parmat[n]))/2.0 + V_noise ${'' if sim.stimulus is None else '+dt*V_stim'}
-            r[n,i] = r_bound(r[n,i])
+            V_n = V[n,i-1] + dt*(dV_0 + dx_V(r_int, V_int, r_c, V_c, parmat[n]))/2.0 + V_noise ${'' if sim.stimulus is None else '+dt*V_stim'}
+            ${call_bound_svars(['r_n','V_n'])}
+            r[n,i] = r_n
+            V[n,i] = V_n
 
     return r, V
