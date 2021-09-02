@@ -37,8 +37,8 @@ Service Layer for the Project entity.
 
 import formencode
 import os
+import uuid
 
-from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
@@ -524,7 +524,7 @@ class ProjectService:
             return meta_atts, states, None
 
     @staticmethod
-    def _add_links_for_linked_datatypes(datatype, fk_to_project, link_to_delete, existing_dt_links):
+    def _add_links_for_datatype_references(datatype, fk_to_project, link_to_delete, existing_dt_links):
         # If we found a datatype that has links, we need to link those as well to the linked project
         # so they can be also copied
 
@@ -533,11 +533,11 @@ class ProjectService:
         h5.gather_all_references_by_index(h5_file, linked_datatype_paths)
 
         for h5_path in linked_datatype_paths:
-            if h5_path in existing_dt_links:
+            if existing_dt_links is not None and h5_path in existing_dt_links:
                 continue
 
-            dt = h5.load(h5_path)
-            dt_index = h5.load_entity_by_gid(dt.gid)
+            gid = H5File.get_metadata_param(h5_path, 'gid')
+            dt_index = h5.load_entity_by_gid(uuid.UUID(gid))
             new_link = Links(dt_index.id, fk_to_project)
             dao.store_entity(new_link)
 
@@ -659,7 +659,7 @@ class ProjectService:
         else:
             self.logger.warning("Attempt to delete operation with id=%s which no longer exists." % operation_id)
 
-    def remove_datatype(self, project_id, datatype_gid, skip_validation=False, existing_dt_links=[]):
+    def remove_datatype(self, project_id, datatype_gid, skip_validation=False, existing_dt_links=None):
         """
         Method used for removing a dataType. If the given dataType is a DatatypeGroup
         or a dataType from a DataTypeGroup than this method will remove the entire group.
@@ -707,12 +707,11 @@ class ProjectService:
                 if len(links) > 0:
                     # We want to get the links for the first TSIndex directly
                     # This code works for all cases
-                    dt_group = dao.get_datatypegroup_by_op_group_id(burst.fk_operation_group)
-                    datatypes = dao.get_datatype_in_group(dt_group.id)
+                    datatypes = dao.get_datatype_in_group(dt_group_for_op_group.id)
                     ts = datatypes[0]
 
-                    new_dt_links = self._add_links_for_linked_datatypes(ts, links[0].fk_to_project, links[0].id,
-                                                                        existing_dt_links)
+                    new_dt_links = self._add_links_for_datatype_references(ts, links[0].fk_to_project, links[0].id,
+                                                                           existing_dt_links)
 
                 if burst.fk_metric_operation_group:
                     correct = correct and self._remove_operation_group(burst.fk_metric_operation_group, project_id,
@@ -734,8 +733,8 @@ class ProjectService:
             links = dao.get_links_for_datatype(datatype.id)
 
             if len(links) > 0:
-                new_dt_links = self._add_links_for_linked_datatypes(datatype, links[0].fk_to_project, links[0].id,
-                                                                    existing_dt_links)
+                new_dt_links = self._add_links_for_datatype_references(datatype, links[0].fk_to_project, links[0].id,
+                                                                       existing_dt_links)
 
             self._remove_project_node_files(project_id, datatype.gid, links, skip_validation)
 
