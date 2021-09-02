@@ -110,33 +110,43 @@ def _mpr_integrate(
         for n in range(N):
             r_c, V_c = cx(i-1, n, N, weights, ${','.join(cvars)}, idelays)
 
+% for svar in sim.model.state_variables:
 % if stochastic:
             # precomputed additive noise 
-% for svar in sim.model.state_variables:
             ${svar}_noise = ${svar}[n,i]
-% endfor
+% else:
+            ${svar}_noise = 0.0
 % endif
+% endfor
 
 % if sim.stimulus is not None:
-            # stimulus TODO reflect stvar
-            r_stim = 0.0
-            V_stim = stimulus[n,i-i0]
+% for i, svar in enumerate(sim.model.state_variables):
+% if i in sim.model.stvar:
+            ${svar}_stim = dt*stimulus[n,i-i0]
+% else:
+            ${svar}_stim = 0.0
+% endif
+% endfor
+% else:
+% for svar in sim.model.state_variables:
+            ${svar}_stim = 0.0
+% endfor
 % endif
             # Heun integration step
             dr_0 = dx_r(r[n,i-1], V[n,i-1], r_c, V_c, parmat[n] ) 
             dV_0 = dx_V(r[n,i-1], V[n,i-1], r_c, V_c, parmat[n] ) 
 
-            r_int = r[n,i-1] + dt*dr_0 + r_noise ${'' if sim.stimulus is None else '+dt*r_stim'}
-            V_int = V[n,i-1] + dt*dV_0 + V_noise ${'' if sim.stimulus is None else '+dt*V_stim'}
+            r_int = r[n,i-1] + dt*dr_0 + r_noise + r_stim
+            V_int = V[n,i-1] + dt*dV_0 + V_noise + V_stim
             ${call_bound_svars(['r_int','V_int'])}
 
 % if not compatibility_mode:
             # coupling
             r_c, V_c = cx(i, n, N, weights, ${','.join(cvars)}, idelays)
 % endif
-            r_n = r[n,i-1] + dt*(dr_0 + dx_r(r_int, V_int, r_c, V_c, parmat[n]  ))/2.0 + r_noise ${'' if sim.stimulus is None else '+dt*r_stim'}
+            r_n = r[n,i-1] + dt*(dr_0 + dx_r(r_int, V_int, r_c, V_c, parmat[n]  ))/2.0 + r_noise + r_stim
 
-            V_n = V[n,i-1] + dt*(dV_0 + dx_V(r_int, V_int, r_c, V_c, parmat[n]))/2.0 + V_noise ${'' if sim.stimulus is None else '+dt*V_stim'}
+            V_n = V[n,i-1] + dt*(dV_0 + dx_V(r_int, V_int, r_c, V_c, parmat[n]))/2.0 + V_noise + V_stim
             ${call_bound_svars(['r_n','V_n'])}
             r[n,i] = r_n
             V[n,i] = V_n
