@@ -96,6 +96,8 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, name='temporal',
                                     subform=get_form_for_equation(self.default_temporal.value))
 
+        del self.spatial.choices[-1]
+
     @staticmethod
     def get_view_model():
         return SurfaceStimulusCreatorModel

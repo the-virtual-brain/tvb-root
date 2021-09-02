@@ -93,6 +93,8 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         self.cutoff = FloatField(LocalConnectivityCreatorModel.cutoff)
         self.display_name = StrField(LocalConnectivityCreatorModel.display_name, name='display_name')
 
+        del self.spatial.choices[-1]
+
     @staticmethod
     def get_view_model():
         return LocalConnectivityCreatorModel

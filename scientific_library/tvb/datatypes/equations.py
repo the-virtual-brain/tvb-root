@@ -529,7 +529,7 @@ class SpatialEquationsEnum(EquationsEnum):
     GAUSSIAN = (Gaussian, "Gaussian")
     MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
     SIGMOID = (Sigmoid, "Sigmoid")
-    # DISCRETE = (DiscreteEquation, "Discrete Equation")
+    DISCRETE = (DiscreteEquation, "Discrete Equation")
 
 
 class TemporalEquationsEnum(EquationsEnum):
