@@ -46,7 +46,6 @@ from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
-from tvb.datatypes.equations import TemporalEquationsEnum
 from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced

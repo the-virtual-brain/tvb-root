@@ -35,6 +35,7 @@ from formencode import validators
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
+from tvb.adapters.simulator.model_forms import ModelsEnum
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
 from tvb.basic.profile import TvbProfile
 from tvb.basic.neotraits.api import Attr, EnumAttr, Range, List, Float, Int
@@ -50,7 +51,7 @@ from tvb.core.neotraits.view_model import Str
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
 from tvb.datatypes.surfaces import SurfaceTypesEnum
-from tvb.simulator.models.models_enum import ModelsEnum
+
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):

@@ -56,7 +56,6 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 
 import abc
 import numpy
-from tvb.datatypes.equations import Gamma, DoubleExponential, FirstOrderVolterra, MixtureOfGammas, EquationsEnum
 
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG,
                                        TimeSeriesSurface)
@@ -67,8 +66,7 @@ from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
 from tvb.simulator.common import numpy_add_at
 from tvb.simulator.backend.ref import ReferenceBackend
-from tvb.basic.neotraits.api import HasTraits, HasTraitsEnum, BaseTypeEnum, Attr, NArray, Float, EnumAttr,\
-    narray_describe
+from tvb.basic.neotraits.api import HasTraits, BaseTypeEnum, Attr, NArray, Float, EnumAttr, narray_describe
 from .backend import ReferenceBackend
 
 
@@ -811,13 +809,6 @@ class iEEG(Projection):
                               title=' ' + self.__class__.__name__)
 
 
-class BoldMonitorEquationsEnum(EquationsEnum):
-    Gamma_KERNEL = (Gamma, "Hrf Kernel: Gamma Kernel")
-    DOUBLE_EXPONENTIAL_KERNEL = (DoubleExponential, "Hrf Kernel: Difference of Exponentials")
-    VOLTERRA_KERNEL = (FirstOrderVolterra, "Hrf Kernel: Volterra Kernel")
-    MOG_KERNEL = (MixtureOfGammas, "Hrf Kernel: Mixture Of Gammas")
-
-
 class Bold(Monitor):
     """
 
@@ -867,10 +858,10 @@ class Bold(Monitor):
         an integral multiple of 500. Typical measurment interval (repetition
         time TR) is between 1-3 s. If TR is 2s, then Bold period is 2000ms.""")
 
-    hrf_kernel = EnumAttr(
-        field_type=BoldMonitorEquationsEnum,
+    hrf_kernel = Attr(
+        equations.HRFKernelEquation,
         label="Haemodynamic Response Function",
-        default=BoldMonitorEquationsEnum.VOLTERRA_KERNEL.instance,
+        default=equations.FirstOrderVolterra(),
         required=True,
         doc="""A tvb.datatypes.equation object which describe the haemodynamic
         response function used to compute the BOLD signal.""")

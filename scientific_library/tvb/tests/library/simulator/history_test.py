@@ -38,7 +38,7 @@ Test history in simulator.
 import numpy
 
 from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.basic.neotraits.api import List, EnumAttr, HasTraitsEnum
+from tvb.basic.neotraits.api import List, EnumAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.simulator.coupling import Coupling, SparseCoupling
 from tvb.simulator.integrators import Identity
@@ -80,26 +80,7 @@ class TestsExactPropagation(BaseTestCase):
         self.dist = numpy.r_[:n * n].reshape((n, n))
         self.dist = numpy.array(self.dist, dtype=float)
 
-        class ExactPropagationCouplingTestEnum(HasTraitsEnum):
-            ID_COUPLING = (IdCoupling, "IdCoupling")
-
-        class ExactPropagationModelTestEnum(HasTraitsEnum):
-            SUM_MODEL = (Sum, "Sum")
-
-        class ExactPropagationTestSimulator(Simulator):
-            coupling = EnumAttr(
-                field_type=ExactPropagationCouplingTestEnum,
-                label="Long-range coupling function",
-                default=ExactPropagationCouplingTestEnum.ID_COUPLING.instance,
-                required=True)
-
-            model = EnumAttr(
-                field_type=ExactPropagationModelTestEnum,
-                label="Local dynamic model",
-                default=ExactPropagationModelTestEnum.SUM_MODEL.instance,
-                required=True)
-
-        self.sim = ExactPropagationTestSimulator(
+        self.sim = Simulator(
             conduction_speed=1.0,
             coupling=IdCoupling(),
             surface=None,

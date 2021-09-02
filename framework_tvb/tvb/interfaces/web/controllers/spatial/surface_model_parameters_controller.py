@@ -44,7 +44,7 @@ from tvb.core.entities import load
 from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.burst_config_serialization import SerializationManager
-from tvb.datatypes.equations import Gaussian, SpatialEquationsEnum, Sigmoid
+from tvb.datatypes.equations import Gaussian, Sigmoid
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController

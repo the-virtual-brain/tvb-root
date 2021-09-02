@@ -40,6 +40,7 @@ import numpy
 import pytest
 
 from tvb.basic.neotraits.api import EnumAttr, HasTraitsEnum
+from tvb.simulator.simulator import Simulator
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import coupling, models, simulator
 from tvb.datatypes import cortex, connectivity
@@ -165,18 +166,8 @@ class TestCouplingShape(BaseTestCase):
                     )
                     return state
 
-        class CouplingShapeTestEnum(HasTraitsEnum):
-            COUPLING_SHAPE_TEST_MODEL = (CouplingShapeTestModel, "CouplingShapeTestModel")
-
-        class CouplingShapeTestSimulator(simulator.Simulator):
-            model = EnumAttr(
-                field_type=CouplingShapeTestEnum,
-                label="Local dynamic model",
-                default=CouplingShapeTestEnum.COUPLING_SHAPE_TEST_MODEL.instance,
-                required=True)
-
         surf = cortex.Cortex.from_file()
-        sim = CouplingShapeTestSimulator(
+        sim = Simulator(
             model=CouplingShapeTestModel(self, surf.vertices.shape[0]),
             connectivity=connectivity.Connectivity.from_file(),
             surface=surf)

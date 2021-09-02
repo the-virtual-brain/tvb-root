@@ -45,20 +45,20 @@ from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
-from tvb.adapters.simulator.model_forms import get_form_for_model
+from tvb.adapters.simulator.equation_forms import TemporalEquationsEnum
+from tvb.adapters.simulator.model_forms import get_form_for_model, ModelsEnum
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.operation_service import OperationService
-from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, Linear, TemporalEquationsEnum
+from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, Linear
 from tvb.datatypes.sensors import SensorTypesEnum
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.interfaces.web.controllers.common import *
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.simulator.coupling import Sigmoidal
-from tvb.simulator.models.models_enum import ModelsEnum
 from tvb.simulator.monitors import DefaultMasks
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory

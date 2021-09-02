@@ -35,14 +35,13 @@
 import json
 import pytest
 
+from tvb.adapters.simulator.model_forms import ModelsEnum
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
-from tvb.simulator.models.models_enum import ModelsEnum
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.core.entities.model.model_burst import Dynamic
 from tvb.core.entities.storage import dao
 from tvb.interfaces.web.controllers.burst.region_model_parameters_controller import RegionsModelParametersController
 from tvb.simulator.integrators import HeunDeterministic
-
 
 
 class TestRegionsModelParametersController(BaseTransactionalControllerTest):

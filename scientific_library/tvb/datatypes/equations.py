@@ -37,8 +37,7 @@ The Equation datatypes.
 """
 import numpy
 from scipy.special import gamma as sp_gamma
-
-from tvb.basic.neotraits.api import HasTraits, HasTraitsEnum, Attr, Final
+from tvb.basic.neotraits.api import HasTraits, Attr, Final, HasTraitsEnum
 from tvb.simulator.backend.ref import RefBase
 
 
@@ -47,9 +46,14 @@ from tvb.simulator.backend.ref import RefBase
 DEFAULT_PLOT_GRANULARITY = 1024
 
 
+class EquationsEnum(HasTraitsEnum):
+    """
+    Superclass of all enums that have equations as values
+    """
+
+
 # class Equation(basic.MapAsJson, core.Type):
 # todo: handle the MapAsJson functionality
-
 
 class Equation(HasTraits):
     """Base class for Equation data types."""
@@ -110,7 +114,30 @@ class Equation(HasTraits):
         return result, False
 
 
-class DiscreteEquation(Equation):
+class TemporalApplicableEquation(Equation):
+    """
+    Abstract class introduced just for filtering what equations to be displayed in UI,
+    for setting the temporal component in Stimulus on region and surface.
+    """
+
+
+class FiniteSupportEquation(TemporalApplicableEquation):
+    """
+    Equations that decay to zero as the variable moves away from zero. It is
+    necessary to restrict spatial equation evaluated on a surface to this
+    class, are . The main purpose of this class is to facilitate filtering in the UI,
+    for patters on surface (stimuli surface and localConnectivity).
+    """
+
+
+class SpatialApplicableEquation(Equation):
+    """
+    Abstract class introduced just for filtering what equations to be displayed in UI,
+    for setting model parameters on the Surface level.
+    """
+
+
+class DiscreteEquation(FiniteSupportEquation):
     """
     A special case for 'discrete' spaces, such as the regions, where each point
     in the space is effectively just assigned a value.
@@ -124,7 +151,7 @@ class DiscreteEquation(Equation):
         doc="""The equation defines a function of :math:`x`""")
 
 
-class Linear(Equation):
+class Linear(TemporalApplicableEquation):
     """
     A linear equation.
 
@@ -141,7 +168,7 @@ class Linear(Equation):
         default=lambda: {"a": 1.0, "b": 0.0})
 
 
-class Gaussian(Equation):
+class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
     """
     A Gaussian equation.
     offset: parameter to extend the behaviour of this function
@@ -162,7 +189,7 @@ class Gaussian(Equation):
         default=lambda: {"amp": 1.0, "sigma": 1.0, "midpoint": 0.0, "offset": 0.0})
 
 
-class DoubleGaussian(Equation):
+class DoubleGaussian(FiniteSupportEquation):
     """
     A Mexican-hat function approximated by the difference of Gaussians functions.
 
@@ -184,7 +211,7 @@ class DoubleGaussian(Equation):
                          "amp_2": 1.0, "sigma_2": 10.0, "midpoint_2": 0.0})
 
 
-class Sigmoid(Equation):
+class Sigmoid(SpatialApplicableEquation, FiniteSupportEquation):
     """
     A Sigmoid equation.
     offset: parameter to extend the behaviour of this function
@@ -203,7 +230,7 @@ class Sigmoid(Equation):
         default=lambda: {"amp": 1.0, "radius": 5.0, "sigma": 1.0, "offset": 0.0}) #"pi": numpy.pi,
 
 
-class GeneralizedSigmoid(Equation):
+class GeneralizedSigmoid(TemporalApplicableEquation):
     """
     A General Sigmoid equation.
     """
@@ -221,7 +248,7 @@ class GeneralizedSigmoid(Equation):
     #"pi": numpy.pi})
 
 
-class Sinusoid(Equation):
+class Sinusoid(TemporalApplicableEquation):
     """
     A Sinusoid equation.
     """
@@ -237,7 +264,7 @@ class Sinusoid(Equation):
         default=lambda: {"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
 
 
-class Cosine(Equation):
+class Cosine(TemporalApplicableEquation):
     """
     A Cosine equation.
     """
@@ -253,7 +280,7 @@ class Cosine(Equation):
         default=lambda: {"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
 
 
-class Alpha(Equation):
+class Alpha(TemporalApplicableEquation):
     """
     An Alpha function belonging to the Exponential function family.
     """
@@ -270,7 +297,7 @@ class Alpha(Equation):
         default=lambda: {"onset": 0.5, "alpha": 13.0, "beta": 42.0})
 
 
-class PulseTrain(Equation):
+class PulseTrain(TemporalApplicableEquation):
     """
     A pulse train , offset with respect to the time axis.
 
@@ -297,7 +324,11 @@ class PulseTrain(Equation):
 
 
 
-class Gamma(Equation):
+class HRFKernelEquation(Equation):
+    "Base class for hemodynamic response functions."
+
+
+class Gamma(HRFKernelEquation):
     """
     A Gamma function for the bold monitor. It belongs to the family of Exponential functions.
 
@@ -359,7 +390,7 @@ class Gamma(Equation):
         return _pattern
 
 
-class DoubleExponential(Equation):
+class DoubleExponential(HRFKernelEquation):
     """
     A difference of two exponential functions to define a kernel for the bold monitor.
 
@@ -408,7 +439,7 @@ class DoubleExponential(Equation):
         return _pattern
 
 
-class FirstOrderVolterra(Equation):
+class FirstOrderVolterra(HRFKernelEquation):
     """
     Integral form of the first Volterra kernel of the three used in the
     Ballon Windekessel model for computing the Bold signal.
@@ -447,7 +478,7 @@ class FirstOrderVolterra(Equation):
         default=lambda: {"tau_s": 0.8, "tau_f": 0.4, "k_1": 5.6, "V_0": 0.02})
 
 
-class MixtureOfGammas(Equation):
+class MixtureOfGammas(HRFKernelEquation):
     """
     A mixture of two gamma distributions to create a kernel similar to the one used in SPM.
 
@@ -517,28 +548,3 @@ class MixtureOfGammas(Equation):
         self.parameters["gamma_a_2"] = sp_gamma(self.parameters["a_2"])
 
         return RefBase.evaluate(self.equation, global_dict=self.parameters)
-
-
-class EquationsEnum(HasTraitsEnum):
-    """
-    Superclass of all enums that have equations as values
-    """
-
-
-class SpatialEquationsEnum(EquationsEnum):
-    GAUSSIAN = (Gaussian, "Gaussian")
-    MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
-    SIGMOID = (Sigmoid, "Sigmoid")
-    DISCRETE = (DiscreteEquation, "Discrete Equation")
-
-
-class TemporalEquationsEnum(EquationsEnum):
-    LINEAR = (Linear, "Linear")
-    GAUSSIAN = (Gaussian, "Gaussian")
-    MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
-    SIGMOID = (Sigmoid, "Sigmoid")
-    GENERALIZEDSIGMOID = (GeneralizedSigmoid, "GeneralizedSigmoid")
-    SINUSOID = (Sinusoid, "Sinusoid")
-    COSINE = (Cosine, "Cosine")
-    ALPHA = (Alpha, "Alpha")
-    PULSETRAIN = (PulseTrain, "PulseTrain")

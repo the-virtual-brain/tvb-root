@@ -28,10 +28,39 @@
 #
 #
 
+from tvb.simulator import models
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
+from tvb.basic.neotraits.api import HasTraitsEnum
 from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField
-from tvb.simulator.models.base import Model
-from tvb.simulator.models.models_enum import ModelsEnum
+
+
+class ModelsEnum(HasTraitsEnum):
+    GENERIC_2D_OSCILLATOR = (models.ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(), "Generic 2D Oscillator")
+    KURAMOTO = (models.ModelsEnum.KURAMOTO.get_class(), "Kuramoto Oscillator")
+    SUP_HOPF = (models.ModelsEnum.SUP_HOPF.get_class(), "Suphopf")
+    HOPFIELD = (models.ModelsEnum.HOPFIELD.get_class(), "Hopfield")
+    EPILEPTOR = (models.ModelsEnum.EPILEPTOR.get_class(), "Epileptor")
+    EPILEPTOR_2D = (models.ModelsEnum.EPILEPTOR_2D.get_class(), "Epileptor2D")
+    EPILEPTOR_CODIM_3 = (models.ModelsEnum.EPILEPTOR_CODIM_3.get_class(), "Epileptor Codim 3")
+    EPILEPTOR_CODIM_3_SLOW = (models.ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(), "Epileptor Codim 3 Ultra-Slow Modulations")
+    EPILEPTOR_RS = (models.ModelsEnum.EPILEPTOR_RS.get_class(), "Epileptor Resting State")
+    JANSEN_RIT = (models.ModelsEnum.JANSEN_RIT.get_class(), "Jansen-Rit")
+    ZETTERBERG_JANSEN = (models.ModelsEnum.ZETTERBERG_JANSEN.get_class(), "Zetterberg-Jansen")
+    REDUCED_WONG_WANG = (models.ModelsEnum.REDUCED_WONG_WANG.get_class(), "Reduced Wong-Wang")
+    REDUCED_WONG_WANG_EXCH_INH = (models.ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class(), "Reduced Wong-Wang With Excitatory And Inhibitory Coupled Populations")
+    REDUCED_SET_FITZ_HUGH_NAGUMO = (models.ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class(), "Stefanescu-Jirsa 2D")
+    REDUCED_SET_HINDMARSH_ROSE = (models.ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(), "Stefanescu-Jirsa 3D")
+    ZERLAUT_FIRST_ORDER = (models.ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(), "Zerlaut Adaptation First Order")
+    ZERLAUT_SECOND_ORDER = (models.ModelsEnum.ZERLAUT_SECOND_ORDER.get_class(), "Zerlaut Adaptation Second Order")
+    MONTBRIO_PAZO_ROXIN = (models.ModelsEnum.MONTBRIO_PAZO_ROXIN.get_class(), "Montbrio Pazo Roxin")
+    COOMBES_BYRNE = (models.ModelsEnum.COOMBES_BYRNE.get_class(), "Coombes Byrne")
+    COOMBES_BYRNE_2D = (models.ModelsEnum.COOMBES_BYRNE_2D.get_class(), "Coombes Byrne 2D")
+    GAST_SCHMIDT_KNOSCHE_SD = (models.ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.get_class(), "Gast Schmidt Knosche_Sd")
+    GAST_SCHMIDT_KNOSCHE_SF = (models.ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.get_class(), "Gast Schmidt Knosche_Sf")
+    DUMONT_GUTKIN = (models.ModelsEnum.DUMONT_GUTKIN.get_class(), "Dumont Gutkin")
+    LINEAR = (models.ModelsEnum.LINEAR.get_class(), "Linear Model")
+    WILSON_COWAN = (models.ModelsEnum.WILSON_COWAN.get_class(), "Wilson-Cowan")
+    LARTER_BREAKSPEAR = (models.ModelsEnum.LARTER_BREAKSPEAR.get_class(), "Larter-Breakspear")
 
 
 def get_model_to_form_dict():

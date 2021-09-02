@@ -36,8 +36,8 @@ from os import path
 import tvb_data
 
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.adapters.simulator.model_forms import ModelsEnum
 from tvb.core.services.burst_config_serialization import SerializationManager
-from tvb.simulator.models.models_enum import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.simulator.integrators import HeunStochastic
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase

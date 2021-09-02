@@ -37,7 +37,7 @@ import uuid
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.equation_forms import get_form_for_equation, SpatialEquationsEnum, TemporalEquationsEnum
 from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
@@ -45,8 +45,6 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, TraitDataTypeSelectField, SelectField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.equations import Sigmoid, PulseTrain, Gaussian, DoubleGaussian, Linear, GeneralizedSigmoid, Cosine,\
-    Sinusoid, Alpha, SpatialEquationsEnum, TemporalEquationsEnum
 from tvb.datatypes.patterns import StimuliSurface, StimuliRegion
 from tvb.datatypes.surfaces import CorticalSurface, SurfaceTypesEnum
 

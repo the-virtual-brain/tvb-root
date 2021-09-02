@@ -33,6 +33,32 @@ from tvb.core.neotraits.forms import Form, FloatField, StrField
 from tvb.basic.neotraits.api import Float
 
 
+class SpatialEquationsEnum(EquationsEnum):
+    GAUSSIAN = (Gaussian, "Gaussian")
+    MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
+    SIGMOID = (Sigmoid, "Sigmoid")
+    DISCRETE = (DiscreteEquation, "Discrete Equation")
+
+
+class TemporalEquationsEnum(EquationsEnum):
+    LINEAR = (Linear, "Linear")
+    GAUSSIAN = (Gaussian, "Gaussian")
+    MEXICAN_HAT = (DoubleGaussian, "Mexican-hat")
+    SIGMOID = (Sigmoid, "Sigmoid")
+    GENERALIZEDSIGMOID = (GeneralizedSigmoid, "GeneralizedSigmoid")
+    SINUSOID = (Sinusoid, "Sinusoid")
+    COSINE = (Cosine, "Cosine")
+    ALPHA = (Alpha, "Alpha")
+    PULSETRAIN = (PulseTrain, "PulseTrain")
+
+
+class BoldMonitorEquationsEnum(EquationsEnum):
+    Gamma_KERNEL = (Gamma, "Hrf Kernel: Gamma Kernel")
+    DOUBLE_EXPONENTIAL_KERNEL = (DoubleExponential, "Hrf Kernel: Difference of Exponentials")
+    VOLTERRA_KERNEL = (FirstOrderVolterra, "Hrf Kernel: Volterra Kernel")
+    MOG_KERNEL = (MixtureOfGammas, "Hrf Kernel: Mixture Of Gammas")
+
+
 def get_ui_name_to_monitor_equation_dict():
     eq_name_to_class = {
         'HRF kernel: Gamma kernel': Gamma,

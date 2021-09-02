@@ -33,7 +33,7 @@
 
 import numpy
 
-from tvb.datatypes.equations import SpatialEquationsEnum
+from tvb.datatypes.equations import DoubleGaussian, Gaussian, DiscreteEquation
 from tvb.datatypes.volumes import Volume
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import patterns, equations, connectivity, surfaces
@@ -46,27 +46,27 @@ class TestPatterns(BaseTestCase):
 
     def test_spatialpattern(self):
         dt = patterns.SpatialPattern()
-        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
+        dt.spatial = DoubleGaussian()
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
         summary = dt.summary_info()
         assert summary['Type'] == 'SpatialPattern'
         assert dt.space.shape == (10, 10)
-        assert isinstance(dt.spatial, SpatialEquationsEnum.MEXICAN_HAT.value)
+        assert isinstance(dt.spatial, DoubleGaussian)
         assert dt.spatial_pattern.shape, (10, 1)
 
     def test_spatiotemporalpattern(self):
         dt = patterns.SpatioTemporalPattern()
-        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
-        dt.temporal = SpatialEquationsEnum.GAUSSIAN.instance
+        dt.spatial = DoubleGaussian()
+        dt.temporal = Gaussian()
         dt.configure_space(numpy.arange(100).reshape((10, 10)))
         dt.configure()
         summary = dt.summary_info()
         assert summary['Type'] == 'SpatioTemporalPattern'
         assert dt.space.shape == (10, 10)
-        assert isinstance(dt.spatial, SpatialEquationsEnum.MEXICAN_HAT.value)
+        assert isinstance(dt.spatial, DoubleGaussian)
         assert dt.spatial_pattern.shape == (10, 1)
-        assert isinstance(dt.temporal, SpatialEquationsEnum.GAUSSIAN.value)
+        assert isinstance(dt.temporal, Gaussian)
         assert dt.temporal_pattern is None
         assert dt.time is None
 
@@ -75,15 +75,15 @@ class TestPatterns(BaseTestCase):
         conn.configure()
         dt = patterns.StimuliRegion()
         dt.connectivity = conn
-        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
-        dt.temporal = SpatialEquationsEnum.GAUSSIAN.instance
+        dt.spatial = DiscreteEquation()
+        dt.temporal = Gaussian()
         dt.weight = numpy.array([0 for _ in range(conn.number_of_regions)])
         dt.configure_space()
         assert dt.summary_info()['Type'] == 'StimuliRegion'
         assert dt.connectivity is not None
         assert dt.space.shape == (76, 1)
         assert dt.spatial_pattern.shape == (76, 1)
-        assert isinstance(dt.temporal, SpatialEquationsEnum.GAUSSIAN.value)
+        assert isinstance(dt.temporal, Gaussian)
         assert dt.temporal_pattern is None
         assert dt.time is None
 
@@ -92,23 +92,23 @@ class TestPatterns(BaseTestCase):
         srf.configure()
         dt = patterns.StimuliSurface()
         dt.surface = srf
-        dt.spatial = SpatialEquationsEnum.MEXICAN_HAT.instance
-        dt.temporal = SpatialEquationsEnum.GAUSSIAN.instance
+        dt.spatial = DoubleGaussian()
+        dt.temporal = Gaussian()
         dt.focal_points_triangles = numpy.array([0, 1, 2])
         dt.configure()
         dt.configure_space()
         summary = dt.summary_info()
         assert summary['Type'] == "StimuliSurface"
         assert dt.space.shape == (16384, 3)
-        assert isinstance(dt.spatial, SpatialEquationsEnum.MEXICAN_HAT.value)
+        assert isinstance(dt.spatial, DoubleGaussian)
         assert dt.spatial_pattern.shape == (16384, 1)
         assert dt.surface is not None
-        assert isinstance(dt.temporal, SpatialEquationsEnum.GAUSSIAN.value)
+        assert isinstance(dt.temporal, Gaussian)
         assert dt.temporal_pattern is None
         assert dt.time is None
 
     def test_spatialpatternvolume(self):
-        dt = patterns.SpatialPatternVolume(spatial=SpatialEquationsEnum.GAUSSIAN.instance,
+        dt = patterns.SpatialPatternVolume(spatial=Gaussian(),
                                            volume=Volume(origin=numpy.array([]), voxel_size=numpy.array([])),
                                            focal_points_volume=numpy.array([1]))
         assert dt.space is None

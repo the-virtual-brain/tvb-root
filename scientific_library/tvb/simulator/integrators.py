@@ -50,7 +50,7 @@ import numpy
 import scipy.integrate
 from . import noise
 from .common import get_logger, simple_gen_astr
-from tvb.basic.neotraits.api import HasTraits, HasTraitsEnum, Attr, NArray, Float
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float
 
 LOG = get_logger(__name__)
 

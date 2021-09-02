@@ -47,10 +47,7 @@ from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float, EnumAt
 from tvb.basic.profile import TvbProfile
 from tvb.datatypes import cortex, connectivity, patterns
 from tvb.simulator import models, integrators, monitors, coupling
-from tvb.simulator.coupling import CouplingFunctionsEnum
 from tvb.simulator.models.base import Model
-from tvb.simulator.models.models_enum import ModelsEnum
-
 from .backend import ReferenceBackend
 from .common import psutil
 from .history import SparseHistory
@@ -79,10 +76,10 @@ class Simulator(HasTraits):
         # range=basic.Range(lo=0.01, hi=100.0, step=1.0),
         doc="""Conduction speed for ``Long-range connectivity`` (mm/ms)""")
 
-    coupling = EnumAttr(
-        field_type=CouplingFunctionsEnum,
+    coupling = Attr(
+        field_type=coupling.Coupling,
         label="Long-range coupling function",
-        default=CouplingFunctionsEnum.LINEAR.instance,
+        default=coupling.Linear(),
         required=True,
         doc="""The coupling function is applied to the activity propagated
         between regions by the ``Long-range connectivity`` before it enters the local
@@ -114,10 +111,10 @@ class Simulator(HasTraits):
         In the current version of TVB, stimuli are applied to the first state
         variable of the ``Local dynamic model``.""")
 
-    model: Model = EnumAttr(
-        field_type=ModelsEnum,
+    model: Model = Attr(
+        field_type=models.Model,
         label="Local dynamic model",
-        default=ModelsEnum.GENERIC_2D_OSCILLATOR.instance,
+        default=models.Generic2dOscillator(),
         required=True,
         doc="""A tvb.simulator.Model object which describe the local dynamic
         equations, their parameters, and, to some extent, where connectivity

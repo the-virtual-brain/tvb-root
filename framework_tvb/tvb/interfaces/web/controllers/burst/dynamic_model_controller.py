@@ -37,9 +37,9 @@ import cherrypy
 import numpy
 
 import tvb.core.entities.model.model_burst as model_burst
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.equation_forms import get_form_for_equation, TemporalEquationsEnum
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator, NoiseTypesEnum
-from tvb.adapters.simulator.model_forms import get_form_for_model
+from tvb.adapters.simulator.model_forms import get_form_for_model, ModelsEnum
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
@@ -53,7 +53,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import StrField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.utils import TVBJSONEncoder
-from tvb.datatypes.equations import TemporalEquationsEnum
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.burst.base_controller import BurstBaseController
@@ -61,7 +60,6 @@ from tvb.interfaces.web.controllers.burst.matjax import configure_matjax_doc
 from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, expose_fragment, using_template, \
     handle_error, check_user
 from tvb.simulator import models
-from tvb.simulator.models.models_enum import ModelsEnum
 
 
 class Dynamic(object):

@@ -29,6 +29,7 @@
 
 import numpy
 
+from tvb.adapters.simulator.equation_forms import BoldMonitorEquationsEnum
 from tvb.basic.neotraits.api import EnumAttr
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
@@ -37,7 +38,7 @@ from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField, FloatFi
 from tvb.core.neotraits.forms import SelectField, TraitDataTypeSelectField
 from tvb.datatypes.projections import ProjectionsTypeEnum
 from tvb.datatypes.sensors import SensorTypesEnum
-from tvb.simulator.monitors import BoldMonitorEquationsEnum, DefaultMasks
+from tvb.simulator.monitors import DefaultMasks
 
 
 def get_monitor_to_form_dict():

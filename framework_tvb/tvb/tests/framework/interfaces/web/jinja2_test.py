@@ -31,6 +31,7 @@
 import numpy
 from bs4 import BeautifulSoup
 
+from tvb.adapters.simulator.model_forms import ModelsEnum
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment
 from tvb.basic.neotraits.api import HasTraits, NArray
@@ -41,7 +42,6 @@ from tvb.core.neotraits.forms import ArrayField
 from tvb.interfaces.web.controllers.decorators import using_template
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorFragmentRenderingRules, \
     SimulatorWizzardURLs
-from tvb.simulator.models.models_enum import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
