@@ -198,7 +198,7 @@ class TestModels(BaseTestCase):
         """
         model = models.WilsonCowan()
         self._validate_initialization(model, 2)
-        self._test_steady_state(model, numpy.r_[0.474, 0.256])
+        self._test_steady_state(model, numpy.r_[0.461, 0.243])
 
     def test_g2d(self):
         """
