@@ -37,6 +37,7 @@ import numba as nb
 
 <%
     cvars = [sim.model.state_variables[i] for i in sim.model.cvar]
+    stochastic = isinstance(sim.integrator, IntegratorStochastic)
 %>
 
 ${'' if debug_nojit else '@nb.njit(inline="always")'}
@@ -83,9 +84,14 @@ def _mpr_integrate(
         for n in range(N):
             r_c, V_c = cx(i-1, n, N, weights, ${','.join(cvars)}, idelays)
 
+% if stochastic:
+% for svar in sim.model.state_variables:
+            ${svar}_noise = ${svar}[n,i]
+% endfor
+% endif
             # precomputed additive noise 
-            r_noise = r[n,i]
-            V_noise = V[n,i]
+            #r_noise = r[n,i]
+            #V_noise = V[n,i]
 % if sim.stimulus is not None:
             # stimulus TODO reflect stvar
             r_stim = 0.0
