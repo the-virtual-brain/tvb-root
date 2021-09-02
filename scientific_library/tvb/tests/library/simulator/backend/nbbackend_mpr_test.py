@@ -391,20 +391,7 @@ class TestNbSim(BaseTestSim):
         weighting = np.zeros((conn.number_of_regions, ))
         weighting[[1]] = 5.0
 
-        # temporary fix
-        from tvb.basic.neotraits.api import Final, Attr
-        class PulseTrain(equations.TemporalApplicableEquation):
-
-            equation = Final(
-                label="Pulse Train",
-                default="where((var>onset)&(((var-onset) % T) < tau), amp, 0)"
-            )
-
-            parameters = Attr(
-                field_type=dict,
-                default=lambda: {"T": 42.0, "tau": 13.0, "amp": 1.0, "onset": 30.0},
-                label="Pulse Train Parameters")
-        eqn_t = PulseTrain(
+        eqn_t = equations.PulseTrain(
             parameters={
                 'onset': 50,
                 'T': 10000.0 ,
