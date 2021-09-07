@@ -1,5 +1,7 @@
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
+#define PI M_PI_F
+#define INF INFINITY
 
 // buffer length defaults to the argument to the integrate kernel
 // but if it's known at compile time, it can be provided which allows
@@ -124,12 +126,12 @@ __global__ void epileptor(
     const float rec_speed_dt = powf(2.0f, global_speed) / dt;
     const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
 
+
     // conditional_derived variable declaration
     float ydot0 = 0.0;
     float ydot2 = 0.0;
     float h = 0.0;
     float ydot4 = 0.0;
-
 
     float x1 = 0.0;
     float y1 = 0.0;
@@ -145,12 +147,18 @@ __global__ void epileptor(
     float dy2 = 0.0;
     float dg = 0.0;
 
+    unsigned int dij_i = 0;
+    float dij = 0.0;
+    float wij = 0.0;
+
+    float x1_j = 0.0;
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
         tavg(i_node) = 0.0f;
         if (i_step == 0){
-            state(i_step, i_node) = 0.001;
+            state(i_step, i_node) = 0.0f;
         }
     }
 
@@ -162,6 +170,15 @@ __global__ void epileptor(
         {
             c_pop1 = 0.0f;
             c_pop2 = 0.0f;
+
+            if (t == (i_step)){
+                tavg(i_node + 0 * n_node) = 0;
+                tavg(i_node + 1 * n_node) = 0;
+                tavg(i_node + 2 * n_node) = 0;
+                tavg(i_node + 3 * n_node) = 0;
+                tavg(i_node + 4 * n_node) = 0;
+                tavg(i_node + 5 * n_node) = 0;
+            }
 
             x1 = state((t) % nh, i_node + 0 * n_node);
             y1 = state((t) % nh, i_node + 1 * n_node);
@@ -181,17 +198,18 @@ __global__ void epileptor(
                     continue;
 
                 // Get the delay between node i and node j
-                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = dij + 0.5;
+                dij_i = (int)dij;
 
                 //***// Get the state of node j which is delayed by dij
-                float x1_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
+                x1_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
                 c_pop1 += wij * 1.0 * sin(x1_j - x1);
-
             } // j_node */
 
-            // rec_n is used for the scaling over nodes
+            // global coupling handling, rec_n used to scale nodes
             c_pop1 *= global_coupling;
             c_pop2 *= g;
 
@@ -217,7 +235,7 @@ __global__ void epileptor(
                 ydot4 = aa * (x2 + 0.25);
             }
 
-            // Integrate with stochastic forward euler
+            // Integrate with forward euler
             dx1 = dt * (tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 ));
             dy1 = dt * (tt * (c - d * powf(x1, 2) - y1));
             dz = dt * (tt * (r * (h - z + Ks * c_pop1)));
@@ -249,11 +267,9 @@ __global__ void epileptor(
             state((t + 1) % nh, i_node + 4 * n_node) = y2;
             state((t + 1) % nh, i_node + 5 * n_node) = g;
 
-            // Update the observable only for the last timestep
-            if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = powf(x1, x2);
-                tavg(i_node + 1 * n_node) = x2;
-            }
+            // Update the observable
+            tavg(i_node + 0 * n_node) += x1/n_step;
+            tavg(i_node + 1 * n_node) += x2/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step
             __syncthreads();

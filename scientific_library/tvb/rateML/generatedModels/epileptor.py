@@ -1,5 +1,4 @@
 from tvb.simulator.models.base import Model, ModelNumbaDfun
-import numexpr
 import numpy
 from numpy import *
 from numba import guvectorize, float64
@@ -120,33 +119,42 @@ class EpileptorT(ModelNumbaDfun):
         
     modification = NArray(
         label=":math:`modification`",
-        default=numpy.array([False]),
+        default=numpy.array([0]),
         doc=""""""
     )    
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
+        default={"x1": numpy.array([0.0]), 
+				 "y1": numpy.array([0.0]), 
+				 "z": numpy.array([0.0]), 
+				 "x2": numpy.array([0.0]), 
+				 "y2": numpy.array([0.0]), 
+				 "g": numpy.array([0.0])},
+        doc="""state variables"""
+    )
+
+    state_variable_boundaries = Final(
+        label="State Variable boundaries [lo, hi]",
         default={"x1": numpy.array([-2.0, 1.0]), 
 				 "y1": numpy.array([-20.0, 2.0]), 
 				 "z": numpy.array([-2.0, 5.0]), 
 				 "x2": numpy.array([-2.0, 0.0]), 
 				 "y2": numpy.array([0.0, 2.0]), 
 				 "g": numpy.array([-1.0, 1.0])},
-        doc="""state variables"""
     )
-
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
-        choices=('x1 ** x2', 'x2', ),
-        default=('x2', 'x2', 'x2', 'x2', 'x2', 'x2', ),
+        choices=('x1', 'x2', ),
+        default=('x1', 'y1', 'z', 'x2', 'y2', 'g', ),
         doc="Variables to monitor"
     )
 
     state_variables = ['x1', 'y1', 'z', 'x2', 'y2', 'g']
 
     _nvar = 6
-    cvar = numpy.array([0], dtype=numpy.int32)
+    cvar = numpy.array([0,1,2,3,4,5,], dtype = numpy.int32)
 
     def dfun(self, vw, c, local_coupling=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
@@ -160,10 +168,12 @@ def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext
     "Gufunc for EpileptorT model equations."
 
     # long-range coupling
-    c_pop1 = coupling[0]
-    c_pop2 = coupling[1]
-    c_pop3 = coupling[2]
-    c_pop4 = coupling[3]
+    c_pop0 = coupling[0]
+    c_pop1 = coupling[1]
+    c_pop2 = coupling[2]
+    c_pop3 = coupling[3]
+    c_pop4 = coupling[4]
+    c_pop5 = coupling[5]
 
     x1 = vw[0]
     y1 = vw[1]

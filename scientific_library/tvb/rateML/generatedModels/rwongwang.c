@@ -1,5 +1,7 @@
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
+#define PI M_PI_F
+#define INF INFINITY
 
 // buffer length defaults to the argument to the integrate kernel
 // but if it's known at compile time, it can be provided which allows
@@ -98,7 +100,6 @@ __global__ void rwongwang(
     float tmp_H_I = 0.0;
 
 
-
     float V = 0.0;
     float W = 0.0;
 
@@ -167,7 +168,7 @@ __global__ void rwongwang(
             tmp_H_I = tmp_I_I/(1.0-exp((-1.0 * d_I)*tmp_I_I));
 
 
-            // Integrate with stochastic forward euler
+            // Integrate with forward euler
             dV = dt * (((-1.0 / tau_E)* V)+(tmp_H_E*(1-V)*gamma_E));
             dW = dt * (((-1.0 / tau_I)* W)+(tmp_H_I*gamma_I));
 

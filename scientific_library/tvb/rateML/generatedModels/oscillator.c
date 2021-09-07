@@ -1,5 +1,7 @@
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
+#define PI M_PI_F
+#define INF INFINITY
 
 // buffer length defaults to the argument to the integrate kernel
 // but if it's known at compile time, it can be provided which allows
@@ -71,7 +73,7 @@ __global__ void oscillator(
     const float e = 3.0;
     const float f = 1.0;
     const float g = 0.0;
-    const float alpha = .5;
+    const float alpha = 1.0;
     const float beta = 1.0;
     const float gamma = 1.0;
 
@@ -89,9 +91,8 @@ __global__ void oscillator(
 
 
 
-
-    float V = -0.0;
-    float W = -0.0;
+    float V = 0.0;
+    float W = 0.0;
 
     float dV = 0.0;
     float dW = 0.0;
@@ -153,7 +154,7 @@ __global__ void oscillator(
             c_pop0 *= global_coupling;
 
 
-            // Integrate with stochastic forward euler
+            // Integrate with forward euler
             dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_pop0 * V));
             dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
 

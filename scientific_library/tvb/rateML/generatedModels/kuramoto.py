@@ -1,5 +1,4 @@
 from tvb.simulator.models.base import Model, ModelNumbaDfun
-import numexpr
 import numpy
 from numpy import *
 from numba import guvectorize, float64
@@ -15,10 +14,14 @@ class KuramotoT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"V": numpy.array([-2, 1])},
+        default={"V": numpy.array([0.0])},
         doc="""state variables"""
     )
 
+    state_variable_boundaries = Final(
+        label="State Variable boundaries [lo, hi]",
+        default={"V": numpy.array([-2, 1])},
+    )
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
@@ -30,7 +33,7 @@ class KuramotoT(ModelNumbaDfun):
     state_variables = ['V']
 
     _nvar = 1
-    cvar = numpy.array([0], dtype=numpy.int32)
+    cvar = numpy.array([0,], dtype = numpy.int32)
 
     def dfun(self, vw, c, local_coupling=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
@@ -44,10 +47,7 @@ def _numba_dfun_KuramotoT(vw, coupling, omega, local_coupling, dx):
     "Gufunc for KuramotoT model equations."
 
     # long-range coupling
-    c_pop1 = coupling[0]
-    c_pop2 = coupling[1]
-    c_pop3 = coupling[2]
-    c_pop4 = coupling[3]
+    c_pop0 = coupling[0]
 
     V = vw[0]
 

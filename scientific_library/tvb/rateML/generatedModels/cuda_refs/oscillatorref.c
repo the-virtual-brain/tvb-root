@@ -1,5 +1,7 @@
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
+#define PI M_PI_F
+#define INF INFINITY
 
 // buffer length defaults to the argument to the integrate kernel
 // but if it's known at compile time, it can be provided which allows
@@ -79,7 +81,7 @@ __global__ void oscillatorref(
     const float c_a = 1;
 
     // coupling parameters
-    float c_pop1 = 0.0;
+    float c_pop0 = 0.0;
 
     // derived parameters
     const float rec_n = 1 / n_node;
@@ -95,12 +97,18 @@ __global__ void oscillatorref(
     float dV = 0.0;
     float dW = 0.0;
 
+    unsigned int dij_i = 0;
+    float dij = 0.0;
+    float wij = 0.0;
+
+    float V_j = 0.0;
+
     //***// This is only initialization of the observable
     for (unsigned int i_node = 0; i_node < n_node; i_node++)
     {
         tavg(i_node) = 0.0f;
         if (i_step == 0){
-            state(i_step, i_node) = 0.001;
+            state(i_step, i_node) = 0.0f;
         }
     }
 
@@ -110,7 +118,12 @@ __global__ void oscillatorref(
     //***// This is the loop over nodes, which also should stay the same
         for (int i_node = 0; i_node < n_node; i_node++)
         {
-            c_pop1 = 0.0f;
+            c_pop0 = 0.0f;
+
+            if (t == (i_step)){
+                tavg(i_node + 0 * n_node) = 0;
+                tavg(i_node + 1 * n_node) = 0;
+            }
 
             V = state((t) % nh, i_node + 0 * n_node);
             W = state((t) % nh, i_node + 1 * n_node);
@@ -126,22 +139,23 @@ __global__ void oscillatorref(
                     continue;
 
                 // Get the delay between node i and node j
-                unsigned int dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = lengths[i_n + j_node] * rec_speed_dt;
+                dij = dij + 0.5;
+                dij_i = (int)dij;
 
                 //***// Get the state of node j which is delayed by dij
-                float V_j = state(((t - dij + nh) % nh), j_node + 0 * n_node);
+                V_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_pop1 += wij * c_a * sin(V_j - V);
-
+                c_pop0 += wij * c_a * V_j;
             } // j_node */
 
-            // rec_n is used for the scaling over nodes
-            c_pop1 *= global_coupling;
+            // global coupling handling, rec_n used to scale nodes
+            c_pop0 *= global_coupling;
 
 
-            // Integrate with stochastic forward euler
-            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_pop1 + local_coupling * V));
+            // Integrate with forward euler
+            dV = dt * (d * tau * (alpha * W - f * powf(V, 3) + e * powf(V, 2) + g * V + gamma * I + gamma * c_pop0 * V));
             dW = dt * (d * (a + b * V + c * powf(V, 2) - beta * W) / tau);
 
             // No noise is added because it is not present in model
@@ -156,11 +170,9 @@ __global__ void oscillatorref(
             state((t + 1) % nh, i_node + 0 * n_node) = V;
             state((t + 1) % nh, i_node + 1 * n_node) = W;
 
-            // Update the observable only for the last timestep
-            if (t == (i_step + n_step - 1)){
-                tavg(i_node + 0 * n_node) = V;
-                tavg(i_node + 1 * n_node) = W;
-            }
+            // Update the observable
+            tavg(i_node + 0 * n_node) += V/n_step;
+            tavg(i_node + 1 * n_node) += W/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step
             __syncthreads();

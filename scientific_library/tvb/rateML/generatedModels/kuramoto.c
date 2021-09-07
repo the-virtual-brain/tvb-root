@@ -1,5 +1,7 @@
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
+#define PI M_PI_F
+#define INF INFINITY
 
 // buffer length defaults to the argument to the integrate kernel
 // but if it's known at compile time, it can be provided which allows
@@ -68,9 +70,8 @@ __global__ void kuramoto(
     const float nsig = sqrt(dt) * sqrt(2.0 * 1e-5);
 
 
-
-    curandState crndst; /
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst); /
+    curandState crndst;
+    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float V = 0.0;
 
@@ -131,7 +132,7 @@ __global__ void kuramoto(
             c_pop1 *= global_coupling;
 
 
-            // Integrate with stochastic forward euler
+            // Integrate with forward euler
             dV = dt * (omega + c_pop1);
 
             // Add noise because component_type Noise is present in model
