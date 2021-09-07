@@ -22,7 +22,7 @@
         <Constant name="e" dimension="" value="3.0" description="Coefficient of the quadratic term of the cubic nullcline."/>
         <Constant name="f" dimension="" value="1.0" description="Coefficient of the cubic term of the cubic nullcline."/>
         <Constant name="g" dimension="" value="0.0" description="Coefficient of the linear term of the cubic nullcline."/>
-        <Constant name="alpha" dimension="" value=".5" description="Constant parameter to scale the rate of feedback from the slow variable to the fast variable."/>
+        <Constant name="alpha" dimension="" value="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to the fast variable."/>
         <Constant name="beta" dimension="" value="1.0" description="Constant parameter to scale the rate of feedback from the slow variable to itself"/>
         <Constant name="gamma" dimension="" value="1.0" description="Constant parameter to reproduce FHN dynamics where excitatory input currents are negative.
             It scales both I and the long range coupling term.."/>

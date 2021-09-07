@@ -1,5 +1,7 @@
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
+#define PI M_PI_F
+#define INF INFINITY
 
 // buffer length defaults to the argument to the integrate kernel
 // but if it's known at compile time, it can be provided which allows
@@ -18,7 +20,7 @@
 
 __device__ float wrap_it_r(float r)
 {
-    float rdim[] = {0.0, inf};
+    float rdim[] = {0.0, INF};
     if (r < rdim[0]) r = rdim[0];
     else if (r > rdim[1]) r = rdim[1];
 
@@ -75,7 +77,8 @@ __global__ void montbrio(
     const float nsig = 0.01;
 
 
-
+    curandState crndst;
+    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 
     float r = 0.0;
     float V = 0.0;
@@ -146,17 +149,16 @@ __global__ void montbrio(
             c_pop1 *= global_coupling;
 
 
-            // Integrate with stochastic forward euler
-            dr = dt * (1/tau * (Delta / (pi * tau) + 2 * V * r));
-            dV = dt * (1/tau * (powf(V, 2) - powf(pi, 2) * powf(tau, 2) * powf(r, 2) + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1));
+            // Integrate with forward euler
+            dr = dt * (1/tau * (Delta / (PI * tau) + 2 * V * r));
+            dV = dt * (1/tau * (powf(V, 2) - powf(PI, 2) * powf(tau, 2) * powf(r, 2) + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1));
 
-            // No noise is added because it is not present in model
-            r += dr;
-            V += dV;
+            // Add noise because component_type Noise is present in model
+            r += nsig * curand_normal(&crndst) + dr;
+            V += nsig * curand_normal(&crndst) + dV;
 
             // Wrap it within the limits of the model
             r = wrap_it_r(r);
-            V = wrap_it_V(V);
 
             // Update the state
             state((t + 1) % nh, i_node + 0 * n_node) = r;

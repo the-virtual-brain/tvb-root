@@ -1,5 +1,7 @@
 #include <stdio.h> // for printf
 #define PI_2 (2 * M_PI_F)
+#define PI M_PI_F
+#define INF INFINITY
 
 // buffer length defaults to the argument to the integrate kernel
 // but if it's known at compile time, it can be provided which allows
@@ -99,13 +101,13 @@ __global__ void ${modelname}(
     // conditional_derived variable declaration
     % for cd in dynamics.conditional_derived_variables:
     float ${cd.name} = 0.0;
-    % endfor /
-    % endif /
+    % endfor
+    % endif \
 
     % if noisepresent==True:
-    curandState crndst; /
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst); /
-    % endif /
+    curandState crndst;
+    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
+    % endif
 
     % for state_var in (dynamics.state_variables):
     float ${state_var.name} = ${state_var.dimension};
@@ -232,7 +234,7 @@ __global__ void ${modelname}(
             % endfor
             % endif /
 
-            // Integrate with stochastic forward euler
+            // Integrate with forward euler
             % for i, tim_der in enumerate(dynamics.time_derivatives):
             ${tim_der.variable} = dt * (${tim_der.value});
             % endfor
@@ -253,7 +255,7 @@ __global__ void ${modelname}(
             % for state_var in (dynamics.state_variables):
                 % if state_var.exposure == 'PI':
             ${state_var.name} = wrap_it_${state_var.exposure}(${state_var.name});
-                % else:
+                % elif (not state_var.exposure == "None" and not state_var.exposure == "none"):
             ${state_var.name} = wrap_it_${state_var.name}(${state_var.name});
                 % endif
             % endfor /

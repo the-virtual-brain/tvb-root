@@ -18,24 +18,16 @@
 #include <curand.h>
 #include <stdbool.h>
 
-__device__ float wrap_it_V(float V)
+__device__ float wrap_it_r(float r)
 {
-    float Vdim[] = {0.0, 1.0};
-    if (V < Vdim[0]) V = Vdim[0];
-    else if (V > Vdim[1]) V = Vdim[1];
+    float rdim[] = {0.0, inf};
+    if (r < rdim[0]) r = rdim[0];
+    else if (r > rdim[1]) r = rdim[1];
 
-    return V;
-}
-__device__ float wrap_it_W(float W)
-{
-    float Wdim[] = {0.0, 1.0};
-    if (W < Wdim[0]) W = Wdim[0];
-    else if (W > Wdim[1]) W = Wdim[1];
-
-    return W;
+    return r;
 }
 
-__global__ void rwongwang(
+__global__ void montbrio_heun(
 
         // config
         unsigned int i_step, unsigned int n_node, unsigned int nh, unsigned int n_step, unsigned int n_work_items,
@@ -60,56 +52,52 @@ __global__ void rwongwang(
 
     // unpack params
     // These are the two parameters which are usually explore in fitting in this model
-    const float global_speed = params(0);
+    const float nsig = params(0);
     const float global_coupling = params(1);
 
     // regular constants
-    const float w_plus = 1.4;
-    const float a_E = 310.0;
-    const float b_E = 125.0;
-    const float d_E = 0.154;
-    const float a_I = 615.0;
-    const float b_I = 177.0;
-    const float d_I = 0.087;
-    const float gamma_E = 0.641 / 1000.0;
-    const float tau_E = 100.0;
-    const float tau_I = 10.0;
-    const float I_0 = 0.382;
-    const float w_E = 1.0;
-    const float w_I = 0.7;
-    const float gamma_I = 1.0 / 1000.0;
-    const float J_N = 0.15;
-    const float J_I = 1.0;
-    const float G = 2.0;
-    const float lamda = 0.0;
-    const float J_NMDA = 0.15;
-    const float JI = 1.0;
+    const float tau = 1.0;
+    const float I = 0.0;
+    const float Delta = 0.7;
+    const float J = 14.5;
+    const float eta = -4.6;
+    const float Gamma = 5.0;
+    const float cr = 1.0;
+    const float cv = 1.0;
 
     // coupling constants, coupling itself is hardcoded in kernel
 
     // coupling parameters
     float c_pop0 = 0.0;
+    float c_pop1 = 0.0;
 
     // derived parameters
-    const float rec_speed_dt = 1.0f / global_speed / dt;
+    const float rec_n = 1 / n_node;
+//    const float rec_speed_dt = 1.0f / global_speed / dt;
+    const float rec_speed_dt = 1.0f / 1.0f / dt;
+    float nsig_r = 0.01;
+    float nsig_V = 0.02;
 
-    // the dynamic derived variables declarations
-    float tmp_I_E = 0.0;
-    float tmp_H_E = 0.0;
-    float tmp_I_I = 0.0;
-    float tmp_H_I = 0.0;
+    curandState crndst;
+//    curand_init(42, 0, 0, &crndst);
+    curand_init(id + (unsigned int) clock64(), 0, 0, &crndst);
+    float noise_r = 0.0;
+    float noise_V = 0.0;
+    float sqrtdt = 0.0;
+    float sqrtnsig = 0.0;
 
-
+    float r = 0.0;
     float V = 0.0;
-    float W = 0.0;
-
+    float dr_i = 0.0;
+    float dV_i = 0.0;
+    float dr = 0.0;
     float dV = 0.0;
-    float dW = 0.0;
 
     unsigned int dij_i = 0;
     float dij = 0.0;
     float wij = 0.0;
 
+    float r_j = 0.0;
     float V_j = 0.0;
 
     //***// This is only initialization of the observable
@@ -128,14 +116,15 @@ __global__ void rwongwang(
         for (int i_node = 0; i_node < n_node; i_node++)
         {
             c_pop0 = 0.0f;
+            c_pop1 = 0.0f;
 
             if (t == (i_step)){
                 tavg(i_node + 0 * n_node) = 0;
                 tavg(i_node + 1 * n_node) = 0;
             }
 
-            V = state((t) % nh, i_node + 0 * n_node);
-            W = state((t) % nh, i_node + 1 * n_node);
+            r = state((t) % nh, i_node + 0 * n_node);
+            V = state((t) % nh, i_node + 1 * n_node);
 
             // This variable is used to traverse the weights and lengths matrix, which is really just a vector. It is just a displacement. /
             unsigned int i_n = i_node * n_node;
@@ -153,40 +142,58 @@ __global__ void rwongwang(
                 dij_i = (int)dij;
 
                 //***// Get the state of node j which is delayed by dij
-                V_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
+                r_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
+                V_j = state(((t - dij_i + nh) % nh), j_node + 1 * n_node);
 
                 // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
-                c_pop0 += wij * 1 * V_j;
+                c_pop0 += wij * 1 * r_j;
+
+                c_pop1 += wij * 1 * V_j;
             } // j_node */
 
             // global coupling handling, rec_n used to scale nodes
             c_pop0 *= global_coupling;
-            // the dynamic derived variables declarations
-            tmp_I_E = a_E * ((w_E * I_0) + (w_plus * J_NMDA) * V + c_pop0 - JI*W) - b_E;
-            tmp_H_E = tmp_I_E/(1.0-exp((-1.0 * d_E) * tmp_I_E));
-            tmp_I_I = (a_I*(((w_I * I_0)+(J_NMDA * V))-W))-b_I;
-            tmp_H_I = tmp_I_I/(1.0-exp((-1.0 * d_I)*tmp_I_I));
+            c_pop1 *= global_coupling;
 
+            // Integrate with Heun (2nd order)
+            dr = 1/tau * (Delta / (pi * tau) + 2 * V * r);
+            dV = 1/tau * (powf(V, 2) - powf(pi, 2) * powf(tau, 2) * powf(r, 2) + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1);
 
-            // Integrate with forward euler
-            dV = dt * (((-1.0 / tau_E)* V)+(tmp_H_E*(1-V)*gamma_E));
-            dW = dt * (((-1.0 / tau_I)* W)+(tmp_H_I*gamma_I));
+            // additive white noise generation in tvb (random_stream.normal(size=shape));
+            sqrtdt = sqrt(dt);
+            noise_r = sqrtdt * curand_normal(&crndst);
+            noise_V = sqrtdt * curand_normal(&crndst);
+            // gfun in tvb
+            noise_r *= sqrt(2.0 * nsig);
+            noise_V *= sqrt(2.0 * nsig * 2.0);
 
-            // No noise is added because it is not present in model
-            V += dV;
-            W += dW;
+            dr_i = r + dr * dt + noise_r;
+            dV_i = V + dV * dt + noise_V;
+//            dr_i = r + dr * dt;
+//            dV_i = V + dV * dt;
 
             // Wrap it within the limits of the model
-            V = wrap_it_V(V);
-            W = wrap_it_W(W);
+            dr_i = wrap_it_r(dr_i);
+
+            dr = dt/2.0 * (dr + (1/tau * (Delta / (pi * tau) + 2 * dV_i * dr_i)));
+            dV = dt/2.0 * (dV + (1/tau * (powf(dV_i, 2) - powf(pi, 2) * powf(tau, 2) * powf(dr_i, 2) + eta + J * tau * dr_i + I + cr * c_pop0 + cv * c_pop1)));
+
+            // No noise is added because it is not present in model
+            r += dr + noise_r;
+            V += dV + noise_V;
+//            r += dr;
+//            V += dV;
+
+            // Wrap it within the limits of the model
+            r = wrap_it_r(r);
 
             // Update the state
-            state((t + 1) % nh, i_node + 0 * n_node) = V;
-            state((t + 1) % nh, i_node + 1 * n_node) = W;
+            state((t + 1) % nh, i_node + 0 * n_node) = r;
+            state((t + 1) % nh, i_node + 1 * n_node) = V;
 
             // Update the observable
-            tavg(i_node + 0 * n_node) += V/n_step;
-            tavg(i_node + 1 * n_node) += W/n_step;
+            tavg(i_node + 0 * n_node) += r/n_step;
+            tavg(i_node + 1 * n_node) += V/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step
             __syncthreads();

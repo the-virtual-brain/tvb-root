@@ -62,7 +62,7 @@ class OscillatorT(ModelNumbaDfun):
         
     alpha = NArray(
         label=":math:`alpha`",
-        default=numpy.array([.5]),
+        default=numpy.array([1.0]),
         doc=""""""
     )    
         

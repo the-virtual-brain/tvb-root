@@ -126,7 +126,7 @@ class Driver_Setup:
 		parser.add_argument('-w', '--write_data', default=False, help="write output data to file: 'tavg_data", action='store_true')
 		parser.add_argument('-g', '--gpu_info', default=False, help="show gpu info", action='store_true')
 		parser.add_argument('-dt', '--delta_time', default=0.1, type=float, help="dt for simulation")
-		parser.add_argument('-sm', '--speeds_min', default=3	, type=float, help="min speed for temporal buffer")
+		parser.add_argument('-sm', '--speeds_min', default=1, type=float, help="min speed for temporal buffer")
 
 		args = parser.parse_args()
 		return args
