@@ -268,7 +268,7 @@ __global__ void epileptor(
             state((t + 1) % nh, i_node + 5 * n_node) = g;
 
             // Update the observable
-            tavg(i_node + 0 * n_node) += powf(x1, x2)/n_step;
+            tavg(i_node + 0 * n_node) += x1/n_step;
             tavg(i_node + 1 * n_node) += x2/n_step;
 
             // sync across warps executing nodes for single sim, before going on to next time step

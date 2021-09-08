@@ -90,9 +90,8 @@ __global__ void oscillator(
     const float local_coupling = 0.0;
 
 
-
-    float V = -0.0;
-    float W = -0.0;
+    float V = 0.0;
+    float W = 0.0;
 
     float dV = 0.0;
     float dW = 0.0;

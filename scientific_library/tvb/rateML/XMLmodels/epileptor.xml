@@ -38,7 +38,7 @@
         <Constant name="modification" dimension="None" value="0" description="When modification is True, then use nonlinear influence on z. The default value is False, i.e., linear influence."/>
 
         <!-- Exposures are used for observables. For dimension enter the reduction functionality. Name field is not used-->
-        <Exposure name="x1" dimension="{x1^x2}"/>
+        <Exposure name="x1" dimension="x1"/>
         <Exposure name="x2" dimension="x2"/>
 
         <Dynamics>

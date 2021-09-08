@@ -76,7 +76,6 @@ __global__ void montbrio(
     const float rec_speed_dt = 1.0f / global_speed / dt;
     const float nsig = 0.01;
 
-
     curandState crndst;
     curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
 

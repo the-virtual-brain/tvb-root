@@ -146,7 +146,7 @@ __global__ void oscillatorref(
                 //***// Get the state of node j which is delayed by dij
                 V_j = state(((t - dij_i + nh) % nh), j_node + 0 * n_node);
 
-                // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi)))
+                // Sum it all together using the coupling function. Kuramoto coupling: (postsyn * presyn) == ((a) * (sin(xj - xi))) 
                 c_pop0 += wij * c_a * V_j;
             } // j_node */
 

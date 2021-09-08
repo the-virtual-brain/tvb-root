@@ -35,11 +35,13 @@
             <!-- For each state variable a set of boundaries can be added to encompass the boundaries of the dynamic range -->
             <!-- Leave empty "" for no boundaries. Set None for one-sided boundaries, i.e. "1.0, None" -->
             <!-- CUDA -->
-<!--            <StateVariable name="r" dimension="0.0" exposure="0.0, inf"/>-->
-<!--            <StateVariable name="V" dimension="0.0" exposure="none"/>-->
-            <!-- Python -->
+
             <StateVariable name="r" dimension="0.0" exposure="0.0, INF"/>
-            <StateVariable name="V" dimension="0.0" exposure="None"/>
+            <StateVariable name="V" dimension="0.0" exposure="none"/>
+
+            <!-- Python -->
+<!--            <StateVariable name="r" dimension="0.0, 2.0" exposure="0.0, INF"/>-->
+<!--            <StateVariable name="V" dimension="0.0, 2.0" exposure="None"/>-->
 
             <!-- Derived variables can be used to simplify the time derivatives, enter the local coupling formulas or any formula -->
             <!-- syntax: [name]=[expression] -->

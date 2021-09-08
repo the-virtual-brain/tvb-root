@@ -5,7 +5,7 @@ from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 class MontbrioT(ModelNumbaDfun):
-        
+
     tau = NArray(
         label=":math:`tau`",
         default=numpy.array([1.0]),
@@ -71,7 +71,7 @@ class MontbrioT(ModelNumbaDfun):
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={"r": numpy.array([0.0, INF]), 
+        default={"r": numpy.array([0.0, np.inf]),
 				 },
     )
     variables_of_interest = List(

@@ -223,8 +223,10 @@ class Driver_Execute(Driver_Setup):
 		try:
 			with open(source_file, 'r') as fd:
 				source = fd.read()
-				source = source.replace('pi', '%ff' % (np.pi, ))
-				source = source.replace('inf', 'INFINITY')
+				source = source.replace('M_PI_F', '%ff' % (np.pi, ))
+				# TODO fix for whole words only. Only uppercase is permitted
+				# source = source.replace('pi', '%ff' % (np.pi, ))
+				# source = source.replace('inf', 'INFINITY')
 				opts = ['--ptxas-options=-v', '-maxrregcount=32']
 				if lineinfo:
 					opts.append('-lineinfo')

@@ -146,7 +146,7 @@ class EpileptorT(ModelNumbaDfun):
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
-        choices=('x1 ** x2', 'x2', ),
+        choices=('x1', 'x2', ),
         default=('x1', 'y1', 'z', 'x2', 'y2', 'g', ),
         doc="Variables to monitor"
     )
