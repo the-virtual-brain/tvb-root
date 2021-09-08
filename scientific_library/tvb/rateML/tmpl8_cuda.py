@@ -106,7 +106,7 @@ __global__ void ${modelname}(
 
     % if noisepresent==True:
     curandState crndst;
-    curand_init(id * (blockDim.x * gridDim.x * gridDim.y), 0, 0, &crndst);
+    curand_init(id + (unsigned int) clock64(), 0, 0, &crndst);
     % endif
 
     % for state_var in (dynamics.state_variables):
