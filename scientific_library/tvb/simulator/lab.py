@@ -61,4 +61,5 @@ from tvb.datatypes import (connectivity, surfaces, equations, patterns, region_m
 from tvb.simulator.plot.tools import (hinton_diagram, plot_3d_centres, plot_connectivity,
                                       plot_fast_kde, plot_local_connectivity, plot_matrix,
                                       plot_pattern, plot_tri_matrix)
+from tvb.simulator.plot.utils import generate_region_demo_data
 
