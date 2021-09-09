@@ -15,10 +15,15 @@ RUN cd /opt \
  && cd tvb_data \
  && python3 setup.py develop
 
-RUN pip install h5py>=2.10 tvb-gdist pytest-xdist sqlalchemy
+RUN pip install h5py>=2.10 pytest-xdist sqlalchemy mako pylems lxml requests autopep8
 
-RUN pip install mako
+RUN pip install --no-build-isolation tvb-gdist
 
-RUN pip install pylems
+# required for rateML CUDA work
+# RUN conda install cudatoolkit \
+#  && conda install -c conda-forge cudatoolkit-dev \
+#  && pip install pycuda
 
-RUN pip install lxml
+# docker run --rm -it -v $PWD:/tvb -w /tvb tvb/lib 
+# add --gpus all for testing CUDA
+CMD ["/bin/bash", "-c", "cd tvb_bin; python3 setup.py develop --no-deps; cd ../scientific_library; python3 setup.py develop --no-deps; python3 -m pytest -n12"]

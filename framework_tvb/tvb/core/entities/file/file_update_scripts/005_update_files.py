@@ -40,8 +40,8 @@ import json
 import os
 import sys
 import uuid
-import numpy
 
+import numpy
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexViewModel
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
@@ -139,6 +139,16 @@ def _migrate_connectivity(**kwargs):
     extra_metadata = ['orientations', 'areas', 'cortical', 'hemispheres', 'orientations']
     storage_manager = kwargs['storage_manager']
     _bytes_ds_to_string_ds(storage_manager, 'region_labels')
+
+    try:
+        storage_manager.get_data('hemispheres')
+    except MissingDataSetException:
+        # In case the Connectivity file does not hold a hemispheres dataset, write one by splitting regions in half
+        all_regions = root_metadata['number_of_regions']
+        right_regions = all_regions / 2
+        left_regions = all_regions - right_regions
+        hemispheres = int(right_regions) * [True] + int(left_regions) * [False]
+        storage_manager.store_data('hemispheres', numpy.array(hemispheres))
 
     for mt in extra_metadata:
         try:
@@ -479,7 +489,7 @@ def _migrate_time_series(operation_xml_parameters):
     for xml_param in operation_xml_parameters:
         if 'coupling_parameters' in xml_param:
             new_param = xml_param.replace('coupling_parameters_option_' + coupling_name + '_', '')
-            coupling_param = numpy.asarray(eval(operation_xml_parameters[xml_param]),
+            coupling_param = numpy.asarray(eval(str(operation_xml_parameters[xml_param])),
                                            dtype=getattr(coupling, new_param).dtype)
             additional_params.append(['coupling', new_param, coupling_param])
 
@@ -524,7 +534,6 @@ def _migrate_time_series_simple(**kwargs):
 
 
 def _parse_fmri_ballon_adapter_operation(operation_xml_parameters):
-    _, operation_xml_parameters['RBM'] = _parse_bool(operation_xml_parameters['RBM'])
     operation_xml_parameters['dt'] = float(operation_xml_parameters['dt'])
     return operation_xml_parameters, None
 
@@ -1000,7 +1009,6 @@ def _migrate_datatype_group(operation_group, burst_gid, generic_attributes):
     dao.store_entity(stored_datatype_group)
 
 
-
 datatypes_to_be_migrated = {
     'Connectivity': _migrate_connectivity,
     'BrainSkull': _migrate_surface,
@@ -1144,22 +1152,23 @@ def update(input_file, burst_match_dict):
     additional_params = None  # params that can't be jsonified with json.dumps
     has_vm = False
     operation = None
-    # Take information out from the Operation.xml file
-    if OPERATION_XML in files_in_folder:
-        operation_file_path = os.path.join(folder, OPERATION_XML)
-        project = dao.get_project_by_name(split_path[-3])
-        xml_operation, operation_xml_parameters, algorithm = \
-            import_service.build_operation_from_file(project, operation_file_path)
-        operation = dao.get_operation_by_id(op_id)
-        try:
-            operation_xml_parameters = json.loads(operation_xml_parameters)
-        except NameError:
-            operation_xml_parameters = operation_xml_parameters.replace('null', '\"null\"')
-            operation_xml_parameters = json.load(operation_xml_parameters)
-    else:
-        has_vm = True
 
     try:
+        # Take information out from the Operation.xml file
+        if OPERATION_XML in files_in_folder:
+            operation_file_path = os.path.join(folder, OPERATION_XML)
+            project = dao.get_project_by_name(split_path[-3])
+            xml_operation, operation_xml_parameters, algorithm = \
+                import_service.build_operation_from_file(project, operation_file_path)
+            operation = dao.get_operation_by_id(op_id)
+            try:
+                operation_xml_parameters = json.loads(operation_xml_parameters)
+            except NameError:
+                operation_xml_parameters = operation_xml_parameters.replace('null', '\"null\"')
+                operation_xml_parameters = json.load(operation_xml_parameters)
+        else:
+            has_vm = True
+
         # Calls the specific method for the current h5 class
         params = datatypes_to_be_migrated[class_name](root_metadata=root_metadata,
                                                       storage_manager=storage_manager,
@@ -1223,7 +1232,7 @@ def update(input_file, burst_match_dict):
             vm = import_service.create_view_model(operation, operation_data, folder,
                                                   generic_attributes, additional_params)
 
-            if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname\
+            if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname \
                     and time_series_gid is None:
                 burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
                                                                   DATE_FORMAT_V4_DB, TvbProfile.current.db.SELECTED_DB)

@@ -121,7 +121,7 @@ class Integrator(HasTraits):
         """
 
     def set_random_state(self, random_state):
-        self.log.warn("random_state supplied for non-stochastic integration")
+        self.log.warning("random_state supplied for non-stochastic integration")
 
     def configure(self):
         # Set default configurations:
@@ -297,6 +297,7 @@ class HeunDeterministic(Integrator):
     """
 
     _ui_name = "Heun"
+    n_dx = 2
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         r"""
@@ -331,6 +332,7 @@ class HeunStochastic(IntegratorStochastic):
     """
 
     _ui_name = "Stochastic Heun"
+    n_dx = 2
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         """
@@ -377,6 +379,7 @@ class EulerDeterministic(Integrator):
     """
 
     _ui_name = "Euler"
+    n_dx = 1
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         r"""
@@ -406,6 +409,7 @@ class EulerStochastic(IntegratorStochastic):
     """
 
     _ui_name = "Euler-Maruyama"
+    n_dx = 1
 
     def scheme(self, X, dfun, coupling, local_coupling, stimulus):
         r"""
@@ -438,6 +442,7 @@ class RungeKutta4thOrderDeterministic(Integrator):
     """
 
     _ui_name = "Runge-Kutta 4th order"
+    n_dx = 4
 
     def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0):
         r"""
@@ -497,6 +502,7 @@ class Identity(Integrator):
     """
 
     _ui_name = "Difference equation"
+    n_dx = 1
 
     def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
         """
@@ -508,7 +514,33 @@ class Identity(Integrator):
 
         """
 
-        return dfun(X, coupling, local_coupling) + stimulus
+        X_next = dfun(X, coupling, local_coupling) + stimulus
+        self.integration_bound_and_clamp(X_next)
+        return X_next
+
+
+class IdentityStochastic(IntegratorStochastic):
+    """
+    A stochastic variant of the Identity integrator.  Together
+    with time delays, this allows for MVAR models. 
+    """
+
+    _ui_name = "Stochastic difference equation (MVAR)"
+    n_dx = 1
+
+    def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
+        """
+        The stochastic identity scheme simply returns the results of the dfun and
+        the gfun and stimulus.
+
+        .. math::
+            x_{n+1} = f(x_{n}) + g(X_n) Z_1
+
+        """
+        z = self.noise.generate(X.shape) * self.noise.gfun(X)
+        X_next = dfun(X, coupling, local_coupling) + z + stimulus
+        self.integration_bound_and_clamp(X_next)
+        return X_next
 
 
 class SciPyODEBase(object):

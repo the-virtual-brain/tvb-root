@@ -30,7 +30,7 @@ RUN conda install -y --name tvb-docs -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-docs/bin/pip install h5py==2.10 formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk
 RUN /opt/conda/envs/tvb-docs/bin/pip install --no-build-isolation tvb-gdist
-RUN /opt/conda/envs/tvb-docs/bin/pip install typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
+RUN /opt/conda/envs/tvb-docs/bin/pip install typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
 
 RUN conda update -n base -c defaults conda
@@ -41,7 +41,7 @@ RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
 RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk
 RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
-RUN /opt/conda/envs/tvb-run/bin/pip install typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
+RUN /opt/conda/envs/tvb-run/bin/pip install typing BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN /opt/conda/envs/tvb-run/bin/pip install lockfile
 RUN /opt/conda/envs/tvb-run/bin/pip install syncrypto
 
@@ -72,6 +72,9 @@ RUN cd tvb-root; \
 
 COPY --chown=$TVB_USER:$TVB_USER .tvb.configuration $USER_HOME/.tvb.configuration
 RUN chown $TVB_USER:$TVB_USER $USER_HOME
+
+RUN rm /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
+RUN echo '{"argv": ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"], "display_name": "Python 3", "language": "python"}' >> /opt/conda/envs/tvb-run/share/jupyter/kernels/python3/kernel.json
 
 USER $TVB_USER
 
