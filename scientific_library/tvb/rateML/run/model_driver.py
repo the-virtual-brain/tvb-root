@@ -12,10 +12,13 @@ from tvb.rateML.run.regular_run import regularRun
 
 import os.path
 import numpy as np
-import pycuda.autoinit
-import pycuda.driver as drv
-from pycuda.compiler import SourceModule
-import pycuda.gpuarray as gpuarray
+try:
+	import pycuda.autoinit
+	import pycuda.driver as drv
+	from pycuda.compiler import SourceModule
+	import pycuda.gpuarray as gpuarray
+except ImportError:
+	logging.warning('pycuda not available, rateML driver not usable.')
 
 import matplotlib.pyplot as plt
 
