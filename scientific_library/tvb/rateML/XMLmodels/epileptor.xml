@@ -43,6 +43,16 @@
 
         <Dynamics>
 
+            <!-- For python models a dimension range is required -->
+            <!-- <StateVariable name="V" dimension="0.0, numpy.pi * 2.0" exposure="-2, 1"/>-->
+<!--            <StateVariable name="x1" dimension="-2., 1." exposure="None"/>-->
+<!--            <StateVariable name="y1" dimension="-20., 2." exposure="None"/>-->
+<!--            <StateVariable name="z" dimension="2.0, 5.0" exposure="None"/>-->
+<!--            <StateVariable name="x2" dimension="-2., 0." exposure="None"/>-->
+<!--            <StateVariable name="y2" dimension="0., 2." exposure="None"/>-->
+<!--            <StateVariable name="g" dimension="-1., 1." exposure="None"/>-->
+
+            <!-- For CUDA models a single value for dimension is required -->
             <!-- dimension is init and exposure are the bounds -->
             <StateVariable name="x1" dimension="0.0" exposure="-2.0, 1.0"/>
             <StateVariable name="y1" dimension="0.0" exposure="-20.0, 2.0"/>

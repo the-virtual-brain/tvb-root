@@ -147,7 +147,7 @@ class EpileptorT(ModelNumbaDfun):
         of=str,
         label="Variables or quantities available to Monitors",
         choices=('x1', 'x2', ),
-        default=('x1', 'y1', 'z', 'x2', 'y2', 'g', ),
+        default=('x1', ),
         doc="Variables to monitor"
     )
 

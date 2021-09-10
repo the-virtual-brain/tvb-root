@@ -40,11 +40,11 @@ class ${modelname}(ModelNumbaDfun):
 '${choice.dimension}', \
 %endfor
 ),
-        default=(\
-%for defa in (dynamics.state_variables):
-'${defa.name}', \
-%endfor
-),
+        default=('${next(iter(dynamics.state_variables)).name}', ),
+##%for defa in (dynamics.state_variables):
+##'${defa.name}', \
+##%endfor
+##),
         doc="Variables to monitor"
     )
 

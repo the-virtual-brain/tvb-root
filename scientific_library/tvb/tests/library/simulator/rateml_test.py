@@ -123,12 +123,14 @@ class TestRateML():
 	# --------------------
 	def test_check_parameters(self):
 
-		# works for kuramoto.xml and default workitems settings
-		driver = setup_namespace()
+		# works for default workitems settings
+		driver = setup_namespace('oscillator')
 		_, count = find_attributes(driver.args, "n_sweep_")
 		assert count == 2
-		assert driver.exposures == 2 and driver.states == 2
+		assert driver.exposures == 2
+		assert driver.states == 2
 
+		# 16 workitems is based on driver default
 		n_work_items, n_params = driver.params.shape
 		assert n_work_items == 16 and n_params == 2
 
