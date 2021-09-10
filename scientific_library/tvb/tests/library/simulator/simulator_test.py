@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -180,8 +180,10 @@ class TestSimulator(BaseTestCase):
     @pytest.mark.parametrize('model_class,method_class', itertools.product(MODEL_CLASSES, METHOD_CLASSES))
     def test_simulator_region(self, model_class, method_class):
         test_simulator = Simulator()
-        test_simulator.configure(model=model_class, method=method_class, surface_sim=False)
-        result = test_simulator.run_simulation()
+
+        with numpy.errstate(all='ignore'):
+            test_simulator.configure(model=model_class, method=method_class, surface_sim=False)
+            result = test_simulator.run_simulation()
 
         self.assert_equal(len(test_simulator.monitors), len(result))
         for ts in result:
@@ -196,8 +198,9 @@ class TestSimulator(BaseTestCase):
         """
         test_simulator = Simulator()
 
-        test_simulator.configure(surface_sim=True, default_connectivity=default_connectivity)
-        result = test_simulator.run_simulation(simulation_length=2)
+        with numpy.errstate(all='ignore'):
+            test_simulator.configure(surface_sim=True, default_connectivity=default_connectivity)
+            result = test_simulator.run_simulation(simulation_length=2)
 
         assert len(test_simulator.monitors) == len(result)
 
@@ -306,7 +309,9 @@ class TestSimulator(BaseTestCase):
     @pytest.mark.parametrize('default_connectivity', [True, False])
     def test_simulator_regional_stimulus(self, default_connectivity):
         test_simulator = Simulator()
-        test_simulator.configure(surface_sim=False, default_connectivity=default_connectivity, with_stimulus=True)
+
+        with numpy.errstate(all='ignore'):
+            test_simulator.configure(surface_sim=False, default_connectivity=default_connectivity, with_stimulus=True)
         stimulus = test_simulator.sim._prepare_stimulus()
         self.assert_equal(
             stimulus.shape,

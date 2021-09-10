@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -113,7 +113,7 @@ def check_permission(resource_access_permission_class, requested_resource_identi
                 if access_permission_instance.has_access():
                     return func(*a, **b)
             except KeyError:
-                get_logger().warn("Invalid identifier name")
+                get_logger().warning("Invalid identifier name")
             raise AuthorizationRequestException("You cannot access this resource")
 
         return deco

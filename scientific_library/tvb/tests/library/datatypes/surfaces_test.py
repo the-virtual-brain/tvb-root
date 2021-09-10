@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -51,7 +51,11 @@ class TestSurfaces(BaseTestCase):
         dt = surfaces.Surface(valid_for_simulations=True)
         dt.vertices = numpy.array(list(range(30))).reshape(10, 3).astype(numpy.float64)
         dt.triangles = numpy.array(list(range(9))).reshape(3, 3)
+        dt.triangle_normals = numpy.array(list(range(9))).reshape(3, 3)
+        dt.vertex_normals = numpy.array(list(range(30))).reshape(10, 3).astype('f')
+
         dt.configure()
+
         summary_info = dt.summary_info()
         assert summary_info['Number of edges'] == 9
         assert summary_info['Number of triangles'] == 3
@@ -117,6 +121,8 @@ class TestSurfaces(BaseTestCase):
         dt = surfaces.Surface()
         dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 2]]).astype(numpy.float64)
         dt.triangles = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
+        dt.triangle_normals = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
+        dt.vertex_normals = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 2]]).astype(numpy.float64)
         dt.configure()
 
         euler, isolated, pinched_off, holes = dt.compute_topological_constants()

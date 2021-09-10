@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -61,6 +61,7 @@ class Config:
         self.tvb_sources = {
             join("..", "framework_tvb", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "scientific_library", "tvb"): join(self.target_site_packages, "tvb"),
+            join("..", "tvb_storage", "tvb"): join(self.target_site_packages, "tvb"),
             join("..", "tvb_bin", "tvb_bin"): join(self.target_site_packages, "tvb_bin"),
             join("..", "externals", "BCT"): join(self.target_site_packages, "externals", "BCT"),
         }
@@ -72,30 +73,6 @@ class Config:
         _artifact_glob = "TVB_" + platform_name + "_*.zip"
         self.artifact_glob = join(self.build_folder, _artifact_glob)  # this is used to match old artifacts
         self.artifact_pth = join(self.build_folder, self.artifact_name)
-
-
-    @staticmethod
-    def mac64():
-        # TODO check paths
-        set_path = 'cd ../tvb_data \n' + \
-                   'export PATH=`pwd`/bin:$PATH \n' + \
-                   'export PYTHONPATH=`pwd`/lib/' + Environment.PYTHON_FOLDER + \
-                   ':`pwd`/lib/' + Environment.PYTHON_FOLDER + '/site-packages \n' + \
-                   'export PYTHONIOENCODING=utf8 \n' + \
-                   'unset PYTHONHOME \n\n' + \
-                   '# export TVB_USER_HOME=`pwd` \n'
-
-        commands_map = {
-            'bin/distribution.command': set_path + '../tvb_data/bin/python -m tvb_bin.app $@',
-            'bin/tvb_start.command': 'source ./distribution.command start',
-            'bin/tvb_clean.command': 'source ./distribution.command clean',
-            'bin/tvb_stop.command': 'source ./distribution.command stop',
-            'bin/jupyter_notebook.sh': set_path + '../tvb_data/bin/python -m tvb_bin.run_jupyter notebook ../demo_scripts',
-            'demo_scripts/jupyter_notebook.sh': set_path + '../tvb_data/bin/python -m tvb_bin.run_jupyter notebook'
-        }
-
-        return Config("MacOS", "/anaconda/envs/tvb-run3", join("lib", Environment.PYTHON_FOLDER, "site-packages"),
-                      commands_map, _create_unix_command)
 
 
     @staticmethod
@@ -142,8 +119,8 @@ class Config:
             'bin/tvb_start.sh': 'bash ./distribution.sh start',
             'bin/tvb_clean.sh': 'bash ./distribution.sh clean',
             'bin/tvb_stop.sh': 'bash ./distribution.sh stop',
-            'bin/jupyter_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m tvb_bin.run_jupyter notebook ../demo_scripts',
-            'demo_scripts/jupyter_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m tvb_bin.run_jupyter notebook'
+            'bin/jupyter_notebook.sh': set_path + 'cd ../bin\n../tvb_data/bin/python -m notebook ../demo_scripts',
+            'demo_scripts/jupyter_notebook.sh': set_path + 'cd ../demo_scripts\n../tvb_data/bin/python -m notebook'
         }
 
         return Config("Linux", "/opt/conda/envs/tvb-run", join("lib", Environment.PYTHON_FOLDER, "site-packages"),
@@ -317,11 +294,7 @@ def prepare_anaconda_dist(config):
 
 
 if __name__ == "__main__":
-
-    if Environment.is_mac():
-        prepare_anaconda_dist(Config.mac64())
-
-    elif Environment.is_windows():
+    if Environment.is_windows():
         prepare_anaconda_dist(Config.win64())
 
     else:

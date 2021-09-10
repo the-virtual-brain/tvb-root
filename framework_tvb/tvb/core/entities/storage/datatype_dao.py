@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -64,7 +64,6 @@ class DatatypeDAO(RootDAO):
                                           ).filter(OperationGroup.fk_launched_in == project_id).order_by(DataTypeGroup.id)
         return query.all()
 
-
     def get_datatypegroup_by_op_group_id(self, operation_group_id):
         """
         Returns the DataTypeGroup corresponding to a certain OperationGroup.
@@ -72,9 +71,11 @@ class DatatypeDAO(RootDAO):
         try:
             result = self.session.query(DataTypeGroup).filter_by(fk_operation_group=operation_group_id).one()
             return result
+        except NoResultFound:
+            self.logger.debug("No operation group was found for operation group id = {}".format(operation_group_id))
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
-            return None
+        return None
 
     def get_datatype_group_by_gid(self, datatype_group_gid):
         """

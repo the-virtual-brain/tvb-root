@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,13 +30,14 @@
 
 import abc
 import json
+import typing
 import uuid
 import numpy
 import scipy.sparse
-import typing
+
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
-from tvb.core.entities.file.exceptions import MissingDataSetException
 from tvb.datatypes import equations
+from tvb.storage.h5.file.exceptions import MissingDataSetException
 
 
 class Accessor(object, metaclass=abc.ABCMeta):
@@ -181,27 +182,31 @@ class DataSet(Accessor):
         """
         super(DataSet, self).__init__(trait_attribute, h5file, name)
         self.expand_dimension = expand_dimension
+        # Cache metadata for expandable DataSets to avoid multiple reads/writes at append time
+        self.meta = None
 
     def append(self, data, close_file=True, grow_dimension=None):
         # type: (numpy.ndarray, bool, int) -> None
+        """
+        Method to be called when it is necessary to write slices of data for a large dataset, eg. TimeSeries.
+        Metdata for such datasets is written only at file close time, see H5File.close method.
+        """
         if not grow_dimension:
             grow_dimension = self.expand_dimension
         self.owner.storage_manager.append_data(
-            self.field_name,
             data,
+            self.field_name,
             grow_dimension=grow_dimension,
             close_file=close_file
         )
         # update the cached array min max metadata values
         new_meta = DataSetMetaData.from_array(numpy.array(data))
-        meta_dict = self.owner.storage_manager.get_metadata(self.field_name)
-        if meta_dict:
-            meta = DataSetMetaData.from_dict(meta_dict)
-            meta.merge(new_meta)
+        if self.meta:
+            self.meta.merge(new_meta)
         else:
             # this must be a new file, nothing to merge, set the new meta
-            meta = new_meta
-        self.owner.storage_manager.set_metadata(meta.to_dict(), self.field_name)
+            self.meta = new_meta
+            self.owner.expandable_datasets.append(self)
 
     def store(self, data):
         # type: (numpy.ndarray) -> None
@@ -210,7 +215,7 @@ class DataSet(Accessor):
         if data is None:
             return
 
-        self.owner.storage_manager.store_data(self.field_name, data)
+        self.owner.storage_manager.store_data(data, self.field_name)
         # cache some array information
         self.owner.storage_manager.set_metadata(
             DataSetMetaData.from_array(data).to_dict(),
@@ -225,7 +230,7 @@ class DataSet(Accessor):
 
     def __getitem__(self, data_slice):
         # type: (typing.Tuple[slice, ...]) -> numpy.ndarray
-        return self.owner.storage_manager.get_data(self.field_name, data_slice)
+        return self.owner.storage_manager.get_data(self.field_name, data_slice=data_slice)
 
     @property
     def shape(self):
@@ -238,6 +243,8 @@ class DataSet(Accessor):
         This cache is useful for large, expanding datasets,
         when we want to avoid loading the whole dataset just to compute a max.
         """
+        if self in self.owner.expandable_datasets:
+            return self.meta
         meta = self.owner.storage_manager.get_metadata(self.field_name)
         return DataSetMetaData.from_dict(meta)
 
@@ -358,7 +365,6 @@ class SparseMatrixMetaData(DataSetMetaData):
         }
 
 
-
 class SparseMatrix(Accessor):
     """
     Stores and loads a scipy.sparse csc or csr matrix in h5.
@@ -378,18 +384,18 @@ class SparseMatrix(Accessor):
             raise TypeError("expected scipy.sparse.spmatrix, got {}".format(type(mtx)))
 
         self.owner.storage_manager.store_data(
-            'data',
             mtx.data,
+            'data',
             where=self.field_name
         )
         self.owner.storage_manager.store_data(
-            'indptr',
             mtx.indptr,
+            'indptr',
             where=self.field_name
         )
         self.owner.storage_manager.store_data(
-            'indices',
             mtx.indices,
+            'indices',
             where=self.field_name
         )
         self.owner.storage_manager.set_metadata(
@@ -421,7 +427,6 @@ class SparseMatrix(Accessor):
         mtx = constructor((data, indices, indptr), shape=meta.shape, dtype=meta.dtype)
         mtx.sort_indices()
         return mtx
-
 
 
 class Json(Scalar):

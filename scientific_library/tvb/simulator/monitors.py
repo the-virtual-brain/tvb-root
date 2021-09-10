@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -96,6 +96,10 @@ class Monitor(HasTraits):
     def __str__(self):
         clsname = self.__class__.__name__
         return '%s(period=%f, voi=%s)' % (clsname, self.period, self.variables_of_interest.tolist())
+
+    @property
+    def ui_name(self):
+        return self._ui_name
 
     def _config_vois(self, simulator):
         self.voi = self.variables_of_interest
@@ -976,20 +980,33 @@ class BoldRegionROI(Bold):
     def config_for_sim(self, simulator):
         super(BoldRegionROI, self).config_for_sim(simulator)
         self.region_mapping = simulator.surface.region_mapping
+        self.no_regions = simulator.surface.region_mapping_data.connectivity.number_of_regions
 
-    def sample(self, step, state, array=numpy.array):
+    def sample(self, step, state):
         result = super(BoldRegionROI, self).sample(step, state)
         if result:
             t, data = result
             # TODO use reduceat
-            return [t, array([data.flat[self.region_mapping==i].mean()
-                              for i in range(self.region_mapping.max())])]
+            data = data[self.voi, :]
+            data = numpy.array([data[:, self.region_mapping == i, :].mean(axis=1)
+                                for i in range(self.no_regions)])
+            data = numpy.swapaxes(data, 0, 1)
+            return [t, data]
         else:
             return None
 
+    def create_time_series(self, connectivity=None, surface=None,
+                           region_map=None, region_volume_map=None):
+
+        return TimeSeriesRegion(connectivity=connectivity,
+                                region_mapping=region_map,
+                                region_mapping_volume=region_volume_map,
+                                sample_period=self.period,
+                                title='Regions ' + self.__class__.__name__)
+
 
 class ProgressLogger(Monitor):
-    "Logs progress of simulation; only for use in console scripts."
+    """Logs progress of simulation; only for use in console scripts."""
 
     def __init__(self, **kwargs):
         super(ProgressLogger, self).__init__(**kwargs)

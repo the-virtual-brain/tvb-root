@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -44,24 +44,24 @@ from tvb.core.utils import date2string
 
 def update_local_connectivity_metadata(file_path):
     with LocalConnectivityH5(file_path) as f:
-        f.storage_manager.set_metadata({'Shape': "(16384, 16384)",
-                                        'format': "csc",
-                                        "dtype": "<f8"},
-                                       "/matrix")
-        f.storage_manager.set_metadata({'cutoff': 40.0,
-                                        'state': "RAW_DATA",
-                                        'subject': "John Doe",
-                                        'user_tag_1': "srf_16k",
-                                        'user_tag_2': "",
-                                        'user_tag_3': "",
-                                        'user_tag_4': "",
-                                        'user_tag_5': "",
-                                        'type': "",
-                                        'create_date': date2string(datetime.now()),
-                                        'visible': True,
-                                        'is_nan': False,
-                                        'gid': UUID('3e551cbd-47ca-11e4-9f21-3c075431bf56').urn,
-                                        'surface': UUID('10467c4f-d487-4186-afa6-d9b1fd8383d8').urn}, )
+        f.storage_interface.set_metadata({'Shape': "(16384, 16384)",
+                                          'format': "csc",
+                                          "dtype": "<f8"},
+                                         "/matrix")
+        f.storage_interface.set_metadata({'cutoff': 40.0,
+                                          'state': "RAW_DATA",
+                                          'subject': "John Doe",
+                                          'user_tag_1': "srf_16k",
+                                          'user_tag_2': "",
+                                          'user_tag_3': "",
+                                          'user_tag_4': "",
+                                          'user_tag_5': "",
+                                          'type': "",
+                                          'create_date': date2string(datetime.now()),
+                                          'visible': True,
+                                          'is_nan': False,
+                                          'gid': UUID('3e551cbd-47ca-11e4-9f21-3c075431bf56').urn,
+                                          'surface': UUID('10467c4f-d487-4186-afa6-d9b1fd8383d8').urn}, )
 
 
 def update_written_by(folder):

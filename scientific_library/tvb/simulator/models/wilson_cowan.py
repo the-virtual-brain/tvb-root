@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,11 +31,29 @@ Wilson-Cowan equations based model definition.
 
 """
 import numpy
-from .base import Model
+from .base import ModelNumbaDfun
 from tvb.basic.neotraits.api import NArray, Final, List, Range
+from numba import guvectorize, float64
 
 
-class WilsonCowan(Model):
+@guvectorize([(float64[:],) * 27], '(n),(m),(o)' + ',()'*23 + '->(n)', nopython=True)
+def _numba_dfun(y, c, lc, c_ee, c_ei, c_ie, c_ii, tau_e, tau_i, a_e, b_e, c_e, theta_e, a_i, b_i, theta_i, c_i,
+                r_e, r_i, k_e, k_i, P, Q, alpha_e, alpha_i, shift_sigmoid, ydot):
+    x_e = alpha_e[0] * (c_ee[0] * y[0] - c_ei[0] * y[1] + P[0]  - theta_e[0] +  c[0] + lc[0] + lc[1])
+    x_i = alpha_i[0] * (c_ie[0] * y[0] - c_ii[0] * y[1] + Q[0]  - theta_i[0] + lc[0] + lc[1])
+    if shift_sigmoid:
+        s_e = c_e[0] * (1.0 / (1.0 + numpy.exp(-a_e[0] * (x_e - b_e[0]))) - 1.0
+                        / (1.0 + numpy.exp(-a_e[0] * -b_e[0])))
+        s_i = c_i[0] * (1.0 / (1.0 + numpy.exp(-a_i[0] * (x_i - b_i[0]))) - 1.0
+                        / (1.0 + numpy.exp(-a_i[0] * -b_i[0])))
+    else:
+        s_e = c_e[0] / (1.0 + numpy.exp(-a_e[0] * (x_e - b_e[0])))
+        s_i = c_i[0] / (1.0 + numpy.exp(-a_i[0] * (x_i - b_i[0])))
+    ydot[0] = (-y[0] + (k_e[0] - r_e[0] * y[0]) * s_e) / tau_e[0]
+    ydot[1] = (-y[1] + (k_i[0] - r_i[0] * y[1]) * s_i) / tau_i[0]
+
+
+class WilsonCowan(ModelNumbaDfun):
     r"""
     **References**:
 
@@ -56,6 +74,50 @@ class WilsonCowan(Model):
     from all other nodes is the external input to the local population.
 
     The default parameters are taken from figure 4 of [WC_1972]_, pag. 10
+
+    +---------------------------+
+    |          Table 0          |
+    +--------------+------------+
+    |Parameter     |  Value     |
+    +==============+============+
+    | k_e, k_i     |    0.00    |
+    +--------------+------------+
+    | r_e, r_i     |    0.00    |
+    +--------------+------------+
+    | tau_e, tau_i |    9.0    |
+    +--------------+------------+
+    | c_ee         |    11.0    |
+    +--------------+------------+
+    | c_ei         |    3.0     |
+    +--------------+------------+
+    | c_ie         |    12.0    |
+    +--------------+------------+
+    | c_ii         |    10.0    |
+    +--------------+------------+
+    | a_e          |    0.2     |
+    +--------------+------------+
+    | a_i          |    0.0     |
+    +--------------+------------+
+    | b_e          |    1.8     |
+    +--------------+------------+
+    | b_i          |    3.0     |
+    +--------------+------------+
+    | theta_e      |    -1.0     |
+    +--------------+------------+
+    | theta_i      |    -1.0     |
+    +--------------+------------+
+    | alpha_e      |    1.0     |
+    +--------------+------------+
+    | alpha_i      |    1.0     |
+    +--------------+------------+
+    | P            |    -1.0     |
+    +--------------+------------+
+    | Q            |    -1.0     |
+    +--------------+------------+
+    | c_e, c_i     |    0.0     |
+    +--------------+------------+
+    | shift_sigmoid|    True    |
+    +--------------+------------+
 
     In [WC_1973]_ they present a model of neural tissue on the pial surface is.
     See Fig. 1 in page 58. The following local couplings (lateral interactions)
@@ -81,13 +143,13 @@ class WilsonCowan(Model):
     +--------------+------------+
     | tau_e, tau_i |    10.0    |
     +--------------+------------+
-    | c_1          |    10.0    |
+    | c_ee         |    10.0    |
     +--------------+------------+
-    | c_2          |    6.0     |
+    | c_ei         |    6.0     |
     +--------------+------------+
-    | c_3          |    1.0     |
+    | c_ie         |    10.0    |
     +--------------+------------+
-    | c_4          |    1.0     |
+    | c_ii         |    1.0     |
     +--------------+------------+
     | a_e, a_i     |    1.0     |
     +--------------+------------+
@@ -103,13 +165,11 @@ class WilsonCowan(Model):
     +--------------+------------+
     | P            |    0.5     |
     +--------------+------------+
-    | Q            |    0       |
+    | Q            |    0.0     |
     +--------------+------------+
     | c_e, c_i     |    1.0     |
     +--------------+------------+
-    | alpha_e      |    1.2     |
-    +--------------+------------+
-    | alpha_i      |    2.0     |
+    | shift_sigmoid|    False   |
     +--------------+------------+
     |                           |
     |  frequency peak at 20  Hz |
@@ -284,6 +344,15 @@ class WilsonCowan(Model):
         doc="""External stimulus to the inhibitory population.
         Constant intensity.Entry point for coupling.""")
 
+    shift_sigmoid=NArray(
+        dtype= numpy.bool,
+        label=r":math:`shift sigmoid`",
+        default=numpy.array([True]),
+        doc="""In order to have resting state (E=0 and I=0) in absence of external input,
+        the logistic curve are translated downward S(0)=0""",
+        )
+
+
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
@@ -309,7 +378,7 @@ class WilsonCowan(Model):
     _nvar = 2
     cvar = numpy.array([0, 1], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
 
         .. math::
@@ -332,10 +401,34 @@ class WilsonCowan(Model):
         x_e = self.alpha_e * (self.c_ee * E - self.c_ei * I + self.P  - self.theta_e +  c_0 + lc_0 + lc_1)
         x_i = self.alpha_i * (self.c_ie * E - self.c_ii * I + self.Q  - self.theta_i + lc_0 + lc_1)
 
-        s_e = self.c_e / (1.0 + numpy.exp(-self.a_e * (x_e - self.b_e)))
-        s_i = self.c_i / (1.0 + numpy.exp(-self.a_i * (x_i - self.b_i)))
+        if self.shift_sigmoid:
+            s_e = self.c_e * (1.0 / (1.0 + numpy.exp(-self.a_e * (x_e - self.b_e))) - 1.0
+                              / (1.0 + numpy.exp(-self.a_e * -self.b_e)))
+            s_i = self.c_i * (1.0 / (1.0 + numpy.exp(-self.a_i * (x_i - self.b_i))) - 1.0
+                              / (1.0 + numpy.exp(-self.a_i * -self.b_i)))
+        else:
+            s_e = self.c_e / (1.0 + numpy.exp(-self.a_e * (x_e - self.b_e)))
+            s_i = self.c_i / (1.0 + numpy.exp(-self.a_i * (x_i - self.b_i)))
 
         derivative[0] = (-E + (self.k_e - self.r_e * E) * s_e) / self.tau_e
         derivative[1] = (-I + (self.k_i - self.r_i * I) * s_i) / self.tau_i
 
         return derivative
+
+    def dfun(self, state_variables, coupling, local_coupling=0.0):
+        r"""
+
+        .. math::
+            \tau \dot{x}(t) &= -z(t) + \phi(z(t)) \\
+            \phi(x) &= \frac{c}{1-exp(-a (x-b))}
+
+        """
+        x_ = state_variables.reshape(state_variables.shape[:-1]).T
+        c_ = coupling.reshape(coupling.shape[:-1]).T
+        local_coupling = numpy.array([local_coupling * state_variables[0, :], local_coupling * state_variables[1, :]])
+        local_coupling_ = local_coupling.reshape(local_coupling.shape[:-1]).T
+        deriv = _numba_dfun(x_, c_, local_coupling_,
+                            self.c_ee, self.c_ei, self.c_ie, self.c_ii, self.tau_e, self.tau_i, self.a_e, self.b_e,
+                            self.c_e, self.theta_e, self.a_i, self.b_i, self.theta_i, self.c_i, self.r_e, self.r_i,
+                            self.k_e, self.k_i, self.P, self.Q, self.alpha_e, self.alpha_i, self.shift_sigmoid)
+        return deriv.T[..., numpy.newaxis]

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,7 +32,7 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import datetime
+from datetime import datetime
 from tvb.core.utils import date2string
 
 
@@ -48,12 +48,11 @@ class Exportable(object):
         dict_equivalent = {}
         for key in self.__dict__:
             if '_sa_' not in key[:5] and key not in excludes:
-                if isinstance(self.__dict__[key], datetime.datetime):
+                if isinstance(self.__dict__[key], datetime):
                     dict_equivalent[key] = date2string(self.__dict__[key])
                 else:
                     dict_equivalent[key] = self.__dict__[key]
         return self.__class__.__name__, dict_equivalent
-
 
     def from_dict(self, dictionary):
         pass

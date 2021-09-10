@@ -2193,7 +2193,7 @@
     <dependency env="[win,mac,linux]" name="werkzeug">
         <full-name value="Werkzeug"/>
         <project-home value="https://palletsprojects.com/p/werkzeug/"/>
-        <version value="0.16.1"/>
+        <version value="2.0.1"/>
         <usage value="dynamic linking"/>
         <license value="LICENSE_werkzeug.txt"/>
         <license-type value="BSD_ 3 clause"/>
@@ -2358,27 +2358,17 @@
         <license value="LICENSE_flask.txt"/>
         <license-type value="BSD_"/>
         <copyright-notice value="Copyright 2010 Pallets"/>
-        <description value="Flask is a lightweight WSGI web application framework."/>
+        <description value="Flask is a lightweight WSGI web appl ication framework."/>
     </dependency>
-    <dependency env="[win,mac,linux]" name="flask-restplus">
+    <dependency env="[win,mac,linux]" name="flask-restx">
         <full-name value="Flask"/>
-        <project-home value="https://github.com/noirbizarre/flask-restplus"/>
-        <version value="0.13.0"/>
+        <project-home value="https://github.com/python-restx/flask-restx"/>
+        <version value="0.4.0"/>
         <usage value="dynamic linking"/>
-        <license value="LICENSE_flask-restplus.txt"/>
+        <license value="LICENSE_flask-x.txt"/>
         <license-type value="BSD_"/>
-        <copyright-notice value="Original work Copyright (c) 2013 Twilio, Inc; Modified work Copyright (c) 2014 Axel Haustant"/>
-        <description value="Flask-RESTPlus is an extension for Flask that adds support for quickly building REST APIs."/>
-    </dependency>
-    <dependency env="[win,mac,linux]" name="flask_restplus">
-        <full-name value="Flask"/>
-        <project-home value="https://github.com/noirbizarre/flask-restplus"/>
-        <version value="0.13.0"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_flask-restplus.txt"/>
-        <license-type value="BSD_"/>
-        <copyright-notice value="Original work Copyright (c) 2013 Twilio, Inc; Modified work Copyright (c) 2014 Axel Haustant"/>
-        <description value="Flask-RESTPlus is an extension for Flask that adds support for quickly building REST APIs."/>
+        <copyright-notice value="©2020, python-restx Authors. | Powered by Sphinx 1.8.5 and Alabaster 0.7.12"/>
+        <description value="Flask-RESTX is an extension for Flask that adds support for quickly building REST APIs."/>
     </dependency>
     <dependency env="[win,mac,linux]" name="brotlipy">
         <full-name value="Brotlipy"/>
@@ -2899,26 +2889,6 @@
         <license-type value="MIT_"/>
         <copyright-notice value="Copyright (c) 2013 noamraph"/>
         <description value="progress maker for loops"/>
-     </dependency>
-    <dependency env="[win,mac,linux]" name="typing">
-        <full-name value="typing"/>
-        <project-home value="https://docs.python.org/3/library/typing.html"/>
-        <version value="3.7.4.3"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_typing.txt"/>
-        <license-type value="PSF_"/>
-        <copyright-notice value="Copyright (c) 1991 - 1995, Stichting Mathematisch Centrum Amsterdam"/>
-        <description value="Type Hints for Python"/>
-     </dependency>
-    <dependency env="[win,mac,linux]" name="typing-extensions">
-        <full-name value="typing-extensions"/>
-        <project-home value="https://docs.python.org/3/library/typing.html"/>
-        <version value="3.7.4.3"/>
-        <usage value="dynamic linking"/>
-        <license value="LICENSE_typing.txt"/>
-        <license-type value="PSF_"/>
-        <copyright-notice value="Copyright (c) 1991 - 1995, Stichting Mathematisch Centrum Amsterdam"/>
-        <description value="Type Hints for Python"/>
      </dependency>
     <dependency env="[win,mac,linux]" name="yarl">
         <full-name value="yarl"/>

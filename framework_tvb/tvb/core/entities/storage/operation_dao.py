@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -126,6 +126,21 @@ class OperationDAO(RootDAO):
         except SQLAlchemyError as excep:
             self.logger.exception(excep)
             return None
+
+    def get_operations_for_hpc_job(self):
+        status = [STATUS_PENDING, STATUS_STARTED]
+        algorithm_classname = "SimulatorAdapter"
+        queue_full = False
+        try:
+            result = self.session.query(Operation).join(Algorithm) \
+                .filter(Algorithm.classname == algorithm_classname) \
+                .filter(Operation.status.in_(status)) \
+                .filter(Operation.queue_full == queue_full).all()
+            return result
+        except SQLAlchemyError as excep:
+            self.logger.exception(excep)
+            return None
+
 
     def is_upload_operation(self, operation_gid):
         """

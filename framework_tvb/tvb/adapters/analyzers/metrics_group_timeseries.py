@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -195,6 +195,7 @@ class TimeseriesMetricsAdapter(ABCAdapter):
                 metrics_results[algorithm_name] = unstored_result
 
         dt_metric = DatatypeMeasure(analyzed_datatype=dt_timeseries, metrics=metrics_results)
-        result = h5.store_complete(dt_metric, self._get_output_path())
+
+        result = self.store_complete(dt_metric)
 
         return result

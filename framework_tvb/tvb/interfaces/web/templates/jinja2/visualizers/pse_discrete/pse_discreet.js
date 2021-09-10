@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -676,10 +676,10 @@ function d3Plot(placeHolder, data, options, pageParam) {
         .on("mouseover", function (d) {
             let offsetX = window.event.pageX;
             let offsetY = window.event.pageY - 100;
-            const portletContainer = document.getElementById("section-pse");
-            if (portletContainer) {
-                let relativeOffsetLeft = portletContainer.offsetLeft;
-                let relativeOffsetTop = portletContainer.offsetTop;
+            const pseContainer = document.getElementById("section-pse");
+            if (pseContainer) {
+                let relativeOffsetLeft = pseContainer.offsetLeft;
+                let relativeOffsetTop = pseContainer.offsetTop;
                 offsetX = offsetX - relativeOffsetLeft;
                 offsetY = offsetY - relativeOffsetTop;
             }

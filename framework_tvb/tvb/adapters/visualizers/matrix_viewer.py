@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -63,12 +63,6 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         dtm_index = self.load_entity_by_gid(view_model.datatype)
         input_size = dtm_index.parsed_shape
         return numpy.prod(input_size) * 8.0
-
-    def generate_preview(self, view_model, **kwargs):
-        # type: (MatrixVisualizerModel, dict) -> dict
-        result = self.launch(view_model)
-        result["isPreview"] = True
-        return result
 
     @staticmethod
     def compute_raw_matrix_params(matrix):

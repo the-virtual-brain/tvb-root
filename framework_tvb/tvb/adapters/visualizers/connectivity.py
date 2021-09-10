@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -54,6 +54,7 @@ from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.surfaces import Surface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ConnectivityViewerModel(ViewModel):
@@ -215,19 +216,6 @@ class ConnectivityViewer(ABCSpaceDisplayer):
 
         return self.build_display_result("connectivity/main_connectivity", result_params, result_pages)
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (ConnectivityViewerModel, (int,int)) -> dict
-        """
-        Generate the preview for the BURST cockpit.
-
-        see `launch_`
-        """
-        connectivity, colors, rays = self._load_input_data(view_model)
-
-        parameters, _ = Connectivity2DViewer().compute_preview_parameters(connectivity, figure_size[0],
-                                                                          figure_size[1], colors, rays, view_model.step)
-        return self.build_display_result("connectivity/portlet_preview", parameters)
-
     @staticmethod
     def _compute_matrix_extrema(m):
         """Returns the min max and the minimal nonzero value from ``m``"""
@@ -282,10 +270,11 @@ class ConnectivityViewer(ABCSpaceDisplayer):
         return global_params, global_pages
 
     @staticmethod
-    def get_connectivity_parameters(input_connectivity, conn_path):
+    def get_connectivity_parameters(input_connectivity, project_name, op_id):
         """
         Returns a dictionary which contains all the needed data for drawing a connectivity.
         """
+        conn_path = StorageInterface().get_project_folder(project_name, op_id)
         viewer = ConnectivityViewer()
         viewer.storage_path = conn_path
         conn_dt = h5.load_from_index(input_connectivity)

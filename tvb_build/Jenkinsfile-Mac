@@ -44,6 +44,10 @@ pipeline {
                         cd ../tvb_contrib
                         python setup.py install
 
+                        echo "Install TVB-STORAGE"
+                        cd ../tvb_storage
+                        python setup.py install
+
                         echo "Install TVB library bin"
                         cd ../tvb_bin
                         python setup.py install

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -125,7 +125,7 @@ class ConnectivityMeasureImporter(ABCUploader):
                 measure.connectivity = connectivity
                 measure.title = "Measure %d for Connectivity with %d nodes." % ((i + 1), node_count)
 
-                cm_idx = h5.store_complete(measure, self.storage_path)
+                cm_idx = self.store_complete(measure)
                 measures.append(cm_idx)
             return measures
 

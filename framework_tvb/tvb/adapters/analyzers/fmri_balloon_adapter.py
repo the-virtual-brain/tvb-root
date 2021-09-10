@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -219,7 +219,7 @@ class BalloonModelAdapter(ABCAdapter):
         time_line = input_time_series_h5.read_time_page(0, self.input_shape[0])
 
         bold_signal_index = TimeSeriesRegionIndex()
-        bold_signal_h5_path = h5.path_for(self.storage_path, TimeSeriesRegionH5, bold_signal_index.gid)
+        bold_signal_h5_path = self.path_for(TimeSeriesRegionH5, bold_signal_index.gid)
         bold_signal_h5 = TimeSeriesRegionH5(bold_signal_h5_path)
         bold_signal_h5.gid.store(uuid.UUID(bold_signal_index.gid))
         self._fill_result_h5(bold_signal_h5, input_time_series_h5)

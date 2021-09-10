@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -98,10 +98,6 @@ class FourierSpectrumDisplay(ABCDisplayer):
         """
         fs_input_index = self.load_entity_by_gid(view_model.input_data)
         return numpy.prod(fs_input_index.get_data_shape()) * 8
-
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (FourierSpectrumModel, (int,int)) -> dict
-        return self.launch(view_model)
 
     def launch(self, view_model):
         # type: (FourierSpectrumModel) -> dict
