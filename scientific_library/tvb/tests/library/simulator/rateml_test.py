@@ -16,7 +16,8 @@ try:
 	PYCUDA_OK = True
 except ImportError:
 	PYCUDA_OK = False
-skip_cuda_if_not_avail = pytest.mark.skipif(!PYCUDA_OK, reason='import pycuda.autoinit failed, CUDA not available')
+skip_cuda_if_not_avail = pytest.mark.skipif(
+	not PYCUDA_OK, reason='import pycuda.autoinit failed, CUDA not available')
 
 xmlModelTesting = "kuramoto.xml"
 framework_path, _ = os.path.split(XML2model.__file__)
