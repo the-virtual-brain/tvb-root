@@ -67,8 +67,8 @@ jobs:
       - name: run library benchmarks
         run: cd scientific_library && python -m pytest --benchmark-only --ignore=tvb/tests/library/simulator/rateml_test.py
 
-      - name: run framework tests
-        run: cd framework_tvb && python -m pytest
+      # - name: run framework tests
+      #   run: cd framework_tvb && python -m pytest
 
-      - name: run storage tests
-        run: cd tvb_storage && python -m pytest
+      # - name: run storage tests
+      #   run: cd tvb_storage && python -m pytest
