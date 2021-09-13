@@ -10,7 +10,7 @@ jobs:
         run: nvidia-smi
 
       - name: pycuda test
-        run: python -c "import pycuda.autoinit; print('yes')"
+        run: python3 -c "import pycuda.autoinit; print('yes')"
 
       - uses: actions/checkout@v1
 
@@ -18,10 +18,10 @@ jobs:
         run: env && pwd && ls -lh
 
       - name: uninstall gdist
-        run: pip uninstall -y tvb-gdist
+        run: pip3 uninstall -y tvb-gdist
 
       - name: install pylems
-        run: pip install pylems
+        run: pip3 install pylems
 
       - name: run pytest
         run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py

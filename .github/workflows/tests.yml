@@ -2,10 +2,11 @@ name: pytests
 on: [push]
 jobs:
   pytest:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.7]
+    runs-on: self-hosted
+    # runs-on: ubuntu-latest
+    # strategy:
+    #   matrix:
+    #     python-version: [3.7]
 
     steps:
       - uses: actions/checkout@v1

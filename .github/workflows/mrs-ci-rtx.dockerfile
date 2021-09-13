@@ -10,4 +10,4 @@ ENV RUNNER_ALLOW_RUNASROOT=1
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 # this is built and then run on the rtx workstation with
 # an already configured github self-hosted runner with the command
-# 
+# docker run --gpus all --rm -it -v $PWD:/work -w /work tvb/mrs-ci-rtx 
