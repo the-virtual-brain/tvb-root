@@ -6,8 +6,10 @@ RUN pip install numba scipy numpy networkx scikit-learn cython numexpr psutil py
 
 RUN pip install pycuda
 
+RUN apt-get install -y git
+
 ENV RUNNER_ALLOW_RUNASROOT=1
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 # this is built and then run on the rtx workstation with
 # an already configured github self-hosted runner with the command
-# docker run --gpus all --rm -it -v $PWD:/work -w /work tvb/mrs-ci-rtx 
+# docker run --gpus all --rm -it -v $PWD:/work -w /work tvb/mrs-ci-rtx bash run.sh
