@@ -23,6 +23,9 @@ jobs:
       - name: install pylems
         run: pip3 install pylems
 
+      - name: ensure tvb setup
+        run: cd tvb_build && bash install_full_tvb.sh && cd ..
+
       - name: run pytest
         run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py
 
