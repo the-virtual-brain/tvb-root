@@ -3,9 +3,6 @@ on: [push]
 jobs:
   pytest:
     runs-on: self-hosted
-    strategy:
-      matrix:
-        python-version: [3.7]
 
     steps:
 
@@ -16,14 +13,9 @@ jobs:
         run: python3 -c "import pycuda.autoinit; print('yes')"
       
       - uses: actions/checkout@v1
-
-      - name: set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
       
       - name: upgrade pip
-        run: python -m pip install --upgrade pip
+        run: python3 -m pip install --upgrade pip
 
       - name: put ~/.local/bin on $PATH
         run: echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
@@ -41,8 +33,8 @@ jobs:
       - name: pip install dependencies (from Dockerfile-build)
         if: steps.cache-local.outputs.cache-hit != 'true'
         run: |
-          pip install --user -r requirements.txt
-          pip install --user --no-build-isolation tvb-gdist
+          pip3 install --user -r requirements.txt
+          pip3 install --user --no-build-isolation tvb-gdist
 
       - name: setup tvb
         run: cd tvb_build && bash install_full_tvb.sh
@@ -65,16 +57,13 @@ jobs:
       - name: setup data
         run: |
           cd tvb_data
-          python setup.py develop
-        
-      - name: check env
-        run: env
+          python3 setup.py develop
 
       - name: run library tests
-        run: cd scientific_library && python -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
+        run: cd scientific_library && python3 -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
 
       - name: run library benchmarks
-        run: cd scientific_library && python -m pytest --benchmark-only --ignore=tvb/tests/library/simulator/rateml_test.py
+        run: cd scientific_library && python3 -m pytest --benchmark-only --ignore=tvb/tests/library/simulator/rateml_test.py
       
       - name: run rateml tests
         run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py
