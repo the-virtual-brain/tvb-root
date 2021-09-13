@@ -15,14 +15,14 @@ RUN cd /opt \
  && cd tvb_data \
  && python3 setup.py develop
 
-RUN pip install h5py==2.10 pytest-xdist sqlalchemy mako requests autopep8
+RUN pip install h5py>=2.10 pytest-xdist sqlalchemy mako pylems lxml requests autopep8
 
 RUN pip install --no-build-isolation tvb-gdist
 
-# TODO make this conditional since it adds a lot
-RUN conda install cudatoolkit \
- && conda install -c conda-forge cudatoolkit-dev \
- && pip install pycuda
+# required for rateML CUDA work
+# RUN conda install cudatoolkit \
+#  && conda install -c conda-forge cudatoolkit-dev \
+#  && pip install pycuda
 
 # docker run --rm -it -v $PWD:/tvb -w /tvb tvb/lib 
 # add --gpus all for testing CUDA
