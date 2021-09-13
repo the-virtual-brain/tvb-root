@@ -9,7 +9,7 @@ jobs:
       - name: nvidia-smi test
         run: nvidia-smi
       - name: pycuda test
-        run: python -c "import pycuda.autoinit; print('yes')"
+        run: pip install pycuda && python -c "import pycuda.autoinit; print('yes')"
 
   gputest:
     runs-on: self-hosted
