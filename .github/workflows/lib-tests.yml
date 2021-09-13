@@ -65,7 +65,10 @@ jobs:
       - name: setup data
         run: |
           cd tvb_data
-          python3 setup.py develop
+          python setup.py develop
+        
+      - name: check env
+        run: env
 
       - name: run library tests
         run: cd scientific_library && python -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
