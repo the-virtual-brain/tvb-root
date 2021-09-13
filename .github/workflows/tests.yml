@@ -62,10 +62,10 @@ jobs:
           python3 setup.py develop
 
       - name: run library tests
-        run: cd scientific_library && python -m pytest -n4
+        run: cd scientific_library && python -m pytest -n12 --ignore=rateml_test
 
       - name: run library benchmarks
-        run: cd scientific_library && python -m pytest --benchmark-only
+        run: cd scientific_library && python -m pytest --benchmark-only --ignore=rateml_test
 
       - name: run framework tests
         run: cd framework_tvb && python -m pytest
