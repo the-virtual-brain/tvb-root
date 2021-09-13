@@ -10,7 +10,7 @@ import pytest, os, itertools, numpy as np, re, sys
 from tvb.rateML import XML2model
 from tvb.rateML.XML2model import RateML
 from tvb.simulator.models.base import Model
-
+pycuda = pytest.importorskip("pycuda")
 try:
 	import pycuda.autoinit
 	PYCUDA_OK = True
