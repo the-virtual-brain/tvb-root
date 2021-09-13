@@ -32,20 +32,19 @@ from collections import OrderedDict
 from tvb.basic.neotraits.api import NArray, Range
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.datatypes.connectivity import Connectivity
-from tvb.datatypes.surfaces import Surface
 from tvb.simulator.integrators import IntegratorStochastic
 from tvb.simulator.simulator import Simulator
 
 
 class SimulatorRangeParameters(object):
 
-    def __init__(self, connectivity_filters=None, surface_filters=None, coupling=None, model=None,
-                 integrator_noise=None):
-        self.connectivity_filters = connectivity_filters
-        self.surface_filters = surface_filters
-        self.coupling_parameters = coupling
-        self.model_parameters = model
-        self.integrator_noise_parameters = integrator_noise
+    def __init__(self):
+        self.connectivity_filters = None
+        self.surface_filters = None
+        self.coupling_parameters = None
+        self.surface_parameters = None
+        self.model_parameters = None
+        self.integrator_noise_parameters = None
 
     def _default_range_parameters(self):
         conduction_speed = RangeParameter(Simulator.conduction_speed.field_name, float,
@@ -73,11 +72,14 @@ class SimulatorRangeParameters(object):
             dynamic_parameters.update({param.name: param})
         return dynamic_parameters
 
-    def _prepare_model_parameters(self):
-        return self._prepare_dynamic_parameters(Simulator.model.field_name, self.model_parameters)
-
     def _prepare_coupling_parameters(self):
         return self._prepare_dynamic_parameters(Simulator.coupling.field_name, self.coupling_parameters)
+
+    def _prepare_surface_parameters(self):
+        return self._prepare_dynamic_parameters(Simulator.surface.field_type.__name__, self.surface_parameters)
+
+    def _prepare_model_parameters(self):
+        return self._prepare_dynamic_parameters(Simulator.model.field_name, self.model_parameters)
 
     def _prepare_integrator_noise_parameters(self):
         return self._prepare_dynamic_parameters(
@@ -87,6 +89,7 @@ class SimulatorRangeParameters(object):
     def get_all_range_parameters(self):
         all_range_parameters = self._default_range_parameters()
         all_range_parameters.update(self._prepare_coupling_parameters())
+        all_range_parameters.update(self._prepare_surface_parameters())
         all_range_parameters.update(self._prepare_model_parameters())
         all_range_parameters.update(self._prepare_integrator_noise_parameters())
 
