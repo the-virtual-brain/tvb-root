@@ -3,12 +3,18 @@ on: [push]
 jobs:
   pytest:
     runs-on: self-hosted
-    # runs-on: ubuntu-latest
-    # strategy:
-    #   matrix:
-    #     python-version: [3.7]
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
+
+      - name: nvidia-smi test
+        run: nvidia-smi
+
+      - name: pycuda test
+        run: python3 -c "import pycuda.autoinit; print('yes')"
+      
       - uses: actions/checkout@v1
 
       - name: set up Python ${{ matrix.python-version }}
@@ -66,9 +72,6 @@ jobs:
 
       - name: run library benchmarks
         run: cd scientific_library && python -m pytest --benchmark-only --ignore=tvb/tests/library/simulator/rateml_test.py
-
-      # - name: run framework tests
-      #   run: cd framework_tvb && python -m pytest
-
-      # - name: run storage tests
-      #   run: cd tvb_storage && python -m pytest
+      
+      - name: run rateml tests
+        run: cd scientific_library/tvb/tests/library/simulator/ && pytest rateml_test.py
