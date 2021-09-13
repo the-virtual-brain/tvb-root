@@ -42,7 +42,6 @@ from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
-from tvb.basic.neotraits.ex import TraitValueError
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
@@ -238,13 +237,14 @@ class SimulatorController(BurstBaseController):
     @expose_fragment('simulator_fragment')
     def set_cortex(self, **data):
         session_stored_simulator, is_simulation_copy, is_simulation_load, _ = self.context.get_common_params()
+        rm_fragment = SimulatorRMFragment()
 
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_STIMULUS_URL)
-            rm_fragment = SimulatorRMFragment()
             rm_fragment.fill_from_post(data)
             rm_fragment.fill_trait(session_stored_simulator.surface)
 
+        self.range_parameters.surface_parameters = rm_fragment.get_range_parameters()
         rendering_rules = SimulatorFragmentRenderingRules(
             None, None, SimulatorWizzardURLs.SET_CORTEX_URL, is_simulation_copy, is_simulation_load,
             self.context.last_loaded_fragment_url, cherrypy.request.method)

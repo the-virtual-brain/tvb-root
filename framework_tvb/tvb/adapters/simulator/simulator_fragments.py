@@ -33,6 +33,7 @@ import formencode
 from formencode import validators
 
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
+from tvb.adapters.simulator.form_with_ranges import FormWithRanges
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
@@ -76,7 +77,7 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
                                                                    project_id)
 
 
-class SimulatorRMFragment(ABCAdapterForm):
+class SimulatorRMFragment(FormWithRanges):
     def __init__(self, surface_index=None, connectivity_gid=None):
         super(SimulatorRMFragment, self).__init__()
         rm_conditions = None
