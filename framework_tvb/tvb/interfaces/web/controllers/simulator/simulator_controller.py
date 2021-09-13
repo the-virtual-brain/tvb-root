@@ -223,6 +223,7 @@ class SimulatorController(BurstBaseController):
             form = SimulatorSurfaceFragment()
             form.fill_from_post(data)
             self.simulator_service.reset_at_surface_change(is_simulation_copy, form, session_stored_simulator)
+            self.range_parameters.surface_parameters = None
             form.fill_trait(session_stored_simulator)
 
             if session_stored_simulator.surface:
@@ -361,6 +362,8 @@ class SimulatorController(BurstBaseController):
                 self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
             else:
                 self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_MONITORS_URL)
+
+            self.range_parameters.integrator_noise_parameters = None
 
         rendering_rules = SimulatorFragmentRenderingRules(
             None, None, SimulatorWizzardURLs.SET_INTEGRATOR_PARAMS_URL, is_simulation_copy,
