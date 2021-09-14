@@ -94,8 +94,6 @@ class NbMPRBackend(MakoUtilMix):
         check_choices(sim.model, models.MontbrioPazoRoxin)
         # coupling
         check_choices(sim.coupling, coupling.Linear)
-        if not np.all(sim.coupling.b == np.r_[0]):
-            raise NotImplementedError("Only linear coupling with b==0 supported.")
         # surface
         if sim.surface is not None:
             raise NotImplementedError("Surface simulation not supported.")
@@ -158,7 +156,6 @@ class NbMPRBackend(MakoUtilMix):
             **dict(zip(sim.model.state_variables,svar_bufs)),
             weights = sim.connectivity.weights, 
             idelays = sim.connectivity.idelays,
-            G = sim.coupling.a.item(),
             parmat = sim.model.spatial_parameter_matrix.T,
             stimulus = stimulus
         )
@@ -208,7 +205,6 @@ class NbMPRBackend(MakoUtilMix):
                 **dict(zip(sim.model.state_variables,svar_bufs)),
                 weights = sim.connectivity.weights, 
                 idelays = sim.connectivity.idelays,
-                G = sim.coupling.a.item(),
                 parmat = sim.model.spatial_parameter_matrix,
                 stimulus = stimulus
             )

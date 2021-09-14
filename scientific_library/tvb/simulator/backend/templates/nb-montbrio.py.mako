@@ -104,7 +104,6 @@ def integrate(
 % endfor
         weights, 
         idelays,
-        G,       # coupling scaling
         parmat,  # spatial parameters [nparams, nnodes]
         stimulus # stimulus [nnodes, ntimes] or None
 ):
