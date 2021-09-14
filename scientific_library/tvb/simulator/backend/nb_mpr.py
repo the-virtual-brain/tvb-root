@@ -80,25 +80,48 @@ class NbMPRBackend(MakoUtilMix):
         fns = [getattr(mod,n) for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
 
+    def check_compatibility(self, sim): 
+        def check_choices(val, choices):
+            if not isinstance(val, choices):
+                raise NotImplementedError("Unsupported simulator component. Given: {}\nExpected one of: {}".format(val, choices))
+        # monitors
+        if len(sim.monitors) > 1:
+            raise NotImplementedError("Configure with one monitor.")
+        check_choices(sim.monitors[0], (monitors.Raw, monitors.TemporalAverage))
+        # integrators
+        check_choices(sim.integrator, integrators.HeunStochastic)
+        # models
+        check_choices(sim.model, models.MontbrioPazoRoxin)
+        # coupling
+        check_choices(sim.coupling, coupling.Linear)
+        if not np.all(sim.coupling.b == np.r_[0]):
+            raise NotImplementedError("Only linear coupling with b==0 supported.")
+        # surface
+        if sim.surface is not None:
+            raise NotImplementedError("Surface simulation not supported.")
+        # stimulus evaluated outside the backend, no restrictions
+
+
     def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000, compatibility_mode=False):
         assert nstep is not None or simulation_length is not None or sim.simulation_length is not None
+
+        self.check_compatibility(sim)
         if nstep is None:
             if simulation_length is None:
                 simulation_length = sim.simulation_length
             nstep = int(np.ceil(simulation_length/sim.integrator.dt))
 
-        assert len(sim.monitors) == 1, "Configure with exatly one monitor."
         if isinstance(sim.monitors[0], monitors.Raw):
-            r, V = self._run_sim_plain(sim, nstep, compatibility_mode=compatibility_mode)
-            time = np.arange(r.shape[1]) * sim.integrator.dt
+            svar_bufs = self._run_sim_plain(sim, nstep, compatibility_mode=compatibility_mode)
+            time = np.arange(svar_bufs[0].shape[1]) * sim.integrator.dt
         elif isinstance(sim.monitors[0], monitors.TemporalAverage):
-            r, V = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize, compatibility_mode=compatibility_mode)
+            svar_bufs = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize, compatibility_mode=compatibility_mode)
             T = sim.monitors[0].period
-            time = np.arange(r.shape[1]) * T + 0.5 * T
+            time = np.arange(svar_bufs[0].shape[1]) * T + 0.5 * T
         else:
             raise NotImplementedError("Only Raw or TemporalAverage monitors supported.")
         data = np.concatenate(
-                (r.T[:,np.newaxis,:, np.newaxis], V.T[:,np.newaxis,:, np.newaxis]),
+                [svar_buf.T[:,np.newaxis,:, np.newaxis] for svar_buf in svar_bufs],
                 axis=1
         )
         return (time, data),   
@@ -109,16 +132,16 @@ class NbMPRBackend(MakoUtilMix):
                 compatibility_mode=compatibility_mode, 
                 sim=sim
         ) 
-        integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=True)
+        integrate = self.build_py_func(template, content, name='integrate', print_source=True)
 
         horizon = sim.connectivity.horizon
         buf_len = horizon + nstep
         N = sim.connectivity.number_of_regions
         gf = sim.integrator.noise.gfun(None)
 
-        r, V = sim.integrator.noise.generate( shape=(2,N,buf_len) ) * gf
-        r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
-        V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
+        svar_bufs = [buf for buf in sim.integrator.noise.generate( shape=(sim.model.nvar,N,buf_len) ) * gf]
+        for i, svar_buf in enumerate(svar_bufs):
+            svar_buf[:,:horizon] = np.roll(sim.history.buffer[:,i,:,0], -1, axis=0).T
 
         if sim.stimulus is None:
             stimulus = None
@@ -127,20 +150,19 @@ class NbMPRBackend(MakoUtilMix):
             sim.stimulus.configure_time(np.arange(nstep)*sim.integrator.dt)
             stimulus = sim.stimulus()
 
-        r, V = integrate(
+        svar_bufs = integrate(
             N = N,
             dt = sim.integrator.dt,
             nstep = nstep,
             i0 = horizon,
-            r=r,
-            V=V,
+            **dict(zip(sim.model.state_variables,svar_bufs)),
             weights = sim.connectivity.weights, 
             idelays = sim.connectivity.idelays,
             G = sim.coupling.a.item(),
             parmat = sim.model.spatial_parameter_matrix.T,
             stimulus = stimulus
         )
-        return r[:,horizon:], V[:,horizon:]
+        return [svar_buf[:,horizon:] for svar_buf in svar_bufs]
 
     def _time_average(self, ts, istep):
         N, T = ts.shape
@@ -149,7 +171,7 @@ class NbMPRBackend(MakoUtilMix):
     def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False):
         template = '<%include file="nb-montbrio.py.mako"/>'
         content = dict(sim=sim, compatibility_mode=compatibility_mode) 
-        integrate = self.build_py_func(template, content, name='_mpr_integrate', print_source=False)
+        integrate = self.build_py_func(template, content, name='integrate', print_source=False)
         # chunksize in number of steps 
         horizon = sim.connectivity.horizon
         N = sim.connectivity.number_of_regions
@@ -162,11 +184,11 @@ class NbMPRBackend(MakoUtilMix):
 
 
         assert nstep % tavg_steps == 0
-        r_out, V_out = np.zeros((2,N,nstep//tavg_steps))
+        svar_outs = [svar_out for svar_out in np.zeros((sim.model.nvar,N,nstep//tavg_steps))]
 
-        r, V = sim.integrator.noise.generate( shape=(2,N,chunksize+horizon) ) * gf
-        r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
-        V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
+        svar_bufs = [buf for buf in sim.integrator.noise.generate( shape=(sim.model.nvar,N,chunksize+horizon) ) * gf]
+        for i, svar_buf in enumerate(svar_bufs):
+            svar_buf[:,:horizon] = np.roll(sim.history.buffer[:,i,:,0], -1, axis=0).T
 
 
         for chunk, _ in enumerate(range(horizon, nstep+horizon, chunksize)):
@@ -178,13 +200,12 @@ class NbMPRBackend(MakoUtilMix):
                         np.arange(chunk*chunksize, (chunk+1)*chunksize)*sim.integrator.dt
                 )
                 stimulus = sim.stimulus()
-            r, V = integrate(
+            svar_bufs = integrate(
                 N = N,
                 dt = sim.integrator.dt,
                 nstep = chunksize,
                 i0 = horizon,
-                r=r,
-                V=V,
+                **dict(zip(sim.model.state_variables,svar_bufs)),
                 weights = sim.connectivity.weights, 
                 idelays = sim.connectivity.idelays,
                 G = sim.coupling.a.item(),
@@ -193,22 +214,21 @@ class NbMPRBackend(MakoUtilMix):
             )
 
             tavg_chunk = chunk * tavg_chunksize
-            r_chunk = self._time_average(r[:, horizon:], tavg_steps)
-            V_chunk = self._time_average(V[:, horizon:], tavg_steps)
-            if tavg_chunk+tavg_chunksize > r_out.shape[1]:
-                cutoff = tavg_chunk+tavg_chunksize - r_out.shape[1]
-                r_chunk = r_chunk[:,:-cutoff]
-                V_chunk = V_chunk[:,:-cutoff]
-            
-            r_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = r_chunk
-            V_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = V_chunk
+            svar_chunks = [self._time_average(svar[:, horizon:], tavg_steps) for svar in svar_bufs]
+            if tavg_chunk+tavg_chunksize > svar_outs[0].shape[1]:
+                cutoff = tavg_chunk+tavg_chunksize - svar_outs[0].shape[1]
+                for svar_chunk in svar_chunks:
+                    svar_chunk = svar_chunk[:,:-cutoff]
+                    
+            for svar_out, svar_chunk in zip (svar_outs, svar_chunks):
+                svar_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = svar_chunk
 
-            r[:,:horizon] = r[:,-horizon:]
-            V[:,:horizon] = V[:,-horizon:]
-
-            r_noise, V_noise = sim.integrator.noise.generate( shape=(2,N,chunksize) ) * gf
-            r[:,horizon:] = r_noise
-            V[:,horizon:] = V_noise
+            for svar_buf in svar_bufs:
+                svar_buf[:,:horizon] = svar_buf[:,-horizon:]
 
 
-        return r_out, V_out
+            for svar_buf, svar_noise in zip(svar_bufs, sim.integrator.noise.generate( shape=(sim.model.nvar,N,chunksize) ) * gf):
+                svar_buf[:,horizon:] = svar_noise
+
+
+        return svar_outs

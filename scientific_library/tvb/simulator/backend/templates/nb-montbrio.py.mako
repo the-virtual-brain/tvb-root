@@ -40,6 +40,8 @@ import numba as nb
     from tvb.simulator.integrators import IntegratorStochastic
     cvars = [sim.model.state_variables[i] for i in sim.model.cvar]
     stochastic = isinstance(sim.integrator, IntegratorStochastic)
+
+    cvar_symbols =  ','.join([f'{cvar}_c' for cvar in cvars])
 %>
 
 # Coupling
@@ -92,13 +94,14 @@ def bound_${svar}(x):
 
 
 @nb.njit
-def _mpr_integrate(
+def integrate(
         N,       # number of regions
         dt,
         nstep,   # integration length
         i0,      # index to t0
-        r,       # r buffer with initial history and pre-filled with noise
-        V,       # V buffer with initial history and pre-filled with noise
+% for svar in sim.model.state_variables:
+        ${svar},       # ${svar} buffer with initial history and pre-filled with noise
+% endfor
         weights, 
         idelays,
         G,       # coupling scaling
@@ -108,7 +111,7 @@ def _mpr_integrate(
 
     for i in range(i0, i0 + nstep):
         for n in range(N):
-            r_c, V_c = cx(i-1, n, N, weights, ${','.join(cvars)}, idelays)
+            ${cvar_symbols} = cx(i-1, n, N, weights, ${','.join(cvars)}, idelays)
 
 % for svar in sim.model.state_variables:
 % if stochastic:
@@ -133,22 +136,35 @@ def _mpr_integrate(
 % endfor
 % endif
             # Heun integration step
-            dr_0 = dx_r(r[n,i-1], V[n,i-1], r_c, V_c, parmat[n] ) 
-            dV_0 = dx_V(r[n,i-1], V[n,i-1], r_c, V_c, parmat[n] ) 
+% for svar in sim.model.state_variables:
+            d${svar}_0 = dx_${svar}(
+% for ssvar in sim.model.state_variables:
+                                ${ssvar}[n,i-1], 
+% endfor
+                                ${cvar_symbols},
+                                parmat[n] 
+            ) 
+% endfor
 
-            r_int = r[n,i-1] + dt*dr_0 + r_noise + r_stim
-            V_int = V[n,i-1] + dt*dV_0 + V_noise + V_stim
-            ${call_bound_svars(['r_int','V_int'])}
+% for svar in sim.model.state_variables:
+            ${svar}_int = ${svar}[n,i-1] + dt*d${svar}_0 + ${svar}_noise + ${svar}_stim
+% endfor
+
+            ${call_bound_svars([f'{ssvar}_int' for ssvar in sim.model.state_variables])}
 
 % if not compatibility_mode:
             # coupling
-            r_c, V_c = cx(i, n, N, weights, ${','.join(cvars)}, idelays)
+            ${cvar_symbols} = cx(i, n, N, weights, ${','.join(cvars)}, idelays)
 % endif
-            r_n = r[n,i-1] + dt*(dr_0 + dx_r(r_int, V_int, r_c, V_c, parmat[n]  ))/2.0 + r_noise + r_stim
+% for svar in sim.model.state_variables:
+            ${svar}_n = ${svar}[n,i-1] + dt*(d${svar}_0 + dx_${svar}(
+                ${','.join([f'{ssvar}_int' for ssvar in sim.model.state_variables])},
+                ${cvar_symbols}, parmat[n]  ))/2.0 + ${svar}_noise + ${svar}_stim
+% endfor
+            ${call_bound_svars([f'{ssvar}_n' for ssvar in sim.model.state_variables])}
 
-            V_n = V[n,i-1] + dt*(dV_0 + dx_V(r_int, V_int, r_c, V_c, parmat[n]))/2.0 + V_noise + V_stim
-            ${call_bound_svars(['r_n','V_n'])}
-            r[n,i] = r_n
-            V[n,i] = V_n
+% for svar in sim.model.state_variables:
+            ${svar}[n,i] = ${svar}_n
+% endfor
 
-    return r, V
+    return ${','.join(svar for svar in sim.model.state_variables)}
