@@ -181,13 +181,17 @@ class ABCExporter(metaclass=ABCMeta):
         return all_datatypes, op_file_dict
 
     @abstractmethod
-    def export(self, data, project):
+    def export(self, data, project, public_key_path, password):
         """
         Actual export method, to be implemented in each sub-class.
 
         :param data: data type to be exported
 
         :param project: project that contains data to be exported
+
+        :param public_key_path:
+
+        :param password:
 
         :returns: a tuple with the following elements:
 

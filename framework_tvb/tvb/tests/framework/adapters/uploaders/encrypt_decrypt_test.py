@@ -42,8 +42,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcuploader import ABCUploader, ENCRYPTED_PASSWORD_NAME, ENCRYPTED_DATA_SUFFIX, \
-    DECRYPTED_DATA_SUFFIX
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -56,6 +54,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
                                                      ('projectionMatrix', 'projection_meg_276_surface_16k.npy'),
                                                      ('h5', 'TimeSeriesRegion.h5')])
     def test_encrypt_decrypt(self, dir_name, file_name):
+        storage_interface = StorageInterface()
 
         # Generate a private key and public key
         private_key = rsa.generate_private_key(
@@ -87,17 +86,18 @@ class TestEncryptionDecryption(TransactionalTestCase):
         password = StorageInterface.generate_random_password(pass_size)
 
         # Encrypt files using an AES symmetric key
-        encrypted_file_path = ABCUploader.get_path_to_encrypt(path_to_file)
+        encrypted_file_path = storage_interface.get_path_to_encrypt(path_to_file)
         buffer_size = TvbProfile.current.hpc.CRYPT_BUFFER_SIZE
         pyAesCrypt.encryptFile(path_to_file, encrypted_file_path, password, buffer_size)
 
         # Asynchronously encrypt the password used at the previous step for the symmetric encryption
         password = str.encode(password)
-        encrypted_password = ABCUploader.encrypt_password(public_key, password)
+        encrypted_password = storage_interface.encrypt_password(public_key, password)
 
         # Save encrypted password
-        ABCUploader.save_encrypted_password(encrypted_password, TvbProfile.current.TVB_TEMP_FOLDER)
-        path_to_encrypted_password = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, ENCRYPTED_PASSWORD_NAME)
+        storage_interface.save_encrypted_password(encrypted_password, TvbProfile.current.TVB_TEMP_FOLDER)
+        path_to_encrypted_password = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
+                                                  storage_interface.ENCRYPTED_PASSWORD_NAME)
 
         # Prepare model for decrypting
         connectivity_model.uploaded = encrypted_file_path
@@ -105,9 +105,11 @@ class TestEncryptionDecryption(TransactionalTestCase):
         TvbProfile.current.UPLOAD_KEY_PATH = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, 'private_key.pem')
 
         # Decrypting
-        ABCUploader._decrypt_content(connectivity_model, 'uploaded')
+        StorageInterface().decrypt_content(connectivity_model, 'uploaded')
 
-        decrypted_file_path = connectivity_model.uploaded.replace(ENCRYPTED_DATA_SUFFIX, DECRYPTED_DATA_SUFFIX)
+        storage_interface = StorageInterface()
+        decrypted_file_path = connectivity_model.uploaded.replace(storage_interface.ENCRYPTED_DATA_SUFFIX,
+                                                                  storage_interface.DECRYPTED_DATA_SUFFIX)
         with open(path_to_file, 'rb') as f_original:
             with open(decrypted_file_path, 'rb') as f_decrypted:
                 while True:
@@ -122,5 +124,5 @@ class TestEncryptionDecryption(TransactionalTestCase):
                         break
 
         # Clean-up
-        StorageInterface.remove_files(
+        storage_interface.remove_files(
             [encrypted_file_path, decrypted_file_path, private_key_path, path_to_encrypted_password])

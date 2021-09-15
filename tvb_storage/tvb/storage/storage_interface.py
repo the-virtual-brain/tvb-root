@@ -35,8 +35,15 @@ All calls to methods from this module must be done through this class.
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 import os
+import shutil
 import uuid
+from cgi import FieldStorage
 from datetime import datetime
+import pyAesCrypt
+from cherrypy._cpreqbody import Part
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -69,6 +76,10 @@ class StorageInterface:
     export_folder = None
     EXPORT_FOLDER_NAME = "EXPORT_TMP"
     EXPORT_FOLDER = os.path.join(TvbProfile.current.TVB_STORAGE, EXPORT_FOLDER_NAME)
+
+    ENCRYPTED_DATA_SUFFIX = '_encrypted'
+    ENCRYPTED_PASSWORD_NAME = 'encrypted_password.pem'
+    DECRYPTED_DATA_SUFFIX = '_decrypted'
 
     logger = get_logger(__name__)
 
@@ -341,7 +352,117 @@ class StorageInterface:
         self.sync_folders(to_project_path)
         self.set_project_inactive(to_project)
 
-        # Exporting related methods start here
+    # Methods related to encrypting data before exporting and decrypting data after uploading start here
+
+    def get_path_to_encrypt(self, input_path):
+        start_extension = input_path.rfind('.')
+        path_to_encrypt = input_path[:start_extension]
+        extension = input_path[start_extension:]
+
+        return path_to_encrypt + self.ENCRYPTED_DATA_SUFFIX + extension
+
+    @staticmethod
+    def prepare_encryption(user_public_key, project_name):
+        storage_interface = StorageInterface()
+        temp_folder = storage_interface.get_temp_folder(project_name)
+        public_key_file_name = "public_key_" + uuid.uuid4().hex + ".pem"
+        public_key_file_path = os.path.join(temp_folder, public_key_file_name)
+
+        if isinstance(user_public_key, FieldStorage) or isinstance(user_public_key, Part):
+            if not user_public_key.file:
+                return None, None
+
+            with open(public_key_file_path, 'wb') as file_obj:
+                storage_interface.copy_file(user_public_key.file, file_obj)
+        else:
+            shutil.copy2(user_public_key, public_key_file_path)
+
+        # Generate a random password for the files
+        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
+        password = EncryptionHandler.generate_random_password(pass_size)
+
+        return public_key_file_path, password
+
+    @staticmethod
+    def encrypt_password(public_key, symmetric_key):
+
+        encrypted_symmetric_key = public_key.encrypt(
+            symmetric_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        return encrypted_symmetric_key
+
+    def save_encrypted_password(self, encrypted_password, path_to_encrypted_password):
+        save_password_path = os.path.join(path_to_encrypted_password, self.ENCRYPTED_PASSWORD_NAME)
+        with open(os.path.join(save_password_path), 'wb') as f:
+            f.write(encrypted_password)
+
+        return save_password_path
+
+    @staticmethod
+    def load_public_key(public_key_path):
+        with open(public_key_path, "rb") as key_file:
+            public_key = serialization.load_pem_public_key(key_file.read(), backend=default_backend())
+
+        return public_key
+
+    def encrypt_and_save_password(self, public_key_path, encrypted_password, path_to_encrypted_password):
+        public_key = self.load_public_key(public_key_path)
+        password_bytes = str.encode(encrypted_password)
+        self.encrypt_password(public_key, password_bytes)
+        self.save_encrypted_password(password_bytes, path_to_encrypted_password)
+
+    def decrypt_content(self, view_model, trait_upload_field_name):
+        upload_path = getattr(view_model, trait_upload_field_name)
+
+        # Get the encrypted password
+        with open(view_model.encrypted_aes_key, 'rb') as f:
+            encrypted_password = f.read()
+
+        # Read the private key
+        with open(TvbProfile.current.UPLOAD_KEY_PATH, "rb") as key_file:
+            private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+
+        # Decrypt the password using the private key
+        decrypted_password = private_key.decrypt(
+            encrypted_password,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+
+        decrypted_password = decrypted_password.decode()
+
+        # Get path to decrypted file
+        decrypted_download_path = upload_path.replace(StorageInterface.ENCRYPTED_DATA_SUFFIX,
+                                                      self.DECRYPTED_DATA_SUFFIX)
+
+        # Use the decrypted password to decrypt the message
+        pyAesCrypt.decryptFile(upload_path, decrypted_download_path, decrypted_password,
+                               TvbProfile.current.hpc.CRYPT_BUFFER_SIZE)
+        view_model.__setattr__(trait_upload_field_name, decrypted_download_path)
+
+    def __encrypt_data_at_export(self, file_path, password):
+        # Encrypt the file(s) using the generated password
+        buffer_size = TvbProfile.current.hpc.CRYPT_BUFFER_SIZE
+
+        encrypted_file_path = self.get_path_to_encrypt(file_path)
+        pyAesCrypt.encryptFile(file_path, encrypted_file_path, password, buffer_size)
+
+        return encrypted_file_path
+
+    # Exporting related methods start here
 
     def __export_datatypes(self, paths, operation):
         op_folder = self.get_project_folder(operation.project.name, operation.id)
@@ -435,18 +556,34 @@ class StorageInterface:
 
         return export_folder
 
-    def export_datatypes(self, dt_path_list, data, download_file_name):
+    def export_datatypes(self, dt_path_list, data, download_file_name, public_key_path=None, password=None):
         """
         This method is used to export a list of datatypes as a ZIP file.
         :param dt_path_list: a list of paths to be exported (there are more than one when exporting with links)
         :param data: data to be exported
         :param download_file_name: name of the zip file to be downloaded
+        :param public_key_path:
+        :password:
         """
 
         export_folder = self.__copy_datatypes(dt_path_list, data)
+        file_destination = None
 
-        if len(dt_path_list) == 1:
-            return os.path.join(export_folder, os.path.basename(dt_path_list[0]))
+        for dt_path in dt_path_list:
+            self.get_storage_manager(dt_path).remove_metadata('parent_burst', check_existence=True)
+
+            if password is not None:
+                dt_path = self.__encrypt_data_at_export(dt_path, password)
+            file_destination = os.path.join(export_folder, os.path.basename(dt_path))
+            if not os.path.exists(file_destination):
+                self.copy_file(dt_path, file_destination)
+
+        if len(dt_path_list) == 1 and password is None:
+            return file_destination
+
+        if password is not None:
+            download_file_name = download_file_name.replace('.h5', '.zip')
+            self.encrypt_and_save_password(public_key_path, password, export_folder)
 
         export_data_zip_path = os.path.join(os.path.dirname(export_folder), download_file_name)
         self.write_zip_folder(export_data_zip_path, export_folder)

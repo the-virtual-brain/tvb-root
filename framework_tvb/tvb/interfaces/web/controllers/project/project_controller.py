@@ -677,14 +677,15 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def downloaddatatype(self, data_gid, export_module):
+    def downloaddatatype(self, data_gid, export_module, **data):
         """ Export the data to a default path of TVB_STORAGE/PROJECTS/project_name """
         current_prj = common.get_current_project()
         # Load data by GID
         entity = load_entity_by_gid(data_gid)
         # Do real export
         export_mng = ExportManager()
-        file_name, file_path, delete_file = export_mng.export_data(entity, export_module, current_prj)
+        file_name, file_path, delete_file = export_mng.export_data(entity, export_module, current_prj,
+                                                                   data['exporter_key'])
         if delete_file:
             # We force parent folder deletion because export process generated it.
             self.mark_file_for_delete(file_path, True)

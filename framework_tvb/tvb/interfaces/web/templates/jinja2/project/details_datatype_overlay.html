@@ -62,20 +62,28 @@
     </section>
 
     <!--! Overlay: Data Exporters -->
+
+    {{ exporter }}
     <section id="overlayTabContent_4" class="node-data node-export ">
 
         {% if exporters %}
             <ul>
                 {% for exporter in exporters %}
-                    <li>
-                        <button class="action action-export" onclick="window.location='/project/downloaddatatype/{{ entity_gid }}/{{ exporter }}';">{{ exporters[exporter] }}</button>
-                    </li>
+                    <form method="post" enctype="multipart/form-data" action="/project/downloaddatatype/{{ entity_gid }}/{{ exporter }}">
+                        <li>
+                            <button type="submit" class="action action-export">{{ exporters[exporter] }}</button>
+                            <p class="field-data">
+                                <input type="file" accept=".pem" id="exporter_key" name="exporter_key" class="inputField" tabindex="1">
+                            </p>
+                        </li>
+                    </form>
                 {% endfor %}
             </ul>
         {% else %}
             <label>No exporters are currently available for this DataType.</label>
         {% endif %}
 
-    </section>
+        </section>
+    </form>
 </div>
 
