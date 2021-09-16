@@ -64,8 +64,7 @@ class TVBExporter(ABCExporter):
             _, op_file_dict = self.prepare_datatypes_for_export(data)
 
             # Create ZIP archive
-            zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data,
-                                                                         download_file_name, project.name)
+            zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name)
             return download_file_name, zip_file, True
         else:
             data_path = h5.path_for_stored_index(data)

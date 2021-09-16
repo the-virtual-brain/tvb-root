@@ -424,7 +424,7 @@ class StorageInterface:
 
         return result_path
 
-    def copy_datatypes(self, dt_path_list, data):
+    def __copy_datatypes(self, dt_path_list, data):
         export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
         for dt_path in dt_path_list:
@@ -443,7 +443,7 @@ class StorageInterface:
         :param download_file_name: name of the zip file to be downloaded
         """
 
-        export_folder = self.copy_datatypes(dt_path_list, data)
+        export_folder = self.__copy_datatypes(dt_path_list, data)
 
         if len(dt_path_list) == 1:
             return os.path.join(export_folder, os.path.basename(dt_path_list[0]))
@@ -452,7 +452,7 @@ class StorageInterface:
         self.write_zip_folder(export_data_zip_path, export_folder)
         return export_data_zip_path
 
-    def export_datatypes_structure(self, op_file_dict, data, download_file_name, export_folder=None):
+    def export_datatypes_structure(self, op_file_dict, data, download_file_name, links_tuple_for_copy=None):
         """
         This method is used to export a list of datatypes as a ZIP file, while preserving the folder structure
         (eg: operation folders). It is only used during normal tvb exporting for datatype groups.
@@ -460,10 +460,13 @@ class StorageInterface:
             that operation folder
         :param data: data to be exported
         :param download_file_name: name of the ZIP file to be exported
-        :param export_folder: destination folder where the datatypes will be exported
-        """
+        :param links_tuple_for_copy: a tuple containing two elements: a list of paths to be copied and the first
+         datatype of the group
 
-        if export_folder is None:
+        """
+        if links_tuple_for_copy is not None:
+            export_folder = self.__copy_datatypes(links_tuple_for_copy[0], links_tuple_for_copy[1])
+        else:
             export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
         for op_folder, files in op_file_dict.items():

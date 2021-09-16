@@ -81,11 +81,10 @@ class TVBLinkedExporter(ABCExporter):
             dt_path_list = []
             data_type = all_datatypes[0]
             self.gather_datatypes_for_copy(data_type, dt_path_list)
-            export_folder = self.storage_interface.copy_datatypes(dt_path_list[1:], data_type)
 
             # Create ZIP archive
             zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name,
-                                                                         project.name, export_folder)
+                                                                         (dt_path_list[1:], data_type))
 
             return download_file_name, zip_file, True
         else:

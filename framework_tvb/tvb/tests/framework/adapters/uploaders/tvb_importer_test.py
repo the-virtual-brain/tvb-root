@@ -138,8 +138,7 @@ class TestTVBImporter(BaseTestCase):
         export_manager = ExportManager()
         _, exported_h5_file, _ = export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER, self.test_project)
 
-        #Clean DB
-        StorageInterface().remove_project_structure(self.test_project.name)
+        # Clean DB
         self.clean_database(delete_folders=False)
 
         # Recreate project, but a clean one where to import data
