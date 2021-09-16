@@ -411,11 +411,11 @@ class StorageInterface:
 
         return public_key
 
-    def encrypt_and_save_password(self, public_key_path, encrypted_password, path_to_encrypted_password):
+    def encrypt_and_save_password(self, public_key_path, password, path_to_encrypted_password):
         public_key = self.load_public_key(public_key_path)
-        password_bytes = str.encode(encrypted_password)
-        self.encrypt_password(public_key, password_bytes)
-        self.save_encrypted_password(password_bytes, path_to_encrypted_password)
+        password_bytes = str.encode(password)
+        encrypted_password = self.encrypt_password(public_key, password_bytes)
+        self.save_encrypted_password(encrypted_password, path_to_encrypted_password)
 
     def decrypt_content(self, view_model, trait_upload_field_name):
         upload_path = getattr(view_model, trait_upload_field_name)
@@ -445,7 +445,7 @@ class StorageInterface:
         decrypted_password = decrypted_password.decode()
 
         # Get path to decrypted file
-        decrypted_download_path = upload_path.replace(StorageInterface.ENCRYPTED_DATA_SUFFIX,
+        decrypted_download_path = upload_path.replace(self.ENCRYPTED_DATA_SUFFIX,
                                                       self.DECRYPTED_DATA_SUFFIX)
 
         # Use the decrypted password to decrypt the message
