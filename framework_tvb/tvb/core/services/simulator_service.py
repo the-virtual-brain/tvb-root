@@ -35,8 +35,8 @@
 import copy
 import json
 import uuid
-
 import numpy
+
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities import load
 from tvb.core.entities.filters.chain import FilterChain
@@ -232,7 +232,6 @@ class SimulatorService(object):
                                                                      view_model=simulator, ranges=ranges,
                                                                      burst_gid=burst_config.gid,
                                                                      op_group_id=burst_config.fk_operation_group)
-                simulator.range_values = ranges
                 operations.append(operation)
                 if first_simulator is None:
                     first_simulator = simulator

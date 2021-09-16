@@ -33,10 +33,8 @@
 """
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities import load
 from tvb.core.entities.model.model_datatype import DataType
-from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.storage.storage_interface import StorageInterface
@@ -54,6 +52,20 @@ class TVBLinkedExporter(ABCExporter):
 
     def get_label(self):
         return "TVB Format with links"
+
+    def gather_datatypes_for_copy(self, data, dt_path_list):
+        data_path = h5.path_for_stored_index(data)
+
+        if data_path not in dt_path_list:
+            dt_path_list.append(data_path)
+
+        with H5File.from_file(data_path) as f:
+            sub_dt_refs = f.gather_references()
+
+            for _, ref_gid in sub_dt_refs:
+                if ref_gid:
+                    dt = load.load_entity_by_gid(ref_gid)
+                    self.gather_datatypes_for_copy(dt, dt_path_list)
 
     def export(self, data, project):
         """

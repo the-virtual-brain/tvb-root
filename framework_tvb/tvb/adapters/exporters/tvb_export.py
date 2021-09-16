@@ -33,7 +33,6 @@
 """
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
 from tvb.storage.storage_interface import StorageInterface
