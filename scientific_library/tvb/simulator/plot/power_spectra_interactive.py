@@ -59,10 +59,13 @@ Usage
 
 import numpy
 import pylab
+import os
 import matplotlib.widgets as widgets
+
 from tvb.simulator.common import get_logger
 import tvb.datatypes.time_series as time_series_datatypes
 from tvb.basic.neotraits.api import HasTraits, Attr, Int
+from tvb.simulator.plot.utils import generate_region_demo_data
 
 LOG = get_logger(__name__)
 
@@ -103,7 +106,6 @@ class PowerSpectraInteractive(HasTraits):
             of 'space' (ie, regions or vertices or channels). In other words,
             for Region or M/EEG timeseries you can ignore this, but, for a 
             surface timeseries it really must be set.""")
-
 
     def __init__(self, **kwargs):
         """
@@ -152,7 +154,6 @@ class PowerSpectraInteractive(HasTraits):
         #Sliders
         #self.window_length_slider = None
 
-
     def configure(self):
         """ Seperate configure cause ttraits be busted... """
         LOG.debug("time_series shape: %s" % str(self.time_series.data.shape))
@@ -167,7 +168,6 @@ class PowerSpectraInteractive(HasTraits):
         self.time_series_length = self.tpts * self.period
         self.time = numpy.arange(self.tpts) * self.period
         self.labels = ["channel_%0.3d" % k for k in range(self.nsrs)]
-
 
     def show(self):
         """ Generate the interactive power-spectra figure. """
@@ -222,7 +222,6 @@ class PowerSpectraInteractive(HasTraits):
 
         self.fft_ax = self.ifft_fig.add_axes([0.15, 0.2, 0.7, 0.75])
 
-
     def add_xscale_selector(self):
         """
         Add a radio button to the figure for selecting which scaling the x-axes
@@ -233,7 +232,6 @@ class PowerSpectraInteractive(HasTraits):
         xscale_tuple = ("log", "linear")
         self.xscale_selector = widgets.RadioButtons(rax, xscale_tuple, active=1)
         self.xscale_selector.on_clicked(self.update_xscale)
-
 
     def add_yscale_selector(self):
         """
@@ -246,7 +244,6 @@ class PowerSpectraInteractive(HasTraits):
         self.yscale_selector = widgets.RadioButtons(rax, yscale_tuple, active=0)
         self.yscale_selector.on_clicked(self.update_yscale)
 
-
     def add_mode_selector(self):
         """
         Add a radio button to the figure for selecting which mode of the model
@@ -257,7 +254,6 @@ class PowerSpectraInteractive(HasTraits):
         mode_tuple = tuple(range(self.data.shape[3]))
         self.mode_selector = widgets.RadioButtons(rax, mode_tuple, active=0)
         self.mode_selector.on_clicked(self.update_mode)
-
 
     def add_variable_selector(self):
         """
@@ -273,7 +269,6 @@ class PowerSpectraInteractive(HasTraits):
                                                     active=0)
         self.variable_selector.on_clicked(self.update_variable)
 
-
     def add_window_length_selector(self):
         """
         Generate radio selector buttons to set the window length is seconds.
@@ -286,7 +281,6 @@ class PowerSpectraInteractive(HasTraits):
         wl_tup = tuple(self.possible_window_lengths)
         self.window_length_selector = widgets.RadioButtons(rax, wl_tup, active=4)
         self.window_length_selector.on_clicked(self.update_window_length)
-
 
     def add_window_function_selector(self):
         """
@@ -301,7 +295,6 @@ class PowerSpectraInteractive(HasTraits):
                                     title="Windowing function")
         self.window_function_selector = widgets.RadioButtons(rax, wf_tup, active=0)
         self.window_function_selector.on_clicked(self.update_window_function)
-
 
     def add_normalise_power_selector(self):
         """
@@ -318,6 +311,7 @@ class PowerSpectraInteractive(HasTraits):
     ##------------------------------------------------------------------------##
     ##------------------ Functions for updating the state --------------------##
     ##------------------------------------------------------------------------##
+
     def calc_fft(self):
         """
         Calculate FFT using current state of the window_length, window_function,
@@ -374,7 +368,6 @@ class PowerSpectraInteractive(HasTraits):
         self.fft_ax.set_xscale(self.xscale)
         pylab.draw()
 
-
     def update_yscale(self, yscale):
         """ 
         Update the FFT axes' yscale to either log or linear based on radio
@@ -384,12 +377,10 @@ class PowerSpectraInteractive(HasTraits):
         self.fft_ax.set_yscale(self.yscale)
         pylab.draw()
 
-
     def update_mode(self, mode):
         """ Update the visualised mode based on radio button selection. """
         self.mode = mode
         self.plot_spectra()
-
 
     def update_variable(self, variable):
         """ 
@@ -398,12 +389,10 @@ class PowerSpectraInteractive(HasTraits):
         self.variable = variable
         self.plot_spectra()
 
-
     def update_normalise_power(self, normalise_power):
         """ Update whether to normalise based on radio button selection. """
         self.normalise_power = normalise_power
         self.plot_spectra()
-
 
     def update_window_length(self, length):
         """
@@ -415,14 +404,12 @@ class PowerSpectraInteractive(HasTraits):
         self.freq_step = 1.0 / self.window_length
         self.update_spectra()
 
-
     def update_window_function(self, window_function):
         """
         Update windowing function based on the radio button selection.
         """
         self.window_function = window_function
         self.update_spectra()
-
 
     def update_spectra(self):
         """ Clear the axes and redraw the power-spectra. """
@@ -442,7 +429,6 @@ class PowerSpectraInteractive(HasTraits):
 #        sem = (self.spectra[:, self.variable, :, self.mode] +
 #               self.spectra_sem[:, self.variable, :, self.mode])
 #        self.fft_ax.plot(self.frequency, sem, ":")
-
 
     def plot_spectra(self):
         """ Plot the power spectra. """
@@ -484,11 +470,13 @@ class PowerSpectraInteractive(HasTraits):
 if __name__ == "__main__":
     # Do some stuff that tests or makes use of this module...
     LOG.info("Testing %s module..." % __file__)
+    file_path = os.path.join(os.getcwd(), "demo_data_region_16s_2048Hz.npy")
     try:
-        data = numpy.load("../demos/demo_data_region_16s_2048Hz.npy")
+        data = numpy.load(file_path)
     except IOError:
-        LOG.error("Can't load demo data. Run demos/generate_region_demo_data.py")
-        raise
+        LOG.error("Can't load demo data. It will be created now running the generate_region_demo_data() function.")
+        generate_region_demo_data(file_path=file_path)
+        data = numpy.load(file_path)
 
     period = 0.00048828125 #NOTE: Providing period in seconds
     tsr = time_series_datatypes.TimeSeriesRegion()

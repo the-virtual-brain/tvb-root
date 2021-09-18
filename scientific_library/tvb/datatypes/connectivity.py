@@ -36,12 +36,12 @@ The Connectivity datatype.
 
 """
 
+from copy import copy
+
 import numpy
 import scipy.stats
-from copy import copy
-from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
-
+from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 
 
 class Connectivity(HasTraits):
@@ -125,6 +125,11 @@ class Connectivity(HasTraits):
     # In case of edited Connectivity, this are the nodes left in interest area,
     # the rest were part of a lesion, so they were removed.
     saved_selection = List(of=int)
+
+    @property
+    def subcortical_indices(self):
+        subcortical_indices = numpy.flatnonzero(self.cortical == 0)
+        return subcortical_indices
 
     @property
     def saved_selection_labels(self):

@@ -34,11 +34,20 @@
 """
 
 import numpy as np
+import os
 from scipy.interpolate import interp1d, griddata
 from scipy.signal import welch, periodogram, spectrogram
 from six import string_types
+
 from tvb.basic.logger.builder import get_logger
+from tvb.datatypes.connectivity import Connectivity
+from tvb.simulator.coupling import Linear
+from tvb.simulator.integrators import HeunStochastic
+from tvb.simulator.models.oscillator import Generic2dOscillator
+from tvb.simulator.monitors import TemporalAverage
+from tvb.simulator.noise import Additive
 from tvb.simulator.plot.config import CONFIGURED
+from tvb.simulator.simulator import Simulator
 
 LOG = get_logger(__name__)
 
@@ -206,3 +215,82 @@ def rotate_n_list_elements(lst, n):
                 lst += old_lst[0]
                 old_lst = old_lst[1:] + old_lst[:1]
     return lst
+
+
+# if the demo data are not generated, this function will.
+def generate_region_demo_data(file_path=os.path.join(os.getcwd(), "demo_data_region_16s_2048Hz.npy")):
+    """
+    Generate 16 seconds of 2048Hz data at the region level, stochastic integration.
+
+    ``Run time``: approximately 4 minutes (workstation circa 2010)
+
+    ``Memory requirement``: < 1GB
+    ``Storage requirement``: ~ 19MB
+
+    .. moduleauthor:: Stuart A. Knock <stuart.knock@gmail.com>
+
+    """
+
+    ##----------------------------------------------------------------------------##
+    ##-                      Perform the simulation                              -##
+    ##----------------------------------------------------------------------------##
+
+    LOG.info("Configuring...")
+
+    # Initialise a Model, Coupling, and Connectivity.
+    pars = {'a': np.array([1.05]),
+            'b': np.array([-1]),
+            'c': np.array([0.0]),
+            'd': np.array([0.1]),
+            'e': np.array([0.0]),
+            'f': np.array([1 / 3.]),
+            'g': np.array([1.0]),
+            'alpha': np.array([1.0]),
+            'beta': np.array([0.2]),
+            'tau': np.array([1.25]),
+            'gamma': np.array([-1.0])}
+
+    oscillator = Generic2dOscillator(**pars)
+
+    white_matter = Connectivity.from_file()
+    white_matter.speed = np.array([4.0])
+    white_matter_coupling = Linear(a=np.array([0.033]))
+
+    # Initialise an Integrator
+    hiss = Additive(nsig=np.array([2 ** -10, ]))
+    heunint = HeunStochastic(dt=0.06103515625, noise=hiss)
+
+    # Initialise a Monitor with period in physical time
+    what_to_watch = TemporalAverage(period=0.48828125)  # 2048Hz => period=1000.0/2048.0
+
+    # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
+    sim = Simulator(model=oscillator, connectivity=white_matter,
+                    coupling=white_matter_coupling,
+                    integrator=heunint, monitors=[what_to_watch])
+
+    sim.configure()
+
+    # Perform the simulation
+    tavg_data = []
+    tavg_time = []
+    LOG.info("Starting simulation...")
+    for tavg in sim(simulation_length=16000):
+        if tavg is not None:
+            tavg_time.append(tavg[0][0])  # TODO:The first [0] is a hack for single monitor
+            tavg_data.append(tavg[0][1])  # TODO:The first [0] is a hack for single monitor
+
+    LOG.info("Finished simulation.")
+
+    ##----------------------------------------------------------------------------##
+    ##-                     Save the data to a file                              -##
+    ##----------------------------------------------------------------------------##
+
+    # Make the list a numpy.array.
+    LOG.info("Converting result to array...")
+    TAVG = np.array(tavg_data)
+
+    # Save it
+    LOG.info("Saving array to %s..." % file_path)
+    np.save(file_path, TAVG)
+
+    LOG.info("Done.")
