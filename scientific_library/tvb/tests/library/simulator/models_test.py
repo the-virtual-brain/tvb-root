@@ -282,6 +282,13 @@ class TestModels(BaseTestCase):
         self._validate_initialization(model, 1)
         self._test_steady_state(model, numpy.r_[0.452846])
 
+    def test_deco2020_transcriptional(self):
+        """
+        """
+        model = models.Deco2020Transcriptional()
+        self._validate_initialization(model, 4)
+        self._test_steady_state(model, numpy.r_[0.416673, 0.078865, 3.987382, 0.38594])
+
     def test_zetterberg_jansen(self):
         """
         """

@@ -78,6 +78,7 @@ class ModelsEnum(Enum):
     GAST_SCHMIDT_KNOSCHE_SD = "GastSchmidtKnosche_SD"
     GAST_SCHMIDT_KNOSCHE_SF = "GastSchmidtKnosche_SF"
     DUMONT_GUTKIN = "DumontGutkin"
+    DECO2020_TRANSCRIPTIONAL = "Deco2020Transcriptional"
 
     def get_class(self):
         return _get_imported_model(self.value)
@@ -111,6 +112,7 @@ _module_models = {
     'wilson_cowan': [ModelsEnum.WILSON_COWAN],
     'wong_wang': [ModelsEnum.REDUCED_WONG_WANG],
     'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXCH_INH],
+    'deco2020_transcriptional': [ModelsEnum.DECO2020_TRANSCRIPTIONAL],
     'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
     'infinite_theta': [ModelsEnum.MONTBRIO_PAZO_ROXIN, ModelsEnum.COOMBES_BYRNE, ModelsEnum.COOMBES_BYRNE_2D, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD, ModelsEnum.DUMONT_GUTKIN],
 }
