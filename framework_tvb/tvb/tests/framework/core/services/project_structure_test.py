@@ -44,7 +44,6 @@ from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.project_service import ProjectService
 from tvb.datatypes.graph import ConnectivityMeasure
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.services.algorithm_service_test import TEST_ADAPTER_VALID_MODULE, TEST_ADAPTER_VALID_CLASS
@@ -91,7 +90,7 @@ class TestProjectStructure(TransactionalTestCase):
         When changing the visibility for an operation that belongs to an operation group, we
         should also change the visibility for the entire group of operations.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         list_of_operations = dao.get_operations_in_group(group.id)
         for operation in list_of_operations:
             assert operation.visible, "The operation should be visible."
@@ -104,7 +103,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Tests if the visibility for an operation group is set correct.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         list_of_operations = dao.get_operations_in_group(group.id)
         for operation in list_of_operations:
             assert operation.visible, "The operation should be visible."
@@ -159,7 +158,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Tests if a datatype is group.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         dt_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         is_dt_group = self.project_service.is_datatype_group(dt_group.gid)
         assert is_dt_group, "The datatype should be a datatype group."
@@ -169,7 +168,7 @@ class TestProjectStructure(TransactionalTestCase):
 
     def test_count_datatypes_in_group(self, datatype_group_factory):
         """ Test that counting dataTypes is correct. Happy flow."""
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         count = dao.count_datatypes_in_group(group.id)
         assert count == group.count_results
         assert count == 6
@@ -194,7 +193,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Check if the visibility for a datatype from a datatype group is set correct.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
         assert datatypes[0].visible, "The data type should be visible."
         assert datatypes[1].visible, "The data type should be visible."
@@ -212,7 +211,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Check if the visibility for a datatype group is set correct.
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         dt_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         datatypes = dao.get_datatypes_from_datatype_group(dt_group.id)
 
@@ -233,7 +232,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         Validate that we can retrieve all DTs from a DT_Group
         """
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         exp_datatypes = dao.get_datatypes_from_datatype_group(group.id)
         datatypes = self.project_service.get_datatypes_from_datatype_group(group.id)
         assert len(datatypes) == group.count_results, "There should be 10 datatypes into the datatype group."
@@ -273,7 +272,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         user = user_factory()
         project = project_factory(user)
-        group = datatype_group_factory(project=project)
+        group, _ = datatype_group_factory(project=project)
 
         datatype_group = dao.get_generic_entity(DataTypeGroup, group.id)[0]
         datatypes = dao.get_datatypes_from_datatype_group(group.id)
@@ -295,7 +294,7 @@ class TestProjectStructure(TransactionalTestCase):
         """
         user = user_factory()
         project = project_factory(user)
-        group = datatype_group_factory(project=project)
+        group, _ = datatype_group_factory(project=project)
 
         datatype_groups = self.get_all_entities(DataTypeGroup)
         datatypes = dao.get_datatypes_from_datatype_group(group.id)

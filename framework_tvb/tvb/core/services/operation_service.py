@@ -215,6 +215,7 @@ class OperationService:
         This should be the common point in calling an adapter- method.
         """
         result_msg = ""
+        nr_datatypes = 0
         temp_files = []
         try:
             operation = dao.get_operation_by_id(operation.id)  # Load Lazy fields
@@ -260,7 +261,7 @@ class OperationService:
             msg = "Could not launch Operation with the given input data!"
             self._handle_exception(excep1, temp_files, msg, operation)
 
-        if operation.fk_operation_group and 'SimulatorAdapter' in operation.algorithm.classname:
+        if operation.fk_operation_group and 'SimulatorAdapter' in operation.algorithm.classname and nr_datatypes == 1:
             next_op = self._prepare_metric_operation(operation)
             self.launch_operation(next_op.id)
         return result_msg
@@ -280,6 +281,10 @@ class OperationService:
     def _update_vm_generic_operation_tag(view_model, operation):
         project = dao.get_project_by_id(operation.fk_launched_in)
         h5_path = h5.path_for(operation.id, ViewModelH5, view_model.gid, project.name, type(view_model).__name__)
+
+        if not os.path.exists(h5_path):
+            return
+
         with ViewModelH5(h5_path, view_model) as vm_h5:
             vm_h5.operation_tag.store(operation.user_group)
 
