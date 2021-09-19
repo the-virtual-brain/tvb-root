@@ -488,8 +488,10 @@ class ImportService(object):
                     operation_entity.view_model_disk_size = view_model_disk_size
                     dao.store_entity(operation_entity)
                 except MissingReferenceException as excep:
-                    dao.remove_entity(Operation, operation_entity.id)
                     self.storage_interface.remove_operation_data(project.name, operation_entity.id)
+                    operation_entity.fk_operation_group = None
+                    dao.store_entity(operation_entity)
+                    dao.remove_entity(DataTypeGroup, dt_group.id)
                     raise excep
             else:
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "

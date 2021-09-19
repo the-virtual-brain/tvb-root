@@ -131,6 +131,7 @@ class TVBImporter(ABCUploader):
                     elif stored_dts_count < all_dts:
                         current_op.additional_info = 'Part of the chosen datatypes already exist!'
                         dao.store_entity(current_op)
+                    self.storage_interface.remove_folder(tmp_folder)
                 except DatatypeGroupImportException as excep:
                     raise LaunchException(str(excep))
                 except ImportException as excep:
@@ -138,8 +139,6 @@ class TVBImporter(ABCUploader):
                     current_op.additional_info = excep.message
                     current_op.status = STATUS_ERROR
                     raise LaunchException("Invalid file received as input. " + str(excep))
-                finally:
-                    self.storage_interface.remove_folder(tmp_folder)
             else:
                 # upgrade file if necessary
                 file_update_manager = FilesUpdateManager()
