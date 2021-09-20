@@ -545,14 +545,18 @@ class StorageInterface:
 
         return result_path
 
-    def __copy_datatypes(self, dt_path_list, data):
+    def __copy_datatypes(self, dt_path_list, data, password):
         export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
         for dt_path in dt_path_list:
             file_destination = os.path.join(export_folder, os.path.basename(dt_path))
             if not os.path.exists(file_destination):
                 self.copy_file(dt_path, file_destination)
-            self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+                self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+
+                if password is not None:
+                    self.__encrypt_data_at_export(file_destination, password)
+                    os.remove(file_destination)
 
         return export_folder
 
@@ -566,20 +570,10 @@ class StorageInterface:
         :password:
         """
 
-        export_folder = self.__copy_datatypes(dt_path_list, data)
-        file_destination = None
-
-        for dt_path in dt_path_list:
-            self.get_storage_manager(dt_path).remove_metadata('parent_burst', check_existence=True)
-
-            if password is not None:
-                dt_path = self.__encrypt_data_at_export(dt_path, password)
-            file_destination = os.path.join(export_folder, os.path.basename(dt_path))
-            if not os.path.exists(file_destination):
-                self.copy_file(dt_path, file_destination)
+        export_folder = self.__copy_datatypes(dt_path_list, data, password)
 
         if len(dt_path_list) == 1 and password is None:
-            return file_destination
+            return os.path.join(export_folder, os.path.basename(dt_path_list[0]))
 
         if password is not None:
             download_file_name = download_file_name.replace('.h5', '.zip')

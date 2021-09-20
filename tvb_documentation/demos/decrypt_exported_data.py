@@ -32,7 +32,7 @@ if __name__ == '__main__':
     decrypted_password = decrypted_password.decode()
 
     # 4. Decrypt file
-    file_path = '/Users/robert.vincze/Documents/Surface_6f246663030d4dd3affaad9df6d47c53_encrypted.h5'
+    file_path = '/Users/robert.vincze/Documents/TimeSeriesRegion_6ea0d6a811cf447999714a743d582939_encrypted.h5'
     decrypted_path = file_path.replace('encrypted', 'decrypted')
 
     pyAesCrypt.decryptFile(file_path, decrypted_path, decrypted_password, TvbProfile.current.hpc.CRYPT_BUFFER_SIZE)
