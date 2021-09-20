@@ -123,7 +123,7 @@ class ABCExporter(metaclass=ABCMeta):
     def skip_group_datatypes(self):
         return False
 
-    def _get_all_data_types_arr(self, data):
+    def __get_all_datatypes_from_data(self, data):
         """
         This method builds an array with all data types to be processed later.
         - If current data is a simple data type is added to an array.
@@ -144,25 +144,31 @@ class ABCExporter(metaclass=ABCMeta):
         else:
             return [data]
 
-    def is_data_a_group(self, data):
+    @staticmethod
+    def is_data_a_group(data):
         """
         Checks if the provided data, ready for export is a DataTypeGroup or not
         """
         return isinstance(data, DataTypeGroup)
 
     def prepare_datatypes_for_export(self, data):
-        all_datatypes = self._get_all_data_types_arr(data)
+        """
+        Method used for exporting data type groups. This method returns a list of all datatype indexes needed to be
+        exported and a dictionary where keys are operation folder names and the values are lists containing the paths
+        that belong to one particular operation folder.
+        """
+        all_datatypes = self.__get_all_datatypes_from_data(data)
         first_datatype = all_datatypes[0]
 
         # We are exporting a group of datatype measures so we need to find the group of time series
         if hasattr(first_datatype, 'fk_source_gid'):
             ts = h5.load_entity_by_gid(first_datatype.fk_source_gid)
             dt_metric_group = dao.get_datatypegroup_by_op_group_id(ts.parent_operation.fk_operation_group)
-            datatype_measure_list = self._get_all_data_types_arr(dt_metric_group)
+            datatype_measure_list = self.__get_all_datatypes_from_data(dt_metric_group)
             all_datatypes = datatype_measure_list + all_datatypes
         else:
             ts_group = dao.get_datatype_measure_group_from_ts_from_pse(first_datatype.gid, DatatypeMeasureIndex)
-            time_series_list = self._get_all_data_types_arr(ts_group)
+            time_series_list = self.__get_all_datatypes_from_data(ts_group)
             all_datatypes = all_datatypes + time_series_list
 
         if all_datatypes is None or len(all_datatypes) == 0:
@@ -189,9 +195,9 @@ class ABCExporter(metaclass=ABCMeta):
 
         :param project: project that contains data to be exported
 
-        :param public_key_path:
+        :param public_key_path: path to public key that will be used for encrypting the password by TVB
 
-        :param password:
+        :param password: password used for encrypting the files before exporting
 
         :returns: a tuple with the following elements:
 

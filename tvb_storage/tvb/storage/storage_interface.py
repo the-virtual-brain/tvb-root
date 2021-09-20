@@ -566,8 +566,8 @@ class StorageInterface:
         :param dt_path_list: a list of paths to be exported (there are more than one when exporting with links)
         :param data: data to be exported
         :param download_file_name: name of the zip file to be downloaded
-        :param public_key_path:
-        :password:
+        :param public_key_path: path to public key that will be used for encrypting the password by TVB
+        :param password: password used for encrypting the files before exporting
         """
 
         export_folder = self.__copy_datatypes(dt_path_list, data, password)
@@ -592,6 +592,8 @@ class StorageInterface:
             that operation folder
         :param data: data to be exported
         :param download_file_name: name of the ZIP file to be exported
+        :param public_key_path: path to public key that will be used for encrypting the password by TVB
+        :param password: password used for encrypting the files before exporting
         :param links_tuple_for_copy: a tuple containing two elements: a list of paths to be copied and the first
          datatype of the group
 
