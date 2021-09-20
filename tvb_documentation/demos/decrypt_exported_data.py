@@ -1,8 +1,11 @@
 import pyAesCrypt
+import os
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+
 from tvb.basic.profile import TvbProfile
+from tvb.storage.storage_interface import StorageInterface
 
 if __name__ == '__main__':
 
@@ -31,8 +34,30 @@ if __name__ == '__main__':
 
     decrypted_password = decrypted_password.decode()
 
-    # 4. Decrypt file
-    file_path = '/Users/robert.vincze/Documents/TimeSeriesRegion_6ea0d6a811cf447999714a743d582939_encrypted.h5'
-    decrypted_path = file_path.replace('encrypted', 'decrypted')
+    path = '/Users/robert.vincze/Documents/2021-09-20_12-27_DataTypeGroup_encrypted'
+    storage_interface = StorageInterface()
 
-    pyAesCrypt.decryptFile(file_path, decrypted_path, decrypted_password, TvbProfile.current.hpc.CRYPT_BUFFER_SIZE)
+    # 4. a) If it is just a file, decrypt the file
+    if os.path.isfile(path):
+        decrypted_path = path.replace(storage_interface.ENCRYPTED_DATA_SUFFIX, storage_interface.DECRYPTED_DATA_SUFFIX)
+        pyAesCrypt.decryptFile(path, decrypted_path, decrypted_password, TvbProfile.current.hpc.CRYPT_BUFFER_SIZE)
+
+    # 4. b) If it is a directory (DatatypeGroup), we have to go through each subdirectory and decrypt the content
+    if os.path.isdir(path):
+        dest_path = path.replace(storage_interface.ENCRYPTED_DATA_SUFFIX, storage_interface.DECRYPTED_DATA_SUFFIX)
+        if not os.path.exists(dest_path):
+            os.mkdir(dest_path)
+        for subdir_path in os.listdir(path):
+            src_sub_folder = os.path.join(path, subdir_path)
+
+            if not os.path.isdir(src_sub_folder):
+                continue
+            dest_sub_folder = os.path.join(dest_path, subdir_path)
+            if not os.path.exists(dest_sub_folder):
+                os.mkdir(dest_sub_folder)
+            for file in os.listdir(src_sub_folder):
+                src_file_path = os.path.join(src_sub_folder, file)
+                dest_file_path = os.path.join(dest_sub_folder, file)
+                dest_file_path = dest_file_path.replace(storage_interface.ENCRYPTED_DATA_SUFFIX, '')
+                pyAesCrypt.decryptFile(src_file_path, dest_file_path, decrypted_password,
+                                       TvbProfile.current.hpc.CRYPT_BUFFER_SIZE)

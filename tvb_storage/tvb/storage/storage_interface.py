@@ -583,7 +583,8 @@ class StorageInterface:
         self.write_zip_folder(export_data_zip_path, export_folder)
         return export_data_zip_path
 
-    def export_datatypes_structure(self, op_file_dict, data, download_file_name, links_tuple_for_copy=None):
+    def export_datatypes_structure(self, op_file_dict, data, download_file_name, public_key_path, password,
+                                   links_tuple_for_copy=None):
         """
         This method is used to export a list of datatypes as a ZIP file, while preserving the folder structure
         (eg: operation folders). It is only used during normal tvb exporting for datatype groups.
@@ -596,7 +597,7 @@ class StorageInterface:
 
         """
         if links_tuple_for_copy is not None:
-            export_folder = self.__copy_datatypes(links_tuple_for_copy[0], links_tuple_for_copy[1])
+            export_folder = self.__copy_datatypes(links_tuple_for_copy[0], links_tuple_for_copy[1], password)
         else:
             export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
@@ -604,10 +605,18 @@ class StorageInterface:
             tmp_op_folder_path = os.path.join(export_folder, os.path.basename(op_folder))
             for file in files:
                 dest_path = os.path.join(tmp_op_folder_path, os.path.basename(file))
-                self.copy_file(file, os.path.join(tmp_op_folder_path, os.path.basename(file)))
-                self.get_storage_manager(dest_path).remove_metadata('parent_burst', check_existence=True)
+
+                if not os.path.exists(dest_path):
+                    self.copy_file(file, os.path.join(tmp_op_folder_path, os.path.basename(file)))
+                    self.get_storage_manager(dest_path).remove_metadata('parent_burst', check_existence=True)
+
+                    if password is not None:
+                        self.__encrypt_data_at_export(dest_path, password)
+                        os.remove(dest_path)
 
         dest_path = os.path.join(os.path.dirname(export_folder), download_file_name)
+        if password is not None:
+            self.encrypt_and_save_password(public_key_path, password, export_folder)
         self.write_zip_folder(dest_path, export_folder)
 
         return dest_path
