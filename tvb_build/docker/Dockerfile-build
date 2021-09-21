@@ -28,7 +28,7 @@ RUN conda install -y --name tvb-docs pytest pytest-cov pytest-benchmark pytest-m
 RUN conda install -y --name tvb-docs psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug
 RUN conda install -y --name tvb-docs -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-docs/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-docs/bin/pip install h5py==2.10 formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk
+RUN /opt/conda/envs/tvb-docs/bin/pip install h5py==2.10 formencode cfflib jinja2==2.12.0 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
 RUN /opt/conda/envs/tvb-docs/bin/pip install --no-build-isolation tvb-gdist
 RUN /opt/conda/envs/tvb-docs/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN /opt/conda/envs/tvb-docs/bin/pip install sphinx==1.2.3 docutils==0.12
@@ -39,7 +39,7 @@ RUN conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mo
 RUN conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy werkzeug docutils
 RUN conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 RUN /opt/conda/envs/tvb-run/bin/pip install --upgrade pip
-RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk
+RUN /opt/conda/envs/tvb-run/bin/pip install h5py>=2.10 formencode cfflib jinja2==2.12.0 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
 RUN /opt/conda/envs/tvb-run/bin/pip install --no-build-isolation tvb-gdist
 RUN /opt/conda/envs/tvb-run/bin/pip install BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN /opt/conda/envs/tvb-run/bin/pip install lockfile
