@@ -116,7 +116,8 @@ class ExportManager(object):
         exporter = self.all_exporters[exporter_id]
 
         if user_public_key is not None:
-            public_key_path, encryption_password = StorageInterface.prepare_encryption(user_public_key, project.name)
+            public_key_path, encryption_password = self.storage_interface.prepare_encryption(user_public_key,
+                                                                                             project.name)
         else:
             public_key_path, encryption_password = None, None
 

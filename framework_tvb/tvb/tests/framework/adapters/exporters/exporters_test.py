@@ -180,12 +180,19 @@ class TestExporters(TransactionalTestCase):
                                                                               "private_key.pem"))
 
         original_conn_path = h5.path_for_stored_index(conn)
-        self.compare_files(original_conn_path, decrypted_file_paths[1])
+        decrypted_conn_path, idx = (decrypted_file_paths[0], 0) if 'Connectivity' in decrypted_file_paths[0] else \
+            (decrypted_file_paths[1], 1) if 'Connectivity' in decrypted_file_paths[1] else (decrypted_file_paths[2], 2)
+
+        self.compare_files(original_conn_path, decrypted_conn_path)
 
         original_surface_path = h5.path_for_stored_index(surface_idx)
-        self.compare_files(original_surface_path, decrypted_file_paths[2])
+        del decrypted_file_paths[idx]
+        decrypted_surface_path, idx = (decrypted_file_paths[0], 0) if 'Surface' in decrypted_file_paths[0] else \
+            (decrypted_file_paths[1], 1)
+        self.compare_files(original_surface_path, decrypted_surface_path)
 
         original_rm_path = h5.path_for_stored_index(region_mapping_index)
+        del decrypted_file_paths[idx]
         self.compare_files(original_rm_path, decrypted_file_paths[0])
 
     def test_tvb_export_of_datatype_with_storage(self, dummy_datatype_index_factory):

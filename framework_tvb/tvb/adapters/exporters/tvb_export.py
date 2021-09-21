@@ -67,8 +67,7 @@ class TVBExporter(ABCExporter):
             zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name,
                                                                          public_key_path, password)
             if password is not None:
-                download_file_name = download_file_name.replace('.zip',
-                                                                self.storage_interface.ENCRYPTED_DATA_SUFFIX + '.zip')
+                download_file_name = self.storage_interface.add_encrypted_suffix(download_file_name)
             return download_file_name, zip_file, True
         else:
             data_path = h5.path_for_stored_index(data)
