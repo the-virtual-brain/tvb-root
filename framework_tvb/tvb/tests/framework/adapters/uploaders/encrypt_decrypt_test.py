@@ -33,16 +33,17 @@
 """
 
 import os
-
 import pyAesCrypt
 import pytest
 import tvb_data
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.basic.profile import TvbProfile
 from tvb.storage.storage_interface import StorageInterface
+from tvb.tests.framework.adapters.exporters.exporters_test import TestExporters
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
 
@@ -105,23 +106,17 @@ class TestEncryptionDecryption(TransactionalTestCase):
         TvbProfile.current.UPLOAD_KEY_PATH = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, 'private_key.pem')
 
         # Decrypting
-        StorageInterface().decrypt_content(connectivity_model, 'uploaded')
+
+        decrypted_download_path = storage_interface.decrypt_content(connectivity_model.encrypted_aes_key,
+                                                                    [connectivity_model.uploaded],
+                                                                    TvbProfile.current.UPLOAD_KEY_PATH)[0]
+        connectivity_model.uploaded = decrypted_download_path
 
         storage_interface = StorageInterface()
         decrypted_file_path = connectivity_model.uploaded.replace(storage_interface.ENCRYPTED_DATA_SUFFIX,
                                                                   storage_interface.DECRYPTED_DATA_SUFFIX)
-        with open(path_to_file, 'rb') as f_original:
-            with open(decrypted_file_path, 'rb') as f_decrypted:
-                while True:
-                    original_content_chunk = f_original.read(buffer_size)
-                    decrypted_content_chunk = f_decrypted.read(buffer_size)
 
-                    assert original_content_chunk == decrypted_content_chunk, \
-                        "Original and Decrypted chunks are not equal, so decryption hasn't been done correctly!"
-
-                    # check if EOF was reached
-                    if len(original_content_chunk) < buffer_size:
-                        break
+        TestExporters.compare_files(path_to_file, decrypted_file_path)
 
         # Clean-up
         storage_interface.remove_files(

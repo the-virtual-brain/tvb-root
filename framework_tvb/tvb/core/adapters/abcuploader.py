@@ -44,7 +44,6 @@ from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapterForm, 
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.forms import StrField, TraitUploadField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.storage.storage_interface import StorageInterface
 
 
 class ABCUploaderForm(ABCAdapterForm):
@@ -98,7 +97,11 @@ class ABCUploader(ABCAdapter, metaclass=ABCMeta):
                                       "due to missing PK for decryption! Please contact the administrator!")
 
             for upload_field_name in trait_upload_field_names:
-                StorageInterface().decrypt_content(view_model, upload_field_name)
+                upload_path = getattr(view_model, upload_field_name)
+                decrypted_download_path = self.storage_interface.decrypt_content(view_model.encrypted_aes_key,
+                                                                                 [upload_path],
+                                                                                 TvbProfile.current.UPLOAD_KEY_PATH)[0]
+                setattr(view_model, upload_field_name, decrypted_download_path)
 
         return ABCAdapter._prelaunch(self, operation, view_model, available_disk_space)
 
