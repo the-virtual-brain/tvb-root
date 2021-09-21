@@ -91,12 +91,13 @@ class ExportManager(object):
 
         return results
 
-    def export_data(self, data, exporter_id, project, user_public_key):
+    def export_data(self, data, exporter_id, project, user_public_key=None):
         """
         Export provided data using given exporter
         :param data: data type to be exported
         :param exporter_id: identifier of the exporter to be used
         :param project: project that contains data to be exported
+        :param user_public_key: public key file used for encrypting data before exporting
 
         :returns: a tuple with the following elements
             1. name of the file to be shown to user
@@ -113,7 +114,11 @@ class ExportManager(object):
             raise ExportException("Provided exporter identifier is not a valid one")
 
         exporter = self.all_exporters[exporter_id]
-        public_key_path, encryption_password = StorageInterface.prepare_encryption(user_public_key, project.name)
+
+        if user_public_key is not None:
+            public_key_path, encryption_password = StorageInterface.prepare_encryption(user_public_key, project.name)
+        else:
+            public_key_path, encryption_password = None, None
 
         if project is None:
             raise ExportException("Please provide the project where data files are stored")
