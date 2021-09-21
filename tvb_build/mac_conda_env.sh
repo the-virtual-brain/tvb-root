@@ -9,7 +9,7 @@ conda install -y --name mac-distribution psycopg2 pytables scikit-image==0.14.2 
 conda install -y --name mac-distribution -c conda-forge flask gevent pillow
 
 /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install --upgrade pip
-/WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install h5py==2.10 formencode cfflib jinja2==2.12.0 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
+/WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install h5py==2.10 formencode cfflib jinja2<2.12.0 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
 /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install tvb-gdist BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
 /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install pyobjc
 /WORK/anaconda3/anaconda3/envs/mac-distribution/bin/pip install biplist six

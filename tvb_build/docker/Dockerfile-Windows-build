@@ -19,7 +19,7 @@ RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab flask 
 
 RUN activate tvb-run && pip install --upgrade pip
 RUN activate tvb-run && pip install certifi
-RUN activate tvb-run && pip install h5py==2.10 formencode cfflib jinja2==2.12.0 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
+RUN activate tvb-run && pip install h5py==2.10 formencode cfflib jinja2<2.12.0 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
 RUN activate tvb-run && pip install tvb-gdist BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
 RUN activate tvb-run && pip install autopep8
 
