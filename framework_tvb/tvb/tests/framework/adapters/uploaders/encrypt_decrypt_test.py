@@ -42,6 +42,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.basic.profile import TvbProfile
+from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.exporters.exporters_test import TestExporters
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -98,7 +99,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
         # Save encrypted password
         storage_interface.save_encrypted_password(encrypted_password, TvbProfile.current.TVB_TEMP_FOLDER)
         path_to_encrypted_password = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                                  storage_interface.ENCRYPTED_PASSWORD_NAME)
+                                                  ImportExportEncryptionHandler.ENCRYPTED_PASSWORD_NAME)
 
         # Prepare model for decrypting
         connectivity_model.uploaded = encrypted_file_path
@@ -106,15 +107,14 @@ class TestEncryptionDecryption(TransactionalTestCase):
         TvbProfile.current.UPLOAD_KEY_PATH = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, 'private_key.pem')
 
         # Decrypting
-
         decrypted_download_path = storage_interface.decrypt_content(connectivity_model.encrypted_aes_key,
                                                                     [connectivity_model.uploaded],
                                                                     TvbProfile.current.UPLOAD_KEY_PATH)[0]
         connectivity_model.uploaded = decrypted_download_path
 
         storage_interface = StorageInterface()
-        decrypted_file_path = connectivity_model.uploaded.replace(storage_interface.ENCRYPTED_DATA_SUFFIX,
-                                                                  storage_interface.DECRYPTED_DATA_SUFFIX)
+        decrypted_file_path = connectivity_model.uploaded.replace(ImportExportEncryptionHandler.ENCRYPTED_DATA_SUFFIX,
+                                                                  ImportExportEncryptionHandler.DECRYPTED_DATA_SUFFIX)
 
         TestExporters.compare_files(path_to_file, decrypted_file_path)
 
