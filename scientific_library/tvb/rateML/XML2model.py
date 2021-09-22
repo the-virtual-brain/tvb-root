@@ -231,36 +231,20 @@ class RateML:
 
         return noisepresent, nsigpresent
 
-    def powerswap_cuda(self, power):
-        target = power.group(0)
-        powersplit = target.split('^')
-        powf = 'powf(' + powersplit[0].replace('{','') + ', ' + powersplit[1].replace('}','') + ')'
-
-        return target, powf
-
-    def powerswap_python(self, power):
-        target = power.group(0)
-        powersplit = target.split('^')
-        powpy = powersplit[0].replace('{','') + '**' + powersplit[1].replace('}','')
-
-        return target, powpy
-
+    # check for power symbol and parse to python (**) or c power (powf(x, y))
     def swap_language_specific_terms(self, model_str):
-
-        # check for power symbol and parse to python (**) or c power (powf(x, y))
 
         model_str = re.sub(r"\bpi\b", 'PI', model_str)
         model_str = re.sub(r"\binf\b", 'INF', model_str)
 
-        if self.language == 'cuda':
-            for power in re.finditer(r"\{(.*?)(\^)(.*?)\}", model_str):
-                target, powf = self.powerswap_cuda(power)
-                model_str = re.sub(re.escape(target), powf, model_str)
-
-        if self.language == 'python':
-            for power in re.finditer(r"\{(.*?)\^(.*?)\}", model_str):
-                target, powpy = self.powerswap_python(power)
-                model_str = re.sub(re.escape(target), powpy, model_str)
+        for power in re.finditer(r"\{(.*?)(\^)(.*?)\}", model_str):
+            target = power.group(0)
+            powersplit = target.split('^')
+            if self.language == 'cuda':
+                pow = 'powf(' + powersplit[0].replace('{', '') + ', ' + powersplit[1].replace('}', '') + ')'
+            if self.language == 'python':
+                pow = powersplit[0].replace('{', '') + '**' + powersplit[1].replace('}', '')
+            model_str = re.sub(re.escape(target), pow, model_str)
 
         return model_str
 
