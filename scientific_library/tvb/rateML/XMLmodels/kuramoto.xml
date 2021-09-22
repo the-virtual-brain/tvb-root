@@ -16,7 +16,7 @@
 
         <Dynamics>
             <!-- For CUDA models a single value for dimension is required -->
-            <StateVariable name="V" dimension="0.0" exposure="-2, 1"/>
+            <StateVariable name="V" dimension="0.0, 0.0" exposure="-2, 1"/>
             <!-- For python models a dimension range is required -->
             <!-- <StateVariable name="V" dimension="0.0, numpy.pi * 2.0" exposure="-2, 1"/>-->
 

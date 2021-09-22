@@ -5,6 +5,7 @@ Test for RateML module
 .. moduleauthor:: Michiel van der Vlag <m.van.der.vlag@fz-juelich.de>
 
 """
+import importlib
 
 import pytest, os, itertools, numpy as np, re, sys
 from tvb.rateML import XML2model
@@ -19,8 +20,6 @@ generatedModels_path = os.path.join(framework_path, "generatedModels")
 cuda_ref_path = os.path.join(generatedModels_path, "cuda_refs")
 run_path = os.path.join(framework_path, "run")
 dic_regex_mincount = {r'^__global':1,
-					  r'^__device':1,
-					  r'^__device__ float wrap_it_':1,
 					  r'state\(\(\(':1,
 					  r'state\(\(t':2,
 					  r'tavg\(':1,
@@ -79,8 +78,8 @@ def setup_namespace(model='kuramoto'):
 
 	# gemerate model and setup namespace for every test
 	RateML(model, 'cuda')
-	from tvb.rateML.run.model_driver import Driver_Execute, Driver_Setup
-	driver = Driver_Execute(Driver_Setup())
+	driver = importlib.import_module('.model_driver_' + model, 'tvb.rateML.run')
+	driver = driver.Driver_Execute(driver.Driver_Setup())
 
 	return driver
 

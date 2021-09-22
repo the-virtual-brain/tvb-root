@@ -60,6 +60,7 @@ from tvb.basic.logger.builder import get_logger
 from lems.model.model import Model
 
 import argparse
+import numpy as np
 
 logger = get_logger(__name__)
 
@@ -161,10 +162,9 @@ class RateML:
 
         return os.path.join(folder, self.model_filename.lower() + ext)
 
-    @staticmethod
-    def set_driver_location():
+    def set_driver_location(self):
         here = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(here, 'run', 'model_driver.py')
+        return os.path.join(here, 'run', 'model_driver_' + self.model_filename + '.py')
 
     def set_template(self, name):
         here = os.path.dirname(os.path.abspath(__file__))
@@ -179,12 +179,9 @@ class RateML:
         from lxml import etree
         from urllib.request import urlopen
 
-        # Local XSD file location
-        # schema_file = urlopen("file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd")
-
         # Global XSD file location
         schema_file = urlopen(
-            "https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
+            "https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/scientific_library/tvb/rateML/rML_v0.xsd")
         xmlschema = etree.XMLSchema(etree.parse(schema_file))
         xmlschema.assertValid(etree.parse(self.xml_location))
         logger.info("True validation of {0} against {1}".format(self.xml_location, schema_file.geturl()))
@@ -293,6 +290,16 @@ class RateML:
                                 target, powf = self.powerswap(power)
                                 powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace(target, powf)
 
+    # setting the inital value for cuda models
+    # the entered range is splitted and a random value is generated within range
+    # if values are equal then that is the inital value
+    def init_statevariables(self, model):
+
+        modellist = model.component_types['derivatives'].dynamics.state_variables
+        for sv in modellist:
+            splitdim = list(sv.dimension.split(","))
+            sv_rnd = np.random.uniform(low=float(splitdim[0]), high=float(splitdim[1]))
+            model.component_types['derivatives'].dynamics.state_variables[sv.name].dimension = sv_rnd
 
     def load_model(self):
         "Load model from filename"
@@ -308,6 +315,9 @@ class RateML:
         noisepresent, nsigpresent = self.pp_noise(model)
         couplinglist = self.pp_cplist(model)
         svboundaries = self.pp_bound(model)
+
+        if self.language == 'cuda':
+            self.init_statevariables(model)
 
         return model, svboundaries, couplinglist, noisepresent, nsigpresent
 
