@@ -12,9 +12,10 @@ class ImportExportEncryptionHandler:
     ENCRYPTED_DATA_SUFFIX = '_encrypted'
     ENCRYPTED_PASSWORD_NAME = 'encrypted_password.pem'
     DECRYPTED_DATA_SUFFIX = '_decrypted'
+    PUBLIC_KEY_NAME = 'public_key.pem'
+    PRIVATE_KEY_NAME = 'private_key.pem'
 
-    @staticmethod
-    def generate_public_private_key_pair(key_path):
+    def generate_public_private_key_pair(self, key_path):
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=2048,
@@ -31,7 +32,7 @@ class ImportExportEncryptionHandler:
             format=serialization.PublicFormat.PKCS1,
         )
 
-        public_key_path = os.path.join(key_path, 'public_key.pem')
+        public_key_path = os.path.join(key_path, self.PUBLIC_KEY_NAME)
         with open(public_key_path, 'wb') as f:
             f.write(pem)
 
@@ -42,7 +43,7 @@ class ImportExportEncryptionHandler:
             encryption_algorithm=serialization.NoEncryption()
         )
 
-        private_key_path = os.path.join(key_path, 'private_key.pem')
+        private_key_path = os.path.join(key_path, self.PRIVATE_KEY_NAME)
         with open(private_key_path, 'wb') as f:
             f.write(pem)
 
@@ -137,3 +138,15 @@ class ImportExportEncryptionHandler:
             pyAesCrypt.decryptFile(path, decrypted_download_path, decrypted_password,
                                    TvbProfile.current.hpc.CRYPT_BUFFER_SIZE)
         return decrypted_paths
+
+    def extract_encrypted_password_from_list(self, file_list):
+        password = None
+        password_idx = None
+
+        for idx, file in enumerate(file_list):
+            if self.ENCRYPTED_PASSWORD_NAME in file:
+                password = file
+                password_idx = idx
+
+        del file_list[password_idx]
+        return password

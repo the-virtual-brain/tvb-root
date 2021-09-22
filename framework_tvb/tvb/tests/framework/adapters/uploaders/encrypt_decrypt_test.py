@@ -74,7 +74,8 @@ class TestEncryptionDecryption(TransactionalTestCase):
             encryption_algorithm=serialization.NoEncryption()
         )
 
-        private_key_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, 'private_key.pem')
+        private_key_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
+                                        ImportExportEncryptionHandler.PRIVATE_KEY_NAME)
         with open(private_key_path, 'wb') as f:
             f.write(pem)
 
@@ -104,7 +105,8 @@ class TestEncryptionDecryption(TransactionalTestCase):
         # Prepare model for decrypting
         connectivity_model.uploaded = encrypted_file_path
         connectivity_model.encrypted_aes_key = path_to_encrypted_password
-        TvbProfile.current.UPLOAD_KEY_PATH = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, 'private_key.pem')
+        TvbProfile.current.UPLOAD_KEY_PATH = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
+                                                          ImportExportEncryptionHandler.PRIVATE_KEY_NAME)
 
         # Decrypting
         decrypted_download_path = storage_interface.decrypt_content(connectivity_model.encrypted_aes_key,

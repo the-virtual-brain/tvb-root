@@ -371,9 +371,8 @@ class StorageInterface:
 
     # Methods related to ImportExportEncryptionHandler start here
 
-    @staticmethod
-    def generate_public_private_key_pair(key_path):
-        ImportExportEncryptionHandler.generate_public_private_key_pair(key_path)
+    def generate_public_private_key_pair(self, key_path):
+        self.import_export_encryption_handler.generate_public_private_key_pair(key_path)
 
     def add_encrypted_suffix(self, name):
         return self.import_export_encryption_handler.add_encrypted_suffix(name)
@@ -403,6 +402,9 @@ class StorageInterface:
     def decrypt_content(self, encrypted_aes_key_path, upload_paths, private_key_path):
         return self.import_export_encryption_handler.decrypt_content(encrypted_aes_key_path, upload_paths,
                                                                      private_key_path)
+
+    def extract_encrypted_password_from_list(self, file_list):
+        return self.import_export_encryption_handler.extract_encrypted_password_from_list(file_list)
 
     # Exporting related methods start here
 
