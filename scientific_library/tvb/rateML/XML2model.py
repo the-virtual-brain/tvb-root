@@ -186,14 +186,6 @@ class RateML:
         xmlschema.assertValid(etree.parse(self.xml_location))
         logger.info("True validation of {0} against {1}".format(self.xml_location, schema_file.geturl()))
 
-    def powerswap(self, power):
-        target = power.group(1)
-        powersplit = target.split('^')
-        powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
-        target = '{' + target + '}'
-
-        return target, powf
-
     def pp_bound(self, model):
 
         # check if boundaries for state variables are present. contruct is not necessary in pymodels
@@ -239,56 +231,38 @@ class RateML:
 
         return noisepresent, nsigpresent
 
-    def pp_pow(self, model):
+    def powerswap_cuda(self, power):
+        target = power.group(0)
+        powersplit = target.split('^')
+        powf = 'powf(' + powersplit[0].replace('{','') + ', ' + powersplit[1].replace('}','') + ')'
+
+        return target, powf
+
+    def powerswap_python(self, power):
+        target = power.group(0)
+        powersplit = target.split('^')
+        powpy = powersplit[0].replace('{','') + '**' + powersplit[1].replace('}','')
+
+        return target, powpy
+
+    def swap_language_specific_terms(self, model_str):
 
         # check for power symbol and parse to python (**) or c power (powf(x, y))
-        # there are 5 locations where they can occur: Derivedvariable.value, ConditionalDerivedVariable.Case.condition
-        # Derivedparameter.value, Time_Derivaties.value and Exposure.dimension
-        # Todo make more generic, XML tag processing might be the key
 
-        for cptype in model.component_types:
-            powlst = model.component_types[cptype.name]
-            # list of locations with mathmatical expressions with attribute 'value'
-            power_parse_exprs_value = [powlst.derived_parameters, powlst.dynamics.derived_variables,
-                                       powlst.dynamics.time_derivatives]
-            for pwr_parse_object in power_parse_exprs_value:
-                for pwr_obj in pwr_parse_object:
-                    if '^' in  pwr_obj.value:
-                        if self.language=='python':
-                            if hasattr(pwr_obj, 'name'):
-                                pwr_parse_object[pwr_obj.name].value = pwr_obj.value\
-                                    .replace('{', '').replace('^', ' ** ').replace('}', '')
-                            if hasattr(pwr_obj, 'variable'):
-                                pwr_parse_object[pwr_obj.variable].value = pwr_obj.value\
-                                    .replace('{', '').replace('^', ' ** ').replace('}', '')
-                        if self.language=='cuda':
-                            for power in re.finditer('\{(.*?)\}',  pwr_obj.value):
-                                target, powf = self.powerswap(power)
-                                if hasattr(pwr_obj, 'name'):
-                                    pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace(target, powf)
-                                if hasattr(pwr_obj, 'variable'):
-                                    pwr_parse_object[pwr_obj.variable].value = pwr_obj.value.replace(target, powf)
+        model_str = re.sub(r"\bpi\b", 'PI', model_str)
+        model_str = re.sub(r"\binf\b", 'INF', model_str)
 
-            for pwr_obj in powlst.exposures:
-                if '^' in pwr_obj.dimension:
-                    if self.language=='python':
-                        powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension\
-                            .replace('{', '').replace('^', ' ** ').replace('}', '')
-                    if self.language=='cuda':
-                        for power in re.finditer('\{(.*?)\}', pwr_obj.dimension):
-                            target, powf = self.powerswap(power)
-                            powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension.replace(target, powf)
+        if self.language == 'cuda':
+            for power in re.finditer(r"\{(.*?)(\^)(.*?)\}", model_str):
+                target, powf = self.powerswap_cuda(power)
+                model_str = re.sub(re.escape(target), powf, model_str)
 
-            for cdv in powlst.dynamics.conditional_derived_variables:
-                for casenr, case in enumerate(cdv.cases):
-                    if '^' in case.value:
-                        if self.language == 'python':
-                            powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value\
-                                .replace('{', '').replace('^', ' ** ').replace('}', '')
-                        if self.language == 'cuda':
-                            for power in re.finditer('\{(.*?)\}', case.value):
-                                target, powf = self.powerswap(power)
-                                powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace(target, powf)
+        if self.language == 'python':
+            for power in re.finditer(r"\{(.*?)\^(.*?)\}", model_str):
+                target, powpy = self.powerswap_python(power)
+                model_str = re.sub(re.escape(target), powpy, model_str)
+
+        return model_str
 
     # setting the inital value for cuda models
     # the entered range is splitted and a random value is generated within range
@@ -311,7 +285,6 @@ class RateML:
         self.XSD_validate_XML()
 
         # Do some preprocessing on the template to easify rendering
-        self.pp_pow(model)
         noisepresent, nsigpresent = self.pp_noise(model)
         couplinglist = self.pp_cplist(model)
         svboundaries = self.pp_bound(model)
@@ -332,6 +305,8 @@ class RateML:
         derivative_list = model.component_types['derivatives']
 
         model_str = self.render_model(derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent)
+
+        model_str = self.swap_language_specific_terms(model_str)
 
         # render driver only in case of cuda
         if self.language == 'cuda':
