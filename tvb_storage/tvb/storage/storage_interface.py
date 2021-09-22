@@ -34,14 +34,13 @@ All calls to methods from this module must be done through this class.
 
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+
 import os
 import shutil
 import uuid
 from cgi import FieldStorage
 from datetime import datetime
-import pyAesCrypt
 from cherrypy._cpreqbody import Part
-from cryptography.hazmat.primitives.asymmetric import padding
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
