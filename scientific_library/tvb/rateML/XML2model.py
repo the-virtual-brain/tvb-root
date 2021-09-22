@@ -234,8 +234,9 @@ class RateML:
     # check for power symbol and parse to python (**) or c power (powf(x, y))
     def swap_language_specific_terms(self, model_str):
 
-        model_str = re.sub(r"\bpi\b", 'PI', model_str)
-        model_str = re.sub(r"\binf\b", 'INF', model_str)
+        if self.language == 'cuda':
+            model_str = re.sub(r"\bpi\b", 'PI', model_str)
+            model_str = re.sub(r"\binf\b", 'INF', model_str)
 
         for power in re.finditer(r"\{(.*?)(\^)(.*?)\}", model_str):
             target = power.group(0)

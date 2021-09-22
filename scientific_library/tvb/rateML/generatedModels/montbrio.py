@@ -5,7 +5,7 @@ from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 class MontbrioT(ModelNumbaDfun):
-
+        
     tau = NArray(
         label=":math:`tau`",
         default=numpy.array([1.0]),
@@ -64,14 +64,14 @@ class MontbrioT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"r": numpy.array([0.0]), 
-				 "V": numpy.array([0.0])},
+        default={"r": numpy.array([0.0, -2.0]), 
+				 "V": numpy.array([-2.0, 1.5])},
         doc="""state variables"""
     )
 
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
-        default={"r": numpy.array([0.0, np.inf]),
+        default={"r": numpy.array([0.0, inf]), 
 				 },
     )
     variables_of_interest = List(
@@ -79,6 +79,7 @@ class MontbrioT(ModelNumbaDfun):
         label="Variables or quantities available to Monitors",
         choices=('r', 'V', ),
         default=('r', 'V', ),
+
         doc="Variables to monitor"
     )
 
@@ -106,6 +107,6 @@ def _numba_dfun_MontbrioT(vw, coupling, tau, I, Delta, J, eta, Gamma, cr, cv, lo
     V = vw[1]
 
 
-    dx[0] = 1/tau * (Delta / (PI * tau) + 2 * V * r)
-    dx[1] = 1/tau * (V ** 2 - PI ** 2 * tau ** 2 * r ** 2 + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1)
+    dx[0] = 1/tau * (Delta / (pi * tau) + 2 * V * r)
+    dx[1] = 1/tau * (V**2 - pi**2 * tau**2 * r**2 + eta + J * tau * r + I + cr * c_pop0 + cv * c_pop1)
     
