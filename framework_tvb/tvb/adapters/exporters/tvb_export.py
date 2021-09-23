@@ -33,7 +33,6 @@
 """
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.neocom import h5
 from tvb.storage.storage_interface import StorageInterface
@@ -62,17 +61,11 @@ class TVBExporter(ABCExporter):
         download_file_name = self._get_export_file_name(data)
 
         if self.is_data_a_group(data):
-            all_datatypes = self._get_all_data_types_arr(data)
-
-            if all_datatypes is None or len(all_datatypes) == 0:
-                raise ExportException("Could not export a data type group with no data")
+            _, op_file_dict = self.prepare_datatypes_for_export(data)
 
             # Create ZIP archive
-            zip_file = self.storage_interface.export_datatypes_structure(all_datatypes, data, download_file_name,
-                                                                         project.name)
-
+            zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name)
             return download_file_name, zip_file, True
-
         else:
             data_path = h5.path_for_stored_index(data)
             data_file = self.storage_interface.export_datatypes([data_path], data, None)

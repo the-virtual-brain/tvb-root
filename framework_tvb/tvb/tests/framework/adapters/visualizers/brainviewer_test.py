@@ -84,7 +84,7 @@ class TestBrainViewer(TransactionalTestCase):
         Check that all required keys are present in output from BrainViewer launch.
         """
         time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
-                                                             self.test_user, self.test_project)
+                                                             test_user=self.test_user, test_project=self.test_project)
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
@@ -101,7 +101,7 @@ class TestBrainViewer(TransactionalTestCase):
         Brainviewer should know required memory so expect positive number and not -1.
         """
         time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
-                                                             self.test_user, self.test_project)
+                                                             test_user=self.test_user, test_project=self.test_project)
         viewer = BrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
@@ -113,7 +113,7 @@ class TestBrainViewer(TransactionalTestCase):
         Tests successful launch of a BrainEEG and that all required keys are present in returned template dictionary
         """
         time_series_index = time_series_region_index_factory(self.connectivity, self.region_mapping,
-                                                             self.test_user, self.test_project)
+                                                             test_user=self.test_user, test_project=self.test_project)
         viewer = DualBrainViewer()
         viewer.current_project_id = self.test_project.id
         view_model = viewer.get_view_model_class()()
