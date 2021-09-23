@@ -42,7 +42,6 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.basic.profile import TvbProfile
-from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.exporters.exporters_test import TestExporters
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -56,7 +55,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
                                                      ('projectionMatrix', 'projection_meg_276_surface_16k.npy'),
                                                      ('h5', 'TimeSeriesRegion.h5')])
     def test_encrypt_decrypt(self, dir_name, file_name):
-        storage_interface = StorageInterface()
+        import_export_encryption_handler = StorageInterface.get_import_export_encryption_handler()
 
         # Generate a private key and public key
         private_key = rsa.generate_private_key(
@@ -75,7 +74,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
         )
 
         private_key_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                        ImportExportEncryptionHandler.PRIVATE_KEY_NAME)
+                                        import_export_encryption_handler.PRIVATE_KEY_NAME)
         with open(private_key_path, 'wb') as f:
             f.write(pem)
 
@@ -89,34 +88,34 @@ class TestEncryptionDecryption(TransactionalTestCase):
         password = StorageInterface.generate_random_password(pass_size)
 
         # Encrypt files using an AES symmetric key
-        encrypted_file_path = storage_interface.get_path_to_encrypt(path_to_file)
+        encrypted_file_path = import_export_encryption_handler.get_path_to_encrypt(path_to_file)
         buffer_size = TvbProfile.current.hpc.CRYPT_BUFFER_SIZE
         pyAesCrypt.encryptFile(path_to_file, encrypted_file_path, password, buffer_size)
 
         # Asynchronously encrypt the password used at the previous step for the symmetric encryption
         password = str.encode(password)
-        encrypted_password = storage_interface.encrypt_password(public_key, password)
+        encrypted_password = import_export_encryption_handler.encrypt_password(public_key, password)
 
         # Save encrypted password
-        storage_interface.save_encrypted_password(encrypted_password, TvbProfile.current.TVB_TEMP_FOLDER)
+        import_export_encryption_handler.save_encrypted_password(encrypted_password, TvbProfile.current.TVB_TEMP_FOLDER)
         path_to_encrypted_password = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                                  ImportExportEncryptionHandler.ENCRYPTED_PASSWORD_NAME)
+                                                  import_export_encryption_handler.ENCRYPTED_PASSWORD_NAME)
 
         # Prepare model for decrypting
         connectivity_model.uploaded = encrypted_file_path
         connectivity_model.encrypted_aes_key = path_to_encrypted_password
         TvbProfile.current.UPLOAD_KEY_PATH = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                                          ImportExportEncryptionHandler.PRIVATE_KEY_NAME)
+                                                          import_export_encryption_handler.PRIVATE_KEY_NAME)
 
         # Decrypting
-        decrypted_download_path = storage_interface.decrypt_content(connectivity_model.encrypted_aes_key,
-                                                                    [connectivity_model.uploaded],
-                                                                    TvbProfile.current.UPLOAD_KEY_PATH)[0]
+        decrypted_download_path = import_export_encryption_handler.decrypt_content(
+            connectivity_model.encrypted_aes_key, [connectivity_model.uploaded], TvbProfile.current.UPLOAD_KEY_PATH)[0]
         connectivity_model.uploaded = decrypted_download_path
 
         storage_interface = StorageInterface()
-        decrypted_file_path = connectivity_model.uploaded.replace(ImportExportEncryptionHandler.ENCRYPTED_DATA_SUFFIX,
-                                                                  ImportExportEncryptionHandler.DECRYPTED_DATA_SUFFIX)
+        decrypted_file_path = connectivity_model.uploaded.replace(
+            import_export_encryption_handler.ENCRYPTED_DATA_SUFFIX,
+            import_export_encryption_handler.DECRYPTED_DATA_SUFFIX)
 
         TestExporters.compare_files(path_to_file, decrypted_file_path)
 

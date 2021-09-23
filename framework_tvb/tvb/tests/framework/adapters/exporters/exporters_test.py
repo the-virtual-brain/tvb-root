@@ -44,7 +44,6 @@ from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
-from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.tests.framework.core.factory import TestFactory
@@ -119,21 +118,22 @@ class TestExporters(TransactionalTestCase):
         """
         datatype = dummy_datatype_index_factory()
         storage_interface = StorageInterface()
-        storage_interface.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
+        import_export_encryption_handler = StorageInterface.get_import_export_encryption_handler()
+        import_export_encryption_handler.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
 
-        _, file_path, _ = self.export_manager.export_data(datatype, self.TVB_EXPORTER, self.test_project,
-                                                          os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                                                       ImportExportEncryptionHandler.PUBLIC_KEY_NAME))
+        _, file_path, _ = self.export_manager.export_data(
+            datatype, self.TVB_EXPORTER, self.test_project, os.path.join(
+                TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
 
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
         result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
-        encrypted_password_path = storage_interface.extract_encrypted_password_from_list(result)
+        encrypted_password_path = import_export_encryption_handler.extract_encrypted_password_from_list(result)
 
-        decrypted_file_path = storage_interface.decrypt_content(
+        decrypted_file_path = import_export_encryption_handler.decrypt_content(
             encrypted_password_path, result, os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                                          ImportExportEncryptionHandler.PRIVATE_KEY_NAME))[0]
+                                                          import_export_encryption_handler.PRIVATE_KEY_NAME))[0]
 
         original_path = h5.path_for_stored_index(datatype)
         self.compare_files(original_path, decrypted_file_path)
@@ -165,22 +165,22 @@ class TestExporters(TransactionalTestCase):
         region_mapping_index = region_mapping_index_factory(conn_gid=conn.gid, surface_gid=surface.gid.hex)
 
         storage_interface = StorageInterface()
-        storage_interface.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
+        import_export_encryption_handler = StorageInterface.get_import_export_encryption_handler()
+        import_export_encryption_handler.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
 
-        _, file_path, _ = self.export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER,
-                                                          self.test_project,
-                                                          os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                                                       ImportExportEncryptionHandler.PUBLIC_KEY_NAME))
+        _, file_path, _ = self.export_manager.export_data(
+            region_mapping_index, self.TVB_LINKED_EXPORTER, self.test_project,
+            os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
 
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
 
         result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
-        encrypted_password = storage_interface.extract_encrypted_password_from_list(result)
+        encrypted_password = import_export_encryption_handler.extract_encrypted_password_from_list(result)
 
-        decrypted_file_paths = storage_interface.decrypt_content(
+        decrypted_file_paths = import_export_encryption_handler.decrypt_content(
             encrypted_password, result, os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                                     ImportExportEncryptionHandler.PRIVATE_KEY_NAME))
+                                                     import_export_encryption_handler.PRIVATE_KEY_NAME))
 
         original_conn_path = h5.path_for_stored_index(conn)
         decrypted_conn_path, idx = (decrypted_file_paths[0], 0) if 'Connectivity' in decrypted_file_paths[0] else \
@@ -321,11 +321,12 @@ class TestExporters(TransactionalTestCase):
         ts_datatype_group, dm_datatype_group = datatype_group_factory(project=self.test_project, store_vm=True)
 
         storage_interface = StorageInterface()
-        storage_interface.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
+        import_export_encryption_handler = StorageInterface.get_import_export_encryption_handler()
+        import_export_encryption_handler.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
 
         file_name, file_path, _ = self.export_manager.export_data(
             dm_datatype_group, self.TVB_EXPORTER, self.test_project, os.path.join(
-                TvbProfile.current.TVB_TEMP_FOLDER, ImportExportEncryptionHandler.PUBLIC_KEY_NAME))
+                TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
 
         assert file_name is not None, "Export process should return a file name"
         assert file_path is not None, "Export process should return path to export file"
@@ -335,10 +336,10 @@ class TestExporters(TransactionalTestCase):
         assert zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file"
 
         result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
-        encrypted_password = storage_interface.extract_encrypted_password_from_list(result)
-        decrypted_file_paths = storage_interface.decrypt_content(
+        encrypted_password = import_export_encryption_handler.extract_encrypted_password_from_list(result)
+        decrypted_file_paths = import_export_encryption_handler.decrypt_content(
             encrypted_password, result, os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
-                                                     ImportExportEncryptionHandler.PRIVATE_KEY_NAME))
+                                                     import_export_encryption_handler.PRIVATE_KEY_NAME))
         # Here we only test if the length of decrypted_file_paths is the one expected
         assert len(decrypted_file_paths) == len(result), "Number of decrypted data type group files is not correct!"
 

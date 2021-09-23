@@ -37,13 +37,16 @@ This represents the Controller part (from MVC).
 """
 import cherrypy
 import formencode
-import tvb.core.entities.model.model_operation as model
 from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
+
+import tvb.core.entities.model.model_operation as model
 from tvb.adapters.creators.tumor_dataset_creator import TumorDatasetCreator
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
@@ -349,7 +352,8 @@ class ProjectController(BaseController):
                                   "isGroup": is_group,
                                   "isRelevant": is_relevant,
                                   "nodeType": 'datatype',
-                                  "backPageIdentifier": back_page}
+                                  "backPageIdentifier": back_page,
+                                  "canEncrypt": TvbProfile.current.web.ENCRYPT_STORAGE}
         template_specification.update(linkable_projects_dict)
 
         overlay_class = "can-browse editor-node node-type-" + str(current_type).lower()
@@ -685,7 +689,7 @@ class ProjectController(BaseController):
         # Do real export
         export_mng = ExportManager()
         file_name, file_path, delete_file = export_mng.export_data(entity, export_module, current_prj,
-                                                                   data['exporter_key'])
+                                                                   data.get('exporter_key'))
         if delete_file:
             # We force parent folder deletion because export process generated it.
             self.mark_file_for_delete(file_path, True)

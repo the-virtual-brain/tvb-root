@@ -67,16 +67,19 @@
         {% if exporters %}
             <form id='my_form' data-ajax="false" method="post" enctype="multipart/form-data">
                 <fieldset>
-                    <dt class="field-mandatory">
-                        <label for="data_file">Public Key</label>
-                    </dt>
-                    <dd>
-                        <p class="field-data">
-                            <input type="file" accept=".pem" id="exporter_key" name="exporter_key" class="inputField"
-                                   tabindex="1"></p>
-                        <p class="errorMessage">
-                        </p>
-                    </dd>
+
+                    {% if True %}
+                        <dt class="field-mandatory">
+                            <label for="data_file">Public Key</label>
+                        </dt>
+                        <dd>
+                            <p class="field-data">
+                                <input type="file" accept=".pem" id="exporter_key" name="exporter_key" class="inputField"
+                                    tabindex="1"></p>
+                            <p class="errorMessage">
+                            </p>
+                        </dd>
+                    {% endif %}
 
                     {% for exporter in exporters %}
                         <li>

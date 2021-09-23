@@ -36,11 +36,8 @@ All calls to methods from this module must be done through this class.
 """
 
 import os
-import shutil
 import uuid
-from cgi import FieldStorage
 from datetime import datetime
-from cherrypy._cpreqbody import Part
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -185,7 +182,7 @@ class StorageInterface:
         self.tvb_zip.close()
         return file
 
-    # Return a HDF5 storage methods to call the methods from there #
+    # Return a HDF5StorageManager object to call the methods from there #
 
     @staticmethod
     def get_storage_manager(file_full_path):
@@ -200,8 +197,6 @@ class StorageInterface:
     def write_metadata_in_xml(self, entity, final_path):
         self.xml_writer = XMLWriter(entity)
         return self.xml_writer.write_metadata_in_xml(final_path)
-
-    # Encryption Handler methods start here #
 
     def cleanup_encryption_handler(self, dir_gid):
         self.encryption_handler = EncryptionHandler(dir_gid)
@@ -346,64 +341,11 @@ class StorageInterface:
         self.sync_folders(to_project_path)
         self.set_project_inactive(to_project)
 
-    # Method for preparing encryption before export
-
-    def prepare_encryption(self, user_public_key, project_name):
-        temp_folder = self.get_temp_folder(project_name)
-        public_key_file_name = "public_key_" + uuid.uuid4().hex + ".pem"
-        public_key_file_path = os.path.join(temp_folder, public_key_file_name)
-
-        if isinstance(user_public_key, FieldStorage) or isinstance(user_public_key, Part):
-            if not user_public_key.file:
-                return None, None
-
-            with open(public_key_file_path, 'wb') as file_obj:
-                self.copy_file(user_public_key.file, file_obj)
-        else:
-            shutil.copy2(user_public_key, public_key_file_path)
-
-        # Generate a random password for the files
-        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
-        password = EncryptionHandler.generate_random_password(pass_size)
-
-        return public_key_file_path, password
-
-    # Methods related to ImportExportEncryptionHandler start here
-
-    def generate_public_private_key_pair(self, key_path):
-        self.import_export_encryption_handler.generate_public_private_key_pair(key_path)
-
-    def add_encrypted_suffix(self, name):
-        return self.import_export_encryption_handler.add_encrypted_suffix(name)
-
-    def get_path_to_encrypt(self, input_path):
-        return self.import_export_encryption_handler.get_path_to_encrypt(input_path)
+    # Return an ImportExportEncryptionHandler object  to call the methods from there #
 
     @staticmethod
-    def load_public_key(public_key_path):
-        return ImportExportEncryptionHandler.load_public_key(public_key_path)
-
-    @staticmethod
-    def encrypt_password(public_key, symmetric_key):
-        return ImportExportEncryptionHandler.encrypt_password(public_key, symmetric_key)
-
-    def save_encrypted_password(self, encrypted_password, path_to_encrypted_password):
-        return self.import_export_encryption_handler.save_encrypted_password(encrypted_password,
-                                                                             path_to_encrypted_password)
-
-    def encrypt_and_save_password(self, public_key_path, password, path_to_encrypted_password):
-        self.import_export_encryption_handler.encrypt_and_save_password(public_key_path, password,
-                                                                        path_to_encrypted_password)
-
-    def __encrypt_data_at_export(self, file_path, password):
-        return self.import_export_encryption_handler.encrypt_data_at_export(file_path, password)
-
-    def decrypt_content(self, encrypted_aes_key_path, upload_paths, private_key_path):
-        return self.import_export_encryption_handler.decrypt_content(encrypted_aes_key_path, upload_paths,
-                                                                     private_key_path)
-
-    def extract_encrypted_password_from_list(self, file_list):
-        return self.import_export_encryption_handler.extract_encrypted_password_from_list(file_list)
+    def get_import_export_encryption_handler():
+        return ImportExportEncryptionHandler()
 
     # Exporting related methods start here
 
@@ -498,7 +440,7 @@ class StorageInterface:
                 self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
 
                 if password is not None:
-                    self.__encrypt_data_at_export(file_destination, password)
+                    self.import_export_encryption_handler.encrypt_data_at_export(file_destination, password)
                     os.remove(file_destination)
 
         return export_folder
@@ -520,7 +462,7 @@ class StorageInterface:
 
         if password is not None:
             download_file_name = download_file_name.replace('.h5', '.zip')
-            self.encrypt_and_save_password(public_key_path, password, export_folder)
+            self.import_export_encryption_handler.encrypt_and_save_password(public_key_path, password, export_folder)
 
         export_data_zip_path = os.path.join(os.path.dirname(export_folder), download_file_name)
         self.write_zip_folder(export_data_zip_path, export_folder)
@@ -556,12 +498,12 @@ class StorageInterface:
                     self.get_storage_manager(dest_path).remove_metadata('parent_burst', check_existence=True)
 
                     if password is not None:
-                        self.__encrypt_data_at_export(dest_path, password)
+                        self.import_export_encryption_handler.encrypt_data_at_export(dest_path, password)
                         os.remove(dest_path)
 
         dest_path = os.path.join(os.path.dirname(export_folder), download_file_name)
         if password is not None:
-            self.encrypt_and_save_password(public_key_path, password, export_folder)
+            self.import_export_encryption_handler.encrypt_and_save_password(public_key_path, password, export_folder)
         self.write_zip_folder(dest_path, export_folder)
 
         return dest_path

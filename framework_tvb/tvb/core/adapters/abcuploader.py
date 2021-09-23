@@ -93,14 +93,13 @@ class ABCUploader(ABCAdapter, metaclass=ABCMeta):
             trait_upload_field_names = list(self.get_form_class().get_upload_information().keys())
 
             if TvbProfile.current.UPLOAD_KEY_PATH is None or not os.path.exists(TvbProfile.current.UPLOAD_KEY_PATH):
-                raise LaunchException("We can not process Encrypted files at this moment, "
-                                      "due to missing PK for decryption! Please contact the administrator!")
+                raise LaunchException("TVB can not process Encrypted files at this moment!"
+                                      " Please contact the administrator!")
 
             for upload_field_name in trait_upload_field_names:
                 upload_path = getattr(view_model, upload_field_name)
-                decrypted_download_path = self.storage_interface.decrypt_content(view_model.encrypted_aes_key,
-                                                                                 [upload_path],
-                                                                                 TvbProfile.current.UPLOAD_KEY_PATH)[0]
+                decrypted_download_path = self.storage_interface.get_import_export_encryption_handler().decrypt_content(
+                    view_model.encrypted_aes_key, [upload_path], TvbProfile.current.UPLOAD_KEY_PATH)[0]
                 setattr(view_model, upload_field_name, decrypted_download_path)
 
         return ABCAdapter._prelaunch(self, operation, view_model, available_disk_space)
