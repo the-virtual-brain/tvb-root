@@ -61,11 +61,11 @@ jobs:
           cd tvb_data
           python3 setup.py develop
 
-      - name: run library tests
-        run: cd scientific_library && python -m pytest -n4
+      # - name: run library tests
+      #   run: cd scientific_library && python -m pytest -n4
 
-      - name: run library benchmarks
-        run: cd scientific_library && python -m pytest --benchmark-only
+      # - name: run library benchmarks
+      #   run: cd scientific_library && python -m pytest --benchmark-only
 
       - name: run framework tests
         run: cd framework_tvb && python -m pytest

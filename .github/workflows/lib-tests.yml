@@ -1,7 +1,8 @@
-name: pytests
+name: lib-tests
 on: [push]
 jobs:
-  pytest:
+  lib-tests:
+    
     runs-on: self-hosted
 
     steps:
