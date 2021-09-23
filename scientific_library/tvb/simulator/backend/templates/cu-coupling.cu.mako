@@ -1,3 +1,4 @@
+/*
 # -*- coding: utf-8 -*-
 #
 #
@@ -27,6 +28,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+*/
 
 __device__ void coupling(
 	unsigned int id,
