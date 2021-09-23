@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -148,7 +148,7 @@ class ICAAdapter(ABCAdapter):
         """
         # --------------------- Prepare result entities ---------------------##
         ica_index = IndependentComponentsIndex()
-        result_path = h5.path_for(self.storage_path, IndependentComponentsH5, ica_index.gid)
+        result_path = self.path_for(IndependentComponentsH5, ica_index.gid)
         ica_h5 = IndependentComponentsH5(path=result_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##

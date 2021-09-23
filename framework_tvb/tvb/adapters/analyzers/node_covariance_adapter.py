@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -133,7 +133,7 @@ class NodeCovarianceAdapter(ABCAdapter):
         """
         # -------------------- Prepare result entities ---------------------##
         covariance_index = CovarianceIndex()
-        covariance_h5_path = h5.path_for(self.storage_path, CovarianceH5, covariance_index.gid)
+        covariance_h5_path = self.path_for(CovarianceH5, covariance_index.gid)
         covariance_h5 = CovarianceH5(covariance_h5_path)
 
         # ------------ NOTE: Assumes 4D, Simulator timeSeries -------------##

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -123,20 +123,12 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
     def get_output(self):
         return []
 
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (ViewModel, (int,int)) -> dict
-        """
-        Should be implemented by all visualizers that can be used by portlets.
-        """
-        raise LaunchException("%s used as Portlet but doesn't implement 'generate_preview'" % self.__class__)
-
     def _prelaunch(self, operation, view_model, available_disk_space=0):
         """
         Shortcut in case of visualization calls.
         """
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
-        self.storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
         return self.launch(view_model=view_model), 0
 
     def get_required_disk_size(self, view_model):

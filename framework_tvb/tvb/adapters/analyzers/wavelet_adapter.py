@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -218,7 +218,7 @@ class ContinuousWaveletTransformAdapter(ABCAdapter):
 
         # --------------------- Prepare result entities ----------------------##
         wavelet_index = WaveletCoefficientsIndex()
-        dest_path = h5.path_for(self.storage_path, WaveletCoefficientsH5, wavelet_index.gid)
+        dest_path = self.path_for(WaveletCoefficientsH5, wavelet_index.gid)
         wavelet_h5 = WaveletCoefficientsH5(path=dest_path)
 
         # ------------- NOTE: Assumes 4D, Simulator timeSeries. --------------##

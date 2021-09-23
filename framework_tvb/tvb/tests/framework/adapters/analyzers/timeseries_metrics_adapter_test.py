@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,10 +35,10 @@
 import os
 import tvb_data
 import json
+
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.config import ALGORITHMS
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.adapters.analyzers.metrics_group_timeseries import TimeseriesMetricsAdapter, TimeseriesMetricsAdapterModel
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -58,14 +58,8 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_66.zip')
         TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path)
 
-    def transactional_teardown_method(self):
-        """
-        Remove project folders and clean up database.
-        """
-        FilesHelper().remove_project_structure(self.test_project.name)
-
     def test_adapter_launch(self, connectivity_factory, region_mapping_factory,
-                            time_series_region_index_factory):
+                            time_series_region_index_factory, operation_from_existing_op_factory):
         """
         Test that the adapters launches and successfully generates a datatype measure entry.
         """
@@ -74,12 +68,14 @@ class TestTimeSeriesMetricsAdapter(TransactionalTestCase):
         region_mapping = region_mapping_factory()
         time_series_index = time_series_region_index_factory(connectivity=connectivity, region_mapping=region_mapping)
 
+        metric_op, _ = operation_from_existing_op_factory(time_series_index.fk_from_operation)
+
         ts_metric_adapter = TimeseriesMetricsAdapter()
-        ts_metric_adapter.storage_path = FilesHelper().get_project_folder(self.test_project, "42")
         view_model = TimeseriesMetricsAdapterModel()
         view_model.time_series = time_series_index.gid
 
         ts_metric_adapter.configure(view_model)
+        ts_metric_adapter.extract_operation_data(metric_op)
         resulted_metric = ts_metric_adapter.launch(view_model)
 
         assert isinstance(resulted_metric, DatatypeMeasureIndex), "Result should be a datatype measure."

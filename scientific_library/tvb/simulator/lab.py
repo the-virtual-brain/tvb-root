@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -61,4 +61,5 @@ from tvb.datatypes import (connectivity, surfaces, equations, patterns, region_m
 from tvb.simulator.plot.tools import (hinton_diagram, plot_3d_centres, plot_connectivity,
                                       plot_fast_kde, plot_local_connectivity, plot_matrix,
                                       plot_pattern, plot_tri_matrix)
+from tvb.simulator.plot.utils import generate_region_demo_data
 

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,6 +33,7 @@
 """
 
 import json
+
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
 
@@ -54,7 +55,7 @@ class TestExplorationController(BaseTransactionalControllerTest):
         """
         Test that Discrete PSE is getting launched and correct fields are prepared.
         """
-        self.dt_group = datatype_group_factory()
+        self.dt_group, _ = datatype_group_factory()
         self.controller = ParameterExplorationController()
         result = self.controller.draw_discrete_exploration(self.dt_group.gid, 'burst', 'v', 'v')
         assert result['available_metrics'] == ["v"]
@@ -75,7 +76,7 @@ class TestExplorationController(BaseTransactionalControllerTest):
         """
         Test that isocline PSE gets launched.
         """
-        self.dt_group = datatype_group_factory()
+        self.dt_group, _ = datatype_group_factory()
         self.controller = ParameterExplorationController()
         result = self.controller.draw_isocline_exploration(self.dt_group.gid)
         assert isinstance(result['canvasName'], str)

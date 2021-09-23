@@ -1,10 +1,38 @@
-"""Generate migration script
-
-Revision ID: ec2859bb9114
-Revises: 
-Create Date: 2021-01-29 11:08:56.258864
+# -*- coding: utf-8 -*-
+#
+#
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
+# Web-UI helpful to run brain-simulations. To use it, you also need do download
+# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# documentation-folder for more details. See also http://www.thevirtualbrain.org
+#
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
+#
+# This program is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License along with this
+# program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#   CITATION:
+# When using The Virtual Brain for scientific publications, please cite it as follows:
+#
+#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
+#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
+#       The Virtual Brain: a simulator of primate brain network dynamics.
+#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
+#
+#
 
 """
+Revision ID: ec2859bb9114
+Create Date: 2021-01-29
+"""
+
 from alembic import op
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy import Column, String, Integer
@@ -178,8 +206,7 @@ def upgrade():
         op.alter_column('BurstConfiguration', '_simulator_configuration', new_column_name='simulator_gid')
         conn.execute(burst_config_table.delete().where(burst_config_table.c.status == 'error'))
 
-        # Take only values with odd id numbers, otherwise each range value will be processed twice
-        ranges = conn.execute("""SELECT OG.id, OG.range1, OG.range2 from "OPERATION_GROUPS" OG """).fetchall()[::2]
+        ranges = conn.execute("""SELECT OG.id, OG.range1, OG.range2 from "OPERATION_GROUPS" OG """).fetchall()
 
         ranges_1 = []
         ranges_2 = []
@@ -212,7 +239,6 @@ def upgrade():
             range1 = str(new_ranges_1[i]).replace('\'', '')
             range2 = str(new_ranges_2[i]).replace('\'', '')
             _update_range_parameters(burst_config_table, operation_groups_table, range1, range2, ranges[i][0])
-            _update_range_parameters(burst_config_table, operation_groups_table, range1, range2, ranges[i][0] + 1)
 
         conn.execute('COMMIT')
     except Exception as excep:

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -237,10 +237,8 @@ class Simulator(HasTraits):
             self.number_of_nodes = self.connectivity.number_of_regions
             self.log.info('Region simulation with %d ROI nodes', self.number_of_nodes)
         else:
-            self._regmap, nc, nsc = self.backend.full_region_map(self.surface, self.connectivity)
-            self.number_of_nodes = nc + nsc
-            self.log.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
-                          nc, nsc, self.number_of_nodes)
+            self.number_of_nodes = len(self.surface.region_mapping)
+            self.log.info('Surface simulation with %d total nodes (vertices + non-cortical)', self.number_of_nodes)
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
@@ -291,7 +289,7 @@ class Simulator(HasTraits):
         """Compute delayed node coupling values."""
         coupling = self.coupling(step, self.history)
         if self.surface is not None:
-            coupling = coupling[:, self._regmap]
+            coupling = coupling[:, self.surface.region_mapping]
         return coupling
 
     def _prepare_stimulus(self):
@@ -315,7 +313,7 @@ class Simulator(HasTraits):
     def _loop_update_history(self, step, state):
         """Update history."""
         if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
-            state = self.backend.surface_state_to_rois(self._regmap, self.connectivity.number_of_regions, state)
+            state = self.backend.surface_state_to_rois(self.surface.region_mapping, self.connectivity.number_of_regions, state)
         self.history.update(step, state)
 
     def _loop_monitor_output(self, step, state, node_coupling):
@@ -419,7 +417,7 @@ class Simulator(HasTraits):
         elif nsig.shape == (self.number_of_nodes,):
             nsig = nsig.reshape((1, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nvar, self.number_of_nodes):
-            nsig = nsig[self.model.state_variable_mask].reshape((self.n_intvar, self.number_of_nodes, 1))
+            nsig = nsig[self.model.state_variable_mask].reshape((self.model.nintvar, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nintvar, self.number_of_nodes):
             nsig = nsig.reshape((self.model.nintvar, self.number_of_nodes, 1))
         else:
@@ -443,8 +441,7 @@ class Simulator(HasTraits):
         if self.stimulus is not None:
             if self.surface:
                 # NOTE the region mapping of the stimuli should also include the subcortical areas
-                self.stimulus.configure_space(region_mapping=numpy.r_[
-                    self.surface.region_mapping, self.connectivity.unmapped_indices(self.surface.region_mapping)])
+                self.stimulus.configure_space(region_mapping=self.surface.region_mapping)
             else:
                 self.stimulus.configure_space()
 

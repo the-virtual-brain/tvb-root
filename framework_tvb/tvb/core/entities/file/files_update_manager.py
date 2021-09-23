@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,21 +36,19 @@ Manager for the file storage version updates.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-
-import os
 from datetime import datetime
+import os
 
 import tvb.core.entities.file.file_update_scripts as file_update_scripts
 from tvb.basic.config import stored
 from tvb.basic.profile import TvbProfile
 from tvb.core.code_versions.base_classes import UpdateManager
-from tvb.core.entities.file.exceptions import MissingDataFileException, FileStructureException, FileMigrationException
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.core.entities.model.db_update_scripts.helper import delete_old_burst_table_after_migration
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.utils import string2date
+from tvb.storage.h5.file.exceptions import FileStructureException, MissingDataFileException, FileMigrationException
+from tvb.storage.storage_interface import StorageInterface
 
 FILE_STORAGE_VALID = 'valid'
 FILE_STORAGE_INVALID = 'invalid'
@@ -71,7 +69,7 @@ class FilesUpdateManager(UpdateManager):
         super(FilesUpdateManager, self).__init__(file_update_scripts,
                                                  TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
                                                  TvbProfile.current.version.DATA_VERSION)
-        self.files_helper = FilesHelper()
+        self.storage_interface = StorageInterface()
 
     def get_file_data_version(self, file_path):
         """
@@ -80,8 +78,8 @@ class FilesUpdateManager(UpdateManager):
         :param file_path: the path on disk to the file for which you need the TVB data version
         :returns: a number representing the data version for which the input file was written
         """
-        manager = self._get_manager(file_path)
-        return manager.get_file_data_version()
+        data_version = TvbProfile.current.version.DATA_VERSION_ATTRIBUTE
+        return self.storage_interface.get_storage_manager(file_path).get_file_data_version(data_version)
 
     def is_file_up_to_date(self, file_path):
         """
@@ -118,18 +116,18 @@ class FilesUpdateManager(UpdateManager):
         for script_name in self.get_update_scripts(file_version):
             temp_file_path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
                                           os.path.basename(input_file_name) + '.tmp')
-            self.files_helper.copy_file(input_file_name, temp_file_path)
+            self.storage_interface.copy_file(input_file_name, temp_file_path)
             try:
                 self.run_update_script(script_name, input_file=input_file_name, burst_match_dict=burst_match_dict)
             except FileMigrationException as excep:
-                self.files_helper.copy_file(temp_file_path, input_file_name)
+                self.storage_interface.copy_file(temp_file_path, input_file_name)
                 os.remove(temp_file_path)
                 self.log.error(excep)
                 return False
 
         if datatype:
             # Compute and update the disk_size attribute of the DataType in DB:
-            datatype.disk_size = self.files_helper.compute_size_on_disk(input_file_name)
+            datatype.disk_size = self.storage_interface.compute_size_on_disk(input_file_name)
             dao.store_entity(datatype)
 
         return True
@@ -166,14 +164,6 @@ class FilesUpdateManager(UpdateManager):
             update message.
         """
         if TvbProfile.current.version.DATA_CHECKED_TO_VERSION < TvbProfile.current.version.DATA_VERSION:
-            total_count = dao.count_all_datatypes()
-
-            self.log.info("Starting to run H5 file updates from version %d to %d, for %d datatypes" % (
-                TvbProfile.current.version.DATA_CHECKED_TO_VERSION,
-                TvbProfile.current.version.DATA_VERSION, total_count))
-
-            # Keep track of how many DataTypes were properly updated and how many
-            # were marked as invalid due to missing files or invalid manager.
             start_time = datetime.now()
 
             file_paths = self.get_all_h5_paths()
@@ -195,7 +185,8 @@ class FilesUpdateManager(UpdateManager):
                                               "Thank you for your patience!" % total_count)
                 self.log.info(FilesUpdateManager.MESSAGE)
             else:
-                # Something went wrong
+                # Keep track of how many DataTypes were properly updated and how many
+                # were marked as invalid due to missing files or invalid manager.
                 config_file_update_dict[stored.KEY_FILE_STORAGE_UPDATE_STATUS] = FILE_STORAGE_INVALID
                 FilesUpdateManager.STATUS = False
                 FilesUpdateManager.MESSAGE = ("Out of %s stored DataTypes, %s were upgraded successfully, but %s had "
@@ -206,26 +197,21 @@ class FilesUpdateManager(UpdateManager):
             TvbProfile.current.manager.add_entries_to_config_file(config_file_update_dict)
 
     @staticmethod
-    def _get_manager(file_path):
-        """
-        Returns a storage manager.
-        """
-        folder, file_name = os.path.split(file_path)
-        return HDF5StorageManager(folder, file_name)
-
-    @staticmethod
     def get_all_h5_paths():
         """
         This method returns a list of all h5 files and it is used in the migration from version 4 to 5.
         The h5 files inside a certain project are retrieved in numerical order (1, 2, 3 etc.).
         """
         h5_files = []
-        projects_folder = FilesHelper().get_projects_folder()
+        projects_folder = StorageInterface().get_projects_folder()
 
         for project_path in os.listdir(projects_folder):
             # Getting operation folders inside the current project
             project_full_path = os.path.join(projects_folder, project_path)
-            project_operations = os.listdir(project_full_path)
+            try:
+                project_operations = os.listdir(project_full_path)
+            except NotADirectoryError:
+                continue
             project_operations_base_names = [os.path.basename(op) for op in project_operations]
 
             for op_folder in project_operations_base_names:
@@ -233,11 +219,14 @@ class FilesUpdateManager(UpdateManager):
                     int(op_folder)
                     op_folder_path = os.path.join(project_full_path, op_folder)
                     for file in os.listdir(op_folder_path):
-                        if file.endswith(FilesHelper.TVB_STORAGE_FILE_EXTENSION):
+                        if StorageInterface().ends_with_tvb_storage_file_extension(file):
                             h5_file = os.path.join(op_folder_path, file)
-                            if FilesUpdateManager._is_empty_file(h5_file):
+                            try:
+                                if FilesUpdateManager._is_empty_file(h5_file):
+                                    continue
+                                h5_files.append(h5_file)
+                            except FileStructureException:
                                 continue
-                            h5_files.append(h5_file)
                 except ValueError:
                     pass
 

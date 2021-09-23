@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,8 +32,6 @@
 .. moduleauthor:: Calin Pavel
 """
 
-import os
-import shutil
 import tempfile
 import zipfile
 
@@ -43,7 +41,6 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
@@ -137,13 +134,12 @@ class RegionMappingImporter(ABCUploader):
         if zipfile.is_zipfile(view_model.mapping_file):
             tmp_folder = tempfile.mkdtemp(prefix='region_mapping_zip_', dir=TvbProfile.current.TVB_TEMP_FOLDER)
             try:
-                files = FilesHelper().unpack_zip(view_model.mapping_file, tmp_folder)
+                files = self.storage_interface.unpack_zip(view_model.mapping_file, tmp_folder)
                 if len(files) > 1:
                     raise LaunchException("Please upload a ZIP file containing only one file.")
                 array_data = self.read_list_data(files[0], dtype=numpy.int32)
             finally:
-                if os.path.exists(tmp_folder):
-                    shutil.rmtree(tmp_folder)
+                self.storage_interface.remove_folder(tmp_folder, True)
         else:
             array_data = self.read_list_data(view_model.mapping_file, dtype=numpy.int32)
 
@@ -175,4 +171,4 @@ class RegionMappingImporter(ABCUploader):
         connectivity_ht = h5.load_from_index(conn_idx)
 
         region_mapping = RegionMapping(surface=surface_ht, connectivity=connectivity_ht, array_data=array_data)
-        return h5.store_complete(region_mapping, self.storage_path)
+        return self.store_complete(region_mapping)

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -136,6 +136,21 @@ class MontbrioPazoRoxin(Model):
                 "r": numpy.array([0.0, numpy.inf])
             },
     )
+
+    # TODO should match cvars below..
+    coupling_terms = Final(
+        label="Coupling terms",
+        # how to unpack coupling array
+        default=["Coupling_Term_r", "Coupling_Term_V"]
+    )
+
+    state_variable_dfuns = Final(
+        label="Drift functions",
+        default={
+            "r": "1/tau * ( Delta / (pi * tau) + 2 * V * r)",
+            "V": "1/tau * ( V*V - pi*pi*tau*tau*r*r + eta + J * tau * r + I + cr * Coupling_Term_r + cv * Coupling_Term_V)"
+        }
+    )
     
     variables_of_interest = List(
             of=str,
@@ -145,6 +160,10 @@ class MontbrioPazoRoxin(Model):
             doc="The quantities of interest for monitoring for the Infinite QIF 2D oscillator.",
     )
 
+    parameter_names = List(
+        of=str,
+        label="List of parameters for this model",
+        default='tau Delta eta J I cr cv'.split())
 
     state_variables = ('r', 'V')
     _nvar = 2
@@ -835,7 +854,7 @@ class DumontGutkin(Model):
     )
 
     Gamma = NArray(
-        label=":math:`\Gamma`",
+        label=":math:`\\Gamma`",
         default=numpy.array([5.0]),
         domain=Range(lo=0., hi=10., step=0.1),
         doc="""Ratio of excitatory VS inhibitory global couplings G_ie/G_ee .""",

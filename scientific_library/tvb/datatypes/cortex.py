@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
-# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -65,14 +65,17 @@ class Cortex(HasTraits):
         # file_storage=core.FILE_STORAGE_NONE,
         doc="""A factor that rescales local connectivity strengths.""")
 
+    _regmap = None
+
     @property
     def region_mapping(self):
-        """
-        Define shortcut for retrieving RegionMapping map array.
-        """
-        if self.region_mapping_data is None:
-            return None
-        return self.region_mapping_data.array_data
+        "Generate a full region mapping vector."
+        if self._regmap is not None:
+            return self._regmap
+        rm = self.region_mapping_data.array_data
+        unmapped = self.region_mapping_data.connectivity.unmapped_indices(rm)
+        self._regmap = numpy.r_[rm, unmapped]
+        return self._regmap
 
     @property
     def surface(self):
@@ -186,17 +189,7 @@ class Cortex(HasTraits):
             local_coupling = sp_cs * self.local_connectivity.matrix
         else:
             raise RuntimeError("cortex.coupling_strength must be size 1 or number_of_vertices")
-        if local_coupling.shape[1] < number_of_nodes:
-            # must match unmapped indices handling in preconfigure
-            # TODO refactor the region mapping convention here
-            from scipy.sparse import csr_matrix, vstack, hstack
-            nn = number_of_nodes
-            npad = nn - local_coupling.shape[0]
-            rpad = csr_matrix((local_coupling.shape[0], npad))
-            bpad = csr_matrix((npad, nn))
-            local_coupling = vstack([hstack([local_coupling, rpad]), bpad])
         return local_coupling
-
 
     @classmethod
     def from_file(cls, source_file='cortex_16384.zip', region_mapping_file=os.path.join("regionMapping_16k_76.txt"),

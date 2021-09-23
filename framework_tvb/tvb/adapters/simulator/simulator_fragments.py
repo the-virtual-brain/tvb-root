@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,11 +33,13 @@ import formencode
 from formencode import validators
 
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
+from tvb.adapters.simulator.form_with_ranges import FormWithRanges
 from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
 from tvb.adapters.simulator.model_forms import get_ui_name_to_model
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
 from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict, get_integrator_name_list
-from tvb.basic.neotraits.api import Attr, Range, List, Float
+from tvb.basic.neotraits.api import Attr, Range, List, Float, Int
+from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModel
 from tvb.core.entities.filters.chain import FilterChain
@@ -76,7 +78,7 @@ class SimulatorSurfaceFragment(ABCAdapterForm):
                                                                    project_id)
 
 
-class SimulatorRMFragment(ABCAdapterForm):
+class SimulatorRMFragment(FormWithRanges):
     def __init__(self, surface_index=None, connectivity_gid=None):
         super(SimulatorRMFragment, self).__init__()
         rm_conditions = None
@@ -262,6 +264,9 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
         self._add_pse_field(pse_param1)
         if pse_param2:
             self._add_pse_field(pse_param2, self.KEY_PARAM2)
+
+        self.max_pse_number = HiddenField(Int(default=TvbProfile.current.MAX_RANGE_NUMBER, required=False),
+                                          "max_range_number")
 
     def _add_pse_field(self, param, param_key=KEY_PARAM1):
         # type: (RangeParameter, str) -> None

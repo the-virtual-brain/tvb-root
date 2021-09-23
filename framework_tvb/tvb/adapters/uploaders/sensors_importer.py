@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -142,4 +142,4 @@ class SensorsImporter(ABCUploader):
         sensors_inst.configure()
         self.logger.debug("Sensors instance ready to be stored")
 
-        return h5.store_complete(sensors_inst, self.storage_path)
+        return self.store_complete(sensors_inst)

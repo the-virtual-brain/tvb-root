@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,21 +33,21 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import os
-import json
 import copy
-import shutil
+import json
+import os
 from pathlib import Path
-
-import pytest
-import cherrypy
 from time import sleep
-from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
-from tvb.basic.profile import TvbProfile
+
+import cherrypy
+import pytest
 from tvb.basic.config import stored
+from tvb.basic.profile import TvbProfile
 from tvb.core.utils import get_matlab_executable, hash_password
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
+from tvb.storage.storage_interface import StorageInterface
+from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
 
 
 class TestSettingsController(BaseTransactionalControllerTest):
@@ -92,9 +92,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         """ Cleans the testing environment """
         self.cleanup()
         self.clean_database()
-
-        if os.path.exists(self.VALID_SETTINGS['TVB_STORAGE']):
-            shutil.rmtree(self.VALID_SETTINGS['TVB_STORAGE'])
+        StorageInterface.remove_folder(self.VALID_SETTINGS['TVB_STORAGE'], True)
 
     def test_with_invalid_admin_settings(self):
 
@@ -161,7 +159,7 @@ class TestSettingsController(BaseTransactionalControllerTest):
         # wait until 'restart' is done
         sleep(1)
         assert self.was_reset
-        assert len(TvbProfile.current.manager.stored_settings) == 20
+        assert len(TvbProfile.current.manager.stored_settings) == 21
 
         assert submit_data['TVB_STORAGE'] == TvbProfile.current.TVB_STORAGE
         assert submit_data['USR_DISK_SPACE'] * 2 ** 10 == TvbProfile.current.MAX_DISK_SPACE

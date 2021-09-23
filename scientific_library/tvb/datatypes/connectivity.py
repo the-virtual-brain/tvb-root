@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,12 +36,12 @@ The Connectivity datatype.
 
 """
 
+from copy import copy
+
 import numpy
 import scipy.stats
-from copy import copy
-from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 from tvb.basic.neotraits.api import Attr, NArray, List, HasTraits, Int, narray_summary_info
-
+from tvb.basic.readers import ZipReader, H5Reader, try_get_absolute_path
 
 
 class Connectivity(HasTraits):
@@ -125,6 +125,11 @@ class Connectivity(HasTraits):
     # In case of edited Connectivity, this are the nodes left in interest area,
     # the rest were part of a lesion, so they were removed.
     saved_selection = List(of=int)
+
+    @property
+    def subcortical_indices(self):
+        subcortical_indices = numpy.flatnonzero(self.cortical == 0)
+        return subcortical_indices
 
     @property
     def saved_selection_labels(self):
@@ -316,6 +321,11 @@ class Connectivity(HasTraits):
         """
         # Express delays in integration steps
         self.idelays = numpy.rint(self.delays / dt).astype(numpy.int32)
+        self.has_delays = self.idelays.any()
+        self._horizon = self.idelays.max() + 1
+        nn = self.idelays.shape[0]
+        self.inodes = numpy.tile(numpy.r_[:nn], (nn, 1))
+        self.delay_indices = self.idelays * nn + self.inodes
 
     def compute_tract_lengths(self):
         """
@@ -729,4 +739,4 @@ class Connectivity(HasTraits):
     @property
     def horizon(self):
         "The horizon is the maximum number of steps required in memory for simulation."
-        return self.idelays.max() + 1
+        return self._horizon

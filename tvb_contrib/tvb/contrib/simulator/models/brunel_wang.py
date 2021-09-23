@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,11 +36,11 @@ Based on the Brunel and Wang model.
 
 """
 
-import inspect
 import numpy
-import tvb.contrib.scripts.datatypes.lookup_tables as lookup_tables
+
 import tvb.simulator.models as models
 from tvb.basic.neotraits.api import NArray, Range, List, Final
+from tvb.contrib.scripts.datatypes.lookup_tables import PsiTable, NerfTable
 from tvb.simulator.common import get_logger
 from tvb.basic.profile import TvbProfile
 
@@ -344,92 +344,20 @@ class BrunelWang(models.Model):
             history, it is also provides the default range of phase-plane plots.
             The corresponding state-variable units for this model are kHz.""")
 
-    # psi_table = lookup_tables.PsiTable(required=True,
-    #                                    default=lookup_tables.PsiTable(),
-    #                                    label="Psi Table",
-    #                                    doc="""Psi Table (description).""")
-    #
-    # nerf_table = lookup_tables.NerfTable(required=True,
-    #                                      default=lookup_tables.NerfTable(),
-    #                                      label="Nerf Table",
-    #                                      doc="""Nerf Table (description).""")
-
-    def __init__(self, **kwargs):
-        """
-        May need to put kwargs back if we can't get them from trait...
-
-        """
-
-        LOG.info("%s: initing..." % str(self))
-
-        super(BrunelWang, self).__init__(**kwargs)
-
-        # self._state_variables = ["E", "I"]
-        self._nvar = 2
-
-        self.cvar = numpy.array([0, 1], dtype=numpy.int32)
-
-        # Derived parameters
-        self.crho1_e = None
-        self.crho1_i = None
-        self.crho2_e = None
-        self.crho2_i = None
-        self.csigma_e = None
-        self.csigma_i = None
-        self.tauNMDA = None
-
-        self.Text_e = None
-        self.Text_i = None
-        self.TAMPA_e = None
-        self.TAMPA_i = None
-        self.T_ei = None
-        self.T_ii = None
-
-        self.pool_fractions = None
-
-        # NOTE: We could speed up this model simplifying some the phi and psi functions
-        # above. However it was decided that functions should be the same as
-        # in the original paper.
-
-        # integral
-        # self.vector_nerf = lambda z: numpy.exp(z**2) * (scipy.special.erf(z) + 1)
-        # integral = lambda x : numpy.float64(quad(self.vector_nerf, float('-Inf') , x, full_output = True)[0])
-        # self.vint = numpy.vectorize(integral)
-
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["E", "I"]
+    _nvar = 2
+    cvar = numpy.array([0, 1], dtype=numpy.int32)
 
     def configure(self):
         """  """
         super(BrunelWang, self).configure()
         self.update_derived_parameters()
 
-        self.psi_table = lookup_tables.PsiTable(load_default=True, use_storage=False)
-        self.nerf_table = lookup_tables.NerfTable(load_default=True, use_storage=False)
-        # configure look up tables
+        self.psi_table = PsiTable.from_file()
+        self.nerf_table = NerfTable.from_file()
+
         self.psi_table.configure()
         self.nerf_table.configure()
-
-        # self.optimize()
-
-    def optimize(self, fnname='optdfun'):
-        """
-        Optimization routine when we have too many self.parameters
-        within dfun
-        """
-
-        decl = "def %s(state_variables, coupling, local_coupling=0.0):\n" % (fnname,)
-
-        NoneType = type(None)
-        for k in dir(self):
-            attr = getattr(self, k)
-            if not k[0] == '_' and type(attr) in (numpy.ndarray, NoneType):
-                decl += '        %s = %r\n' % (k, attr)
-
-        decl += '\n'.join(inspect.getsource(self.dfun).split('\n')[1:]).replace("self.", "")
-        dikt = {'vint': self.vint, 'array': numpy.array, 'int32': numpy.int32, 'numpy': numpy}
-        # print decl
-        exec(decl, dikt)
-        self.dfun = dikt[fnname]
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         """
@@ -587,27 +515,3 @@ class BrunelWang(models.Model):
                         (self.gm_e * self.taum_e) ** 2
         self.csigma_i = (self.gAMPAext_i ** 2 * self.Cext * self.tauAMPA ** 2) / \
                         (self.gm_i * self.taum_i) ** 2
-
-
-if __name__ == "__main__":
-    # Do some stuff that tests or makes use of this module...
-    LOG.info("Testing %s module..." % __file__)
-
-    # Check that the docstring examples, if there are any, are accurate.
-    import doctest
-    doctest.testmod()
-
-    # Initialise Models in their default state:
-    BW = BrunelWang()
-
-    LOG.info("Model initialised in its default state without error...")
-
-    LOG.info("Testing phase plane interactive ... ")
-
-    # Check the Phase Plane
-    from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
-    import tvb.simulator.integrators
-
-    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2 ** -5)
-    ppi_fig = PhasePlaneInteractive(model=BW, integrator=INTEGRATOR)
-    ppi_fig.show()

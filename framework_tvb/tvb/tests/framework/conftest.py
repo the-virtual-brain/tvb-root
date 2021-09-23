@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,6 +39,7 @@ from datetime import datetime
 from time import sleep
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.adapters.analyzers.bct_clustering_adapters import TransitivityBinaryDirected
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
@@ -50,11 +51,11 @@ from tvb.basic.profile import TvbProfile
 from tvb.basic.neotraits.api import Range
 from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
+from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure, DatatypeMeasureH5
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.services.burst_service import BurstService
 from tvb.core.services.simulator_service import SimulatorService
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.file.simulator.view_model import TemporalAverageViewModel, CortexViewModel
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import get_filtered_datatypes, try_get_last_datatype
@@ -72,7 +73,8 @@ from tvb.datatypes.sensors import Sensors, SensorsEEG
 from tvb.datatypes.surfaces import Surface, CorticalSurface, CORTICAL
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 from tvb.simulator.simulator import Simulator
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1
+from tvb.storage.storage_interface import StorageInterface
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1
 from tvb.tests.framework.core.base_testcase import Base, OperationGroup, DataTypeGroup
 from tvb.tests.framework.datatypes.dummy_datatype import DummyDataType
 from tvb.tests.framework.datatypes.dummy_datatype_h5 import DummyDataTypeH5
@@ -187,7 +189,6 @@ def operation_factory(user_factory, project_factory, connectivity_factory):
                 view_model = adapter.get_view_model_class()()
                 view_model.connectivity = connectivity_factory(4).gid if conn_gid is None else conn_gid
                 vm_gid = view_model.gid
-
         else:
             algorithm = dao.get_algorithm_by_module(TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS)
             if store_vm:
@@ -201,11 +202,23 @@ def operation_factory(user_factory, project_factory, connectivity_factory):
         dao.store_entity(operation)
 
         if store_vm:
-            op_folder = FilesHelper().get_project_folder(test_project, str(operation.id))
+            op_folder = StorageInterface().get_project_folder(test_project.name, str(operation.id))
             h5.store_view_model(view_model, op_folder)
 
         # Make sure lazy attributes are correctly loaded.
         return dao.get_operation_by_id(operation.id)
+
+    return build
+
+
+@pytest.fixture()
+def operation_from_existing_op_factory(operation_factory):
+    def build(existing_op_id):
+        op = dao.get_operation_by_id(existing_op_id)
+        project = dao.get_project_by_id(op.fk_launched_in)
+        user = dao.get_user_by_id(op.fk_launched_by)
+
+        return operation_factory(test_user=user, test_project=project), project.id
 
     return build
 
@@ -239,8 +252,7 @@ def connectivity_index_factory(connectivity_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
-        conn_db = h5.store_complete(conn, storage_path)
+        conn_db = h5.store_complete(conn, op.id, op.project.name)
         conn_db.fk_from_operation = op.id
         return dao.store_entity(conn_db)
 
@@ -286,13 +298,13 @@ def surface_factory():
 
 @pytest.fixture()
 def surface_index_factory(surface_factory, operation_factory):
-    def build(data=4, op=None, cortical=False):
-        surface = surface_factory(data, cortical=cortical)
+    def build(data=4, op=None, cortical=False, surface=None):
+        if not surface:
+            surface = surface_factory(data, cortical=cortical)
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
-        surface_db = h5.store_complete(surface, storage_path)
+        surface_db = h5.store_complete(surface, op.id, op.project.name)
         surface_db.fk_from_operation = op.id
         return dao.store_entity(surface_db), surface
 
@@ -317,25 +329,25 @@ def region_mapping_factory(surface_factory, connectivity_factory):
 
 @pytest.fixture()
 def region_mapping_index_factory(region_mapping_factory, operation_factory):
-    def build(op=None, conn_gid=None, surface_gid=None):
-        region_mapping = region_mapping_factory()
+    def build(op=None, conn_gid=None, surface_gid=None, region_mapping=None):
+        if not region_mapping:
+            region_mapping = region_mapping_factory()
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
         if not surface_gid:
-            surface_db = h5.store_complete(region_mapping.surface, storage_path)
+            surface_db = h5.store_complete(region_mapping.surface, op.id, op.project.name)
             surface_db.fk_from_operation = op.id
             dao.store_entity(surface_db)
         else:
             region_mapping.surface.gid = uuid.UUID(surface_gid)
         if not conn_gid:
-            conn_db = h5.store_complete(region_mapping.connectivity, storage_path)
+            conn_db = h5.store_complete(region_mapping.connectivity, op.id, op.project.name)
             conn_db.fk_from_operation = op.id
             dao.store_entity(conn_db)
         else:
             region_mapping.connectivity.gid = uuid.UUID(conn_gid)
-        rm_db = h5.store_complete(region_mapping, storage_path)
+        rm_db = h5.store_complete(region_mapping, op.id, op.project.name)
         rm_db.fk_from_operation = op.id
         return dao.store_entity(rm_db)
 
@@ -375,8 +387,7 @@ def sensors_index_factory(sensors_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
-        sensors_db = h5.store_complete(sensors, storage_path)
+        sensors_db = h5.store_complete(sensors, op.id, op.project.name)
         sensors_db.fk_from_operation = op.id
         return dao.store_entity(sensors_db), sensors
 
@@ -414,8 +425,9 @@ def time_series_factory():
 
 @pytest.fixture()
 def time_series_index_factory(time_series_factory, operation_factory):
-    def build(data=None, op=None):
-        ts = time_series_factory(data)
+    def build(ts=None, data=None, op=None):
+        if ts is None:
+            ts = time_series_factory(data)
 
         if op is None:
             op = operation_factory()
@@ -439,8 +451,8 @@ def time_series_index_factory(time_series_factory, operation_factory):
 
 
 @pytest.fixture()
-def time_series_region_index_factory(operation_factory):
-    def build(connectivity, region_mapping, test_user=None, test_project=None):
+def time_series_region_factory():
+    def build(connectivity, region_mapping):
         time = numpy.linspace(0, 1000, 4000)
         data = numpy.zeros((time.size, 1, 3, 1))
         data[:, 0, 0, 0] = numpy.sin(2 * numpy.pi * time / 1000.0 * 40)
@@ -450,8 +462,19 @@ def time_series_region_index_factory(operation_factory):
 
         ts = TimeSeriesRegion(time=time, data=data, sample_period=1.0 / 4000, connectivity=connectivity,
                               region_mapping=region_mapping)
+        return ts
 
-        op = operation_factory(test_user=test_user, test_project=test_project)
+    return build
+
+
+@pytest.fixture()
+def time_series_region_index_factory(operation_factory, time_series_region_factory):
+    def build(connectivity, region_mapping, ts=None, test_user=None, test_project=None, op=None):
+        if ts is None:
+            ts = time_series_region_factory(connectivity, region_mapping)
+
+        if not op:
+            op = operation_factory(test_user=test_user, test_project=test_project)
 
         ts_db = TimeSeriesRegionIndex()
         ts_db.fk_from_operation = op.id
@@ -518,13 +541,20 @@ def value_wrapper_factory():
 
 @pytest.fixture()
 def datatype_measure_factory():
-    def build(analyzed_entity, operation, datatype_group, metrics='{"v": 3}'):
+    def build(analyzed_entity_index, analyzed_entity, operation, datatype_group, metrics='{"v": 3}'):
         measure = DatatypeMeasureIndex()
         measure.metrics = metrics
-        measure.source = analyzed_entity
+        measure.source = analyzed_entity_index
         measure.fk_from_operation = operation.id
         measure.fk_datatype_group = datatype_group.id
         measure = dao.store_entity(measure)
+
+        dm = DatatypeMeasure(analyzed_datatype=analyzed_entity, metrics=json.loads(metrics))
+        dm_path = h5.path_for_stored_index(measure)
+
+        with DatatypeMeasureH5(dm_path) as dm_h5:
+            dm_h5.store(dm)
+            dm_h5.store_generic_attributes(GenericAttributes())
 
         return measure
 
@@ -532,9 +562,11 @@ def datatype_measure_factory():
 
 
 @pytest.fixture()
-def datatype_group_factory(connectivity_factory, time_series_index_factory, datatype_measure_factory,
-                           project_factory, user_factory, operation_factory):
-    def build(project=None, store_vm=False, status=STATUS_FINISHED):
+def datatype_group_factory(connectivity_factory, time_series_index_factory, time_series_factory,
+                           time_series_region_factory, datatype_measure_factory, project_factory, user_factory,
+                           operation_factory, time_series_region_index_factory, region_mapping_factory, surface_factory,
+                           connectivity_index_factory, region_mapping_index_factory, surface_index_factory):
+    def build(project=None, store_vm=False, use_time_series_region=False, status=STATUS_FINISHED):
         # there store the name and the (hi, lo, step) value of the range parameters
         range_1 = ["row1", [1, 2, 6]]
         range_2 = ["row2", [0.1, 0.3, 0.5]]
@@ -546,11 +578,24 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
         if project is None:
             project = project_factory(user)
 
+        connectivity = connectivity_factory(4)
+        if use_time_series_region:
+            operation = operation_factory(test_project=project)
+            connectivity_index_factory(op=operation, conn=connectivity)
+
+            operation2 = operation_factory(test_project=project)
+            surface = surface_factory()
+            surface_index_factory(op=operation2, surface=surface)
+
+            operation3 = operation_factory(test_project=project)
+            region_mapping = region_mapping_factory(surface=surface, connectivity=connectivity)
+            region_mapping_index_factory(op=operation3, conn_gid=connectivity.gid.hex, surface_gid=surface.gid.hex, region_mapping=region_mapping)
+
         algorithm = dao.get_algorithm_by_module(SIMULATOR_MODULE, SIMULATOR_CLASS)
         adapter = ABCAdapter.build_adapter(algorithm)
         if store_vm:
             view_model = adapter.get_view_model_class()()
-            view_model.connectivity = connectivity_factory(4).gid
+            view_model.connectivity = connectivity.gid
         else:
             view_model = None
 
@@ -585,7 +630,14 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                                range_values=json.dumps({range_1[0]: range_val1,
                                                         range_2[0]: range_val2}))
                 op = dao.store_entity(op)
-                ts_index = time_series_index_factory(op=op)
+                if use_time_series_region:
+                    ts = time_series_region_factory(connectivity=connectivity, region_mapping=region_mapping)
+                    ts_index = time_series_region_index_factory(ts=ts, connectivity=connectivity,
+                                                                region_mapping=region_mapping, test_user=user,
+                                                                test_project=project, op=op)
+                else:
+                    ts = time_series_factory()
+                    ts_index = time_series_index_factory(ts=ts, op=op)
                 ts_index.fk_datatype_group = datatype_group.id
                 dao.store_entity(ts_index)
 
@@ -594,18 +646,18 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                                   range_values=json.dumps({range_1[0]: range_val1,
                                                            range_2[0]: range_val2}))
                 op_ms = dao.store_entity(op_ms)
-                datatype_measure_factory(ts_index, op_ms, dt_group_ms)
+                datatype_measure_factory(ts_index, ts, op_ms, dt_group_ms)
 
                 if store_vm:
                     view_model = copy.deepcopy(view_model)
                     view_model.gid = view_model_gid
-                    op_path = FilesHelper().get_project_folder(project, str(op.id))
+                    op_path = StorageInterface().get_project_folder(project.name, str(op.id))
                     h5.store_view_model(view_model, op_path)
 
                     view_model_ms = copy.deepcopy(view_model_ms)
                     view_model_ms.gid = view_model_ms_gid
                     view_model_ms.time_series = ts_index.gid
-                    op_ms_path = FilesHelper().get_project_folder(project, str(op_ms.id))
+                    op_ms_path = StorageInterface().get_project_folder(project.name, str(op_ms.id))
                     h5.store_view_model(view_model_ms, op_ms_path)
 
                 if not datatype_group.fk_from_operation:
@@ -615,14 +667,14 @@ def datatype_group_factory(connectivity_factory, time_series_index_factory, data
                     datatype_group = dao.store_entity(datatype_group)
                     dt_group_ms = dao.store_entity(dt_group_ms)
 
-        return datatype_group
+        return datatype_group, dt_group_ms
 
     return build
 
 
 @pytest.fixture()
 def test_adapter_factory():
-    def build(adapter_class=TestAdapter1):
+    def build(adapter_class=DummyAdapter1):
 
         all_categories = dao.get_algorithm_categories()
         algo_category_id = all_categories[0].id
@@ -664,12 +716,11 @@ def local_connectivity_index_factory(surface_factory, operation_factory):
         if op is None:
             op = operation_factory()
 
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
-        surface_db = h5.store_complete(surface, storage_path)
+        surface_db = h5.store_complete(surface, op.id, op.project.name)
         surface_db.fk_from_operation = op.id
         dao.store_entity(surface_db)
 
-        lconn_db = h5.store_complete(lconn, storage_path)
+        lconn_db = h5.store_complete(lconn, op.id, op.project.name)
         lconn_db.fk_from_operation = op.id
         return dao.store_entity(lconn_db), lconn
 
@@ -696,7 +747,7 @@ def simulator_factory(connectivity_index_factory, operation_factory, region_mapp
             model.surface.surface_gid = rm_idx.fk_surface_gid
             model.surface.region_mapping_data = rm_idx.gid
             model.simulation_length = 10
-        storage_path = FilesHelper().get_project_folder(op.project, str(op.id))
+        storage_path = StorageInterface().get_project_folder(op.project.name, str(op.id))
         h5.store_view_model(model, storage_path)
 
         return storage_path, model.gid

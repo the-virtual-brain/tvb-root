@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,10 +33,16 @@ Root class for export functionality.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
+import os
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
+
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.project_service import ProjectService
 
 # List of DataTypes to be excluded from export due to not having a valid export mechanism implemented yet.
@@ -144,15 +150,42 @@ class ABCExporter(metaclass=ABCMeta):
         """
         return isinstance(data, DataTypeGroup)
 
+    def prepare_datatypes_for_export(self, data):
+        all_datatypes = self._get_all_data_types_arr(data)
+        first_datatype = all_datatypes[0]
+
+        # We are exporting a group of datatype measures so we need to find the group of time series
+        if hasattr(first_datatype, 'fk_source_gid'):
+            ts = h5.load_entity_by_gid(first_datatype.fk_source_gid)
+            dt_metric_group = dao.get_datatypegroup_by_op_group_id(ts.parent_operation.fk_operation_group)
+            datatype_measure_list = self._get_all_data_types_arr(dt_metric_group)
+            all_datatypes = datatype_measure_list + all_datatypes
+        else:
+            ts_group = dao.get_datatype_measure_group_from_ts_from_pse(first_datatype.gid, DatatypeMeasureIndex)
+            time_series_list = self._get_all_data_types_arr(ts_group)
+            all_datatypes = all_datatypes + time_series_list
+
+        if all_datatypes is None or len(all_datatypes) == 0:
+            raise ExportException("Could not export a data type group with no data!")
+
+        op_file_dict = dict()
+        for dt in all_datatypes:
+            h5_path = h5.path_for_stored_index(dt)
+            op_folder = os.path.dirname(h5_path)
+            op_file_dict[op_folder] = [h5_path]
+
+            op = dao.get_operation_by_id(dt.fk_from_operation)
+            vms = h5.gather_references_of_view_model(op.view_model_gid, os.path.dirname(h5_path), only_view_models=True)
+            op_file_dict[op_folder].extend(vms[0])
+
+        return all_datatypes, op_file_dict
+
     @abstractmethod
-    def export(self, data, export_folder, project):
+    def export(self, data, project):
         """
         Actual export method, to be implemented in each sub-class.
 
         :param data: data type to be exported
-
-        :param export_folder: folder where to write results of the export if needed.
-                              This is necessary in case new files are generated.
 
         :param project: project that contains data to be exported
 
@@ -164,16 +197,20 @@ class ABCExporter(metaclass=ABCMeta):
         """
         pass
 
-    def get_export_file_name(self, data):
-        """
-        This method computes the name used to save exported data on user computer
-        """
-        file_ext = self.get_export_file_extension(data)
+    @staticmethod
+    def get_export_file_name(data, file_extension):
         data_type_name = data.__class__.__name__
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
 
-        return "%s_%s.%s" % (date_str, data_type_name, file_ext)
+        return "%s_%s%s" % (date_str, data_type_name, file_extension)
+
+    def _get_export_file_name(self, data):
+        """
+        This method computes the name used to save exported data on user computer
+        """
+        file_ext = self.get_export_file_extension(data)
+        return self.get_export_file_name(data, file_ext)
 
     @abstractmethod
     def get_export_file_extension(self, data):

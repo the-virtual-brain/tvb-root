@@ -11,7 +11,14 @@ import pytest, os, itertools, numpy as np, re, sys
 from tvb.rateML import XML2model
 from tvb.rateML.XML2model import RateML
 from tvb.simulator.models.base import Model
-
+pycuda = pytest.importorskip("pycuda")
+try:
+	import pycuda.autoinit
+	PYCUDA_OK = True
+except ImportError:
+	PYCUDA_OK = False
+skip_cuda_if_not_avail = pytest.mark.skipif(
+	not PYCUDA_OK, reason='import pycuda.autoinit failed, CUDA not available')
 
 xmlModelTesting = "kuramoto.xml"
 framework_path, _ = os.path.split(XML2model.__file__)
@@ -92,6 +99,7 @@ class TestRateML():
 
 	# Cuda Section
 	#----------------
+	@skip_cuda_if_not_avail
 	def test_make_cuda_setup(self):
 
 		driver = setup_namespace('oscillator')
@@ -103,6 +111,7 @@ class TestRateML():
 
 		assert gridx * gridy * bx * by >= nwi
 
+	@skip_cuda_if_not_avail
 	def test_make_cuda_data(self):
 		data = {}
 		data["serie"] = np.zeros(2, 'f')
@@ -112,6 +121,7 @@ class TestRateML():
 
 		assert gpu_data["serie"].size == data["serie"].size
 
+	@skip_cuda_if_not_avail
 	def test_make_cuda_kernel(self):
 		driver = setup_namespace()
 		step_fn = driver.make_kernel(source_file=driver.args.filename, warp_size=32, args=driver.args,
@@ -171,6 +181,8 @@ class TestRateML():
 	@pytest.mark.slow
 	@pytest.mark.parametrize('model_name, language', itertools.product(models, languages))
 	def test_convert_model(self, model_name, language):
+		if language == 'cuda' and not PYCUDA_OK:
+			return
 		# reload(Driver_Execute)
 		model_str, driver_str = RateML(model_filename=model_name,language=language,XMLfolder=XMLModel_path,
 									   GENfolder=generatedModels_path).render()
@@ -179,11 +191,13 @@ class TestRateML():
 		if language == "cuda":
 			assert len(model_str) >0 and driver_str is not None and len(driver_str) > 0
 
+	@skip_cuda_if_not_avail
 	@pytest.mark.slow
 	@pytest.mark.parametrize('model_name', models)
 	def test_compile_cuda_models(self, model_name):
 		assert compile_cuda_model(location=generatedModels_path, model_name=model_name)
 
+	@skip_cuda_if_not_avail
 	@pytest.mark.slow
 	@pytest.mark.parametrize('model_name', models)
 	def test_contentcheck_cuda_models(self, model_name):
@@ -204,6 +218,7 @@ class TestRateML():
 
 	# Simulation Section
 	# ----------------
+	@skip_cuda_if_not_avail
 	@pytest.mark.slow
 	def test_simulation_cuda_model_osc(self):
 		# simulate with different properties to check if output shape is related
@@ -219,6 +234,7 @@ class TestRateML():
 		a, b, c, d = tavg_data.shape
 		assert (a, b, c, d) == (4, 2, 68, 8)
 
+	@skip_cuda_if_not_avail
 	@pytest.mark.slow
 	def test_simulation_cuda_model_kur(self):
 		# simulate with different properties to check if output shape is related
@@ -234,6 +250,7 @@ class TestRateML():
 		a, b, c, d = tavg_data.shape
 		assert (a, b, c, d) == (8, 1, 76, 12)
 
+	@skip_cuda_if_not_avail
 	@pytest.mark.slow
 	def test_simulation_cuda_model_epi(self):
 		# simulate with different properties to check if output shape is related

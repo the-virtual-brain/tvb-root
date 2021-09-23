@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -228,9 +228,9 @@ class NodeComplexCoherenceAdapter(ABCAdapter):
         self.log.debug("ComplexCoherenceSpectrum epoch_length is %s" % (str(ht_result.epoch_length)))
         self.log.debug("ComplexCoherenceSpectrum windowing_function is %s" % (str(ht_result.windowing_function)))
 
-        complex_coherence_index = h5.store_complete(ht_result, self.storage_path)
+        complex_coherence_index = self.store_complete(ht_result)
 
-        result_path = h5.path_for(self.storage_path, ComplexCoherenceSpectrumH5, complex_coherence_index.gid)
+        result_path = self.path_for(ComplexCoherenceSpectrumH5, complex_coherence_index.gid)
         ica_h5 = ComplexCoherenceSpectrumH5(path=result_path)
 
         self.fill_index_from_h5(complex_coherence_index, ica_h5)

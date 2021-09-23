@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,7 +36,7 @@ Here we define entities related to user and project.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 
-import datetime
+from datetime import datetime
 import uuid
 
 from sqlalchemy import Boolean, Integer, String, DateTime, Column, ForeignKey
@@ -192,7 +192,7 @@ class Project(Base, Exportable):
 
     def refresh_update_date(self):
         """Mark entity as being changed NOW. (last_update field)"""
-        self.last_updated = datetime.datetime.now()
+        self.last_updated = datetime.now()
 
     def __repr__(self):
         return "<Project('%s', '%s')>" % (self.name, self.fk_admin)
@@ -210,7 +210,7 @@ class Project(Base, Exportable):
         """
         self.name = dictionary['name']
         self.description = dictionary['description']
-        self.last_updated = datetime.datetime.now()
+        self.last_updated = datetime.now()
         self.gid = dictionary['gid']
         self.fk_admin = user_id
         self.version = int(dictionary['version'])

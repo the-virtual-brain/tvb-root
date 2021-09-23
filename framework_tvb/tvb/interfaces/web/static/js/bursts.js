@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,9 +29,6 @@
 
 var sessionStoredBurstID = "";
 
-//A list of selected portlets id. Used to correctly change/update the portlet checkboxes for each tab.
-var selectedPortlets;
-
 // Class mapping to the active burst entry
 var ACTIVE_BURST_CLASS = 'burst-active';
 // Class mapping to a workflow from a group launch
@@ -49,7 +46,7 @@ function clone(object_) {
  *************************************************************************************************************************/
 
 /*
- * When clicking on the New Burst Button reset to defaults for simulator interface and portlets.
+ * When clicking on the New Burst Button reset to defaults for simulator interface.
  */
 function resetToNewBurst() {
     doAjaxCall({
@@ -165,10 +162,10 @@ function renderAllSimulatorForms(url, stop_at_url = '', onFinishFunction = null)
 /*
  * Reload entire Burst-History column.
  */
-function loadBurstHistory() {
+function loadBurstHistory(initBurst = false) {
     doAjaxCall({
         type: "POST",
-        url: '/burst/load_burst_history',
+        url: '/burst/load_burst_history/' + (initBurst ? initBurst : ''),
         cache: false,
         async: false,
         success: function (r) {
@@ -247,7 +244,7 @@ function _updateBurstHistoryElapsedTime(result) {
 function scheduleNewUpdate(withFullUpdate, refreshCurrent) {
     if ($('#burst-history').length !== 0) {
         if (withFullUpdate) {
-            loadBurstHistory();
+            loadBurstHistory(true);
             changeBurstHistory(sessionStoredBurstID, false);
             if (refreshCurrent) {
                 loadBurstReadOnly(sessionStoredBurstID,  '/burst/set_connectivity');
@@ -423,10 +420,19 @@ function _displayPseSimulationMessage() {
     const THREASHOLD_WARNING = 500;
     const THREASHOLD_ERROR = 50000;
 
-    pse_param1_number = _computeRangeNumberForParamPrefix('pse_param1');
-    pse_param2_number = _computeRangeNumberForParamPrefix('pse_param2');
+    var maxRangeNumber = document.getElementById("max_range_number");
+    var maxRangeNumberInt = parseInt(maxRangeNumber.value);
+
+    let pse_param1_number = _computeRangeNumberForParamPrefix('pse_param1');
+    let pse_param2_number = _computeRangeNumberForParamPrefix('pse_param2');
 
     let nrOps = pse_param1_number * pse_param2_number;
+
+    if (nrOps > maxRangeNumberInt){
+        message = "Can't launch PSE! Maximum number of operations (" + maxRangeNumberInt + ") has been exceeded!";
+        displayMessage(message, "errorMessage");
+        throw message;
+    }
 
     // Only the first range been chosen
     if(nrOps == 0){
@@ -483,10 +489,11 @@ function setPseRangeParameters(){
 function initBurstConfiguration(currentBurstID, currentBurstName, selectedTab) {
     setPseRangeParameters();
 
-    loadBurstHistory();
+    loadBurstHistory(true);
     changeBurstHistory(currentBurstID, true);
     fill_burst_name(currentBurstName, currentBurstID !== "");
     toggleConfigSurfaceModelParamsButton();
+
 
     if ('-1' === selectedTab) {
         $("#tab-burst-tree").click();
@@ -532,26 +539,21 @@ function fill_burst_name(burstName, isReadOnly) {
     const inputBurstName = $("#input-burst-name-id");
     const titleSimulation = $("#title-simulation");
     const titlePSE = $("#title-pse");
-    const titlePortlets = $("#title-visualizers");
 
     inputBurstName.val(burstName);
     titleSimulation.empty();
-    titlePortlets.empty();
     titlePSE.empty();
 
     if (isReadOnly) {
         titleSimulation.append("<mark>Review</mark> Simulation configuration for " + burstName);
-        titlePortlets.append(burstName);
         titlePSE.append(burstName);
         inputBurstName.parent().parent().removeClass('is-created');
     } else {
         if (burstName !== '') {
             titleSimulation.append("<mark>Edit</mark> Simulation configuration for " + burstName);
-            titlePortlets.append(burstName);
             titlePSE.append(burstName);
         } else {
             titleSimulation.append("<mark>Configure</mark> New simulation");
-            titlePortlets.append("New simulation");
             titlePSE.append("New simulation");
         }
         inputBurstName.parent().parent().addClass('is-created');
@@ -635,6 +637,11 @@ function setInitialFocusOnButton(simulator_params) {
 }
 
 function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
+    $.ajax({
+        url: '/burst/set_fragment_url',
+        type: 'POST',
+        data: {"url": previous_action},
+    });
     const simulator_params = document.getElementById(div_id);
     simulator_params.removeChild(currentForm);
 
@@ -683,7 +690,7 @@ function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulat
     setInitialFocusOnButton(simulator_params);
 }
 
-function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters') {
+function wizzard_submit(currentForm, success_function = null, div_id = 'div-simulator-parameters', keep_same_wizard = false) {
     event.preventDefault(); //prevent default action
     var post_url = $(currentForm).attr("action"); //get form action url
     var request_method = $(currentForm).attr("method"); //get form GET/POST method
@@ -694,6 +701,10 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
         $(fieldset).removeAttr('disabled')
     }
     var form_data = $(currentForm).serialize(); //Encode form elements for submission
+    if (keep_same_wizard) {
+        form_data += "&keep_same_wizard=True"
+    }
+
     if (disabledFieldset){
         $(fieldset).attr('disabled', 'disabled')
     }
@@ -761,8 +772,5 @@ function displayBurstTree(selectedBurstID) {
         filterValue = {'type': 'from_burst', 'value': "0"};
     }
     updateTree("#treeOverlay", null, JSON.stringify(filterValue));
-    $("#portlets-display").hide();
-    $("#portlets-configure").hide();
-    $("#portlet-param-config").hide();
     $("#div-burst-tree").show();
 }

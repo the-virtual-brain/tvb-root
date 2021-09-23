@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -166,7 +166,7 @@ class TimeSeriesDisplay(ABCSpaceDisplayer):
         h5_file = h5.h5_file_for_index(time_series_index)
         assert isinstance(h5_file, TimeSeriesH5)
         shape = list(h5_file.read_data_shape())
-        ts = h5_file.storage_manager.get_data('time')
+        ts = h5_file.time.load()
         state_variables = time_series_index.get_labels_for_dimension(1)
         labels = self.get_space_labels(h5_file)
 
@@ -196,7 +196,3 @@ class TimeSeriesDisplay(ABCSpaceDisplayer):
         # type: (TimeSeriesModel) -> dict
         """Construct data for visualization and launch it."""
         return self._launch(view_model, None)
-
-    def generate_preview(self, view_model, figure_size=None):
-        # type: (TimeSeriesModel, (int, int)) -> dict
-        return self._launch(view_model, figsize=figure_size, preview=True)

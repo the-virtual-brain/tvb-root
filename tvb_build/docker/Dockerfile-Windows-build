@@ -14,13 +14,14 @@ RUN conda init powershell
 # Prepare tvb-run env
 RUN activate && conda create -y --name tvb-run python=3.7 numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN activate && conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
-RUN activate && conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug==0.16.1
+RUN activate && conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug
 RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
 
 RUN activate tvb-run && pip install --upgrade pip
 RUN activate tvb-run && pip install certifi
-RUN activate tvb-run && pip install h5py==2.10 formencode cfflib jinja2 nibabel sqlalchemy alembic allensdk
-RUN activate tvb-run && pip install typing tvb-gdist BeautifulSoup4 subprocess32 flask-restplus python-keycloak mako pyAesCrypt pyunicore
+RUN activate tvb-run && pip install h5py==2.10 formencode cfflib jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
+RUN activate tvb-run && pip install tvb-gdist BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
+RUN activate tvb-run && pip install autopep8
 
 # Download and install tvb data
 ADD https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 C:\\TEMP\\tvb_data.zip
@@ -31,5 +32,8 @@ RUN mkdir %userprofile%\\TVB_TEST
 RUN mkdir %userprofile%\\.tvb-temp
 RUN CACLS %userprofile%\\TVB_TEST /e /p %username%:f
 RUN CACLS %userprofile%\\.tvb-temp /e /p %username%:f
+
+RUN powershell.exe rm C:\miniconda\envs\tvb-run\share\jupyter\kernels\python3\kernel.json
+RUN echo {"argv": ["python.exe", "-m", ""ipykernel_launcher", "-f", "{connection_file}"], "display_name": "Python 3", "language": "python"} >> C:\miniconda\envs\tvb-run\share\jupyter\kernels\python3\kernel.json
 
 CMD ["cmd", "activate tvb-run"]

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -71,7 +71,7 @@ class PearsonEdgeBundle(ABCSpaceDisplayer):
         state_list = ts_index.get_labels_for_dimension(1)
         mode_list = list(range(ts_index.data_length_4d))
 
-        with h5.load_from_index(ts_index) as ts_h5:
+        with h5.h5_file_for_index(ts_index) as ts_h5:
             labels = self.get_space_labels(ts_h5)
 
         if not labels:

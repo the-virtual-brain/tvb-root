@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -249,7 +249,7 @@ class SurfaceH5(H5File):
             end_idx = min(self._split_slices[str(slice_idx)][KEY_TRIANGLES][KEY_END], self._number_of_triangles)
             return start_idx, end_idx
         else:
-            LOG.warn("Could not access slice indices, possibly due to an incompatibility with code update!")
+            LOG.warning("Could not access slice indices, possibly due to an incompatibility with code update!")
             return 0, self._number_of_triangles
 
     def get_vertices_slice(self, slice_number=0):

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,26 +34,24 @@ Root classes for adding custom functionality to the code.
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
-
+from datetime import datetime
 import importlib
 import json
 import os
 import typing
 import uuid
 from abc import ABCMeta, abstractmethod
-from datetime import datetime
 from enum import Enum
 from functools import wraps
-
 import numpy
 import psutil
 from six import add_metaclass
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Attr, HasTraits, List
 from tvb.basic.profile import TvbProfile
 from tvb.core.adapters.exceptions import IntrospectionException, LaunchException, InvalidParameterException
 from tvb.core.adapters.exceptions import NoMemoryAvailableException
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataType
@@ -65,6 +63,7 @@ from tvb.core.neotraits.forms import Form
 from tvb.core.neotraits.h5 import H5File
 from tvb.core.neotraits.view_model import DataTypeGidAttr, ViewModel
 from tvb.core.utils import date2string, LESS_COMPLEX_TIME_FORMAT
+from tvb.storage.storage_interface import StorageInterface
 
 LOGGER = get_logger("ABCAdapter")
 
@@ -179,8 +178,7 @@ class ABCAdapter(object):
     def __init__(self):
         self.generic_attributes = GenericAttributes()
         self.generic_attributes.subject = DataTypeMetaData.DEFAULT_SUBJECT
-        self.file_handler = FilesHelper()
-        self.storage_path = '.'
+        self.storage_interface = StorageInterface()
         # Will be populate with current running operation's identifier
         self.operation_id = None
         self.user_id = None
@@ -306,8 +304,6 @@ class ABCAdapter(object):
 
     def extract_operation_data(self, operation):
         operation = dao.get_operation_by_id(operation.id)
-        project = dao.get_project_by_id(operation.fk_launched_in)
-        self.storage_path = self.file_handler.get_project_folder(project, str(operation.id))
         self.operation_id = operation.id
         self.current_project_id = operation.project.id
         self.user_id = operation.fk_launched_by
@@ -393,7 +389,7 @@ class ABCAdapter(object):
                     with H5File.from_file(associated_file) as f:
                         f.store_generic_attributes(self.generic_attributes)
                 # Compute size-on disk, in case file-storage is used
-                res.disk_size = self.file_handler.compute_size_on_disk(associated_file)
+                res.disk_size = self.storage_interface.compute_size_on_disk(associated_file)
 
             dao.store_entity(res)
             res.after_store()
@@ -436,9 +432,6 @@ class ABCAdapter(object):
         """
         operation = dao.get_operation_by_id(self.operation_id)
         return operation.fk_operation_group is not None
-
-    def _get_output_path(self):
-        return self.storage_path
 
     def load_entity_by_gid(self, data_gid):
         # type: (typing.Union[uuid.UUID, str]) -> DataType
@@ -538,7 +531,7 @@ class ABCAdapter(object):
             raise IntrospectionException(msg)
 
     def load_view_model(self, operation):
-        storage_path = self.file_handler.get_project_folder(operation.project, str(operation.id))
+        storage_path = self.storage_interface.get_project_folder(operation.project.name, str(operation.id))
         input_gid = operation.view_model_gid
         return h5.load_view_model(input_gid, storage_path)
 
@@ -568,3 +561,16 @@ class ABCAdapter(object):
         analyzer_index.array_is_finite = metadata.is_finite
         analyzer_index.shape = json.dumps(analyzer_h5.array_data.shape)
         analyzer_index.ndim = len(analyzer_h5.array_data.shape)
+
+    def path_for(self, h5_file_class, gid, dt_class=None):
+        project = dao.get_project_by_id(self.current_project_id)
+        return h5.path_for(self.operation_id, h5_file_class, gid, project.name, dt_class)
+
+    def store_complete(self, datatype, generic_attributes=GenericAttributes()):
+        project = dao.get_project_by_id(self.current_project_id)
+        return h5.store_complete(datatype, self.operation_id, project.name, generic_attributes)
+
+    def get_storage_path(self):
+        project = dao.get_project_by_id(self.current_project_id)
+        return self.storage_interface.get_project_folder(project.name, str(self.operation_id))
+

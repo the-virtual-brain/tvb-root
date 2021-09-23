@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -301,20 +301,14 @@ class PulseTrain(TemporalApplicableEquation):
 
     * :math:`\\tau` :  pulse width or pulse duration
     * :math:`T`     :  pulse repetition period
-    * :math:`f`     :  pulse repetition frequency (1/T)
-    * duty cycle    :  :math:``\\frac{\\tau}{T}`` (for a square wave: 0.5)
-    * onset time    :
+    * onset         :  time of the first pulse
+    * amp           :  amplitude of the pulse
     """
 
     equation = Final(
         label="Pulse Train",
-        default="where((var % T) < tau, amp, 0)",
-        doc=""":math:`\\frac{\\tau}{T}
-        +\\sum_{n=1}^{\\infty}\\frac{2}{n\\pi}
-        \\sin\\left(\\frac{\\pi\\,n\\tau}{T}\\right)
-        \\cos\\left(\\frac{2\\pi\\,n}{T} var\\right)`.
-        The starting time is halfway through the first pulse.
-        The phase can be offset t with t - tau/2""")
+        default="where((var>onset)&(((var-onset) % T) < tau), amp, 0)",
+        doc=""":math:`\\left\\{{\\begin{array}{rl}amp,&{\\text{if }} (var-onset) \\mod T < \\tau \\and var > onset\\\\0,&{\\text{otherwise }}\\end{array}}\\right.`""")
 
     # onset is in milliseconds
     # T and tau are in milliseconds as well
@@ -324,26 +318,6 @@ class PulseTrain(TemporalApplicableEquation):
         default=lambda: {"T": 42.0, "tau": 13.0, "amp": 1.0, "onset": 30.0},
         label="Pulse Train Parameters")
 
-    def evaluate(self, var):
-        """
-        Generate a discrete representation of the equation for the space
-        represented by ``var``.
-
-        The argument ``var`` can represent a distance, or effective distance,
-        for each node in a simulation. Or a time, or in principle any arbitrary
-        `` space ``. ``var`` can be a single number, a numpy.ndarray or a
-        ?scipy.sparse_matrix? TODO: think this last one is true, need to check
-        as we need it for LocalConnectivity...
-
-        """
-        # rolling in the deep ...
-        onset = self.parameters["onset"]
-        off = var < onset
-        var = numpy.roll(var, off.sum() + 1)
-        var[..., off] = 0.0
-        _pattern = RefBase.evaluate(self.equation, global_dict=self.parameters)
-        _pattern[..., off] = 0.0
-        return _pattern
 
 
 
