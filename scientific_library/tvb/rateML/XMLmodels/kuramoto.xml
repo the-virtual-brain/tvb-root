@@ -15,9 +15,12 @@
         <Exposure name="V" dimension="V" />
 
         <Dynamics>
-            <StateVariable name="V" dimension="0.0" exposure="-2, 1"/>
+            <!-- For CUDA models a single value for dimension is required -->
+            <StateVariable name="V" dimension="0.0, 0.0" exposure="-2, 1"/>
+            <!-- For python models a dimension range is required -->
+            <!-- <StateVariable name="V" dimension="0.0, numpy.pi * 2.0" exposure="-2, 1"/>-->
 
-            <TimeDerivative variable="dV" value="omega + c_pop1"/>
+            <TimeDerivative variable="dV" value="omega + c_pop0"/>
         </Dynamics>
 
     </ComponentType>
@@ -26,7 +29,7 @@
 
 <!--        variables for pre synaptic function-->
         <Parameter name="V_j" dimension='0'/>
-        <DerivedParameter name="c_pop1" value="global_coupling"/>
+        <DerivedParameter name="c_pop0" value="global_coupling"/>
 
         <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
 

@@ -67,14 +67,21 @@ class ${modelname}(ModelNumbaDfun):
         label="Variables or quantities available to Monitors",
         choices=(\
 %for choice in exposures:
-'${choice.dimension}', \
+'${choice.name}', \
 %endfor
 ),
+## minic the choices in default instead of free choice
         default=(\
-%for defa in (dynamics.state_variables):
-'${defa.name}', \
+%for choice in exposures:
+'${choice.name}', \
 %endfor
 ),
+
+##         default=(\
+## %for defa in (dynamics.state_variables):
+## '${defa.name}', \
+## %endfor
+## ),
         doc="Variables to monitor"
     )
 
