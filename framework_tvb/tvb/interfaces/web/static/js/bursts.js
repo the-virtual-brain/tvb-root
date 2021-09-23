@@ -429,7 +429,7 @@ function _displayPseSimulationMessage() {
     let nrOps = pse_param1_number * pse_param2_number;
 
     if (nrOps > maxRangeNumberInt){
-        message = "Can't launch PSE! Maximum number of operations has been exceeded!";
+        message = "Can't launch PSE! Maximum number of operations (" + maxRangeNumberInt + ") has been exceeded!";
         displayMessage(message, "errorMessage");
         throw message;
     }
