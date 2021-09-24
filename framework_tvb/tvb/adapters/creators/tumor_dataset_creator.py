@@ -119,18 +119,19 @@ class TumorDatasetCreator(ABCAdapter):
     def get_required_memory_size(self, view_model):
         return -1
 
-    def __import_tumor_connectivity(self, conn_folder, patient, user_tag, storage_path):
+    def __import_tumor_connectivity(self, conn_folder, patient, user_tag):
         connectivity_zip = os.path.join(conn_folder, self.CONN_ZIP_FILE)
         if not os.path.exists(connectivity_zip):
             self.logger.error("File {} does not exist.".format(connectivity_zip))
             return
         import_conn_adapter = self.build_adapter_from_class(ZIPConnectivityImporter)
+        operation = dao.get_operation_by_id(self.operation_id)
+        import_conn_adapter.extract_operation_data(operation)
         import_conn_model = ZIPConnectivityImporterModel()
         import_conn_model.uploaded = connectivity_zip
         import_conn_model.data_subject = patient
         import_conn_model.generic_attributes.user_tag_1 = user_tag
 
-        import_conn_adapter.storage_path = storage_path
         connectivity_index = import_conn_adapter.launch(import_conn_model)
 
         self.generic_attributes.subject = patient
@@ -258,7 +259,7 @@ class TumorDatasetCreator(ABCAdapter):
                 for user_tag in user_tags:
                     datatype_folder = os.path.join(patient_path, user_tag)
 
-                    conn_gid = self.__import_tumor_connectivity(datatype_folder, patient, user_tag, self.storage_path)
+                    conn_gid = self.__import_tumor_connectivity(datatype_folder, patient, user_tag)
 
                     # The Time Series are invisible in the UI and are imported
                     # just so we can link them with the Pearson Coefficients
