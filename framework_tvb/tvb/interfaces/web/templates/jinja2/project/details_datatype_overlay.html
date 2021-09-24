@@ -66,35 +66,39 @@
         {% import 'form_fields/generate_help_tooltip.html' as ght with context %}
 
         {% if exporters %}
-        <div class="adaptersDiv">
-            <form id='my_form' data-ajax="false" method="post" enctype="multipart/form-data">
+            <form id="export_form" data-ajax="false" method="post" enctype="multipart/form-data">
                 <fieldset>
                     <dl>
+                        <ul>
+                            {% if canEncrypt %}
+                                <li>
+                                    <dt class="field-mandatory">
+                                        <label for="data_file">Public Key (used to encrypt exported file)</label>
+                                    </dt>
+                                    <dd>
+                                        <p class="field-data">
+                                            <input type="file" accept=".pem" id="exporter_key" name="exporter_key"
+                                                   class="inputField" tabindex="1"></p>
+                                        <p class="errorMessage">
+                                            <label id="error_msg"></label>
+                                        </p>
+                                    </dd>
+                                </li>
+                            {% endif %}
 
-                    {% if canEncrypt %}
-                        <dt class="field-mandatory">
-                            <label for="data_file">Public Key (used to encrypt exported file)</label>
-                        </dt>
-                        <dd>
-                            <p class="field-data">
-                                <input type="file" accept=".pem" id="exporter_key" name="exporter_key" class="inputField"
-                                    tabindex="1"></p>
-                            <p class="errorMessage">
-                            </p>
-                        </dd>
-                    {% endif %}
 
-                    {% for exporter in exporters %}
-                        <li>
-                            <button type="submit" form="my_form"
-                                    formaction="/project/downloaddatatype/{{ entity_gid }}/{{ exporter }}"
-                                    class="action action-export">{{ exporters[exporter] }}</button>
-                        </li>
-                    {% endfor %}
+                            {% for exporter in exporters %}
+
+                                <li>
+                                    <button type="submit" form="export_form"
+                                            formaction="/project/downloaddatatype/{{ entity_gid }}/{{ exporter }}"
+                                            class="action action-export">{{ exporters[exporter] }}</button>
+                                </li>
+                            {% endfor %}
+                        </ul>
                     </dl>
                 </fieldset>
             </form>
-        </div>
         {% else %}
             <label>No exporters are currently available for this DataType.</label>
         {% endif %}
@@ -102,3 +106,17 @@
     </section>
 </div>
 
+<script>
+    $(document).ready(function () {
+        if ({{ canEncrypt | tojson }}) {
+            $('#export_form').submit(function (e) {
+                if (!$('#exporter_key').val()) {
+                    e.preventDefault();
+                    document.getElementById("error_msg").innerHTML = "Please provide a public key before export! Use our demo notebooks to generate it!"
+                } else {
+                    document.getElementById("error_msg").innerHTML = ""
+                }
+            });
+        }
+    });
+</script>
