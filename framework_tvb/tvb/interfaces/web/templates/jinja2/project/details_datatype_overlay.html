@@ -63,14 +63,17 @@
 
     <!--! Overlay: Data Exporters -->
     <section id="overlayTabContent_4" class="node-data node-export ">
+        {% import 'form_fields/generate_help_tooltip.html' as ght with context %}
 
         {% if exporters %}
+        <div class="adaptersDiv">
             <form id='my_form' data-ajax="false" method="post" enctype="multipart/form-data">
                 <fieldset>
+                    <dl>
 
-                    {% if True %}
+                    {% if canEncrypt %}
                         <dt class="field-mandatory">
-                            <label for="data_file">Public Key</label>
+                            <label for="data_file">Public Key (used to encrypt exported file)</label>
                         </dt>
                         <dd>
                             <p class="field-data">
@@ -88,8 +91,10 @@
                                     class="action action-export">{{ exporters[exporter] }}</button>
                         </li>
                     {% endfor %}
+                    </dl>
                 </fieldset>
             </form>
+        </div>
         {% else %}
             <label>No exporters are currently available for this DataType.</label>
         {% endif %}
