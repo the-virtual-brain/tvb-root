@@ -42,6 +42,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporterModel
 from tvb.basic.profile import TvbProfile
+from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.exporters.exporters_test import TestExporters
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -85,7 +86,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
 
         # Generate password
         pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
-        password = StorageInterface.generate_random_password(pass_size)
+        password = EncryptionHandler.generate_random_password(pass_size)
 
         # Encrypt files using an AES symmetric key
         encrypted_file_path = import_export_encryption_handler.get_path_to_encrypt(path_to_file)

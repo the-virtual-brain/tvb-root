@@ -198,13 +198,24 @@ class StorageInterface:
         self.xml_writer = XMLWriter(entity)
         return self.xml_writer.write_metadata_in_xml(final_path)
 
+    # Method for preparing encryption
+    def prepare_encryption(self, project_name):
+        # Generate path to public_key
+        temp_folder = self.get_temp_folder(project_name)
+        public_key_file_name = "public_key_" + uuid.uuid4().hex + ".pem"
+        public_key_file_path = os.path.join(temp_folder, public_key_file_name)
+
+        # Generate a random password for the files
+        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
+        password = self.encryption_handler.generate_random_password(pass_size)
+
+        return public_key_file_path, password
+
+    # EncryptionHandler methods start here
+
     def cleanup_encryption_handler(self, dir_gid):
         self.encryption_handler = EncryptionHandler(dir_gid)
         self.encryption_handler.cleanup_encryption_handler()
-
-    @staticmethod
-    def generate_random_password(pass_size):
-        return EncryptionHandler.generate_random_password(pass_size)
 
     def get_encrypted_dir(self, dir_gid):
         self.encryption_handler = EncryptionHandler(dir_gid)
