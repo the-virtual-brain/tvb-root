@@ -42,34 +42,23 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 from tvb.simulator.models.base import ModelNumbaDfun
 
 
-@guvectorize([(float64[:],)*24], '(n),(m)' + ',()'*21 + '->(n)', nopython=True)
-def _numba_dfun(S, c, alpha, beta, ratio, ae, be, de, ge, te, wp, we, jn, ai, bi, di, gi, ti, wi, ji, g, l, io, dx):
-    """Gufunc for transcriptional model equations."""
+@guvectorize([(float64[:],)*23], '(n),(m)' + ',()'*20 + '->(n)', nopython=True)
+def _numba_dfun(S, c, mi, ae, be, de, ge, te, wp, we, jn, ai, bi, di, gi, ti, wi, ji, g, l, io, ie, dx):
+    "Gufunc for reduced Wong-Wang model equations."
 
     cc = g[0]*jn[0]*c[0]
 
     jnSe = jn[0]*S[0]
 
-    ie = wp[0]*jnSe - ji[0]*S[1] + we[0]*io[0] + cc
-    gain = 1.0+alpha[0]+beta[0]*ratio[0]
-    x = (ae[0]*ie - be[0]) * gain
-    he = x / (1 - numpy.exp(-de[0]*x))
-    dx[0] = - (S[0] / te[0]) + (1.0 - S[0]) * he * ge[0]
+    x = wp[0]*jnSe - ji[0]*S[1] + we[0]*io[0] + cc + ie[0]
+    x = (ae[0]*x - be[0]) * mi[0]
+    h = x / (1 - numpy.exp(-de[0]*x))
+    dx[0] = - (S[0] / te[0]) + (1.0 - S[0]) * h * ge[0]
 
-    i = jnSe - S[1] + wi[0]*io[0] + l[0]*cc
-    x = (ai[0]*i - bi[0]) * gain
+    x = jnSe - S[1] + wi[0]*io[0] + l[0]*cc
+    x = (ai[0]*x - bi[0]) * mi[0]
     h = x / (1 - numpy.exp(-di[0]*x))
-    dx[1] = - (S[1]/ ti[0]) + h * gi[0]
-
-    sigma = numpy.exp(de[0]*(be[0] - ae[0]*i))
-    sigma_1 = sigma - 1.0
-
-    term1 = ae[0]*(ji[0]*dx[1] - jn[0]*wp[0]*dx[0]) / sigma_1
-    term2 = (ae[0]*de[0]*sigma*(be[0] - ae[0]*i))*(ji[0]*dx[1] - jn[0]*wp[0]*dx[0]) / (sigma_1*sigma_1)
-
-    dx[2] = term1 - term2
-    dx[2] = he - S[2]
-    dx[3] = ie - S[3]
+    dx[1] = - (S[1] / ti[0]) + h * gi[0]
 
 
 class Deco2020Transcriptional(ModelNumbaDfun):
@@ -82,26 +71,11 @@ class Deco2020Transcriptional(ModelNumbaDfun):
 
     # Define traited attributes for this model, these represent possible kwargs.
 
-    alpha = NArray(
-        label=":math:`alpha`",
-        default=numpy.array([0.0, ]),
-        domain=Range(lo=0., hi=1., step=0.01),
-        doc="""Parameters for the the scaling between regional biological measures of heterogeneity, R_i, and the
-            effective gain within a region""")
-
-    beta = NArray(
-        label=":math:`beta`",
-        default=numpy.array([0.0, ]),
-        domain=Range(lo=0., hi=1., step=0.01),
-        doc="""Parameters for the the scaling between regional biological measures of heterogeneity, R_i, and the
-            effective gain within a region""")
-
-    ratio = NArray(
+    M_i = NArray(
         label=":math:`ratio`",
-        default=numpy.array([0.0, ]),
-        domain=Range(lo=0., hi=1., step=0.01),
-        doc="""Parameters for the the scaling between regional biological measures of heterogeneity, R_i, and the
-            effective gain within a region""")
+        default=numpy.array([1.0, ]),
+        domain=Range(lo=1.0, hi=10., step=0.01),
+        doc="""Effective gain within a region.""")
 
     a_e = NArray(
         label=":math:`a_e`",
@@ -200,6 +174,12 @@ class Deco2020Transcriptional(ModelNumbaDfun):
         domain=Range(lo=0.0, hi=1.0, step=0.001),
         doc="""[nA]. Effective external input""")
 
+    I_ext = NArray(
+        label=":math:`I_{ext}`",
+        default=numpy.array([0.0, ]),
+        domain=Range(lo=0.0, hi=1.0, step=0.001),
+        doc="""[nA]. Effective external stimulus input""")
+
     G = NArray(
         label=":math:`G`",
         default=numpy.array([2.0, ]),
@@ -215,9 +195,7 @@ class Deco2020Transcriptional(ModelNumbaDfun):
     state_variable_range = Final(
         default={
             "S_e": numpy.array([0.0, 1.0]),
-            "S_i": numpy.array([0.0, 1.0]),
-            "H_e": numpy.array([0.0, 100]),
-            "I_e": numpy.array([0.0, 30.0])
+            "S_i": numpy.array([0.0, 1.0])
         },
         label="State variable ranges [lo, hi]",
         doc="Population firing rate")
@@ -226,21 +204,19 @@ class Deco2020Transcriptional(ModelNumbaDfun):
     state_variable_boundaries = Final(
         label="State Variable boundaries [lo, hi]",
         default={"S_e": numpy.array([0.0, 1.0]),
-                 "S_i": numpy.array([0.0, 1.0]),
-                 "H_e": numpy.array([0.0, 150.0]),
-                 "I_e": numpy.array([0.0, 30.0])},
+                 "S_i": numpy.array([0.0, 1.0])},
         doc="""The values for each state-variable should be set to encompass
             the boundaries of the dynamic range of that state-variable. Set None for one-sided boundaries""")
 
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
-        choices=('H_e', 'I_e', 'S_i', 'S_e'),
-        default=('H_e', 'I_e', 'S_i', 'S_e'),
+        choices=('S_e', 'S_i'),
+        default=('S_e', 'S_i'),
         doc="""default state variables to be monitored""")
 
-    state_variables = ['S_e', 'S_i', 'H_e', 'I_e']
-    _nvar = 4
+    state_variables = ['S_e', 'S_i']
+    _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
     def configure(self):
@@ -256,8 +232,6 @@ class Deco2020Transcriptional(ModelNumbaDfun):
 
         ic[:, 0] = 0.001
         ic[:, 1] = 0.001
-        ic[:, 2] = 0.001
-        ic[:, 3] = 0.001
 
         return ic
 
@@ -267,10 +241,10 @@ class Deco2020Transcriptional(ModelNumbaDfun):
 
         S = state_variables[:, :]
 
-        S_e = S[:, 0]
-        S_i = S[:, 1]
+        S_e = S[0, :]
+        S_i = S[1, :]
 
-        c_0 = coupling[:, 0]
+        c_0 = coupling[0, :]
 
         # if applicable
         lc_0 = local_coupling * S_e
@@ -279,29 +253,23 @@ class Deco2020Transcriptional(ModelNumbaDfun):
 
         J_N_S_e = self.J_N * S_e
 
-        I_ext = 0.0  # Resting state
-
         inh = self.J_i * S_i
 
-        I_e = self.W_e * self.I_o + self.w_p * J_N_S_e + coupling - inh + I_ext
+        I_e = self.W_e * self.I_o + self.w_p * J_N_S_e + coupling - inh + self.I_ext
 
-        gain = 1.0 + self.alpha + self.beta * self.ratio
-        x_e = (self.a_e * I_e - self.b_e) * gain
+        x_e = (self.a_e * I_e - self.b_e) * self.M_i
         H_e = x_e / (1 - numpy.exp(-self.d_e * x_e))
 
         dS_e = - (S_e / self.tau_e) + (1.0 - S_e) * H_e * self.gamma_e
 
         I_i = self.W_i * self.I_o + J_N_S_e - S_i + self.lamda * coupling
 
-        x_i = (self.a_i * I_i - self.b_i) * gain
+        x_i = (self.a_i * I_i - self.b_i) * self.M_i
         H_i = x_i / (1 - numpy.exp(-self.d_i * x_i))
 
         dS_i = - (S_i / self.tau_i) + H_i * self.gamma_i
 
-        dH_e = H_e - S[:, 2]
-        dI_e = I_e - S[:, 3]
-
-        derivative = numpy.array([dS_e, dS_i, dH_e, dI_e])
+        derivative = numpy.array([dS_e, dS_i])
 
         return derivative
 
@@ -309,14 +277,14 @@ class Deco2020Transcriptional(ModelNumbaDfun):
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]
         deriv = _numba_dfun(x_, c_,
-                            self.alpha, self.beta, self.ratio,
+                            self.M_i,
                             self.a_e, self.b_e, self.d_e,
                             self.gamma_e, self.tau_e,
                             self.w_p, self.W_e, self.J_N,
                             self.a_i, self.b_i, self.d_i,
                             self.gamma_i, self.tau_i,
                             self.W_i, self.J_i,
-                            self.G, self.lamda, self.I_o)
+                            self.G, self.lamda, self.I_o, self.I_ext)
         return deriv.T[..., numpy.newaxis]
         # deriv = self._numpy_dfun(x_, c_, local_coupling)
         # return deriv[..., numpy.newaxis]
