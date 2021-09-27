@@ -52,7 +52,7 @@ class TVBExporter(ABCExporter):
     def get_label(self):
         return "TVB Format"
 
-    def export(self, data, project):
+    def export(self, data, project, public_key_path, password):
         """
         Exports data type:
         1. If data is a normal data type, simply exports storage file (HDF format)
@@ -64,11 +64,13 @@ class TVBExporter(ABCExporter):
             _, op_file_dict = self.prepare_datatypes_for_export(data)
 
             # Create ZIP archive
-            zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name)
+            zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name,
+                                                                         public_key_path, password)
             return download_file_name, zip_file, True
         else:
             data_path = h5.path_for_stored_index(data)
-            data_file = self.storage_interface.export_datatypes([data_path], data, None)
+            data_file = self.storage_interface.export_datatypes([data_path], data, download_file_name,
+                                                                public_key_path, password)
 
             return None, data_file, True
 

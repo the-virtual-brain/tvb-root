@@ -33,12 +33,18 @@ Class responsible for all TVB exports (datatype or project).
 
 .. moduleauthor:: Calin Pavel <calin.pavel@codemat.ro
 """
+import os
+import shutil
+import uuid
+from cgi import FieldStorage
+from cherrypy._cpreqbody import Part
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
 from tvb.adapters.exporters.tvb_export import TVBExporter
 from tvb.adapters.exporters.tvb_linked_export import TVBLinkedExporter
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.config import TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
@@ -91,12 +97,33 @@ class ExportManager(object):
 
         return results
 
-    def export_data(self, data, exporter_id, project):
+    def prepare_encryption(self, user_public_key, project_name):
+        temp_folder = self.storage_interface.get_temp_folder(project_name)
+        public_key_file_name = "public_key_" + uuid.uuid4().hex + ".pem"
+        public_key_file_path = os.path.join(temp_folder, public_key_file_name)
+
+        if isinstance(user_public_key, FieldStorage) or isinstance(user_public_key, Part):
+            if not user_public_key.file:
+                return None, None
+
+            with open(public_key_file_path, 'wb') as file_obj:
+                self.storage_interface.copy_file(user_public_key.file, file_obj)
+        else:
+            shutil.copy2(user_public_key, public_key_file_path)
+
+        # Generate a random password for the files
+        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
+        password = StorageInterface.generate_random_password(pass_size)
+
+        return public_key_file_path, password
+
+    def export_data(self, data, exporter_id, project, user_public_key=None):
         """
         Export provided data using given exporter
         :param data: data type to be exported
         :param exporter_id: identifier of the exporter to be used
         :param project: project that contains data to be exported
+        :param user_public_key: public key file used for encrypting data before exporting
 
         :returns: a tuple with the following elements
             1. name of the file to be shown to user
@@ -114,6 +141,11 @@ class ExportManager(object):
 
         exporter = self.all_exporters[exporter_id]
 
+        if user_public_key is not None:
+            public_key_path, encryption_password = self.prepare_encryption(user_public_key, project.name)
+        else:
+            public_key_path, encryption_password = None, None
+
         if project is None:
             raise ExportException("Please provide the project where data files are stored")
 
@@ -126,7 +158,7 @@ class ExportManager(object):
         export_data = None
         try:
             self.logger.debug("Start export of data: %s" % data.type)
-            export_data = exporter.export(data, project)
+            export_data = exporter.export(data, project, public_key_path, encryption_password)
         except Exception:
             pass
 

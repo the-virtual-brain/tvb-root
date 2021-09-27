@@ -40,10 +40,10 @@ import shutil
 import uuid
 from cgi import FieldStorage
 from datetime import datetime
-
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.attributes import manager_of_class
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.basic.profile import TvbProfile

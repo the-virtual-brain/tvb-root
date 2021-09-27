@@ -67,7 +67,7 @@ class TVBLinkedExporter(ABCExporter):
                     dt = load.load_entity_by_gid(ref_gid)
                     self.gather_datatypes_for_copy(dt, dt_path_list)
 
-    def export(self, data, project):
+    def export(self, data, project, public_key_path, password):
         """
         Exports data type:
         1. If data is a normal data type, simply exports storage file (HDF format)
@@ -84,6 +84,7 @@ class TVBLinkedExporter(ABCExporter):
 
             # Create ZIP archive
             zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name,
+                                                                         public_key_path, password,
                                                                          (dt_path_list[1:], data_type))
 
             return download_file_name, zip_file, True
@@ -92,7 +93,8 @@ class TVBLinkedExporter(ABCExporter):
             self.gather_datatypes_for_copy(data, dt_path_list)
 
             download_file_name = self._get_export_file_name(data)
-            zip_to_export = self.storage_interface.export_datatypes(dt_path_list, data, download_file_name)
+            zip_to_export = self.storage_interface.export_datatypes(dt_path_list, data, download_file_name,
+                                                                    public_key_path, password)
             return None, zip_to_export, True
 
     def get_export_file_extension(self, data):

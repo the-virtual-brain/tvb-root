@@ -1,14 +1,4 @@
-{% macro generate_help_tooltip(field) %}
-    <nav class="inline-menu helper">
-        <a href="#" title="Need help? Click here to get more details" class="helper-hook action-menu">?</a>
-        <div class="extension">
-            <div class="dropdown-pane">
-                <mark>{{ field.label }}</mark>
-                <div class="dropdown-pane-overlay">{{ field.doc }}</div>
-            </div>
-        </div>
-    </nav>
-{% endmacro %}
+{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
 
 <fieldset>
     <dl>
@@ -16,7 +6,7 @@
             <dt {% if field.label_classes %} class="{{ field.label_classes|join(' ') }}" {% endif %}>
                 <label for="{{ field.name }}">{{ field.label }}</label>
                 {% if field.doc %}
-                    {{ generate_help_tooltip(field) }}
+                    {{ generate_help_tooltip(field.label, field.doc) }}
                 {% endif %}
             </dt>
             <dd>

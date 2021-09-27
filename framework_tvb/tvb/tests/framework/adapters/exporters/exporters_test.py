@@ -42,6 +42,7 @@ from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.burst_service import BurstService
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -95,8 +96,54 @@ class TestExporters(TransactionalTestCase):
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
 
+    @staticmethod
+    def compare_files(original_path, decrypted_file_path):
+        buffer_size = TvbProfile.current.hpc.CRYPT_BUFFER_SIZE
+        with open(original_path, 'rb') as f_original:
+            with open(decrypted_file_path, 'rb') as f_decrypted:
+                while True:
+                    original_content_chunk = f_original.read(buffer_size)
+                    decrypted_content_chunk = f_decrypted.read(buffer_size)
+
+                    assert original_content_chunk == decrypted_content_chunk, \
+                        "Original and Decrypted chunks are not equal, so decryption hasn't been done correctly!"
+
+                    # check if EOF was reached
+                    if len(original_content_chunk) < buffer_size:
+                        break
+
+    def test_tvb_export_of_simple_datatype_with_encryption(self, dummy_datatype_index_factory):
+        """
+        Test export of an encrypted data type which has no data stored on file system
+        """
+        datatype = dummy_datatype_index_factory()
+        storage_interface = StorageInterface()
+        import_export_encryption_handler = StorageInterface.get_import_export_encryption_handler()
+        import_export_encryption_handler.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
+
+        _, file_path, _ = self.export_manager.export_data(
+            datatype, self.TVB_EXPORTER, self.test_project, os.path.join(
+                TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
+
+        assert file_path is not None, "Export process should return path to export file"
+        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+
+        result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
+        encrypted_password_path = import_export_encryption_handler.extract_encrypted_password_from_list(result)
+
+        decrypted_file_path = import_export_encryption_handler.decrypt_content(
+            encrypted_password_path, result, os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
+                                                          import_export_encryption_handler.PRIVATE_KEY_NAME))[0]
+
+        original_path = h5.path_for_stored_index(datatype)
+        self.compare_files(original_path, decrypted_file_path)
+
     def test_tvb_linked_export_of_simple_datatype(self, connectivity_index_factory, surface_index_factory,
                                                   region_mapping_index_factory):
+        """
+        Test export of a data type and its linked data types which have no data stored on file system
+        """
+
         conn = connectivity_index_factory()
         _, surface = surface_index_factory(cortical=True)
         region_mapping_index = region_mapping_index_factory(conn_gid=conn.gid, surface_gid=surface.gid.hex)
@@ -106,6 +153,50 @@ class TestExporters(TransactionalTestCase):
 
         assert file_path is not None, "Export process should return path to export file"
         assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
+
+    def test_tvb_linked_export_of_simple_datatype_with_encryption(self, connectivity_index_factory,
+                                                                  surface_index_factory, region_mapping_index_factory):
+        """
+        Test export of an encrypted data type and its linked data types which have no data stored on file system
+        """
+
+        conn = connectivity_index_factory()
+        surface_idx, surface = surface_index_factory(cortical=True)
+        region_mapping_index = region_mapping_index_factory(conn_gid=conn.gid, surface_gid=surface.gid.hex)
+
+        storage_interface = StorageInterface()
+        import_export_encryption_handler = StorageInterface.get_import_export_encryption_handler()
+        import_export_encryption_handler.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
+
+        _, file_path, _ = self.export_manager.export_data(
+            region_mapping_index, self.TVB_LINKED_EXPORTER, self.test_project,
+            os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
+
+        assert file_path is not None, "Export process should return path to export file"
+        assert os.path.exists(file_path), "Could not find export file;: %s on disk." % file_path
+
+        result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
+        encrypted_password = import_export_encryption_handler.extract_encrypted_password_from_list(result)
+
+        decrypted_file_paths = import_export_encryption_handler.decrypt_content(
+            encrypted_password, result, os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
+                                                     import_export_encryption_handler.PRIVATE_KEY_NAME))
+
+        original_conn_path = h5.path_for_stored_index(conn)
+        decrypted_conn_path, idx = (decrypted_file_paths[0], 0) if 'Connectivity' in decrypted_file_paths[0] else \
+            (decrypted_file_paths[1], 1) if 'Connectivity' in decrypted_file_paths[1] else (decrypted_file_paths[2], 2)
+
+        self.compare_files(original_conn_path, decrypted_conn_path)
+
+        original_surface_path = h5.path_for_stored_index(surface_idx)
+        del decrypted_file_paths[idx]
+        decrypted_surface_path, idx = (decrypted_file_paths[0], 0) if 'Surface' in decrypted_file_paths[0] else \
+            (decrypted_file_paths[1], 1)
+        self.compare_files(original_surface_path, decrypted_surface_path)
+
+        original_rm_path = h5.path_for_stored_index(region_mapping_index)
+        del decrypted_file_paths[idx]
+        self.compare_files(original_rm_path, decrypted_file_paths[0])
 
     def test_tvb_export_of_datatype_with_storage(self, dummy_datatype_index_factory):
         """
@@ -128,7 +219,8 @@ class TestExporters(TransactionalTestCase):
         region_mapping_index = region_mapping_index_factory()
 
         export_manager = ExportManager()
-        _, exported_h5_file, _ = export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER, self.test_project)
+        _, exported_h5_file, _ = export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER,
+                                                            self.test_project)
         assert zipfile.is_zipfile(exported_h5_file), "Generated file is not a valid ZIP file"
 
         with zipfile.ZipFile(exported_h5_file, 'r') as zipObj:
@@ -146,6 +238,37 @@ class TestExporters(TransactionalTestCase):
 
         assert has_conn is True, "Connectivity was exported in zip"
         assert has_surface is True, "Surface was exported in zip"
+
+    def test_tvb_export_for_datatype_group(self, datatype_group_factory):
+        """
+        This method checks export of a data type group
+        """
+        ts_datatype_group, dm_datatype_group = datatype_group_factory(project=self.test_project, store_vm=True)
+        file_name, file_path, _ = self.export_manager.export_data(dm_datatype_group, self.TVB_EXPORTER,
+                                                                  self.test_project)
+
+        assert file_name is not None, "Export process should return a file name"
+        assert file_path is not None, "Export process should return path to export file"
+        assert os.path.exists(file_path), "Could not find export file: %s on disk." % file_path
+
+        # Now check if the generated file is a correct ZIP file
+        assert zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file"
+
+        with closing(zipfile.ZipFile(file_path)) as zip_file:
+            list_of_files = zip_file.namelist()
+
+            list_of_folders = []
+            for file in list_of_files:
+                dir_name = os.path.dirname(file)
+                if dir_name not in list_of_folders:
+                    list_of_folders.append(dir_name)
+
+            count_datatypes = dao.count_datatypes_in_group(ts_datatype_group.id)
+            count_datatypes += dao.count_datatypes_in_group(dm_datatype_group.id)
+
+            # Check if ZIP files contains files for data types and view models (multiple H5 files in case of a Sim)
+            assert count_datatypes == len(list_of_folders)
+            assert (count_datatypes / 2) * 6 + (count_datatypes / 2) * 2 == len(list_of_files)
 
     def test_tvb_export_for_datatype_group_with_links(self, datatype_group_factory):
         """
@@ -190,12 +313,20 @@ class TestExporters(TransactionalTestCase):
             # time series have 6 files, datatype measures have 2 files
             assert (count_datatypes / 2) * 6 + (count_datatypes / 2) * 2 + 3 == len(list_of_files)
 
-    def test_tvb_export_for_datatype_group(self, datatype_group_factory):
+    def test_tvb_export_for_encrypted_datatype_group_with_links(self, datatype_group_factory):
         """
-        This method checks export of a data type group
+        This method checks export of an encrypted data type group
         """
+
         ts_datatype_group, dm_datatype_group = datatype_group_factory(project=self.test_project, store_vm=True)
-        file_name, file_path, _ = self.export_manager.export_data(dm_datatype_group, self.TVB_EXPORTER, self.test_project)
+
+        storage_interface = StorageInterface()
+        import_export_encryption_handler = StorageInterface.get_import_export_encryption_handler()
+        import_export_encryption_handler.generate_public_private_key_pair(TvbProfile.current.TVB_TEMP_FOLDER)
+
+        file_name, file_path, _ = self.export_manager.export_data(
+            dm_datatype_group, self.TVB_EXPORTER, self.test_project, os.path.join(
+                TvbProfile.current.TVB_TEMP_FOLDER, import_export_encryption_handler.PUBLIC_KEY_NAME))
 
         assert file_name is not None, "Export process should return a file name"
         assert file_path is not None, "Export process should return path to export file"
@@ -204,21 +335,13 @@ class TestExporters(TransactionalTestCase):
         # Now check if the generated file is a correct ZIP file
         assert zipfile.is_zipfile(file_path), "Generated file is not a valid ZIP file"
 
-        with closing(zipfile.ZipFile(file_path)) as zip_file:
-            list_of_files = zip_file.namelist()
-
-            list_of_folders = []
-            for file in list_of_files:
-                dir_name = os.path.dirname(file)
-                if dir_name not in list_of_folders:
-                    list_of_folders.append(dir_name)
-
-            count_datatypes = dao.count_datatypes_in_group(ts_datatype_group.id)
-            count_datatypes += dao.count_datatypes_in_group(dm_datatype_group.id)
-
-            # Check if ZIP files contains files for data types and view models (multiple H5 files in case of a Sim)
-            assert count_datatypes == len(list_of_folders)
-            assert (count_datatypes / 2) * 6 + (count_datatypes / 2) * 2 == len(list_of_files)
+        result = storage_interface.unpack_zip(file_path, TvbProfile.current.TVB_TEMP_FOLDER)
+        encrypted_password = import_export_encryption_handler.extract_encrypted_password_from_list(result)
+        decrypted_file_paths = import_export_encryption_handler.decrypt_content(
+            encrypted_password, result, os.path.join(TvbProfile.current.TVB_TEMP_FOLDER,
+                                                     import_export_encryption_handler.PRIVATE_KEY_NAME))
+        # Here we only test if the length of decrypted_file_paths is the one expected
+        assert len(decrypted_file_paths) == len(result), "Number of decrypted data type group files is not correct!"
 
     def test_export_with_invalid_data(self, dummy_datatype_index_factory):
         """

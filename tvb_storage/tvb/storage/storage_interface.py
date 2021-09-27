@@ -34,6 +34,7 @@ All calls to methods from this module must be done through this class.
 
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+
 import os
 import uuid
 from datetime import datetime
@@ -43,6 +44,7 @@ from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer, \
     encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
+from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
 from tvb.storage.h5.file.exceptions import RenameWhileSyncEncryptingException, FileStructureException
 from tvb.storage.h5.file.files_helper import FilesHelper, TvbZip
 from tvb.storage.h5.file.hdf5_storage_manager import HDF5StorageManager
@@ -66,7 +68,6 @@ class StorageInterface:
     EXPORTED_SIMULATION_NAME = "exported_simulation"
     EXPORTED_SIMULATION_DTS_DIR = "datatypes"
 
-    export_folder = None
     EXPORT_FOLDER_NAME = "EXPORT_TMP"
     EXPORT_FOLDER = os.path.join(TvbProfile.current.TVB_STORAGE, EXPORT_FOLDER_NAME)
 
@@ -76,6 +77,7 @@ class StorageInterface:
         self.files_helper = FilesHelper()
         self.data_encryption_handler = encryption_handler
         self.folders_queue_consumer = FoldersQueueConsumer()
+        self.import_export_encryption_handler = ImportExportEncryptionHandler()
 
         # object attributes which have parameters in their constructor will be lazily instantiated
         self.tvb_zip = None
@@ -180,7 +182,7 @@ class StorageInterface:
         self.tvb_zip.close()
         return file
 
-    # Return a HDF5 storage methods to call the methods from there #
+    # Return a HDF5StorageManager object to call the methods from there #
 
     @staticmethod
     def get_storage_manager(file_full_path):
@@ -195,8 +197,6 @@ class StorageInterface:
     def write_metadata_in_xml(self, entity, final_path):
         self.xml_writer = XMLWriter(entity)
         return self.xml_writer.write_metadata_in_xml(final_path)
-
-    # Encryption Handler methods start here #
 
     def cleanup_encryption_handler(self, dir_gid):
         self.encryption_handler = EncryptionHandler(dir_gid)
@@ -341,7 +341,13 @@ class StorageInterface:
         self.sync_folders(to_project_path)
         self.set_project_inactive(to_project)
 
-        # Exporting related methods start here
+    # Return an ImportExportEncryptionHandler object  to call the methods from there #
+
+    @staticmethod
+    def get_import_export_encryption_handler():
+        return ImportExportEncryptionHandler()
+
+    # Exporting related methods start here
 
     def __export_datatypes(self, paths, operation):
         op_folder = self.get_project_folder(operation.project.name, operation.id)
@@ -424,35 +430,46 @@ class StorageInterface:
 
         return result_path
 
-    def __copy_datatypes(self, dt_path_list, data):
+    def __copy_datatypes(self, dt_path_list, data, password):
         export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
         for dt_path in dt_path_list:
             file_destination = os.path.join(export_folder, os.path.basename(dt_path))
             if not os.path.exists(file_destination):
                 self.copy_file(dt_path, file_destination)
-            self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+                self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+
+                if password is not None:
+                    self.import_export_encryption_handler.encrypt_data_at_export(file_destination, password)
+                    os.remove(file_destination)
 
         return export_folder
 
-    def export_datatypes(self, dt_path_list, data, download_file_name):
+    def export_datatypes(self, dt_path_list, data, download_file_name, public_key_path=None, password=None):
         """
         This method is used to export a list of datatypes as a ZIP file.
         :param dt_path_list: a list of paths to be exported (there are more than one when exporting with links)
         :param data: data to be exported
         :param download_file_name: name of the zip file to be downloaded
+        :param public_key_path: path to public key that will be used for encrypting the password by TVB
+        :param password: password used for encrypting the files before exporting
         """
 
-        export_folder = self.__copy_datatypes(dt_path_list, data)
+        export_folder = self.__copy_datatypes(dt_path_list, data, password)
 
-        if len(dt_path_list) == 1:
+        if len(dt_path_list) == 1 and password is None:
             return os.path.join(export_folder, os.path.basename(dt_path_list[0]))
+
+        if password is not None:
+            download_file_name = download_file_name.replace('.h5', '.zip')
+            self.import_export_encryption_handler.encrypt_and_save_password(public_key_path, password, export_folder)
 
         export_data_zip_path = os.path.join(os.path.dirname(export_folder), download_file_name)
         self.write_zip_folder(export_data_zip_path, export_folder)
         return export_data_zip_path
 
-    def export_datatypes_structure(self, op_file_dict, data, download_file_name, links_tuple_for_copy=None):
+    def export_datatypes_structure(self, op_file_dict, data, download_file_name, public_key_path, password,
+                                   links_tuple_for_copy=None):
         """
         This method is used to export a list of datatypes as a ZIP file, while preserving the folder structure
         (eg: operation folders). It is only used during normal tvb exporting for datatype groups.
@@ -460,12 +477,14 @@ class StorageInterface:
             that operation folder
         :param data: data to be exported
         :param download_file_name: name of the ZIP file to be exported
+        :param public_key_path: path to public key that will be used for encrypting the password by TVB
+        :param password: password used for encrypting the files before exporting
         :param links_tuple_for_copy: a tuple containing two elements: a list of paths to be copied and the first
          datatype of the group
 
         """
         if links_tuple_for_copy is not None:
-            export_folder = self.__copy_datatypes(links_tuple_for_copy[0], links_tuple_for_copy[1])
+            export_folder = self.__copy_datatypes(links_tuple_for_copy[0], links_tuple_for_copy[1], password)
         else:
             export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
@@ -473,10 +492,18 @@ class StorageInterface:
             tmp_op_folder_path = os.path.join(export_folder, os.path.basename(op_folder))
             for file in files:
                 dest_path = os.path.join(tmp_op_folder_path, os.path.basename(file))
-                self.copy_file(file, os.path.join(tmp_op_folder_path, os.path.basename(file)))
-                self.get_storage_manager(dest_path).remove_metadata('parent_burst', check_existence=True)
+
+                if not os.path.exists(dest_path):
+                    self.copy_file(file, os.path.join(tmp_op_folder_path, os.path.basename(file)))
+                    self.get_storage_manager(dest_path).remove_metadata('parent_burst', check_existence=True)
+
+                    if password is not None:
+                        self.import_export_encryption_handler.encrypt_data_at_export(dest_path, password)
+                        os.remove(dest_path)
 
         dest_path = os.path.join(os.path.dirname(export_folder), download_file_name)
+        if password is not None:
+            self.import_export_encryption_handler.encrypt_and_save_password(public_key_path, password, export_folder)
         self.write_zip_folder(dest_path, export_folder)
 
         return dest_path

@@ -11,14 +11,14 @@
     <section class="configure-stimulus-shape view-column col-1">
         <h4> Model parameter configuration </h4>
             <div id="left_input_tree">{{ model_name_fragment | safe }}{{ model_form | safe }}
-            {% import 'flow/generate_help_tooltip.html' as ght with context %}
+            {% import 'form_fields/generate_help_tooltip.html' as ght with context %}
                 <fieldset>
                     <dl>
                         <dt></dt>
                         <dd>
                             {% for model in model_description %}
                                 <div id="data_model_{{ model.name }}" style="display:none">
-                                    {{ ght.generate_help_tooltip(model) }}
+                                    {{ ght.generate_help_tooltip(model.label, model.doc) }}
                                 </div>
                             {% endfor %}
                         </dd>
