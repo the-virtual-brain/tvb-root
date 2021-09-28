@@ -83,7 +83,6 @@ class StorageInterface:
         self.tvb_zip = None
         self.xml_reader = None
         self.xml_writer = None
-        self.encryption_handler = None
 
     # FilesHelper methods start here #
 
@@ -198,37 +197,23 @@ class StorageInterface:
         self.xml_writer = XMLWriter(entity)
         return self.xml_writer.write_metadata_in_xml(final_path)
 
-    def cleanup_encryption_handler(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        self.encryption_handler.cleanup_encryption_handler()
+    # Method for preparing encryption
+    def prepare_encryption(self, project_name):
+        # Generate path to public_key
+        temp_folder = self.get_temp_folder(project_name)
+        public_key_file_name = "public_key_" + uuid.uuid4().hex + ".pem"
+        public_key_file_path = os.path.join(temp_folder, public_key_file_name)
 
+        # Generate a random password for the files
+        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
+        password = EncryptionHandler.generate_random_password(pass_size)
+
+        return public_key_file_path, password
+
+    # Return an EncryptionHandler object to call the methods from there #
     @staticmethod
-    def generate_random_password(pass_size):
-        return EncryptionHandler.generate_random_password(pass_size)
-
-    def get_encrypted_dir(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.get_encrypted_dir()
-
-    def get_password_file(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.get_password_file()
-
-    def encrypt_inputs(self, dir_gid, files_to_encrypt, subdir=None):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.encrypt_inputs(files_to_encrypt, subdir)
-
-    def decrypt_results_to_dir(self, dir_gid, dir, from_subdir=None):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.decrypt_results_to_dir(dir, from_subdir)
-
-    def decrypt_files_to_dir(self, dir_gid, files, dir):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.decrypt_files_to_dir(files, dir)
-
-    def get_current_enc_dirname(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.current_enc_dirname
+    def get_encryption_handler(dir_gid):
+        return EncryptionHandler(dir_gid)
 
     # Data Encryption Handler methods start here #
 

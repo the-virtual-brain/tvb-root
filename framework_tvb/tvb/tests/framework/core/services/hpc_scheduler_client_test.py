@@ -61,6 +61,7 @@ class TestHPCSchedulerClient(BaseTestCase):
     def setup_method(self):
         self.storage_interface = StorageInterface()
         self.dir_gid = '123'
+        self.encryption_handler = self.storage_interface.get_encryption_handler(self.dir_gid)
         self.clean_database()
         self.test_user = TestFactory.create_user()
         self.test_project = TestFactory.create_project(self.test_user)
@@ -75,20 +76,20 @@ class TestHPCSchedulerClient(BaseTestCase):
 
     def test_encrypt_inputs(self, tmpdir):
         job_inputs = self._prepare_dummy_files(tmpdir)
-        job_encrypted_inputs = self.storage_interface.encrypt_inputs(self.dir_gid, job_inputs)
+        job_encrypted_inputs = self.encryption_handler.encrypt_inputs(job_inputs)
         # Encrypted folder has 2 more files are more then plain folder
         assert len(job_encrypted_inputs) == len(job_inputs)
 
     def test_decrypt_results(self, tmpdir):
         # Prepare encrypted dir
         job_inputs = self._prepare_dummy_files(tmpdir)
-        self.storage_interface.encrypt_inputs(self.dir_gid, job_inputs)
-        encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)
+        self.encryption_handler.encrypt_inputs(job_inputs)
+        encrypted_dir = self.encryption_handler.get_encrypted_dir()
 
         # Unencrypt data
         out_dir = os.path.join(str(tmpdir), 'output')
         os.mkdir(out_dir)
-        self.storage_interface.decrypt_results_to_dir(self.dir_gid, out_dir)
+        self.encryption_handler.decrypt_results_to_dir(out_dir)
         list_plain_dir = os.listdir(out_dir)
         assert len(list_plain_dir) == len(os.listdir(encrypted_dir))
         assert 'dummy1.txt' in list_plain_dir
@@ -97,12 +98,12 @@ class TestHPCSchedulerClient(BaseTestCase):
     def test_decrypt_files(self, tmpdir):
         # Prepare encrypted dir
         job_inputs = self._prepare_dummy_files(tmpdir)
-        enc_files = self.storage_interface.encrypt_inputs(self.dir_gid, job_inputs)
+        enc_files = self.encryption_handler.encrypt_inputs(job_inputs)
 
         # Unencrypt data
         out_dir = os.path.join(str(tmpdir), 'output')
         os.mkdir(out_dir)
-        self.storage_interface.decrypt_files_to_dir(self.dir_gid, [enc_files[1]], out_dir)
+        self.encryption_handler.decrypt_files_to_dir([enc_files[1]], out_dir)
         list_plain_dir = os.listdir(out_dir)
         assert len(list_plain_dir) == 1
         assert os.path.basename(enc_files[0]).replace('.aes', '') not in list_plain_dir
@@ -118,16 +119,17 @@ class TestHPCSchedulerClient(BaseTestCase):
     def _do_operation_launch(self, op, sim_gid, mocker, is_pse=False):
         # Prepare encrypted dir
         self.dir_gid = sim_gid
-        job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, sim_gid)
-        self.storage_interface.encrypt_inputs(sim_gid, job_encrypted_inputs)
-        encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)
+        self.encryption_handler = StorageInterface.get_encryption_handler(self.dir_gid)
+        job_encrypted_inputs = HPCSchedulerClient()._prepare_input(op, self.dir_gid)
+        self.encryption_handler.encrypt_inputs(job_encrypted_inputs)
+        encrypted_dir = self.encryption_handler.get_encrypted_dir()
 
         mocker.patch('tvb.core.operation_hpc_launcher._request_passfile', _request_passfile_dummy)
         mocker.patch('tvb.core.operation_hpc_launcher._update_operation_status', _update_operation_status)
 
         # Call do_operation_launch similarly to CSCS env
         plain_dir = self.storage_interface.get_project_folder(self.test_project.name, 'plain')
-        do_operation_launch(sim_gid.hex, 1000, is_pse, '', op.id, plain_dir)
+        do_operation_launch(self.dir_gid, 1000, is_pse, '', op.id, plain_dir)
         assert len(os.listdir(encrypted_dir)) == 7
         output_path = os.path.join(encrypted_dir, HPCSchedulerClient.OUTPUT_FOLDER)
         assert os.path.exists(output_path)
@@ -203,7 +205,7 @@ class TestHPCSchedulerClient(BaseTestCase):
         assert os.path.exists(sim_results_files[0])
 
     def teardown_method(self):
-        encrypted_dir = self.storage_interface.get_encrypted_dir(self.dir_gid)
-        passfile = self.storage_interface.get_password_file(self.dir_gid)
+        encrypted_dir = self.encryption_handler.get_encrypted_dir()
+        passfile = self.encryption_handler.get_password_file()
         self.storage_interface.remove_files([encrypted_dir, passfile])
         self.clean_database()
