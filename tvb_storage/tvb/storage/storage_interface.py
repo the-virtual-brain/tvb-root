@@ -211,35 +211,10 @@ class StorageInterface:
 
         return public_key_file_path, password
 
-    # EncryptionHandler methods start here
-
-    def cleanup_encryption_handler(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        self.encryption_handler.cleanup_encryption_handler()
-
-    def get_encrypted_dir(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.get_encrypted_dir()
-
-    def get_password_file(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.get_password_file()
-
-    def encrypt_inputs(self, dir_gid, files_to_encrypt, subdir=None):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.encrypt_inputs(files_to_encrypt, subdir)
-
-    def decrypt_results_to_dir(self, dir_gid, dir, from_subdir=None):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.decrypt_results_to_dir(dir, from_subdir)
-
-    def decrypt_files_to_dir(self, dir_gid, files, dir):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.decrypt_files_to_dir(files, dir)
-
-    def get_current_enc_dirname(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.current_enc_dirname
+    # Return an EncryptionHandler object to call the methods from there #
+    @staticmethod
+    def get_encryption_handler(dir_gid):
+        return EncryptionHandler(dir_gid)
 
     # Data Encryption Handler methods start here #
 
