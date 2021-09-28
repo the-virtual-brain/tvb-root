@@ -83,7 +83,6 @@ class StorageInterface:
         self.tvb_zip = None
         self.xml_reader = None
         self.xml_writer = None
-        self.encryption_handler = None
 
     # FilesHelper methods start here #
 
@@ -207,7 +206,7 @@ class StorageInterface:
 
         # Generate a random password for the files
         pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
-        password = self.encryption_handler.generate_random_password(pass_size)
+        password = EncryptionHandler.generate_random_password(pass_size)
 
         return public_key_file_path, password
 
