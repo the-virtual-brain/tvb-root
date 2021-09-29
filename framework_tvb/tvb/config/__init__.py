@@ -68,3 +68,6 @@ MEASURE_METRICS_MODEL_CLASS = 'TimeseriesMetricsAdapterModel'
 DEFAULT_PROJECT_GID = '2cc58a73-25c1-11e5-a7af-14109fe3bf71'
 
 VIEW_MODEL2ADAPTER = {}
+
+DATATYPE_MEASURE_INDEX_MODULE = 'tvb.adapters.datatypes.db.mapped_value'
+DATATYPE_MEASURE_INDEX_CLASS = 'DatatypeMeasureIndex'

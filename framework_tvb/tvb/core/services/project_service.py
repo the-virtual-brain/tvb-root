@@ -40,9 +40,11 @@ import os
 import uuid
 
 from tvb.basic.logger.builder import get_logger
+from tvb.config import DATATYPE_MEASURE_INDEX_MODULE, DATATYPE_MEASURE_INDEX_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.inputs_processor import review_operation_inputs_from_adapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
+from tvb.core.entities.load import get_class_by_name, load_entity_by_gid
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.model.model_datatype import Links, DataType, DataTypeGroup
 from tvb.core.entities.model.model_operation import Operation, OperationGroup
@@ -686,7 +688,9 @@ class ProjectService:
         # Found the first DatatypeMeasureIndex from a group
         elif datatype.fk_datatype_group is not None:
             is_datatype_group = True
-            datatype_group = dao.get_datatype_by_id(datatype.fk_datatype_group)
+            # We load it this way to make sure we have the 'fk_operation_group' in every case
+            datatype_group_gid = dao.get_datatype_by_id(datatype.fk_datatype_group).gid
+            datatype_group = h5.load_entity_by_gid(datatype_group_gid)
 
         operations_set = [datatype.fk_from_operation]
         correct = True
@@ -694,40 +698,39 @@ class ProjectService:
         if is_datatype_group:
             operations_set = [datatype_group.fk_from_operation]
             self.logger.debug("Removing datatype group %s" % datatype_group)
-            if datatype_group.fk_parent_burst:
-                burst = dao.get_generic_entity(BurstConfiguration, datatype_group.fk_parent_burst, 'gid')[0]
 
-                # If the link points towards a DatatypeGroup for TimeSeriesIndex and not for DatatypeMeasureIndex,
-                # we still need to take it into consideration when the first DatatypeMeasureIndex is found
-                dt_group_for_op_group = dao.get_datatypegroup_by_op_group_id(burst.fk_operation_group)
-                dt_group_for_metric_op_group = dao.get_datatypegroup_by_op_group_id(burst.fk_metric_operation_group)
-                links = dao.get_links_for_datatype(dt_group_for_op_group.id)
-                links.extend(dao.get_links_for_datatype(dt_group_for_metric_op_group.id))
+            datatypes = self.get_all_datatypes_from_data(datatype_group)
+            first_datatype = datatypes[0]
 
-                if len(links) > 0:
-                    # We want to get the links for the first TSIndex directly
-                    # This code works for all cases
-                    datatypes = dao.get_datatype_in_group(dt_group_for_op_group.id)
-                    ts = datatypes[0]
-
-                    new_dt_links = self._add_links_for_datatype_references(ts, links[0].fk_to_project, links[0].id,
-                                                                           existing_dt_links)
-
-                if burst.fk_metric_operation_group:
-                    correct = correct and self._remove_operation_group(burst.fk_metric_operation_group, project_id,
-                                                                       skip_validation, operations_set, links)
-
-                if burst.fk_operation_group:
-                    correct = correct and self._remove_operation_group(burst.fk_operation_group, project_id,
-                                                                       skip_validation, operations_set, links)
-
+            if hasattr(first_datatype, 'fk_source_gid'):
+                ts = h5.load_entity_by_gid(first_datatype.fk_source_gid)
+                ts_group = dao.get_datatypegroup_by_op_group_id(ts.parent_operation.fk_operation_group)
+                dm_group = datatype_group
             else:
-                links = dao.get_links_for_datatype(datatype.id)
-                self._remove_datatype_group_dts(project_id, datatype_group.id, skip_validation, operations_set, links)
+                dt_measure_index = get_class_by_name("{}.{}".format(DATATYPE_MEASURE_INDEX_MODULE,
+                                                                    DATATYPE_MEASURE_INDEX_CLASS))
+                dm_group = dao.get_datatype_measure_group_from_ts_from_pse(first_datatype.gid, dt_measure_index)
+                ts_group = datatype_group
 
-                datatype_group = dao.get_datatype_group_by_gid(datatype_group.gid)
-                dao.remove_entity(DataTypeGroup, datatype.id)
-                correct = correct and dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
+            links = dao.get_links_for_datatype(ts_group.id)
+            links.extend(dao.get_links_for_datatype(dm_group.id))
+
+            if len(links) > 0:
+                # We want to get the links for the first TSIndex directly
+                # This code works for all cases
+                datatypes = dao.get_datatype_in_group(ts_group.id)
+                ts = datatypes[0]
+
+                new_dt_links = self._add_links_for_datatype_references(ts, links[0].fk_to_project, links[0].id,
+                                                                       existing_dt_links)
+
+            if ts_group:
+                correct = correct and self._remove_operation_group(ts_group.fk_operation_group, project_id,
+                                                                   skip_validation, operations_set, links)
+
+            if dm_group:
+                correct = correct and self._remove_operation_group(dm_group.fk_operation_group, project_id,
+                                                                   skip_validation, operations_set, links)
         else:
             self.logger.debug("Removing datatype %s" % datatype)
             links = dao.get_links_for_datatype(datatype.id)
@@ -976,3 +979,25 @@ class ProjectService:
             else:
                 self.logger.warning("Problem when trying to retrieve path on %s:%s!" % (lnk_dt.type, lnk_dt.gid))
         return paths
+
+    @staticmethod
+    def get_all_datatypes_from_data(data):
+        """
+        This method builds an array with all data types to be processed later.
+        - If current data is a simple data type is added to an array.
+        - If it is an data type group all its children are loaded and added to array.
+        """
+        # first check if current data is a DataTypeGroup
+        if DataTypeGroup.is_data_a_group(data):
+            data_types = ProjectService.get_datatypes_from_datatype_group(data.id)
+
+            result = []
+            if data_types is not None and len(data_types) > 0:
+                for data_type in data_types:
+                    entity = load_entity_by_gid(data_type.gid)
+                    result.append(entity)
+
+            return result
+
+        else:
+            return [data]

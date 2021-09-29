@@ -33,7 +33,7 @@
 """
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.model.model_datatype import DataType, DataTypeGroup
 from tvb.core.neocom import h5
 from tvb.storage.storage_interface import StorageInterface
 
@@ -60,7 +60,7 @@ class TVBExporter(ABCExporter):
         """
         download_file_name = self._get_export_file_name(data)
 
-        if self.is_data_a_group(data):
+        if DataTypeGroup.is_data_a_group(data):
             _, op_file_dict = self.prepare_datatypes_for_export(data)
 
             # Create ZIP archive
@@ -75,7 +75,7 @@ class TVBExporter(ABCExporter):
             return None, data_file, True
 
     def get_export_file_extension(self, data):
-        if self.is_data_a_group(data):
+        if DataTypeGroup.is_data_a_group(data):
             return StorageInterface.TVB_ZIP_FILE_EXTENSION
         else:
             return StorageInterface.TVB_STORAGE_FILE_EXTENSION

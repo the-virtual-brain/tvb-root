@@ -310,6 +310,13 @@ class DataTypeGroup(DataType):
         else:
             self.no_of_ranges = 0
 
+    @staticmethod
+    def is_data_a_group(data):
+        """
+        Checks if the provided data, ready for export is a DataTypeGroup or not
+        """
+        return isinstance(data, DataTypeGroup)
+
 
 class Links(Base):
     """
