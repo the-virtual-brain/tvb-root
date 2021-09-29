@@ -101,20 +101,20 @@ class TestLinks(_BaseLinksTest):
 
     def test_create_link(self, initialize_two_projects):
         dest_id = self.dest_project.id
-        self.algorithm_service.create_link([self.red_datatype.id], dest_id)
+        self.algorithm_service.create_link(self.red_datatype.id, dest_id)
         assert 1 == self.red_datatypes_in(dest_id)
         assert 0 == self.blue_datatypes_in(dest_id)
 
     def test_remove_link(self, initialize_two_projects):
         dest_id = self.dest_project.id
-        self.algorithm_service.create_link([self.red_datatype.id], dest_id)
+        self.algorithm_service.create_link(self.red_datatype.id, dest_id)
         assert 1 == self.red_datatypes_in(dest_id)
         self.algorithm_service.remove_link(self.red_datatype.id, dest_id)
         assert 0 == self.red_datatypes_in(dest_id)
 
     def test_link_appears_in_project_structure(self, initialize_two_projects):
         dest_id = self.dest_project.id
-        self.algorithm_service.create_link([self.red_datatype.id], dest_id)
+        self.algorithm_service.create_link(self.red_datatype.id, dest_id)
         # Test getting information about linked datatypes, from low level methods to the one used by the UI
         dt_1s = dao.get_linked_datatypes_in_project(dest_id)
         assert 1 == len(dt_1s)
@@ -125,7 +125,7 @@ class TestLinks(_BaseLinksTest):
 
     def test_remove_entity_with_links_moves_links(self, initialize_two_projects):
         dest_id = self.dest_project.id
-        self.algorithm_service.create_link([self.red_datatype.id], dest_id)
+        self.algorithm_service.create_link(self.red_datatype.id, dest_id)
         assert 1 == self.red_datatypes_in(dest_id)
         # remove original datatype
         self.project_service.remove_datatype(self.src_project.id, self.red_datatype.gid)
@@ -147,8 +147,8 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
         """
 
         dest_id = self.dest_project.id
-        self.algorithm_service.create_link([self.red_datatype.id], dest_id)
-        self.algorithm_service.create_link([self.blue_datatype.id], dest_id)
+        self.algorithm_service.create_link(self.red_datatype.id, dest_id)
+        self.algorithm_service.create_link(self.blue_datatype.id, dest_id)
         self.export_mng = ExportManager()
 
     def test_export(self, initialize_linked_projects):
@@ -212,13 +212,13 @@ class TestImportExportProjectWithLinksTest(_BaseLinksTest):
             # add a connectivity to src project and link it to dest project
             zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'connectivity_96.zip')
             conn = TestFactory.import_zip_connectivity(self.dst_user, self.src_project, zip_path, "John")
-            self.algorithm_service.create_link([conn.id], self.dest_project.id)
+            self.algorithm_service.create_link(conn.id, self.dest_project.id)
 
             # in dest derive a ValueWrapper from the linked conn
             vw_gid = TestFactory.create_value_wrapper(self.dst_user, self.dest_project)[1]
             vw = dao.get_datatype_by_gid(vw_gid)
             # then link the time series in the src project
-            self.algorithm_service.create_link([vw.id], self.src_project.id)
+            self.algorithm_service.create_link(vw.id, self.src_project.id)
 
             assert 3 == len(dao.get_datatypes_in_project(self.src_project.id))
             assert 1 == len(dao.get_linked_datatypes_in_project(self.src_project.id))

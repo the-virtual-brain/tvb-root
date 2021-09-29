@@ -316,12 +316,12 @@ class StorageInterface:
         encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
         FilesHelper.remove_files([encrypted_path, DataEncryptionHandler.project_key_path(project.id)], True)
 
-    def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, full_path, vm_full_path):
+    def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, path_list):
         self.set_project_active(to_project)
         self.sync_folders(to_project_path)
 
-        self.files_helper.move_datatype(to_project.name, str(new_op_id), full_path)
-        self.files_helper.move_datatype(to_project.name, str(new_op_id), vm_full_path)
+        for path in path_list:
+            self.files_helper.move_datatype(to_project.name, str(new_op_id), path)
 
         self.sync_folders(to_project_path)
         self.set_project_inactive(to_project)

@@ -615,18 +615,12 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def createlink(self, link_data, project_id, is_group):
+    def createlink(self, link_data, project_id):
         """
-        Delegate the creation of the actual link to the flow service.
+        Delegate the creation of the actual link to the algorithm service.
         """
-        if not string2bool(str(is_group)):
-            self.algorithm_service.create_link([link_data], project_id)
-        else:
-            all_data = self.project_service.get_datatype_in_group(link_data)
-            # Link all Dts in group and the DT_Group entity
-            data_ids = [data.id for data in all_data]
-            data_ids.append(int(link_data))
-            self.algorithm_service.create_link(data_ids, project_id)
+        self.algorithm_service.create_link(link_data, project_id)
+
 
     @cherrypy.expose
     @handle_error(redirect=False)

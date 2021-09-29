@@ -34,7 +34,7 @@
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.core.entities import load
-from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.model.model_datatype import DataType, DataTypeGroup
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import H5File
 from tvb.storage.storage_interface import StorageInterface
@@ -74,7 +74,7 @@ class TVBLinkedExporter(ABCExporter):
         2. If data is a DataTypeGroup creates a zip with all files for all data types
         """
         download_file_name = self._get_export_file_name(data)
-        if self.is_data_a_group(data):
+        if DataTypeGroup.is_data_a_group(data):
             all_datatypes, op_file_dict = self.prepare_datatypes_for_export(data)
 
             # Copy the linked datatypes
