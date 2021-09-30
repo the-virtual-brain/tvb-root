@@ -35,14 +35,10 @@ Test for tvb.simulator.models module
 
 """
 import numpy
-
-from tvb.simulator.simulator import Simulator
-from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.basic.neotraits.api import Final, List, EnumAttr
+from tvb.basic.neotraits.api import Final, List
 from tvb.simulator import models
 from tvb.simulator.models.base import Model
-from tvb.rateML.XML2model import RateML
-from tvb.dsl.LEMS2python import load_model as load_lems_model, render_model
+from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class TestBoundsModel(Model):

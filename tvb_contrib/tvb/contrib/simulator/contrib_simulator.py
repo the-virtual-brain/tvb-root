@@ -25,7 +25,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.basic.neotraits.api import HasTraitsEnum, EnumAttr
+from tvb.basic.neotraits.api import TupleEnum, EnumAttr
 from tvb.simulator.models.models_enum import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.simulator.models.epileptor import Epileptor, Epileptor2D
@@ -46,7 +46,7 @@ from tvb.simulator.models.zerlaut import ZerlautAdaptationFirstOrder, ZerlautAda
 from tvb.contrib.simulator import models
 
 
-class ContribModelsEnum(HasTraitsEnum):
+class ContribModelsEnum(TupleEnum):
     # It includes the same models as the ones in tvb-library
     GENERIC_2D_OSCILLATOR = (Generic2dOscillator, "Generic 2D Oscillator")
     KURAMOTO = (Kuramoto, "Kuramoto Oscillator")

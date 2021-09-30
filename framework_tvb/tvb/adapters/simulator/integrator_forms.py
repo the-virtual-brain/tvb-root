@@ -28,13 +28,20 @@
 #
 #
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
-from tvb.basic.neotraits.api import HasTraitsEnum, EnumAttr
+from tvb.basic.neotraits.api import TupleEnum, EnumAttr
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
     EulerDeterministicViewModel, EulerStochasticViewModel, RungeKutta4thOrderDeterministicViewModel, IdentityViewModel, \
     VODEViewModel, VODEStochasticViewModel, Dopri5ViewModel, Dopri5StochasticViewModel, Dop853ViewModel, \
     Dop853StochasticViewModel, IntegratorViewModel, AdditiveNoiseViewModel, MultiplicativeNoiseViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.neotraits.forms import Form, SelectField, FloatField
+
+
+def get_integrator_name_list():
+    return ['Heun', 'Stochastic Heun', 'Euler', 'Euler-Maruyama', 'Runge-Kutta 4th order', 'Difference equation',
+            'Variable-order Adams / BDF', 'Stochastic variable-order Adams / BDF', 'Dormand-Prince, order(4, 5)',
+            'Stochastic Dormand-Prince, order (4, 5)', 'Stochastic Dormand-Prince, order 8 (4, 5)',
+            'Stochastic Dormand-Prince, order 8 (5, 3)']
 
 
 def get_integrator_to_form_dict():
@@ -59,7 +66,7 @@ def get_form_for_integrator(integrator_class):
     return get_integrator_to_form_dict().get(integrator_class)
 
 
-class NoiseTypesEnum(HasTraitsEnum):
+class NoiseTypesEnum(TupleEnum):
     ADDITIVE = (AdditiveNoiseViewModel, "Additive")
     MULTIPLICATIVE = (MultiplicativeNoiseViewModel, "Multiplicative")
 

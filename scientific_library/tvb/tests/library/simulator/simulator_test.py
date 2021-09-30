@@ -51,9 +51,8 @@ from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes.surfaces import CorticalSurface
 from tvb.simulator import simulator, coupling, integrators, monitors, noise
 from tvb.simulator.integrators import HeunDeterministic, IntegratorStochastic
-from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator.models import ModelsEnum
-
+from tvb.tests.library.base_testcase import BaseTestCase
 
 MODEL_CLASSES = ModelsEnum.get_base_model_subclasses()
 METHOD_CLASSES = integrators.Integrator.get_known_subclasses().values()

@@ -39,7 +39,6 @@ import numpy
 import scipy.signal
 
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import BaseTypeEnum
 from tvb.basic.neotraits.info import narray_describe
 from tvb.datatypes.spectral import FourierSpectrum
 

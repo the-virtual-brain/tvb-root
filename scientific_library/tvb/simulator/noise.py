@@ -40,10 +40,11 @@ Specific noises inherit from the abstract class Noise
 """
 import abc
 import numpy
+
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Int, Float
 from tvb.datatypes import equations
 
 from .common import simple_gen_astr
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Int, Float, EnumAttr
 
 
 class Noise(HasTraits):

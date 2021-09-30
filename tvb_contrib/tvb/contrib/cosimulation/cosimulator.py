@@ -33,7 +33,7 @@ It inherits the Simulator class.
 
 import numpy
 
-from tvb.basic.neotraits.api import Attr, NArray, Float, List, HasTraitsEnum, EnumAttr
+from tvb.basic.neotraits.api import Attr, NArray, Float, List, TupleEnum, EnumAttr
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
@@ -42,7 +42,7 @@ from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor, CosimMonitorFr
 from tvb.contrib.cosimulation.exception import NumericalInstability
 
 
-class ContribModelsEnum(HasTraitsEnum):
+class ContribModelsEnum(TupleEnum):
     REDUCED_WONG_WANG_PROXY = (ReducedWongWangProxy, "Reduced Wong-Wang Proxy")
 
 

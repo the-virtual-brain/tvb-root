@@ -39,7 +39,6 @@ import copy
 import numpy
 import pytest
 
-from tvb.basic.neotraits.api import EnumAttr, HasTraitsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import coupling, models, simulator
@@ -166,10 +165,12 @@ class TestCouplingShape(BaseTestCase):
                     )
                     return state
 
+        conn = connectivity.Connectivity.from_file()
         surf = cortex.Cortex.from_file()
+        surf.region_mapping_data.connectivity = conn
         sim = Simulator(
             model=CouplingShapeTestModel(self, surf.vertices.shape[0]),
-            connectivity=connectivity.Connectivity.from_file(),
+            connectivity=conn,
             surface=surf)
 
         sim.configure()

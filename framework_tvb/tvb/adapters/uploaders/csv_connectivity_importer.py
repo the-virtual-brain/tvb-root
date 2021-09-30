@@ -44,7 +44,7 @@ from tvb.core.neotraits.forms import TraitUploadField, SelectField, TraitDataTyp
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
-from tvb.basic.neotraits.api import BaseTypeEnum, EnumAttr
+from tvb.basic.neotraits.api import TVBEnum, EnumAttr
 
 
 class CSVConnectivityParser(object):
@@ -111,7 +111,7 @@ class CSVConnectivityParser(object):
             self.result_conn[self.permutation[row_idx]] = new_row
 
 
-class CSVDelimiterOptionsEnum(BaseTypeEnum):
+class CSVDelimiterOptionsEnum(TVBEnum):
     COMMA = ','
     SEMICOLON = ';'
     tab = '\t'

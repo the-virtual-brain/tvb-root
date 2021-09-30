@@ -295,7 +295,7 @@ class SelectField(TraitField):
             self.template = 'form_fields/select_field.html'
 
     def __init__(self, trait_attribute, name=None, disabled=False, display_none_choice=True,
-                 subform=None, display_subform=True):
+                 subform=None, display_subform=True, ui_values=None):
         super(SelectField, self).__init__(trait_attribute, name, disabled)
 
         self.choices = list(trait_attribute.choices)
@@ -307,6 +307,7 @@ class SelectField(TraitField):
             self.subform_field = FormField(subform, self.subform_prefix + self.name)
             self.display_subform = display_subform
         self._prepare_template(self.choices)
+        self.ui_values = ui_values
 
     @property
     def value(self):
@@ -326,11 +327,13 @@ class SelectField(TraitField):
                     checked=self.data is None
                 )
 
+        choices = self.choices if self.ui_values is None else self.ui_values
+
         for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=choice,
-                label=str(choice).title(),
+                label=str(choices[i]).title(),
                 checked=self.value == choice or (self.value == choice.value if hasattr(choice, 'value') else False)
             )
 

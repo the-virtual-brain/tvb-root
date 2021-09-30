@@ -38,7 +38,7 @@ import cherrypy
 
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
-from tvb.basic.neotraits.api import Attr, Float, EnumAttr, HasTraitsEnum, TVBEnum
+from tvb.basic.neotraits.api import Attr, Float, EnumAttr, TupleEnum, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.entities import load
 from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
@@ -59,7 +59,7 @@ from tvb.interfaces.web.entities.context_simulator import SimulatorContext
 KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
 
 
-class SurfaceModelEquationsEnum(HasTraitsEnum):
+class SurfaceModelEquationsEnum(TupleEnum):
     GAUSSIAN = (Gaussian, "Gaussian")
     SIGMOID = (Sigmoid, "Sigmoid")
 

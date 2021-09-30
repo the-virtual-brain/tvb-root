@@ -27,13 +27,13 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.basic.neotraits.api import HasTraitsEnum
+from tvb.basic.neotraits.api import TupleEnum
 from tvb.simulator.coupling import *
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
 from tvb.core.neotraits.forms import ArrayField, BoolField
 
 
-class CouplingFunctionsEnum(HasTraitsEnum):
+class CouplingFunctionsEnum(TupleEnum):
     LINEAR = (Linear, "Linear")
     SCALING = (Scaling, "Scaling")
     HYPERBOLIC_TANGENT = (HyperbolicTangent, "Hyperbolictangent")

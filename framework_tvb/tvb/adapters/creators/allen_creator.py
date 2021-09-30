@@ -47,7 +47,7 @@ from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Float, Int, EnumAttr, BaseTypeEnum
+from tvb.basic.neotraits.api import Float, Int, EnumAttr, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import SelectField, FloatField
@@ -60,13 +60,13 @@ from tvb.datatypes.volumes import Volume
 LOGGER = get_logger(__name__)
 
 
-class ResolutionOptionsEnum(BaseTypeEnum):
+class ResolutionOptionsEnum(TVBEnum):
     TWENTY_FIVE = 25
     FIFTY = 50
     ONE_HUNDRED = 100
 
 
-class WeightsOptionsEnum(BaseTypeEnum):
+class WeightsOptionsEnum(TVBEnum):
     PROJECTION_DENSITY_INJECTION_DENSITY = 1
     PROJECTION_DENSITY = 2
     PROJECTION_ENERGY = 3

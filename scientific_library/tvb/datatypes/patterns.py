@@ -39,7 +39,7 @@ The Pattern datatypes.
 import numpy
 
 from tvb.datatypes import surfaces, volumes, connectivity, equations
-from tvb.basic.neotraits.api import HasTraits, NArray, Attr, EnumAttr
+from tvb.basic.neotraits.api import HasTraits, NArray, Attr
 
 
 class SpatialPattern(HasTraits):

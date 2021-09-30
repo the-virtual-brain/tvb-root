@@ -135,6 +135,10 @@ def cached_trait_property(attr):
 
 
 class TVBEnum(Enum):
+    """Super class for all enums used in TVB"""
+
+    def __str__(self):
+        return str(self.value)
 
     @staticmethod
     def string_to_enum(choices, data):
@@ -143,25 +147,23 @@ class TVBEnum(Enum):
                 return choice
         return None
 
-class HasTraitsEnum(TVBEnum):
+class TupleEnum(TVBEnum):
+    """Super class for all enums which represent classes. The values of these enums are tuples of two elements,
+    where the first element is a class and the second is a string representing how the parameter is displayed
+    in the UI."""
 
     @property
     def value(self):
-        tuple_value = super(HasTraitsEnum, self).value
+        tuple_value = super(TupleEnum, self).value
         return tuple_value[0]
 
     def __str__(self):
-        tuple_value = super(HasTraitsEnum, self).value
+        tuple_value = super(TupleEnum, self).value
         return tuple_value[1]
 
     @property
     def instance(self):
         return self.value()
-
-
-class BaseTypeEnum(TVBEnum):
-    def __str__(self):
-        return str(self.value)
 
 
 @add_metaclass(MetaType)

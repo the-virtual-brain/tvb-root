@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 
-from tvb.basic.neotraits.api import Attr, List, EnumAttr, HasTraitsEnum
+from tvb.basic.neotraits.api import Attr, List, EnumAttr, TupleEnum
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -164,14 +164,14 @@ class Dop853StochasticViewModel(IntegratorStochasticViewModel, Dop853Stochastic)
         return Dop853Stochastic
 
 
-class IntegratorViewModelsEnum(HasTraitsEnum):
+class IntegratorViewModelsEnum(TupleEnum):
     HEUN = (HeunDeterministicViewModel, "Heun")
     STOCHASTIC_HEUN = (HeunStochasticViewModel, "Stochastic Heun")
     EULER = (EulerDeterministicViewModel, "Euler")
     EULER_MARUYAMA = (EulerStochasticViewModel, "Euler-Maruyama")
     RUNGE_KUTTA = (RungeKutta4thOrderDeterministicViewModel, "Runge-Kutta 4Th Order")
     DIFFERENCE_EQUATION = (IdentityViewModel, "Difference equation")
-    VARIABLE_ORDER_ADAMS = (VODEViewModel, "Variable-Order Adams / Bdf")
+    VARIABLE_ORDER_ADAMS = (VODEViewModel, "Variable-Order Adams (BDF)")
     STOCHASTIC_VARIABLE_ODER_ADAMS = (VODEStochasticViewModel, "Stochastic variable-order Adams (BDF)")
     DOPRI_5 = (Dopri5ViewModel, "Dormand-Prince, order (4, 5)")
     DOPRI_5_STOCHASTIC = (Dopri5StochasticViewModel, "Stochastic Dormand-Prince, order (4, 5)")

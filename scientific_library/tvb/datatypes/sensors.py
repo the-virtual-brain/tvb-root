@@ -41,10 +41,10 @@ import re
 import numpy
 
 from tvb.basic.readers import FileReader, try_get_absolute_path
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, EnumAttr, BaseTypeEnum, Final
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, TVBEnum, Final
 
 
-class SensorTypesEnum(BaseTypeEnum):
+class SensorTypesEnum(TVBEnum):
     TYPE_EEG = "EEG"
     TYPE_MEG = "MEG"
     TYPE_INTERNAL = "Internal"

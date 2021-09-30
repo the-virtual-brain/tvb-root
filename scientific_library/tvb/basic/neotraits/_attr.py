@@ -42,7 +42,7 @@ from .ex import TraitValueError, TraitTypeError, TraitAttributeError, TraitFinal
 from tvb.basic.logger.builder import get_logger
 
 if typing.TYPE_CHECKING:
-    from ._core import HasTraits, HasTraitsEnum
+    from ._core import HasTraits, TupleEnum
 
 # a logger for the whole traits system
 log = get_logger('tvb.traits')
@@ -600,11 +600,11 @@ class EnumAttr(Attr):
             self.__validate(self.default)
 
     # def __get__(self, instance, owner):
-    #     # type: (typing.Optional['HasTraitsEnum'], 'MetaType') -> typing.Union[Enum, 'Enum']
+    #     # type: (typing.Optional['TupleEnum'], 'MetaType') -> typing.Union[Enum, 'Enum']
     #     return super(EnumAttr).__get__(instance, owner)
     #
     # def __set__(self, instance, value):
-    #     # type: (HasTraitsEnum, Enum) -> None
+    #     # type: (TupleEnum, Enum) -> None
     #     super(EnumAttr).__set__(instance, value)
 
 

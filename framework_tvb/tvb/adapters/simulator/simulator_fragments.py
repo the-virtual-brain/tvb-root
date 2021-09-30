@@ -34,7 +34,7 @@ from formencode import validators
 
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
+from tvb.adapters.simulator.integrator_forms import get_form_for_integrator, get_integrator_name_list
 from tvb.adapters.simulator.model_forms import ModelsEnum
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
 from tvb.basic.profile import TvbProfile
@@ -151,7 +151,7 @@ class SimulatorModelFragment(ABCAdapterForm):
         self.model.data = type(trait.model)
 
     def fill_trait(self, datatype):
-        if type(datatype.model) != type(self.model.value.instance):
+        if type(datatype.model) != self.model.value:
             datatype.model = self.model.value.instance
 
 
@@ -162,7 +162,7 @@ class SimulatorIntegratorFragment(ABCAdapterForm):
         self.integrator = SelectField(
             EnumAttr(default=IntegratorViewModelsEnum.HEUN, label=SimulatorAdapterModel.integrator.label,
                      doc=SimulatorAdapterModel.integrator.doc), name='integrator',
-            subform=get_form_for_integrator(IntegratorViewModelsEnum.HEUN.value))
+            subform=get_form_for_integrator(IntegratorViewModelsEnum.HEUN.value), ui_values=get_integrator_name_list())
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None

@@ -30,11 +30,11 @@
 
 from tvb.simulator import models
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.basic.neotraits.api import HasTraitsEnum
+from tvb.basic.neotraits.api import TupleEnum
 from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField
 
 
-class ModelsEnum(HasTraitsEnum):
+class ModelsEnum(TupleEnum):
     GENERIC_2D_OSCILLATOR = (models.ModelsEnum.GENERIC_2D_OSCILLATOR.get_class(), "Generic 2D Oscillator")
     KURAMOTO = (models.ModelsEnum.KURAMOTO.get_class(), "Kuramoto Oscillator")
     SUP_HOPF = (models.ModelsEnum.SUP_HOPF.get_class(), "Suphopf")

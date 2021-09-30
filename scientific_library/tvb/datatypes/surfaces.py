@@ -36,14 +36,14 @@ Surface relates DataTypes.
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
-import scipy.sparse
 import warnings
 import numpy
+import scipy.sparse
 
 from tvb.basic import exceptions
-from tvb.basic.neotraits.api import EnumAttr, BaseTypeEnum
-from tvb.basic.readers import ZipReader, try_get_absolute_path
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Final, Int, Float, narray_describe
+from tvb.basic.readers import ZipReader, try_get_absolute_path
 
 try:
     import gdist
@@ -87,7 +87,7 @@ class ValidationResult(object):
         return '  |  '.join(message for message, _ in self.warnings)
 
 
-class SurfaceTypesEnum(BaseTypeEnum):
+class SurfaceTypesEnum(TVBEnum):
     CORTICAL_SURFACE = "Cortical Surface"
     BRAIN_SKULL_SURFACE = "Brain Skull"
     SKULL_SKIN_SURFACE = "Skull Skin"

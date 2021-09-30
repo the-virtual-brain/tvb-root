@@ -36,15 +36,14 @@ Test history in simulator.
 """
 
 import numpy
-
-from tvb.tests.library.base_testcase import BaseTestCase
-from tvb.basic.neotraits.api import List, EnumAttr
+from tvb.basic.neotraits.api import List
 from tvb.datatypes.connectivity import Connectivity
-from tvb.simulator.coupling import Coupling, SparseCoupling
+from tvb.simulator.coupling import SparseCoupling
 from tvb.simulator.integrators import Identity
 from tvb.simulator.models.base import Model
 from tvb.simulator.monitors import Raw
 from tvb.simulator.simulator import Simulator
+from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class IdCoupling(SparseCoupling):

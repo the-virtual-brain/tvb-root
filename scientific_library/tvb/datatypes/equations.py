@@ -37,7 +37,7 @@ The Equation datatypes.
 """
 import numpy
 from scipy.special import gamma as sp_gamma
-from tvb.basic.neotraits.api import HasTraits, Attr, Final, HasTraitsEnum
+from tvb.basic.neotraits.api import HasTraits, Attr, Final, TupleEnum
 from tvb.simulator.backend.ref import RefBase
 
 
@@ -46,7 +46,7 @@ from tvb.simulator.backend.ref import RefBase
 DEFAULT_PLOT_GRANULARITY = 1024
 
 
-class EquationsEnum(HasTraitsEnum):
+class EquationsEnum(TupleEnum):
     """
     Superclass of all enums that have equations as values
     """

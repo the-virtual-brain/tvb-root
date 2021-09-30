@@ -712,8 +712,17 @@ class ProjectService:
                 dm_group = dao.get_datatype_measure_group_from_ts_from_pse(first_datatype.gid, dt_measure_index)
                 ts_group = datatype_group
 
-            links = dao.get_links_for_datatype(ts_group.id)
-            links.extend(dao.get_links_for_datatype(dm_group.id))
+            links = []
+
+            if ts_group:
+                correct = correct and self._remove_operation_group(ts_group.fk_operation_group, project_id,
+                                                                   skip_validation, operations_set, links)
+                links.extend(dao.get_links_for_datatype(ts_group.id))
+
+            if dm_group:
+                correct = correct and self._remove_operation_group(dm_group.fk_operation_group, project_id,
+                                                                   skip_validation, operations_set, links)
+                links.extend(dao.get_links_for_datatype(dm_group.id))
 
             if len(links) > 0:
                 # We want to get the links for the first TSIndex directly
@@ -724,13 +733,6 @@ class ProjectService:
                 new_dt_links = self._add_links_for_datatype_references(ts, links[0].fk_to_project, links[0].id,
                                                                        existing_dt_links)
 
-            if ts_group:
-                correct = correct and self._remove_operation_group(ts_group.fk_operation_group, project_id,
-                                                                   skip_validation, operations_set, links)
-
-            if dm_group:
-                correct = correct and self._remove_operation_group(dm_group.fk_operation_group, project_id,
-                                                                   skip_validation, operations_set, links)
         else:
             self.logger.debug("Removing datatype %s" % datatype)
             links = dao.get_links_for_datatype(datatype.id)

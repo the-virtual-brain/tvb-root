@@ -58,17 +58,17 @@ References:
 import numpy
 
 import tvb.datatypes.time_series as time_series
-from tvb.basic.neotraits.api import HasTraits, BaseTypeEnum, Attr, NArray, Range, Float, EnumAttr
+from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Range, Float, EnumAttr
 import tvb.simulator.integrators as integrators_module
 
 
-class NeuralInputTransformations(BaseTypeEnum):
+class NeuralInputTransformations(TVBEnum):
     ABS_DIFF = "abs_diff"
     SUM = "sum"
     NONE = "none"
 
 
-class BoldModels(BaseTypeEnum):
+class BoldModels(TVBEnum):
     LINEAR = "linear"
     NONLINEAR = "nonlinear"
 

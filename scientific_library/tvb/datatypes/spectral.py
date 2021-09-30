@@ -37,11 +37,11 @@ The Spectral datatypes.
 """
 import numpy
 
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Float, EnumAttr, BaseTypeEnum
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Int, Float, EnumAttr, TVBEnum
 from tvb.datatypes import time_series
 
 
-class WindowingFunctionsEnum(BaseTypeEnum):
+class WindowingFunctionsEnum(TVBEnum):
     HAMMING = "hamming"
     BARTLETT = "bartlett"
     BLACKMAN = "blackman"

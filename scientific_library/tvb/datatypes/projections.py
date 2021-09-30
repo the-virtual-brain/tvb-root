@@ -35,10 +35,10 @@ The ProjectionMatrices DataTypes.
 
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import surfaces, sensors
-from tvb.basic.neotraits.api import HasTraits, BaseTypeEnum, Attr, NArray, EnumAttr, Final
+from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Final
 
 
-class ProjectionsTypeEnum(BaseTypeEnum):
+class ProjectionsTypeEnum(TVBEnum):
     EEG = "projEEG"
     MEG = "projMEG"
     SEEG = "projSEEG"

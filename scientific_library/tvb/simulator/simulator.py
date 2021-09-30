@@ -43,11 +43,12 @@ import math
 import time
 import numpy
 
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float, EnumAttr
+from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 from tvb.basic.profile import TvbProfile
 from tvb.datatypes import cortex, connectivity, patterns
 from tvb.simulator import models, integrators, monitors, coupling
 from tvb.simulator.models.base import Model
+
 from .backend import ReferenceBackend
 from .common import psutil
 from .history import SparseHistory

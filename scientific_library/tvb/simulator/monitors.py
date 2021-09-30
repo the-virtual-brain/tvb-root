@@ -66,7 +66,7 @@ from tvb.datatypes.region_mapping import RegionMapping
 import tvb.datatypes.equations as equations
 from tvb.simulator.common import numpy_add_at
 from tvb.simulator.backend.ref import ReferenceBackend
-from tvb.basic.neotraits.api import HasTraits, BaseTypeEnum, Attr, NArray, Float, EnumAttr, narray_describe
+from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Float, EnumAttr, narray_describe
 from .backend import ReferenceBackend
 
 
@@ -226,7 +226,7 @@ class SubSample(Monitor):
             return [time, state[self.voi, :]]
 
 
-class DefaultMasks(BaseTypeEnum):
+class DefaultMasks(TVBEnum):
     CORTICAL = "cortical"
     HEMISPHERES = "hemispheres"
     REGION_MAPPING = "region_mapping"
