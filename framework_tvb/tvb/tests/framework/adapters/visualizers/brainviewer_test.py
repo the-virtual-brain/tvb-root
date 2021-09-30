@@ -38,7 +38,7 @@ import tvb_data.regionMapping
 
 from tvb.core.neocom import h5
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.adapters.visualizers.brain import BrainViewer, DualBrainViewer, ConnectivityIndex
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -54,7 +54,7 @@ class TestBrainViewer(TransactionalTestCase):
     EXPECTED_EXTRA_KEYS = ['urlMeasurePointsLabels', 'urlMeasurePoints', 'pageSize', 'shellObject',
                            'extended_view', 'legendLabels', 'labelsStateVar', 'labelsModes', 'title']
 
-    face = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
+    cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
     region_mapping_path = os.path.join(os.path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
 
     def transactional_setup_method(self):
@@ -71,7 +71,8 @@ class TestBrainViewer(TransactionalTestCase):
         connectivity_idx = TestFactory.get_entity(self.test_project, ConnectivityIndex)
         assert connectivity_idx is not None
 
-        self.face_surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.face, CORTICAL)
+        self.face_surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.cortex,
+                                                           SurfaceTypesEnum.CORTICAL_SURFACE)
 
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project,
                                                            self.region_mapping_path, self.face_surface.gid,

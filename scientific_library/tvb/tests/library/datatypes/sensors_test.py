@@ -31,9 +31,9 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import pytest
 import numpy
-from tvb.datatypes.sensors import SensorTypes
+from tvb.datatypes.sensors import SensorTypesEnum
+
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import sensors
 from tvb.datatypes.surfaces import SkinAir
@@ -88,7 +88,7 @@ class TestSensors(BaseTestCase):
         assert dt.locations.shape == (65, 3)
         assert dt.number_of_sensors == 65
         assert dt.orientations is None
-        assert dt.sensors_type == SensorTypes.TYPE_EEG.value
+        assert dt.sensors_type == SensorTypesEnum.TYPE_EEG.value
 
     def test_sensorsmeg(self):
         dt = sensors.SensorsMEG.from_file()
@@ -99,7 +99,7 @@ class TestSensors(BaseTestCase):
         assert dt.locations.shape == (151, 3)
         assert dt.number_of_sensors == 151
         assert dt.orientations.shape == (151, 3)
-        assert dt.sensors_type == SensorTypes.TYPE_MEG.value
+        assert dt.sensors_type == SensorTypesEnum.TYPE_MEG.value
 
     def test_sensorsinternal(self):
         dt = sensors.SensorsInternal.from_file()
@@ -110,4 +110,4 @@ class TestSensors(BaseTestCase):
         assert dt.locations.shape == (103, 3)
         assert dt.number_of_sensors == 103
         assert dt.orientations is None
-        assert dt.sensors_type == SensorTypes.TYPE_INTERNAL.value
+        assert dt.sensors_type == SensorTypesEnum.TYPE_INTERNAL.value

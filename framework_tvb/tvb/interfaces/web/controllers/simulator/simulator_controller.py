@@ -509,7 +509,7 @@ class SimulatorController(BurstBaseController):
             previous_form_action_url=previous_form_action_url)
 
         form_action_url, if_bold_url = self.get_urls_for_next_monitor_fragment(next_monitor, current_monitor)
-        self.monitors_handler.update_monitor(current_monitor)
+        self.monitors_handler.update_monitor(current_monitor, session_stored_simulator.is_surface_simulation)
         return self.monitors_handler.handle_next_fragment_for_monitors(self.context, rendering_rules, current_monitor,
                                                                        next_monitor, False, form_action_url,
                                                                        if_bold_url)
@@ -552,7 +552,7 @@ class SimulatorController(BurstBaseController):
         burst_config = self.context.burst_config
         all_range_parameters = self.range_parameters.get_all_range_parameters()
         next_form = self.algorithm_service.prepare_adapter_form(
-            form_instance=SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters()))
+            form_instance=SimulatorPSEConfigurationFragment(all_range_parameters))
 
         if cherrypy.request.method == POST_REQUEST:
             session_stored_simulator.simulation_length = float(data['simulation_length'])

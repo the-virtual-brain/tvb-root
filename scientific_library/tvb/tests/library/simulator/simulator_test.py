@@ -39,9 +39,9 @@ schemes (region and surface based simulations).
 """
 
 import itertools
-
 import numpy
 import pytest
+
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.equations import Linear

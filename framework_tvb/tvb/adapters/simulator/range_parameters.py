@@ -53,8 +53,7 @@ class SimulatorRangeParameters(object):
                                           isinstance(Simulator.conduction_speed, NArray))
         connectivity = RangeParameter(Simulator.connectivity.field_name, Connectivity, self.connectivity_filters)
 
-        return OrderedDict({Simulator.conduction_speed.field_name: conduction_speed,
-                            Simulator.connectivity.field_name: connectivity})
+        return [conduction_speed, connectivity]
 
     def _ensure_correct_prefix_for_param_name(self, prefix, param):
         prefix = prefix + '.'
@@ -63,13 +62,13 @@ class SimulatorRangeParameters(object):
             param.name = param_full_name
 
     def _prepare_dynamic_parameters(self, param_prefix, param_list):
-        dynamic_parameters = {}
+        dynamic_parameters = []
         if param_list is None:
             return dynamic_parameters
 
         for param in param_list:
             self._ensure_correct_prefix_for_param_name(param_prefix, param)
-            dynamic_parameters.update({param.name: param})
+            dynamic_parameters.append(param)
         return dynamic_parameters
 
     def _prepare_coupling_parameters(self):
@@ -88,10 +87,10 @@ class SimulatorRangeParameters(object):
 
     def get_all_range_parameters(self):
         all_range_parameters = self._default_range_parameters()
-        all_range_parameters.update(self._prepare_coupling_parameters())
-        all_range_parameters.update(self._prepare_surface_parameters())
-        all_range_parameters.update(self._prepare_model_parameters())
-        all_range_parameters.update(self._prepare_integrator_noise_parameters())
+        all_range_parameters.extend(self._prepare_coupling_parameters())
+        all_range_parameters.extend(self._prepare_surface_parameters())
+        all_range_parameters.extend(self._prepare_model_parameters())
+        all_range_parameters.extend(self._prepare_integrator_noise_parameters())
 
         return all_range_parameters
 

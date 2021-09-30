@@ -56,9 +56,21 @@ References:
 """
 
 import numpy
+
 import tvb.datatypes.time_series as time_series
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range, Float
+from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Range, Float, EnumAttr
 import tvb.simulator.integrators as integrators_module
+
+
+class NeuralInputTransformations(TVBEnum):
+    ABS_DIFF = "abs_diff"
+    SUM = "sum"
+    NONE = "none"
+
+
+class BoldModels(TVBEnum):
+    LINEAR = "linear"
+    NONLINEAR = "nonlinear"
 
 
 class BalloonModel(HasTraits):
@@ -98,11 +110,9 @@ class BalloonModel(HasTraits):
         methods. It is used to compute the time courses of the balloon model state 
         variables.""")
 
-    bold_model = Attr(
-        field_type=str,
+    bold_model = EnumAttr(
+        default=BoldModels.NONLINEAR,
         label="Select BOLD model equations",
-        choices=("linear", "nonlinear"),
-        default="nonlinear",
         doc="""Select the set of equations for the BOLD model.""")
 
     RBM = Attr(
@@ -113,11 +123,9 @@ class BalloonModel(HasTraits):
         doc="""Select classical vs revised BOLD model (CBM or RBM).
         Coefficients  k1, k2 and k3 will be derived accordingly.""")
 
-    neural_input_transformation = Attr(
-        field_type=str,
+    neural_input_transformation = EnumAttr(
+        default=NeuralInputTransformations.NONE,
         label="Neural input transformation",
-        choices=("none", "abs_diff", "sum"),
-        default="none",
         doc=""" This represents the operation to perform on the state-variable(s) of
         the model used to generate the input TimeSeries. ``none`` takes the
         first state-variable as neural input; `` abs_diff`` is the absolute
@@ -326,16 +334,16 @@ class BalloonModel(HasTraits):
 
         self.log.debug("Computing: %s on the input time series" % str(mode))
 
-        if mode == "none":
+        if mode == NeuralInputTransformations.NONE:
             ts = time_series.data[:, 0, :, :]
             ts = ts[:, numpy.newaxis, :, :]
             t_int = time_series.time / 1000.  # (s)
 
-        elif mode == "abs_diff":
+        elif mode == NeuralInputTransformations.ABS_DIFF:
             ts = abs(numpy.diff(time_series.data, axis=0))
             t_int = (time_series.time[1:] - time_series.time[0:-1]) / 1000.  # (s)
 
-        elif mode == "sum":
+        elif mode == NeuralInputTransformations.SUM:
             ts = numpy.sum(time_series.data, axis=1)
             ts = ts[:, numpy.newaxis, :, :]
             t_int = time_series.time / 1000.  # (s)

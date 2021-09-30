@@ -28,14 +28,20 @@
 #
 #
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_noise_dict
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import TupleEnum, EnumAttr
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, HeunStochasticViewModel, \
     EulerDeterministicViewModel, EulerStochasticViewModel, RungeKutta4thOrderDeterministicViewModel, IdentityViewModel, \
     VODEViewModel, VODEStochasticViewModel, Dopri5ViewModel, Dopri5StochasticViewModel, Dop853ViewModel, \
-    Dop853StochasticViewModel, IntegratorViewModel, NoiseViewModel
+    Dop853StochasticViewModel, IntegratorViewModel, AdditiveNoiseViewModel, MultiplicativeNoiseViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
 from tvb.core.neotraits.forms import Form, SelectField, FloatField
+
+
+def get_integrator_name_list():
+    return ['Heun', 'Stochastic Heun', 'Euler', 'Euler-Maruyama', 'Runge-Kutta 4th order', 'Difference equation',
+            'Variable-order Adams / BDF', 'Stochastic variable-order Adams / BDF', 'Dormand-Prince, order(4, 5)',
+            'Stochastic Dormand-Prince, order (4, 5)', 'Stochastic Dormand-Prince, order 8 (4, 5)',
+            'Stochastic Dormand-Prince, order 8 (5, 3)']
 
 
 def get_integrator_to_form_dict():
@@ -60,11 +66,15 @@ def get_form_for_integrator(integrator_class):
     return get_integrator_to_form_dict().get(integrator_class)
 
 
+class NoiseTypesEnum(TupleEnum):
+    ADDITIVE = (AdditiveNoiseViewModel, "Additive")
+    MULTIPLICATIVE = (MultiplicativeNoiseViewModel, "Multiplicative")
+
+
 class IntegratorForm(Form):
 
     def get_subform_key(self):
-        return SubformsEnum.INTEGRATOR.name
-
+        return 'INTEGRATOR'
     def __init__(self, is_dt_disabled=False):
         super(IntegratorForm, self).__init__()
         self.is_dt_disabled = is_dt_disabled
@@ -83,16 +93,14 @@ class IntegratorStochasticForm(IntegratorForm):
 
     def __init__(self, is_dt_disabled=False):
         super(IntegratorStochasticForm, self).__init__(is_dt_disabled)
-        self.noise_choices = get_ui_name_to_noise_dict()
-        default_noise = list(self.noise_choices.values())[0]
 
-        self.noise = SelectField(Attr(NoiseViewModel, label='Noise', default=default_noise), name='noise',
-                                 choices=self.noise_choices, subform=get_form_for_noise(default_noise))
+        self.noise = SelectField(EnumAttr(label='Noise', default=NoiseTypesEnum.ADDITIVE), name='noise',
+                                 subform=get_form_for_noise(NoiseTypesEnum.ADDITIVE.value))
 
     def fill_trait(self, datatype):
         super(IntegratorStochasticForm, self).fill_trait(datatype)
-        if self.noise.data and type(datatype.noise) != self.noise.data:
-            datatype.noise = self.noise.data()
+        if self.noise.data and type(datatype.noise) != self.noise.data.value:
+            datatype.noise = self.noise.data.instance
 
     def fill_from_trait(self, trait):
         # type: (IntegratorStochasticViewModel) -> None

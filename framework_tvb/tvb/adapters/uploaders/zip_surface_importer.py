@@ -34,17 +34,17 @@
 """
 
 import numpy
+
 from tvb.adapters.uploaders.zip_surface.parser import ZipSurfaceParser
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
-from tvb.core.neocom import h5
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import TraitUploadField, SelectField, BoolField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
-from tvb.datatypes.surfaces import make_surface, center_vertices
+from tvb.datatypes.surfaces import make_surface, center_vertices, SurfaceTypesEnum
 
 
 class ZIPSurfaceImporterModel(UploaderViewModel):
@@ -52,9 +52,8 @@ class ZIPSurfaceImporterModel(UploaderViewModel):
         label='Surface file (zip)'
     )
 
-    surface_type = Str(
-        choices=tuple(ALL_SURFACES_SELECTION.values()),
-        default=tuple(ALL_SURFACES_SELECTION.values())[0],
+    surface_type = EnumAttr(
+        default=SurfaceTypesEnum.CORTICAL_SURFACE,
         label='Surface type'
     )
 
@@ -77,10 +76,11 @@ class ZIPSurfaceImporterForm(ABCUploaderForm):
     def __init__(self):
         super(ZIPSurfaceImporterForm, self).__init__()
         self.uploaded = TraitUploadField(ZIPSurfaceImporterModel.uploaded, '.zip', 'uploaded')
-        self.surface_type = SelectField(ZIPSurfaceImporterModel.surface_type, 'surface_type',
-                                        choices=ALL_SURFACES_SELECTION)
+        self.surface_type = SelectField(ZIPSurfaceImporterModel.surface_type, 'surface_type')
         self.zero_based_triangles = BoolField(ZIPSurfaceImporterModel.zero_based_triangles, name='zero_based_triangles')
         self.should_center = BoolField(ZIPSurfaceImporterModel.should_center, name='should_center')
+
+        del self.surface_type.choices[-1]
 
     @staticmethod
     def get_view_model():
@@ -143,7 +143,7 @@ class ZIPSurfaceImporter(ABCUploader):
 
         # Detect and instantiate correct surface type
         self.logger.debug("Create surface instance")
-        surface = self._make_surface(view_model.surface_type)
+        surface = self._make_surface(view_model.surface_type.value)
         surface.zero_based_triangles = view_model.zero_based_triangles
         if view_model.should_center:
             vertices = center_vertices(zip_surface.vertices)

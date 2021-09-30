@@ -40,7 +40,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel
 from tvb.interfaces.command.lab import *
 from tvb.simulator.coupling import HyperbolicTangent
-from tvb.simulator.models import ModelsEnum
+from tvb.simulator.models.models_enum import ModelsEnum
 
 
 def _fire_simulation(project_id, simulator_vm):
@@ -146,7 +146,7 @@ def main():
     prj, connectivities = _create_bench_project()
 
     g2d_epi = Bench(
-        models=[ModelsEnum.GENERIC_2D_OSCILLATOR.get_class()(), ModelsEnum.EPILEPTOR.get_class()()],
+        models=[ModelsEnum.GENERIC_2D_OSCILLATOR.instance, ModelsEnum.EPILEPTOR.instance],
         connectivities=connectivities,
         conductions=[30.0, 3.0],
         int_dts=[0.1, 0.05],
@@ -154,7 +154,7 @@ def main():
     )
 
     larter = Bench(
-        models=[ModelsEnum.LARTER_BREAKSPEAR.get_class()()],
+        models=[ModelsEnum.LARTER_BREAKSPEAR.instance],
         connectivities=connectivities,
         conductions=[10.0],
         int_dts=[0.2, 0.1],

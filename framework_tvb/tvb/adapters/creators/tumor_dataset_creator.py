@@ -48,7 +48,7 @@ from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.graph_h5 import CorrelationCoefficientsH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
-from tvb.adapters.uploaders.csv_connectivity_importer import DELIMITER_OPTIONS
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVDelimiterOptionsEnum
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterModel
 from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import DEFAULTDATASTATE_RAW_DATA
@@ -145,7 +145,7 @@ class TumorDatasetCreator(ABCAdapter):
     def __import_time_series_csv_datatype(self, hrf_folder, connectivity_gid, patient, user_tag):
         path = os.path.join(hrf_folder, self.TIME_SERIES_CSV_FILE)
         with open(path) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=DELIMITER_OPTIONS['comma'])
+            csv_reader = csv.reader(csv_file, delimiter=CSVDelimiterOptionsEnum.COMMA)
             ts = list(csv_reader)
 
         ts_data = np.array(ts, dtype=np.float64).reshape((len(ts), 1, len(ts[0]), 1))

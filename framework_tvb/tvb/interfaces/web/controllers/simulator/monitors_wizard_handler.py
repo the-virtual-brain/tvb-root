@@ -153,5 +153,6 @@ class MonitorsWizardHandler:
     def prepare_monitor_legend(is_surface_simulation, monitor):
         return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
 
-    def update_monitor(self, monitor):
-        self.all_monitors_dict[monitor.ui_name] = monitor
+    def update_monitor(self, monitor, is_surface):
+        monitor_name = get_monitor_to_ui_name_dict(is_surface)[type(monitor)]
+        self.all_monitors_dict[monitor_name] = monitor

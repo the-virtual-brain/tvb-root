@@ -45,7 +45,7 @@ from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.import_service import ImportService
-from tvb.datatypes.sensors import SensorTypes
+from tvb.datatypes.sensors import SensorTypesEnum
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -73,7 +73,8 @@ class _BaseLinksTest(TransactionalTestCase):
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'connectivity', 'paupau.zip')
         self.red_datatype = TestFactory.import_zip_connectivity(src_user, self.src_project, zip_path, "John")
         zip_path = os.path.join(os.path.dirname(tvb_data.__file__), 'sensors', 'eeg_unitvector_62.txt.bz2')
-        self.blue_datatype = TestFactory.import_sensors(src_user, self.src_project, zip_path, SensorTypes.TYPE_EEG.value)
+        self.blue_datatype = TestFactory.import_sensors(src_user, self.src_project, zip_path,
+                                                        SensorTypesEnum.TYPE_EEG)
         assert 1 == self.red_datatypes_in(self.src_project.id)
         assert 1 == self.blue_datatypes_in(self.src_project.id)
 

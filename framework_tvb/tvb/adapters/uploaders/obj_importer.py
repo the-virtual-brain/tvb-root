@@ -33,23 +33,21 @@
 """
 
 from tvb.adapters.uploaders.obj.surface import ObjSurface
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.entities.storage import transactional
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
-from tvb.datatypes.surfaces import make_surface, center_vertices
+from tvb.datatypes.surfaces import make_surface, center_vertices, SurfaceTypesEnum
 from tvb.core.neotraits.forms import BoolField, TraitUploadField, SelectField
-from tvb.core.neocom import h5
 
 
 class ObjSurfaceImporterModel(UploaderViewModel):
-    surface_type = Str(
+    surface_type = EnumAttr(
         label='Specify file type :',
-        choices=tuple(ALL_SURFACES_SELECTION.values()),
-        default=tuple(ALL_SURFACES_SELECTION.values())[0]
+        default=SurfaceTypesEnum.CORTICAL_SURFACE
     )
 
     data_file = Str(
@@ -69,10 +67,11 @@ class ObjSurfaceImporterForm(ABCUploaderForm):
     def __init__(self):
         super(ObjSurfaceImporterForm, self).__init__()
 
-        self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, name='surface_type',
-                                        choices=ALL_SURFACES_SELECTION)
+        self.surface_type = SelectField(ObjSurfaceImporterModel.surface_type, name='surface_type')
         self.data_file = TraitUploadField(ObjSurfaceImporterModel.data_file, '.obj', 'data_file')
         self.should_center = BoolField(ObjSurfaceImporterModel.should_center, name='should_center')
+
+        del self.surface_type.choices[-1]
 
     @staticmethod
     def get_view_model():
@@ -106,7 +105,7 @@ class ObjSurfaceImporter(ABCUploader):
         Execute import operations:
         """
         try:
-            surface = make_surface(view_model.surface_type)
+            surface = make_surface(view_model.surface_type.value)
             if surface is None:
                 raise ParseException("Could not determine surface type! %s" % view_model.surface_type)
 

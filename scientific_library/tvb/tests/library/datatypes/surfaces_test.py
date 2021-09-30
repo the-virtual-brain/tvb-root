@@ -32,16 +32,15 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import sys
-
 import numpy
 import pytest
-from tvb.datatypes import surfaces
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.surfaces import CorticalSurface, SurfaceTypesEnum
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes import surfaces
 
 
 class TestSurfaces(BaseTestCase):
@@ -86,7 +85,7 @@ class TestSurfaces(BaseTestCase):
         assert summary_info['Number of edges'] == 49140
         assert summary_info['Number of triangles'] == 32760
         assert summary_info['Number of vertices'] == 16384
-        assert dt.surface_type == surfaces.CORTICAL
+        assert dt.surface_type == SurfaceTypesEnum.CORTICAL_SURFACE.value
         assert len(dt.vertex_neighbours) == 16384
         assert isinstance(dt.vertex_neighbours[0], frozenset)
         assert len(dt.vertex_triangles) == 16384

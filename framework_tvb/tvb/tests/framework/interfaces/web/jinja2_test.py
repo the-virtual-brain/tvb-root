@@ -30,7 +30,8 @@
 
 import numpy
 from bs4 import BeautifulSoup
-from tvb.adapters.simulator.model_forms import get_ui_name_to_model
+
+from tvb.adapters.simulator.model_forms import ModelsEnum
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment
 from tvb.basic.neotraits.api import HasTraits, NArray
@@ -41,7 +42,6 @@ from tvb.core.neotraits.forms import ArrayField
 from tvb.interfaces.web.controllers.decorators import using_template
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorFragmentRenderingRules, \
     SimulatorWizzardURLs
-from tvb.simulator.models import ModelsEnum
 from tvb.simulator.simulator import Simulator
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
@@ -144,10 +144,9 @@ class TestJinja2Simulator(Jinja2Test):
         return soup
 
     def test_models_list(self, mocker):
-        all_models_for_ui = get_ui_name_to_model()
         models_form = SimulatorModelFragment()
         simulator = Simulator()
-        simulator.model = ModelsEnum.EPILEPTOR.get_class()()
+        simulator.model = ModelsEnum.EPILEPTOR.instance
         models_form.fill_from_trait(simulator)
 
         rendering_rules = SimulatorFragmentRenderingRules(is_model_fragment=True)
@@ -156,7 +155,7 @@ class TestJinja2Simulator(Jinja2Test):
         select_field = soup.find_all('select')
         assert len(select_field) == 1, 'Number of select inputs is different than 1'
         select_field_options = soup.find_all('option')
-        assert len(select_field_options) == len(all_models_for_ui), 'Number of select field options != number of models'
+        assert len(select_field_options) == len(ModelsEnum), 'Number of select field options != number of models'
         select_field_choice = soup.find_all('option', selected=True)
         assert len(select_field_choice) == 1
         assert 'Epileptor' in select_field_choice[0].attrs['value']

@@ -34,14 +34,11 @@ Test for tvb.simulator.models module
 .. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
 
 """
-
-from tvb.tests.library.base_testcase import BaseTestCase
+import numpy
 from tvb.basic.neotraits.api import Final, List
 from tvb.simulator import models
 from tvb.simulator.models.base import Model
-from tvb.rateML.XML2model import RateML
-
-import numpy
+from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class TestBoundsModel(Model):

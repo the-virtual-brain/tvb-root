@@ -1196,7 +1196,7 @@ function prepareUrlParam(paramName, paramValue) {
 }
 
 function refreshSubform(currentElem, elementType, subformDiv) {
-    let url = prepareRefreshSubformUrl(currentElem, elementType, subformDiv);
+    let url = prepareRefreshSubformUrl(currentElem, subformDiv);
     $.ajax({
         url: url,
         type: 'POST',

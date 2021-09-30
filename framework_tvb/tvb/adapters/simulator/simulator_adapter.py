@@ -47,11 +47,11 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionMappingIndex, RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.adapters.simulator.coupling_forms import get_ui_name_to_coupling_dict
+from tvb.adapters.simulator.coupling_forms import CouplingFunctionsEnum
 from tvb.adapters.simulator.model_forms import get_model_to_form_dict
 from tvb.adapters.simulator.monitor_forms import get_monitor_to_form_dict
 from tvb.adapters.simulator.simulator_fragments import *
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException, InvalidParameterException
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
@@ -59,7 +59,6 @@ from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.core.entities.storage import dao
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FloatField, SelectField
-from tvb.simulator.coupling import Coupling
 from tvb.simulator.simulator import Simulator
 
 
@@ -67,14 +66,13 @@ class SimulatorAdapterForm(ABCAdapterForm):
 
     def __init__(self):
         super(SimulatorAdapterForm, self).__init__()
-        self.coupling_choices = get_ui_name_to_coupling_dict()
-        default_coupling = list(self.coupling_choices.values())[0]
+        default_coupling = CouplingFunctionsEnum.LINEAR
 
         self.connectivity = TraitDataTypeSelectField(SimulatorAdapterModel.connectivity, name=self.get_input_name(),
                                                      conditions=self.get_filters())
         self.coupling = SelectField(
-            Attr(Coupling, default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), name='coupling',
-            choices=self.coupling_choices)
+            EnumAttr(default=default_coupling, label="Coupling", doc=Simulator.coupling.doc), name='coupling')
+
         self.conduction_speed = FloatField(Simulator.conduction_speed)
         self.ordered_fields = (self.connectivity, self.conduction_speed, self.coupling)
         self.range_params = [Simulator.connectivity, Simulator.conduction_speed]
@@ -90,8 +88,8 @@ class SimulatorAdapterForm(ABCAdapterForm):
         datatype.connectivity = self.connectivity.value
         datatype.conduction_speed = self.conduction_speed.value
         coupling = self.coupling.value
-        if type(datatype.coupling) != coupling:
-            datatype.coupling = coupling()
+        if type(datatype.coupling) != coupling.value:
+            datatype.coupling = coupling.instance
 
     @staticmethod
     def get_view_model():
