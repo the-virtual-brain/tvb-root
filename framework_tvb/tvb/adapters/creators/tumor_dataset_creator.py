@@ -145,7 +145,7 @@ class TumorDatasetCreator(ABCAdapter):
     def __import_time_series_csv_datatype(self, hrf_folder, connectivity_gid, patient, user_tag):
         path = os.path.join(hrf_folder, self.TIME_SERIES_CSV_FILE)
         with open(path) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=CSVDelimiterOptionsEnum.COMMA)
+            csv_reader = csv.reader(csv_file, delimiter=CSVDelimiterOptionsEnum.COMMA.value)
             ts = list(csv_reader)
 
         ts_data = np.array(ts, dtype=np.float64).reshape((len(ts), 1, len(ts[0]), 1))
