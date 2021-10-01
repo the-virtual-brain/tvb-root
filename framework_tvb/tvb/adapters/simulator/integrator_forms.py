@@ -40,7 +40,7 @@ from tvb.core.neotraits.forms import Form, SelectField, FloatField
 def get_integrator_name_list():
     return ['Heun', 'Stochastic Heun', 'Euler', 'Euler-Maruyama', 'Runge-Kutta 4th order', 'Difference equation',
             'Variable-order Adams / BDF', 'Stochastic variable-order Adams / BDF', 'Dormand-Prince, order(4, 5)',
-            'Stochastic Dormand-Prince, order (4, 5)', 'Stochastic Dormand-Prince, order 8 (4, 5)',
+            'Stochastic Dormand-Prince, order (4, 5)', 'Dormand-Prince, order 8 (5, 3)',
             'Stochastic Dormand-Prince, order 8 (5, 3)']
 
 
