@@ -290,9 +290,9 @@ class SpatialAverage(Monitor):
                 self.spatial_mask = simulator.surface.region_mapping
             else:
                 conn = simulator.connectivity
-                if self.default_mask == self.CORTICAL:
+                if self.default_mask == DefaultMasks.CORTICAL:
                     self.spatial_mask = self._support_bool_mask(conn.cortical)
-                elif self.default_mask == self.HEMISPHERES:
+                elif self.default_mask == DefaultMasks.HEMISPHERES:
                     self.spatial_mask = self._support_bool_mask(conn.hemispheres)
                 else:
                     msg = "Must fill either the Spatial Mask parameter or choose a Default Mask for non-surface" \
