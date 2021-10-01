@@ -75,7 +75,7 @@ class SimulatorRangeParameters(object):
         return self._prepare_dynamic_parameters(Simulator.coupling.field_name, self.coupling_parameters)
 
     def _prepare_surface_parameters(self):
-        return self._prepare_dynamic_parameters(Simulator.surface.field_type.__name__, self.surface_parameters)
+        return self._prepare_dynamic_parameters(Simulator.surface.field_name, self.surface_parameters)
 
     def _prepare_model_parameters(self):
         return self._prepare_dynamic_parameters(Simulator.model.field_name, self.model_parameters)
