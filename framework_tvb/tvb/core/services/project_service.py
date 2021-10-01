@@ -715,14 +715,14 @@ class ProjectService:
             links = []
 
             if ts_group:
+                links.extend(dao.get_links_for_datatype(ts_group.id))
                 correct = correct and self._remove_operation_group(ts_group.fk_operation_group, project_id,
                                                                    skip_validation, operations_set, links)
-                links.extend(dao.get_links_for_datatype(ts_group.id))
 
             if dm_group:
+                links.extend(dao.get_links_for_datatype(dm_group.id))
                 correct = correct and self._remove_operation_group(dm_group.fk_operation_group, project_id,
                                                                    skip_validation, operations_set, links)
-                links.extend(dao.get_links_for_datatype(dm_group.id))
 
             if len(links) > 0:
                 # We want to get the links for the first TSIndex directly

@@ -46,7 +46,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField, StrField, BoolField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField, StrField, BoolField, SelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 
@@ -117,8 +117,8 @@ class BalloonModelAdapterForm(ABCAdapterForm):
         self.dt = FloatField(BalloonModelAdapterModel.dt)
         self.tau_s = FloatField(BalloonModelAdapterModel.tau_s)
         self.tau_f = FloatField(BalloonModelAdapterModel.tau_f)
-        self.neural_input_transformation = StrField(BalloonModelAdapterModel.neural_input_transformation)
-        self.bold_model = StrField(BalloonModelAdapterModel.bold_model)
+        self.neural_input_transformation = SelectField(BalloonModelAdapterModel.neural_input_transformation)
+        self.bold_model = SelectField(BalloonModelAdapterModel.bold_model)
         self.RBM = BoolField(BalloonModelAdapterModel.RBM)
 
     @staticmethod
