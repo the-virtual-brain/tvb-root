@@ -34,9 +34,9 @@
 import sys
 import numpy
 import pytest
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.surfaces import CorticalSurface, SurfaceTypesEnum
-from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
@@ -202,12 +202,10 @@ class TestSurfaces(BaseTestCase):
 
     @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
     def test_cortexdata(self):
-        dt = Cortex.from_file()
+        dt = Cortex.from_file(local_connectivity_file="local_connectivity_16384.mat")
         dt.region_mapping_data.connectivity = Connectivity.from_file()
         assert isinstance(dt, Cortex)
         assert dt.region_mapping is not None
-        ## Initialize Local Connectivity, to avoid long computation time.
-        dt.local_connectivity = LocalConnectivity.from_file()
 
         dt.configure()
         assert dt.vertices.shape == (16384, 3)

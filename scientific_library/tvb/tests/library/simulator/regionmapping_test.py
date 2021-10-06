@@ -52,8 +52,7 @@ class TestRegionMapping(BaseTestCase):
         con.configure()
 
         # Surface and local connectivity kernel
-        surf = cortex.Cortex.from_file() #Initialise a surface
-        surf.local_connectivity = local_connectivity.LocalConnectivity.from_file()
+        surf = cortex.Cortex.from_file(local_connectivity_file="local_connectivity_16384.mat")
         surf.region_mapping_data.connectivity = con
         surf.configure()
 
