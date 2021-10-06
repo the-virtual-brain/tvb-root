@@ -317,8 +317,11 @@ class ViewModelH5(H5File):
                     ref = EquationScalar(attr, self)
                 elif attr.field_type is Range:
                     ref = JsonRange(attr, self)
-                elif isinstance(attr, Final) and attr.field_type == dict:
-                    ref = JsonFinal(attr, self)
+                elif isinstance(attr, Final):
+                    if attr.field_type == dict:
+                        ref = JsonFinal(attr, self)
+                    elif attr.field_type == list:
+                        ref = Json(attr, self)
                 elif issubclass(attr.field_type, (HasTraits, TupleEnum)):
                     ref = Reference(attr, self)
                 elif issubclass(attr.field_type, TVBEnum):
