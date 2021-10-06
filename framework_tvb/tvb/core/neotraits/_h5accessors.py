@@ -132,7 +132,7 @@ class Enum(Scalar):
     def load(self):
         metadata = self.owner.storage_manager.get_metadata()
         if self.field_name in metadata:
-            return TVBEnum.string_to_enum(list(self.trait_attribute.field_type), metadata[self.field_name])
+            return TVBEnum.string_to_enum(list(self.trait_attribute.field_type), str(metadata[self.field_name]))
 
 
 class DataSetMetaData(object):
