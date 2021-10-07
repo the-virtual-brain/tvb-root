@@ -32,8 +32,6 @@
 .. moduleauthor:: Calin Pavel
 """
 
-import os
-import shutil
 import tempfile
 import zipfile
 
@@ -50,7 +48,7 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import CORTICAL, Surface
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 
 class RegionMappingImporterModel(UploaderViewModel):
@@ -80,7 +78,7 @@ class RegionMappingImporterForm(ABCUploaderForm):
         self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'),
                                              'mapping_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
-                                         values=[CORTICAL])
+                                         values=[SurfaceTypesEnum.CORTICAL_SURFACE.value])
         self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, name='surface',
                                                 conditions=surface_conditions)
         self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, name='connectivity')
@@ -141,8 +139,7 @@ class RegionMappingImporter(ABCUploader):
                     raise LaunchException("Please upload a ZIP file containing only one file.")
                 array_data = self.read_list_data(files[0], dtype=numpy.int32)
             finally:
-                if os.path.exists(tmp_folder):
-                    shutil.rmtree(tmp_folder)
+                self.storage_interface.remove_folder(tmp_folder, True)
         else:
             array_data = self.read_list_data(view_model.mapping_file, dtype=numpy.int32)
 

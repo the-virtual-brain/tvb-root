@@ -48,7 +48,7 @@ from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.graph_h5 import CorrelationCoefficientsH5
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
-from tvb.adapters.uploaders.csv_connectivity_importer import DELIMITER_OPTIONS
+from tvb.adapters.uploaders.csv_connectivity_importer import CSVDelimiterOptionsEnum
 from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImporter, ZIPConnectivityImporterModel
 from tvb.basic.logger.builder import get_logger
 from tvb.config.algorithm_categories import DEFAULTDATASTATE_RAW_DATA
@@ -119,18 +119,19 @@ class TumorDatasetCreator(ABCAdapter):
     def get_required_memory_size(self, view_model):
         return -1
 
-    def __import_tumor_connectivity(self, conn_folder, patient, user_tag, storage_path):
+    def __import_tumor_connectivity(self, conn_folder, patient, user_tag):
         connectivity_zip = os.path.join(conn_folder, self.CONN_ZIP_FILE)
         if not os.path.exists(connectivity_zip):
             self.logger.error("File {} does not exist.".format(connectivity_zip))
             return
         import_conn_adapter = self.build_adapter_from_class(ZIPConnectivityImporter)
+        operation = dao.get_operation_by_id(self.operation_id)
+        import_conn_adapter.extract_operation_data(operation)
         import_conn_model = ZIPConnectivityImporterModel()
         import_conn_model.uploaded = connectivity_zip
         import_conn_model.data_subject = patient
         import_conn_model.generic_attributes.user_tag_1 = user_tag
 
-        import_conn_adapter.storage_path = storage_path
         connectivity_index = import_conn_adapter.launch(import_conn_model)
 
         self.generic_attributes.subject = patient
@@ -144,7 +145,7 @@ class TumorDatasetCreator(ABCAdapter):
     def __import_time_series_csv_datatype(self, hrf_folder, connectivity_gid, patient, user_tag):
         path = os.path.join(hrf_folder, self.TIME_SERIES_CSV_FILE)
         with open(path) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=DELIMITER_OPTIONS['comma'])
+            csv_reader = csv.reader(csv_file, delimiter=CSVDelimiterOptionsEnum.COMMA.value)
             ts = list(csv_reader)
 
         ts_data = np.array(ts, dtype=np.float64).reshape((len(ts), 1, len(ts[0]), 1))
@@ -258,7 +259,7 @@ class TumorDatasetCreator(ABCAdapter):
                 for user_tag in user_tags:
                     datatype_folder = os.path.join(patient_path, user_tag)
 
-                    conn_gid = self.__import_tumor_connectivity(datatype_folder, patient, user_tag, self.storage_path)
+                    conn_gid = self.__import_tumor_connectivity(datatype_folder, patient, user_tag)
 
                     # The Time Series are invisible in the UI and are imported
                     # just so we can link them with the Pearson Coefficients

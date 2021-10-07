@@ -42,7 +42,6 @@ from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
-from tvb.basic.neotraits.ex import TraitValueError
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel
@@ -224,6 +223,7 @@ class SimulatorController(BurstBaseController):
             form = SimulatorSurfaceFragment()
             form.fill_from_post(data)
             self.simulator_service.reset_at_surface_change(is_simulation_copy, form, session_stored_simulator)
+            self.range_parameters.surface_parameters = None
             form.fill_trait(session_stored_simulator)
 
             if session_stored_simulator.surface:
@@ -238,13 +238,14 @@ class SimulatorController(BurstBaseController):
     @expose_fragment('simulator_fragment')
     def set_cortex(self, **data):
         session_stored_simulator, is_simulation_copy, is_simulation_load, _ = self.context.get_common_params()
+        rm_fragment = SimulatorRMFragment()
 
         if cherrypy.request.method == POST_REQUEST:
             self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_STIMULUS_URL)
-            rm_fragment = SimulatorRMFragment()
             rm_fragment.fill_from_post(data)
             rm_fragment.fill_trait(session_stored_simulator.surface)
 
+        self.range_parameters.surface_parameters = rm_fragment.get_range_parameters()
         rendering_rules = SimulatorFragmentRenderingRules(
             None, None, SimulatorWizzardURLs.SET_CORTEX_URL, is_simulation_copy, is_simulation_load,
             self.context.last_loaded_fragment_url, cherrypy.request.method)
@@ -361,6 +362,8 @@ class SimulatorController(BurstBaseController):
                 self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
             else:
                 self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_MONITORS_URL)
+
+            self.range_parameters.integrator_noise_parameters = None
 
         rendering_rules = SimulatorFragmentRenderingRules(
             None, None, SimulatorWizzardURLs.SET_INTEGRATOR_PARAMS_URL, is_simulation_copy,
@@ -506,7 +509,7 @@ class SimulatorController(BurstBaseController):
             previous_form_action_url=previous_form_action_url)
 
         form_action_url, if_bold_url = self.get_urls_for_next_monitor_fragment(next_monitor, current_monitor)
-        self.monitors_handler.update_monitor(current_monitor)
+        self.monitors_handler.update_monitor(current_monitor, session_stored_simulator.is_surface_simulation)
         return self.monitors_handler.handle_next_fragment_for_monitors(self.context, rendering_rules, current_monitor,
                                                                        next_monitor, False, form_action_url,
                                                                        if_bold_url)
@@ -549,7 +552,7 @@ class SimulatorController(BurstBaseController):
         burst_config = self.context.burst_config
         all_range_parameters = self.range_parameters.get_all_range_parameters()
         next_form = self.algorithm_service.prepare_adapter_form(
-            form_instance=SimulatorPSEConfigurationFragment(self.range_parameters.get_all_range_parameters()))
+            form_instance=SimulatorPSEConfigurationFragment(all_range_parameters))
 
         if cherrypy.request.method == POST_REQUEST:
             session_stored_simulator.simulation_length = float(data['simulation_length'])
@@ -801,8 +804,8 @@ class SimulatorController(BurstBaseController):
                 simulator, burst_config, sim_folder = self.burst_service.load_simulation_from_zip(data[upload_param],
                                                                                                   self.context.project)
 
-                dts_folder = os.path.join(sim_folder, ExportManager.EXPORTED_SIMULATION_DTS_DIR)
-                ImportService().import_project_operations(self.context.project, dts_folder, False, None)
+                dts_folder = os.path.join(sim_folder, StorageInterface.EXPORTED_SIMULATION_DTS_DIR)
+                ImportService().import_list_of_operations(self.context.project, dts_folder, False, None)
 
                 self.monitors_handler.build_list_of_monitors_from_view_models(simulator)
                 if burst_config.is_pse_burst():

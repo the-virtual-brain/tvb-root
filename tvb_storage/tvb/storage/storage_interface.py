@@ -34,16 +34,18 @@ All calls to methods from this module must be done through this class.
 
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+
+import os
 import uuid
 from datetime import datetime
-import os
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer, \
     encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
-from tvb.storage.h5.file.exceptions import RenameWhileSyncEncryptingException
+from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
+from tvb.storage.h5.file.exceptions import RenameWhileSyncEncryptingException, FileStructureException
 from tvb.storage.h5.file.files_helper import FilesHelper, TvbZip
 from tvb.storage.h5.file.hdf5_storage_manager import HDF5StorageManager
 from tvb.storage.h5.file.xml_metadata_handlers import XMLReader, XMLWriter
@@ -55,18 +57,19 @@ class StorageInterface:
     PROJECTS_FOLDER = "PROJECTS"
 
     ROOT_NODE_PATH = "/"
-    TVB_FILE_EXTENSION = XMLWriter.FILE_EXTENSION
     TVB_STORAGE_FILE_EXTENSION = ".h5"
     TVB_ZIP_FILE_EXTENSION = ".zip"
+    TVB_XML_FILE_EXTENSION = ".xml"
 
-    TVB_PROJECT_FILE = "Project" + TVB_FILE_EXTENSION
-
-    ZIP_FILE_EXTENSION = "zip"
-
-    FILE_EXTENSION = '.h5'
+    TVB_PROJECT_FILE = "Project" + TVB_XML_FILE_EXTENSION
     FILE_NAME_STRUCTURE = '{}_{}.h5'
-
     OPERATION_FOLDER_PREFIX = "Operation_"
+
+    EXPORTED_SIMULATION_NAME = "exported_simulation"
+    EXPORTED_SIMULATION_DTS_DIR = "datatypes"
+
+    EXPORT_FOLDER_NAME = "EXPORT_TMP"
+    EXPORT_FOLDER = os.path.join(TvbProfile.current.TVB_STORAGE, EXPORT_FOLDER_NAME)
 
     logger = get_logger(__name__)
 
@@ -74,13 +77,12 @@ class StorageInterface:
         self.files_helper = FilesHelper()
         self.data_encryption_handler = encryption_handler
         self.folders_queue_consumer = FoldersQueueConsumer()
+        self.import_export_encryption_handler = ImportExportEncryptionHandler()
 
         # object attributes which have parameters in their constructor will be lazily instantiated
         self.tvb_zip = None
-        self.storage_manager = None
         self.xml_reader = None
         self.xml_writer = None
-        self.encryption_handler = None
 
     # FilesHelper methods start here #
 
@@ -97,9 +99,6 @@ class StorageInterface:
     def get_temp_folder(self, project_name):
         return self.files_helper.get_project_folder(project_name, self.TEMP_FOLDER)
 
-    def remove_project_structure(self, project_name):
-        self.files_helper.remove_project_structure(project_name)
-
     def get_project_meta_file_path(self, project_name):
         return self.files_helper.get_project_meta_file_path(project_name)
 
@@ -115,18 +114,15 @@ class StorageInterface:
     def remove_operation_data(self, project_name, operation_id):
         self.files_helper.remove_operation_data(project_name, operation_id)
 
-    def remove_datatype_file(self, h5_file):
-        self.files_helper.remove_datatype_file(h5_file)
-        self.push_folder_to_sync(FilesHelper.get_project_folder_from_h5(h5_file))
-
     def get_images_folder(self, project_name):
         return self.files_helper.get_images_folder(project_name, self.IMAGES_FOLDER)
 
     def write_image_metadata(self, figure, meta_entity):
         self.files_helper.write_image_metadata(figure, meta_entity, self.IMAGES_FOLDER)
 
-    def remove_image_metadata(self, figure):
-        self.files_helper.remove_image_metadata(figure, self.IMAGES_FOLDER)
+    def remove_figure(self, figure):
+        self.files_helper.remove_figure(figure, self.IMAGES_FOLDER)
+        self.push_folder_to_sync(figure.project.name)
 
     def get_allen_mouse_cache_folder(self, project_name):
         return self.files_helper.get_allen_mouse_cache_folder(project_name)
@@ -156,34 +152,16 @@ class StorageInterface:
 
     # TvbZip methods start here #
 
-    def write_zip_folder(self, dest_path, folder, exclude=[]):
-        self.tvb_zip = TvbZip(dest_path, "w")
-        self.tvb_zip.write_zip_folder(folder, self.OPERATION_FOLDER_PREFIX, exclude)
-        self.tvb_zip.close()
-
-    def write_zip_folder_with_links(self, dest_path, folder, linked_paths, op, exclude=[]):
+    def write_zip_folder(self, dest_path, folder, linked_paths=None, op=None, exclude=[]):
         self.tvb_zip = TvbZip(dest_path, "w")
         self.tvb_zip.write_zip_folder(folder, exclude)
 
         self.logger.debug("Done exporting files, now we will export linked DTs")
 
-        if linked_paths is not None:
-            self.export_datatypes(linked_paths, op)
+        if linked_paths is not None and op is not None:
+            self.__export_datatypes(linked_paths, op)
 
         self.tvb_zip.close()
-
-    def write_zip_folders(self, all_datatypes, project_name, zip_full_path, exclude=[]):
-        operation_folders = []
-        for data_type in all_datatypes:
-            operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
-            operation_folders.append(operation_folder)
-        self.tvb_zip = TvbZip(zip_full_path, "w")
-        self.tvb_zip.write_zip_folders(operation_folders, exclude)
-        self.tvb_zip.close()
-
-    @staticmethod
-    def zip_folder(result_name, folder_root):
-        FilesHelper.zip_folder(result_name, folder_root)
 
     def unpack_zip(self, uploaded_zip, folder_path):
         self.tvb_zip = TvbZip(uploaded_zip, "r")
@@ -203,7 +181,7 @@ class StorageInterface:
         self.tvb_zip.close()
         return file
 
-    # Return a HDF5 storage methods to call the methods from there #
+    # Return a HDF5StorageManager object to call the methods from there #
 
     @staticmethod
     def get_storage_manager(file_full_path):
@@ -219,39 +197,23 @@ class StorageInterface:
         self.xml_writer = XMLWriter(entity)
         return self.xml_writer.write_metadata_in_xml(final_path)
 
-    # Encryption Handler methods start here #
+    # Method for preparing encryption
+    def prepare_encryption(self, project_name):
+        # Generate path to public_key
+        temp_folder = self.get_temp_folder(project_name)
+        public_key_file_name = "public_key_" + uuid.uuid4().hex + ".pem"
+        public_key_file_path = os.path.join(temp_folder, public_key_file_name)
 
-    def cleanup_encryption_handler(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        self.encryption_handler.cleanup_encryption_handler()
+        # Generate a random password for the files
+        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
+        password = EncryptionHandler.generate_random_password(pass_size)
 
+        return public_key_file_path, password
+
+    # Return an EncryptionHandler object to call the methods from there #
     @staticmethod
-    def generate_random_password(pass_size):
-        return EncryptionHandler.generate_random_password(pass_size)
-
-    def get_encrypted_dir(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.get_encrypted_dir()
-
-    def get_password_file(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.get_password_file()
-
-    def encrypt_inputs(self, dir_gid, files_to_encrypt, subdir=None):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.encrypt_inputs(files_to_encrypt, subdir)
-
-    def decrypt_results_to_dir(self, dir_gid, dir, from_subdir=None):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.decrypt_results_to_dir(dir, from_subdir)
-
-    def decrypt_files_to_dir(self, dir_gid, files, dir):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.decrypt_files_to_dir(files, dir)
-
-    def get_current_enc_dirname(self, dir_gid):
-        self.encryption_handler = EncryptionHandler(dir_gid)
-        return self.encryption_handler.current_enc_dirname
+    def get_encryption_handler(dir_gid):
+        return EncryptionHandler(dir_gid)
 
     # Data Encryption Handler methods start here #
 
@@ -305,13 +267,6 @@ class StorageInterface:
         self.folders_queue_consumer.join()
 
     # Generic methods start here
-    def get_file_by_gid(self, project_name, op_id, dt_gid):
-        op_path = self.files_helper.get_project_folder(project_name, str(op_id))
-
-        for f in os.listdir(op_path):
-            fp = os.path.join(op_path, f)
-            if dt_gid in f and os.path.isfile(fp):
-                return fp
 
     def get_filename(self, class_name, gid):
         return self.FILE_NAME_STRUCTURE.format(class_name, gid.hex)
@@ -327,7 +282,7 @@ class StorageInterface:
         return os.path.join(base_dir, fname)
 
     def ends_with_tvb_file_extension(self, file):
-        return file.endswith(self.TVB_FILE_EXTENSION)
+        return file.endswith(self.TVB_XML_FILE_EXTENSION)
 
     def ends_with_tvb_storage_file_extension(self, file):
         return file.endswith(self.TVB_STORAGE_FILE_EXTENSION)
@@ -347,26 +302,39 @@ class StorageInterface:
                 self.get_project_folder(new_name))
             os.rename(encrypted_path, new_encrypted_path)
 
-    def remove_project(self, project):
+    def remove_project(self, project, sync_for_encryption=False):
         project_folder = self.get_project_folder(project.name)
-        self.remove_project_structure(project.name)
-        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
-        if os.path.exists(encrypted_path):
-            self.remove_folder(encrypted_path)
-        if os.path.exists(DataEncryptionHandler.project_key_path(project.id)):
-            os.remove(DataEncryptionHandler.project_key_path(project.id))
+        if sync_for_encryption:
+            self.sync_folders(project_folder)
+        try:
+            self.remove_folder(project_folder)
+            self.logger.debug("Project folders were removed for " + project.name)
+        except OSError:
+            self.logger.exception("A problem occurred while removing folder.")
+            raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
 
-    def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, full_path, vm_full_path):
+        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
+        FilesHelper.remove_files([encrypted_path, DataEncryptionHandler.project_key_path(project.id)], True)
+
+    def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, path_list):
         self.set_project_active(to_project)
         self.sync_folders(to_project_path)
 
-        self.files_helper.move_datatype(to_project.name, str(new_op_id), full_path)
-        self.files_helper.move_datatype(to_project.name, str(new_op_id), vm_full_path)
+        for path in path_list:
+            self.files_helper.move_datatype(to_project.name, str(new_op_id), path)
 
         self.sync_folders(to_project_path)
         self.set_project_inactive(to_project)
 
-    def export_datatypes(self, paths, operation):
+    # Return an ImportExportEncryptionHandler object  to call the methods from there #
+
+    @staticmethod
+    def get_import_export_encryption_handler():
+        return ImportExportEncryptionHandler()
+
+    # Exporting related methods start here
+
+    def __export_datatypes(self, paths, operation):
         op_folder = self.get_project_folder(operation.project.name, operation.id)
         op_folder_name = os.path.basename(op_folder)
 
@@ -378,7 +346,7 @@ class StorageInterface:
         # remove these files, since we only want them in export archive
         self.remove_folder(op_folder)
 
-    def build_data_export_folder(self, data, export_folder):
+    def __build_data_export_folder(self, data, export_folder):
         now = datetime.now()
         date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
                                              now.minute, now.second, now.microsecond)
@@ -388,24 +356,139 @@ class StorageInterface:
 
         return data_export_folder
 
-    def export_project(self, project, folders_to_exclude, export_folder, linked_paths, op):
+    def export_project(self, project, folders_to_exclude, linked_paths, op):
+        """
+        This method is used to export a project as a ZIP file.
+        :param project: project to be exported.
+        :param folders_to_exclude: a list of paths to folders inside of a project folder which should not be exported.
+        :param linked_paths: a list of links to datatypes for the project to be exported
+        :param op: operation for links to exported datatypes (if any)
+        """
+
         project_folder = self.get_project_folder(project.name)
         folders_to_exclude.append("TEMP")
 
         # Compute path and name of the zip file
         now = datetime.now()
         date_str = now.strftime("%Y-%m-%d_%H-%M")
-        zip_file_name = "%s_%s.%s" % (date_str, project.name, self.ZIP_FILE_EXTENSION)
+        zip_file_name = "%s_%s.%s" % (date_str, project.name, self.TVB_ZIP_FILE_EXTENSION)
 
-        export_folder = self.build_data_export_folder(project, export_folder)
+        export_folder = self.__build_data_export_folder(project, self.EXPORT_FOLDER)
         result_path = os.path.join(export_folder, zip_file_name)
 
         # Pack project [filtered] content into a ZIP file:
         self.logger.debug("Done preparing, now we will write the folder.")
         self.logger.debug(project_folder)
-        self.write_zip_folder_with_links(result_path, project_folder, linked_paths, op, folders_to_exclude)
+        self.write_zip_folder(result_path, project_folder, linked_paths, op, folders_to_exclude)
 
         # Make sure the Project.xml file gets copied:
         self.logger.debug("Done, closing")
 
         return result_path
+
+    def export_simulator_configuration(self, burst, all_view_model_paths, all_datatype_paths, zip_filename):
+        """
+        This method is used to export a simulator configuration as a ZIP file
+        :param burst: BurstConfiguration of the simulation to be exported
+        :param all_view_model_paths: a list of paths to all view model files of the simulation
+        :param all_datatype_paths: a list of paths to all datatype files of the simulation
+        :param zip_filename: name of the file to be exported
+        """
+
+        tmp_export_folder = self.__build_data_export_folder(burst, self.EXPORT_FOLDER)
+        tmp_sim_folder = os.path.join(tmp_export_folder, self.EXPORTED_SIMULATION_NAME)
+
+        if not os.path.exists(tmp_sim_folder):
+            os.makedirs(tmp_sim_folder)
+
+        for vm_path in all_view_model_paths:
+            dest = os.path.join(tmp_sim_folder, os.path.basename(vm_path))
+            self.copy_file(vm_path, dest)
+
+        for dt_path in all_datatype_paths:
+            dest = os.path.join(tmp_sim_folder, self.EXPORTED_SIMULATION_DTS_DIR, os.path.basename(dt_path))
+            self.copy_file(dt_path, dest)
+
+        result_path = os.path.join(tmp_export_folder, zip_filename)
+        self.write_zip_folder(result_path, tmp_sim_folder)
+        self.remove_folder(tmp_sim_folder)
+
+        return result_path
+
+    def __copy_datatypes(self, dt_path_list, data, password):
+        export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
+
+        for dt_path in dt_path_list:
+            file_destination = os.path.join(export_folder, os.path.basename(dt_path))
+            if not os.path.exists(file_destination):
+                self.copy_file(dt_path, file_destination)
+                self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+
+                if password is not None:
+                    self.import_export_encryption_handler.encrypt_data_at_export(file_destination, password)
+                    os.remove(file_destination)
+
+        return export_folder
+
+    def export_datatypes(self, dt_path_list, data, download_file_name, public_key_path=None, password=None):
+        """
+        This method is used to export a list of datatypes as a ZIP file.
+        :param dt_path_list: a list of paths to be exported (there are more than one when exporting with links)
+        :param data: data to be exported
+        :param download_file_name: name of the zip file to be downloaded
+        :param public_key_path: path to public key that will be used for encrypting the password by TVB
+        :param password: password used for encrypting the files before exporting
+        """
+
+        export_folder = self.__copy_datatypes(dt_path_list, data, password)
+
+        if len(dt_path_list) == 1 and password is None:
+            return os.path.join(export_folder, os.path.basename(dt_path_list[0]))
+
+        if password is not None:
+            download_file_name = download_file_name.replace('.h5', '.zip')
+            self.import_export_encryption_handler.encrypt_and_save_password(public_key_path, password, export_folder)
+
+        export_data_zip_path = os.path.join(os.path.dirname(export_folder), download_file_name)
+        self.write_zip_folder(export_data_zip_path, export_folder)
+        return export_data_zip_path
+
+    def export_datatypes_structure(self, op_file_dict, data, download_file_name, public_key_path, password,
+                                   links_tuple_for_copy=None):
+        """
+        This method is used to export a list of datatypes as a ZIP file, while preserving the folder structure
+        (eg: operation folders). It is only used during normal tvb exporting for datatype groups.
+        :param op_file_dict: a dictionary where keys are operation folders and the values are lists of files inside
+            that operation folder
+        :param data: data to be exported
+        :param download_file_name: name of the ZIP file to be exported
+        :param public_key_path: path to public key that will be used for encrypting the password by TVB
+        :param password: password used for encrypting the files before exporting
+        :param links_tuple_for_copy: a tuple containing two elements: a list of paths to be copied and the first
+         datatype of the group
+
+        """
+        if links_tuple_for_copy is not None:
+            export_folder = self.__copy_datatypes(links_tuple_for_copy[0], links_tuple_for_copy[1], password)
+        else:
+            export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
+
+        for op_folder, files in op_file_dict.items():
+            tmp_op_folder_path = os.path.join(export_folder, os.path.basename(op_folder))
+            for file in files:
+                dest_path = os.path.join(tmp_op_folder_path, os.path.basename(file))
+
+                if not os.path.exists(dest_path):
+                    self.copy_file(file, os.path.join(tmp_op_folder_path, os.path.basename(file)))
+                    self.get_storage_manager(dest_path).remove_metadata('parent_burst', check_existence=True)
+
+                    if password is not None:
+                        self.import_export_encryption_handler.encrypt_data_at_export(dest_path, password)
+                        os.remove(dest_path)
+
+        dest_path = os.path.join(os.path.dirname(export_folder), download_file_name)
+        if password is not None:
+            self.import_export_encryption_handler.encrypt_and_save_password(public_key_path, password, export_folder)
+        self.write_zip_folder(dest_path, export_folder)
+
+        return dest_path

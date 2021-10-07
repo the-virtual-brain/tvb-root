@@ -184,14 +184,7 @@ class FigureService:
         Remove figure from DB and file storage.
         """
         figure = dao.load_figure(figure_id)
-
-        # Delete all figure related files from disk.
-        figures_folder = self.storage_interface.get_images_folder(figure.project.name)
-        path2figure = os.path.join(figures_folder, figure.file_path)
-        if os.path.exists(path2figure):
-            os.remove(path2figure)
-            self.storage_interface.remove_image_metadata(figure)
-            self.storage_interface.push_folder_to_sync(figure.project.name)
+        self.storage_interface.remove_figure(figure)
         # Remove figure reference from DB.
         result = dao.remove_entity(ResultFigure, figure_id)
         return result

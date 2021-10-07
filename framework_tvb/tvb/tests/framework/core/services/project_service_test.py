@@ -33,18 +33,17 @@
 """
 
 import os
-import shutil
+
 import pytest
 import tvb_data
-
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model import model_datatype, model_project, model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.context_overlay import DataTypeOverlayDetails
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.neocom import h5
-from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.algorithm_service import AlgorithmService
+from tvb.core.services.exceptions import ProjectServiceException
 from tvb.core.services.project_service import ProjectService, PROJECTS_PAGE_SIZE
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.adapters.dummy_adapter3 import DummyAdapter3
@@ -70,11 +69,8 @@ class TestProjectService(TransactionalTestCase):
 
     def transactional_teardown_method(self):
         """
-        Remove project folders and clean up database.
+        Remove project folders.
         """
-        created_projects = dao.get_projects_for_user(self.test_user.id)
-        for project in created_projects:
-            self.storage_interface.remove_project_structure(project.name)
         self.delete_project_folders()
 
     def test_create_project_happy_flow(self):
@@ -244,8 +240,8 @@ class TestProjectService(TransactionalTestCase):
 
         for folder in os.listdir(TvbProfile.current.TVB_STORAGE):
             full_path = os.path.join(TvbProfile.current.TVB_STORAGE, folder)
-            if os.path.isdir(full_path) and folder.startswith('Generated'):
-                shutil.rmtree(full_path)
+            if folder.startswith('Generated'):
+                self.storage_interface.remove_folder(full_path)
 
     def test_retrieve_projects_page2(self):
         """
@@ -374,7 +370,7 @@ class TestProjectService(TransactionalTestCase):
         project_to_link = dao.store_entity(project_to_link)
         exact_data = dao.get_datatype_by_gid(gid)
         assert exact_data is not None, "Initialization problem!"
-        dao.store_entity(model_datatype.Links(exact_data.id, project_to_link.id))
+        link = dao.store_entity(model_datatype.Links(exact_data.id, project_to_link.id))
 
         vw_h5_path = h5.path_for_stored_index(exact_data)
         assert os.path.exists(vw_h5_path)
@@ -384,7 +380,7 @@ class TestProjectService(TransactionalTestCase):
                                                   TvbProfile.current.web.admin.SYSTEM_USER_NAME, None, None, True,
                                                   None))
 
-        self.project_service._remove_project_node_files(inserted_project.id, gid)
+        self.project_service._remove_project_node_files(inserted_project.id, gid, [link])
 
         assert not os.path.exists(vw_h5_path)
         exact_data = dao.get_datatype_by_gid(gid)
@@ -393,7 +389,7 @@ class TestProjectService(TransactionalTestCase):
         assert os.path.exists(vw_h5_path_new)
         assert vw_h5_path_new != vw_h5_path
 
-        self.project_service._remove_project_node_files(project_to_link.id, gid)
+        self.project_service._remove_project_node_files(project_to_link.id, gid, [])
         assert dao.get_datatype_by_gid(gid) is None
 
     def test_update_meta_data_simple(self):
@@ -418,7 +414,7 @@ class TestProjectService(TransactionalTestCase):
         Test the new update metaData for a group of dataTypes.
         """
         test_adapter_factory(adapter_class=DummyAdapter3)
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         op_group_id = group.fk_operation_group
 
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
@@ -461,7 +457,7 @@ class TestProjectService(TransactionalTestCase):
         project1 = project_factory(user, name="TestPS1")
         project2 = project_factory(user, name="TestPS2")
 
-        dt_group = datatype_group_factory(project=project1)
+        dt_group, _ = datatype_group_factory(project=project1)
         dt_simple = dummy_datatype_index_factory(state="RAW_DATA", project=project1)
         # Create 3 DTs directly in Project 2
         dummy_datatype_index_factory(state="RAW_DATA", project=project2)
@@ -480,7 +476,8 @@ class TestProjectService(TransactionalTestCase):
         expected_links.append(dt_group.gid)
 
         # Actually create the links from Prj1 into Prj2
-        AlgorithmService().create_link(link_ids, project2.id)
+        for link_id in link_ids:
+            AlgorithmService().create_link(link_id, project2.id)
 
         # Retrieve the raw data used to compose the tree (for easy parsing)
         dts_in_tree = dao.get_data_in_project(project2.id)

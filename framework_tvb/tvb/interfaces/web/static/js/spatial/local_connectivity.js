@@ -215,6 +215,6 @@ function plotEquation(subformDiv = null) {
     });
 }
 
-function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
-    return refreshBaseUrl + '/refresh_subform/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + currentElem.value;
 }

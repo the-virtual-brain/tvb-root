@@ -54,12 +54,12 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import Surface, FACE
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 LOG = get_logger(__name__)
 
 
-def ensure_shell_surface(project_id, shell_surface=None, preferred_type=FACE):
+def ensure_shell_surface(project_id, shell_surface=None, preferred_type=SurfaceTypesEnum.FACE_SURFACE.value):
     filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                          values=[preferred_type])
     if shell_surface is None:

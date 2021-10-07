@@ -61,7 +61,6 @@ class TestGIFTISurfaceImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        self.storage_interface.remove_project_structure(self.test_project.name)
 
     def test_import_surface_gifti_data(self, operation_factory):
         """

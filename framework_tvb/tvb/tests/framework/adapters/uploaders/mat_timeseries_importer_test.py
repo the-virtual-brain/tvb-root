@@ -39,7 +39,6 @@ import os
 import tvb_data
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.uploaders.mat_timeseries_importer import RegionMatTimeSeriesImporterModel, RegionTimeSeriesImporter
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -57,7 +56,6 @@ class TestMatTimeSeriesImporter(BaseTestCase):
 
     def teardown_method(self):
         self.clean_database()
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_import_bold(self):
         view_model = RegionMatTimeSeriesImporterModel()

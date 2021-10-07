@@ -34,11 +34,12 @@
 """
 
 import os
-import shutil
+
 import pytest
 from tvb.basic.profile import TvbProfile
 from tvb.config.profile_settings import TestSQLiteProfile
 from tvb.core.services.settings_service import SettingsService, InvalidSettingsException
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 
 TEST_CONFIG_FILE = os.path.expanduser(os.path.join("~", 'tvb.tests.framework.configuration'))
@@ -57,10 +58,7 @@ class TestSettingsService(BaseTestCase):
         """
         Prepare the usage of a different config file for this class only.
         """
-        if os.path.exists(TEST_CONFIG_FILE):
-            os.remove(TEST_CONFIG_FILE)
-        if os.path.exists(TestSQLiteProfile.DEFAULT_STORAGE):
-            shutil.rmtree(TestSQLiteProfile.DEFAULT_STORAGE)
+        StorageInterface.remove_files([TEST_CONFIG_FILE, TestSQLiteProfile.DEFAULT_STORAGE])
 
         self.old_config_file = TvbProfile.current.TVB_CONFIG_FILE
         TvbProfile.current.__class__.TVB_CONFIG_FILE = TEST_CONFIG_FILE
@@ -181,5 +179,5 @@ class TestSettingsService(BaseTestCase):
         data = open(os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED', "test_rename-xxx43"), 'r').read()
         assert data == 'test-content'
 
-        shutil.rmtree(os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED'))
-        os.remove(os.path.join(TvbProfile.current.TVB_STORAGE, "test_rename-xxx43"))
+        StorageInterface.remove_files([os.path.join(TvbProfile.current.TVB_STORAGE, 'RENAMED'),
+                                       os.path.join(TvbProfile.current.TVB_STORAGE, "test_rename-xxx43")])

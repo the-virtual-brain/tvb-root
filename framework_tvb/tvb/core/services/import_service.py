@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
@@ -38,14 +38,14 @@ import json
 import os
 import shutil
 import uuid
-from datetime import datetime
 from cgi import FieldStorage
+from datetime import datetime
 from cherrypy._cpreqbody import Part
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.attributes import manager_of_class
 
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.ex import TraitTypeError
+from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.basic.profile import TvbProfile
 from tvb.config import VIEW_MODEL2ADAPTER, TVB_IMPORTER_MODULE, TVB_IMPORTER_CLASS
 from tvb.config.algorithm_categories import UploadAlgorithmCategoryConfig, DEFAULTDATASTATE_INTERMEDIATE
@@ -64,7 +64,8 @@ from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.h5 import H5File, ViewModelH5
 from tvb.core.project_versions.project_update_manager import ProjectUpdateManager
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException
+from tvb.core.services.exceptions import ImportException, ServicesBaseException, MissingReferenceException, \
+    DatatypeGroupImportException
 from tvb.storage.h5.file.exceptions import MissingDataSetException, FileStructureException, \
     IncompatibleFileManagerException
 from tvb.storage.storage_interface import StorageInterface
@@ -110,7 +111,7 @@ class ImportService(object):
 
     def _download_and_unpack_project_zip(self, uploaded, uq_file_name, temp_folder):
 
-        if isinstance(uploaded, FieldStorage) or isinstance(uploaded, Part):
+        if isinstance(uploaded, (FieldStorage, Part)):
             if not uploaded.file:
                 raise ImportException("Please select the archive which contains the project structure.")
             with open(uq_file_name, 'wb') as file_obj:
@@ -158,7 +159,7 @@ class ImportService(object):
 
         try:
             self._download_and_unpack_project_zip(uploaded, uq_file_name, temp_folder)
-            self._import_projects_from_folder(temp_folder)
+            self._import_project_from_folder(temp_folder)
 
         except Exception as excep:
             self.logger.exception("Error encountered during import. Deleting projects created during this operation.")
@@ -168,29 +169,31 @@ class ImportService(object):
             # Removing from DB is not necessary because in transactional env a simple exception throw
             # will erase everything to be inserted.
             for project in self.created_projects:
-                project_path = self.storage_interface.get_project_folder(project.name)
-                shutil.rmtree(project_path)
+                self.storage_interface.remove_project(project)
             raise ImportException(str(excep))
 
         finally:
-            # Now delete uploaded file
-            if os.path.exists(uq_file_name):
-                os.remove(uq_file_name)
-            # Now delete temporary folder where uploaded ZIP was exploded.
-            if os.path.exists(temp_folder):
-                shutil.rmtree(temp_folder)
+            # Now delete uploaded file and temporary folder where uploaded ZIP was exploded.
+            self.storage_interface.remove_files([uq_file_name, temp_folder])
 
-    def _import_projects_from_folder(self, temp_folder):
+    def _import_project_from_folder(self, temp_folder):
         """
         Process each project from the uploaded pack, to extract names.
         """
-        project_roots = []
+        temp_project_path = None
         for root, _, files in os.walk(temp_folder):
             if StorageInterface.TVB_PROJECT_FILE in files:
-                project_roots.append(root)
+                temp_project_path = root
+                break
 
-        for temp_project_path in project_roots:
+        if temp_project_path is not None:
             update_manager = ProjectUpdateManager(temp_project_path)
+
+            if update_manager.checked_version < 3:
+                raise ImportException('Importing projects with versions older than 3 is not supported in TVB 2! '
+                                      'Please import the project in TVB 1.5.8 and then launch the current version of '
+                                      'TVB in order to upgrade this project!')
+
             update_manager.run_all_updates()
             project = self.__populate_project(temp_project_path)
             # Populate the internal list of create projects so far, for cleaning up folders, in case of failure
@@ -199,12 +202,11 @@ class ImportService(object):
             project_path = self.storage_interface.get_project_folder(project.name)
             shutil.move(os.path.join(temp_project_path, StorageInterface.TVB_PROJECT_FILE), project_path)
             # Now import project operations with their results
-            self.import_project_operations(project, temp_project_path)
+            self.import_list_of_operations(project, temp_project_path)
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
             if StorageInterface.encryption_enabled():
-                StorageInterface.sync_folders(project_path)
-                shutil.rmtree(project_path)
+                self.storage_interface.remove_project(project, True)
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """
@@ -260,9 +262,9 @@ class ImportService(object):
             self.store_datatype(datatype, dt_path)
             stored_dt_count = 1
         elif datatype_already_in_tvb.parent_operation.project.id != project_id:
-            AlgorithmService.create_link([datatype_already_in_tvb.id], project_id)
+            AlgorithmService.create_link(datatype_already_in_tvb.id, project_id)
             if datatype_already_in_tvb.fk_datatype_group:
-                AlgorithmService.create_link([datatype_already_in_tvb.fk_datatype_group], project_id)
+                AlgorithmService.create_link(datatype_already_in_tvb.fk_datatype_group, project_id)
         return stored_dt_count
 
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
@@ -366,6 +368,7 @@ class ImportService(object):
                     operation = Operation(view_model.gid.hex, project.fk_admin, project.id, alg.id,
                                           status=STATUS_FINISHED,
                                           start_date=datetime.now(), completion_date=datetime.now())
+                    operation.create_date = datetime.min
                     self.logger.debug("Found no ViewModel in folder, so we default to " + str(operation))
 
                     if importer_operation_id:
@@ -385,10 +388,11 @@ class ImportService(object):
                 setattr(key_attr, element[1], element[2])
 
         view_model.range_values = operation_entity.range_values
-        if operation_entity.operation_group:
-            view_model.operation_group_gid = uuid.UUID(operation_entity.operation_group.gid)
-            view_model.ranges = json.dumps(operation_entity.operation_group.range_references)
-            view_model.is_metric_operation = 'DatatypeMeasure' in operation_entity.operation_group.name
+        op_group = dao.get_operationgroup_by_id(operation_entity.fk_operation_group)
+        if op_group:
+            view_model.operation_group_gid = uuid.UUID(op_group.gid)
+            view_model.ranges = json.dumps(op_group.range_references)
+            view_model.is_metric_operation = 'DatatypeMeasure' in op_group.name
 
         if generic_attributes is not None:
             view_model.generic_attributes = generic_attributes
@@ -401,17 +405,24 @@ class ImportService(object):
         dao.store_entity(operation_entity)
         return view_model
 
-    def import_project_operations(self, project, import_path, is_group=False, importer_operation_id=None):
+    def import_list_of_operations(self, project, import_path, is_group=False, importer_operation_id=None):
         """
         This method scans provided folder and identify all operations that needs to be imported
         """
         all_dts_count = 0
         all_stored_dts_count = 0
         imported_operations = []
-        ordered_operations = self._retrieve_operations_in_order(project, import_path, importer_operation_id)
+        ordered_operations = self._retrieve_operations_in_order(project, import_path,
+                                                                None if is_group else importer_operation_id)
+
+        if is_group and len(ordered_operations) > 0:
+            first_op = dao.get_operation_by_id(importer_operation_id)
+            vm_path = h5.determine_filepath(first_op.view_model_gid, os.path.dirname(import_path))
+            os.remove(vm_path)
+
+            ordered_operations[0].operation.id = importer_operation_id
 
         for operation_data in ordered_operations:
-
             if operation_data.is_old_form:
                 operation_entity, datatype_group = self.import_operation(operation_data.operation)
                 new_op_folder = self.storage_interface.get_project_folder(project.name, str(operation_entity.id))
@@ -429,6 +440,10 @@ class ImportService(object):
                     dao.store_entity(operation_entity)
 
             elif operation_data.main_view_model is not None:
+                operation_data.operation.create_date = datetime.now()
+                operation_data.operation.start_date = datetime.now()
+                operation_data.operation.completion_date = datetime.now()
+
                 do_merge = False
                 if importer_operation_id:
                     do_merge = True
@@ -463,28 +478,28 @@ class ImportService(object):
                     if operation_data.main_view_model.is_metric_operation:
                         self._update_burst_metric(operation_entity)
 
-                    #TODO: TVB-2849 to reveiw these flags and simplify condition
-                    if stored_dts_count > 0 or (not operation_data.is_self_generated and not is_group) or importer_operation_id is not None:
-                        imported_operations.append(operation_entity)
-                        new_op_folder = self.storage_interface.get_project_folder(project.name, str(operation_entity.id))
-                        view_model_disk_size = 0
-                        for h5_file in operation_data.all_view_model_files:
-                            view_model_disk_size += StorageInterface.compute_size_on_disk(h5_file)
-                            shutil.move(h5_file, new_op_folder)
-                        operation_entity.view_model_disk_size = view_model_disk_size
-                        dao.store_entity(operation_entity)
-                    else:
-                        # In case all Dts under the current operation were Links and the ViewModel is dummy,
-                        # don't keep the Operation empty in DB
-                        dao.remove_entity(Operation, operation_entity.id)
-                        self.storage_interface.remove_operation_data(project.name, operation_entity.id)
+                    imported_operations.append(operation_entity)
+                    new_op_folder = self.storage_interface.get_project_folder(project.name,
+                                                                              str(operation_entity.id))
+                    view_model_disk_size = 0
+                    for h5_file in operation_data.all_view_model_files:
+                        view_model_disk_size += StorageInterface.compute_size_on_disk(h5_file)
+                        shutil.move(h5_file, new_op_folder)
+                    operation_entity.view_model_disk_size = view_model_disk_size
+                    dao.store_entity(operation_entity)
                 except MissingReferenceException as excep:
-                    dao.remove_entity(Operation, operation_entity.id)
                     self.storage_interface.remove_operation_data(project.name, operation_entity.id)
+                    operation_entity.fk_operation_group = None
+                    dao.store_entity(operation_entity)
+                    dao.remove_entity(DataTypeGroup, dt_group.id)
                     raise excep
             else:
                 self.logger.warning("Folder %s will be ignored, as we could not find a serialized "
                                     "operation or DTs inside!" % operation_data.operation_folder)
+
+            # We want importer_operation_id to be kept just for the first operation (the first iteration)
+            if is_group:
+                importer_operation_id = None
 
         self._update_dt_groups(project.id)
         self._update_burst_configurations(project.id)
@@ -493,7 +508,8 @@ class ImportService(object):
     @staticmethod
     def _get_new_form_view_model(operation, xml_parameters):
         # type (Operation) -> ViewModel
-        ad = ABCAdapter.build_adapter(operation.algorithm)
+        algo = dao.get_algorithm_by_id(operation.fk_from_algo)
+        ad = ABCAdapter.build_adapter(algo)
         view_model = ad.get_view_model_class()()
 
         if xml_parameters:
@@ -503,13 +519,13 @@ class ImportService(object):
                 xml_parameters = json.loads(xml_parameters)
             for param in xml_parameters:
                 new_param_name = param
-                if param[0] == "_":
+                if param != '' and param[0] == "_":
                     new_param_name = param[1:]
                 new_param_name = new_param_name.lower()
                 if new_param_name in declarative_attrs:
                     try:
                         setattr(view_model, new_param_name, xml_parameters[param])
-                    except TraitTypeError:
+                    except (TraitTypeError, TraitAttributeError):
                         pass
         return view_model
 
@@ -538,7 +554,7 @@ class ImportService(object):
     def load_datatype_from_file(self, current_file, op_id, datatype_group=None, current_project_id=None):
         # type: (str, int, DataTypeGroup, int) -> HasTraitsIndex
         """
-        Creates an instance of datatype from storage / H5 file 
+        Creates an instance of datatype from storage / H5 file
         :returns: DatatypeIndex
         """
         self.logger.debug("Loading DataType from file: %s" % current_file)
@@ -555,10 +571,28 @@ class ImportService(object):
             result = burst
         else:
             datatype, generic_attributes = h5.load_with_links(current_file)
+
+            already_existing_datatype = h5.load_entity_by_gid(datatype.gid)
+            if datatype_group is not None and already_existing_datatype is not None:
+                raise DatatypeGroupImportException("The datatype group that you are trying to import"
+                                                   " already exists!")
             index_class = h5.REGISTRY.get_index_for_datatype(datatype.__class__)
             datatype_index = index_class()
             datatype_index.fill_from_has_traits(datatype)
             datatype_index.fill_from_generic_attributes(generic_attributes)
+
+            if datatype_group is not None and hasattr(datatype_index, 'fk_source_gid') and \
+                    datatype_index.fk_source_gid is not None:
+                ts = h5.load_entity_by_gid(datatype_index.fk_source_gid)
+
+                if ts is None:
+                    op = dao.get_operations_in_group(datatype_group.fk_operation_group, only_first_operation=True)
+                    op.fk_operation_group = None
+                    dao.store_entity(op)
+                    dao.remove_entity(OperationGroup, datatype_group.fk_operation_group)
+                    dao.remove_entity(DataTypeGroup, datatype_group.id)
+                    raise DatatypeGroupImportException("Please import the time series group before importing the"
+                                                       " datatype measure group!")
 
             # Add all the required attributes
             if datatype_group:
@@ -631,20 +665,22 @@ class ImportService(object):
         """
         Store a Operation entity.
         """
-        operation_entity = dao.store_entity(operation_entity)
+        do_merge = False
+        if operation_entity.id:
+            do_merge = True
+        operation_entity = dao.store_entity(operation_entity, merge=do_merge)
         operation_group_id = operation_entity.fk_operation_group
         datatype_group = None
 
         if operation_group_id is not None:
-            try:
-                datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
-            except SQLAlchemyError:
+            datatype_group = dao.get_datatypegroup_by_op_group_id(operation_group_id)
+
+            if datatype_group is None and migration is False:
                 # If no dataType group present for current op. group, create it.
-                if migration is False:
-                    operation_group = dao.get_operationgroup_by_id(operation_group_id)
-                    datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
-                    datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
-                    datatype_group = dao.store_entity(datatype_group)
+                operation_group = dao.get_operationgroup_by_id(operation_group_id)
+                datatype_group = DataTypeGroup(operation_group, operation_id=operation_entity.id)
+                datatype_group.state = UploadAlgorithmCategoryConfig.defaultdatastate
+                datatype_group = dao.store_entity(datatype_group)
 
         return operation_entity, datatype_group
 
@@ -653,7 +689,7 @@ class ImportService(object):
         temp_folder = self._compute_unpack_path()
         uq_file_name = temp_folder + ".zip"
 
-        if isinstance(zip_file, FieldStorage) or isinstance(zip_file, Part):
+        if isinstance(zip_file, (FieldStorage, Part)):
             if not zip_file.file:
                 raise ServicesBaseException("Could not process the given ZIP file...")
 
@@ -692,4 +728,3 @@ class ImportService(object):
         for burst_config in burst_configs:
             burst_config.datatypes_number = dao.count_datatypes_in_burst(burst_config.gid)
             dao.store_entity(burst_config)
-

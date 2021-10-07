@@ -39,9 +39,9 @@ schemes (region and surface based simulations).
 """
 
 import itertools
-
 import numpy
 import pytest
+
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.equations import Linear
@@ -112,7 +112,8 @@ class Simulator(object):
                   coupling_strength=0.00042, method=HeunDeterministic,
                   surface_sim=False,
                   default_connectivity=True,
-                  with_stimulus=False):
+                  with_stimulus=False,
+                  with_subcorticals=False):
         """
         Create an instance of the Simulator class, by default use the
         generic plane oscillator local dynamic model and the deterministic 
@@ -127,7 +128,10 @@ class Simulator(object):
         else:
             white_matter = Connectivity.from_file(source_file="connectivity_192.zip")
             region_mapping = RegionMapping.from_file(source_file="regionMapping_16k_192.txt")
+        if with_subcorticals:
+            BaseTestCase.add_subcorticals_to_conn(white_matter)
         region_mapping.surface = CorticalSurface.from_file()
+        region_mapping.connectivity = white_matter
 
         white_matter_coupling = coupling.Linear(a=numpy.array([coupling_strength]))
         white_matter.speed = numpy.array([speed])  # no longer allow scalars to numpy array promotion
@@ -180,8 +184,10 @@ class TestSimulator(BaseTestCase):
     @pytest.mark.parametrize('model_class,method_class', itertools.product(MODEL_CLASSES, METHOD_CLASSES))
     def test_simulator_region(self, model_class, method_class):
         test_simulator = Simulator()
-        test_simulator.configure(model=model_class, method=method_class, surface_sim=False)
-        result = test_simulator.run_simulation()
+
+        with numpy.errstate(all='ignore'):
+            test_simulator.configure(model=model_class, method=method_class, surface_sim=False)
+            result = test_simulator.run_simulation()
 
         self.assert_equal(len(test_simulator.monitors), len(result))
         for ts in result:
@@ -190,14 +196,21 @@ class TestSimulator(BaseTestCase):
 
     @pytest.mark.slow
     @pytest.mark.parametrize('default_connectivity', [True, False])
-    def test_simulator_surface(self, default_connectivity):
+    @pytest.mark.parametrize('with_subcorticals', [True, False])
+    def test_simulator_surface(self, default_connectivity, with_subcorticals):
         """
         This test evaluates if surface simulations run as basic flow.
+        If flag with_subcorticals is set, we test the case when the Connectivity contains subcortical
+        regions, but the RegionMapping does not. The simulator internally fills-in the Cortex.region_mapping
+        to contain also the subcortical regions (a single vertex is associated to each subcortical region).
         """
         test_simulator = Simulator()
 
-        test_simulator.configure(surface_sim=True, default_connectivity=default_connectivity)
-        result = test_simulator.run_simulation(simulation_length=2)
+        with numpy.errstate(all='ignore'):
+            test_simulator.configure(surface_sim=True,
+                                     default_connectivity=default_connectivity,
+                                     with_subcorticals=with_subcorticals)
+            result = test_simulator.run_simulation(simulation_length=2)
 
         assert len(test_simulator.monitors) == len(result)
 
@@ -293,7 +306,7 @@ class TestSimulator(BaseTestCase):
         finfo = numpy.finfo(dtype="float64")
         assert numpy.all(
             test_simulator.integrator.state_variable_boundaries ==
-                numpy.array([[0.0, 1.0], [finfo.min, 1.0], [0.0, finfo.max], [finfo.min, finfo.max]]))
+            numpy.array([[0.0, 1.0], [finfo.min, 1.0], [0.0, finfo.max], [finfo.min, finfo.max]]))
         assert numpy.all(
             test_simulator.integrator._bounded_integration_state_variable_indices == numpy.array([0, 1, 2]))
         assert numpy.all(
@@ -306,7 +319,9 @@ class TestSimulator(BaseTestCase):
     @pytest.mark.parametrize('default_connectivity', [True, False])
     def test_simulator_regional_stimulus(self, default_connectivity):
         test_simulator = Simulator()
-        test_simulator.configure(surface_sim=False, default_connectivity=default_connectivity, with_stimulus=True)
+
+        with numpy.errstate(all='ignore'):
+            test_simulator.configure(surface_sim=False, default_connectivity=default_connectivity, with_stimulus=True)
         stimulus = test_simulator.sim._prepare_stimulus()
         self.assert_equal(
             stimulus.shape,

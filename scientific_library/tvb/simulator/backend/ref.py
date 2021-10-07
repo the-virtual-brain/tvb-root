@@ -138,14 +138,6 @@ class RefSurface(RefBase):
         state = region_state.transpose((1, 0, 2))  # (cvar, node, mode)
         return state
 
-    @staticmethod
-    def full_region_map(surf, conn):
-        "Generate a full region mapping vector."
-        rm = surf.region_mapping
-        unmapped = conn.unmapped_indices(rm)
-        regmap = numpy.r_[rm, unmapped]
-        return regmap, rm.size, unmapped.size
-
 
 class ReferenceBackend(BaseBackend, RefSurface):
     "Base reference backend, implemented in readable NumPy."

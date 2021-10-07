@@ -261,7 +261,10 @@ def gather_all_references_by_index(h5_file, ref_files):
             continue
         index = load_entity_by_gid(gid)
         h5_file = h5_file_for_index(index)
-        ref_files.append(h5_file.path)
+
+        if h5_file.path not in ref_files:
+            ref_files.append(h5_file.path)
+
         gather_all_references_by_index(h5_file, ref_files)
 
 

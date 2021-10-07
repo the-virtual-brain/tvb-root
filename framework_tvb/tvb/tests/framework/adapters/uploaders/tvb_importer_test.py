@@ -37,12 +37,13 @@
 import os
 import shutil
 import pytest
+
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.adapters.uploaders.tvb_importer import TVBImporterModel, TVBImporter
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.load import get_filtered_datatypes, load_entity_by_gid
+from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import OperationException
-from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -52,6 +53,7 @@ class TestTVBImporter(BaseTestCase):
     Unit-tests for TVB importer.
     """
     TVB_EXPORTER = "TVBExporter"
+    TVB_LINKED_EXPORTER = "TVBLinkedExporter"
 
     @pytest.fixture()
     def prepare_importer_data(self, user_factory, project_factory, operation_factory,
@@ -77,11 +79,10 @@ class TestTVBImporter(BaseTestCase):
         assert os.path.exists(self.h5_file_path), "Simple data type was not exported correct"
 
         # Generate data type group and export it to ZIP file
-        datatype_group = datatype_group_factory(project=self.test_project)
+        datatype_group, _ = datatype_group_factory(project=self.test_project, store_vm=True)
         _, self.zip_file_path, _ = export_manager.export_data(datatype_group, self.TVB_EXPORTER, self.test_project)
         assert os.path.exists(self.zip_file_path), "Data type group was not exported correct"
 
-        StorageInterface().remove_project_structure(self.test_project.name)
         self.clean_database(delete_folders=False)
 
         # Recreate project, but a clean one where to import data
@@ -93,7 +94,6 @@ class TestTVBImporter(BaseTestCase):
         Clean-up tests data
         """
         self.clean_database()
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def _import(self, import_file_path=None):
 
@@ -124,6 +124,45 @@ class TestTVBImporter(BaseTestCase):
         data_type_entity = load_entity_by_gid(data_types[0][2])
         assert data_type_entity is not None, "Datatype should not be none"
         assert self.datatype.gid, data_type_entity.gid == "Imported datatype should have the same gid"
+
+    def test_import_datatype_with_links(self, region_mapping_index_factory, user_factory, project_factory):
+        """
+        This is a test for importing region mapping with links, that results in importing:
+        connectivity, surface and region mapping all from one zip.
+        """
+        self.test_user = user_factory()
+        self.test_project = project_factory(self.test_user)
+
+        region_mapping_index = region_mapping_index_factory()
+
+        export_manager = ExportManager()
+        _, exported_h5_file, _ = export_manager.export_data(region_mapping_index, self.TVB_LINKED_EXPORTER, self.test_project)
+
+        # Clean DB
+        self.clean_database(delete_folders=False)
+
+        # Recreate project, but a clean one where to import data
+        self.test_user = user_factory()
+        self.test_project = project_factory(self.test_user)
+
+        datatypes = dao.get_datatypes_in_project(self.test_project.id)
+        assert 0 == len(datatypes), "There are no DT's in DB before import."
+
+        self._import(exported_h5_file)
+
+        datatypes = dao.get_datatypes_in_project(self.test_project.id)
+        assert 3 == len(datatypes), "Project should contain 3 data types."
+
+        has_conn = False
+        has_surface = False
+        for dt in datatypes:
+            if dt.gid == region_mapping_index.fk_connectivity_gid:
+                has_conn = True
+            if dt.gid == region_mapping_index.fk_surface_gid:
+                has_surface = True
+
+        assert has_conn is True, "Connectivity was imported as linked"
+        assert has_surface is True, "Surface was imported as linked"
 
     def test_import_invalid_file(self, prepare_importer_data):
         """

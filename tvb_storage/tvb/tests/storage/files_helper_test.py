@@ -95,14 +95,6 @@ class TestFilesHelper(StorageTestCase):
         with pytest.raises(FileStructureException):
             self.files_helper.rename_project_structure(self.project_name, self.project_name)
 
-    def test_remove_project_structure(self):
-        """ Check that remove project structure deletes the corresponding folder. Standard flow. """
-        full_path = self.files_helper.get_project_folder(self.project_name)
-        assert os.path.exists(full_path), "Folder was not created."
-
-        self.files_helper.remove_project_structure(self.project_name)
-        assert not os.path.exists(full_path), "Project folder not deleted."
-
     def test_write_project_metadata(self):
         """  Write XML for test-project. """
         user_id = 1
@@ -123,29 +115,6 @@ class TestFilesHelper(StorageTestCase):
         del found_dict['last_updated']
         self._dictContainsSubset(expected_dict, found_dict)
         self._dictContainsSubset(found_dict, expected_dict)
-
-    def test_remove_dt_happy_flow(self):
-        """
-        Happy flow for removing a file related to a DataType.
-        """
-        path = self.files_helper.get_project_folder(self.project_name)
-        h5_path = os.path.join(path, "dummy_datatype.h5")
-        DummyStorageDataH5(h5_path)
-        assert os.path.exists(h5_path), "Test file was not created!"
-        self.files_helper.remove_datatype_file(h5_path)
-        assert not os.path.exists(h5_path), "Test file was not deleted!"
-
-    def test_remove_dt_non_existent(self):
-        """
-        Try to call remove on a dataType with no H5 file.
-        Should work.
-        """
-        path = self.files_helper.get_project_folder(self.project_name)
-        h5_path = os.path.join(path, "dummy_datatype.h5")
-        DummyStorageDataH5(h5_path)
-        wrong_path = os.path.join(h5_path, "WRONG_PATH")
-        assert not os.path.exists(wrong_path)
-        self.files_helper.remove_datatype_file(wrong_path)
 
     def test_move_datatype(self):
         """

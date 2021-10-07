@@ -30,7 +30,7 @@
 import json
 
 import numpy
-from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference
+from tvb.core.neotraits.h5 import H5File, DataSet, Scalar, Reference, Enum
 from tvb.datatypes.spectral import FourierSpectrum, WaveletCoefficients, CoherenceSpectrum, ComplexCoherenceSpectrum
 
 
@@ -51,7 +51,7 @@ class FourierSpectrumH5(DataTypeMatrixH5):
         self.array_data = DataSet(FourierSpectrum.array_data, self, expand_dimension=2)
         self.source = Reference(FourierSpectrum.source, self)
         self.segment_length = Scalar(FourierSpectrum.segment_length, self)
-        self.windowing_function = Scalar(FourierSpectrum.windowing_function, self)
+        self.windowing_function = Enum(FourierSpectrum.windowing_function, self)
         self.amplitude = DataSet(FourierSpectrum.amplitude, self, expand_dimension=2)
         self.phase = DataSet(FourierSpectrum.phase, self, expand_dimension=2)
         self.power = DataSet(FourierSpectrum.power, self, expand_dimension=2)

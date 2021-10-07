@@ -130,7 +130,7 @@ class HPCSchedulerClient(BackendClient):
         base_url = TvbProfile.current.web.BASE_URL
         inputs_in_container = os.path.join(
             HPCSchedulerClient.CONTAINER_INPUT_FOLDER,
-            StorageInterface(simulator_gid).get_current_enc_dirname())
+            StorageInterface.get_encryption_handler(simulator_gid).current_enc_dirname)
 
         # Build job configuration JSON
         my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
@@ -274,9 +274,9 @@ class HPCSchedulerClient(BackendClient):
                                                                    is_group_launch, operation.id)
 
         LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
-        storage_interface = StorageInterface()
+        encryption_handler = StorageInterface.get_encryption_handler(simulator_gid)
         LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
-        job_encrypted_inputs = storage_interface.encrypt_inputs(simulator_gid, job_plain_inputs)
+        job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
 
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
@@ -309,7 +309,7 @@ class HPCSchedulerClient(BackendClient):
         output_list = HPCSchedulerClient._listdir(working_dir, output_subfolder)
         LOGGER.info("Output list {}".format(output_list))
         storage_interface = StorageInterface()
-        encrypted_dir = os.path.join(storage_interface.get_encrypted_dir(simulator_gid),
+        encrypted_dir = os.path.join(storage_interface.get_encryption_handler(simulator_gid).get_encrypted_dir(),
                                      HPCSchedulerClient.OUTPUT_FOLDER)
         encrypted_files = HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
 
@@ -321,14 +321,13 @@ class HPCSchedulerClient(BackendClient):
         return encrypted_files
 
     @staticmethod
-    def _handle_metric_results(metric_encrypted_file, metric_vm_encrypted_file, operation, storage_interface,
-                               simulator_gid):
+    def _handle_metric_results(metric_encrypted_file, metric_vm_encrypted_file, operation, encryption_handler):
         if not metric_encrypted_file:
             return None, None
 
         metric_op_dir, metric_op = BurstService.prepare_metrics_operation(operation)
-        metric_files = storage_interface.decrypt_files_to_dir(simulator_gid, [metric_encrypted_file,
-                                                                              metric_vm_encrypted_file], metric_op_dir)
+        metric_files = encryption_handler.decrypt_files_to_dir([metric_encrypted_file,
+                                                                metric_vm_encrypted_file], metric_op_dir)
         metric_file = metric_files[0]
         metric_vm = h5.load_view_model_from_file(metric_files[1])
         metric_op.view_model_gid = metric_vm.gid.hex
@@ -351,14 +350,14 @@ class HPCSchedulerClient(BackendClient):
             else:
                 simulation_results.append(encrypted_file)
 
-        storage_interface = StorageInterface()
+        encryption_handler = StorageInterface.get_encryption_handler(simulator_gid)
         metric_op, metric_file = HPCSchedulerClient._handle_metric_results(metric_encrypted_file,
                                                                            metric_vm_encrypted_file, operation,
-                                                                           storage_interface, simulator_gid)
+                                                                           encryption_handler)
         project = dao.get_project_by_id(operation.fk_launched_in)
         operation_dir = HPCSchedulerClient.storage_interface.get_project_folder(project.name, str(operation.id))
-        h5_filenames = storage_interface.decrypt_files_to_dir(simulator_gid, simulation_results, operation_dir)
-        storage_interface.cleanup_encryption_handler(simulator_gid)
+        h5_filenames = encryption_handler.decrypt_files_to_dir(simulation_results, operation_dir)
+        encryption_handler.cleanup_encryption_handler()
         LOGGER.info("Decrypted h5: {}".format(h5_filenames))
         LOGGER.info("Metric op: {}".format(metric_op))
         LOGGER.info("Metric file: {}".format(metric_file))

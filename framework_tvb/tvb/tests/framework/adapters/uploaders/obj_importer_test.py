@@ -36,8 +36,7 @@ import os
 import tvb_data.obj
 
 from tvb.core.neocom import h5
-from tvb.datatypes.surfaces import FACE
-from tvb.storage.storage_interface import StorageInterface
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -56,13 +55,13 @@ class TestObjSurfaceImporter(BaseTestCase):
 
     def teardown_method(self):
         self.clean_database()
-        StorageInterface().remove_project_structure(self.test_project.name)
 
     def test_import_quads_no_normals(self):
         """
         Test that import works with a file which contains quads and no normals
         """
-        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.face, FACE, False)
+        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.face,
+                                                       SurfaceTypesEnum.FACE_SURFACE, False)
 
         surface = h5.load_from_index(surface_index)
         assert 8614 == len(surface.vertex_normals)
@@ -73,7 +72,8 @@ class TestObjSurfaceImporter(BaseTestCase):
         """
         Test that import works with an OBJ file which includes normals
         """
-        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.torus, FACE, False)
+        surface_index = TestFactory.import_surface_obj(self.test_user, self.test_project, self.torus,
+                                                       SurfaceTypesEnum.FACE_SURFACE, False)
         assert 441 == surface_index.number_of_vertices
         assert 800 == surface_index.number_of_triangles
 

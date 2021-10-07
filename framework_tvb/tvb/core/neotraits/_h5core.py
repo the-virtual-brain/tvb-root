@@ -29,22 +29,20 @@
 #
 from datetime import datetime
 import importlib
-import os.path
 import typing
 import uuid
 import numpy
 import scipy.sparse
 
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Final
-from tvb.basic.neotraits.api import HasTraits, Attr, List, NArray, Range
+from tvb.basic.neotraits.api import HasTraits, TupleEnum, Attr, List, NArray, Range, EnumAttr, Final, TVBEnum
 from tvb.basic.neotraits.ex import TraitFinalAttributeError
 from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.neotraits.h5 import EquationScalar, SparseMatrix, ReferenceList
-from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange
+from tvb.core.neotraits.h5 import Uuid, Scalar, Accessor, DataSet, Reference, JsonFinal, Json, JsonRange, Enum
 from tvb.core.neotraits.view_model import DataTypeGidAttr
 from tvb.core.utils import string2date, date2string
-from tvb.datatypes.equations import Equation
+from tvb.datatypes.equations import Equation, EquationsEnum
 from tvb.storage.h5.file.exceptions import MissingDataSetException
 from tvb.storage.storage_interface import StorageInterface
 
@@ -264,12 +262,6 @@ class H5File(object):
         self.storage_manager.set_metadata({key: value})
 
     @staticmethod
-    def remove_metadata_param(file_path, param):
-        storage_manager = StorageInterface.get_storage_manager(file_path)
-        if param in storage_manager.get_metadata():
-            storage_manager.remove_metadata(param)
-
-    @staticmethod
     def h5_class_from_file(path):
         # type: (str) -> typing.Type[H5File]
         h5file_class_fqn = H5File.get_metadata_param(path, H5File.KEY_WRITTEN_BY)
@@ -321,14 +313,19 @@ class ViewModelH5(H5File):
                     continue
                 elif attr.field_type is uuid.UUID:
                     ref = Uuid(attr, self)
-                elif issubclass(attr.field_type, Equation):
+                elif issubclass(attr.field_type, (Equation, EquationsEnum)):
                     ref = EquationScalar(attr, self)
                 elif attr.field_type is Range:
                     ref = JsonRange(attr, self)
-                elif isinstance(attr, Final) and attr.field_type == dict:
-                    ref = JsonFinal(attr, self)
-                elif issubclass(attr.field_type, HasTraits):
+                elif isinstance(attr, Final):
+                    if attr.field_type == dict:
+                        ref = JsonFinal(attr, self)
+                    elif attr.field_type == list:
+                        ref = Json(attr, self)
+                elif issubclass(attr.field_type, (HasTraits, TupleEnum)):
                     ref = Reference(attr, self)
+                elif issubclass(attr.field_type, TVBEnum):
+                    ref = Enum(attr, self)
                 else:
                     ref = Scalar(attr, self)
             else:

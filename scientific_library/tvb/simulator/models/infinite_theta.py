@@ -195,11 +195,7 @@ class MontbrioPazoRoxin(Model):
         
         return derivative
     
-    
-    
-    
-    
-    
+
 class CoombesByrne(Model):
     r"""
     4D model describing the Ott-Antonsen reduction of infinite all-to-all
@@ -316,16 +312,9 @@ class CoombesByrne(Model):
         derivative[2] = alpha * (q)
         derivative[3] = alpha * (k * numpy.pi * r - g - 2 * q)
 
-        
-        
         return derivative
     
-    
-    
-    
-        
-    
-    
+
 class CoombesByrne2D(Model):
     r"""
     2D model describing the Ott-Antonsen reduction of infinite all-to-all coupled 
@@ -424,13 +413,7 @@ class CoombesByrne2D(Model):
         
         return derivative
     
-    
-    
-    
-    
-    
-    
-    
+
 class GastSchmidtKnosche_SD(Model):
     r"""
     4D model describing the Ott-Antonsen reduction of infinite all-to-all 
@@ -577,19 +560,10 @@ class GastSchmidtKnosche_SD(Model):
         derivative[1] = 1/tau * ( V**2 - numpy.pi**2 * tau**2 * r**2 + eta + J * tau * r * (1 - A) + I + cr * Coupling_Term_r + cv * Coupling_Term_V)     
         derivative[2] = 1/tau_A * ( B )
         derivative[3] = 1/tau_A * ( - 2 * B - A + alpha * r)
-        
-        
-        
+
         return derivative
     
-    
-    
-    
-    
-    
-    
-    
-        
+
 class GastSchmidtKnosche_SF(Model):
     r"""
     4D model describing the Ott-Antonsen reduction of infinite all-to-all coupled QIF neurons (Theta-neurons) with Spike-Frequency adaptation mechanisms [Gastetal_2020]_.
@@ -731,14 +705,8 @@ class GastSchmidtKnosche_SF(Model):
         derivative[1] = 1/tau * ( V**2 - numpy.pi**2 * tau**2 * r**2 + eta + J * tau * r + I - A + cr * Coupling_Term_r + cv * Coupling_Term_V)     
         derivative[2] = 1/tau_A * ( B )
         derivative[3] = 1/tau_A * ( - 2 * B - A + alpha * r)
-        
-        
-        
-        return derivative
-    
-    
 
-    
+        return derivative
     
 
 class DumontGutkin(Model):

@@ -35,16 +35,19 @@ of the dynamic models in Simulator/Phase Plane.
 .. moduleauthor:: Mihai Andrei <mihai.andrei@codemart.ro>
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
+from tvb.adapters.simulator.model_forms import ModelsEnum
 
 
-def configure_matjax_doc(available_models):
+def configure_matjax_doc():
     """
     Builds a list containing the model names, inline descriptions and descriptions,
     which will be displayed in the Simulation/Phase Plane section.
     """
     models_docs = []
 
-    for clz_name, clz in available_models.items():
+    for member in list(ModelsEnum):
+        clz_name = str(member)
+        clz = member.value
         models_docs.append({
             'name': clz_name.replace(' ', '_'),
             'inline_description': _dfun_math_directives_to_matjax(clz),

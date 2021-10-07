@@ -28,9 +28,10 @@
 #
 #
 
-'''
+"""
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
-'''
+"""
+
 import cherrypy
 from tvb.core.services.backend_clients.standalone_client import StandAloneClient, LOCKS_QUEUE
 from tvb.interfaces.web.controllers.base_controller import BaseController

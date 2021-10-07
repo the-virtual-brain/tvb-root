@@ -46,7 +46,6 @@ from tvb.adapters.simulator.simulator_adapter import SimulatorAdapter, CortexVie
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import Range
 from tvb.basic.profile import TvbProfile
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.simulation_history_h5 import SimulationHistory
 from tvb.core.entities.model.db_update_scripts.helper import get_burst_for_migration
@@ -58,7 +57,7 @@ from tvb.core.neocom.h5 import REGISTRY
 from tvb.core.neotraits.h5 import H5File, STORE_STRING, DataSetMetaData
 from tvb.core.services.import_service import OPERATION_XML, ImportService, Operation2ImportData
 from tvb.core.utils import date2string, string2date
-from tvb.datatypes.sensors import SensorTypes
+from tvb.datatypes.sensors import SensorTypesEnum
 from tvb.storage.h5.file.exceptions import MissingDataSetException, IncompatibleFileManagerException, \
     FileMigrationException, MissingMatlabOctavePathException
 from tvb.storage.storage_interface import StorageInterface
@@ -280,19 +279,19 @@ def _migrate_sensors(datasets, **kwargs):
 
 def _migrate_eeg_sensors(**kwargs):
     algorithm, operation_xml_parameters = _migrate_sensors(['labels', 'locations'], **kwargs)
-    operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_EEG.value
+    operation_xml_parameters['sensors_type'] = SensorTypesEnum.TYPE_EEG.value
     return {'algorithm': algorithm, 'operation_xml_parameters': operation_xml_parameters}
 
 
 def _migrate_meg_sensors(**kwargs):
     algorithm, operation_xml_parameters = _migrate_sensors(['labels', 'locations', 'orientations'], **kwargs)
-    operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_MEG.value
+    operation_xml_parameters['sensors_type'] = SensorTypesEnum.TYPE_MEG.value
     return {'algorithm': algorithm, 'operation_xml_parameters': operation_xml_parameters}
 
 
 def _migrate_seeg_sensors(**kwargs):
     algorithm, operation_xml_parameters = _migrate_sensors(['labels', 'locations'], **kwargs)
-    operation_xml_parameters['sensors_type'] = SensorTypes.TYPE_INTERNAL.value
+    operation_xml_parameters['sensors_type'] = SensorTypesEnum.TYPE_INTERNAL.value
     return {'algorithm': algorithm, 'operation_xml_parameters': operation_xml_parameters}
 
 
@@ -1113,7 +1112,7 @@ def _migrate_general_part(input_file):
     return root_metadata, storage_manager
 
 
-def update(input_file, burst_match_dict, op_id):
+def update(input_file, burst_match_dict):
     """
     :param input_file: the file that needs to be converted to a newer file storage version.
     """
@@ -1125,8 +1124,7 @@ def update(input_file, burst_match_dict, op_id):
     split_path = input_file.split(os.path.sep)
     storage_migrate = True
     try:
-        if op_id is None:
-            op_id = int(split_path[-2])
+        op_id = int(split_path[-2])
 
         # Change file names only for storage migration
         file_basename = os.path.basename(input_file)
@@ -1167,7 +1165,7 @@ def update(input_file, burst_match_dict, op_id):
 
     try:
         # Take information out from the Operation.xml file
-        if OPERATION_XML in files_in_folder:
+        if op_id is not None and OPERATION_XML in files_in_folder:
             operation_file_path = os.path.join(folder, OPERATION_XML)
             operation = dao.get_operation_by_id(op_id)
             xml_operation, operation_xml_parameters, algorithm = \
@@ -1244,7 +1242,7 @@ def update(input_file, burst_match_dict, op_id):
             vm = import_service.create_view_model(operation, operation_data, folder,
                                                   generic_attributes, additional_params)
 
-            if 'TimeSeries' in class_name and 'Importer' not in operation_entity.algorithm.classname \
+            if 'TimeSeries' in class_name and 'Importer' not in algorithm.classname \
                     and time_series_gid is None:
                 burst_config, new_burst = get_burst_for_migration(possible_burst_id, burst_match_dict,
                                                                   DATE_FORMAT_V4_DB, TvbProfile.current.db.SELECTED_DB)
@@ -1268,8 +1266,8 @@ def update(input_file, burst_match_dict, op_id):
                             simulation_history = SimulationHistory()
                             simulation_history.populate_from(alg)
                             history_index = h5.store_complete(simulation_history, op_id,
-                                                                        operation.project.name,
-                                                                        generic_attributes=vm.generic_attributes)
+                                                              operation.project.name,
+                                                              generic_attributes=vm.generic_attributes)
                             history_index.fk_from_operation = op_id
                             history_index.fk_parent_burst = burst_config.gid
                             history_index.disk_size = StorageInterface.compute_size_on_disk(

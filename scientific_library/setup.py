@@ -39,11 +39,12 @@ import os
 import shutil
 import setuptools
 
-LIBRARY_VERSION = "2.3"
+LIBRARY_VERSION = "2.4"
 
 LIBRARY_TEAM = "Marmaduke Woodman, Stuart Knock, Paula Sanz Leon, Viktor Jirsa"
 
-LIBRARY_REQUIRED_PACKAGES = ["autopep8", "mako", "matplotlib", "networkx", "numba", "numexpr", "numpy", "requests", "scipy", "six", "typing"]
+LIBRARY_REQUIRED_PACKAGES = ["mako>=1.1.4", "matplotlib", "networkx", "numba", "numexpr", "numpy", 
+                             "requests", "autopep8", "scipy", "six", "typing", "pylems", "lxml"]
 
 LIBRARY_REQUIRED_EXTRA = ["h5py", "mpl_toolkits", "pytest", "pytest-benchmark", "tvb-gdist", "tvb-data"]
 

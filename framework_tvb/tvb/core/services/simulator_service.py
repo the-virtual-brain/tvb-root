@@ -34,7 +34,6 @@
 
 import copy
 import json
-import shutil
 import uuid
 import numpy
 
@@ -137,7 +136,7 @@ class SimulatorService(object):
         except Exception as excep:
             self.logger.error(excep)
         finally:
-            shutil.rmtree(zip_folder_path)
+            self.storage_interface.remove_folder(zip_folder_path)
 
     @staticmethod
     def _set_range_param_in_dict(param_value):
@@ -228,11 +227,11 @@ class SimulatorService(object):
 
                 ranges = json.dumps(ranges)
 
+                simulator.range_values = ranges
                 operation = self.operation_service.prepare_operation(user.id, project, simulator_algo,
                                                                      view_model=simulator, ranges=ranges,
                                                                      burst_gid=burst_config.gid,
                                                                      op_group_id=burst_config.fk_operation_group)
-                simulator.range_values = ranges
                 operations.append(operation)
                 if first_simulator is None:
                     first_simulator = simulator
