@@ -111,7 +111,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         return result_2d, slice_str(slice_used), slice_used == default
 
     def compute_params(self, dtm_index, matrix2d, title_suffix, labels=None,
-                       given_slice=None, slice_used=None, is_default_slice=True):
+                       given_slice=None, slice_used=None, is_default_slice=True, has_infinite_values=False):
         # type: (DataTypeMatrix, numpy.array, str, list, str, str, bool) -> dict
         view_pars = self.compute_raw_matrix_params(matrix2d)
         view_pars.update(original_matrix_shape=dtm_index.shape,
@@ -120,7 +120,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
                          has_complex_numbers=dtm_index.array_has_complex,
-                         has_infinite_values=not dtm_index.array_is_finite,
+                         has_infinite_values=has_infinite_values,
                          viewer_title=title_suffix,
                          title=dtm_index.display_name + " - " + title_suffix,
                          matrix_labels=json.dumps(labels))
@@ -199,5 +199,5 @@ class MappedArrayVisualizer(ABCMappedArraySVGVisualizer):
             labels = [labels, labels]
 
         params = self.compute_params(dtm_index, matrix2d, "Matrix Plot", labels,
-                                     view_model.slice, slice_used, is_default_slice)
+                                     view_model.slice, slice_used, is_default_slice, not dtm_index.is_array_finite)
         return self.build_display_result("matrix/svg_view", params)
