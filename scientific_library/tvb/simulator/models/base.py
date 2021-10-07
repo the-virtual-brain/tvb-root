@@ -157,7 +157,7 @@ class Model(HasTraits):
         dt = integrator.dt
         return self.initial(dt, shape, rng)
 
-    def _update_stimulus(self, step, dt):
+    def update_stimulus(self, step, dt):
         """
         When needed, and if stimulus is not None,
         this should be a method for computing a model specific, time-dependent stimulus.
