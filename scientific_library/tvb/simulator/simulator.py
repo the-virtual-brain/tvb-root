@@ -309,6 +309,8 @@ class Simulator(HasTraits):
             # TODO stim_step != current step
             stim_step = step - (self.current_step + 1)
             stimulus[self.model.stvar, :, :] = self.stimulus(stim_step).reshape((1, -1, 1))
+        if self.model.stimulus is not None:
+            self.model._loop_update_stimulus(step, self.integrator.dt)
 
     def _loop_update_history(self, step, state):
         """Update history."""

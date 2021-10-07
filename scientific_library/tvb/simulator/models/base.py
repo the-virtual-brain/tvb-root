@@ -54,6 +54,7 @@ class Model(HasTraits):
     stvar = None
     state_variable_boundaries = None
     state_variable_mask = None
+    stimulus = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -155,6 +156,13 @@ class Model(HasTraits):
         rng = integrator.noise.random_stream if hasattr(integrator, 'noise') else numpy.random
         dt = integrator.dt
         return self.initial(dt, shape, rng)
+
+    def _update_stimulus(self, step, dt):
+        """
+        When needed, and if stimulus is not None,
+        this should be a method for computing a model specific, time-dependent stimulus.
+        """
+        pass
 
     @abc.abstractmethod
     def dfun(self, state_variables, coupling, local_coupling=0.0):
