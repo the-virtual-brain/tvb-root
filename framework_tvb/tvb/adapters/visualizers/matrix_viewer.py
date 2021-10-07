@@ -70,10 +70,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         Serializes matrix data, shape and stride metadata to json
         """
 
-        # replace infinite values with the biggest float number available in numpy
-        float_max = numpy.finfo(numpy.float64).max
-        matrix[matrix == numpy.inf] = float_max
-
+        matrix = ABCDisplayer.handle_infinite_values(matrix)
         matrix_data = ABCDisplayer.dump_with_precision(matrix.flat)
 
         matrix_shape = json.dumps(matrix.shape)
@@ -123,7 +120,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
                          has_complex_numbers=dtm_index.array_has_complex,
-                         has_infinite_values=dtm_index.array_is_finite,
+                         has_infinite_values=not dtm_index.array_is_finite,
                          viewer_title=title_suffix,
                          title=dtm_index.display_name + " - " + title_suffix,
                          matrix_labels=json.dumps(labels))
