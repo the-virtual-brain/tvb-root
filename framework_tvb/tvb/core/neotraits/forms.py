@@ -394,7 +394,7 @@ class DynamicSelectField(TraitField):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=str(choice),
-                label=str(choice).title(),
+                label=str(choice),
                 checked=self.value == choice
             )
 
