@@ -109,7 +109,7 @@ class TestIntegrators(BaseTestCase):
         """Verify identity scheme works"""
         x, c, lc, s = 1, 2, 3, 4
 
-        def dfun(x, c, lc):
+        def dfun(x, c, lc, tm):
             return x + c - lc
 
         integ = integrators.Identity()
