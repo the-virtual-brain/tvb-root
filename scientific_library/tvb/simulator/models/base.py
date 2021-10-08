@@ -157,7 +157,7 @@ class Model(HasTraits):
         return self.initial(dt, shape, rng)
 
     @abc.abstractmethod
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         """
         Defines the dynamic equations. That is, the derivative of the
         state-variables given their current state ``state_variables``, the past

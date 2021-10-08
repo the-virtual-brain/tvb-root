@@ -234,7 +234,7 @@ class JansenRit(ModelNumbaDfun):
             self.B * self.b * (self.a_4 * self.J * sigm_y0_3) - 2.0 * self.b * y5 - self.b ** 2 * y2,
         ])
 
-    def dfun(self, y, c, local_coupling=0.0):
+    def dfun(self, y, c, local_coupling=0.0, time=0.0):
         r"""
         The dynamic equations were taken from [JR_1995]_
 
@@ -478,7 +478,7 @@ class ZetterbergJansen(Model):
     keke = None  # self.ke **2
     kiki = None  # self.ki **2
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         """
         Zetterberg et al derived a model inspired by the Wilson-Cowan equations. It served as a basis for the later,
         better known Jansen-Rit model.

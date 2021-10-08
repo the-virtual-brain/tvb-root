@@ -360,7 +360,7 @@ class Generic2dOscillator(ModelNumbaDfun):
 
         return derivative
 
-    def dfun(self, vw, c, local_coupling=0.0):
+    def dfun(self, vw, c, local_coupling=0.0, time=0.0):
         r"""
         The two state variables :math:`V` and :math:`W` are typically considered
         to represent a function of the neuron's membrane potential, such as the
@@ -457,7 +457,7 @@ class Kuramoto(Model):
     _nvar = 1
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0,
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0,
              ev=RefBase.evaluate, sin=numpy.sin, pi2=numpy.pi * 2):
         r"""
         The :math:`\theta` variable is the phase angle of the oscillation.
@@ -570,7 +570,7 @@ class SupHopf(ModelNumbaDfun):
 
         return ydot
 
-    def dfun(self, x, c, local_coupling=0.0):
+    def dfun(self, x, c, local_coupling=0.0, time=0.0):
         r"""
         Computes the derivatives of the state-variables of supHopf
         with respect to time.

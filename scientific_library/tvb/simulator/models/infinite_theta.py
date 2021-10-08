@@ -172,7 +172,7 @@ class MontbrioPazoRoxin(Model):
     # Stvar is the variable where stimulus is applied.
     stvar = numpy.array([1], dtype=numpy.int32)
     
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r, V = state_variables
         
         #[State_variables, nodes]
@@ -293,7 +293,7 @@ class CoombesByrne(Model):
     # Cvar is the coupling variable. 
     cvar = numpy.array([0,1,2,3], dtype=numpy.int32)
     
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r, V, g, q = state_variables
         
         #[State_variables, nodes]
@@ -395,7 +395,7 @@ class CoombesByrne2D(Model):
     # Cvar is the coupling variable. 
     cvar = numpy.array([0,1], dtype=numpy.int32)
     
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r, V = state_variables
         
         #[State_variables, nodes]
@@ -535,7 +535,7 @@ class GastSchmidtKnosche_SD(Model):
     # Cvar is the coupling variable. 
     cvar = numpy.array([0,1,2,3], dtype=numpy.int32)
     
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r, V, A, B = state_variables
         
         #[State_variables, nodes]
@@ -680,7 +680,7 @@ class GastSchmidtKnosche_SF(Model):
     # Cvar is the coupling variable. 
     cvar = numpy.array([0,1,2,3], dtype=numpy.int32)
     
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r, V, A, B = state_variables
         
         #[State_variables, nodes]
@@ -864,7 +864,7 @@ class DumontGutkin(Model):
     # Cvar is the coupling variable. 
     cvar = numpy.array([0,1,4,5], dtype=numpy.int32)
     
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r_e, V_e, s_ee, s_ei, r_i, V_i, s_ie, s_ii = state_variables
         
         #[State_variables, nodes]

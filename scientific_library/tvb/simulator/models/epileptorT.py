@@ -156,7 +156,7 @@ class EpileptorT(ModelNumbaDfun):
     _nvar = 6
     cvar = numpy.array([0,1,2,3,4,5,], dtype = numpy.int32)
 
-    def dfun(self, vw, c, local_coupling=0.0):
+    def dfun(self, vw, c, local_coupling=0.0, time=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         deriv = _numba_dfun_EpileptorT(vw_, c_, self.a, self.b, self.c, self.d, self.r, self.s, self.x0, self.Iext, self.slope, self.Iext2, self.tau, self.aa, self.bb, self.Kvf, self.Kf, self.Ks, self.tt, self.modification, local_coupling)

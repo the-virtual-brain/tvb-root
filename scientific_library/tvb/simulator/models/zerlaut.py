@@ -355,7 +355,7 @@ class ZerlautAdaptationFirstOrder(Model):
     _nvar = 4
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.00):
+    def dfun(self, state_variables, coupling, local_coupling=0.00, time=0.0):
         r"""
         .. math::
             T \dot{\nu_\mu} &= -F_\mu(\nu_e,\nu_i) + \nu_\mu ,{\forall}\mu\in\{e,i\}\\
@@ -634,7 +634,7 @@ class ZerlautAdaptationSecondOrder(ZerlautAdaptationFirstOrder):
     state_variables = 'E I C_ee C_ei C_ii W_e W_i'.split()
     _nvar = 7
 
-    def dfun(self, state_variables, coupling, local_coupling=0.00):
+    def dfun(self, state_variables, coupling, local_coupling=0.00, time=0.0):
         r"""
         .. math::
             \forall \mu,\lambda,\eta \in \{e,i\}^3\,

@@ -142,7 +142,7 @@ class Generic2dOscillator(models.Model):
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         """
         The fast, :math:`V`, and slow, :math:`W`, state variables are typically
         considered to represent a membrane potential and recovery variable,

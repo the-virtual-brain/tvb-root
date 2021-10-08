@@ -261,7 +261,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
 
         return derivative
 
-    def dfun(self, x, c, local_coupling=0.0, **kwargs):
+    def dfun(self, x, c, local_coupling=0.0, time=0.0, **kwargs):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 

@@ -160,7 +160,7 @@ class HMJEpileptor(models.Model):
     _nvar = 6
     cvar = numpy.array([0, 3], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0,
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0,
              array=numpy.array, where=numpy.where, concat=numpy.concatenate):
         """
         Computes the derivatives of the state variables of the Epileptor 

@@ -505,7 +505,7 @@ class Epileptor2D(ModelNumbaDfun):
 
         return ydot
 
-    def dfun(self, x, c, local_coupling=0.0):
+    def dfun(self, x, c, local_coupling=0.0, time=0.0):
         r"""
         Computes the derivatives of the state-variables of the Epileptor 2D
         with respect to time.

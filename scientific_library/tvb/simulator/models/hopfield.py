@@ -146,7 +146,7 @@ class Hopfield(Model):
             self.cvar = numpy.array([0, 1], dtype=numpy.int32)
             # self.variables_of_interest = ["x", "theta"]
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
         The fast, :math:`x`, and slow, :math:`\theta`, state variables are typically
         considered to represent a membrane potentials of nodes and the global inhibition term,
@@ -165,7 +165,7 @@ class Hopfield(Model):
         derivative = numpy.array([dx, dx])
         return derivative
 
-    def dfunDyn(self, state_variables, coupling, local_coupling=0.0):
+    def dfunDyn(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
         The fast, :math:`x`, and slow, :math:`\theta`, state variables are typically
         considered to represent a membrane potentials of nodes and the inhibition term(s),

@@ -149,7 +149,7 @@ class JansenRitDavid(models.Model):
     _nvar = 8
     cvar = numpy.array([1, 2], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
         The dynamic equations were taken from:
         TODO: add equations and finish the model ...
