@@ -103,13 +103,13 @@ class TestUpdateVariablesModel(Model):
     def dfun(self, integrated_variables, node_coupling, local_coupling=0.0, time=0.0):
         return 0.0 * integrated_variables
 
-    def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
+    def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
         new_state = numpy.copy(state)
         new_state[3] = state[3] + state[0]
         new_state[4] = state[4] + state[1] + state[2]
         return state
 
-    def update_state_variables_after_integration(self, state):
+    def update_state_variables_after_integration(self, state, time=0.0):
         new_state = numpy.copy(state)
         new_state[3] = state[3] - state[0]
         new_state[4] = state[4] - state[1] - state[2]
