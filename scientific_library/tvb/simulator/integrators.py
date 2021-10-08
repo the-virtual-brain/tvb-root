@@ -572,14 +572,14 @@ class SciPyODEBase(object):
 class SciPyODE(SciPyODEBase):
 
     def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
-        X_next = self._apply_ode(t, X, dfun, coupling, local_coupling, stimulus, time)
+        X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus, time)
         self.integration_bound_and_clamp(X_next)
         return X_next
 
 class SciPySDE(SciPyODEBase):
 
     def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
-        X_next = self._apply_ode(tt, X, dfun, coupling, local_coupling, stimulus, time)
+        X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus, time)
         X_next += self.noise.gfun(X) * self.noise.generate(X.shape)
         self.integration_bound_and_clamp(X_next)
         return X_next
