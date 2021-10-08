@@ -390,7 +390,12 @@ class Simulator(HasTraits):
             if not numpy.issubdtype(type(n_steps), numpy.integer):
                 raise TypeError("Incorrect type for n_steps: %s, expected integer" % type(n_steps))
 
-        for step in range(start_step, start_step + n_steps):
+        try:
+            import tqdm
+            iters = tqdm.trange(start_step, start_step + n_steps)
+        except ImportError:
+            iters = range(start_step, start_step + n_steps)
+        for step in iters:
             self._loop_update_stimulus(step, stimulus)
             state = self.integrate_next_step(state, self.model, node_coupling, local_coupling, stimulus)
             self._loop_update_history(step, state)
