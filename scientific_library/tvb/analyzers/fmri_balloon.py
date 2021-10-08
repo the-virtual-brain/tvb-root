@@ -355,7 +355,7 @@ class BalloonModel(HasTraits):
 
         return ts, t_int
 
-    def balloon_dfun(self, state_variables, neural_input, local_coupling=0.0):
+    def balloon_dfun(self, state_variables, neural_input, local_coupling=0.0, time=0.0):
         r"""
         The Balloon model equations. See Eqs. (4-10) in [Stephan2007]_
         .. math::
