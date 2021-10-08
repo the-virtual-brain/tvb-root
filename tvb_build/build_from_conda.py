@@ -256,8 +256,7 @@ def prepare_anaconda_dist(config):
     os.mkdir(join(config.target_root, 'bin'))
 
     _log(1, "Copying anaconda ENV folder" + config.anaconda_env_path + " into '" + config.target_library_root + "'...")
-    os.remove('C:\\miniconda\\envs\\tvb-run\\Lib\\site-packages\\allensdk\\brain_observatory\\behavior\\data_objects\\metadata\\ophys_experiment_metadata\\multi_plane_metadata\\__pycache__\\multi_plane_metadata.cpython-37.pyc')
-    shutil.copytree(config.anaconda_env_path, config.target_library_root)
+    shutil.copytree(config.anaconda_env_path, config.target_library_root, ignore=shutil.ignore_patterns('__pycache__*'))
 
     _log(1, "Copying TVB sources into site-packages ...")
     _copy_collapsed(config)
