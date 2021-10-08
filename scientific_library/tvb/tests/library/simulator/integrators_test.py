@@ -146,7 +146,7 @@ class TestIntegrators(BaseTestCase):
         x[:, 0, ] = -x[:, 0, ]
         x[:, 1, ] = 2 * x[:, 1, ]
         x0 = numpy.array(x)
-        dfun = lambda state, node_coupling, local_coupling=0.0: 0.0 * state
+        dfun = lambda state, node_coupling, local_coupling=0.0, time=0.0: 0.0 * state
         for integrator_class in INTEGRATORStoTEST:
             integrator = integrator_class(
                 bounded_state_variable_indices=bounded_state_variable_indices,
@@ -209,23 +209,23 @@ class TestIntegrators(BaseTestCase):
             integrator.bound_and_clamp(x0)
             # The integration will happen with TestUpdateVariablesModel methods:
             # a dfun that does nothing:
-            # def dfun(self, state_variables, node_coupling, local_coupling=0.0):
+            # def dfun(self, state_variables, node_coupling, local_coupling=0.0, time=0.0):
             #     return 0.0 * state_variables
             #
             # an update before integration that adds state[0] to state[3], and state[1] and state[2] to state[4]
-            # def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):
+            # def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
             #     new_state = numpy.copy(state)
             #     new_state[3] = state[3] + state[0]
             #     new_state[4] = state[4] + state[1] + state[2]
             #     return state
             #
             # and an update after integration that reverses the effect of the update before integration
-            # def update_state_variables_after_integration(self, state):
+            # def update_state_variables_after_integration(self, state, time=0.0):
             #     new_state = numpy.copy(state)
             #     new_state[3] = state[3] - state[0]
             #     new_state[4] = state[4] - state[1] - state[2]
             #     return state
-            x1 = integrator.integrate_with_update(x0, model, 0.0, 0.0, 0.0)
+            x1 = integrator.integrate_with_update(x0, model, 0.0, 0.0, 0.0, 0.0)
             # Eventually, the state should be left unchanged:
             assert numpy.all(x1 == x0)
 
