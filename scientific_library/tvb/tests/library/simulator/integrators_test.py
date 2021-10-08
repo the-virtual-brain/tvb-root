@@ -63,7 +63,7 @@ class TestIntegrators(BaseTestCase):
         
     """
 
-    def _dummy_dfun(self, X, coupling, local_coupling):
+    def _dummy_dfun(self, X, coupling, local_coupling, time=0.0):
         # equiv to linear system with identity matrix
         return X
 
