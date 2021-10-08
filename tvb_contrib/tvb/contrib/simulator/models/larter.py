@@ -222,7 +222,7 @@ class Larter(models.Model):
     _nvar = 3
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         """
         .. math::
              \\dot{V} &= - g_L \\, (V - V_L) - g_K\\, Z \\, (V - V_K) -

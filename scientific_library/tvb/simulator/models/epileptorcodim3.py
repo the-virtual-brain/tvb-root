@@ -241,7 +241,7 @@ class EpileptorCodim3(ModelNumbaDfun):
         derivative = numpy.array([xdot, ydot, zdot])
         return derivative
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
         The equations were taken from [Saggioetal_2017]
         cf. Eqns. (4) and (7), page 17
@@ -590,7 +590,7 @@ class EpileptorCodim3SlowMod(ModelNumbaDfun):
         derivative = numpy.array([xdot, ydot, zdot, uAdot, uBdot])
         return derivative
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
         The equations were taken from [Saggioetal_2017]
         cf. Eqns. (4) and (7), page 17 and 21

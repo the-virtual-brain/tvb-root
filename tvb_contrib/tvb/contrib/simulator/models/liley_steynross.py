@@ -300,7 +300,7 @@ class LileySteynRoss(models.Model):
     _nvar = 2
     cvar = numpy.array([0, 1], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
 
         TODO:  include equations here and see how to add the local connectivity or the 

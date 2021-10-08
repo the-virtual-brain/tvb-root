@@ -213,7 +213,7 @@ class WongWang(models.Model):
         super(WongWang, self).configure()
         self.update_derived_parameters()
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
         The notation of those dynamic equations follows [WW_2007].
         Derivatives of s are multiplied by 0.001 constant to match ms time scale.

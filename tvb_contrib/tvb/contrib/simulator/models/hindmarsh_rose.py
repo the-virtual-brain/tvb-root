@@ -142,7 +142,7 @@ class HindmarshRose(models.Model):
     _nvar = 3
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         """
         As in the FitzHugh-Nagumo model ([FH_1961]_), :math:`x` and :math:`y`
         signify the membrane potential and recovery variable respectively.

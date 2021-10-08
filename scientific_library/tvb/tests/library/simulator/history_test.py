@@ -64,7 +64,7 @@ class Sum(Model):
     state_variables = ('x',)
     cvar = numpy.array([0])
 
-    def dfun(self, X, coupling, local_coupling=0):
+    def dfun(self, X, coupling, local_coupling=0, time=0.0):
         return X + coupling + local_coupling
 
 

@@ -166,7 +166,7 @@ class ReducedWongWang(ModelNumbaDfun):
         derivative = numpy.array([dS])
         return derivative
 
-    def dfun(self, x, c, local_coupling=0.0):
+    def dfun(self, x, c, local_coupling=0.0, time=0.0):
         r"""
         Equations taken from [DPA_2013]_ , page 11242
 

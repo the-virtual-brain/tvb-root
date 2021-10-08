@@ -112,7 +112,7 @@ class Integrator(HasTraits):
     _clamped_integration_state_variable_values = None
 
     @abc.abstractmethod
-    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
         """
         The scheme of integrator should take a state and provide the next
         state in time, e.g. for a differential equation, scheme should take
@@ -223,21 +223,21 @@ class Integrator(HasTraits):
             # ...use the integrator's clamp_state
             self.clamp_integration_state(state)
 
-    def integrate_with_update(self, X, model, coupling, local_coupling, stimulus):
-        temp = model.update_state_variables_before_integration(X, coupling, local_coupling, stimulus)
+    def integrate_with_update(self, X, model, coupling, local_coupling, stimulus, time):
+        temp = model.update_state_variables_before_integration(X, coupling, local_coupling, stimulus, time)
         if temp is not None:
             X = temp
             self.bound_and_clamp(X)
-        X = self.integrate(X, model, coupling, local_coupling, stimulus)
-        temp = model.update_state_variables_after_integration(X)
+        X = self.integrate(X, model, coupling, local_coupling, stimulus, time)
+        temp = model.update_state_variables_after_integration(X, time)
         if temp is not None:
             X = temp
             self.bound_and_clamp(X)
         return X
 
-    def integrate(self, X, model, coupling, local_coupling, stimulus):
-        X[model.state_variable_mask] = self.scheme(X[model.state_variable_mask],
-                                                   model.dfun, coupling, local_coupling, stimulus)
+    def integrate(self, X, model, coupling, local_coupling, stimulus, time):
+        X[model.state_variable_mask] = self.scheme(X[model.state_variable_mask], model.dfun,
+                                                   coupling, local_coupling, stimulus, time)
         return X
 
     def __str__(self):
@@ -298,7 +298,7 @@ class HeunDeterministic(Integrator):
 
     n_dx = 2
 
-    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
         r"""
         From [1]_:
 
@@ -311,11 +311,11 @@ class HeunDeterministic(Integrator):
 
         """
         #import pdb; pdb.set_trace()
-        m_dx_tn = dfun(X, coupling, local_coupling)
+        m_dx_tn = dfun(X, coupling, local_coupling, time)
         inter = X + self.dt * (m_dx_tn + stimulus)
         self.integration_bound_and_clamp(inter)
 
-        dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
+        dX = (m_dx_tn + dfun(inter, coupling, local_coupling, time)) * self.dt / 2.0
 
         X_next = X + dX + self.dt * stimulus
         self.integration_bound_and_clamp(X_next)
@@ -332,7 +332,7 @@ class HeunStochastic(IntegratorStochastic):
 
     n_dx = 2
 
-    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
         """
         From [2]_:
 
@@ -352,14 +352,14 @@ class HeunStochastic(IntegratorStochastic):
                        noise_gfun.shape, (noise.shape[0], noise.shape[1])))
             raise Exception(msg)
 
-        m_dx_tn = dfun(X, coupling, local_coupling)
+        m_dx_tn = dfun(X, coupling, local_coupling, time)
 
         noise *= noise_gfun
 
         inter = X + self.dt * m_dx_tn + noise + self.dt * stimulus
         self.integration_bound_and_clamp(inter)
 
-        dX = (m_dx_tn + dfun(inter, coupling, local_coupling)) * self.dt / 2.0
+        dX = (m_dx_tn + dfun(inter, coupling, local_coupling, time)) * self.dt / 2.0
 
         X_next = X + dX + noise + self.dt * stimulus
         self.integration_bound_and_clamp(X_next)
@@ -378,7 +378,7 @@ class EulerDeterministic(Integrator):
 
     n_dx = 1
 
-    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
         r"""
 
         .. math::
@@ -388,7 +388,7 @@ class EulerDeterministic(Integrator):
 
         """
 
-        self.dX = dfun(X, coupling, local_coupling) 
+        self.dX = dfun(X, coupling, local_coupling, time)
 
         X_next = X + self.dt * (self.dX + stimulus)
         self.integration_bound_and_clamp(X_next)
@@ -407,7 +407,7 @@ class EulerStochastic(IntegratorStochastic):
 
     n_dx = 1
 
-    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
         r"""
         Ones of the simplest time discrete approximations of an Ito process is
         Euler-Maruyama approximation, that satisfies the scalar stochastic
@@ -423,7 +423,7 @@ class EulerStochastic(IntegratorStochastic):
         """
 
         noise = self.noise.generate(X.shape)
-        dX = dfun(X, coupling, local_coupling) * self.dt 
+        dX = dfun(X, coupling, local_coupling, time) * self.dt
         noise_gfun = self.noise.gfun(X)
         X_next = X + dX + noise_gfun * noise + self.dt * stimulus
         self.integration_bound_and_clamp(X_next)
@@ -439,7 +439,7 @@ class RungeKutta4thOrderDeterministic(Integrator):
 
     n_dx = 4
 
-    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0):
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
         r"""
         The classical 4th order Runge-Kutta method is an explicit method.
         The 4th order Runge-Kutta methods are the most commonly used,
@@ -463,19 +463,19 @@ class RungeKutta4thOrderDeterministic(Integrator):
         dt2 = dt / 2.0
         dt6 = dt / 6.0
 
-        k1 = dfun(X, coupling, local_coupling)
+        k1 = dfun(X, coupling, local_coupling, time)
         inter_k1 = X + dt2 * k1
         self.integration_bound_and_clamp(inter_k1)
 
-        k2 = dfun(inter_k1, coupling, local_coupling)
+        k2 = dfun(inter_k1, coupling, local_coupling, time)
         inter_k2 = X + dt2 * k2
         self.integration_bound_and_clamp(inter_k2)
 
-        k3 = dfun(inter_k2, coupling, local_coupling)
+        k3 = dfun(inter_k2, coupling, local_coupling, time)
         inter_k3 = X + dt * k3
         self.integration_bound_and_clamp(inter_k3)
 
-        k4 = dfun(inter_k3, coupling, local_coupling)
+        k4 = dfun(inter_k3, coupling, local_coupling, time)
 
         dX = dt6 * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
 
@@ -498,7 +498,7 @@ class Identity(Integrator):
 
     n_dx = 1
 
-    def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
+    def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0, time=0.0):
         """
         The identity scheme simply returns the results of the dfun and
         stimulus.
@@ -508,7 +508,7 @@ class Identity(Integrator):
 
         """
 
-        X_next = dfun(X, coupling, local_coupling) + stimulus
+        X_next = dfun(X, coupling, local_coupling, time) + stimulus
         self.integration_bound_and_clamp(X_next)
         return X_next
 
@@ -521,7 +521,7 @@ class IdentityStochastic(IntegratorStochastic):
 
     n_dx = 1
 
-    def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0):
+    def scheme(self, X, dfun, coupling=None, local_coupling=0.0, stimulus=0.0, time=0.0):
         """
         The stochastic identity scheme simply returns the results of the dfun and
         the gfun and stimulus.
@@ -531,7 +531,7 @@ class IdentityStochastic(IntegratorStochastic):
 
         """
         z = self.noise.generate(X.shape) * self.noise.gfun(X)
-        X_next = dfun(X, coupling, local_coupling) + z + stimulus
+        X_next = dfun(X, coupling, local_coupling, time) + z + stimulus
         self.integration_bound_and_clamp(X_next)
         return X_next
 
@@ -541,9 +541,9 @@ class SciPyODEBase(object):
 
     def _dfun_wrapper(self, dfun, state_shape):
         @functools.wraps(dfun)
-        def wrapper(t, X_, coupling=None, local_coupling=0.0):
+        def wrapper(t, X_, coupling=None, local_coupling=0.0, time=0.0):
             X = X_.reshape(state_shape)
-            dXdt = dfun(X, coupling, local_coupling)
+            dXdt = dfun(X, coupling, local_coupling, time)
             return dXdt.ravel()
         return wrapper
 
@@ -557,11 +557,11 @@ class SciPyODEBase(object):
 
     _ode = None
 
-    def _apply_ode(self, X, dfun, coupling, local_coupling, stimulus):
+    def _apply_ode(self, X, dfun, coupling, local_coupling, stimulus, time):
         if self._ode is None:
             self._ode = self._prepare_ode(X, dfun)
         self._ode.y[:] = X.ravel()
-        self._ode.set_f_params(coupling, local_coupling)
+        self._ode.set_f_params(coupling, local_coupling, time)
         return self._ode.integrate(self._ode.t + self.dt).reshape(X.shape) + self.dt * stimulus
 
 
@@ -571,15 +571,15 @@ class SciPyODEBase(object):
 
 class SciPyODE(SciPyODEBase):
 
-    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
-        X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
+        X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus, time)
         self.integration_bound_and_clamp(X_next)
         return X_next
 
 class SciPySDE(SciPyODEBase):
 
-    def scheme(self, X, dfun, coupling, local_coupling, stimulus):
-        X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus)
+    def scheme(self, X, dfun, coupling, local_coupling=0.0, stimulus=0.0, time=0.0):
+        X_next = self._apply_ode(X, dfun, coupling, local_coupling, stimulus, time)
         X_next += self.noise.gfun(X) * self.noise.generate(X.shape)
         self.integration_bound_and_clamp(X_next)
         return X_next

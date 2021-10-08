@@ -73,14 +73,14 @@ class ReducedWongWangProxy(ReducedWongWang):
     non_integrated_variables = ["H"]
     H_save = None
 
-    def update_state_variables_before_integration(self, x, c, local_coupling=0.0, stimulus=0.0):
+    def update_state_variables_before_integration(self, x, c, local_coupling=0.0, stimulus=0.0, time=0.0):
         return None
 
-    def update_state_variables_after_integration(self, X):
+    def update_state_variables_after_integration(self, X, time=0.0):
         X[1,:] = self.H_save # only work for Euler integrator
         return X
 
-    def dfun(self, x, c, local_coupling=0.0):
+    def dfun(self, x, c, local_coupling=0.0, time=0.0):
         # same has tvb implementation
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T + local_coupling * x[0]

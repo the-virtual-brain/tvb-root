@@ -359,7 +359,7 @@ class BrunelWang(models.Model):
         self.psi_table.configure()
         self.nerf_table.configure()
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         """
         .. math::
              \tau_e*\\dot{\nu_e}(t) &= -\nu_e(t) + \\phi_e \\\\

@@ -168,7 +168,7 @@ class MorrisLecar(models.Model):
     _nvar = 2
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         """
         The dynamics of the membrane potential :math:`V` rely on the fraction
         of Ca++ channels :math:`M` and K+ channels :math:`N` open at a given

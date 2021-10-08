@@ -415,7 +415,7 @@ class WilsonCowan(ModelNumbaDfun):
 
         return derivative
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
 
         .. math::

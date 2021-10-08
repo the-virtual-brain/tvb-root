@@ -194,7 +194,7 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
     m_i = None
     n_i = None
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
 
 
@@ -489,7 +489,7 @@ class ReducedSetHindmarshRose(ReducedSetBase):
     m_i = None
     n_i = None
 
-    def dfun(self, state_variables, coupling, local_coupling=0.0):
+    def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         r"""
         The equations of the population model for i-th mode at node q are:
 

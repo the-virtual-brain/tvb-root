@@ -168,7 +168,7 @@ def kernel(dx, state, cx, parmat):
 
 class TestNbIntegrate(BaseTestIntegrate):
 
-    def _test_dfun(self, state, cX, lc):
+    def _test_dfun(self, state, cX, lc, tm):
         return -state*cX**2/state.shape[1]
 
     def _eval_cg(self, integrator_, state, weights_):
