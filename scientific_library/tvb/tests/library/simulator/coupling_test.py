@@ -157,7 +157,7 @@ class TestCouplingShape(BaseTestCase):
                 self.n_node = n_node
                 self.test_case = test_case
 
-            def dfun(self, state, coupling, local_coupling):
+            def dfun(self, state, coupling, local_coupling, time):
                 if self.test_case is not None:
                     self.test_case.assert_equal(
                         (2, self.n_node, 1),
