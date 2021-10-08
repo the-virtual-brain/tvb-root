@@ -54,7 +54,6 @@ class Model(HasTraits):
     stvar = None
     state_variable_boundaries = None
     state_variable_mask = None
-    stimulus = None
 
     def _build_observer(self):
         template = ("def observe(state):\n"
@@ -157,13 +156,6 @@ class Model(HasTraits):
         dt = integrator.dt
         return self.initial(dt, shape, rng)
 
-    def update_stimulus(self, step, dt):
-        """
-        When needed, and if stimulus is not None,
-        this should be a method for computing a model specific, time-dependent stimulus.
-        """
-        pass
-
     @abc.abstractmethod
     def dfun(self, state_variables, coupling, local_coupling=0.0, time=0.0):
         """
@@ -250,10 +242,11 @@ class Model(HasTraits):
                 new_parameters = region_parameters[sim.surface.region_mapping].reshape(spatial_reshape)
                 setattr(self, param, new_parameters)
 
-    def update_state_variables_before_integration(self, state_variables, coupling, local_coupling=0.0, stimulus=0.0):
+    def update_state_variables_before_integration(self, state_variables, coupling,
+                                                  local_coupling=0.0, stimulus=0.0, time=0.0):
         return state_variables
 
-    def update_state_variables_after_integration(self, state_variables):
+    def update_state_variables_after_integration(self, state_variables, time=0.0):
         return state_variables
 
     @property
