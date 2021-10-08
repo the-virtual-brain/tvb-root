@@ -73,7 +73,7 @@ class TestBoundsModel(Model):
     _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, state, node_coupling, local_coupling=0.0):
+    def dfun(self, state, node_coupling, local_coupling=0.0, time=0.0):
         return 0.0 * state
 
 
@@ -100,7 +100,7 @@ class TestUpdateVariablesModel(Model):
     _nvar = 5
     cvar = numpy.array([0], dtype=numpy.int32)
 
-    def dfun(self, integrated_variables, node_coupling, local_coupling=0.0):
+    def dfun(self, integrated_variables, node_coupling, local_coupling=0.0, time=0.0):
         return 0.0 * integrated_variables
 
     def update_state_variables_before_integration(self, state, coupling, local_coupling=0.0, stimulus=0.0):

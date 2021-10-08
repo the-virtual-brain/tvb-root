@@ -62,7 +62,7 @@ def integrators():
     return get_subclasses('integrators', 'Integrator', ignore_names=["IntegratorStochastic"])
 
 
-def nop_dfun(x, coupling, local_coupling):
+def nop_dfun(x, coupling, local_coupling, time):
     return x
 
 
