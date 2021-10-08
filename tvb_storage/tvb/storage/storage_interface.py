@@ -315,8 +315,8 @@ class StorageInterface:
             self.logger.exception("A problem occurred while removing folder.")
             raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
 
-        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
-        FilesHelper.remove_files([encrypted_path, DataEncryptionHandler.project_key_path(project.id)], True)
+        encrypted_path = self.data_encryption_handler.compute_encrypted_folder_path(project_folder)
+        FilesHelper.remove_files([encrypted_path, self.data_encryption_handler.project_key_path(project.id)], True)
 
     def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, path_list):
         self.set_project_active(to_project)
