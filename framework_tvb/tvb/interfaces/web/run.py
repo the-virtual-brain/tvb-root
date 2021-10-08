@@ -227,7 +227,7 @@ def start_tvb(arguments, browser=True):
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
-    if StorageInterface.encryption_enabled():
+    if StorageInterface.encryption_enabled() and StorageInterface.app_encryption_handler():
         storage_interface = StorageInterface()
         storage_interface.start()
         storage_interface.startup_cleanup()

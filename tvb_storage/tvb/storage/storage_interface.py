@@ -41,7 +41,7 @@ from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer, \
+from tvb.storage.h5.encryption.data_encryption_handler import FoldersQueueConsumer, \
     encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
 from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
@@ -230,9 +230,8 @@ class StorageInterface:
         self.data_encryption_handler.dec_running_op_count(folder)
         return self.data_encryption_handler.check_and_delete(folder)
 
-    @staticmethod
-    def sync_folders(folder):
-        DataEncryptionHandler.sync_folders(folder)
+    def sync_folders(self, folder):
+        self.data_encryption_handler.sync_folders(folder)
 
     def set_project_active(self, project, linked_dt=None):
         self.data_encryption_handler.set_project_active(project, linked_dt)
@@ -246,11 +245,14 @@ class StorageInterface:
 
     @staticmethod
     def encryption_enabled():
-        return DataEncryptionHandler.encryption_enabled()
+        return encryption_handler.encryption_enabled()
 
     @staticmethod
-    def startup_cleanup():
-        return DataEncryptionHandler.startup_cleanup()
+    def app_encryption_handler():
+        return encryption_handler.app_encryption_handler()
+
+    def startup_cleanup(self):
+        return self.data_encryption_handler.startup_cleanup()
 
     # Folders Queue Consumer methods start here #
 
@@ -296,9 +298,9 @@ class StorageInterface:
             raise RenameWhileSyncEncryptingException(
                 "A project can not be renamed while sync encryption operations are running")
         self.files_helper.rename_project_structure(current_proj_name, new_name)
-        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
+        encrypted_path = self.data_encryption_handler.compute_encrypted_folder_path(project_folder)
         if os.path.exists(encrypted_path):
-            new_encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(
+            new_encrypted_path = self.data_encryption_handler.compute_encrypted_folder_path(
                 self.get_project_folder(new_name))
             os.rename(encrypted_path, new_encrypted_path)
 
@@ -313,8 +315,8 @@ class StorageInterface:
             self.logger.exception("A problem occurred while removing folder.")
             raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
 
-        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
-        FilesHelper.remove_files([encrypted_path, DataEncryptionHandler.project_key_path(project.id)], True)
+        encrypted_path = self.data_encryption_handler.compute_encrypted_folder_path(project_folder)
+        FilesHelper.remove_files([encrypted_path, self.data_encryption_handler.project_key_path(project.id)], True)
 
     def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, path_list):
         self.set_project_active(to_project)
