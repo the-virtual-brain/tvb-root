@@ -52,17 +52,16 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 """
 
 import os
-import tvb.simulator.models
-from mako.template import Template
 import re
-from tvb.basic.logger.builder import get_logger
-
-from lems.model.model import Model
-
 import argparse
 import numpy as np
+import tvb.simulator.models
+from mako.template import Template
+from tvb.basic.logger.builder import get_logger
+from lems.model.model import Model
 
 logger = get_logger(__name__)
+
 
 class RateML:
 
@@ -103,7 +102,7 @@ class RateML:
                 self.write_model_file(default_save, model_str)
 
         # if it is a TVB.py model, it should be familiarized
-        if self.language.lower()=='python':
+        if self.language.lower() == 'python':
             self.familiarize_TVB(model_str)
 
     def parse_args(self):  # {{{
@@ -134,7 +133,7 @@ class RateML:
             location = os.path.join(folder, self.model_filename.lower() + '.xml')
             assert os.path.isfile(location)
         except AssertionError:
-            logger.error('XML folder %s does not contain %s', folder, self.model_filename+'.xml')
+            logger.error('XML folder %s does not contain %s', folder, self.model_filename + '.xml')
             exit()
 
         return location
@@ -148,10 +147,10 @@ class RateML:
     def set_generated_model_location(self):
         folder = self.GENfolder or self.default_generation_folder()
         lan = self.language.lower()
-        if lan=='python':
-            ext='.py'
-        elif lan=='cuda':
-            ext='.c'
+        if lan == 'python':
+            ext = '.py'
+        elif lan == 'cuda':
+            ext = '.c'
 
         try:
             location = os.path.join(folder)
@@ -168,7 +167,7 @@ class RateML:
 
     def set_template(self, name):
         here = os.path.dirname(os.path.abspath(__file__))
-        tmp_filename = os.path.join(here, 'tmpl8_'+ name +'.py')
+        tmp_filename = os.path.join(here, 'tmpl8_' + name + '.py')
         template = Template(filename=tmp_filename)
         return template
 
@@ -214,20 +213,19 @@ class RateML:
 
         # only check whether noise is there, if so then activate it
         # cuda only
-        noisepresent=False
+        noisepresent = False
         for ct in (model.component_types):
             if ct.name == 'noise':
-                noisepresent=True
-
+                noisepresent = True
 
         # see if nsig derived parameter is present for noise
         # cuda only
         modellist = model.component_types['derivatives']
-        nsigpresent=False
-        if noisepresent==True:
+        nsigpresent = False
+        if noisepresent == True:
             for dprm in (modellist.derived_parameters):
                 if (dprm.name == 'nsig' or dprm.name == 'NSIG'):
-                     nsigpresent=True
+                    nsigpresent = True
 
         return noisepresent, nsigpresent
 
@@ -301,7 +299,6 @@ class RateML:
 
         return model_str, driver_str
 
-
     def render_model(self, derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent):
 
         if self.language == 'python':
@@ -311,20 +308,19 @@ class RateML:
 
         # start templating
         model_str = self.set_template(self.language).render(
-            modelname=model_class_name,                     # all
-            const=derivative_list.constants,                # all
-            dynamics=derivative_list.dynamics,              # all
-            exposures=derivative_list.exposures,            # all
-            params=derivative_list.parameters,              # cuda
-            derparams=derivative_list.derived_parameters,   # cuda
-            svboundaries=svboundaries,                      # python
-            coupling=couplinglist,                          # cuda
-            noisepresent=noisepresent,                      # cuda
-            nsigpresent=nsigpresent,                        # cuda
-            )
+            modelname=model_class_name,  # all
+            const=derivative_list.constants,  # all
+            dynamics=derivative_list.dynamics,  # all
+            exposures=derivative_list.exposures,  # all
+            params=derivative_list.parameters,  # cuda
+            derparams=derivative_list.derived_parameters,  # cuda
+            svboundaries=svboundaries,  # python
+            coupling=couplinglist,  # cuda
+            noisepresent=noisepresent,  # cuda
+            nsigpresent=nsigpresent,  # cuda
+        )
 
         return model_str
-
 
     def render_driver(self, derivative_list):
 
@@ -335,7 +331,6 @@ class RateML:
 
         return driver_str
 
-
     def familiarize_TVB(self, model_str):
         '''
         Write new model to TVB model location and into init.py such it is familiar to TVB if not already present
@@ -344,7 +339,8 @@ class RateML:
 
         model_filename = self.model_filename
         # set tvb location
-        TVB_model_location = os.path.join(os.path.dirname(tvb.simulator.models.__file__), model_filename.lower() + 'T.py')
+        TVB_model_location = os.path.join(os.path.dirname(tvb.simulator.models.__file__),
+                                          model_filename.lower() + 'T.py')
         # next to user submitted location also write to default tvb location
         self.write_model_file(TVB_model_location, model_str)
 
@@ -383,8 +379,8 @@ class RateML:
         except IOError as e:
             logger.error('Writing %s model to file failed: %s', self.language, e)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     RateML()
 
     # example for direct project implementation
@@ -401,4 +397,3 @@ if __name__ == "__main__":
 
     # start conversion to default model location
     # RateML(model_filename, language)
-
