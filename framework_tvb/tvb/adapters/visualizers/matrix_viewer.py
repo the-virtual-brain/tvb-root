@@ -199,5 +199,5 @@ class MappedArrayVisualizer(ABCMappedArraySVGVisualizer):
             labels = [labels, labels]
 
         params = self.compute_params(dtm_index, matrix2d, "Matrix Plot", labels,
-                                     view_model.slice, slice_used, is_default_slice, not dtm_index.is_array_finite)
+                                     view_model.slice, slice_used, is_default_slice, not dtm_index.array_is_finite)
         return self.build_display_result("matrix/svg_view", params)

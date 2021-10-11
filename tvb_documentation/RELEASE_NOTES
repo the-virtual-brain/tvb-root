@@ -1,7 +1,7 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 2.4 - build 16841
- Release Date: 08 October 2021
+ Version: 2.4 - build 16845
+ Release Date: 09 October 2021
  Description: Bug fixing, spack packaging and support encryption at export
 ======================================================================================================================================
     * Bug fixing
