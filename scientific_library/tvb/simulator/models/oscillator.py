@@ -431,7 +431,7 @@ class Kuramoto(Model):
         label=r":math:`\omega`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.01, hi=200.0, step=0.1),
-        doc=""":math:`\\omega` sets the base line frequency for the
+        doc=r""":math:`\omega` sets the base line frequency for the
             Kuramoto oscillator in [rad/ms]""")
 
     state_variable_range = Final(

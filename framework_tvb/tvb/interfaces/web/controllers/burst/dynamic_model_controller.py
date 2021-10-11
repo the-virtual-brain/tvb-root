@@ -310,7 +310,7 @@ class DynamicModelController(BurstBaseController):
         """
         ret = []
         model_form_class = get_form_for_model(type(model))
-        for name in model_form_class.get_params_configurable_in_phase_plane():
+        for name in list(model_form_class.get_params_configurable_in_phase_plane().keys()):
             attr = getattr(type(model), name)
             ranger = attr.domain
             if ranger is None:
@@ -392,7 +392,7 @@ class DynamicModelController(BurstBaseController):
         model_parameters = []
 
         model_form_class = get_form_for_model(type(model))
-        for name in model_form_class.get_params_configurable_in_phase_plane():
+        for name in list(model_form_class.get_params_configurable_in_phase_plane().keys()):
             value = getattr(model, name)[0]
             model_parameters.append((name, value))
 

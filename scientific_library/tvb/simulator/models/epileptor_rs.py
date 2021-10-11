@@ -154,7 +154,7 @@ class EpileptorRestingState(ModelNumbaDfun):
         doc="External input current to the second population (x2, y2).")
 
     tau = NArray(
-        label=":math:`/tau`",
+        label=r":math:`\tau`",
         default=numpy.array([10.0]),
         doc="Temporal scaling coefficient in the fifth state-variable y2.")
 
@@ -265,7 +265,6 @@ class EpileptorRestingState(ModelNumbaDfun):
         default=numpy.array([1.0]),
         domain=Range(lo=0.0, hi=10.0, step=0.001),
         doc="Coupling scaling on a fast time scale.")
-
 
     # Combination 2 models
     p = NArray(

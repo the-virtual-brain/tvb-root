@@ -126,6 +126,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
     def __init__(self):
         super(SurfaceModelParametersController, self).__init__()
         self.simulator_context = SimulatorContext()
+        self.model_params_dict = None
 
     def get_data_from_burst_configuration(self):
         """
@@ -149,7 +150,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         cortex = des.conf.surface
         return model, cortex
 
-    def _prepare_model_params_list(self, model):
+    def _prepare_model_params_dict(self, model):
         model_form = get_model_to_form_dict().get(type(model))
         model_params = model_form.get_params_configurable_in_phase_plane()
         if len(model_params) == 0:
@@ -176,13 +177,14 @@ class SurfaceModelParametersController(SpatioTemporalController):
         }
         template_specification.update({'applied_equations': context.get_configure_info()})
 
-        config_form = SurfaceModelParametersForm(self.model_params_list)
+        config_form = SurfaceModelParametersForm(list(self.model_params_dict.values()))
         config_form.model_param.data = context.current_model_param
         self._fill_form_from_context(config_form, context)
         template_specification.update({'adapter_form': self.render_adapter_form(config_form)})
 
         parameters_equation_plot_form = EquationPlotForm()
-        template_specification.update({'parametersEquationPlotForm': self.render_adapter_form(parameters_equation_plot_form)})
+        template_specification.update({'parametersEquationPlotForm': self.render_adapter_form(
+            parameters_equation_plot_form)})
         return template_specification
 
     @expose_page
@@ -194,16 +196,16 @@ class SurfaceModelParametersController(SpatioTemporalController):
         surface_gid = cortex.surface_gid
         surface_index = load.load_entity_by_gid(surface_gid)
 
-        self.model_params_list = self._prepare_model_params_list(model)
+        self.model_params_dict = self._prepare_model_params_dict(model)
         context_model_parameters = SurfaceContextModelParameters(surface_index, model,
                                                                  SurfaceModelParametersForm.default_equation,
-                                                                 self.model_params_list[0])
+                                                                 list(self.model_params_dict.keys())[0])
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")
         template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data))
 
-        dummy_form_for_initialization = SurfaceModelParametersForm(self.model_params_list)
+        dummy_form_for_initialization = SurfaceModelParametersForm(list(self.model_params_dict.values()))
         self.plotted_equation_prefixes = {
             self.MODEL_PARAM_FIELD: dummy_form_for_initialization.model_param.name,
             self.EQUATION_FIELD: dummy_form_for_initialization.equation.name,
@@ -307,7 +309,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
             simulator = self.simulator_context.simulator
 
-            for param_name in self.model_params_list:
+            for param_name in list(self.model_params_list.keys()):
                 param_data = context_model_parameters.get_data_for_model_param(param_name)
                 if param_data is None:
                     continue
