@@ -39,7 +39,7 @@ class RangeParameter(object):
     KEY_FLOAT_STEP = 'step'
     KEY_FLOAT_HI = 'hi'
 
-    def __init__(self, name, type, range_definition, is_array=False, range_values=None):
+    def __init__(self, name, type, range_definition=None, is_array=False, range_values=None):
         self.name = name
         self.type = type
         self.is_array = is_array
