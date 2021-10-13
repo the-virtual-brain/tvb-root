@@ -121,7 +121,7 @@ class CleanupSessionHandler(RamSession):
 
 
 def init_cherrypy(arguments=None):
-    #### Mount static folders from modules marked for introspection
+    # Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
     if StorageInterface.encryption_enabled():
@@ -133,7 +133,7 @@ def init_cherrypy(arguments=None):
                                                'tools.staticdir.dir': '.',
                                                'tools.staticdir.root': module_path}
 
-    #### Mount controllers, and specify the root URL for them.
+    # Mount controllers, and specify the root URL for them.
     cherrypy.tree.mount(BaseController(), "/", config=CONFIGUER)
     cherrypy.tree.mount(UserController(), "/user/", config=CONFIGUER)
     cherrypy.tree.mount(ProjectController(), "/project/", config=CONFIGUER)
@@ -175,7 +175,7 @@ def init_cherrypy(arguments=None):
             bus=cherrypy.engine)
         operations_job.start()
 
-    # HTTP Server is fired now ######
+    # HTTP Server is fired now #
     cherrypy.engine.start()
 
 
@@ -207,7 +207,7 @@ def start_tvb(arguments, browser=True):
     """
 
     if PARAM_RESET_DB in arguments:
-        ##### When specified, clean everything in DB
+        # When specified, clean everything in DB
         reset()
         arguments.remove(PARAM_RESET_DB)
 
@@ -223,7 +223,7 @@ def start_tvb(arguments, browser=True):
         LOGGER.exception(excep)
         sys.exit()
 
-    #### Mark that the interface is Web
+    # Mark that the interface is Web
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
@@ -232,13 +232,13 @@ def start_tvb(arguments, browser=True):
         storage_interface.start()
         storage_interface.startup_cleanup()
 
-    #### Fire a browser page at the end.
+    # Fire a browser page at the end.
     if browser:
         run_browser()
 
     expose_rest_api()
 
-    ## Launch CherryPy loop forever.
+    # Launch CherryPy loop forever.
     LOGGER.info("Finished starting TVB version %s in %.3f s",
                 TvbProfile.current.version.CURRENT_VERSION, time.time() - STARTUP_TIC)
     cherrypy.engine.block()
@@ -268,6 +268,6 @@ def run_browser():
 
 
 if __name__ == '__main__':
-    #### Prepare parameters and fire CherryPy
-    #### Remove not-relevant parameter, 0 should point towards this "run.py" file, 1 to the profile
+    # Prepare parameters and fire CherryPy
+    # Remove not-relevant parameter, 0 should point towards this "run.py" file, 1 to the profile
     start_tvb(sys.argv[2:])
