@@ -866,6 +866,7 @@ class TimeSeries(HasTraits):
         output = data.plot(x=time, **kwargs)
         pyplot.gcf().suptitle(figname)
         pyplot.gcf().canvas.set_window_title(figname)
+        pyplot.gcf().tight_layout()
         # TODO: Something better than this temporary hack for base_plotter functionality
         if plotter_config is not None:
             save_show_figure(plotter_config, figname)
