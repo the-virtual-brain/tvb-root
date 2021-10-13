@@ -465,6 +465,18 @@ class HiddenField(TraitField):
         self.label = ''
 
 
+class LabelField(TraitField):
+    template = 'form_fields/label_field.html'
+
+    def __init__(self, trait_attribute, label_message=None, name=None):
+        super(LabelField, self).__init__(trait_attribute, name, disabled=True)
+
+        if label_message is None:
+            self.label_message = trait_attribute.label
+        else:
+            self.label_message = label_message
+
+
 class FormField(Field):
     template = 'form_fields/form_field.html'
 
