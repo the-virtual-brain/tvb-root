@@ -205,8 +205,7 @@ class StorageInterface:
         public_key_file_path = os.path.join(temp_folder, public_key_file_name)
 
         # Generate a random password for the files
-        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
-        password = EncryptionHandler.generate_random_password(pass_size)
+        password = EncryptionHandler.generate_random_password()
 
         return public_key_file_path, password
 
