@@ -27,10 +27,10 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from datetime import datetime
 import os
 import typing
 import uuid
+from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
@@ -268,8 +268,8 @@ class TVBLoader(object):
 
 class ViewModelLoader(DirLoader):
 
-    def __init__(self, base_dir):
-        super().__init__(base_dir, None)
+    def __init__(self, base_dir, registry=None):
+        super().__init__(base_dir, registry)
 
     def get_class_path(self, vm):
         return vm.__class__.__module__ + '.' + vm.__class__.__name__
@@ -285,26 +285,29 @@ class ViewModelLoader(DirLoader):
         else:
             h5_path = os.path.join(self.base_dir, fname)
         with ViewModelH5(h5_path, view_model) as h5_file:
-            h5_file.store(view_model)
-            h5_file.type.store(self.get_class_path(view_model))
-            h5_file.create_date.store(date2string(datetime.now()))
-            if hasattr(view_model, "generic_attributes"):
-                h5_file.store_generic_attributes(view_model.generic_attributes)
-            else:
-                # For HasTraits not inheriting from ViewModel (e.g. Linear)
-                h5_file.store_generic_attributes(GenericAttributes())
-
-            references = h5_file.gather_references()
-            for trait_attr, gid in references:
-                if not gid:
-                    continue
-                model_attr = getattr(view_model, trait_attr.field_name)
-                if isinstance(gid, list):
-                    for idx, sub_gid in enumerate(gid):
-                        self.store(model_attr[idx])
-                else:
-                    self.store(model_attr)
+            self._store(h5_file, view_model)
         return h5_path
+
+    def _store(self, file, view_model):
+        file.store(view_model)
+        file.type.store(self.get_class_path(view_model))
+        file.create_date.store(date2string(datetime.now()))
+        if hasattr(view_model, "generic_attributes"):
+            file.store_generic_attributes(view_model.generic_attributes)
+        else:
+            # For HasTraits not inheriting from ViewModel (e.g. Linear)
+            file.store_generic_attributes(GenericAttributes())
+
+        references = file.gather_references()
+        for trait_attr, gid in references:
+            if not gid:
+                continue
+            model_attr = getattr(view_model, trait_attr.field_name)
+            if isinstance(gid, list):
+                for idx, sub_gid in enumerate(gid):
+                    self.store(model_attr[idx])
+            else:
+                self.store(model_attr)
 
     def load(self, gid=None, fname=None):
         # type: (typing.Union[uuid.UUID, str], str) -> ViewModel
@@ -322,22 +325,25 @@ class ViewModelLoader(DirLoader):
         view_model = view_model_class()
 
         with ViewModelH5(fname, view_model) as h5_file:
-            h5_file.load_into(view_model)
-            references = h5_file.gather_references()
-            view_model.create_date = string2date(h5_file.create_date.load())
-            view_model.generic_attributes = h5_file.load_generic_attributes()
-            for trait_attr, gid in references:
-                if not gid:
-                    continue
-                if isinstance(gid, list):
-                    loaded_ref = []
-                    for idx, sub_gid in enumerate(gid):
-                        ref = self.load(sub_gid)
-                        loaded_ref.append(ref)
-                else:
-                    loaded_ref = self.load(gid)
-                setattr(view_model, trait_attr.field_name, loaded_ref)
+            self._load(h5_file, view_model)
         return view_model
+
+    def _load(self, file, view_model):
+        file.load_into(view_model)
+        references = file.gather_references()
+        view_model.create_date = string2date(file.create_date.load())
+        view_model.generic_attributes = file.load_generic_attributes()
+        for trait_attr, gid in references:
+            if not gid:
+                continue
+            if isinstance(gid, list):
+                loaded_ref = []
+                for idx, sub_gid in enumerate(gid):
+                    ref = self.load(sub_gid)
+                    loaded_ref.append(ref)
+            else:
+                loaded_ref = self.load(gid)
+            setattr(view_model, trait_attr.field_name, loaded_ref)
 
     def gather_reference_files(self, gid, vm_ref_files, dt_ref_files, load_dts=None):
         vm_path = self.find_file_by_gid(gid)
@@ -358,3 +364,51 @@ class ViewModelLoader(DirLoader):
                     self.gather_reference_files(gid, vm_ref_files, dt_ref_files, load_dts)
             if load_dts:
                 load_dts(vm_h5, dt_ref_files)
+
+
+class DtLoader(ViewModelLoader):
+    def __init__(self, base_dir, registry):
+        super().__init__(base_dir, registry)
+
+    def load(self, gid=None, fname=None):
+        # type: (typing.Union[uuid.UUID, str], str) -> ViewModel
+        """
+        Load a ViewModel object by reading the H5 file with the given GID, from the directory self.base_dir
+        """
+        if fname is None:
+            if gid is None:
+                raise ValueError("Neither gid nor filename is provided to load!")
+            fname = self.find_file_by_gid(gid)
+        else:
+            fname = os.path.join(self.base_dir, fname)
+
+        view_model_class = H5File.determine_type(fname)
+        view_model = view_model_class()
+
+        has_traits_h5 = self.registry.get_h5file_for_datatype(view_model.__class__)
+        if has_traits_h5 != H5File:
+            with has_traits_h5(fname) as file:
+                self._load(file, view_model)
+        else:
+            with ViewModelH5(fname, view_model) as h5_file:
+                self._load(h5_file, view_model)
+        return view_model
+
+    def store(self, ht, fname=None):
+        # type: (HasTraits, str) -> str
+        """
+        Completely store any ViewModel object to the directory specified by self.base_dir.
+        Works recursively for view models that are serialized in multiple files (eg. SimulatorAdapterModel)
+        """
+        if fname is None:
+            h5_path = self.path_for_has_traits(type(ht), ht.gid)
+        else:
+            h5_path = os.path.join(self.base_dir, fname)
+        has_traits_h5 = self.registry.get_h5file_for_datatype(ht.__class__)
+        if has_traits_h5 != H5File:
+            with has_traits_h5(h5_path) as file:
+                self._store(file, ht)
+        else:
+            with ViewModelH5(h5_path, ht) as h5_file:
+                self._store(h5_file, ht)
+        return h5_path

@@ -1,64 +1,8 @@
-# -*- coding: utf-8 -*-
-#
-#
-# TheVirtualBrain-Scientific Package. This package holds all simulators, and
-# analysers necessary to run brain-simulations. You can use it stand alone or
-# in conjunction with TheVirtualBrain-Framework Package. See content of the
-# documentation-folder for more details. See also http://www.thevirtualbrain.org
-#
-# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
-#
-# This program is free software: you can redistribute it and/or modify it under the
-# terms of the GNU General Public License as published by the Free Software Foundation,
-# either version 3 of the License, or (at your option) any later version.
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY
-# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-# PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License along with this
-# program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#
-#   CITATION:
-# When using The Virtual Brain for scientific publications, please cite it as follows:
-#
-#   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
-#   Jochen Mersmann, Anthony R. McIntosh, Viktor Jirsa (2013)
-#       The Virtual Brain: a simulator of primate brain network dynamics.
-#   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
-#
-#
-
 import numpy as np
 import numba
 
-def run_sim(sim, nstep):
-    horizon = sim.connectivity.horizon
-    buf_len = horizon + nstep
-    N = sim.connectivity.number_of_regions
-    gf = sim.integrator.noise.gfun(None)
 
-    r, V = sim.integrator.noise.generate( shape=(2,N,buf_len) ) * gf
-    r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
-    V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
 
-    r, V = _mpr_integrate(
-        N = N,
-        dt = sim.integrator.dt,
-        nstep = nstep,
-        i0 = sim.connectivity.horizon,
-        r=r,
-        V=V,
-        weights = sim.connectivity.weights, 
-        idelays = sim.connectivity.idelays,
-        G = sim.coupling.a.item(),
-        I = sim.model.I.item(),
-        Delta = sim.model.Delta.item(), 
-        Gamma = sim.model.Gamma.item(),
-        eta = sim.model.eta.item(),
-        tau = sim.model.tau.item(),
-        J = sim.model.J.item(),       # end of model params
-    )
-    return r, V
 
 @numba.njit
 def _mpr_integrate(
@@ -111,6 +55,13 @@ def _mpr_integrate(
             V_int = V[n,i-1] + dt*dV_0 + V_noise
             r_int = r_bound(r_int)
 
+% if not compatibility_mode:
+            # coupling
+            r_c = 0
+            for m in range(N):
+                r_c += weights[n,m] * r[m, i - idelays[n, m]]
+            r_c = r_c * G # post
+% endif
             r[n,i] = r[n,i-1] + dt*(dr_0 + dr(r_int, V_int))/2.0 + r_noise
             V[n,i] = V[n,i-1] + dt*(dV_0 + dV(r_int, V_int, r_c))/2.0 + V_noise
             r[n,i] = r_bound(r[n,i])
