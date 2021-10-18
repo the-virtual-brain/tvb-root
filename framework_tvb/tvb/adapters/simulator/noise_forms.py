@@ -65,6 +65,7 @@ class AdditiveNoiseForm(NoiseForm):
     def get_range_parameters(self, prefix):
         ntau_range_param = RangeParameter(NoiseViewModel.ntau.field_name, float, Range(lo=0.0, hi=20.0, step=1.0))
         params_with_range_defined = super(NoiseForm, self).get_range_parameters(prefix)
+        self.ensure_correct_prefix_for_param_name(ntau_range_param, prefix)
         params_with_range_defined.append(ntau_range_param)
 
         return params_with_range_defined
