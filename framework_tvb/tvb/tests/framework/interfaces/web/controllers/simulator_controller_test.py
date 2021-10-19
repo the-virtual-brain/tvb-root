@@ -44,9 +44,9 @@ from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
+from tvb.adapters.simulator.coupling_forms import get_form_for_coupling, LinearCouplingForm
 from tvb.adapters.simulator.equation_forms import TemporalEquationsEnum
-from tvb.adapters.simulator.model_forms import get_form_for_model, ModelsEnum
+from tvb.adapters.simulator.model_forms import get_form_for_model, ModelsEnum, Generic2dOscillatorModelForm
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.model.model_burst import BurstConfiguration
 from tvb.core.entities.storage import dao
@@ -57,9 +57,10 @@ from tvb.datatypes.equations import FirstOrderVolterra, GeneralizedSigmoid, Line
 from tvb.datatypes.sensors import SensorTypesEnum
 from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.interfaces.web.controllers.common import *
-from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
+from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController, FormWithRanges
 from tvb.simulator.coupling import Sigmoidal
 from tvb.simulator.monitors import DefaultMasks
+from tvb.simulator.simulator import Simulator
 from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseTransactionalControllerTest
@@ -898,9 +899,14 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['pse_param2'] = 'model.c'
 
         self.simulator_controller.range_parameters.coupling_parameters = get_form_for_coupling(type(
-            self.session_stored_simulator.coupling))().get_range_parameters()
+            self.session_stored_simulator.coupling))().get_range_parameters(Simulator.coupling.field_name)
         self.simulator_controller.range_parameters.model_parameters = get_form_for_model(type(
-            self.session_stored_simulator.model))().get_range_parameters()
+            self.session_stored_simulator.model))().get_range_parameters(Simulator.model.field_name)
+
+        self.simulator_controller.range_parameters.range_param_forms[FormWithRanges.COUPLING_FRAGMENT_KEY] = \
+            LinearCouplingForm()
+        self.simulator_controller.range_parameters.range_param_forms[FormWithRanges.MODEL_FRAGMENT_KEY] = \
+            Generic2dOscillatorModelForm()
 
         burst_config = BurstConfiguration(self.test_project.id)
 
@@ -925,9 +931,14 @@ class TestSimulationController(BaseTransactionalControllerTest):
         self.sess_mock['pse_param2_step'] = '10.0'
 
         self.simulator_controller.range_parameters.coupling_parameters = get_form_for_coupling(type(
-            self.session_stored_simulator.coupling))().get_range_parameters()
+            self.session_stored_simulator.coupling))().get_range_parameters(Simulator.coupling.field_name)
         self.simulator_controller.range_parameters.model_parameters = get_form_for_model(type(
-            self.session_stored_simulator.model))().get_range_parameters()
+            self.session_stored_simulator.model))().get_range_parameters(Simulator.model.field_name)
+
+        self.simulator_controller.range_parameters.range_param_forms[FormWithRanges.COUPLING_FRAGMENT_KEY] = \
+            LinearCouplingForm()
+        self.simulator_controller.range_parameters.range_param_forms[FormWithRanges.MODEL_FRAGMENT_KEY] = \
+            Generic2dOscillatorModelForm()
 
         burst_config = BurstConfiguration(self.test_project.id)
 
