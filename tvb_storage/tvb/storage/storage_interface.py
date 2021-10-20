@@ -493,3 +493,19 @@ class StorageInterface:
         self.write_zip_folder(dest_path, export_folder)
 
         return dest_path
+
+    def export_datatype_from_rest_server(self, dt, data, download_file_name, public_key_path):
+        password = EncryptionHandler.generate_random_password()
+        dest_path = self.export_datatypes([dt], data, download_file_name, public_key_path, password)
+
+        return dest_path
+
+    def import_datatype_to_rest_client(self, file_path, temp_folder, private_key_path):
+        import_export_encryption_handler = self.get_import_export_encryption_handler()
+        result = self.unpack_zip(file_path, temp_folder)
+        encrypted_password_path = import_export_encryption_handler.extract_encrypted_password_from_list(result)
+
+        decrypted_file_path = import_export_encryption_handler.decrypt_content(encrypted_password_path,
+                                                                               result, private_key_path)[0]
+        os.remove(file_path)
+        return decrypted_file_path

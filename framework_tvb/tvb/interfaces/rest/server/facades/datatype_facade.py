@@ -28,11 +28,16 @@
 #
 #
 
+import os
+
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.interfaces.rest.commons.dtos import AlgorithmDto, DataTypeDto
+from tvb.interfaces.rest.commons.dtos import AlgorithmDto
+from tvb.interfaces.rest.commons.exceptions import ServiceException
+from tvb.storage.storage_interface import StorageInterface
 
 
 class DatatypeFacade:
@@ -40,9 +45,26 @@ class DatatypeFacade:
         self.algorithm_service = AlgorithmService()
 
     @staticmethod
-    def get_dt_h5_path(datatype_gid):
+    def is_data_encrypted():
+        return TvbProfile.current.web.ENCRYPT_STORAGE
+
+    @staticmethod
+    def get_dt_h5_path(datatype_gid, public_key_path=None):
         index = load_entity_by_gid(datatype_gid)
-        return h5_file_for_index(index).path
+        h5_path = h5_file_for_index(index).path
+        file_name = os.path.basename(h5_path)
+
+        if True:
+            if public_key_path and os.path.exists(public_key_path):
+                encrypted_h5_path = StorageInterface().export_datatype_from_rest_server(
+                    h5_path, index, file_name, public_key_path)
+                file_name = file_name.replace(StorageInterface.TVB_STORAGE_FILE_EXTENSION,
+                                              StorageInterface.TVB_ZIP_FILE_EXTENSION)
+                return encrypted_h5_path, file_name
+            else:
+                raise ServiceException('Client requested encrypted retrieval of data but the server has no'
+                                       ' valid private key!')
+        return h5_path, file_name
 
     def get_datatype_operations(self, datatype_gid):
         categories = dao.get_launchable_categories(elimin_viewers=True)

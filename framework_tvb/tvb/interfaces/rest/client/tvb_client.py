@@ -164,12 +164,19 @@ class TVBClient:
         pages = response["pages"]
         return operations, pages
 
-    def retrieve_datatype(self, datatype_gid, download_folder):
+    def is_data_encrypted(self):
+        """
+        Returns a boolean value which informs the client whether data is encrypted or not.
+        This function should be called before retrieving data fro the server.
+        """
+        return self.datatype_api.is_data_encrypted()
+
+    def retrieve_datatype(self, datatype_gid, download_folder, is_data_encrypted):
         """
         Given a guid, this function will download locally the H5 full data from the server to the given folder.
+        If encryption was activated, the function will also decrypt the H5 data.
         """
-
-        return self.datatype_api.retrieve_datatype(datatype_gid, download_folder)
+        return self.datatype_api.retrieve_datatype(datatype_gid, download_folder, is_data_encrypted)
 
     def load_datatype_from_file(self, datatype_path):
         """
@@ -178,24 +185,24 @@ class TVBClient:
         """
         return self.datatype_api.load_datatype_from_file(datatype_path)
 
-    def load_datatype_with_full_references(self, datatype_gid, download_folder):
-        # type: (str, str) -> HasTraits
+    def load_datatype_with_full_references(self, datatype_gid, download_folder, is_data_encrypted):
+        # type: (str, str, bool) -> HasTraits
         """
         Given a datatype GID, download the entire tree of dependencies and load them in memory.
         :param datatype_gid: GID of datatype to load
         :return: datatype object with all references fully loaded
         """
-        return self.datatype_api.load_datatype_with_full_references(datatype_gid, download_folder)
+        return self.datatype_api.load_datatype_with_full_references(datatype_gid, download_folder, is_data_encrypted)
 
-    def load_datatype_with_links(self, datatype_gid, download_folder):
-        # type: (str, str) -> HasTraits
+    def load_datatype_with_links(self, datatype_gid, download_folder, is_data_encrypted):
+        # type: (str, str, bool) -> HasTraits
         """
         Given a datatype GID, download only the corresponding H5 file and load it in memory.
         Also, instantiate empty objects as its references only for the purpose to load the GIDs on them.
         :param datatype_gid: GID of datatype to load
         :return: datatype object with correct GIDs for references
         """
-        return self.datatype_api.load_datatype_with_links(datatype_gid, download_folder)
+        return self.datatype_api.load_datatype_with_links(datatype_gid, download_folder, is_data_encrypted)
 
     def get_operations_for_datatype(self, datatype_gid):
         """

@@ -32,8 +32,6 @@
 Example of launching a simulation and an analyzer from within the REST client API.
 """
 
-import os
-
 from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, FourierAdapter
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
@@ -42,22 +40,8 @@ from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
 from tvb.datatypes.spectral import WindowingFunctionsEnum
 from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
-from tvb.storage.storage_interface import StorageInterface
 
 logger = get_logger(__name__)
-
-
-def __decrypt_data(file_path, temp_folder):
-    storage_interface = StorageInterface()
-    import_export_encryption_handler = storage_interface.get_import_export_encryption_handler()
-    result = storage_interface.unpack_zip(file_path, temp_folder)
-    encrypted_password_path = import_export_encryption_handler.extract_encrypted_password_from_list(result)
-
-    decrypted_file_path = import_export_encryption_handler.decrypt_content(
-        encrypted_password_path, result, os.path.join('/Users/Robert.Vincze/WORK',
-                                                      import_export_encryption_handler.PRIVATE_KEY_NAME))[0]
-
-    return decrypted_file_path
 
 
 def fire_simulation_example(tvb_client_instance):
@@ -102,12 +86,14 @@ def fire_simulation_example(tvb_client_instance):
             datatype_names.append(datatype.name)
         logger.info("The resulted datatype are: {}".format(datatype_names))
 
+        logger.info("Finding out whether data on the server is encrypted or not...")
+        is_data_encrypted = tvb_client_instance.is_data_encrypted()
+
         time_series_gid = simulation_results[1].gid
         logger.info("Download the time series file...")
-        encrypted_time_series_path = tvb_client_instance.retrieve_datatype(time_series_gid,
-                                                                           tvb_client_instance.temp_folder)
-        logger.info("Encrypt the time series file...")
-        time_series_path = __decrypt_data(encrypted_time_series_path, tvb_client_instance.temp_folder)
+        time_series_path = tvb_client_instance.retrieve_datatype(time_series_gid,
+                                                                 tvb_client_instance.temp_folder, is_data_encrypted)
+
         logger.info("The time series file location is: {}".format(time_series_path))
 
         logger.info("Requesting algorithms to run on time series...")
@@ -136,11 +122,9 @@ def fire_simulation_example(tvb_client_instance):
                 break
 
         logger.info("Download the connectivity file...")
-        encrypted_connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid,
-                                                                            tvb_client_instance.temp_folder)
-
-        logger.info("Decrypt the connectivity file...")
-        connectivity_path = __decrypt_data(encrypted_connectivity_path, tvb_client_instance.temp_folder)
+        connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid,
+                                                                  tvb_client_instance.temp_folder,
+                                                                  is_data_encrypted)
 
         logger.info("The connectivity file location is: {}".format(connectivity_path))
 
