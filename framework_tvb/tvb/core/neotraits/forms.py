@@ -390,11 +390,13 @@ class DynamicSelectField(TraitField):
                     checked=self.data is None
                 )
 
+        choices = self.choices if self.ui_values is None else self.ui_values
+
         for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=str(choice),
-                label=str(choice),
+                label=str(choices[i]),
                 checked=self.value == choice
             )
 

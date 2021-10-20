@@ -42,12 +42,14 @@ class ModelsEnum(TupleEnum):
     EPILEPTOR = (models.ModelsEnum.EPILEPTOR.get_class(), "Epileptor")
     EPILEPTOR_2D = (models.ModelsEnum.EPILEPTOR_2D.get_class(), "Epileptor2D")
     EPILEPTOR_CODIM_3 = (models.ModelsEnum.EPILEPTOR_CODIM_3.get_class(), "Epileptor Codim 3")
-    EPILEPTOR_CODIM_3_SLOW = (models.ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(), "Epileptor Codim 3 Ultra-Slow Modulations")
+    EPILEPTOR_CODIM_3_SLOW = (
+        models.ModelsEnum.EPILEPTOR_CODIM_3_SLOW.get_class(), "Epileptor Codim 3 Ultra-Slow Modulations")
     EPILEPTOR_RS = (models.ModelsEnum.EPILEPTOR_RS.get_class(), "Epileptor Resting State")
     JANSEN_RIT = (models.ModelsEnum.JANSEN_RIT.get_class(), "Jansen-Rit")
     ZETTERBERG_JANSEN = (models.ModelsEnum.ZETTERBERG_JANSEN.get_class(), "Zetterberg-Jansen")
     REDUCED_WONG_WANG = (models.ModelsEnum.REDUCED_WONG_WANG.get_class(), "Reduced Wong-Wang")
-    REDUCED_WONG_WANG_EXC_INH = (models.ModelsEnum.REDUCED_WONG_WANG_EXC_INH.get_class(), "Reduced Wong-Wang With Excitatory And Inhibitory Coupled Populations")
+    REDUCED_WONG_WANG_EXCH_INH = (models.ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class(),
+                                  "Reduced Wong-Wang With Excitatory And Inhibitory Coupled Populations")
     REDUCED_SET_FITZ_HUGH_NAGUMO = (models.ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class(), "Stefanescu-Jirsa 2D")
     REDUCED_SET_HINDMARSH_ROSE = (models.ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(), "Stefanescu-Jirsa 3D")
     ZERLAUT_FIRST_ORDER = (models.ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(), "Zerlaut Adaptation First Order")
@@ -119,6 +121,20 @@ class ModelForm(FormWithRanges):
         if self.are_voi_disabled:
             self.variables_of_interest.disabled = True
 
+    @staticmethod
+    def get_params_configurable_in_phase_plane():
+        """
+        Returns the configurable parameters in phase plane.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        """
+        Returns the mathjax representation of parameters in phase plane.
+        """
+        raise NotImplementedError
+
 
 class Generic2dOscillatorModelForm(ModelForm):
 
@@ -141,9 +157,12 @@ class Generic2dOscillatorModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"tau": r":math:`\tau`", "a": ":math:`a`", "b": ":math:`b`", "c": ":math:`c`", "I": ":math:`I`",
-                "d": ":math:`d`", "e": ":math:`e`", "f": ":math:`f`", "g": ":math:`g`", "alpha": r":math:`\alpha`",
-                "beta": r":math:`\beta`", "gamma": r":math:`\gamma`"}
+        return ["tau", "a", "b", "c", "I", "d", "e", "f", "g", "alpha", "beta", "gamma"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\tau`", ":math:`a`", ":math:`b`", ":math:`c`", ":math:`I`", ":math:`d`", ":math:`e`",
+                ":math:`f`", ":math:`g`", r":math:`\alpha`", r":math:`\beta`", r":math:`\gamma`"]
 
 
 class KuramotoModelForm(ModelForm):
@@ -155,7 +174,11 @@ class KuramotoModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"omega": r":math:`\omega`"}
+        return ["omega"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\omega`"]
 
 
 class SupHopfModelForm(ModelForm):
@@ -168,7 +191,11 @@ class SupHopfModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"a": ":math:`a`", "omega": r":math:`\omega`"}
+        return ["a", "omega"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`a`", r":math:`\omega`"]
 
 
 class HopfieldModelForm(ModelForm):
@@ -182,7 +209,11 @@ class HopfieldModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"taux": r":math:`\tau_{x}`", "tauT": r":math:`\tau_{\theta}`", "dynamic": "Dynamic"}
+        return ["taux", "tauT", "dynamic"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\tau_{x}`", r":math:`\tau_{\theta}`", "Dynamic"]
 
 
 class EpileptorModelForm(ModelForm):
@@ -211,8 +242,11 @@ class EpileptorModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"Iext": ":math:`I_{ext}`", "Iext2": ":math:`I_{ext2}`", "r": ":math:`r`", "x0": ":math:`x_0`",
-                "slope": ":math:`slope`"}
+        return ["Iext", "Iext2", "r", "x0", "slope"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`I_{ext}`", ":math:`I_{ext2}`", ":math:`r`", ":math:`x_0`", ":math:`slope`"]
 
 
 class Epileptor2DModelForm(ModelForm):
@@ -235,7 +269,11 @@ class Epileptor2DModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"r": ":math:`r`", "Iext": ":math:`I_{ext}`", "x0": ":math:`x_0`"}
+        return ["r", "Iext", "x0"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`r`", ":math:`I_{ext}`", ":math:`x_0`"]
 
 
 class EpileptorCodim3ModelForm(ModelForm):
@@ -259,10 +297,14 @@ class EpileptorCodim3ModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"mu1_start": ":math:`mu_1 start`", "mu2_start": ":math:`mu_2 start`", "nu_start": ":math:`nu start`",
-                "mu1_stop": ":math:`mu_1 stop`", "mu2_stop": ":math:`mu_2 stop`", "nu_stop": ":math:`nu stop`",
-                "b": ":math:`b`", "R": ":math:`R`", "c": ":math:`c`", "dstar": ":math:`d^*`", "N": ":math:`N`",
-                "Ks": ":math:`K_s`"}
+        return ["mu1_start", "mu2_start", "nu_start", "mu1_stop", "mu2_stop", "nu_stop", "b", "R", "c", "dstar", "N",
+                "Ks"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`mu_1 start`", ":math:`mu_2 start`", ":math:`nu start`", ":math:`mu_1 stop`",
+                ":math:`mu_2 stop`", ":math:`nu stop`", ":math:`b`", ":math:`R`", ":math:`c`", ":math:`d^*`",
+                ":math:`N`", ":math:`K_s`"]
 
 
 class EpileptorCodim3SlowModModelForm(ModelForm):
@@ -295,10 +337,13 @@ class EpileptorCodim3SlowModModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"mu1_Ain": "mu1_Ain", "mu2_Ain": "mu2_Ain", "nu_Ain": "nu_Ain", "mu1_Bin": "mu1_Bin",
-                "mu2_Bin": "mu2_Bin", "nu_Bin": "nu_Bin", "mu1_Aend": "mu1_Aend", "mu2_Aend": "mu2_Aend",
-                "nu_Aend":  "nu_Aend", "mu1_Bend": "mu1_Bend", "mu2_Bend": "mu2_Bend", "nu_Bend": "nu_Bend", "b": "b",
-                "R": "R", "c": "c", "dstar": "dstar", "N": "N"}
+        return ["mu1_Ain", "mu2_Ain", "nu_Ain", "mu1_Bin", "mu2_Bin", "nu_Bin", "mu1_Aend", "mu2_Aend", "nu_Aend",
+                "mu1_Bend", "mu2_Bend", "nu_Bend", "b", "R", "c", "dstar", "N"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return ["mu1_Ain", "mu2_Ain", "nu_Ain", "mu1_Bin", "mu2_Bin", "nu_Bin", "mu1_Aend", "mu2_Aend", "nu_Aend",
+                "mu1_Bend", "mu2_Bend", "nu_Bend", "b", "R", "c", "dstar", "N"]
 
 
 class EpileptorRestingStateModelForm(ModelForm):
@@ -337,11 +382,15 @@ class EpileptorRestingStateModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"Iext": ":math:`I_{ext}`", "Iext2": ":math:`I_{ext2}`", "r": ":math:`r`", "x0": ":math:`x_0`",
-                "slope": ":math:`slope`", "tau_rs": r":math:`\tau_{rs}`", "a_rs": ":math:`a_{rs}`",
-                "b_rs": ":math:`b_{rs}`", "I_rs": ":math:`I_{rs}`", "d_rs": ":math:`d_{rs}`",
-                "e_rs": ":math:`e_{rs}`", "f_rs": ":math:`f_{rs}`", "alpha_rs": r":math:`\alpha_{rs}`",
-                "beta_rs": r":math:`\beta_{rs}`", "gamma_rs": r":math:`\gamma_{rs}`"}
+        return ["Iext", "Iext2", "r", "x0", "slope", "tau_rs", "a_rs", "b_rs", "I_rs", "d_rs", "e_rs", "f_rs",
+                "alpha_rs", "beta_rs", "gamma_rs"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`I_{ext}`", ":math:`I_{ext2}`", ":math:`r`", ":math:`x_0`", ":math:`slope`",
+                r":math:`\tau_{rs}`", ":math:`a_{rs}`", ":math:`b_{rs}`", ":math:`I_{rs}`", ":math:`d_{rs}`",
+                ":math:`e_{rs}`", ":math:`f_{rs}`", r":math:`\alpha_{rs}`", r":math:`\beta_{rs}`",
+                r":math:`\gamma_{rs}`"]
 
 
 class JansenRitModelForm(ModelForm):
@@ -367,10 +416,13 @@ class JansenRitModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"A": ":math:`A`", "B": ":math:`B`", "a": ":math:`a`", "b": ":math:`b`", "v0": ":math:`v_0`",
-                "nu_max": r":math:`\nu_{max}`", "r": ":math:`r`", "J": ":math:`J`", "a_1": r":math:`\alpha_1`",
-                "a_2": r":math:`\alpha_2`", "a_3": r":math:`\alpha_3`", "a_4": r":math:`\alpha_4`",
-                "p_min": ":math:`p_{min}`", "p_max": ":math:`p_{max}`", "mu": r":math:`\mu_{max}`"}
+        return ["A", "B", "a", "b", "v0", "nu_max", "r", "J", "a_1", "a_2", "a_3", "a_4", "p_min", "p_max", "mu"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`A`", ":math:`B`", ":math:`a`", ":math:`b`", ":math:`v_0`", r":math:`\nu_{max}`", ":math:`r`",
+                ":math:`J`", r":math:`\alpha_1`", r":math:`\alpha_2`", r":math:`\alpha_3`", r":math:`\alpha_4`",
+                ":math:`p_{min}`", ":math:`p_{max}`", r":math:`\mu_{max}`"]
 
 
 class ZetterbergJansenModelForm(ModelForm):
@@ -399,11 +451,14 @@ class ZetterbergJansenModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"He": ":math:`H_e`", "Hi": ":math:`H_i`", "ke": r":math:`\kappa_e`", "ki": r":math:`\kappa_i`",
-                "e0": r":math:`e_0`", "rho_2": r":math:`\rho_2`", "rho_1": r":math:`\rho_1`",
-                "gamma_1": r":math:`\gamma_1`", "gamma_2": r":math:`\gamma_2`", "gamma_3": r":math:`\gamma_3`",
-                "gamma_4": r":math:`\gamma_4`", "gamma_5": r":math:`\gamma_5`", "P": ":math:`P`", "U": ":math:`U`",
-                "Q": ":math:`Q`"}
+        return ["He", "Hi", "ke", "ki", "e0", "rho_2", "rho_1", "gamma_1", "gamma_2", "gamma_3", "gamma_4", "gamma_5",
+                "P", "U", "Q"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`H_e`", ":math:`H_i`", r":math:`\kappa_e`", r":math:`\kappa_i`", r":math:`e_0`",
+                r":math:`\rho_2`", r":math:`\rho_1`", r":math:`\gamma_1`", r":math:`\gamma_2`", r":math:`\gamma_3`",
+                r":math:`\gamma_4`", r":math:`\gamma_5`", ":math:`P`", ":math:`U`", ":math:`Q`"]
 
 
 class ReducedWongWangModelForm(ModelForm):
@@ -423,8 +478,12 @@ class ReducedWongWangModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"a": ":math:`a`", "b": ":math:`b`", "d": ":math:`d`", "gamma": r":math:`\gamma`",
-                "tau_s":  r":math:`\tau_S`", "w": r":math:`w`", "J_N": r":math:`J_{N}`", "I_o": ":math:`I_{o}`"}
+        return ["a", "b", "d", "gamma", "tau_s", "w", "J_N", "I_o"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`a`", ":math:`b`", ":math:`d`", r":math:`\gamma`", r":math:`\tau_S`", r":math:`w`",
+                r":math:`J_{N}`", ":math:`I_{o}`"]
 
 
 class ReducedWongWangExcInhModelForm(ModelForm):
@@ -454,11 +513,15 @@ class ReducedWongWangExcInhModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"a_e": ":math:`a_e`", "b_e": ":math:`b_e`", "d_e": ":math:`d_e`", "gamma_e": r":math:`\gamma_e`",
-                "tau_e": r":math:`\tau_e`", "W_e": r":math:`W_e`", "w_p": r":math:`w_p`", "J_N": r":math:`J_N`",
-                "a_i": ":math:`a_i`", "b_i": ":math:`b_i`", "d_i": ":math:`d_i`", "gamma_i": r":math:`\gamma_i`",
-                "tau_i": r":math:`\tau_i`", "W_i": r":math:`W_i`", "J_i": r":math:`J_{i}`", "I_o": ":math:`I_{o}`",
-                "G": ":math:`G`", "lamda": r":math:`\lambda`"}
+        return ["a_e", "b_e", "d_e", "gamma_e", "tau_e", "W_e", "w_p", "J_N", "a_i", "b_i", "d_i", "gamma_i", "tau_i",
+                "W_i", "J_i", "I_o", "G", "lamda"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`a_e`", ":math:`b_e`", ":math:`d_e`", r":math:`\gamma_e`", r":math:`\tau_e`", r":math:`W_e`",
+                r":math:`w_p`", r":math:`J_N`", ":math:`a_i`", ":math:`b_i`", ":math:`d_i`", r":math:`\gamma_i`",
+                r":math:`\tau_i`", r":math:`W_i`", r":math:`J_{i}`", ":math:`I_{o}`", ":math:`G`",
+                r":math:`\lambda`"]
 
 
 class ReducedSetFitzHughNagumoModelForm(ModelForm):
@@ -478,8 +541,12 @@ class ReducedSetFitzHughNagumoModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"tau": r":math:`\tau`", "a": ":math:`a`", "b": ":math:`b`", "K11": ":math:`K_{11}`",
-                "K12": ":math:`K_{12}`", "K21": ":math:`K_{21}`", "sigma": r":math:`\sigma`", "mu": r":math:`\mu`"}
+        return ["tau", "a", "b", "K11", "K12", "K21", "sigma", "mu"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\tau`", ":math:`a`", ":math:`b`", ":math:`K_{11}`", ":math:`K_{12}`", ":math:`K_{21}`",
+                r":math:`\sigma`", r":math:`\mu`"]
 
 
 class ReducedSetHindmarshRoseModelForm(ModelForm):
@@ -503,9 +570,12 @@ class ReducedSetHindmarshRoseModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"r": ":math:`r`", "a": ":math:`a`", "b": ":math:`b`", "c": ":math:`c`", "d": ":math:`d`",
-                "s": ":math:`s`", "xo": ":math:`x_{o}`", "K11": ":math:`K_{11}`", "K12": ":math:`K_{12}`",
-                "K21": ":math:`K_{21}`", "sigma": r":math:`\sigma`", "mu": r":math:`\mu`"}
+        return ["r", "a", "b", "c", "d", "s", "xo", "K11", "K12", "K21", "sigma", "mu"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`r`", ":math:`a`", ":math:`b`", ":math:`c`", ":math:`d`", ":math:`s`", ":math:`x_{o}`",
+                ":math:`K_{11}`", ":math:`K_{12}`", ":math:`K_{21}`", r":math:`\sigma`", r":math:`\mu`"]
 
 
 class ZerlautAdaptationFirstOrderModelForm(ModelForm):
@@ -544,14 +614,17 @@ class ZerlautAdaptationFirstOrderModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"g_L": ":math:`g_{L}`", "E_L_e": ":math:`E_{Le}`", "E_L_i": ":math:`E_{Li}`", "C_m": ":math:`C_{m}`",
-                "b_e": ":math:`b_e`", "b_i": ":math:`b_i`", "a_e": ":math:`a_e`", "a_i": ":math:`a_i`",
-                "tau_w_e": ":math:`tau_{we}`", "tau_w_i": ":math:`tau_{wi}`", "E_e": r":math:`E_e`",
-                "E_i": ":math:`E_i`", "Q_e": r":math:`Q_e`", "Q_i": r":math:`Q_i`", "tau_e": r":math:`\tau_e`",
-                "tau_i": r":math:`\tau_i`", "N_tot": ":math:`N_{tot}`", "p_connect": r":math:`\epsilon`",
-                "g": ":math:`g`", "K_ext_e": ":math:`K_ext_e`", "K_ext_i": ":math:`K_ext_i`", "T": ":math:`T`",
-                "external_input_ex_ex": r":math:`\nu_e^{drive}`", "external_input_ex_in": r":math:`\nu_e^{drive}`",
-                "external_input_in_ex": r":math:`\nu_e^{drive}`", "external_input_in_in": r":math:`\nu_e^{drive}`"}
+        return ["g_L", "E_L_e", "E_L_i", "C_m", "b_e", "b_i", "a_e", "a_i", "tau_w_e", "tau_w_i", "E_e", "E_i", "Q_e",
+                "Q_i", "tau_e", "tau_i", "N_tot", "p_connect", "g", "K_ext_e", "K_ext_i", "T", "external_input_ex_ex",
+                "external_input_ex_in", "external_input_in_ex", "external_input_in_in"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`g_{L}`", ":math:`E_{Le}`", ":math:`E_{Li}`", ":math:`C_{m}`", ":math:`b_e`", ":math:`b_i`",
+                ":math:`a_e`", ":math:`a_i`", ":math:`tau_{we}`", ":math:`tau_{wi}`", r":math:`E_e`", ":math:`E_i`",
+                r":math:`Q_e`", r":math:`Q_i`", r":math:`\tau_e`", r":math:`\tau_i`", ":math:`N_{tot}`",
+                r":math:`\epsilon`", ":math:`g`", ":math:`K_ext_e`", ":math:`K_ext_i`", ":math:`T`",
+                r":math:`\nu_e^{drive}`", r":math:`\nu_e^{drive}`", r":math:`\nu_e^{drive}`", r":math:`\nu_e^{drive}`"]
 
 
 class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm):
@@ -576,8 +649,12 @@ class MontbrioPazoRoxinModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"tau": r":math:`\tau`", "I": ":math:`I_{ext}`", "Delta": r":math:`\Delta`", "J": ":math:`J`",
-                "eta": r":math:`\eta`", "Gamma": r":math:`\Gamma`", "cr": ":math:`cr`", "cv": ":math:`cv`"}
+        return ["tau", "I", "Delta", "J", "eta", "Gamma", "cr", "cv"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\tau`", ":math:`I_{ext}`", r":math:`\Delta`", ":math:`J`", r":math:`\eta`", r":math:`\Gamma`",
+                ":math:`cr`", ":math:`cv`"]
 
 
 class CoombesByrneModelForm(ModelForm):
@@ -609,7 +686,11 @@ class CoombesByrne2DModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"Delta": r":math:`\Delta`", "v_syn": ":math:`v_syn`", "k": ":math:`k`", "eta": r":math:`\eta`"}
+        return ["Delta", "v_syn", "k", "eta"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\Delta`", ":math:`v_syn`", ":math:`k`", r":math:`\eta`"]
 
 
 class GastSchmidtKnoscheSDModelForm(ModelForm):
@@ -630,9 +711,12 @@ class GastSchmidtKnoscheSDModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"tau": r":math:`\tau`", "tau_A": r":math:`\tau_A`", "alpha":  r":math:`\alpha`", "I": ":math:`I_{ext}`",
-                "Delta": r":math:`\Delta`", "J": ":math:`J`", "eta": r":math:`\eta`", "cr": ":math:`cr`",
-                "cv": ":math:`cv`"}
+        return ["tau", "tau_A", "alpha", "I", "Delta", "J", "eta", "cr", "cv"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\tau`", r":math:`\tau_A`", r":math:`\alpha`", ":math:`I_{ext}`", r":math:`\Delta`",
+                ":math:`J`", r":math:`\eta`", ":math:`cr`", ":math:`cv`"]
 
 
 class GastSchmidtKnoscheSFModelForm(ModelForm):
@@ -653,9 +737,12 @@ class GastSchmidtKnoscheSFModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"tau": r":math:`\tau`", "tau_A": r":math:`\tau_A`", "alpha": r":math:`\alpha`", "I": ":math:`I_{ext}`",
-                "Delta": r":math:`\Delta`", "J": ":math:`J`", "eta": r":math:`\eta`", "cr": ":math:`cr`",
-                "cv": ":math:`cv`"}
+        return ["tau", "tau_A", "alpha", "I", "Delta", "J", "eta", "cr", "cv"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\tau`", r":math:`\tau_A`", r":math:`\alpha`", ":math:`I_{ext}`", r":math:`\Delta`",
+                ":math:`J`", r":math:`\eta`", ":math:`cr`", ":math:`cv`"]
 
 
 class DumontGutkinModelForm(ModelForm):
@@ -680,11 +767,14 @@ class DumontGutkinModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"I_e": ":math:`I_{ext_e}`", "Delta_e": r":math:`\Delta_e`", "eta_e": r":math:`\eta_e`",
-                "tau_e": r":math:`\tau_e`", "I_i": ":math:`I_{ext_i}`", "Delta_i": r":math:`\Delta_i`",
-                "eta_i": r":math:`\eta_i`", "tau_i": r":math:`\tau_i`", "tau_s": r":math:`\tau_s`",
-                "J_ee": ":math:`J_{ee}`", "J_ei": ":math:`J_{ei}`", "J_ie": ":math:`J_{ie}`", "J_ii": ":math:`J_{ii}`",
-                "Gamma": r":math:`\Gamma`"}
+        return ["I_e", "Delta_e", "eta_e", "tau_e", "I_i", "Delta_i", "eta_i", "tau_i", "tau_s",
+                "J_ee", "J_ei", "J_ie", "J_ii", "Gamma"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`I_{ext_e}`", r":math:`\Delta_e`", r":math:`\eta_e`", r":math:`\tau_e`", ":math:`I_{ext_i}`",
+                r":math:`\Delta_i`", r":math:`\eta_i`", r":math:`\tau_i`", r":math:`\tau_s`", ":math:`J_{ee}`",
+                ":math:`J_{ei}`", ":math:`J_{ie}`", ":math:`J_{ii}`", r":math:`\Gamma`"]
 
 
 class LinearModelForm(ModelForm):
@@ -696,7 +786,11 @@ class LinearModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"gamma": r":math:`\gamma`"}
+        return ["gamma"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [r":math:`\gamma`"]
 
 
 class WilsonCowanModelForm(ModelForm):
@@ -729,12 +823,15 @@ class WilsonCowanModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"c_ee": "math:`c_{ee}`", 'c_ei': ":math:`c_{ei}`", "c_ii": ":math:`c_{ii}`",
-                "tau_e": r":math:`\tau_e`", "tau_i": r":math:`\tau_i`", "a_e": ":math:`a_e`", "b_e": ":math:`b_e`",
-                "c_e": ":math:`c_{ei}`", "a_i": ":math:`a_i`", "b_i": ":math:`b_i`", "c_i": ":math:`c_i`",
-                "r_e": ":math:`r_e`", "r_i": ":math:`r_i`", "k_e": ":math:`k_e`", "k_i": ":math:`k_i`",
-                "P": ":math:`P`", "Q": ":math:`Q`", "theta_e": r":math:`\theta_e`", "theta_i": r":math:`\theta_i",
-                "alpha_e": r":math:`\alpha_e`", "alpha_i": r":math:`\alpha_i`"}
+        return ["c_ee", "c_ei", "c_ie", "c_ii", "tau_e", "tau_i", "a_e", "b_e", "c_e", "a_i", "b_i", "c_i", "r_e",
+                "r_i", "k_e", "k_i", "P", "Q", "theta_e", "theta_i", "alpha_e", "alpha_i"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return ["math:`c_{ee}`", ":math:`c_{ei}`", ":math:`c_{ii}`", r":math:`\tau_e`", r":math:`\tau_i`",
+                ":math:`a_e`", ":math:`b_e`", ":math:`c_{ei}`", ":math:`a_i`", ":math:`b_i`", ":math:`c_i`",
+                ":math:`r_e`", ":math:`r_i`", ":math:`k_e`", ":math:`k_i`", ":math:`P`", ":math:`Q`",
+                r":math:`\theta_e`", r":math:`\theta_i", r":math:`\alpha_e`", r":math:`\alpha_i`"]
 
 
 class LarterBreakspearModelForm(ModelForm):
@@ -777,12 +874,16 @@ class LarterBreakspearModelForm(ModelForm):
 
     @staticmethod
     def get_params_configurable_in_phase_plane():
-        return {"gCa": ":math:`g_{Ca}`", "gK": ":math:`g_{K}`", "gL": ":math:`g_{L}`", "phi": r":math:`\phi`",
-                "gNa": ":math:`g_{Na}`", "TK": ":math:`T_{K}`", "TCa": ":math:`T_{Ca}`", "TNa": ":math:`T_{Na}`",
-                "VCa": ":math:`V_{Ca}`", "VK": ":math:`V_{K}`", "VL": ":math:`V_{L}`", "VNa": ":math:`V_{Na}`",
-                "d_K": r":math:`\delta_{K}`", "tau_K": r":math:`\tau_{K}`", "d_Na": r":math:`\delta_{Na}`",
-                "d_Ca": r":math:`\delta_{Ca}`", "aei": ":math:`a_{ei}`", "aie": ":math:`a_{ie}`", "b": ":math:`b`",
-                "C": ":math:`C`", "ane": ":math:`a_{ne}`", "ani": ":math:`a_{ni}`", "aee": ":math:`a_{ee}`",
-                "Iext": ":math:`I_{ext}`", "rNMDA": ":math:`r_{NMDA}`", "VT": ":math:`V_{T}`",
-                "d_V": r":math:`\delta_{V}`", "ZT": ":math:`Z_{T}`", "d_Z": r":math:`\delta_{Z}`",
-                "QV_max": ":math:`QV_{max}`", "QZ_max": ":math:`QZ_{max}`", "t_scale": ":math:`t_{scale}`"}
+        return ["gCa", "gK", "gL", "phi", "gNa", "TK", "TCa", "TNa", "VCa", "VK", "VL", "VNa", "d_K", "tau_K", "d_Na",
+                "d_Ca", "aei", "aie", "b", "C", "ane", "ani", "aee", "Iext", "rNMDA", "VT", "d_V", "ZT", "d_Z",
+                "QV_max", "QZ_max", "t_scale"]
+
+    @staticmethod
+    def get_mathjax_rendered_params():
+        return [":math:`g_{Ca}`", ":math:`g_{K}`", ":math:`g_{L}`", r":math:`\phi`", ":math:`g_{Na}`",
+                ":math:`T_{K}`", ":math:`T_{Ca}`", ":math:`T_{Na}`", ":math:`V_{Ca}`", ":math:`V_{K}`",
+                ":math:`V_{L}`", ":math:`V_{Na}`", r":math:`\delta_{K}`", r":math:`\tau_{K}`", r":math:`\delta_{Na}`",
+                r":math:`\delta_{Ca}`", ":math:`a_{ei}`", ":math:`a_{ie}`", ":math:`b`", ":math:`C`", ":math:`a_{ne}`",
+                ":math:`a_{ni}`", ":math:`a_{ee}`", ":math:`I_{ext}`", ":math:`r_{NMDA}`", ":math:`V_{T}`",
+                r":math:`\delta_{V}`", ":math:`Z_{T}`", r":math:`\delta_{Z}`", ":math:`QV_{max}`", ":math:`QZ_{max}`",
+                ":math:`t_{scale}`"]
