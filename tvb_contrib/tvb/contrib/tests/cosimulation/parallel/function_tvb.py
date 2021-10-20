@@ -35,7 +35,7 @@ import tvb.simulator.lab as lab
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import \
     ReducedWongWangProxy, _numba_dfun_proxy
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim
-from tvb.contrib.cosimulation.cosimulator import CoSimulator, ContribTestSimulator
+from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
 
 def tvb_model(dt, weight, delay, id_proxy):
@@ -90,7 +90,7 @@ def tvb_init(parameters, time_synchronize, initial_condition):
 
     # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
     if len(id_proxy) == 0:
-        sim = ContribTestSimulator(
+        sim = lab.simulator.Simulator(
             model=model,
             connectivity=connectivity,
             coupling=coupling,
@@ -137,7 +137,7 @@ def tvb_simulation(time, sim, data_proxy):
         time = result[0][0]
         s = [result[0][1][:,0], result_delayed[0][1][:,0]]
         rate = [result[0][1][:,1], result_delayed[0][1][:,1]]
-    elif isinstance(sim, ContribTestSimulator):
+    elif isinstance(sim, lab.simulator.Simulator):
         result = sim.run(simulation_length=time)
         time = result[0][0]
         s = result[0][1][:, 0]
