@@ -54,7 +54,7 @@ class DatatypeFacade:
         h5_path = h5_file_for_index(index).path
         file_name = os.path.basename(h5_path)
 
-        if True:
+        if TvbProfile.current.web.ENCRYPT_STORAGE:
             if public_key_path and os.path.exists(public_key_path):
                 encrypted_h5_path = StorageInterface().export_datatype_from_rest_server(
                     h5_path, index, file_name, public_key_path)

@@ -54,6 +54,7 @@ class DataTypeApi(MainApi):
     def retrieve_datatype(self, datatype_gid, download_folder, is_data_encrypted):
         storage_interface = StorageInterface()
         import_export_encryption_handler = storage_interface.get_import_export_encryption_handler()
+        public_key = None
 
         if is_data_encrypted:
             import_export_encryption_handler.generate_public_private_key_pair(download_folder)
