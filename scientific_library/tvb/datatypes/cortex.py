@@ -28,8 +28,6 @@
 #
 #
 
-import os
-
 import numpy
 import scipy.sparse
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Range
@@ -69,7 +67,7 @@ class Cortex(HasTraits):
 
     @property
     def region_mapping(self):
-        "Generate a full region mapping vector."
+        """Generate a full region mapping vector."""
         if self._regmap is not None:
             return self._regmap
         rm = self.region_mapping_data.array_data
@@ -176,7 +174,7 @@ class Cortex(HasTraits):
         self.log.debug("%s: %s minimum: %s" % (sts, name, array_min))
 
     def prepare_local_coupling(self, number_of_nodes):
-        "Prepare the concrete local coupling matrix used for simulation."
+        """Prepare the concrete local coupling matrix used for simulation."""
         if self.coupling_strength.size == 1:
             local_coupling = (self.coupling_strength[0] *
                               self.local_connectivity.matrix)
@@ -192,14 +190,16 @@ class Cortex(HasTraits):
         return local_coupling
 
     @classmethod
-    def from_file(cls, source_file='cortex_16384.zip', region_mapping_file=os.path.join("regionMapping_16k_76.txt"),
+    def from_file(cls, source_file='cortex_16384.zip', region_mapping_file="regionMapping_16k_76.txt",
                   local_connectivity_file=None):
+
         result = Cortex()
+
         if region_mapping_file is not None:
             result.region_mapping_data = region_mapping.RegionMapping.from_file(region_mapping_file)
 
-            if source_file is not None:
-                result.region_mapping_data.surface = surfaces.CorticalSurface.from_file(source_file)
+        if source_file is not None:
+            result.region_mapping_data.surface = surfaces.CorticalSurface.from_file(source_file)
 
         if local_connectivity_file is not None:
             result.local_connectivity = local_connectivity.LocalConnectivity.from_file(local_connectivity_file)

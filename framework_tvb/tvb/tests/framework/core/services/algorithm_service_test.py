@@ -34,6 +34,7 @@
 """
 
 import pytest
+
 from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form, DummyAdapter1, DummyModel
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
@@ -97,7 +98,7 @@ class TestAlgorithmService(TransactionalTestCase):
 
     def test_get_visualizers_for_group(self, datatype_group_factory):
 
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         dt_group = dao.get_datatypegroup_by_op_group_id(group.fk_from_operation)
         result = self.algorithm_service.get_visualizers_for_group(dt_group.gid)
         # Both discrete and isocline are expected due to the 2 ranges set in the factory

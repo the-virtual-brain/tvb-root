@@ -1,9 +1,9 @@
 <!--! This file defines functions used by concrete slider generating templates -->
-{% import 'flow/generate_help_tooltip.html' as ght with context %}
+{% import 'form_fields/generate_help_tooltip.html' as ght with context %}
 
 {% macro drawSlider(par) -%}
     <td class="paramName">{{ par.label }}</td>
-        <td class="paramHelp"> {{ ght.generate_help_tooltip(par) }}</td>
+        <td class="paramHelp"> {{ ght.generate_help_tooltip(par.label, par.doc) }}</td>
         <td class="paramSlider"><div id="slider_{{ par.name }}"></div></td>
         <td class="paramValue"><input type="number" id="value_{{ par.name }}"
                    value="{{ par.default }}" min="{{ par.min }}" max="{{ par.max }}" step="{{ par.step }}"/>

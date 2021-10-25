@@ -36,12 +36,14 @@ Surface relates DataTypes.
 .. moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
 """
-import scipy.sparse
 import warnings
 import numpy
+import scipy.sparse
+
 from tvb.basic import exceptions
-from tvb.basic.readers import ZipReader, try_get_absolute_path
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Final, Int, Float, narray_describe
+from tvb.basic.readers import ZipReader, try_get_absolute_path
 
 try:
     import gdist
@@ -59,16 +61,6 @@ except ImportError:
     gdist = ExceptionRaisingGdistModule()
     msg = "Geodesic distance module is unavailable; some functionality for surfaces will be unavailable."
     warnings.warn(msg)
-
-OUTER_SKIN = "Skin Air"
-OUTER_SKULL = "Skull Skin"
-INNER_SKULL = "Brain Skull"
-CORTICAL = "Cortical Surface"
-WHITE_MATTER = "White Matter"
-EEG_CAP = "EEG Cap"
-FACE = "Face"
-
-ALL_SURFACES = [CORTICAL, INNER_SKULL, OUTER_SKULL, OUTER_SKIN, EEG_CAP, FACE, WHITE_MATTER]
 
 
 class ValidationResult(object):
@@ -93,6 +85,18 @@ class ValidationResult(object):
 
     def summary(self):
         return '  |  '.join(message for message, _ in self.warnings)
+
+
+class SurfaceTypesEnum(TVBEnum):
+    CORTICAL_SURFACE = "Cortical Surface"
+    BRAIN_SKULL_SURFACE = "Brain Skull"
+    SKULL_SKIN_SURFACE = "Skull Skin"
+    SKIN_AIR_SURFACE = "Skin Air"
+    EEG_CAP_SURFACE = "EEG Cap"
+    FACE_SURFACE = "Face"
+    WHITE_MATTER_SURFACE = "White Matter"
+    KEY_OPTION_READ_METADATA = 'Specified in the file metadata'  # This last option will be displayed only for gifti
+    # surface importer
 
 
 class Surface(HasTraits):
@@ -146,7 +150,7 @@ class Surface(HasTraits):
 
     bi_hemispheric = Attr(field_type=bool, default=False)
 
-    surface_type = Attr(field_type=str)
+    surface_type = Final(field_type=str)
 
     valid_for_simulations = Attr(field_type=bool, default=True)
 
@@ -663,17 +667,17 @@ class Surface(HasTraits):
 
 class WhiteMatterSurface(Surface):
     """White matter - gray matter interface surface."""
-    surface_type = Final(WHITE_MATTER)
+    surface_type = Final(field_type=str, default=SurfaceTypesEnum.WHITE_MATTER_SURFACE.value)
 
 
 class CorticalSurface(Surface):
     """Cortical or pial surface."""
-    surface_type = Attr(field_type=str, default=CORTICAL)
+    surface_type = Final(field_type=str, default=SurfaceTypesEnum.CORTICAL_SURFACE.value)
 
 
 class SkinAir(Surface):
     """Skin - air interface surface."""
-    surface_type = Final(OUTER_SKIN)
+    surface_type = Final(field_type=str, default=SurfaceTypesEnum.SKIN_AIR_SURFACE.value)
 
     @classmethod
     def from_file(cls, source_file="outer_skin_4096.zip"):
@@ -682,7 +686,7 @@ class SkinAir(Surface):
 
 class BrainSkull(Surface):
     """Brain - inner skull interface surface."""
-    surface_type = Final(INNER_SKULL)
+    surface_type = Final(field_type=str, default=SurfaceTypesEnum.BRAIN_SKULL_SURFACE.value)
 
     @classmethod
     def from_file(cls, source_file="inner_skull_4096.zip"):
@@ -691,7 +695,7 @@ class BrainSkull(Surface):
 
 class SkullSkin(Surface):
     """Outer-skull - scalp interface surface."""
-    surface_type = Final(OUTER_SKULL)
+    surface_type = Final(field_type=str, default=SurfaceTypesEnum.SKULL_SKIN_SURFACE.value)
 
     @classmethod
     def from_file(cls, source_file="outer_skull_4096.zip"):
@@ -700,7 +704,7 @@ class SkullSkin(Surface):
 
 class EEGCap(Surface):
     """EEG cap surface."""
-    surface_type = Final(EEG_CAP)
+    surface_type = Final(field_type=str, default=SurfaceTypesEnum.EEG_CAP_SURFACE.value)
 
     @classmethod
     def from_file(cls, source_file="scalp_1082.zip"):
@@ -709,7 +713,7 @@ class EEGCap(Surface):
 
 class FaceSurface(Surface):
     """Face surface."""
-    surface_type = Final(FACE)
+    surface_type = Final(field_type=str, default=SurfaceTypesEnum.FACE_SURFACE.value)
 
     @classmethod
     def from_file(cls, source_file="face_8614.zip"):
@@ -722,19 +726,19 @@ def make_surface(surface_type):
     :param surface_type: one of the supported surface types
     :return: Instance of the corresponding surface lass, or None
     """
-    if surface_type in [CORTICAL, "Pial"] or surface_type.startswith("Cortex"):
+    if surface_type in [SurfaceTypesEnum.CORTICAL_SURFACE.value, "Pial"] or surface_type.startswith("Cortex"):
         return CorticalSurface()
-    elif surface_type == INNER_SKULL:
+    elif surface_type == SurfaceTypesEnum.BRAIN_SKULL_SURFACE.value:
         return BrainSkull()
-    elif surface_type == OUTER_SKULL:
+    elif surface_type == SurfaceTypesEnum.SKULL_SKIN_SURFACE.value:
         return SkullSkin()
-    elif surface_type in [OUTER_SKIN, "SkinAir"]:
+    elif surface_type in [SurfaceTypesEnum.SKIN_AIR_SURFACE.value, "SkinAir"]:
         return SkinAir()
-    elif surface_type == EEG_CAP:
+    elif surface_type == SurfaceTypesEnum.EEG_CAP_SURFACE.value:
         return EEGCap()
-    elif surface_type == FACE:
+    elif surface_type == SurfaceTypesEnum.FACE_SURFACE.value:
         return FaceSurface()
-    elif surface_type == WHITE_MATTER:
+    elif surface_type == SurfaceTypesEnum.WHITE_MATTER_SURFACE.value:
         return WhiteMatterSurface()
 
     return None

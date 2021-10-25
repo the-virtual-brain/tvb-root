@@ -27,9 +27,21 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.basic.neotraits.api import TupleEnum
 from tvb.simulator.coupling import *
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
 from tvb.core.neotraits.forms import ArrayField, BoolField
+
+
+class CouplingFunctionsEnum(TupleEnum):
+    LINEAR = (Linear, "Linear")
+    SCALING = (Scaling, "Scaling")
+    HYPERBOLIC_TANGENT = (HyperbolicTangent, "Hyperbolictangent")
+    SIGMOIDAL = (Sigmoidal, "Sigmoidal")
+    SIGMOIDAL_JANSEN_RIT = (SigmoidalJansenRit, "Sigmoidaljansenrit")
+    PRESIGMOIDAL = (PreSigmoidal, "Presigmoidal")
+    DIFFERENCE = (Difference, "Difference")
+    KURAMOTO = (Kuramoto, "Kuramoto")
 
 
 def get_coupling_to_form_dict():
@@ -44,14 +56,6 @@ def get_coupling_to_form_dict():
         Kuramoto: KuramotoCouplingForm
     }
     return coupling_class_to_form
-
-
-def get_ui_name_to_coupling_dict():
-    ui_name_to_coupling = {}
-    for coupling_class in get_coupling_to_form_dict():
-        ui_name_to_coupling.update({coupling_class.__name__: coupling_class})
-
-    return ui_name_to_coupling
 
 
 def get_form_for_coupling(coupling_class):

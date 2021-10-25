@@ -203,6 +203,10 @@ class DataType(HasTraitsIndex):
                 pass
         return ret
 
+    @property
+    def is_ts(self):
+        return hasattr(self, 'time_series_type')
+
     def _get_table_columns(self):
         columns = self.__table__.columns.keys()
         if type(self).__bases__[0] is DataType:
@@ -305,6 +309,13 @@ class DataTypeGroup(DataType):
             self.no_of_ranges = 1
         else:
             self.no_of_ranges = 0
+
+    @staticmethod
+    def is_data_a_group(data):
+        """
+        Checks if the provided data, ready for export is a DataTypeGroup or not
+        """
+        return isinstance(data, DataTypeGroup)
 
 
 class Links(Base):

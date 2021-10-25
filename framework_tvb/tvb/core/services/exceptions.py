@@ -81,6 +81,12 @@ class MissingReferenceException(ImportException):
     """
 
 
+class DatatypeGroupImportException(ImportException):
+    """
+    Exception to be thrown in case there are issues when importing a datatype group.
+    """
+
+
 class BurstServiceException(ServicesBaseException):
     """
     Exception to be thrown in case of a problem at project import.

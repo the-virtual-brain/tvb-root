@@ -35,6 +35,7 @@
 
 import json
 import numpy
+
 from tvb.core.entities.storage import dao
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.adapters.visualizers.pse_discrete import DiscretePSEAdapter
@@ -50,7 +51,7 @@ class TestPSE(TransactionalTestCase):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
-        dt_group = datatype_group_factory()
+        dt_group, _ = datatype_group_factory()
 
         viewer = DiscretePSEAdapter()
         view_model = viewer.get_view_model_class()()
@@ -67,13 +68,14 @@ class TestPSE(TransactionalTestCase):
         assert dt_group.gid == result["datatype_group_gid"]
         assert 'false' == result["has_started_ops"]
 
-    def _add_extra_operation_in_group(self, dt_group, operation_factory, time_series_index_factory,
+    def _add_extra_operation_in_group(self, dt_group, operation_factory, time_series_factory, time_series_index_factory,
                                       datatype_measure_factory):
         extra_operation = operation_factory(range_values=json.dumps({'row1': 2, 'row2': 0.1}))
         extra_operation.fk_operation_group = dt_group.fk_operation_group
         extra_operation = dao.store_entity(extra_operation)
 
-        datatype = time_series_index_factory(op=extra_operation)
+        ts = time_series_factory()
+        datatype = time_series_index_factory(ts=ts, op=extra_operation)
         datatype.fk_datatype_group = dt_group.id
         datatype.operation_id = extra_operation.id
         dao.store_entity(datatype)
@@ -81,15 +83,15 @@ class TestPSE(TransactionalTestCase):
         extra_operation_ms = operation_factory(range_values=json.dumps({'row1': 2, 'row2': 0.1}))
         extra_operation_ms.fk_operation_group = dt_group.fk_operation_group
         extra_operation_ms = dao.store_entity(extra_operation_ms)
-        datatype_measure_factory(datatype, extra_operation_ms, dt_group, '{"v": 4}')
+        datatype_measure_factory(datatype, ts,  extra_operation_ms, dt_group, '{"v": 4}')
 
-    def test_launch_discrete_order_operations(self, datatype_group_factory, operation_factory,
+    def test_launch_discrete_order_operations(self, datatype_group_factory, operation_factory, time_series_factory,
                                               time_series_index_factory, datatype_measure_factory):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
-        dt_group = datatype_group_factory()
-        self._add_extra_operation_in_group(dt_group, operation_factory, time_series_index_factory,
+        dt_group, _ = datatype_group_factory()
+        self._add_extra_operation_in_group(dt_group, operation_factory, time_series_factory, time_series_index_factory,
                                            datatype_measure_factory)
 
         viewer = DiscretePSEAdapter()
@@ -114,7 +116,7 @@ class TestPSE(TransactionalTestCase):
         """
         Check that all required keys are present in output from PSE Discrete Adapter launch.
         """
-        dt_group = datatype_group_factory()
+        dt_group, _ = datatype_group_factory()
 
         viewer = IsoclinePSEAdapter()
         view_model = viewer.get_view_model_class()()
@@ -124,10 +126,10 @@ class TestPSE(TransactionalTestCase):
         assert viewer._ui_name == result["title"]
         assert 1 == len(result["available_metrics"])
 
-    def test_launch_isocline_order_operations(self, datatype_group_factory, operation_factory,
+    def test_launch_isocline_order_operations(self, datatype_group_factory, operation_factory, time_series_factory,
                                               time_series_index_factory, datatype_measure_factory):
-        dt_group = datatype_group_factory()
-        self._add_extra_operation_in_group(dt_group, operation_factory, time_series_index_factory,
+        dt_group, _ = datatype_group_factory()
+        self._add_extra_operation_in_group(dt_group, operation_factory, time_series_factory, time_series_index_factory,
                                            datatype_measure_factory)
 
         viewer = IsoclinePSEAdapter()

@@ -37,13 +37,19 @@ The Equation datatypes.
 """
 import numpy
 from scipy.special import gamma as sp_gamma
-from tvb.basic.neotraits.api import HasTraits, Attr, Final
+from tvb.basic.neotraits.api import HasTraits, Attr, Final, TupleEnum
 from tvb.simulator.backend.ref import RefBase
 
 
 # In how many points should the equation be evaluated for the plot. Increasing this will
 # give smoother results at the cost of some performance
 DEFAULT_PLOT_GRANULARITY = 1024
+
+
+class EquationsEnum(TupleEnum):
+    """
+    Superclass of all enums that have equations as values
+    """
 
 
 # class Equation(basic.MapAsJson, core.Type):
@@ -65,7 +71,6 @@ class Equation(HasTraits):
         doc="""Should be a list of the parameters and their meaning, Traits
                 should be able to take defaults and sensible ranges from any
                 traited information that was provided.""")
-
 
     def summary_info(self):
         """
@@ -189,7 +194,6 @@ class DoubleGaussian(FiniteSupportEquation):
     A Mexican-hat function approximated by the difference of Gaussians functions.
 
     """
-    _ui_name = "Mexican-hat"
 
     equation = Final(
         label="Double Gaussian Equation",
@@ -320,7 +324,6 @@ class PulseTrain(TemporalApplicableEquation):
 
 
 
-
 class HRFKernelEquation(Equation):
     "Base class for hemodynamic response functions."
 
@@ -347,8 +350,6 @@ class Gamma(HRFKernelEquation):
     .. note:: might be filtered from the equations used in Stimulus and Local Connectivity.
 
     """
-
-    _ui_name = "HRF kernel: Gamma kernel"
 
     # TODO: Introduce a time delay in the equation (shifts the hrf onset)
     # """:math:`h(t) = \frac{(\frac{t-\delta}{\tau})^{(n-1)} e^{-(\frac{t-\delta}{\tau})}}{\tau(n-1)!}"""
@@ -389,7 +390,6 @@ class Gamma(HRFKernelEquation):
         return _pattern
 
 
-
 class DoubleExponential(HRFKernelEquation):
     """
     A difference of two exponential functions to define a kernel for the bold monitor.
@@ -412,8 +412,6 @@ class DoubleExponential(HRFKernelEquation):
         perception during binocular rivalry. Nature Neuroscience 3: 1153-1159
 
     """
-
-    _ui_name = "HRF kernel: Difference of Exponentials"
 
     equation = Final(
         label="Double Exponential Equation",
@@ -441,7 +439,6 @@ class DoubleExponential(HRFKernelEquation):
         return _pattern
 
 
-
 class FirstOrderVolterra(HRFKernelEquation):
     """
     Integral form of the first Volterra kernel of the three used in the
@@ -463,8 +460,6 @@ class FirstOrderVolterra(HRFKernelEquation):
         Hemodynamics*, NeuroImage, 12, 466 - 477, 2000.
 
     """
-
-    _ui_name = "HRF kernel: Volterra Kernel"
 
     equation = Final(
         label="First Order Volterra Kernel",
@@ -530,8 +525,6 @@ class MixtureOfGammas(HRFKernelEquation):
 
     """
 
-    _ui_name = "HRF kernel: Mixture of Gammas"
-
     equation = Final(
         label="Mixture of Gammas",
         default="(l * var)**(a_1-1) * exp(-l*var) / gamma_a_1 - c * (l*var)**(a_2-1) * exp(-l*var) / gamma_a_2",
@@ -555,4 +548,3 @@ class MixtureOfGammas(HRFKernelEquation):
         self.parameters["gamma_a_2"] = sp_gamma(self.parameters["a_2"])
 
         return RefBase.evaluate(self.equation, global_dict=self.parameters)
-

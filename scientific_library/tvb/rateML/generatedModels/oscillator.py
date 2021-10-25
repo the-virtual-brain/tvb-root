@@ -80,8 +80,8 @@ class OscillatorT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"V": numpy.array([0.0]), 
-				 "W": numpy.array([0.0])},
+        default={"V": numpy.array([0.0, 0.0]), 
+				 "W": numpy.array([0.0, 0.0])},
         doc="""state variables"""
     )
 
@@ -95,6 +95,7 @@ class OscillatorT(ModelNumbaDfun):
         label="Variables or quantities available to Monitors",
         choices=('V', 'W', ),
         default=('V', 'W', ),
+
         doc="Variables to monitor"
     )
 
@@ -122,6 +123,6 @@ def _numba_dfun_OscillatorT(vw, coupling, tau, I, a, b, c, d, e, f, g, alpha, be
     W = vw[1]
 
 
-    dx[0] = d * tau * (alpha * W - f * V ** 3 + e * V ** 2 + g * V + gamma * I + gamma * c_pop0 * V)
-    dx[1] = d * (a + b * V + c * V ** 2 - beta * W) / tau
+    dx[0] = d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma * c_pop0 * V)
+    dx[1] = d * (a + b * V + c * V**2 - beta * W) / tau
     

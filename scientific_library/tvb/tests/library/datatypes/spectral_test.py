@@ -34,6 +34,7 @@ Created on Mar 20, 2013
 """
 
 import numpy
+from tvb.datatypes.spectral import WindowingFunctionsEnum
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import spectral, time_series
 
@@ -48,7 +49,7 @@ class TestSpectral(BaseTestCase):
         ts = time_series.TimeSeries(data=data, title='meh')
         dt = spectral.FourierSpectrum(source=ts,
                                       segment_length=100, array_data=numpy.array([]),
-                                      windowing_function = str(''))
+                                      windowing_function=WindowingFunctionsEnum.HAMMING)
         summary_info = dt.summary_info()
         assert summary_info['Frequency step'] == 0.01
         assert summary_info['Maximum frequency'] == 0.5

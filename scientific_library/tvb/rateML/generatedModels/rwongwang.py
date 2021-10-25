@@ -6,87 +6,101 @@ from tvb.basic.neotraits.api import NArray, Final, List, Range
 
 class RwongwangT(ModelNumbaDfun):
         
-    w_plus = NArray(
-        label=":math:`w_plus`",
-        default=numpy.array([1.4]),
-        doc=""""""
-    )    
-        
     a_E = NArray(
         label=":math:`a_E`",
         default=numpy.array([310.0]),
+        domain=Range(lo=0., hi=500., step=1.),
         doc=""""""
     )    
         
     b_E = NArray(
         label=":math:`b_E`",
         default=numpy.array([125.0]),
+        domain=Range(lo=0., hi=200., step=1.),
         doc=""""""
     )    
         
     d_E = NArray(
         label=":math:`d_E`",
-        default=numpy.array([0.154]),
+        default=numpy.array([0.160]),
+        domain=Range(lo=0.0, hi=0.2, step=0.001),
         doc=""""""
     )    
         
     a_I = NArray(
         label=":math:`a_I`",
         default=numpy.array([615.0]),
+        domain=Range(lo=0., hi=1000., step=1.),
         doc=""""""
     )    
         
     b_I = NArray(
         label=":math:`b_I`",
         default=numpy.array([177.0]),
+        domain=Range(lo=0.0, hi=200.0, step=1.0),
         doc=""""""
     )    
         
     d_I = NArray(
         label=":math:`d_I`",
         default=numpy.array([0.087]),
+        domain=Range(lo=0.01, hi=0.2, step=0.001),
         doc=""""""
     )    
         
     gamma_E = NArray(
         label=":math:`gamma_E`",
         default=numpy.array([0.641 / 1000.0]),
+        domain=Range(lo=0.0, hi=0.001, step=0.00001),
         doc=""""""
     )    
         
     tau_E = NArray(
         label=":math:`tau_E`",
         default=numpy.array([100.0]),
+        domain=Range(lo=50., hi=150., step=1.),
         doc=""""""
     )    
         
-    tau_I = NArray(
-        label=":math:`tau_I`",
-        default=numpy.array([10.0]),
-        doc=""""""
-    )    
-        
-    I_0 = NArray(
-        label=":math:`I_0`",
-        default=numpy.array([0.382]),
+    w_plus = NArray(
+        label=":math:`w_plus`",
+        default=numpy.array([1.4]),
+        domain=Range(lo=0.0, hi=2.0, step=0.01),
         doc=""""""
     )    
         
     w_E = NArray(
         label=":math:`w_E`",
         default=numpy.array([1.0]),
-        doc=""""""
-    )    
-        
-    w_I = NArray(
-        label=":math:`w_I`",
-        default=numpy.array([0.7]),
+        domain=Range(lo=0.0, hi=2.0, step=0.01),
         doc=""""""
     )    
         
     gamma_I = NArray(
         label=":math:`gamma_I`",
         default=numpy.array([1.0 / 1000.0]),
+        domain=Range(lo=0.0, hi=0.002, step=0.0001),
+        doc=""""""
+    )    
+        
+    tau_I = NArray(
+        label=":math:`tau_I`",
+        default=numpy.array([10.0]),
+        domain=Range(lo=5., hi=150., step=1.0),
+        doc=""""""
+    )    
+        
+    w_I = NArray(
+        label=":math:`w_I`",
+        default=numpy.array([0.7]),
+        domain=Range(lo=0.0, hi=1.0, step=0.01),
+        doc=""""""
+    )    
+        
+    I_0 = NArray(
+        label=":math:`I_0`",
+        default=numpy.array([0.382]),
+        domain=Range(lo=0.0, hi=1.0, step=0.001),
         doc=""""""
     )    
         
@@ -128,8 +142,8 @@ class RwongwangT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"V": numpy.array([0.0]), 
-				 "W": numpy.array([0.0])},
+        default={"V": numpy.array([0.0, 1.0]), 
+				 "W": numpy.array([0.0, 1.0])},
         doc="""state variables"""
     )
 
@@ -143,6 +157,7 @@ class RwongwangT(ModelNumbaDfun):
         label="Variables or quantities available to Monitors",
         choices=('V', 'W', ),
         default=('V', 'W', ),
+
         doc="Variables to monitor"
     )
 
@@ -154,12 +169,12 @@ class RwongwangT(ModelNumbaDfun):
     def dfun(self, vw, c, local_coupling=0.0):
         vw_ = vw.reshape(vw.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
-        deriv = _numba_dfun_RwongwangT(vw_, c_, self.w_plus, self.a_E, self.b_E, self.d_E, self.a_I, self.b_I, self.d_I, self.gamma_E, self.tau_E, self.tau_I, self.I_0, self.w_E, self.w_I, self.gamma_I, self.J_N, self.J_I, self.G, self.lamda, self.J_NMDA, self.JI, local_coupling)
+        deriv = _numba_dfun_RwongwangT(vw_, c_, self.a_E, self.b_E, self.d_E, self.a_I, self.b_I, self.d_I, self.gamma_E, self.tau_E, self.w_plus, self.w_E, self.gamma_I, self.tau_I, self.w_I, self.I_0, self.J_N, self.J_I, self.G, self.lamda, self.J_NMDA, self.JI, local_coupling)
 
         return deriv.T[..., numpy.newaxis]
 
 @guvectorize([(float64[:], float64[:], float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64, float64[:])], '(n),(m)' + ',()'*21 + '->(n)', nopython=True)
-def _numba_dfun_RwongwangT(vw, coupling, w_plus, a_E, b_E, d_E, a_I, b_I, d_I, gamma_E, tau_E, tau_I, I_0, w_E, w_I, gamma_I, J_N, J_I, G, lamda, J_NMDA, JI, local_coupling, dx):
+def _numba_dfun_RwongwangT(vw, coupling, a_E, b_E, d_E, a_I, b_I, d_I, gamma_E, tau_E, w_plus, w_E, gamma_I, tau_I, w_I, I_0, J_N, J_I, G, lamda, J_NMDA, JI, local_coupling, dx):
     "Gufunc for RwongwangT model equations."
 
     # long-range coupling

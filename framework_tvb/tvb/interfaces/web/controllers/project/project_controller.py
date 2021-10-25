@@ -37,13 +37,16 @@ This represents the Controller part (from MVC).
 """
 import cherrypy
 import formencode
-import tvb.core.entities.model.model_operation as model
 from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
+
+import tvb.core.entities.model.model_operation as model
 from tvb.adapters.creators.tumor_dataset_creator import TumorDatasetCreator
 from tvb.adapters.exporters.export_manager import ExportManager
+from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
@@ -349,7 +352,8 @@ class ProjectController(BaseController):
                                   "isGroup": is_group,
                                   "isRelevant": is_relevant,
                                   "nodeType": 'datatype',
-                                  "backPageIdentifier": back_page}
+                                  "backPageIdentifier": back_page,
+                                  "canEncrypt": TvbProfile.current.web.ENCRYPT_STORAGE}
         template_specification.update(linkable_projects_dict)
 
         overlay_class = "can-browse editor-node node-type-" + str(current_type).lower()
@@ -611,18 +615,12 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def createlink(self, link_data, project_id, is_group):
+    def createlink(self, link_data, project_id):
         """
-        Delegate the creation of the actual link to the flow service.
+        Delegate the creation of the actual link to the algorithm service.
         """
-        if not string2bool(str(is_group)):
-            self.algorithm_service.create_link([link_data], project_id)
-        else:
-            all_data = self.project_service.get_datatype_in_group(link_data)
-            # Link all Dts in group and the DT_Group entity
-            data_ids = [data.id for data in all_data]
-            data_ids.append(int(link_data))
-            self.algorithm_service.create_link(data_ids, project_id)
+        self.algorithm_service.create_link(link_data, project_id)
+
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -677,14 +675,15 @@ class ProjectController(BaseController):
     @cherrypy.expose
     @handle_error(redirect=False)
     @check_user
-    def downloaddatatype(self, data_gid, export_module):
+    def downloaddatatype(self, data_gid, export_module, **data):
         """ Export the data to a default path of TVB_STORAGE/PROJECTS/project_name """
         current_prj = common.get_current_project()
         # Load data by GID
         entity = load_entity_by_gid(data_gid)
         # Do real export
         export_mng = ExportManager()
-        file_name, file_path, delete_file = export_mng.export_data(entity, export_module, current_prj)
+        file_name, file_path, delete_file = export_mng.export_data(entity, export_module, current_prj,
+                                                                   data.get('exporter_key'))
         if delete_file:
             # We force parent folder deletion because export process generated it.
             self.mark_file_for_delete(file_path, True)

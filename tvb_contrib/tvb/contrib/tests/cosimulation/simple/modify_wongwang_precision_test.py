@@ -36,10 +36,8 @@ import operator
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
-
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim
-from tvb.contrib.cosimulation.cosimulator import CoSimulator
-
+from tvb.contrib.cosimulation.cosimulator import CoSimulator, ContribTestSimulator
 
 SIMULATION_LENGTH = 3.0
 
@@ -66,7 +64,7 @@ class TestModifyWongWang(BaseTestCase):
 
         return model, connectivity, coupling, init, integrator, monitors
 
-    def _reference_simulation(self,simulator=lab.simulator.Simulator):
+    def _reference_simulation(self, simulator=ContribTestSimulator):
         model, connectivity, coupling, init, integrator, monitors = self._prepare_reference_simulation()
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         sim = simulator(model=model,
@@ -80,6 +78,7 @@ class TestModifyWongWang(BaseTestCase):
         result_all = sim.run(simulation_length=SIMULATION_LENGTH)
         result = result_all[0][1][:,:,0,0]
         return connectivity, coupling, integrator, monitors, sim, result, result_all
+
 
 class TestModifyWongWangRate(TestModifyWongWang):
     """

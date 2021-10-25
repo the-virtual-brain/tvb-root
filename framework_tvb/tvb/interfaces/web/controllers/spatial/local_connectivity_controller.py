@@ -41,9 +41,8 @@ import cherrypy
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
+from tvb.adapters.simulator.equation_forms import get_form_for_equation, SpatialEquationsEnum
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
@@ -138,12 +137,12 @@ class LocalConnectivityController(SpatioTemporalController):
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def refresh_subform(self, equation, mapping_key):
-        eq_class = get_ui_name_to_equation_dict().get(equation)
+    def refresh_subform(self, equation):
+        eq_class = TVBEnum.string_to_enum(list(SpatialEquationsEnum), equation).value
         current_lconn = common.get_from_session(KEY_LCONN)
         current_lconn.equation = eq_class()
 
-        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
+        eq_params_form = get_form_for_equation(eq_class)()
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose

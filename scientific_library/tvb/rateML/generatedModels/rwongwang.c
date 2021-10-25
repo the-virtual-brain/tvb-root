@@ -64,20 +64,20 @@ __global__ void rwongwang(
     const float global_coupling = params(1);
 
     // regular constants
-    const float w_plus = 1.4;
     const float a_E = 310.0;
     const float b_E = 125.0;
-    const float d_E = 0.154;
+    const float d_E = 0.160;
     const float a_I = 615.0;
     const float b_I = 177.0;
     const float d_I = 0.087;
     const float gamma_E = 0.641 / 1000.0;
     const float tau_E = 100.0;
-    const float tau_I = 10.0;
-    const float I_0 = 0.382;
+    const float w_plus = 1.4;
     const float w_E = 1.0;
-    const float w_I = 0.7;
     const float gamma_I = 1.0 / 1000.0;
+    const float tau_I = 10.0;
+    const float w_I = 0.7;
+    const float I_0 = 0.382;
     const float J_N = 0.15;
     const float J_I = 1.0;
     const float G = 2.0;
@@ -100,8 +100,8 @@ __global__ void rwongwang(
     float tmp_H_I = 0.0;
 
 
-    float V = 0.0;
-    float W = 0.0;
+    float V = 0.998307465821013;
+    float W = 0.12069886682928;
 
     float dV = 0.0;
     float dW = 0.0;

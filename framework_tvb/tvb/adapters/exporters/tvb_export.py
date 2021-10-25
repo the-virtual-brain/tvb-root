@@ -33,8 +33,7 @@
 """
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
-from tvb.adapters.exporters.exceptions import ExportException
-from tvb.core.entities.model.model_datatype import DataType
+from tvb.core.entities.model.model_datatype import DataType, DataTypeGroup
 from tvb.core.neocom import h5
 from tvb.storage.storage_interface import StorageInterface
 
@@ -53,7 +52,7 @@ class TVBExporter(ABCExporter):
     def get_label(self):
         return "TVB Format"
 
-    def export(self, data, project):
+    def export(self, data, project, public_key_path, password):
         """
         Exports data type:
         1. If data is a normal data type, simply exports storage file (HDF format)
@@ -61,26 +60,22 @@ class TVBExporter(ABCExporter):
         """
         download_file_name = self._get_export_file_name(data)
 
-        if self.is_data_a_group(data):
-            all_datatypes = self._get_all_data_types_arr(data)
-
-            if all_datatypes is None or len(all_datatypes) == 0:
-                raise ExportException("Could not export a data type group with no data")
+        if DataTypeGroup.is_data_a_group(data):
+            _, op_file_dict = self.prepare_datatypes_for_export(data)
 
             # Create ZIP archive
-            zip_file = self.storage_interface.export_datatypes_structure(all_datatypes, data, download_file_name,
-                                                                         project.name)
-
+            zip_file = self.storage_interface.export_datatypes_structure(op_file_dict, data, download_file_name,
+                                                                         public_key_path, password)
             return download_file_name, zip_file, True
-
         else:
             data_path = h5.path_for_stored_index(data)
-            data_file = self.storage_interface.export_datatypes([data_path], data, None)
+            data_file = self.storage_interface.export_datatypes([data_path], data, download_file_name,
+                                                                public_key_path, password)
 
             return None, data_file, True
 
     def get_export_file_extension(self, data):
-        if self.is_data_a_group(data):
+        if DataTypeGroup.is_data_a_group(data):
             return StorageInterface.TVB_ZIP_FILE_EXTENSION
         else:
             return StorageInterface.TVB_STORAGE_FILE_EXTENSION

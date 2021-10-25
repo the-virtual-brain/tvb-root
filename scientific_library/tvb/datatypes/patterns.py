@@ -37,6 +37,7 @@ The Pattern datatypes.
 """
 
 import numpy
+
 from tvb.datatypes import surfaces, volumes, connectivity, equations
 from tvb.basic.neotraits.api import HasTraits, NArray, Attr
 
@@ -46,7 +47,7 @@ class SpatialPattern(HasTraits):
     Equation for space variation.
     """
 
-    spatial = Attr(field_type=equations.FiniteSupportEquation, label="Spatial Equation")
+    spatial =  Attr(field_type=equations.FiniteSupportEquation, label="Spatial Equation")
 
     space = None
     _spatial_pattern = None

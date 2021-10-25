@@ -34,7 +34,6 @@ from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
 from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS
-from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.file.simulator.burst_configuration_h5 import BurstConfigurationH5
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
@@ -340,14 +339,22 @@ class BurstService(object):
         return op_dir, metric_operation
 
     @staticmethod
+    def get_range_param_by_name(param_name, all_range_parameters):
+        for range_param in all_range_parameters:
+            if param_name == range_param.name:
+                return range_param
+
+        return None
+
+    @staticmethod
     def handle_range_params_at_loading(burst_config, all_range_parameters):
         param1, param2 = None, None
         if burst_config.range1:
             param1 = RangeParameter.from_json(burst_config.range1)
-            param1.fill_from_default(all_range_parameters[param1.name])
+            param1.fill_from_default(BurstService.get_range_param_by_name(param1.name, all_range_parameters))
             if burst_config.range2 is not None:
                 param2 = RangeParameter.from_json(burst_config.range2)
-                param2.fill_from_default(all_range_parameters[param2.name])
+                param2.fill_from_default(BurstService.get_range_param_by_name(param2.name, all_range_parameters))
 
         return param1, param2
 

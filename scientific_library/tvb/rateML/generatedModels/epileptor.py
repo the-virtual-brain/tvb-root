@@ -125,29 +125,21 @@ class EpileptorT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"x1": numpy.array([0.0]), 
-				 "y1": numpy.array([0.0]), 
-				 "z": numpy.array([0.0]), 
-				 "x2": numpy.array([0.0]), 
-				 "y2": numpy.array([0.0]), 
-				 "g": numpy.array([0.0])},
+        default={"x1": numpy.array([-2., 1.]), 
+				 "y1": numpy.array([-20., 2.]), 
+				 "z": numpy.array([2.0, 5.0]), 
+				 "x2": numpy.array([-2., 0.]), 
+				 "y2": numpy.array([0., 2.]), 
+				 "g": numpy.array([-1., 1.])},
         doc="""state variables"""
     )
 
-    state_variable_boundaries = Final(
-        label="State Variable boundaries [lo, hi]",
-        default={"x1": numpy.array([-2.0, 1.0]), 
-				 "y1": numpy.array([-20.0, 2.0]), 
-				 "z": numpy.array([-2.0, 5.0]), 
-				 "x2": numpy.array([-2.0, 0.0]), 
-				 "y2": numpy.array([0.0, 2.0]), 
-				 "g": numpy.array([-1.0, 1.0])},
-    )
     variables_of_interest = List(
         of=str,
         label="Variables or quantities available to Monitors",
         choices=('x1', 'x2', ),
-        default=('x1', 'y1', 'z', 'x2', 'y2', 'g', ),
+        default=('x1', 'x2', ),
+
         doc="Variables to monitor"
     )
 
@@ -182,15 +174,17 @@ def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext
     y2 = vw[4]
     g = vw[5]
 
+    # derived variables
+    ztmp = z-4
 
     # Conditional variables
     if x1 < 0.0:
-        ydot0 = -a * x1 ** 2 + b * x1
+        ydot0 = -a * x1**2 + b * x1
     else:
-        ydot0 = slope - x2 + 0.6 * z-4 ** 2
+        ydot0 = slope - x2 + 0.6 * ztmp**2
 
     if z < 0.0:
-        ydot2 = - 0.1 * z ** 7
+        ydot2 = - 0.1 * z**7
     else:
         ydot2 = 0
 
@@ -204,10 +198,10 @@ def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope, Iext
     else:
         ydot4 = aa * (x2 + 0.25)
 
-    dx[0] = tt * (y1 - z + Iext + Kvf * c_pop1 + ydot0 )
-    dx[1] = tt * (c - d * x1 ** 2 - y1)
-    dx[2] = tt * (r * (h - z + Ks * c_pop1))
-    dx[3] = tt * (-y2 + x2 - x2 ** 3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop2)
+    dx[0] = tt * (y1 - z + Iext + Kvf * c_pop0 + ydot0 )
+    dx[1] = tt * (c - d * x1**2 - y1)
+    dx[2] = tt * (r * (h - z + Ks * c_pop0))
+    dx[3] = tt * (-y2 + x2 - x2**3 + Iext2 + bb * g - 0.3 * (z - 3.5) + Kf * c_pop1)
     dx[4] = tt * (-y2 + ydot4) / tau
     dx[5] = tt * (-0.01 * (g - 0.1 * x1) )
     

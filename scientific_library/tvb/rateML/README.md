@@ -7,6 +7,11 @@ XML file location and model output location, are entered.
 ```python
 RateML('model_filename', language=('python' | 'cuda'), 'path/to/your/XMLmodels', 'path/to/your/generatedModels')
 ```
+or run directly from commandline, from the rateML folder:
+```bash
+python XML2model.py -m 'model_filename' -l 'python' | 'cuda'
+```
+
 The XML file location and model output location are optional, if the default XML and generated model folders 
 (~/rateML) are used. The relative paths mentioned in this readme all start from /tvb-root/scientific_library/tvb/.
 \
@@ -26,7 +31,7 @@ a class named Model_filenameT.
 * XML2model.py   		    : python script for initiating model code generation of either CUDA or Python models
 * tmpl8_cuda.py 		    : Mako template converting XML to CUDA
 * tmpl8_python.py 		    : Mako template converting XML to Python
-* tmpl8_driver.py           : Mako template holding the CUDA model driver simulating the result  
+* tmpl8_driver_['model].py  : Mako template holding the CUDA model driver simulating the result  
 * /XMLmodels/               : folder containing LEMS based XML model example files as well as a model template
 * /generatedModels          : resulting model folder
 * /run/model_driver/        : resulting driver file
@@ -104,28 +109,28 @@ For the CUDA models, the dimension field can be omitted.
 ```
 \
 The **Exposures** construct specifies variables that the user wants to monitor and that are returned by 
-the computing kernel: name is the name of the variable to be monitored, the keyword dimension permits a simple
+the computing kernel: name is the name of the variable to be monitored. This field can also be used to enter a 
 mathematical operation to be performed on the variable of interest. 
+The dimension field is unused but should be present.
 See the section on the intepreter which operations are permitted.
 ```xml
-<Exposure name="[name]" dimension="[Expression]"/>
+<Exposure name="[name]" dimension=""/>
 ```
 \
 The **StateVariable** construct is used to define the state variables of the model. 
-The state variables in a Python TVB model are initialized with a numpy.array with the values entered in the dimension 
-field. For the Python state variables a range need to be entered (ie. [0, 2]). For the CUDA models the state variables 
-are initialized with a single value in the dimension field. 
-The exposure field sets the state variables' upper and lower boundaries, for both languages. 
+The state variables are initialized with a random value from the range in the dimension field. 
+When low == high, this is the initial value. 
+The exposure field sets the state variables' upper and lower boundaries. 
 These boundaries ensure that the values of state variables stay within the set boundaries and resets the state 
 if the boundaries are exceeded.
 ```xml
 <Dynamics>
-    <StateVariable name="[name]" dimension="[range|single]" exposure="[lower_bound], [upper_bound]"/>
+    <StateVariable name="[name]" dimension="[low, high]" exposure="[lower_bound, upper_bound]"/>
 </Dynamics>
 ```
 \
 The **DerivedVariable** construct can be used to define temporary variables which are the building blocks of 
-the time derivatives. The syntax is: name=value. See interpreter secion for more info on what is allowed.
+the time derivatives. The syntax is: name=value. See interpreter section for more info on what is allowed.
 ```xml
 <Dynamics>
     <DerivedVariable name="[name]" value="[expression]" />
@@ -136,7 +141,7 @@ the time derivatives. The syntax is: name=value. See interpreter secion for more
 The **ConditionalDerivedVariable** construct can be used to create if-else constructs. 
 Within the construct a number of Cases can be defined to indicate what action is taken when the condition 
 is true of false. The condition field holds the condition for the action. 
-The escape sequences '\&lt(=);' and '\&gt;(=)' for less- or greater then (or equal to) are used to specify 
+The escape sequences '\&lt(=);' and '\&gt;(=)' for less- or greater than (or equal to) are used to specify 
 the condition. The value field holds the expression of which the value will be assigned to the variable indicated 
 with the name field. At least one case should be defined. Two cases will produce an if-else structure. 
 There is no need to enter the ‘else’ keyword as is shown in the example, this will be produced automatically. 
@@ -300,7 +305,7 @@ def _numba_dfun_EpileptorT(vw, coupling, a, b, c, d, r, s, x0, Iext, slope,
 *Listing 2. Generated CUDA code for the coupling functionality*
 
 
-## Simulating an CUDA model
+## Simulating a CUDA model
 In the folder '~/rateML/run/' the model_driver.py file can be found which enables the user to run the generated 
 CUDA-model. Running rateML not only results in a generated model file but also set the driver for the specific model 
 such that it can be easily simulated. The fields that are dynamically set and link the model to the driver are 

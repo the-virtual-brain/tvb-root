@@ -52,16 +52,16 @@ LEMS2python module implements a DSL code generation using a TVB-specific LEMS-ba
 """
 
 import os
+import re
+import argparse
+import numpy as np
 import tvb.simulator.models
 from mako.template import Template
-import re
 from tvb.basic.logger.builder import get_logger
-
 from lems.model.model import Model
 
-import argparse
-
 logger = get_logger(__name__)
+
 
 class RateML:
 
@@ -102,7 +102,7 @@ class RateML:
                 self.write_model_file(default_save, model_str)
 
         # if it is a TVB.py model, it should be familiarized
-        if self.language.lower()=='python':
+        if self.language.lower() == 'python':
             self.familiarize_TVB(model_str)
 
     def parse_args(self):  # {{{
@@ -133,7 +133,7 @@ class RateML:
             location = os.path.join(folder, self.model_filename.lower() + '.xml')
             assert os.path.isfile(location)
         except AssertionError:
-            logger.error('XML folder %s does not contain %s', folder, self.model_filename+'.xml')
+            logger.error('XML folder %s does not contain %s', folder, self.model_filename + '.xml')
             exit()
 
         return location
@@ -147,10 +147,10 @@ class RateML:
     def set_generated_model_location(self):
         folder = self.GENfolder or self.default_generation_folder()
         lan = self.language.lower()
-        if lan=='python':
-            ext='.py'
-        elif lan=='cuda':
-            ext='.c'
+        if lan == 'python':
+            ext = '.py'
+        elif lan == 'cuda':
+            ext = '.c'
 
         try:
             location = os.path.join(folder)
@@ -161,14 +161,13 @@ class RateML:
 
         return os.path.join(folder, self.model_filename.lower() + ext)
 
-    @staticmethod
-    def set_driver_location():
+    def set_driver_location(self):
         here = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(here, 'run', 'model_driver.py')
+        return os.path.join(here, 'run', 'model_driver_' + self.model_filename + '.py')
 
     def set_template(self, name):
         here = os.path.dirname(os.path.abspath(__file__))
-        tmp_filename = os.path.join(here, 'tmpl8_'+ name +'.py')
+        tmp_filename = os.path.join(here, 'tmpl8_' + name + '.py')
         template = Template(filename=tmp_filename)
         return template
 
@@ -179,23 +178,12 @@ class RateML:
         from lxml import etree
         from urllib.request import urlopen
 
-        # Local XSD file location
-        # schema_file = urlopen("file:///home/michiel/Documents/Repos/tvb-root/github/tvb-root/scientific_library/tvb/rateML/rML_v0.xsd")
-
         # Global XSD file location
         schema_file = urlopen(
-            "https://raw.githubusercontent.com/DeLaVlag/tvb-root/xsdvalidation/scientific_library/tvb/rateML/rML_v0.xsd")
+            "https://raw.githubusercontent.com/the-virtual-brain/tvb-root/master/scientific_library/tvb/rateML/rML_v0.xsd")
         xmlschema = etree.XMLSchema(etree.parse(schema_file))
         xmlschema.assertValid(etree.parse(self.xml_location))
         logger.info("True validation of {0} against {1}".format(self.xml_location, schema_file.geturl()))
-
-    def powerswap(self, power):
-        target = power.group(1)
-        powersplit = target.split('^')
-        powf = 'powf(' + powersplit[0] + ', ' + powersplit[1] + ')'
-        target = '{' + target + '}'
-
-        return target, powf
 
     def pp_bound(self, model):
 
@@ -225,74 +213,50 @@ class RateML:
 
         # only check whether noise is there, if so then activate it
         # cuda only
-        noisepresent=False
+        noisepresent = False
         for ct in (model.component_types):
             if ct.name == 'noise':
-                noisepresent=True
-
+                noisepresent = True
 
         # see if nsig derived parameter is present for noise
         # cuda only
         modellist = model.component_types['derivatives']
-        nsigpresent=False
-        if noisepresent==True:
+        nsigpresent = False
+        if noisepresent == True:
             for dprm in (modellist.derived_parameters):
                 if (dprm.name == 'nsig' or dprm.name == 'NSIG'):
-                     nsigpresent=True
+                    nsigpresent = True
 
         return noisepresent, nsigpresent
 
-    def pp_pow(self, model):
+    # check for power symbol and parse to python (**) or c power (powf(x, y))
+    def swap_language_specific_terms(self, model_str):
 
-        # check for power symbol and parse to python (**) or c power (powf(x, y))
-        # there are 5 locations where they can occur: Derivedvariable.value, ConditionalDerivedVariable.Case.condition
-        # Derivedparameter.value, Time_Derivaties.value and Exposure.dimension
-        # Todo make more generic, XML tag processing might be the key
+        if self.language == 'cuda':
+            model_str = re.sub(r"\bpi\b", 'PI', model_str)
+            model_str = re.sub(r"\binf\b", 'INF', model_str)
 
-        for cptype in model.component_types:
-            powlst = model.component_types[cptype.name]
-            # list of locations with mathmatical expressions with attribute 'value'
-            power_parse_exprs_value = [powlst.derived_parameters, powlst.dynamics.derived_variables,
-                                       powlst.dynamics.time_derivatives]
-            for pwr_parse_object in power_parse_exprs_value:
-                for pwr_obj in pwr_parse_object:
-                    if '^' in  pwr_obj.value:
-                        if self.language=='python':
-                            if hasattr(pwr_obj, 'name'):
-                                pwr_parse_object[pwr_obj.name].value = pwr_obj.value\
-                                    .replace('{', '').replace('^', ' ** ').replace('}', '')
-                            if hasattr(pwr_obj, 'variable'):
-                                pwr_parse_object[pwr_obj.variable].value = pwr_obj.value\
-                                    .replace('{', '').replace('^', ' ** ').replace('}', '')
-                        if self.language=='cuda':
-                            for power in re.finditer('\{(.*?)\}',  pwr_obj.value):
-                                target, powf = self.powerswap(power)
-                                if hasattr(pwr_obj, 'name'):
-                                    pwr_parse_object[pwr_obj.name].value = pwr_obj.value.replace(target, powf)
-                                if hasattr(pwr_obj, 'variable'):
-                                    pwr_parse_object[pwr_obj.variable].value = pwr_obj.value.replace(target, powf)
+        for power in re.finditer(r"\{(.*?)(\^)(.*?)\}", model_str):
+            target = power.group(0)
+            powersplit = target.split('^')
+            if self.language == 'cuda':
+                pow = 'powf(' + powersplit[0].replace('{', '') + ', ' + powersplit[1].replace('}', '') + ')'
+            if self.language == 'python':
+                pow = powersplit[0].replace('{', '') + '**' + powersplit[1].replace('}', '')
+            model_str = re.sub(re.escape(target), pow, model_str)
 
-            for pwr_obj in powlst.exposures:
-                if '^' in pwr_obj.dimension:
-                    if self.language=='python':
-                        powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension\
-                            .replace('{', '').replace('^', ' ** ').replace('}', '')
-                    if self.language=='cuda':
-                        for power in re.finditer('\{(.*?)\}', pwr_obj.dimension):
-                            target, powf = self.powerswap(power)
-                            powlst.exposures[pwr_obj.name].dimension = pwr_obj.dimension.replace(target, powf)
+        return model_str
 
-            for cdv in powlst.dynamics.conditional_derived_variables:
-                for casenr, case in enumerate(cdv.cases):
-                    if '^' in case.value:
-                        if self.language == 'python':
-                            powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value\
-                                .replace('{', '').replace('^', ' ** ').replace('}', '')
-                        if self.language == 'cuda':
-                            for power in re.finditer('\{(.*?)\}', case.value):
-                                target, powf = self.powerswap(power)
-                                powlst.dynamics.conditional_derived_variables[cdv.name].cases[casenr].value = case.value.replace(target, powf)
+    # setting the inital value for cuda models
+    # the entered range is splitted and a random value is generated within range
+    # if values are equal then that is the inital value
+    def init_statevariables(self, model):
 
+        modellist = model.component_types['derivatives'].dynamics.state_variables
+        for sv in modellist:
+            splitdim = list(sv.dimension.split(","))
+            sv_rnd = np.random.uniform(low=float(splitdim[0]), high=float(splitdim[1]))
+            model.component_types['derivatives'].dynamics.state_variables[sv.name].dimension = sv_rnd
 
     def load_model(self):
         "Load model from filename"
@@ -304,10 +268,12 @@ class RateML:
         self.XSD_validate_XML()
 
         # Do some preprocessing on the template to easify rendering
-        self.pp_pow(model)
         noisepresent, nsigpresent = self.pp_noise(model)
         couplinglist = self.pp_cplist(model)
         svboundaries = self.pp_bound(model)
+
+        if self.language == 'cuda':
+            self.init_statevariables(model)
 
         return model, svboundaries, couplinglist, noisepresent, nsigpresent
 
@@ -323,6 +289,8 @@ class RateML:
 
         model_str = self.render_model(derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent)
 
+        model_str = self.swap_language_specific_terms(model_str)
+
         # render driver only in case of cuda
         if self.language == 'cuda':
             driver_str = self.render_driver(derivative_list)
@@ -330,7 +298,6 @@ class RateML:
             driver_str = None
 
         return model_str, driver_str
-
 
     def render_model(self, derivative_list, svboundaries, couplinglist, noisepresent, nsigpresent):
 
@@ -341,20 +308,19 @@ class RateML:
 
         # start templating
         model_str = self.set_template(self.language).render(
-            modelname=model_class_name,                     # all
-            const=derivative_list.constants,                # all
-            dynamics=derivative_list.dynamics,              # all
-            exposures=derivative_list.exposures,            # all
-            params=derivative_list.parameters,              # cuda
-            derparams=derivative_list.derived_parameters,   # cuda
-            svboundaries=svboundaries,                      # python
-            coupling=couplinglist,                          # cuda
-            noisepresent=noisepresent,                      # cuda
-            nsigpresent=nsigpresent,                        # cuda
-            )
+            modelname=model_class_name,  # all
+            const=derivative_list.constants,  # all
+            dynamics=derivative_list.dynamics,  # all
+            exposures=derivative_list.exposures,  # all
+            params=derivative_list.parameters,  # cuda
+            derparams=derivative_list.derived_parameters,  # cuda
+            svboundaries=svboundaries,  # python
+            coupling=couplinglist,  # cuda
+            noisepresent=noisepresent,  # cuda
+            nsigpresent=nsigpresent,  # cuda
+        )
 
         return model_str
-
 
     def render_driver(self, derivative_list):
 
@@ -365,7 +331,6 @@ class RateML:
 
         return driver_str
 
-
     def familiarize_TVB(self, model_str):
         '''
         Write new model to TVB model location and into init.py such it is familiar to TVB if not already present
@@ -374,7 +339,8 @@ class RateML:
 
         model_filename = self.model_filename
         # set tvb location
-        TVB_model_location = os.path.join(os.path.dirname(tvb.simulator.models.__file__), model_filename.lower() + 'T.py')
+        TVB_model_location = os.path.join(os.path.dirname(tvb.simulator.models.__file__),
+                                          model_filename.lower() + 'T.py')
         # next to user submitted location also write to default tvb location
         self.write_model_file(TVB_model_location, model_str)
 
@@ -413,8 +379,8 @@ class RateML:
         except IOError as e:
             logger.error('Writing %s model to file failed: %s', self.language, e)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     RateML()
 
     # example for direct project implementation
@@ -431,4 +397,3 @@ if __name__ == "__main__":
 
     # start conversion to default model location
     # RateML(model_filename, language)
-

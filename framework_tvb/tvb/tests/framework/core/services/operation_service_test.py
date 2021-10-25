@@ -92,7 +92,7 @@ class TestOperationService(BaseTestCase):
         all_operations = dao.get_filtered_operations(self.test_project.id, None)
         assert len(all_operations) == 0, "There should be no operation"
 
-        dt_group = datatype_group_factory(project=self.test_project)
+        dt_group, _ = datatype_group_factory(project=self.test_project)
         model = DummyModel()
         test_adapter_factory()
         adapter = TestFactory.create_adapter("tvb.tests.framework.adapters.dummy_adapter1", "DummyAdapter1")

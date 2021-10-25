@@ -41,8 +41,8 @@ simulation and the method for running the simulation.
 
 import math
 import time
-
 import numpy
+
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 from tvb.basic.profile import TvbProfile
 from tvb.datatypes import cortex, connectivity, patterns
