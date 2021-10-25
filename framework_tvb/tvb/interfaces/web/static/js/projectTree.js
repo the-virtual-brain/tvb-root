@@ -126,11 +126,11 @@ function _postInitializeTree(treeSelector) {
 //                More GENERIC functions from here
 //-----------------------------------------------------------------------
 
-function createLink(dataId, projectId, isGroup) {
+function createLink(dataId, projectId) {
     doAjaxCall({
         async : false,
         type: 'GET',
-        url: "/project/createlink/" + dataId +"/" + projectId + "/" + isGroup,
+        url: "/project/createlink/" + dataId +"/" + projectId,
         success: function(r) {if(r) displayMessage(r,'warningMessage'); },
         error:   function(r) {if(r) displayMessage(r,'warningMessage'); }
     });

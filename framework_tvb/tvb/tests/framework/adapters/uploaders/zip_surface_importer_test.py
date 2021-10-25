@@ -35,7 +35,7 @@
 import os
 
 import tvb_data.surfaceData
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -55,8 +55,8 @@ class TestZIPSurfaceImporter(BaseTestCase):
         self.clean_database()
 
     def test_import_surf_zip(self):
-        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.surf_skull, CORTICAL,
-                                                 same_process=False)
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, self.surf_skull,
+                                                 SurfaceTypesEnum.CORTICAL_SURFACE,  same_process=False)
         assert 4096 == surface.number_of_vertices
         assert 8188 == surface.number_of_triangles
         assert surface.valid_for_simulations

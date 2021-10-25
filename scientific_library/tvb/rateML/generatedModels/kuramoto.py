@@ -14,7 +14,7 @@ class KuramotoT(ModelNumbaDfun):
 
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
-        default={"V": numpy.array([0.0])},
+        default={"V": numpy.array([0.0, 0.0])},
         doc="""state variables"""
     )
 
@@ -27,6 +27,7 @@ class KuramotoT(ModelNumbaDfun):
         label="Variables or quantities available to Monitors",
         choices=('V', ),
         default=('V', ),
+
         doc="Variables to monitor"
     )
 
@@ -52,5 +53,5 @@ def _numba_dfun_KuramotoT(vw, coupling, omega, local_coupling, dx):
     V = vw[0]
 
 
-    dx[0] = omega + c_pop1
+    dx[0] = omega + c_pop0
     

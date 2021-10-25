@@ -43,7 +43,7 @@ from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.storage import dao
 from tvb.core.entities.transient.structure_entities import DataTypeMetaData
 from tvb.core.services.import_service import ImportService
-from tvb.datatypes.projections import ProjectionsType
+from tvb.datatypes.projections import ProjectionsTypeEnum
 from tvb.storage.h5.file.exceptions import IncompatibleFileManagerException
 from tvb.storage.storage_interface import StorageInterface
 
@@ -75,11 +75,11 @@ def update(input_file, burst_match_dict=None):
     if "ProjectionSurface" in class_name and FIELD_PROJECTION_TYPE not in root_metadata:
         LOGGER.info("Updating ProjectionSurface %s from %s" % (file_name, folder))
 
-        projection_type = ProjectionsType.EEG.value
+        projection_type = ProjectionsTypeEnum.EEG.value
         if "SEEG" in class_name:
-            projection_type = ProjectionsType.SEEG.value
+            projection_type = ProjectionsTypeEnum.SEEG.value
         elif "MEG" in class_name:
-            projection_type = ProjectionsType.MEG.value
+            projection_type = ProjectionsTypeEnum.MEG.value
 
         root_metadata[FIELD_PROJECTION_TYPE] = json.dumps(projection_type)
         LOGGER.debug("Setting %s = %s" % (FIELD_PROJECTION_TYPE, projection_type))

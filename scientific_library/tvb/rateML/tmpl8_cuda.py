@@ -297,7 +297,7 @@ __global__ void ${modelname}(
 
             // Update the observable
             % for i, expo in enumerate(exposures):
-            tavg(i_node + ${i} * n_node) += ${expo.dimension}/n_step;
+            tavg(i_node + ${i} * n_node) += ${expo.name}/n_step;
             % endfor /
 
             // sync across warps executing nodes for single sim, before going on to next time step

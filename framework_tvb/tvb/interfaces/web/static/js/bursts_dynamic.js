@@ -529,8 +529,8 @@ function setEventsOnFormFields(param, div_id) {
     });
 }
 
-function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
-    return 'refresh_subform/' + dynamicPage.dynamic_gid + '/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, subformDiv) {
+    return 'refresh_subform/' + dynamicPage.dynamic_gid + '/' + currentElem.value;
 }
 
 function displayDocForModel(model){

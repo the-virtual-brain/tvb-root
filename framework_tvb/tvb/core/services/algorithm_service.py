@@ -196,13 +196,12 @@ class AlgorithmService(object):
         return dao.get_algorithm_by_module(module, classname)
 
     @staticmethod
-    def create_link(data_ids, project_id):
+    def create_link(data_id, project_id):
         """
         For a list of dataType IDs and a project id create all the required links.
         """
-        for data in data_ids:
-            link = Links(data, project_id)
-            dao.store_entity(link)
+        link = Links(data_id, project_id)
+        dao.store_entity(link)
 
     @staticmethod
     def remove_link(dt_id, project_id):

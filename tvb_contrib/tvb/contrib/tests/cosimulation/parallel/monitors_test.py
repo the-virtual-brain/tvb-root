@@ -30,13 +30,11 @@
 """
 
 import numpy as np
-import operator
 
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
-
-from tvb.contrib.cosimulation.cosim_monitors import RawCosim, RawVoiCosim, RawDelayed,\
+from tvb.contrib.cosimulation.cosim_monitors import RawCosim, RawVoiCosim, RawDelayed, \
     RawVoiDelayed, CosimCoupling
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
@@ -75,7 +73,8 @@ class TestMonitors(BaseTestCase):
         return connectivity, coupling, integrator, monitors, sim, result, result_all
 
     def test_monitor(self):
-        connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation(self._simulation_length)
+        connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation(
+            self._simulation_length)
         # New simulator with proxy
         np.random.seed(42)
         init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
@@ -85,19 +84,19 @@ class TestMonitors(BaseTestCase):
         # Initialise a Simulator -- Model, Connectivity, Integrator, and Monitors.
         synchronization_time = 1.0
         sim_1 = CoSimulator(
-                            voi=np.array([0]),
-                            synchronization_time=synchronization_time,
-                            cosim_monitors=(RawCosim(), RawVoiCosim( variables_of_interest=np.array([0]) ),
-                                            RawDelayed(), RawVoiDelayed( variables_of_interest=np.array([0]) ),
-                                            CosimCoupling( coupling=coupling ),
-                                            CosimCoupling( coupling=coupling, variables_of_interest=np.array([0]) )),
-                            proxy_inds=np.asarray([0], dtype=np.int),
-                            model=model_1,
-                            connectivity=connectivity,
-                            coupling=coupling,
-                            integrator=integrator,
-                            monitors=(monitors,),
-                            initial_conditions=init,
+            voi=np.array([0]),
+            synchronization_time=synchronization_time,
+            cosim_monitors=(RawCosim(), RawVoiCosim(variables_of_interest=np.array([0])),
+                            RawDelayed(), RawVoiDelayed(variables_of_interest=np.array([0])),
+                            CosimCoupling(coupling=coupling),
+                            CosimCoupling(coupling=coupling, variables_of_interest=np.array([0]))),
+            proxy_inds=np.asarray([0], dtype=np.int),
+            model=model_1,
+            connectivity=connectivity,
+            coupling=coupling,
+            integrator=integrator,
+            monitors=(monitors,),
+            initial_conditions=init,
         )
         sim_1.configure()
 
@@ -106,21 +105,21 @@ class TestMonitors(BaseTestCase):
 
         result_1_all = [np.empty((0,)), np.empty((sync_steps, 2, 76, 1))]
         result_cosim_monitors = []
-        sim_1.run() # run the first steps because the history is delayed
+        sim_1.run()  # run the first steps because the history is delayed
 
         for j in range(0, sim_to_sync_time):
             # This should fail for CosimCoupling that can only return FUTURE coupling values!!!
             result_cosim_monitors.append(sim_1.loop_cosim_monitor_output(sync_steps, 0))
             result_1_all_step = sim_1.run(
                 cosim_updates=[np.array([result_all[0][0][(sync_steps * j) + i] for i in range(sync_steps)]),
-                            np.array([result_all[0][1][(sync_steps * j) + i][0][0]
-                                      for i in range(sync_steps)]).reshape((sync_steps, 1, 1, 1))])
+                               np.array([result_all[0][1][(sync_steps * j) + i][0][0]
+                                         for i in range(sync_steps)]).reshape((sync_steps, 1, 1, 1))])
             result_1_all[0] = np.concatenate((result_1_all[0], result_1_all_step[0][0]))
             result_1_all[1] = np.concatenate((result_1_all[1], result_1_all_step[0][1]))
 
-        for i in range(int(self._simulation_length/integrator.dt)):
-            np.testing.assert_array_equal(result_all[0][1][i][0][1:], result_1_all[1][i+sync_steps, 0, 1:])
-            np.testing.assert_array_equal(result_all[0][1][i][0][:1], result_1_all[1][i+sync_steps, 0, :1])
+        for i in range(int(self._simulation_length / integrator.dt)):
+            np.testing.assert_array_equal(result_all[0][1][i][0][1:], result_1_all[1][i + sync_steps, 0, 1:])
+            np.testing.assert_array_equal(result_all[0][1][i][0][:1], result_1_all[1][i + sync_steps, 0, :1])
 
         for i in range(sim_to_sync_time):
             result_step = result_cosim_monitors[i]
@@ -133,4 +132,4 @@ class TestMonitors(BaseTestCase):
             # compare the monitors between them
             np.testing.assert_array_equal(result_step[2][1], result_step[3][1])
             np.testing.assert_array_equal(result_step[4][1], result_step[5][1])
-            np.testing.assert_array_equal(result_step[0][1][:,0,:,:], result_step[1][1][:, 0, :, :])
+            np.testing.assert_array_equal(result_step[0][1][:, 0, :, :], result_step[1][1][:, 0, :, :])

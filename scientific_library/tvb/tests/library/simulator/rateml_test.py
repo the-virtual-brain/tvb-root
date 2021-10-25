@@ -5,6 +5,7 @@ Test for RateML module
 .. moduleauthor:: Michiel van der Vlag <m.van.der.vlag@fz-juelich.de>
 
 """
+import importlib
 
 import pytest, os, itertools, numpy as np, re, sys
 from tvb.rateML import XML2model
@@ -26,8 +27,6 @@ generatedModels_path = os.path.join(framework_path, "generatedModels")
 cuda_ref_path = os.path.join(generatedModels_path, "cuda_refs")
 run_path = os.path.join(framework_path, "run")
 dic_regex_mincount = {r'^__global':1,
-					  r'^__device':1,
-					  r'^__device__ float wrap_it_':1,
 					  r'state\(\(\(':1,
 					  r'state\(\(t':2,
 					  r'tavg\(':1,
@@ -86,8 +85,8 @@ def setup_namespace(model='kuramoto'):
 
 	# gemerate model and setup namespace for every test
 	RateML(model, 'cuda')
-	from tvb.rateML.run.model_driver import Driver_Execute, Driver_Setup
-	driver = Driver_Execute(Driver_Setup())
+	driver = importlib.import_module('.model_driver_' + model, 'tvb.rateML.run')
+	driver = driver.Driver_Execute(driver.Driver_Setup())
 
 	return driver
 
@@ -133,12 +132,14 @@ class TestRateML():
 	# --------------------
 	def test_check_parameters(self):
 
-		# works for kuramoto.xml and default workitems settings
-		driver = setup_namespace()
+		# works for default workitems settings
+		driver = setup_namespace('oscillator')
 		_, count = find_attributes(driver.args, "n_sweep_")
 		assert count == 2
-		assert driver.exposures == 2 and driver.states == 2
+		assert driver.exposures == 2
+		assert driver.states == 2
 
+		# 16 workitems is based on driver default
 		n_work_items, n_params = driver.params.shape
 		assert n_work_items == 16 and n_params == 2
 

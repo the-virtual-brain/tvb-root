@@ -38,6 +38,8 @@ import tvb_data.sensors as demo_data
 from tvb.adapters.uploaders.sensors_importer import SensorsImporter, SensorsImporterModel
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
+from tvb.datatypes.sensors import SensorTypesEnum
+from tvb.storage.storage_interface import StorageInterface
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -69,7 +71,7 @@ class TestSensorsImporter(BaseTestCase):
         This method tests import of a file containing EEG sensors.
         """
         eeg_sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, self.EEG_FILE,
-                                                       SensorsImporterModel.OPTIONS['EEG Sensors'], False)
+                                                       SensorTypesEnum.TYPE_EEG, False)
 
         expected_size = 62
         assert expected_size == eeg_sensors_index.number_of_sensors
@@ -85,7 +87,7 @@ class TestSensorsImporter(BaseTestCase):
         This method tests import of a file containing MEG sensors.
         """
         meg_sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, self.MEG_FILE,
-                                                       SensorsImporterModel.OPTIONS['MEG Sensors'], False)
+                                                       SensorTypesEnum.TYPE_MEG, False)
 
         expected_size = 151
         assert expected_size == meg_sensors_index.number_of_sensors
@@ -105,7 +107,7 @@ class TestSensorsImporter(BaseTestCase):
         """
         try:
             TestFactory.import_sensors(self.test_user, self.test_project, self.EEG_FILE,
-                                       SensorsImporterModel.OPTIONS['MEG Sensors'], False)
+                                       SensorTypesEnum.TYPE_MEG, False)
             raise AssertionError("Import should fail in case of a MEG import without orientation.")
         except OperationException:
             # Expected exception
@@ -116,7 +118,7 @@ class TestSensorsImporter(BaseTestCase):
         This method tests import of a file containing internal sensors.
         """
         internal_sensors_index = TestFactory.import_sensors(self.test_user, self.test_project, self.EEG_FILE,
-                                                            SensorsImporterModel.OPTIONS['Internal Sensors'], False)
+                                                            SensorTypesEnum.TYPE_INTERNAL, False)
 
         expected_size = 62
         assert expected_size == internal_sensors_index.number_of_sensors

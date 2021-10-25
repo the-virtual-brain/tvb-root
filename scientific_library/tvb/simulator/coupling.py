@@ -81,7 +81,9 @@ following:
 .. moduleauthor:: Paula Sanz Leon <Paula@tvb.invalid>
 
 """
+
 import numpy
+
 from tvb.basic.neotraits.api import HasTraits, NArray, Attr, Range
 from .history import SparseHistory
 from .common import simple_gen_astr

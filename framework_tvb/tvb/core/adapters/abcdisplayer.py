@@ -36,12 +36,12 @@ import os
 from abc import ABCMeta
 from threading import Lock
 from uuid import UUID
+import numpy
 
 from six import add_metaclass
 from tvb.core.adapters.abcadapter import AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neocom import h5
-from tvb.core.neotraits.view_model import ViewModel
 
 LOCK_CREATE_FIGURE = Lock()
 
@@ -186,6 +186,20 @@ class ABCDisplayer(ABCAdapter, metaclass=ABCMeta):
         """
         format_str = "%0." + str(precision) + "g"
         return "[" + ",".join(format_str % s for s in xs) + "]"
+
+    @staticmethod
+    def handle_infinite_values(data):
+        """
+        Replace positive infinite values with the biggest float number available in numpy, and negative infinite
+        values with the smallest float number available in numpy.
+        """
+        float_max = numpy.finfo(numpy.float64).max
+        data[data == numpy.PINF] = float_max
+
+        float_min = numpy.finfo(numpy.float64).min
+        data[data == numpy.NINF] = float_min
+
+        return data
 
     @staticmethod
     def prepare_shell_surface_params(shell_surface, surface_url_generator):

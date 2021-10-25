@@ -47,9 +47,9 @@ class SpatioTemporalPatternIndex(DataType):
     def fill_from_has_traits(self, datatype):
         # type: (SpatioTemporalPattern) -> None
         super(SpatioTemporalPatternIndex, self).fill_from_has_traits(datatype)
-        self.spatial_equation = datatype.spatial.__class__.__name__
+        self.spatial_equation = type(datatype.spatial).__name__
         self.spatial_parameters = json.dumps(datatype.spatial.parameters)
-        self.temporal_equation = datatype.temporal.__class__.__name__
+        self.temporal_equation = type(datatype.temporal).__name__
         self.temporal_parameters = json.dumps(datatype.temporal.parameters)
 
 

@@ -43,13 +43,14 @@ import psutil
 from tvb.adapters.datatypes.db.spectral import FourierSpectrumIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
 from tvb.adapters.datatypes.h5.spectral_h5 import FourierSpectrumH5
-from tvb.analyzers.fft import compute_fast_fourier_transform, SUPPORTED_WINDOWING_FUNCTIONS
-from tvb.basic.neotraits.api import Attr, Float
+from tvb.analyzers.fft import compute_fast_fourier_transform
+from tvb.basic.neotraits.api import Attr, EnumAttr, Float
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField, SelectField, FloatField, BoolField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
+from tvb.datatypes.spectral import WindowingFunctionsEnum
 from tvb.datatypes.time_series import TimeSeries
 
 
@@ -76,10 +77,9 @@ class FFTAdapterModel(ViewModel):
             frequency resolution of the resulting power spectra -- longer
             windows produce finer frequency resolution.""")
 
-    window_function = Attr(
-        field_type=str,
+    window_function = EnumAttr(
+        default=WindowingFunctionsEnum.HAMMING,
         label="Windowing function",
-        choices=tuple(SUPPORTED_WINDOWING_FUNCTIONS),
         required=False,
         doc="""Windowing functions can be applied before the FFT is performed.
              Default is None, possibilities are: 'hamming'; 'bartlett';
@@ -225,7 +225,7 @@ class FourierAdapter(ABCAdapter):
         self.fill_index_from_h5(fft_index, spectra_file)
 
         spectra_file.store(partial_result, scalars_only=True)
-        spectra_file.windowing_function.store(str(view_model.window_function))
+        spectra_file.windowing_function.store(view_model.window_function)
         spectra_file.close()
 
         self.log.debug("partial segment_length is %s" % (str(partial_result.segment_length)))

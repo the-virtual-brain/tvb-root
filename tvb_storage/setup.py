@@ -38,7 +38,7 @@ import os
 import shutil
 import setuptools
 
-STORAGE_VERSION = "2.3"
+STORAGE_VERSION = "2.4"
 
 STORAGE_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
 

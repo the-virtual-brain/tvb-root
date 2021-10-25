@@ -34,14 +34,14 @@
 
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import EnumAttr
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
 from tvb.core.neotraits.h5 import MEMORY_STRING
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, SensorsInternal, SensorTypesEnum
 
 
 class SensorsImporterModel(UploaderViewModel):
@@ -54,10 +54,9 @@ class SensorsImporterModel(UploaderViewModel):
         doc='Expected a text/bz2 file containing sensor measurements.'
     )
 
-    sensors_type = Str(
+    sensors_type = EnumAttr(
         label='Sensors type: ',
-        choices=tuple(OPTIONS.values()),
-        default=tuple(OPTIONS.values())[0]
+        default=SensorTypesEnum.TYPE_EEG
     )
 
 
@@ -67,8 +66,7 @@ class SensorsImporterForm(ABCUploaderForm):
         super(SensorsImporterForm, self).__init__()
 
         self.sensors_file = TraitUploadField(SensorsImporterModel.sensors_file, ('.txt', '.bz2'), 'sensors_file')
-        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, name='sensors_type',
-                                        choices=SensorsImporterModel.OPTIONS)
+        self.sensors_type = SelectField(SensorsImporterModel.sensors_type, name='sensors_type')
 
     @staticmethod
     def get_view_model():
@@ -112,11 +110,11 @@ class SensorsImporter(ABCUploader):
             raise LaunchException("Please select sensors file which contains data to import")
 
         self.logger.debug("Create sensors instance")
-        if view_model.sensors_type == SensorsEEG.sensors_type.default:
+        if view_model.sensors_type.value == SensorsEEG.sensors_type.default:
             sensors_inst = SensorsEEG()
-        elif view_model.sensors_type == SensorsMEG.sensors_type.default:
+        elif view_model.sensors_type.value == SensorsMEG.sensors_type.default:
             sensors_inst = SensorsMEG()
-        elif view_model.sensors_type == SensorsInternal.sensors_type.default:
+        elif view_model.sensors_type.value == SensorsInternal.sensors_type.default:
             sensors_inst = SensorsInternal()
         else:
             exception_str = "Could not determine sensors type (selected option %s)" % view_model.sensors_type

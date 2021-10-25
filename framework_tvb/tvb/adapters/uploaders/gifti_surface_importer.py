@@ -33,26 +33,22 @@
 .. moduleauthor:: Calin Pavel <calin.pavel@codemart.ro>
 """
 
-from tvb.adapters.uploaders.gifti.parser import GIFTIParser, OPTION_READ_METADATA
+from tvb.adapters.uploaders.gifti.parser import GIFTIParser
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Attr
+from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.exceptions import LaunchException, ParseException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.adapters.datatypes.db.surface import SurfaceIndex, ALL_SURFACES_SELECTION
+from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.core.neotraits.forms import SelectField, TraitUploadField, BoolField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 
 
 class GIFTISurfaceImporterModel(UploaderViewModel):
-    KEY_OPTION_READ_METADATA = 'Specified in the file metadata'
-    surface_types = ALL_SURFACES_SELECTION.copy()
-    surface_types[KEY_OPTION_READ_METADATA] = OPTION_READ_METADATA
-
-    file_type = Str(
+    file_type = EnumAttr(
         label='Specify file type : ',
-        choices=tuple(surface_types.values()),
-        default=tuple(surface_types.values())[0]
+        default=SurfaceTypesEnum.CORTICAL_SURFACE
     )
 
     data_file = Str(
@@ -77,8 +73,7 @@ class GIFTISurfaceImporterForm(ABCUploaderForm):
     def __init__(self):
         super(GIFTISurfaceImporterForm, self).__init__()
 
-        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, name='file_type',
-                                     choices=GIFTISurfaceImporterModel.surface_types)
+        self.file_type = SelectField(GIFTISurfaceImporterModel.file_type, name='file_type')
         self.data_file = TraitUploadField(GIFTISurfaceImporterModel.data_file, '.gii', 'data_file')
         self.data_file_part2 = TraitUploadField(GIFTISurfaceImporterModel.data_file_part2, '.gii', 'data_file_part2')
         self.should_center = BoolField(GIFTISurfaceImporterModel.should_center, name='should_center')

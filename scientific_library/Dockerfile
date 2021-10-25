@@ -6,7 +6,7 @@ RUN conda install python=3.7 nomkl numba scipy numpy networkx scikit-learn cytho
     pytest pytest-cov pytest-benchmark pytest-mock matplotlib \
     psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils
 
-RUN apt-get install -y zip
+RUN apt-get install -y zip unzip
 RUN cd /opt \
  && wget -q https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 -O tvb_data.zip \
  && mkdir tvb_data \

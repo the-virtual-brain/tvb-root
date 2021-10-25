@@ -30,14 +30,12 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-from datetime import time
 from time import sleep
-
 import cherrypy
-from tvb.basic.profile import TvbProfile
 
+from tvb.basic.profile import TvbProfile
 from tvb.config.algorithm_categories import CreateAlgorithmCategoryConfig
-from tvb.core.entities.model.model_operation import Operation, STATUS_PENDING, STATUS_FINISHED
+from tvb.core.entities.model.model_operation import STATUS_PENDING
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.standalone_client import LOCKS_QUEUE, StandAloneClient
 from tvb.core.services.operation_service import OperationService
@@ -248,7 +246,7 @@ class TestFlowController(BaseControllersTest):
         assert operation.status == STATUS_CANCELED
 
     def test_stop_operations_group(self, test_adapter_factory, datatype_group_factory):
-        group = datatype_group_factory(status=STATUS_STARTED, store_vm=True)
+        group, _ = datatype_group_factory(status=STATUS_STARTED, store_vm=True)
         operations = dao.get_operations_in_group(group.fk_from_operation)
         operation_group_id = 0
         for operation in operations:

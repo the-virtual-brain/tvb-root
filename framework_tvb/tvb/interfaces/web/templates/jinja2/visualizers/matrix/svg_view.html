@@ -15,6 +15,13 @@
         </div>
     {% endif %}
 
+        {% if has_infinite_values %}
+        <div class="matrix-info">
+            <p>Matrix <span><b>has infinite values!</b></span> Positive infinite values were replaced with a very big number
+                and negative infinite values were replaced with a very small number before displaying the matrix.</p>
+        </div>
+    {% endif %}
+
     {% if show_slice_info %}
 
         <div class="slice-info">

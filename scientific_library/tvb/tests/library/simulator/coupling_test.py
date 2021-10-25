@@ -38,6 +38,8 @@ Test for tvb.simulator.coupling module
 import copy
 import numpy
 import pytest
+
+from tvb.simulator.simulator import Simulator
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.simulator import coupling, models, simulator
 from tvb.datatypes import cortex, connectivity
@@ -166,7 +168,7 @@ class TestCouplingShape(BaseTestCase):
         conn = connectivity.Connectivity.from_file()
         surf = cortex.Cortex.from_file()
         surf.region_mapping_data.connectivity = conn
-        sim = simulator.Simulator(
+        sim = Simulator(
             model=CouplingShapeTestModel(self, surf.vertices.shape[0]),
             connectivity=conn,
             surface=surf)

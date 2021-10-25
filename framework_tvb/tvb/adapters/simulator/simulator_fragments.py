@@ -34,30 +34,31 @@ from formencode import validators
 
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, SpatioTemporalPatternIndex
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
-from tvb.adapters.simulator.model_forms import get_ui_name_to_model
+from tvb.adapters.simulator.integrator_forms import get_form_for_integrator, get_integrator_name_list
+from tvb.adapters.simulator.model_forms import ModelsEnum
 from tvb.adapters.simulator.monitor_forms import get_ui_name_to_monitor_dict, get_monitor_to_ui_name_dict
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict, get_integrator_name_list
-from tvb.basic.neotraits.api import Attr, Range, List, Float
+from tvb.basic.profile import TvbProfile
+from tvb.basic.neotraits.api import Attr, EnumAttr, Range, List, Float, Int
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModel
+from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel, IntegratorViewModelsEnum
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import ArrayField, SelectField, MultiSelectField, \
-    TraitDataTypeSelectField, HiddenField, FloatField, StrField
+    TraitDataTypeSelectField, HiddenField, FloatField, StrField, DynamicSelectField
 from tvb.core.neotraits.view_model import Str
 from tvb.core.services.algorithm_service import AlgorithmService
 from tvb.core.services.burst_service import BurstService
-from tvb.datatypes.surfaces import CORTICAL
-from tvb.simulator.models.base import Model
+from tvb.datatypes.surfaces import SurfaceTypesEnum
+
 
 
 class SimulatorSurfaceFragment(ABCAdapterForm):
     def __init__(self):
         super(SimulatorSurfaceFragment, self).__init__()
-        conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="], values=[CORTICAL])
+        conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                                 values=[SurfaceTypesEnum.CORTICAL_SURFACE.value])
         self.surface = TraitDataTypeSelectField(CortexViewModel.surface_gid, name='surface_gid', conditions=conditions)
 
     def fill_trait(self, datatype):
@@ -139,41 +140,36 @@ class SimulatorStimulusFragment(ABCAdapterForm):
 class SimulatorModelFragment(ABCAdapterForm):
     def __init__(self):
         super(SimulatorModelFragment, self).__init__()
-        self.model_choices = get_ui_name_to_model()
-        default_model = list(self.model_choices.values())[0]
+        default_model = ModelsEnum.GENERIC_2D_OSCILLATOR
 
         self.model = SelectField(
-            Attr(Model, default=default_model, label=SimulatorAdapterModel.model.label,
-                 doc=SimulatorAdapterModel.model.doc), choices=self.model_choices, name='model')
+            EnumAttr(default=default_model, label=SimulatorAdapterModel.model.label,
+                     doc=SimulatorAdapterModel.model.doc), name='model')
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None
-        self.model.data = trait.model.__class__
+        self.model.data = type(trait.model)
 
     def fill_trait(self, datatype):
         if type(datatype.model) != self.model.value:
-            datatype.model = self.model.value()
+            datatype.model = self.model.value.instance
 
 
 class SimulatorIntegratorFragment(ABCAdapterForm):
 
     def __init__(self):
         super(SimulatorIntegratorFragment, self).__init__()
-        self.integrator_choices = get_ui_name_to_integrator_dict()
-        default_integrator = list(self.integrator_choices.values())[0]
-
         self.integrator = SelectField(
-            Attr(IntegratorViewModel, default=default_integrator, label=SimulatorAdapterModel.integrator.label,
-                 doc=SimulatorAdapterModel.integrator.doc), name='integrator', choices=self.integrator_choices,
-            subform=get_form_for_integrator(default_integrator), ui_values=get_integrator_name_list())
+            EnumAttr(default=IntegratorViewModelsEnum.HEUN, label=SimulatorAdapterModel.integrator.label,
+                     doc=SimulatorAdapterModel.integrator.doc), name='integrator',
+            subform=get_form_for_integrator(IntegratorViewModelsEnum.HEUN.value), ui_values=get_integrator_name_list())
 
     def fill_from_trait(self, trait):
         # type: (SimulatorAdapterModel) -> None
-        self.integrator.data = trait.integrator.__class__
+        self.integrator.data = type(trait.integrator)
 
     def fill_trait(self, datatype):
-        if type(datatype.integrator) != self.integrator.value:
-            datatype.integrator = self.integrator.value()
+        datatype.integrator = self.integrator.value.instance
 
 
 class SimulatorMonitorFragment(ABCAdapterForm):
@@ -242,10 +238,11 @@ class SimulatorPSEConfigurationFragment(ABCAdapterForm):
 
     def __init__(self, choices):
         super(SimulatorPSEConfigurationFragment, self).__init__()
-        default_choice = list(choices.values())[0]
-        self.pse_param1 = SelectField(Str(default=default_choice, label="PSE param1"), choices=choices,
-                                      name='pse_param1')
-        self.pse_param2 = SelectField(Str(label="PSE param2", required=False), choices=choices, name='pse_param2')
+        default_choice = choices[0]
+        self.pse_param1 = DynamicSelectField(Str(default=default_choice, label="PSE param1"), choices=choices,
+                                             name='pse_param1')
+        self.pse_param2 = DynamicSelectField(Str(label="PSE param2", required=False), choices=choices,
+                                             name='pse_param2')
 
 
 class SimulatorPSERangeFragment(ABCAdapterForm):
@@ -263,6 +260,9 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
         self._add_pse_field(pse_param1)
         if pse_param2:
             self._add_pse_field(pse_param2, self.KEY_PARAM2)
+
+        self.max_pse_number = HiddenField(Int(default=TvbProfile.current.MAX_RANGE_NUMBER, required=False),
+                                          "max_range_number")
 
     def _add_pse_field(self, param, param_key=KEY_PARAM1):
         # type: (RangeParameter, str) -> None
@@ -303,7 +303,7 @@ class SimulatorPSERangeFragment(ABCAdapterForm):
     def _fill_param_from_post(all_range_parameters, param_key, **data):
         # type: (dict, str, dict) -> RangeParameter
         param_name = data.get(SimulatorPSERangeFragment.NAME_FIELD.format(param_key))
-        param = all_range_parameters.get(param_name)
+        param = BurstService.get_range_param_by_name(param_name, all_range_parameters)
         if param.type is float:
             param_lo = data.get(SimulatorPSERangeFragment.LO_FIELD.format(param_key))
             param_hi = data.get(SimulatorPSERangeFragment.HI_FIELD.format(param_key))

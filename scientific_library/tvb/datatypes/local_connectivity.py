@@ -31,9 +31,10 @@
 
 import numpy
 import scipy.sparse
+
+from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_summary_info
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import equations, surfaces
-from tvb.basic.neotraits.api import HasTraits, Attr, Float, narray_summary_info
 
 
 class LocalConnectivity(HasTraits):

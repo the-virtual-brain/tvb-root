@@ -116,7 +116,7 @@ class EncryptionHandler(object):
             os.makedirs(encrypted_dir)
         return encrypted_dir
 
-    def encrypt_inputs(self, files_to_encrypt, subdir):
+    def encrypt_inputs(self, files_to_encrypt, subdir=None):
         # type: (list, str) -> list
         """
         Receive a list with all files to encrypt.
@@ -139,7 +139,7 @@ class EncryptionHandler(object):
         # type: (str, str) -> str
         return os.path.join(dir, os.path.basename(encrypted_file).replace(self.encrypted_suffix, ''))
 
-    def decrypt_results_to_dir(self, dir, from_subdir):
+    def decrypt_results_to_dir(self, dir, from_subdir=None):
         # type: (str, str) -> list
         """
         Having an already encrypted directory, decrypt all files,

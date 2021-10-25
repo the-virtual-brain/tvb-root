@@ -33,6 +33,9 @@ Class responsible for all TVB exports (datatype or project).
 
 .. moduleauthor:: Calin Pavel <calin.pavel@codemat.ro
 """
+import shutil
+from cgi import FieldStorage
+from cherrypy._cpreqbody import Part
 
 from tvb.adapters.exporters.abcexporter import ABCExporter
 from tvb.adapters.exporters.exceptions import ExportException, InvalidExportDataException
@@ -91,12 +94,13 @@ class ExportManager(object):
 
         return results
 
-    def export_data(self, data, exporter_id, project):
+    def export_data(self, data, exporter_id, project, user_public_key=None):
         """
         Export provided data using given exporter
         :param data: data type to be exported
         :param exporter_id: identifier of the exporter to be used
         :param project: project that contains data to be exported
+        :param user_public_key: public key file used for encrypting data before exporting
 
         :returns: a tuple with the following elements
             1. name of the file to be shown to user
@@ -114,6 +118,17 @@ class ExportManager(object):
 
         exporter = self.all_exporters[exporter_id]
 
+        if user_public_key is not None:
+            public_key_path, encryption_password = self.storage_interface.prepare_encryption(project.name)
+            if isinstance(user_public_key, (FieldStorage, Part)):
+                with open(public_key_path, 'wb') as file_obj:
+                    self.storage_interface.copy_file(user_public_key.file, file_obj)
+            else:
+                shutil.copy2(user_public_key, public_key_path)
+
+        else:
+            public_key_path, encryption_password = None, None
+
         if project is None:
             raise ExportException("Please provide the project where data files are stored")
 
@@ -126,7 +141,7 @@ class ExportManager(object):
         export_data = None
         try:
             self.logger.debug("Start export of data: %s" % data.type)
-            export_data = exporter.export(data, project)
+            export_data = exporter.export(data, project, public_key_path, encryption_password)
         except Exception:
             pass
 

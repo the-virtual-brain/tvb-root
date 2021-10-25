@@ -345,6 +345,6 @@ function plotEquation(subformDiv = 'temporal_params') {
     });
 }
 
-function prepareRefreshSubformUrl(currentElem, elementType, subformDiv) {
-    return refreshBaseUrl + '/refresh_subform/' + subformDiv + '/' + currentElem.value + '/' + elementType;
+function prepareRefreshSubformUrl(currentElem, subformDiv) {
+    return refreshBaseUrl + '/refresh_subform/' + subformDiv + '/' + currentElem.value;
 }

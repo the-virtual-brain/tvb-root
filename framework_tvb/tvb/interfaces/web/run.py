@@ -35,21 +35,16 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
-from tvb.storage.storage_interface import StorageInterface
-from tvb.core.services.backend_clients.standalone_client import StandAloneClient
-from tvb.interfaces.web.controllers.kube_controller import KubeController
-
 STARTUP_TIC = time.time()
 
 import os
 import importlib
-from subprocess import Popen, PIPE
 import sys
 import webbrowser
-
 import cherrypy
 from cherrypy import Tool
 from cherrypy.lib.sessions import RamSession
+from subprocess import Popen, PIPE
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize, reset
@@ -57,6 +52,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.hpc_operation_service import HPCOperationService
+from tvb.core.services.backend_clients.standalone_client import StandAloneClient
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.burst.dynamic_model_controller import DynamicModelController
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
@@ -66,6 +62,7 @@ from tvb.interfaces.web.controllers.common import KEY_PROJECT
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.help.help_controller import HelpController
 from tvb.interfaces.web.controllers.hpc_controller import HPCController
+from tvb.interfaces.web.controllers.kube_controller import KubeController
 from tvb.interfaces.web.controllers.project.figure_controller import FigureController
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
@@ -77,6 +74,7 @@ from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller 
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.users_controller import UserController
 from tvb.interfaces.web.request_handler import RequestHandler
+from tvb.storage.storage_interface import StorageInterface
 
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[1])
@@ -229,7 +227,7 @@ def start_tvb(arguments, browser=True):
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
-    if StorageInterface.encryption_enabled():
+    if StorageInterface.encryption_enabled() and StorageInterface.app_encryption_handler():
         storage_interface = StorageInterface()
         storage_interface.start()
         storage_interface.startup_cleanup()
