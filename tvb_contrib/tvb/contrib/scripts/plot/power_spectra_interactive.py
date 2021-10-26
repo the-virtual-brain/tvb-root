@@ -64,6 +64,7 @@ from tvb.simulator.common import get_logger
 import tvb.datatypes.time_series as time_series_datatypes
 from tvb.basic.neotraits.api import HasTraits, Attr, Int
 
+
 LOG = get_logger(__name__)
 
 # Define a colour theme... see: matplotlib.colors.cnames.keys()
@@ -162,7 +163,7 @@ class PowerSpectraInteractive(HasTraits):
             first_n = self.first_n
         self.data = self.time_series.data[:, :, :first_n, :]
         print('data.shape = %s' % str(self.data.shape))
-        self.regions = np.arange(self.data.shape[2]).astype('i')
+        self.regions = numpy.arange(self.data.shape[2]).astype('i')
         self.reg_xy_inds = {}
         self.data_xy = []
         ii_xy = 0
@@ -171,9 +172,9 @@ class PowerSpectraInteractive(HasTraits):
                 self.reg_xy_inds[(reg1, reg2)] = int(ii_xy)
                 ii_xy += 1
                 self.data_xy.append(self.data[:, :, reg1, :] * self.data[:, :, reg2, :])
-        self.data_xy = np.array(self.data_xy).transpose(1, 2, 0, 3)
+        self.data_xy = numpy.array(self.data_xy).transpose(1, 2, 0, 3)
         self.reg_inds_sel = slice(0, self.regions.shape[0])
-        self.reg_xy_inds_sel = np.arange(self.data_xy.shape[2]).astype('i')
+        self.reg_xy_inds_sel = numpy.arange(self.data_xy.shape[2]).astype('i')
         self.period = self.time_series.sample_period
         print("period = %g" % self.period)
         print("window_length = %g" % self.window_length)
@@ -354,11 +355,11 @@ class PowerSpectraInteractive(HasTraits):
         nseg = int(numpy.ceil(self.time_series_length / self.window_length))
         print("nseg = \n%s" % str(nseg))
         if nseg != 1:
-            seg_tpts = int(np.round(self.window_length / self.period))
+            seg_tpts = int(numpy.round(self.window_length / self.period))
             print("seg_tpts = \n%s" % str(seg_tpts))
-            overlap = int(np.round(((seg_tpts * nseg) - self.tpts) / (nseg - 1)))
+            overlap = int(numpy.round(((seg_tpts * nseg) - self.tpts) / (nseg - 1)))
             print("overlap = \n%s" % str(overlap))
-            starts = [int(np.round(max(seg * (seg_tpts - overlap), 0)))
+            starts = [int(numpy.round(max(seg * (seg_tpts - overlap), 0)))
                       for seg in range(nseg)]
             segments = [self.data[start:start + seg_tpts] for start in starts]
             segments = [segment[:, :, :, numpy.newaxis] for segment in segments]
@@ -386,7 +387,7 @@ class PowerSpectraInteractive(HasTraits):
         # Calculate the FFT
         result = numpy.fft.fft(time_series, axis=0)
         result_xy = numpy.fft.fft(time_series_xy, axis=0)
-        nfreq = int(np.round(len(result) / 2))
+        nfreq = int(numpy.round(len(result) / 2))
 
         self.frequency = numpy.arange(0, self.max_freq, self.freq_step)
         self.plot_freqs_slice = slice(0, self.frequency.size)
@@ -410,7 +411,7 @@ class PowerSpectraInteractive(HasTraits):
                 (self.spectra_norm[:, :, xy_inds[0], :] *
                  self.spectra_norm[:, :, xy_inds[1], :]),
             )
-        self.coherence = np.array(self.coherence).transpose(1, 2, 0, 3)
+        self.coherence = numpy.array(self.coherence).transpose(1, 2, 0, 3)
         LOG.debug("coherence shape: %s" % str(self.spectra.shape))
 
         # import pdb; pdb.set_trace()
@@ -432,7 +433,7 @@ class PowerSpectraInteractive(HasTraits):
         pylab.draw()
 
     def _find_nearest(self, value):
-        return (np.abs(self.frequency - value)).argmin()
+        return (numpy.abs(self.frequency - value)).argmin()
 
     def update_freq_range(self, freq_range_text):
         if "," in freq_range_text:
@@ -477,7 +478,7 @@ class PowerSpectraInteractive(HasTraits):
         for ir1, reg1 in enumerate(self.reg_inds_sel[:-1]):
             for reg2 in self.reg_inds_sel[ir1 + 1:]:
                 self.reg_xy_inds_sel.append(self.reg_xy_inds[(reg1, reg2)])
-        self.reg_xy_inds_sel = np.array(self.reg_xy_inds_sel).astype('i')
+        self.reg_xy_inds_sel = numpy.array(self.reg_xy_inds_sel).astype('i')
 
     def update_regions(self, regions_slice_text):
         """ Update the visualised regions based on radio button selection. """
@@ -504,7 +505,7 @@ class PowerSpectraInteractive(HasTraits):
             self.reg_inds_sel = self.regions[slice(start, stop, step)]
         else:
             if len(regions_slice_text):
-                self.reg_inds_sel = np.array(regions_slice_text.split(",")).astype('i')
+                self.reg_inds_sel = numpy.array(regions_slice_text.split(",")).astype('i')
         print("Indices of regions selected for plotting:\n%s" % str(self.reg_inds_sel))
         self._update_xy_regions()
         self.plot_spectra()
