@@ -60,6 +60,9 @@ jobs:
           cd tvb_data
           python3 setup.py develop
 
+      - name: setup dace
+        run: pip3 install -U dace
+
       - name: run library tests
         run: cd scientific_library && python3 -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
 
