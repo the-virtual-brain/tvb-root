@@ -572,7 +572,7 @@ class Projection(Monitor):
                 self.gain[:, non_cortical_indices] = sub_gain
             else:
                 full_gain = numpy.zeros((self.gain.shape[0], self.gain.shape[1] + sub_gain.shape[1]))
-                full_gain[:, cortical_indices] = self.gain
+                full_gain[:, self.rmap if using_cortical_surface else cortical_indices] = self.gain
                 full_gain[:, non_cortical_indices] = self.analytic(*src)
                 self.gain = full_gain
                 self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
