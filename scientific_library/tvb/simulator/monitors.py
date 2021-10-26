@@ -553,10 +553,15 @@ class Projection(Monitor):
             self.gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
-        # NB gain may be loaded already, only cortical
+        # this fails when rmap doesn't have non_cortical, need to ensure "full" first
+        # OR fix non_cortical_rmap_idx to be empty in that case:
         cortical_rmap = self.rmap.copy()
-        for i in non_cortical_indices:
-            cortical_rmap = numpy.delete(cortical_rmap, numpy.argwhere(cortical_rmap==i)[:,0])
+        if (self.rmap.max()+1) == conn.cortical.sum():
+            # there are no non_cortical indices in rmap, so cortical_rmap is already fine
+            pass
+        else:
+            non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap==i)[:,0] for i in non_cortical_indices])
+            cortical_rmap = numpy.delete(cortical_rmap, non_cortical_rmap_idx)
         if not using_cortical_surface and self.gain.shape[1] == cortical_rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
             numpy_add_at(gain.T, cortical_rmap, self.gain.T)
