@@ -47,7 +47,7 @@ class ModelsEnum(TupleEnum):
     JANSEN_RIT = (models.ModelsEnum.JANSEN_RIT.get_class(), "Jansen-Rit")
     ZETTERBERG_JANSEN = (models.ModelsEnum.ZETTERBERG_JANSEN.get_class(), "Zetterberg-Jansen")
     REDUCED_WONG_WANG = (models.ModelsEnum.REDUCED_WONG_WANG.get_class(), "Reduced Wong-Wang")
-    REDUCED_WONG_WANG_EXCH_INH = (models.ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class(), "Reduced Wong-Wang With Excitatory And Inhibitory Coupled Populations")
+    REDUCED_WONG_WANG_EXC_INH = (models.ModelsEnum.REDUCED_WONG_WANG_EXC_INH.get_class(), "Reduced Wong-Wang With Excitatory And Inhibitory Coupled Populations")
     REDUCED_SET_FITZ_HUGH_NAGUMO = (models.ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class(), "Stefanescu-Jirsa 2D")
     REDUCED_SET_HINDMARSH_ROSE = (models.ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(), "Stefanescu-Jirsa 3D")
     ZERLAUT_FIRST_ORDER = (models.ModelsEnum.ZERLAUT_FIRST_ORDER.get_class(), "Zerlaut Adaptation First Order")
@@ -77,7 +77,7 @@ def get_model_to_form_dict():
         ModelsEnum.JANSEN_RIT.value: JansenRitModelForm,
         ModelsEnum.ZETTERBERG_JANSEN.value: ZetterbergJansenModelForm,
         ModelsEnum.REDUCED_WONG_WANG.value: ReducedWongWangModelForm,
-        ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value: ReducedWongWangExcInhModelForm,
+        ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value: ReducedWongWangExcInhModelForm,
         ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.value: ReducedSetFitzHughNagumoModelForm,
         ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.value: ReducedSetHindmarshRoseModelForm,
         ModelsEnum.ZERLAUT_FIRST_ORDER.value: ZerlautAdaptationFirstOrderModelForm,
@@ -414,26 +414,26 @@ class ReducedWongWangExcInhModelForm(ModelForm):
 
     def __init__(self, are_voi_disabled=False):
         super(ReducedWongWangExcInhModelForm, self).__init__(are_voi_disabled)
-        self.a_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.a_e)
-        self.b_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.b_e)
-        self.d_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.d_e)
-        self.gamma_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.gamma_e)
-        self.tau_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.tau_e)
-        self.w_p = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.w_p)
-        self.J_N = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.J_N)
-        self.W_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.W_e)
-        self.a_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.a_i)
-        self.b_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.b_i)
-        self.d_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.d_i)
-        self.gamma_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.gamma_i)
-        self.tau_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.tau_i)
-        self.J_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.J_i)
-        self.W_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.W_i)
-        self.I_o = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.I_o)
-        self.G = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.G)
-        self.lamda = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.lamda)
+        self.a_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.a_e)
+        self.b_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.b_e)
+        self.d_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.d_e)
+        self.gamma_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.gamma_e)
+        self.tau_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.tau_e)
+        self.w_p = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.w_p)
+        self.J_N = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.J_N)
+        self.W_e = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.W_e)
+        self.a_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.a_i)
+        self.b_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.b_i)
+        self.d_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.d_i)
+        self.gamma_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.gamma_i)
+        self.tau_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.tau_i)
+        self.J_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.J_i)
+        self.W_i = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.W_i)
+        self.I_o = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.I_o)
+        self.G = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.G)
+        self.lamda = ArrayField(ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.lamda)
         self.variables_of_interest = MultiSelectField(
-            ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.value.variables_of_interest)
+            ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.variables_of_interest)
 
     @staticmethod
     def get_params_configurable_in_phase_plane():

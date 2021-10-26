@@ -280,6 +280,13 @@ class TestModels(BaseTestCase):
         self._validate_initialization(model, 1)
         self._test_steady_state(model, numpy.r_[0.452846])
 
+    def test_deco_balanced_exc_inh(self):
+        """
+        """
+        model = models.DecoBalancedExcInh()
+        self._validate_initialization(model, 2)
+        self._test_steady_state(model, numpy.r_[0.416673, 0.078865])
+
     def test_zetterberg_jansen(self):
         """
         """
