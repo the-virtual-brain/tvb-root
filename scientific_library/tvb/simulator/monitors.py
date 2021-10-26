@@ -515,14 +515,9 @@ class Projection(Monitor):
         conn = simulator.connectivity
         using_cortical_surface = surf is not None
         if using_cortical_surface:
-<<<<<<< HEAD
-            # This code assumes that subcortical regions are mapped to a single vertex
-            non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
-=======
             cortical_mask = numpy.bincount(surf.region_mapping) == 1
             non_cortical_indices, = numpy.where(cortical_mask)
             cortical_indices, = numpy.where(~cortical_mask)
->>>>>>> 8fab4d38a (merge gains with correct indices, test passes)
             self.rmap = surf.region_mapping
         else:
             # assume all cortical if no info
