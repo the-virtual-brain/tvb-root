@@ -86,13 +86,10 @@ def fire_simulation_example(tvb_client_instance):
             datatype_names.append(datatype.name)
         logger.info("The resulted datatype are: {}".format(datatype_names))
 
-        logger.info("Finding out whether data on the server is encrypted or not...")
-        is_data_encrypted = tvb_client_instance.is_data_encrypted()
-
         time_series_gid = simulation_results[1].gid
         logger.info("Download the time series file...")
         time_series_path = tvb_client_instance.retrieve_datatype(time_series_gid,
-                                                                 tvb_client_instance.temp_folder, is_data_encrypted)
+                                                                 tvb_client_instance.temp_folder)
 
         logger.info("The time series file location is: {}".format(time_series_path))
 
@@ -123,8 +120,7 @@ def fire_simulation_example(tvb_client_instance):
 
         logger.info("Download the connectivity file...")
         connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid,
-                                                                  tvb_client_instance.temp_folder,
-                                                                  is_data_encrypted)
+                                                                  tvb_client_instance.temp_folder)
 
         logger.info("The connectivity file location is: {}".format(connectivity_path))
 

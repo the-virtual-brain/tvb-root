@@ -90,28 +90,22 @@ def launch_operation_examples(tvb_client_instance):
     logger.info("Get the result of region mapping import...")
     region_mapping_dto = tvb_client_instance.get_operation_results(operation_gid)[0]
 
-    logger.info("Finding out whether data on the server is encrypted or not...")
-    is_data_encrypted = tvb_client_instance.is_data_encrypted()
-
     # --- Load the region mapping together with references information in 3 different ways ---
 
     logger.info("1.Download and load the region mapping with all its references...")
     region_mapping_complete = tvb_client_instance.load_datatype_with_full_references(region_mapping_dto.gid,
-                                                                                     tvb_client_instance.temp_folder,
-                                                                                     is_data_encrypted)
+                                                                                     tvb_client_instance.temp_folder)
     logger.info("1.This region mapping is linked to a connectivity with GID={} and number_of_regions={}".format(
         region_mapping_complete.connectivity.gid, region_mapping_complete.connectivity.number_of_regions))
 
     logger.info("2.Download and load the region mapping with only GIDs for its references...")
     region_mapping_with_links = tvb_client_instance.load_datatype_with_links(region_mapping_dto.gid,
-                                                                             tvb_client_instance.temp_folder,
-                                                                             is_data_encrypted)
+                                                                             tvb_client_instance.temp_folder)
     logger.info("2.This region mapping is linked to a connectivity with GID={}".format(
         region_mapping_with_links.connectivity.gid))
 
     logger.info("3.Only download the region mapping on client machine...")
-    region_mapping_path = tvb_client_instance.retrieve_datatype(region_mapping_dto.gid, tvb_client_instance.temp_folder,
-                                                                is_data_encrypted)
+    region_mapping_path = tvb_client_instance.retrieve_datatype(region_mapping_dto.gid, tvb_client_instance.temp_folder)
 
     logger.info("3.Load the region mapping that was already downloaded on client machine...")
     local_region_mapping_with_links = tvb_client_instance.load_datatype_from_file(region_mapping_path)

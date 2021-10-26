@@ -105,7 +105,7 @@ class DataTypeApi(MainApi):
         return datatype
 
     def _load_with_full_references(self, file_path, download_folder, is_data_encrypted):
-        # type: (str, str) -> HasTraits
+        # type: (str, str, bool) -> HasTraits
         def load_ht_function(sub_gid, traited_attr):
             ref_ht_path = self.retrieve_datatype(sub_gid.hex, download_folder, is_data_encrypted)
             ref_ht, _ = h5.load_with_links(ref_ht_path)
