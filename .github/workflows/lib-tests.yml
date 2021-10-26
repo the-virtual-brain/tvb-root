@@ -60,6 +60,15 @@ jobs:
           cd tvb_data
           python3 setup.py develop
 
+      - name: setup Futhark
+        run: |
+          if [[ ! -f /usr/local/bin/futhark ]]; then 
+            curl -LO https://github.com/diku-dk/futhark/releases/download/v0.20.5/futhark-0.20.5-linux-x86_64.tar.xz
+            tar xJf futhark-0.20.5-linux-x86_64.tar.xz
+            ln -s $PWD/futhark-0.20.5-linux-x86_64/bin/futhark /usr/local/bin/futhark
+          fi
+          pip3 install futhark_ffi
+
       - name: run library tests
         run: cd scientific_library && python3 -m pytest -n12 --ignore=tvb/tests/library/simulator/rateml_test.py
 
