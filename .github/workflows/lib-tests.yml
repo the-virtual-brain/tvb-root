@@ -63,6 +63,7 @@ jobs:
       - name: setup Futhark
         run: |
           if [[ ! -f /usr/local/bin/futhark ]]; then 
+            apt-get install -y curl
             curl -LO https://github.com/diku-dk/futhark/releases/download/v0.20.5/futhark-0.20.5-linux-x86_64.tar.xz
             tar xJf futhark-0.20.5-linux-x86_64.tar.xz
             ln -s $PWD/futhark-0.20.5-linux-x86_64/bin/futhark /usr/local/bin/futhark
