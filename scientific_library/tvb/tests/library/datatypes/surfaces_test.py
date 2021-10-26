@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,8 +34,9 @@
 import sys
 import numpy
 import pytest
-from tvb.datatypes.surfaces import CorticalSurface
 from tvb.tests.library.base_testcase import BaseTestCase
+from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.surfaces import CorticalSurface, SurfaceTypesEnum
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
@@ -51,7 +52,11 @@ class TestSurfaces(BaseTestCase):
         dt = surfaces.Surface(valid_for_simulations=True)
         dt.vertices = numpy.array(list(range(30))).reshape(10, 3).astype(numpy.float64)
         dt.triangles = numpy.array(list(range(9))).reshape(3, 3)
+        dt.triangle_normals = numpy.array(list(range(9))).reshape(3, 3)
+        dt.vertex_normals = numpy.array(list(range(30))).reshape(10, 3).astype('f')
+
         dt.configure()
+
         summary_info = dt.summary_info()
         assert summary_info['Number of edges'] == 9
         assert summary_info['Number of triangles'] == 3
@@ -80,7 +85,7 @@ class TestSurfaces(BaseTestCase):
         assert summary_info['Number of edges'] == 49140
         assert summary_info['Number of triangles'] == 32760
         assert summary_info['Number of vertices'] == 16384
-        assert dt.surface_type == surfaces.CORTICAL
+        assert dt.surface_type == SurfaceTypesEnum.CORTICAL_SURFACE.value
         assert len(dt.vertex_neighbours) == 16384
         assert isinstance(dt.vertex_neighbours[0], frozenset)
         assert len(dt.vertex_triangles) == 16384
@@ -117,6 +122,8 @@ class TestSurfaces(BaseTestCase):
         dt = surfaces.Surface()
         dt.vertices = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 2]]).astype(numpy.float64)
         dt.triangles = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
+        dt.triangle_normals = numpy.array([[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]])
+        dt.vertex_normals = numpy.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, 2]]).astype(numpy.float64)
         dt.configure()
 
         euler, isolated, pinched_off, holes = dt.compute_topological_constants()
@@ -195,14 +202,22 @@ class TestSurfaces(BaseTestCase):
 
     @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
     def test_cortexdata(self):
-        dt = Cortex.from_file()
-        dt.__setattr__('valid_for_simulations', True)
+        dt = Cortex.from_file(local_connectivity_file="local_connectivity_16384.mat")
+        dt.region_mapping_data.connectivity = Connectivity.from_file()
         assert isinstance(dt, Cortex)
         assert dt.region_mapping is not None
-        ## Initialize Local Connectivity, to avoid long computation time.
-        dt.local_connectivity = LocalConnectivity.from_file()
 
         dt.configure()
         assert dt.vertices.shape == (16384, 3)
         assert dt.vertex_normals.shape == (16384, 3)
         assert dt.triangles.shape == (32760, 3)
+
+    def test_cortex_reg_map_without_subcorticals(self):
+        dt = Cortex.from_file()
+        dt.region_mapping_data.connectivity = Connectivity.from_file()
+        self.add_subcorticals_to_conn(dt.region_mapping_data.connectivity)
+        dt.region_mapping_data.connectivity.configure()
+
+        assert isinstance(dt, Cortex)
+        assert dt.region_mapping is not None
+        assert numpy.unique(dt.region_mapping).size == dt.region_mapping_data.connectivity.number_of_regions

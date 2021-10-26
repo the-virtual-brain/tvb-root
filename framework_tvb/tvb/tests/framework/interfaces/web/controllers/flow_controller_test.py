@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,16 +30,20 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-
+from time import sleep
 import cherrypy
+
+from tvb.basic.profile import TvbProfile
 from tvb.config.algorithm_categories import CreateAlgorithmCategoryConfig
+from tvb.core.entities.model.model_operation import STATUS_PENDING
 from tvb.core.entities.storage import dao
-from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1
+from tvb.core.services.backend_clients.standalone_client import LOCKS_QUEUE, StandAloneClient
+from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestModel
-from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form, DummyModel
+from tvb.tests.framework.core.factory import TestFactory, STATUS_CANCELED, STATUS_STARTED
 from tvb.tests.framework.interfaces.web.controllers.base_controller_test import BaseControllersTest
 
 
@@ -143,20 +147,21 @@ class TestFlowController(BaseControllersTest):
 
     def test_get_simple_adapter_interface(self, test_adapter_factory):
         algo = test_adapter_factory()
-        form = TestAdapter1Form()
-        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
+        form = DummyAdapter1Form()
+        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.dummy_adapter1', 'DummyAdapter1')
         adapter.submit_form(form)
         result = self.flow_c.get_simple_adapter_interface(algo.id)
         expected_interface = adapter.get_form()
         found_form = result['adapter_form']['adapter_form']
         assert isinstance(result['adapter_form'], dict)
-        assert isinstance(found_form, TestAdapter1Form)
+        assert isinstance(found_form, DummyAdapter1Form)
         assert found_form.test1_val1.value == expected_interface.test1_val1.value
         assert found_form.test1_val2.value == expected_interface.test1_val2.value
 
     def test_stop_burst_operation(self, simulation_launch):
         operation = simulation_launch(self.test_user, self.test_project, 1000)
         assert not operation.has_finished
+        sleep(5)
         self.flow_c.cancel_or_remove_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
@@ -165,6 +170,7 @@ class TestFlowController(BaseControllersTest):
         first_op = simulation_launch(self.test_user, self.test_project, 1000, True)
         operations_group_id = first_op.fk_operation_group
         assert not first_op.has_finished
+        sleep(5)
         self.flow_c.cancel_or_remove_operation(operations_group_id, 1, False)
         operations = dao.get_operations_in_group(operations_group_id)
         for operation in operations:
@@ -178,6 +184,38 @@ class TestFlowController(BaseControllersTest):
         operation = dao.try_get_operation_by_id(operation.id)
         assert operation is None
 
+    def test_launch_multiple_operations(self, simulation_launch):
+        operations = []
+        for i in range(TvbProfile.current.MAX_THREADS_NUMBER + 1):
+            operations.append(simulation_launch(self.test_user, self.test_project, 1000))
+        preparing_operations = True
+        while preparing_operations:
+            op_ready = True
+            for i in range(TvbProfile.current.MAX_THREADS_NUMBER):
+                op = dao.get_operation_by_id(operations[i].id)
+                if op.status == STATUS_PENDING:
+                    op_ready = False
+                    break
+            if op_ready:
+                preparing_operations = False
+
+        for i, operation in enumerate(operations):
+            op = dao.get_operation_by_id(operation.id)
+            if i == len(operations) - 1:
+                assert op.status == STATUS_PENDING
+            else:
+                assert op.status == STATUS_STARTED
+        while LOCKS_QUEUE.qsize() == 0:
+            pass
+
+        StandAloneClient.process_queued_operations()
+
+        op = operations[len(operations) -1]
+        while dao.get_operation_by_id(op.id).status == STATUS_PENDING:
+            pass
+        op = dao.get_operation_by_id(op.id)
+        assert op.status == STATUS_STARTED
+
     def test_remove_burst_operation_group(self, simulation_launch):
         first_op = simulation_launch(self.test_user, self.test_project, 1000, True)
         operations_group_id = first_op.fk_operation_group
@@ -188,30 +226,28 @@ class TestFlowController(BaseControllersTest):
             operation = dao.try_get_operation_by_id(operation.id)
             assert operation is None
 
-    def _asynch_launch_simple_op(self, **data):
-        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter1', 'TestAdapter1')
-        view_model = TestModel()
+    def _asynch_launch_simple_op(self):
+        adapter = TestFactory.create_adapter('tvb.tests.framework.adapters.dummy_adapter1', 'DummyAdapter1')
+        view_model = DummyModel()
         view_model.test1_val1 = 5
         view_model.test1_val2 = 6
         algo = adapter.stored_adapter
-        algo_category = dao.get_category_by_id(algo.fk_category)
-        operations, _ = self.operation_service.prepare_operations(self.test_user.id, self.test_project, algo,
-                                                                  algo_category, view_model=view_model, **data)
-        self.operation_service._send_to_cluster(operations, adapter)
-        return operations
+        operation = self.operation_service.prepare_operation(self.test_user.id, self.test_project, algo,
+                                                             view_model=view_model)
+        self.operation_service._send_to_cluster(operation, adapter)
+        return operation
 
-    def test_stop_operations(self):
-        operations = self._asynch_launch_simple_op()
-        operation = dao.get_operation_by_id(operations[0].id)
+    def test_stop_operation(self):
+        operation = self._asynch_launch_simple_op()
+        operation = dao.get_operation_by_id(operation.id)
         assert not operation.has_finished
         self.flow_c.cancel_or_remove_operation(operation.id, 0, False)
         operation = dao.get_operation_by_id(operation.id)
         assert operation.status == STATUS_CANCELED
 
-    def test_stop_operations_group(self):
-        range_param = {RANGE_PARAMETER_1: "test1_val1", 'test1_val1': {"lo": 0, "step": 2.0, "hi": 5.0}}
-        operations = self._asynch_launch_simple_op(**range_param)
-        assert 3 == len(operations)
+    def test_stop_operations_group(self, test_adapter_factory, datatype_group_factory):
+        group, _ = datatype_group_factory(status=STATUS_STARTED, store_vm=True)
+        operations = dao.get_operations_in_group(group.fk_from_operation)
         operation_group_id = 0
         for operation in operations:
             operation = dao.get_operation_by_id(operation.id)

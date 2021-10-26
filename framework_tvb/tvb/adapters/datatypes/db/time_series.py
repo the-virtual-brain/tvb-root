@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -86,6 +86,7 @@ class TimeSeriesIndex(DataType):
             self.fill_shape(datatype.data.shape)
 
     def fill_from_h5(self, h5_file):
+        super(TimeSeriesIndex, self).fill_from_h5(h5_file)
         self.time_series_type = type(h5_file).__name__.replace('H5', '')
         self.title = h5_file.title.load()
         self.start_time = h5_file.start_time.load()

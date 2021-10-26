@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,7 +34,8 @@
 """
 
 import pytest
-from tvb.tests.framework.adapters.testadapter1 import TestAdapter1Form, TestAdapter1, TestModel
+
+from tvb.tests.framework.adapters.dummy_adapter1 import DummyAdapter1Form, DummyAdapter1, DummyModel
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.adapters.exceptions import IntrospectionException
@@ -43,8 +44,8 @@ from tvb.core.entities.model import model_operation
 from tvb.core.entities.storage import dao
 from tvb.core.services.algorithm_service import AlgorithmService
 
-TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.testadapter1"
-TEST_ADAPTER_VALID_CLASS = "TestAdapter1"
+TEST_ADAPTER_VALID_MODULE = "tvb.tests.framework.adapters.dummy_adapter1"
+TEST_ADAPTER_VALID_CLASS = "DummyAdapter1"
 TEST_ADAPTER_INVALID_CLASS = "InvalidTestAdapter"
 
 
@@ -80,7 +81,6 @@ class TestAlgorithmService(TransactionalTestCase):
     def test_get_uploaders(self):
 
         result = AlgorithmService.get_upload_algorithms()
-        # Not sure if it is correct but I think there are not 29 algorithms anymore here
         assert 19 == len(result)
         found = False
         for algo in result:
@@ -98,7 +98,7 @@ class TestAlgorithmService(TransactionalTestCase):
 
     def test_get_visualizers_for_group(self, datatype_group_factory):
 
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         dt_group = dao.get_datatypegroup_by_op_group_id(group.fk_from_operation)
         result = self.algorithm_service.get_visualizers_for_group(dt_group.gid)
         # Both discrete and isocline are expected due to the 2 ranges set in the factory
@@ -142,6 +142,6 @@ class TestAlgorithmService(TransactionalTestCase):
         """
         assert isinstance(self.algorithm, model_operation.Algorithm), "Can not find Adapter!"
         adapter = self.algorithm_service.prepare_adapter(self.algorithm)
-        assert isinstance(adapter, TestAdapter1), "Adapter incorrectly built"
-        assert adapter.get_form_class() == TestAdapter1Form
-        assert adapter.get_view_model() == TestModel
+        assert isinstance(adapter, DummyAdapter1), "Adapter incorrectly built"
+        assert adapter.get_form_class() == DummyAdapter1Form
+        assert adapter.get_view_model() == DummyModel

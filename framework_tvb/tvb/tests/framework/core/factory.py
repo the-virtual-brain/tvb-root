@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -42,6 +42,7 @@ import os
 import random
 import uuid
 import tvb_data
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
@@ -57,12 +58,9 @@ from tvb.adapters.uploaders.zip_connectivity_importer import ZIPConnectivityImpo
 from tvb.adapters.uploaders.zip_surface_importer import ZIPSurfaceImporter, ZIPSurfaceImporterModel
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.entities.load import try_get_last_datatype
 from tvb.core.entities.model.model_burst import BurstConfiguration
-from tvb.core.entities.model.model_burst import RANGE_PARAMETER_1
 from tvb.core.entities.model.model_datatype import DataType
 from tvb.core.entities.model.model_operation import *
 from tvb.core.entities.storage import dao
@@ -76,6 +74,7 @@ from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import hash_password
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.surfaces import CorticalSurface
+from tvb.storage.storage_interface import StorageInterface
 
 
 class TestFactory(object):
@@ -158,39 +157,9 @@ class TestFactory(object):
         operation = Operation(view_model.gid.hex, test_user.id, test_project.id, algorithm.id,
                               status=operation_status)
         dao.store_entity(operation)
-        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
+        op_dir = StorageInterface().get_project_folder(test_project.name, str(operation.id))
         h5.store_view_model(view_model, op_dir)
         return dao.get_operation_by_id(operation.id)
-
-    @staticmethod
-    def create_group(test_user=None, test_project=None, subject="John Doe"):
-        """
-        Create a group of 2 operations, each with at least one resultant DataType.
-        """
-        if test_user is None:
-            test_user = TestFactory.create_user()
-        if test_project is None:
-            test_project = TestFactory.create_project(test_user)
-
-        adapter_inst = TestFactory.create_adapter('tvb.tests.framework.adapters.testadapter3', 'TestAdapter3')
-        adapter_inst.generic_attributes.subject = subject
-
-        view_model = adapter_inst.get_view_model()()
-        args = {RANGE_PARAMETER_1: 'param_5', 'param_5': json.dumps({constants.ATT_MINVALUE: 1,
-                                                                     constants.ATT_MAXVALUE: 2.1,
-                                                                     constants.ATT_STEP: 1})}
-        algo = adapter_inst.stored_adapter
-        algo_category = dao.get_category_by_id(algo.fk_category)
-
-        # Prepare Operations group. Execute them synchronously
-        service = OperationService()
-        operations = service.prepare_operations(test_user.id, test_project, algo, algo_category,
-                                                view_model=view_model, **args)[0]
-        service.launch_operation(operations[0].id, False, adapter_inst)
-        service.launch_operation(operations[1].id, False, adapter_inst)
-
-        resulted_dts = dao.get_datatype_in_group(operation_group_id=operations[0].fk_operation_group)
-        return resulted_dts, operations[0].fk_operation_group
 
     @staticmethod
     def create_value_wrapper(test_user, test_project=None):
@@ -202,8 +171,7 @@ class TestFactory(object):
             test_project = TestFactory.create_project(test_user, 'test_proj')
         operation = TestFactory.create_operation(test_user=test_user, test_project=test_project)
         value_wrapper = ValueWrapper(data_value="5.0", data_name="my_value", data_type="float")
-        op_dir = FilesHelper().get_project_folder(test_project, str(operation.id))
-        vw_idx = h5.store_complete(value_wrapper, op_dir)
+        vw_idx = h5.store_complete(value_wrapper, operation.id, operation.project.name)
         vw_idx.fk_from_operation = operation.id
         vw_idx = dao.store_entity(vw_idx)
         return test_project, vw_idx.gid, operation
@@ -212,13 +180,12 @@ class TestFactory(object):
     def create_local_connectivity(user, project, surface_gid):
 
         op = TestFactory.create_operation(test_user=user, test_project=project)
-        op_folder = FilesHelper().get_project_folder(project, str(op.id))
 
         wrapper_surf = CorticalSurface()
         wrapper_surf.gid = uuid.UUID(surface_gid)
         lc_ht = LocalConnectivity.from_file()
         lc_ht.surface = wrapper_surf
-        lc_idx = h5.store_complete(lc_ht, op_folder)
+        lc_idx = h5.store_complete(lc_ht, op.id, project.name)
         lc_idx.fk_surface_gid = surface_gid
         lc_idx.fk_from_operation = op.id
         dao.store_entity(lc_idx)
@@ -248,7 +215,7 @@ class TestFactory(object):
             burst.range2 = '["connectivity", null]'
             burst.fk_simulation = operation.id
             burst.simulator_gid = uuid.uuid4().hex
-            BurstService().update_burst_configuration_h5(burst)
+            BurstService().store_burst_configuration(burst)
         return dao.store_entity(burst)
 
     @staticmethod
@@ -274,7 +241,7 @@ class TestFactory(object):
         """
         importer = ABCAdapter.build_adapter_from_class(importer_class)
         if same_process:
-            TestFactory.launch_synchronously(user, project, importer, view_model)
+            TestFactory.launch_synchronously(user.id, project, importer, view_model)
         else:
             OperationService().fire_operation(importer, user, project.id, view_model=view_model)
 
@@ -360,14 +327,12 @@ class TestFactory(object):
         return TestFactory._assert_one_more_datatype(project, ConnectivityIndex, count)
 
     @staticmethod
-    def launch_synchronously(test_user, test_project, adapter_instance, view_model, algo_category=None):
+    def launch_synchronously(test_user_id, test_project, adapter_instance, view_model):
         # Avoid the scheduled execution, as this is asynch, thus launch it immediately
         service = OperationService()
         algorithm = adapter_instance.stored_adapter
-        if algo_category is None:
-            algo_category = dao.get_category_by_id(algorithm.fk_category)
-        operation = service.prepare_operations(test_user.id, test_project, algorithm, algo_category,
-                                               True, view_model=view_model)[0][0]
+
+        operation = service.prepare_operation(test_user_id, test_project, algorithm, True, view_model)
         service.initiate_prelaunch(operation, adapter_instance)
 
         operation = dao.get_operation_by_id(operation.id)

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,6 +36,7 @@ A displayer for the cross coherence of a time series.
 """
 
 import json
+
 from tvb.adapters.datatypes.db.spectral import CoherenceSpectrumIndex
 from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
@@ -88,9 +89,7 @@ class CrossCoherenceVisualizer(ABCMappedArraySVGVisualizer):
         # type: (CrossCoherenceVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
 
-        coherence_gid = view_model.datatype
-        coherence_index = self.load_entity_by_gid(coherence_gid)
-        with h5.h5_file_for_index(coherence_index) as datatype_h5:
+        with h5.h5_file_for_gid(view_model.datatype) as datatype_h5:
             # get data from coherence datatype h5, convert to json
             frequency = ABCDisplayer.dump_with_precision(datatype_h5.frequency.load().flat)
             array_data = datatype_h5.array_data[:]

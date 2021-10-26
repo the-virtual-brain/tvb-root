@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,14 +32,13 @@ The ProjectionMatrices DataTypes.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from enum import Enum
 
 from tvb.basic.readers import try_get_absolute_path, FileReader
 from tvb.datatypes import surfaces, sensors
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray
+from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Final
 
 
-class ProjectionsType(Enum):
+class ProjectionsTypeEnum(TVBEnum):
     EEG = "projEEG"
     MEG = "projMEG"
     SEEG = "projSEEG"
@@ -51,7 +50,7 @@ class ProjectionMatrix(HasTraits):
     The projection is between a source of type CorticalSurface and a set of Sensors.
     """
 
-    projection_type = Attr(field_type=str)
+    projection_type = Final(field_type=str)
 
     brain_skull = Attr(
         field_type=surfaces.BrainSkull,
@@ -107,7 +106,7 @@ class ProjectionSurfaceEEG(ProjectionMatrix):
     Specific projection, from a CorticalSurface to EEG sensors.
     """
 
-    projection_type = Attr(field_type=str, default=ProjectionsType.EEG.value)
+    projection_type = Final(field_type=str, default=ProjectionsTypeEnum.EEG.value)
 
     sensors = Attr(field_type=sensors.SensorsEEG)
 
@@ -122,7 +121,7 @@ class ProjectionSurfaceMEG(ProjectionMatrix):
     Specific projection, from a CorticalSurface to MEG sensors.
     """
 
-    projection_type = Attr(field_type=str, default=ProjectionsType.MEG.value)
+    projection_type = Final(field_type=str, default=ProjectionsTypeEnum.MEG.value)
 
     sensors = Attr(field_type=sensors.SensorsMEG)
 
@@ -136,7 +135,7 @@ class ProjectionSurfaceSEEG(ProjectionMatrix):
     Specific projection, from a CorticalSurface to SEEG sensors.
     """
 
-    projection_type = Attr(field_type=str, default=ProjectionsType.SEEG.value)
+    projection_type = Final(field_type=str, default=ProjectionsTypeEnum.SEEG.value)
 
     sensors = Attr(field_type=sensors.SensorsInternal)
 
@@ -151,10 +150,10 @@ def make_proj_matrix(proj_type):
     :param proj_type: one of the supported subtypes
     :return: Instance of the corresponding projectiion matrix class, or None
     """
-    if proj_type == ProjectionsType.EEG.value:
+    if proj_type == ProjectionsTypeEnum.EEG.value:
         return ProjectionSurfaceEEG()
-    elif proj_type == ProjectionsType.MEG.value:
+    elif proj_type == ProjectionsTypeEnum.MEG.value:
         return ProjectionSurfaceMEG()
-    elif proj_type == ProjectionsType.SEEG.value:
+    elif proj_type == ProjectionsTypeEnum.SEEG.value:
         return ProjectionSurfaceSEEG()
     return None

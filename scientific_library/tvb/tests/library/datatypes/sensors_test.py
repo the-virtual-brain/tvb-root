@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -31,9 +31,9 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 
-import pytest
 import numpy
-from tvb.datatypes.sensors import SensorTypes
+from tvb.datatypes.sensors import SensorTypesEnum
+
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes import sensors
 from tvb.datatypes.surfaces import SkinAir
@@ -69,10 +69,13 @@ class TestSensors(BaseTestCase):
         dummy_surf = SkinAir()
         dummy_surf.vertices = numpy.array(list(range(30))).reshape(10, 3).astype('f')
         dummy_surf.triangles = numpy.array(list(range(9))).reshape(3, 3)
+        dummy_surf.triangle_normals = numpy.array(list(range(9))).reshape(3, 3)
+        dummy_surf.vertex_normals = numpy.array(list(range(30))).reshape(10, 3).astype('f')
         dummy_surf.configure()
+
         try:
             dt.sensors_to_surface(dummy_surf)
-            self.fail("Should have failed for this simple surface!")
+            pytest.fail("Should have failed for this simple surface!")
         except Exception:
             pass
 
@@ -85,7 +88,7 @@ class TestSensors(BaseTestCase):
         assert dt.locations.shape == (65, 3)
         assert dt.number_of_sensors == 65
         assert dt.orientations is None
-        assert dt.sensors_type == SensorTypes.TYPE_EEG.value
+        assert dt.sensors_type == SensorTypesEnum.TYPE_EEG.value
 
     def test_sensorsmeg(self):
         dt = sensors.SensorsMEG.from_file()
@@ -96,7 +99,7 @@ class TestSensors(BaseTestCase):
         assert dt.locations.shape == (151, 3)
         assert dt.number_of_sensors == 151
         assert dt.orientations.shape == (151, 3)
-        assert dt.sensors_type == SensorTypes.TYPE_MEG.value
+        assert dt.sensors_type == SensorTypesEnum.TYPE_MEG.value
 
     def test_sensorsinternal(self):
         dt = sensors.SensorsInternal.from_file()
@@ -107,4 +110,4 @@ class TestSensors(BaseTestCase):
         assert dt.locations.shape == (103, 3)
         assert dt.number_of_sensors == 103
         assert dt.orientations is None
-        assert dt.sensors_type == SensorTypes.TYPE_INTERNAL.value
+        assert dt.sensors_type == SensorTypesEnum.TYPE_INTERNAL.value

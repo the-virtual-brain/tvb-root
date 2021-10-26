@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -183,53 +183,6 @@ function VS_SetHemisphere(h) {
             bufferSetsMask[i] = VS_hemisphere_chunk_mask[i];
         }
     }
-}
-
-function VS_StartPortletPreview(urlBaseAdapter, urlVerticesList, urlTrianglesList, urlNormalsList, noOfMeasurePoints,
-                                urlRegionMapList, boundaryURL, minActivity, maxActivity, oneToOneMapping) {
-    isPreview = true;
-    pageSize = 1;
-    activitiesData = HLPR_readJSONfromFile(readDataSplitPageURL(urlBaseAdapter, 0, 1, selectedStateVar, selectedMode, TIME_STEP));
-    if (oneToOneMapping === 'True') {
-        isOneToOneMapping = true;
-    }
-    activityMin = parseFloat(minActivity);
-    activityMax = parseFloat(maxActivity);
-
-    NO_OF_MEASURE_POINTS = noOfMeasurePoints;
-    for (let i = 0; i < NO_OF_MEASURE_POINTS; i++) {
-        VS_selectedRegions.push(i);
-    }
-
-    const canvas = document.getElementById(BRAIN_CANVAS_ID);
-    customInitGL(canvas);
-    initShaders();
-    if (urlVerticesList) {
-        brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList), $.parseJSON(urlTrianglesList),
-            $.parseJSON(urlRegionMapList), false);
-    }
-
-    ColSch_initColorSchemeComponent(activityMin, activityMax);
-    LEG_initMinMax(activityMin, activityMax);
-    LEG_generateLegendBuffers();
-
-    VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
-    regionBoundariesController = new RB_RegionBoundariesController(boundaryURL);
-
-    // Enable keyboard and mouse interaction
-    canvas.onkeydown = GL_handleKeyDown;
-    canvas.onkeyup = GL_handleKeyUp;
-    canvas.onmousedown = customMouseDown;
-    canvas.oncontextmenu = function () {
-        return false;
-    };
-    $(document).on('mousemove', GL_handleMouseMove);
-    $(document).on('mouseup', customMouseUp);
-    // We use drawScene instead of tick because tick's performance is worse.
-    // Portlet previews are static, not movies. Tick's movie update is not required.
-    // A call to updateColors has to be made to initialize the color buffer.
-    updateColors(0);
-    setInterval(drawScene, TICK_STEP);
 }
 
 function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,

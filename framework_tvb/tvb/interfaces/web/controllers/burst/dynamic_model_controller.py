@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,22 +33,22 @@
 """
 import json
 import threading
-
 import cherrypy
 import numpy
+
 import tvb.core.entities.model.model_burst as model_burst
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.integrator_forms import get_form_for_integrator
-from tvb.adapters.simulator.model_forms import get_ui_name_to_model, get_form_for_model
+from tvb.adapters.simulator.equation_forms import get_form_for_equation, TemporalEquationsEnum
+from tvb.adapters.simulator.integrator_forms import get_form_for_integrator, NoiseTypesEnum
+from tvb.adapters.simulator.model_forms import get_form_for_model, ModelsEnum
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.simulator_fragments import SimulatorModelFragment, SimulatorIntegratorFragment
-from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_integrator_dict
 from tvb.adapters.visualizers.phase_plane_interactive import phase_space_d3
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.core import utils
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel
+from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel, IntegratorStochasticViewModel, \
+    IntegratorViewModelsEnum
 from tvb.core.entities.storage import dao
 from tvb.core.neotraits.forms import StrField
 from tvb.core.neotraits.view_model import Str
@@ -121,8 +121,6 @@ class DynamicModelController(BurstBaseController):
 
     def __init__(self):
         BurstBaseController.__init__(self)
-        self.available_models = get_ui_name_to_model()
-        self.available_integrators = get_ui_name_to_integrator_dict()
         self.cache = SessionCache()
         # Work around a numexpr thread safety issue. See TVB-1639.
         self.traj_lock = threading.Lock()
@@ -145,7 +143,7 @@ class DynamicModelController(BurstBaseController):
         model_name_fragment = _InputTreeFragment()
         model_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorModelFragment())
         integrator_fragment = self.algorithm_service.prepare_adapter_form(form_instance=SimulatorIntegratorFragment())
-        model_description = configure_matjax_doc(self.available_models)
+        model_description = configure_matjax_doc()
 
         params = {
             'title': "Dynamic model",
@@ -171,7 +169,7 @@ class DynamicModelController(BurstBaseController):
         Resets the phase plane and returns the ui model for the slider area.
         """
         dynamic = self.get_cached_dynamic(dynamic_gid)
-        dynamic.model = self.available_models[name]()
+        dynamic.model = TVBEnum.string_to_enum(list(ModelsEnum), name).instance
         dynamic.model.configure()
         self._configure_integrator_noise(dynamic.integrator, dynamic.model)
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
@@ -183,25 +181,6 @@ class DynamicModelController(BurstBaseController):
             'axis_sliders_fragment': self._axis_sliders_fragment(dynamic_gid)
         }
 
-    @expose_json
-    def integrator_changed(self, dynamic_gid, **kwargs):
-        # TODO: display form for integrator configuration
-        # adapter = _IntegratorFragmentAdapter()
-        # tree = adapter.convert_ui_inputs(kwargs, validation_required=False)
-        # integrator_name = tree['integrator']
-        # integrator_parameters = tree['integrator_parameters']
-
-        # noise_framework.build_noise(integrator_parameters)
-        integrator = self.available_integrators[kwargs['integrator']]()
-
-        dynamic = self.get_cached_dynamic(dynamic_gid)
-        dynamic.integrator = integrator
-        dynamic.model.integrator = integrator
-        dynamic.model.configure()
-        self._configure_integrator_noise(integrator, dynamic.model)
-
-        dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
-
     def _update_integrator(self, dynamic, integrator):
         dynamic.integrator = integrator
         dynamic.model.integrator = integrator
@@ -209,38 +188,42 @@ class DynamicModelController(BurstBaseController):
         self._configure_integrator_noise(integrator, dynamic.model)
         dynamic.phase_plane = phase_space_d3(dynamic.model, dynamic.integrator)
 
-    def _change_integrator(self, dynamic, field_value, mapping_key):
-        integrator = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
+    def _change_integrator(self, dynamic, field_value):
+        integrator = TVBEnum.string_to_enum(list(IntegratorViewModelsEnum), field_value).instance
         self._update_integrator(dynamic, integrator)
 
-    def _change_noise(self, dynamic, field_value, mapping_key):
-        noise = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
+    def _change_noise(self, dynamic, field_value):
+        noise = TVBEnum.string_to_enum(list(NoiseTypesEnum), field_value).instance
         integrator = dynamic.integrator
         integrator.noise = noise
         self._update_integrator(dynamic, integrator)
 
-    def _change_equation(self, dynamic, field_value, mapping_key):
-        equation = SubformHelper.get_class_for_field_value(field_value, mapping_key)()
+    def _change_equation(self, dynamic, field_value):
+        equation = TVBEnum.string_to_enum(list(TemporalEquationsEnum), field_value).instance
         integrator = dynamic.integrator
         integrator.noise.b = equation
         self._update_integrator(dynamic, integrator)
 
-    def _update_integrator_on_dynamic(self, dynamic_gid, field_value, mapping_key):
+    def _update_integrator_on_dynamic(self, dynamic_gid, field_value):
         dynamic = self.get_cached_dynamic(dynamic_gid)
-        if mapping_key == SubformHelper.FormToConfigEnum.INTEGRATOR.name:
-            self._change_integrator(dynamic, field_value, mapping_key)
-        if mapping_key == SubformHelper.FormToConfigEnum.NOISE.name:
-            self._change_noise(dynamic, field_value, mapping_key)
-        if mapping_key == SubformHelper.FormToConfigEnum.EQUATION.name:
-            self._change_equation(dynamic, field_value, mapping_key)
+        if field_value in list(map(str, IntegratorViewModelsEnum)):
+            self._change_integrator(dynamic, field_value)
+            return IntegratorViewModelsEnum, get_form_for_integrator
+        elif field_value in list(map(str, NoiseTypesEnum)):
+            self._change_noise(dynamic, field_value)
+            return NoiseTypesEnum, get_form_for_noise
+        elif field_value in list(map(str, TemporalEquationsEnum)):
+            self._change_equation(dynamic, field_value)
+            return TemporalEquationsEnum, get_form_for_equation
 
     @cherrypy.expose
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def refresh_subform(self, dynamic_gid, field_value, mapping_key):
-        self._update_integrator_on_dynamic(dynamic_gid, field_value, mapping_key)
-        subform = SubformHelper.get_subform_for_field_value(field_value, mapping_key)
+    def refresh_subform(self, dynamic_gid, field_value):
+        enum_class, get_form_method = self._update_integrator_on_dynamic(dynamic_gid, field_value)
+        integrator_class = TVBEnum.string_to_enum(list(enum_class), field_value).value
+        subform = get_form_method(integrator_class)()
         return {'adapter_form': subform}
 
     @cherrypy.expose
@@ -248,17 +231,17 @@ class DynamicModelController(BurstBaseController):
         dynamic = self.get_cached_dynamic(dynamic_gid)
         integrator = dynamic.integrator
         changed_params = list(param.keys())
-        if type == SubformHelper.FormToConfigEnum.INTEGRATOR.name:
+        if type == 'INTEGRATOR':
             integrator_form_class = get_form_for_integrator(integrator.__class__)
             integrator_form = integrator_form_class()
             integrator_form.fill_from_post(param)
             integrator_form.fill_trait_partially(integrator, changed_params)
-        if type == SubformHelper.FormToConfigEnum.NOISE.name:
+        if type == 'NOISE':
             noise_form_class = get_form_for_noise(integrator.noise.__class__)
             noise_form = noise_form_class()
             noise_form.fill_from_post(param)
             noise_form.fill_trait_partially(integrator.noise, changed_params)
-        if type == SubformHelper.FormToConfigEnum.EQUATION.name:
+        if type == 'EQUATION':
             eq_form_class = get_form_for_equation(integrator.noise.b.__class__)
             eq_form = eq_form_class()
             eq_form.fill_from_post(param)

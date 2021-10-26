@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,10 +32,11 @@ import json
 import uuid
 from collections import namedtuple
 import numpy
+
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom.h5 import REGISTRY
 from tvb.basic.neotraits.ex import TraitError
-from tvb.basic.neotraits.api import List, Attr
+from tvb.basic.neotraits.api import List, Attr, TVBEnum
 # TODO: remove dependency
 from tvb.core.neotraits.db import HasTraitsIndex
 from tvb.core.neotraits.view_model import DataTypeGidAttr
@@ -80,7 +81,7 @@ class Field(object):
         return not self.errors
 
     def _from_post(self):
-        if self.required and (self.unvalidated_data is None or len(self.unvalidated_data.strip()) == 0):
+        if self.required and (self.unvalidated_data is None or len(str(self.unvalidated_data).strip()) == 0):
             raise ValueError('Field required')
         self.data = self.unvalidated_data
 
@@ -293,13 +294,11 @@ class SelectField(TraitField):
         if len(choices) > 4:
             self.template = 'form_fields/select_field.html'
 
-    def __init__(self, trait_attribute, name=None, disabled=False, choices=None, display_none_choice=True,
-                 subform=None, display_subform=True):
+    def __init__(self, trait_attribute, name=None, disabled=False, display_none_choice=True,
+                 subform=None, display_subform=True, ui_values=None):
         super(SelectField, self).__init__(trait_attribute, name, disabled)
-        if choices:
-            self.choices = choices
-        else:
-            self.choices = {choice: choice for choice in trait_attribute.choices}
+
+        self.choices = list(trait_attribute.choices)
         if not self.choices:
             raise ValueError('no choices for field')
         self.display_none_choice = display_none_choice
@@ -308,6 +307,7 @@ class SelectField(TraitField):
             self.subform_field = FormField(subform, self.subform_prefix + self.name)
             self.display_subform = display_subform
         self._prepare_template(self.choices)
+        self.ui_values = ui_values
 
     @property
     def value(self):
@@ -327,23 +327,93 @@ class SelectField(TraitField):
                     checked=self.data is None
                 )
 
+        choices = self.choices if self.ui_values is None else self.ui_values
+
         for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=choice,
-                label=str(choice).title(),
-                checked=self.value == self.choices.get(choice)
+                label=str(choices[i]).title(),
+                checked=self.value == choice or (self.value == choice.value if hasattr(choice, 'value') else False)
             )
 
     def _from_post(self):
         super(SelectField, self)._from_post()
 
-        if self.unvalidated_data != self.missing_value and self.choices.get(self.unvalidated_data) is None\
+        data_as_enum = TVBEnum.string_to_enum(self.choices, self.unvalidated_data)
+        if self.unvalidated_data != self.missing_value and data_as_enum is None \
                 and (self.unvalidated_data is not None or self.display_none_choice is False):
 
             raise ValueError("the entered value is not among the choices for this field!")
 
-        self.data = self.choices.get(self.unvalidated_data)
+        self.data = data_as_enum
+
+
+class DynamicSelectField(TraitField):
+    template = 'form_fields/radio_field.html'
+    missing_value = 'explicit-None-value'
+    subform_prefix = 'subform_'
+
+    def _prepare_template(self, choices):
+        if len(choices) > 4:
+            self.template = 'form_fields/select_field.html'
+
+    def __init__(self, trait_attribute, name=None, disabled=False, choices=None, display_none_choice=True,
+                 subform=None, display_subform=True, ui_values=None):
+        super(DynamicSelectField, self).__init__(trait_attribute, name, disabled)
+        self.choices = choices
+        if not self.choices:
+            raise ValueError('no choices for field')
+        self.display_none_choice = display_none_choice
+        self.subform_field = None
+        if subform:
+            self.subform_field = FormField(subform, self.subform_prefix + self.name)
+            self.display_subform = display_subform
+        self._prepare_template(self.choices)
+        self.ui_values = ui_values
+
+    @property
+    def value(self):
+        if self.data is None and not self.trait_attribute.required:
+            return self.data
+        return super(DynamicSelectField, self).value
+
+    def options(self):
+        """ to be used from template, assumes self.data is set """
+        if self.display_none_choice:
+            if not self.trait_attribute.required:
+                choice = None
+                yield Option(
+                    id='{}_{}'.format(self.name, None),
+                    value=self.missing_value,
+                    label=str(choice).title(),
+                    checked=self.data is None
+                )
+
+        for i, choice in enumerate(self.choices):
+            yield Option(
+                id='{}_{}'.format(self.name, i),
+                value=str(choice),
+                label=str(choice).title(),
+                checked=self.value == choice
+            )
+
+    def _from_post(self):
+        super(DynamicSelectField, self)._from_post()
+
+        data_as_object = self.__string_to_object()
+        if self.unvalidated_data != self.missing_value and data_as_object is None \
+                and (self.unvalidated_data is not None or self.display_none_choice is False):
+
+            raise ValueError("the entered value is not among the choices for this field!")
+
+        self.data = data_as_object
+
+    def __string_to_object(self):
+        for choice in self.choices:
+            if self.unvalidated_data == str(choice):
+                return choice
+        return None
 
 
 class MultiSelectField(TraitField):
@@ -420,7 +490,7 @@ class Form(object):
 
     def get_subform_key(self):
         """
-        If the current form can be used as subform, this method should return the proper value from SubformsEnum.
+        If the current form can be used as subform, this method should return the proper value.
         """
         raise NotImplementedError
 

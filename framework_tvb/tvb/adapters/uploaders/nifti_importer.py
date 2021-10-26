@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -131,7 +131,7 @@ class NIFTIImporter(ABCUploader):
         if self.parser.units is not None and len(self.parser.units) > 0:
             volume.voxel_unit = self.parser.units[0]
 
-        return h5.store_complete(volume, self.storage_path), volume
+        return self.store_complete(volume), volume
 
     def _create_mri(self, volume, title):
         mri = StructuralMRI()
@@ -141,7 +141,7 @@ class NIFTIImporter(ABCUploader):
         mri.array_data = self.parser.parse()
         mri.volume = volume
 
-        return h5.store_complete(mri, self.storage_path)
+        return self.store_complete(mri)
 
     def _create_time_series(self, volume, title):
         # Now create TimeSeries and fill it with data from NIFTI image
@@ -160,7 +160,7 @@ class NIFTIImporter(ABCUploader):
         if self.parser.units is not None and len(self.parser.units) > 1:
             time_series.sample_period_unit = self.parser.units[1]
 
-        ts_h5_path = h5.path_for(self.storage_path, TimeSeriesVolumeH5, time_series.gid)
+        ts_h5_path = self.path_for(TimeSeriesVolumeH5, time_series.gid)
         nifti_data = self.parser.parse()
         with TimeSeriesVolumeH5(ts_h5_path) as ts_h5:
             ts_h5.store(time_series, scalars_only=True, store_references=True)
@@ -187,7 +187,7 @@ class NIFTIImporter(ABCUploader):
         rvm.connectivity = h5.load_from_index(connectivity)
         rvm.array_data = nifti_data
 
-        return h5.store_complete(rvm, self.storage_path)
+        return self.store_complete(rvm)
 
     def _apply_corrections_and_mapping(self, data, apply_corrections, mappings_file, conn_nr_regions):
 
@@ -214,7 +214,7 @@ class NIFTIImporter(ABCUploader):
 
             self.log.info("Imported RM with values in interval [%d - %d]" % (data.min(), data.max()))
             if not_matched:
-                self.log.warn("Not matched regions will be considered background: %s" % not_matched)
+                self.log.warning("Not matched regions will be considered background: %s" % not_matched)
                 if not apply_corrections:
                     raise ValidationException("Not matched regions were identified %s" % not_matched)
 

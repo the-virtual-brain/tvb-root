@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -87,6 +87,20 @@ class ConnectivityMeasureIndex(DataTypeMatrix):
                                 primaryjoin=ConnectivityIndex.gid == fk_connectivity_gid)
 
     has_surface_mapping = Column(Boolean, nullable=False, default=False)
+
+    def fill_from_h5(self, h5_file):
+        super(ConnectivityMeasureIndex, self).fill_from_h5(h5_file)
+        self.fk_connectivity_gid = h5_file.connectivity.load().hex
+        self.title = h5_file.title.load()
+        self.has_volume_mapping = False
+        self.has_surface_mapping = False
+        rm_list = dao.get_generic_entity(RegionMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
+        if rm_list:
+            self.has_surface_mapping = True
+
+        rvm_list = dao.get_generic_entity(RegionVolumeMappingIndex, self.fk_connectivity_gid, 'fk_connectivity_gid')
+        if rvm_list:
+            self.has_volume_mapping = True
 
     def fill_from_has_traits(self, datatype):
         # type: (ConnectivityMeasure)  -> None

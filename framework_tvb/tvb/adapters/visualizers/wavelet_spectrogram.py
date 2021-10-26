@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -38,12 +38,12 @@ Plot the power of a WaveletCoefficients object
 
 import json
 
-from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.adapters.datatypes.db.spectral import WaveletCoefficientsIndex
 from tvb.adapters.datatypes.db.time_series import TimeSeriesIndex
-from tvb.core.neotraits.forms import TraitDataTypeSelectField
+from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.spectral import WaveletCoefficients
 
@@ -95,23 +95,19 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
         """
          Return the required memory to run this algorithm.
          """
-        input_h5_class, input_h5_path = self.load_h5_of_gid(view_model.input_data.hex)
-        with input_h5_class(input_h5_path) as input_h5:
-            shape = input_h5.data.shape
-        return shape[0] * shape[1] * 8
+        wavelet_idx = self.load_entity_by_gid(view_model.input_data)
+        shape = wavelet_idx.shape
 
-    def generate_preview(self, view_model):
-        # type: (WaveletSpectrogramVisualizerModel) -> dict
-        return self.launch(view_model)
+        return shape[0] * shape[1] * 8
 
     def launch(self, view_model):
         # type: (WaveletSpectrogramVisualizerModel) -> dict
 
-        input_index = self.load_entity_by_gid(view_model.input_data)
-        with h5.h5_file_for_index(input_index) as input_h5:
+        with h5.h5_file_for_gid(view_model.input_data) as input_h5:
             shape = input_h5.array_data.shape
             input_sample_period = input_h5.sample_period.load()
             input_frequencies = input_h5.frequencies.load()
+            ts_index = self.load_entity_by_gid(input_h5.source.load())
 
             slices = (slice(shape[0]),
                       slice(shape[1]),
@@ -121,7 +117,6 @@ class WaveletSpectrogramVisualizer(ABCDisplayer):
             data_matrix = input_h5.power[slices]
             data_matrix = data_matrix.sum(axis=3)
 
-        ts_index = self.load_entity_by_gid(input_index.fk_source_gid)
         assert isinstance(ts_index, TimeSeriesIndex)
 
         wavelet_sample_period = ts_index.sample_period * max((1, int(input_sample_period / ts_index.sample_period)))

@@ -4,7 +4,7 @@
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -551,9 +551,9 @@
      * @returns Array of length <code>tsFra.timeLength</code> with the requested time series values
      */
     function getPerVoxelTimeSeries(selectedEntity) {
-        const x = "x=" + selectedEntity[0];
-        const y = ";y=" + selectedEntity[1];
-        const z = ";z=" + selectedEntity[2];
+        const x = "x_plane=" + selectedEntity[0];
+        const y = ";y_plane=" + selectedEntity[1];
+        const z = ";z_plane=" + selectedEntity[2];
         const mode = ";mode=" + selectedEntity[3];
         const sv = ";var=" + selectedEntity[4];
         const query = tsFrag.urlTSData + x + y + z + mode + sv;

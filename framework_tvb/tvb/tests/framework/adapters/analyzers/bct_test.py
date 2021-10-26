@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,6 +35,7 @@
 import pytest
 import os
 import tvb_data
+
 from tvb.adapters.analyzers.bct_adapters import BaseBCTModel
 from tvb.core.entities.model.model_operation import Algorithm
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
@@ -88,8 +89,8 @@ class TestBCT(TransactionalTestCase):
         algo_category = dao.get_category_by_id(self.bct_adapters[0].stored_adapter.fk_category)
 
         for adapter_instance in self.bct_adapters:
-            results = TestFactory.launch_synchronously(self.test_user, self.test_project, adapter_instance,
-                                                       view_model, algo_category)
+            results = TestFactory.launch_synchronously(self.test_user.id, self.test_project, adapter_instance,
+                                                        view_model)
             assert len(results) > 0
 
     @pytest.mark.skipif(no_matlab(), reason="Matlab or Octave not installed!")

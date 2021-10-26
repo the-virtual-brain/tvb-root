@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -41,15 +41,15 @@ simulation and the method for running the simulation.
 
 import math
 import time
-
 import numpy
-import scipy.sparse
+
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 from tvb.basic.profile import TvbProfile
 from tvb.datatypes import cortex, connectivity, patterns
 from tvb.simulator import models, integrators, monitors, coupling
 from tvb.simulator.models.base import Model
-from .backend import BaseBackend, ReferenceBackend
+
+from .backend import ReferenceBackend
 from .common import psutil
 from .history import SparseHistory
 
@@ -201,7 +201,7 @@ class Simulator(HasTraits):
         self.integrator.configure_boundaries(self.model)
         if self.model.has_nonint_vars:
             self.integrate_next_step = self.integrator.integrate_with_update
-            self.integrator.\
+            self.integrator. \
                 reconfigure_boundaries_and_clamping_for_integration_state_variables(self.model)
         else:
             self.integrate_next_step = self.integrator.integrate
@@ -237,10 +237,8 @@ class Simulator(HasTraits):
             self.number_of_nodes = self.connectivity.number_of_regions
             self.log.info('Region simulation with %d ROI nodes', self.number_of_nodes)
         else:
-            self._regmap, nc, nsc = self.backend.full_region_map(self.surface, self.connectivity)
-            self.number_of_nodes = nc + nsc
-            self.log.info('Surface simulation with %d vertices + %d non-cortical, %d total nodes',
-                          nc, nsc, self.number_of_nodes)
+            self.number_of_nodes = len(self.surface.region_mapping)
+            self.log.info('Surface simulation with %d total nodes (vertices + non-cortical)', self.number_of_nodes)
 
     def configure(self, full_configure=True):
         """Configure simulator and its components.
@@ -282,31 +280,6 @@ class Simulator(HasTraits):
         # Allow user to chain configure to another call or assignment.
         return self
 
-    def _spatialize_model_parameters(self):
-        # Make sure spatialised model parameters have the right shape (number_of_nodes, 1)
-        # todo: this exclusion list is fragile, consider excluding declarative attrs that are not arrays
-        excluded_params = ("state_variable_range", "state_variable_boundaries", "variables_of_interest",
-                           "noise", "psi_table", "nerf_table", "gid")
-        spatial_reshape = self.model.spatial_param_reshape
-        for param in type(self.model).declarative_attrs:
-            if param in excluded_params:
-                continue
-            region_parameters = getattr(self.model, param)
-            self._map_roi_param_to_surface(param, region_parameters, spatial_reshape)
-            self._reshape_model_param_for_modes(param, spatial_reshape)
-
-    def _reshape_model_param_for_modes(self, param, spatial_reshape):
-        region_parameters = getattr(self.model, param)
-        if region_parameters.size == self.number_of_nodes:
-            new_parameters = region_parameters.reshape(spatial_reshape)
-            setattr(self.model, param, new_parameters)
-
-    def _map_roi_param_to_surface(self, param, region_parameters, spatial_reshape):
-        if self.surface is not None:
-            if region_parameters.size == self.connectivity.number_of_regions:
-                new_parameters = region_parameters[self.surface.region_mapping].reshape(spatial_reshape)
-                setattr(self.model, param, new_parameters)
-
     def _prepare_local_coupling(self):
         if self.surface is None:
             return 0.0
@@ -316,7 +289,7 @@ class Simulator(HasTraits):
         """Compute delayed node coupling values."""
         coupling = self.coupling(step, self.history)
         if self.surface is not None:
-            coupling = coupling[:, self._regmap]
+            coupling = coupling[:, self.surface.region_mapping]
         return coupling
 
     def _prepare_stimulus(self):
@@ -324,7 +297,7 @@ class Simulator(HasTraits):
             stimulus = 0.0
         else:
             # TODO time grid wrong for continuations
-            time = numpy.r_[0.0 : self.simulation_length : self.integrator.dt]
+            time = numpy.r_[0.0: self.simulation_length: self.integrator.dt]
             self.stimulus.configure_time(time.reshape((1, -1)))
             stimulus = numpy.zeros((self.model.nvar, self.number_of_nodes, 1))
             self.log.debug("stimulus shape is: %s", stimulus.shape)
@@ -340,7 +313,7 @@ class Simulator(HasTraits):
     def _loop_update_history(self, step, state):
         """Update history."""
         if self.surface is not None and state.shape[1] > self.connectivity.number_of_regions:
-            state = self.backend.surface_state_to_rois(self._regmap, self.connectivity.number_of_regions, state)
+            state = self.backend.surface_state_to_rois(self.surface.region_mapping, self.connectivity.number_of_regions, state)
         self.history.update(step, state)
 
     def _loop_monitor_output(self, step, state, node_coupling):
@@ -444,7 +417,7 @@ class Simulator(HasTraits):
         elif nsig.shape == (self.number_of_nodes,):
             nsig = nsig.reshape((1, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nvar, self.number_of_nodes):
-            nsig = nsig[self.model.state_variable_mask].reshape((self.n_intvar, self.number_of_nodes, 1))
+            nsig = nsig[self.model.state_variable_mask].reshape((self.model.nintvar, self.number_of_nodes, 1))
         elif nsig.shape == (self.model.nintvar, self.number_of_nodes):
             nsig = nsig.reshape((self.model.nintvar, self.number_of_nodes, 1))
         else:
@@ -468,7 +441,7 @@ class Simulator(HasTraits):
         if self.stimulus is not None:
             if self.surface:
                 # NOTE the region mapping of the stimuli should also include the subcortical areas
-                self.stimulus.configure_space(region_mapping=numpy.r_[self.surface.region_mapping, self.connectivity.unmapped_indices(self.surface.region_mapping)])
+                self.stimulus.configure_space(region_mapping=self.surface.region_mapping)
             else:
                 self.stimulus.configure_space()
 

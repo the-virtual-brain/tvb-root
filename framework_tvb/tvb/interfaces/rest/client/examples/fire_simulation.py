@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,6 +37,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.datatypes.spectral import WindowingFunctionsEnum
 from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
@@ -98,7 +99,7 @@ def fire_simulation_example(tvb_client_instance):
         logger.info("Launch Fourier Analyzer...")
         fourier_model = FFTAdapterModel()
         fourier_model.time_series = time_series_gid
-        fourier_model.window_function = 'hamming'
+        fourier_model.window_function = WindowingFunctionsEnum.HAMMING
 
         operation_gid = tvb_client_instance.launch_operation(project_gid, FourierAdapter, fourier_model)
         logger.info("Fourier Analyzer operation has launched with gid {}".format(operation_gid))

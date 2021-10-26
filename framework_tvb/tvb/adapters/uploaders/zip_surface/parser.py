@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,7 +34,7 @@
 import os
 import re
 import numpy
-from tvb.core.entities.file.files_helper import TvbZip
+from tvb.storage.storage_interface import StorageInterface
 
 
 class ZipSurfaceParser(object):
@@ -59,12 +59,11 @@ class ZipSurfaceParser(object):
         self.hemisphere_mask = []
         self._read_vertices = 0
 
-        with TvbZip(path) as self._zipf:
-            self._read()
+        self.storage_interface = StorageInterface()
+        self._read(path)
 
-
-    def _read(self):
-        vertices, normals, triangles = self._group_by_type(sorted(self._zipf.namelist()))
+    def _read(self, path):
+        vertices, normals, triangles = self._group_by_type(sorted(self.storage_interface.get_filenames_in_zip(path)))
         if len(vertices) == 0:
             raise Exception("Cannot find vertices file.")
         if len(vertices) != len(triangles):
@@ -83,25 +82,23 @@ class ZipSurfaceParser(object):
         )
 
         if self.bi_hemispheric:
-            self._read_files(vertices_lh, normals_lh, triangles_lh)
+            self._read_files(vertices_lh, normals_lh, triangles_lh, path)
             vertices_in_lh = self._read_vertices
-            self._read_files(vertices_rh, normals_rh, triangles_rh)
+            self._read_files(vertices_rh, normals_rh, triangles_rh, path)
             self._stack_arrays()
 
             self.hemisphere_mask = numpy.ones(len(self.vertices), dtype=numpy.bool)
             self.hemisphere_mask[0:vertices_in_lh] = 0
         else:
-            self._read_files(vertices, normals, triangles)
+            self._read_files(vertices, normals, triangles, path)
             self._stack_arrays()
             self.hemisphere_mask = numpy.zeros(len(self.vertices), dtype=numpy.bool)
-
 
     def _stack_arrays(self):
         self.vertices = numpy.vstack(self.vertices)
         self.triangles = numpy.vstack(self.triangles)
         if self.normals:
             self.normals = numpy.vstack(self.normals)
-
 
     def _group_by_type(self, names):
         vertices, normals, triangles = [], [], []
@@ -115,7 +112,6 @@ class ZipSurfaceParser(object):
                 triangles.append(name)
 
         return vertices, normals, triangles
-
 
     def _group_by_hemisph(self, names):
         """ groups by hemisphere """
@@ -136,16 +132,15 @@ class ZipSurfaceParser(object):
         else:
             return lefts, rights
 
-
-    def _read_files(self, vertices_files, normals_files, triangles_files):
+    def _read_files(self, vertices_files, normals_files, triangles_files, path):
         """
         Read vertices, normals and triangles from files.
         All files of a type are concatenated.
         """
         # we need to process vertices in parallel with triangles, so that we can offset triangle indices
         for vertices_file, triangles_file in zip(vertices_files, triangles_files):
-            vertices_file = self._zipf.open(vertices_file)
-            triangles_file = self._zipf.open(triangles_file)
+            vertices_file = self.storage_interface.open_tvb_zip(path, vertices_file)
+            triangles_file = self.storage_interface.open_tvb_zip(path, triangles_file)
 
             current_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
             self.vertices.append(current_vertices)
@@ -160,9 +155,9 @@ class ZipSurfaceParser(object):
             triangles_file.close()
 
         for normals_file in normals_files:
-            normals_file = self._zipf.open(normals_file)
+            normals_file = self.storage_interface.open_tvb_zip(path, normals_file)
 
             current_normals = numpy.loadtxt(normals_file, dtype=numpy.float32)
             self.normals.append(current_normals)
 
-            normals_file .close()
+            normals_file.close()

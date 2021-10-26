@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,25 +36,26 @@
 from tvb.adapters.datatypes.db.projections import ProjectionMatrixIndex
 from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
+from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.chain import FilterChain
-from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
-from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
 from tvb.datatypes.projections import *
-from tvb.datatypes.surfaces import CorticalSurface, Surface
+from tvb.datatypes.projections import ProjectionMatrix
+from tvb.datatypes.sensors import SensorsEEG, SensorsMEG, Sensors
+from tvb.datatypes.surfaces import Surface
 
 DEFAULT_DATASET_NAME = "ProjectionMatrix"
 
 
-def determine_projection_type(sensors_idx):
+def determine_projection_type(sensors):
     # type: (SensorsIndex) -> str
-    if sensors_idx.sensors_type == SensorsEEG.sensors_type.default:
+    if sensors.sensors_type == SensorsEEG.sensors_type.default:
         projection_matrix_type = ProjectionSurfaceEEG.projection_type.default
-    elif sensors_idx.sensors_type == SensorsMEG.sensors_type.default:
+    elif sensors.sensors_type == SensorsMEG.sensors_type.default:
         projection_matrix_type = ProjectionSurfaceMEG.projection_type.default
     else:
         projection_matrix_type = ProjectionSurfaceSEEG.projection_type.default
@@ -148,11 +149,8 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
         if view_model.surface is None:
             raise LaunchException("No source selected. Please initiate upload again and select a source.")
 
-        surface_index = self.load_entity_by_gid(view_model.surface)
-        expected_surface_shape = surface_index.number_of_vertices
-
-        sensors_index = self.load_entity_by_gid(view_model.sensors)
-        expected_sensors_shape = sensors_index.number_of_sensors
+        sensors_ht = self.load_traited_by_gid(view_model.sensors)
+        expected_sensors_shape = sensors_ht.number_of_sensors
 
         self.logger.debug("Reading projection matrix from uploaded file...")
         if view_model.projection_file.endswith(".mat"):
@@ -167,14 +165,16 @@ class ProjectionMatrixSurfaceEEGImporter(ABCUploader):
             raise LaunchException("Invalid Projection Matrix shape[0]: %d Expected: %d" % (projection_data.shape[0],
                                                                                            expected_sensors_shape))
 
+        surface_idx = self.load_entity_by_gid(view_model.surface)
+        expected_surface_shape = surface_idx.number_of_vertices
+
         if projection_data.shape[1] != expected_surface_shape:
             raise LaunchException("Invalid Projection Matrix shape[1]: %d Expected: %d" % (projection_data.shape[1],
                                                                                            expected_surface_shape))
 
-        projection_matrix_type = determine_projection_type(sensors_index)
-        surface_ht = h5.load_from_index(surface_index)
-        sensors_ht = h5.load_from_index(sensors_index)
+        surface_ht = h5.load_from_index(surface_idx)
+        projection_matrix_type = determine_projection_type(sensors_ht)
         projection_matrix = ProjectionMatrix(sources=surface_ht, sensors=sensors_ht,
                                              projection_type=projection_matrix_type,
                                              projection_data=projection_data)
-        return h5.store_complete(projection_matrix, self.storage_path)
+        return self.store_complete(projection_matrix)

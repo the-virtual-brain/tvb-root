@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -30,12 +30,13 @@
 
 
 import json
-import numpy
 
+import numpy
 from tvb.adapters.visualizers.pearson_cross_correlation import PearsonCorrelationCoefficientVisualizerForm, \
     PearsonCorrelationCoefficientVisualizerModel
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.core.adapters.abcdisplayer import URLGenerator
+from tvb.core.neocom import h5
 from tvb.datatypes.graph import CorrelationCoefficients
 
 
@@ -62,17 +63,17 @@ class PearsonEdgeBundle(ABCSpaceDisplayer):
         # type: (PearsonCorrelationCoefficientVisualizerModel) -> dict
         """Construct data for visualization and launch it."""
 
-        datatype_h5_class, datatype_h5_path = self.load_h5_of_gid(view_model.datatype.hex)
-        with datatype_h5_class(datatype_h5_path) as datatype_h5:
+        with h5.h5_file_for_gid(view_model.datatype) as datatype_h5:
             matrix_shape = datatype_h5.array_data.shape[0:2]
             ts_gid = datatype_h5.source.load()
+
         ts_index = self.load_entity_by_gid(ts_gid)
         state_list = ts_index.get_labels_for_dimension(1)
         mode_list = list(range(ts_index.data_length_4d))
 
-        ts_h5_class, ts_h5_path = self.load_h5_of_gid(ts_index.gid)
-        with ts_h5_class(ts_h5_path) as ts_h5:
+        with h5.h5_file_for_index(ts_index) as ts_h5:
             labels = self.get_space_labels(ts_h5)
+
         if not labels:
             labels = None
         pars = dict(matrix_labels=json.dumps(labels),

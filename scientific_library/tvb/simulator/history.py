@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and
-# Web-UI helpful to run brain-simulations. To use it, you also need do download
-# TheVirtualBrain-Scientific Package (for simulators). See content of the
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# analysers necessary to run brain-simulations. You can use it stand alone or
+# in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -18,7 +18,7 @@
 # program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# CITATION:
+#   CITATION:
 # When using The Virtual Brain for scientific publications, please cite it as follows:
 #
 #   Paula Sanz Leon, Stuart A. Knock, M. Marmaduke Woodman, Lia Domide,
@@ -104,7 +104,7 @@ class BaseHistory(StaticAttr):
             n_time, n_svar, n_node, n_mode = ic_shape = initial_conditions.shape
             nr = sim.connectivity.number_of_regions
             if sim.surface is not None and n_node == nr:
-                initial_conditions = initial_conditions[:, :, sim._regmap]
+                initial_conditions = initial_conditions[:, :, sim.surface.region_mapping]
                 return sim._configure_history(initial_conditions)
             elif sim.surface is None and ic_shape[1:] != sim.good_history_shape[1:]:
                 raise ValueError("Incorrect history sample shape %s, expected %s"
@@ -122,8 +122,8 @@ class BaseHistory(StaticAttr):
                         n_reg = sim.connectivity.number_of_regions
                         (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
                         region_initial_conditions = numpy.zeros((nt, ns, n_reg, nm))
-                        backend.add_at(region_initial_conditions.transpose(ax), sim._regmap, initial_conditions.transpose(ax))
-                        region_initial_conditions /= numpy.bincount(sim._regmap).reshape((-1, 1))
+                        backend.add_at(region_initial_conditions.transpose(ax), sim.surface.region_mapping, initial_conditions.transpose(ax))
+                        region_initial_conditions /= numpy.bincount(sim.surface.region_mapping).reshape((-1, 1))
                         history[:region_initial_conditions.shape[0], :, :, :] = region_initial_conditions
                     else:
                         history[:ic_shape[0], :, :, :] = initial_conditions
@@ -142,8 +142,8 @@ class BaseHistory(StaticAttr):
             n_reg = sim.connectivity.number_of_regions
             (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
             region_history = numpy.zeros((nt, ns, n_reg, nm))
-            backend.add_at(region_history.transpose(ax), sim._regmap, history.transpose(ax))
-            region_history /= numpy.bincount(sim._regmap).reshape((-1, 1))
+            backend.add_at(region_history.transpose(ax), sim.surface.region_mapping, history.transpose(ax))
+            region_history /= numpy.bincount(sim.surface.region_mapping).reshape((-1, 1))
             history = region_history
 
         inst = cls(sim.connectivity.weights, sim.connectivity.idelays,

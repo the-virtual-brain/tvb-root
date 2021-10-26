@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -28,7 +28,6 @@
 
 """
 Hindmarsh-Rose-Jirsa Epileptor model.
-
 """
 import numpy
 from .base import ModelNumbaDfun
@@ -36,7 +35,7 @@ from numba import guvectorize, float64
 from tvb.basic.neotraits.api import NArray, List, Range, Final
 
 
-@guvectorize([(float64[:],) * 20], '(n),(m)' + ',()'*17 + '->(n)', nopython=True)
+@guvectorize([(float64[:],) * 20], '(n),(m)' + ',()' * 17 + '->(n)', nopython=True)
 def _numba_dfun(y, c_pop, x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf, aa, bb, tau, modification, ydot):
     "Gufunc for Hindmarsh-Rose-Jirsa Epileptor model equations."
 
@@ -57,10 +56,10 @@ def _numba_dfun(y, c_pop, x0, Iext, Iext2, a, b, slope, tt, Kvf, c, d, r, Ks, Kf
     else:
         ydot[2] = 0.0
     if modification[0]:
-        h =  x0[0] + 3/(1 + numpy.exp(-(y[0]+0.5)/0.1))
+        h = x0[0] + 3 / (1 + numpy.exp(-(y[0] + 0.5) / 0.1))
     else:
         h = 4 * (y[0] - x0[0]) + ydot[2]
-    ydot[2] = tt[0] * (r[0] * (h - y[2]  + Ks[0] * c_pop1))
+    ydot[2] = tt[0] * (r[0] * (h - y[2] + Ks[0] * c_pop1))
 
     # population 2
     ydot[3] = tt[0] * (-y[4] + y[3] - y[3] ** 3 + Iext2[0] + bb[0] * y[5] - 0.3 * (y[2] - 3.5) + Kf[0] * c_pop2)
@@ -79,9 +78,7 @@ class Epileptor(ModelNumbaDfun):
     The Epileptor is a composite neural mass model of six dimensions which
     has been crafted to model the phenomenology of epileptic seizures.
     (see [Jirsaetal_2014]_)
-
     Equations and default parameters are taken from [Jirsaetal_2014]_.
-
           +------------------------------------------------------+
           |                         Table 1                      |
           +----------------------+-------------------------------+
@@ -109,18 +106,12 @@ class Epileptor(ModelNumbaDfun):
           +----------------------+-------------------------------+
           |              Jirsa et al. 2014                       |
           +------------------------------------------------------+
-
-
     .. figure :: img/Epileptor_01_mode_0_pplane.svg
         :alt: Epileptor phase plane
-
     .. [Jirsaetal_2014] Jirsa, V. K.; Stacey, W. C.; Quilichini, P. P.;
         Ivanov, A. I.; Bernard, C. *On the nature of seizure dynamics.* Brain,
         2014.
-
-
     Variables of interest to be used by monitors: -y[0] + y[3]
-
         .. math::
             \dot{x_{1}} &=& y_{1} - f_{1}(x_{1}, x_{2}) - z + I_{ext1} \\
             \dot{y_{1}} &=& c - d x_{1}^{2} - y{1} \\
@@ -132,7 +123,6 @@ class Epileptor(ModelNumbaDfun):
             \dot{x_{2}} &=& -y_{2} + x_{2} - x_{2}^{3} + I_{ext2} + 0.002 g - 0.3 (z-3.5) \\
             \dot{y_{2}} &=& 1 / \tau (-y_{2} + f_{2}(x_{2}))\\
             \dot{g} &=& -0.01 (g - 0.1 x_{1})
-
     where:
         .. math::
             f_{1}(x_{1}, x_{2}) =
@@ -140,23 +130,18 @@ class Epileptor(ModelNumbaDfun):
             a x_{1}^{3} - b x_{1}^2 & \text{if } x_{1} <0\\
             -(slope - x_{2} + 0.6(z-4)^2) x_{1} &\text{if }x_{1} \geq 0
             \end{cases}
-
     and:
-
         .. math::
             f_{2}(x_{2}) =
             \begin{cases}
             0 & \text{if } x_{2} <-0.25\\
             a_{2}(x_{2} + 0.25) & \text{if } x_{2} \geq -0.25
             \end{cases}
-
     Note Feb. 2017: the slow permittivity variable can be modify to account for the time
     difference between interictal and ictal states (see [Proixetal_2014]).
-
     .. [Proixetal_2014] Proix, T.; Bartolomei, F; Chauvel, P; Bernard, C; Jirsa, V.K. *
         Permittivity coupling across brain regions determines seizure recruitment in
         partial epilepsy.* J Neurosci 2014, 34:15009-21.
-
     """
 
     a = NArray(
@@ -314,7 +299,8 @@ class Epileptor(ModelNumbaDfun):
         ydot[2] = self.tt * (self.r * (h - y[2] + self.Ks * c_pop1))
 
         # population 2
-        ydot[3] = self.tt * (-y[4] + y[3] - y[3] ** 3 + self.Iext2 + self.bb * y[5] - 0.3 * (y[2] - 3.5) + self.Kf * c_pop2)
+        ydot[3] = self.tt * (
+                -y[4] + y[3] - y[3] ** 3 + self.Iext2 + self.bb * y[5] - 0.3 * (y[2] - 3.5) + self.Kf * c_pop2)
         if_ydot4 = 0
         else_ydot4 = self.aa * (y[3] + 0.25)
         ydot[4] = self.tt * ((-y[4] + where(y[3] < -0.25, if_ydot4, else_ydot4)) / self.tau)
@@ -328,15 +314,12 @@ class Epileptor(ModelNumbaDfun):
         r"""
         Computes the derivatives of the state variables of the Epileptor
         with respect to time.
-
         Implementation note: we expect this version of the Epileptor to be used
         in a vectorized manner. Concretely, y has a shape of (6, n) where n is
         the number of nodes in the network. An consequence is that
         the original use of if/else is translated by calculated both the true
         and false forms and mixing them using a boolean mask.
-
         Variables of interest to be used by monitors: -y[0] + y[3]
-
             .. math::
                 \dot{x_{1}} &=& y_{1} - f_{1}(x_{1}, x_{2}) - z + I_{ext1} \\
                 \dot{y_{1}} &=& c - d x_{1}^{2} - y{1} \\
@@ -348,7 +331,6 @@ class Epileptor(ModelNumbaDfun):
                 \dot{x_{2}} &=& -y_{2} + x_{2} - x_{2}^{3} + I_{ext2} + 0.002 g - 0.3 (z-3.5) \\
                 \dot{y_{2}} &=& 1 / \tau (-y_{2} + f_{2}(x_{2}))\\
                 \dot{g} &=& -0.01 (g - 0.1 x_{1})
-
         where:
             .. math::
                 f_{1}(x_{1}, x_{2}) =
@@ -356,7 +338,6 @@ class Epileptor(ModelNumbaDfun):
                 a x_{1}^{3} - b x_{1}^2 & \text{if } x_{1} <0\\
                 -(slope - x_{2} + 0.6(z-4)^2) x_{1} &\text{if }x_{1} \geq 0
                 \end{cases}
-
         and:
             .. math::
                 f_{2}(x_{2}) =
@@ -364,49 +345,47 @@ class Epileptor(ModelNumbaDfun):
                 0 & \text{if } x_{2} <-0.25\\
                 a_{2}(x_{2} + 0.25) & \text{if } x_{2} \geq -0.25
                 \end{cases}
-
         """
         x_ = x.reshape(x.shape[:-1]).T
         c_ = c.reshape(c.shape[:-1]).T
         Iext = self.Iext + local_coupling * x[0, :, 0]
         deriv = _numba_dfun(x_, c_,
-                         self.x0, Iext, self.Iext2, self.a, self.b, self.slope, self.tt, self.Kvf,
-                         self.c, self.d, self.r, self.Ks, self.Kf, self.aa, self.bb, self.tau, self.modification)
+                            self.x0, Iext, self.Iext2, self.a, self.b, self.slope, self.tt, self.Kvf,
+                            self.c, self.d, self.r, self.Ks, self.Kf, self.aa, self.bb, self.tau, self.modification)
         return deriv.T[..., numpy.newaxis]
 
 
 class Epileptor2D(ModelNumbaDfun):
     r"""
         Two-dimensional reduction of the Epileptor.
-        
+
         .. moduleauthor:: courtiol.julie@gmail.com
-        
-        Taking advantage of time scale separation and focusing on the slower time scale, 
-        the five-dimensional Epileptor reduces to a two-dimensional system (see [Proixetal_2014, 
+
+        Taking advantage of time scale separation and focusing on the slower time scale,
+        the five-dimensional Epileptor reduces to a two-dimensional system (see [Proixetal_2014,
         Proixetal_2017]).
-        
+
         Note: the slow permittivity variable can be modify to account for the time
         difference between interictal and ictal states (see [Proixetal_2014]).
-        
+
         Equations and default parameters are taken from [Proixetal_2014]:
-        
+
         .. math::
             \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
             \dot{z_{i}} &=& r(h - z_{i})
-        
+
         with
             h =
             \begin{cases}
             x_{0} + 3 / (exp((x_{1} + 0.5)/0.1)) & \text{if } modification\\
             4 (x_{1,i} - x_{0}) & \text{else }
             \end{cases}
-
         References:
             [Proixetal_2014] Proix, T.; Bartolomei, F; Chauvel, P; Bernard, C; Jirsa, V.K. *
-            Permittivity coupling across brain regions determines seizure recruitment in 
+            Permittivity coupling across brain regions determines seizure recruitment in
             partial epilepsy.* J Neurosci 2014, 34:15009-21.
-            
-            [Proixetal_2017] Proix, T.; Bartolomei, F; Guye, M.; Jirsa, V.K. *Individual brain 
+
+            [Proixetal_2017] Proix, T.; Bartolomei, F; Guye, M.; Jirsa, V.K. *Individual brain
             structure and modelling predict seizure propagation.* Brain 2017, 140; 641–654.
     """
 
@@ -530,13 +509,10 @@ class Epileptor2D(ModelNumbaDfun):
         r"""
         Computes the derivatives of the state-variables of the Epileptor 2D
         with respect to time.
-
         Equations and default parameters are taken from [Proixetal_2014]:
-
         .. math::
             \dot{x_{1,i}} &=& - x_{1,i}^{3} - 2x_{1,i}^{2}  + 1 - z_{i} + I_{ext1,i} \\
             \dot{z_{i}} &=& r(h - z_{i})
-
         with
             h =
             \begin{cases}
@@ -549,12 +525,12 @@ class Epileptor2D(ModelNumbaDfun):
         c_ = c.reshape(c.shape[:-1]).T
         Iext = self.Iext + local_coupling * x[0, :, 0]
         deriv = _numba_dfun_epi2d(x_, c_,
-                            self.x0, Iext, self.a, self.b, self.slope, self.c,
-                            self.d, self.r, self.Kvf, self.Ks, self.tt, self.modification)
+                                  self.x0, Iext, self.a, self.b, self.slope, self.c,
+                                  self.d, self.r, self.Kvf, self.Ks, self.tt, self.modification)
         return deriv.T[..., numpy.newaxis]
 
 
-@guvectorize([(float64[:],) * 15], '(n),(m)' + ',()'* 12 + '->(n)', nopython=True)
+@guvectorize([(float64[:],) * 15], '(n),(m)' + ',()' * 12 + '->(n)', nopython=True)
 def _numba_dfun_epi2d(y, c_pop, x0, Iext, a, b, slope, c, d, r, Kvf, Ks, tt, modification, ydot):
     "Gufunction for Epileptor 2D model equations."
 

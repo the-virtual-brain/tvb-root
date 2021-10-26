@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,13 +34,11 @@ Test for tvb.simulator.models module
 .. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
 
 """
-
-from tvb.tests.library.base_testcase import BaseTestCase
+import numpy
 from tvb.basic.neotraits.api import Final, List
 from tvb.simulator import models
 from tvb.simulator.models.base import Model
-from tvb.dsl.LEMS2python import load_model as load_lems_model, render_model
-import numpy
+from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class TestBoundsModel(Model):
@@ -198,7 +196,7 @@ class TestModels(BaseTestCase):
         """
         model = models.WilsonCowan()
         self._validate_initialization(model, 2)
-        self._test_steady_state(model, numpy.r_[0.474, 0.256])
+        self._test_steady_state(model, numpy.r_[0.461, 0.243])
 
     def test_g2d(self):
         """
@@ -282,6 +280,13 @@ class TestModels(BaseTestCase):
         self._validate_initialization(model, 1)
         self._test_steady_state(model, numpy.r_[0.452846])
 
+    def test_deco_balanced_exc_inh(self):
+        """
+        """
+        model = models.DecoBalancedExcInh()
+        self._validate_initialization(model, 2)
+        self._test_steady_state(model, numpy.r_[0.416673, 0.078865])
+
     def test_zetterberg_jansen(self):
         """
         """
@@ -341,23 +346,3 @@ class TestModels(BaseTestCase):
 
         model = models.DumontGutkin()
         self._validate_initialization(model, 8)
-
-
-class TestDSLModels(BaseTestCase):
-
-    def test_load_model(self):
-        model, _ = load_lems_model('EpileptorT')
-        assert model is not None
-
-    def test_render_model(self):
-        name = 'EpileptorT'
-        model_str = render_model(name)
-        assert '_numba_dfun_EpileptorT' in model_str
-
-    def test_eval_model_str(self):
-        name = 'EpileptorT'
-        module = {}
-        exec(render_model(name), module)
-        assert issubclass(module[name], Model)
-        model = module[name]()
-        assert isinstance(model, Model)

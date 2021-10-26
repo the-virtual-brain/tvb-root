@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -47,6 +47,7 @@ from keycloak.exceptions import KeycloakError
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.services.authorization import AuthorizationManager
+from tvb.storage.kube.kube_notifier import KubeNotifier
 from tvb.core.utils import TVBJSONEncoder
 from tvb.interfaces.web.controllers import common
 
@@ -167,7 +168,7 @@ def handle_error(redirect):
                     raise
                 else:
                     log = get_logger(_LOGGER_NAME)
-                    log.warn('Redirect converted to error: ' + str(ex))
+                    log.warning('Redirect converted to error: ' + str(ex))
                     # should we do this? Are browsers following redirects in ajax?
                     raise cherrypy.HTTPError(500, str(ex))
 
@@ -199,6 +200,22 @@ def check_user(func):
             if common.get_logged_user():
                 return func(*a, **b)
         raise common.NotAuthenticated('Login Required!', redirect_url='/user')
+
+    return deco
+
+
+def check_kube_user(func):
+    @wraps(func)
+    def deco(*a, **b):
+        authorization = cherrypy.request.headers["Authorization"] if "Authorization" in cherrypy.request.headers \
+            else None
+        if not authorization:
+            raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, "Token is missing")
+        try:
+            KubeNotifier.fetch_endpoints({"Authorization": authorization})
+            return func(*a, **b)
+        except Exception as e:
+            raise cherrypy.HTTPError(HTTPStatus.UNAUTHORIZED, e)
 
     return deco
 

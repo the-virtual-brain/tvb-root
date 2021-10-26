@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,10 +34,11 @@
 
 import json
 
+from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.visualizers.surface_view import SurfaceURLGenerator
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer
-from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
+from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.local_connectivity import LocalConnectivity
@@ -102,13 +103,12 @@ class LocalConnectivityViewer(ABCDisplayer):
         params = dict(title="Local Connectivity Visualizer", extended_view=False,
                       isOneToOneMapping=False, hasRegionMap=False)
 
-        local_conn_h5_class, local_conn_h5_path = self.load_h5_of_gid(view_model.local_conn.hex)
-        with local_conn_h5_class(local_conn_h5_path) as local_conn_h5:
-            surface_gid = local_conn_h5.surface.load().hex
+        local_conn_h5 = h5.h5_file_for_gid(view_model.local_conn)
+        with local_conn_h5:
+            surface_gid = local_conn_h5.surface.load()
             min_value, max_value = local_conn_h5.get_min_max_values()
 
-        surface_h5_class, surface_h5_path = self.load_h5_of_gid(surface_gid)
-        with surface_h5_class(surface_h5_path) as surface_h5:
+        with h5.h5_file_for_gid(surface_gid) as surface_h5:
             params.update(self._compute_surface_params(surface_h5))
 
         params['local_connectivity_gid'] = view_model.local_conn.hex

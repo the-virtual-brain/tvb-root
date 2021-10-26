@@ -1,8 +1,7 @@
-# The Jupyter licensing terms
+This project is licensed under the terms of the Modified BSD License
+(also known as New or Revised or 3-Clause BSD), as follows:
 
-Jupyter is licensed under the terms of the Modified BSD License (also known as
-New or Revised or 3-Clause BSD), as follows:
-
+- Copyright (c) 2001-2015, IPython Development Team
 - Copyright (c) 2015-, Jupyter Development Team
 
 All rights reserved.
@@ -34,20 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## About the Jupyter Development Team
 
-The Jupyter Development Team is the set of all contributors to the Jupyter
-project.  This includes all of the Jupyter subprojects. A full list with
-details is kept in the documentation directory, in the file
-`about/credits.txt`.
+The Jupyter Development Team is the set of all contributors to the Jupyter project.
+This includes all of the Jupyter subprojects.
 
 The core team that coordinates development on GitHub can be found here:
-https://github.com/ipython/.
+https://github.com/jupyter/.
 
 ## Our Copyright Policy
 
 Jupyter uses a shared copyright model. Each contributor maintains copyright
-over their contributions to Jupyter. It is important to note that these
+over their contributions to Jupyter. But, it is important to note that these
 contributions are typically only changes to the repositories. Thus, the Jupyter
-source code in its entirety is not the copyright of any single person or
+source code, in its entirety is not the copyright of any single person or
 institution.  Instead, it is the collective copyright of the entire Jupyter
 Development Team.  If individual contributors want to maintain a record of what
 changes/contributions they have specific copyright on, they should indicate

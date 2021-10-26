@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,19 +33,19 @@ This module is used to measure simulation performance with the Command Profile.
 Some standardized simulations are run and a report is generated in the console output.
 """
 
-import tvb_data
 from os import path
-from tvb.simulator.coupling import HyperbolicTangent
-from tvb.simulator.integrators import HeunDeterministic
+
+import tvb_data
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
+from tvb.core.entities.file.simulator.view_model import HeunDeterministicViewModel
 from tvb.interfaces.command.lab import *
-from tvb.simulator.models import ModelsEnum
+from tvb.simulator.coupling import HyperbolicTangent
+from tvb.simulator.models.models_enum import ModelsEnum
 
 
-def _fire_simulation(project_id, **kwargs):
+def _fire_simulation(project_id, simulator_vm):
     # Prepare a Simulator instance with defaults and configure it to use the previously loaded Connectivity
-    simulator = Simulator(**kwargs)
-    launched_operation = fire_simulation(project_id, simulator)
+    launched_operation = fire_simulation(project_id, simulator_vm)
 
     # wait for the operation to finish
     while not launched_operation.has_finished:
@@ -94,41 +94,45 @@ class Bench(object):
     FS = ' | '.join('%' + str(cw) + 's' for cw in COLW)  # builds a format string like  "| %6s | %6s | %6s ... "
     FS = '| ' + FS + ' |'
 
-    def __init__(self, model_kws, connectivities, conductions, int_dts, sim_lengths):
-        self.model_kws = model_kws
+    def __init__(self, models, connectivities, conductions, int_dts, sim_lengths, coupling=None):
+        self.models = models
         self.connectivities = connectivities
         self.conductions = conductions
         self.int_dts = int_dts
         self.sim_lengths = sim_lengths
         self.running_times = []
+        self.coupling = coupling
 
     def run(self, project_id):
-        for model_kw in self.model_kws:
+        for model in self.models:
             for conn in self.connectivities:
                 for length in self.sim_lengths:
                     for dt in self.int_dts:
                         for conduction in self.conductions:
-                            launch_args = model_kw.copy()
-                            launch_args.update({
-                                "connectivity": conn,
-                                "simulation_length": length,
-                                "integrator": HeunDeterministic(dt=dt),
-                                "conduction_speed": conduction,
-                            })
-                            operation = _fire_simulation(project_id, **launch_args)
+                            simulator_vm = SimulatorAdapterModel()
+                            simulator_vm.connectivity = conn.gid
+                            simulator_vm.model = model
+                            simulator_vm.integrator = HeunDeterministicViewModel(dt=dt)
+                            simulator_vm.conduction_speed = conduction
+                            simulator_vm.simulation_length = length
+
+                            if self.coupling:
+                                simulator_vm.coupling = self.coupling
+
+                            operation = _fire_simulation(project_id, simulator_vm)
                             self.running_times.append(operation.completion_date - operation.start_date)
 
     def report(self):
         i = 0
         print(HEADER)
         # use the same iteration order as run_benchmark to interpret running_times
-        for model_kw in self.model_kws:
+        for model in self.models:
             for conn in self.connectivities:
                 for length in self.sim_lengths:
                     for dt in self.int_dts:
                         for conduction in self.conductions:
                             timestr = str(self.running_times[i])[2:-5]
-                            print(self.FS % (model_kw['model'].__class__.__name__, length,
+                            print(self.FS % (type(model).__name__, length,
                                              conn.number_of_regions, conduction, dt, timestr))
                             print(self.LINE)
                             i += 1
@@ -142,10 +146,7 @@ def main():
     prj, connectivities = _create_bench_project()
 
     g2d_epi = Bench(
-        model_kws=[
-            {"model": ModelsEnum.GENERIC_2D_OSCILLATOR.get_class()()},
-            {"model": ModelsEnum.EPILEPTOR.get_class()()},
-        ],
+        models=[ModelsEnum.GENERIC_2D_OSCILLATOR.instance, ModelsEnum.EPILEPTOR.instance],
         connectivities=connectivities,
         conductions=[30.0, 3.0],
         int_dts=[0.1, 0.05],
@@ -153,13 +154,12 @@ def main():
     )
 
     larter = Bench(
-        model_kws=[
-            {"model": ModelsEnum.LARTER_BREAKSPEAR.get_class()(), "coupling": HyperbolicTangent()},
-        ],
+        models=[ModelsEnum.LARTER_BREAKSPEAR.instance],
         connectivities=connectivities,
         conductions=[10.0],
         int_dts=[0.2, 0.1],
-        sim_lengths=[10000]
+        sim_lengths=[10000],
+        coupling=HyperbolicTangent()
     )
 
     print('Generic2dOscillator and Epileptor')

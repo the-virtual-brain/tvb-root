@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -73,17 +73,29 @@ class SimulatorContext(object):
 
         return session_stored_simulator, is_simulator_copy, is_simulator_load, is_branch
 
-    def add_session_stored_simulator(self, simulator):
+    def set_simulator(self, simulator=None):
         # type: (SimulatorAdapterModel) -> None
-        common.add2session(self.KEY_SIMULATOR_CONFIG, simulator)
+        """
+        Create a new simulator instance only if one does not exist in the context.
+        """
+        if not simulator and not self.simulator:
+            simulator = SimulatorAdapterModel()
+        if simulator:
+            common.add2session(self.KEY_SIMULATOR_CONFIG, simulator)
+
+    def set_burst_config(self, burst_config=None):
+        # type: (BurstConfiguration) -> None
+        """
+        Create a new burst instance only if one does not exist in the context.
+        """
+        if not burst_config and not self.burst_config:
+            burst_config = BurstConfiguration(self.project.id)
+        if burst_config:
+            common.add2session(self.KEY_BURST_CONFIG, burst_config)
 
     def add_last_loaded_form_url_to_session(self, last_loaded_form_url):
         # type: (str) -> None
         common.add2session(self.KEY_LAST_LOADED_FORM_URL, last_loaded_form_url)
-
-    def add_burst_config_to_session(self, burst_config):
-        # type: (BurstConfiguration) -> None
-        common.add2session(self.KEY_BURST_CONFIG, burst_config)
 
     def remove_burst_config_from_session(self):
         common.remove_from_session(self.KEY_BURST_CONFIG)
@@ -94,8 +106,8 @@ class SimulatorContext(object):
 
     def init_session_at_burst_loading(self, burst_config, simulator, last_loaded_form_url):
         # type: (BurstConfiguration, SimulatorAdapterModel, str) -> None
-        self.add_burst_config_to_session(burst_config)
-        self.add_session_stored_simulator(simulator)
+        self.set_burst_config(burst_config)
+        self.set_simulator(simulator)
         self.add_last_loaded_form_url_to_session(last_loaded_form_url)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, True)
         common.add2session(self.KEY_IS_SIMULATOR_COPY, False)
@@ -108,15 +120,15 @@ class SimulatorContext(object):
 
     def init_session_at_copy_preparation(self, burst_config, simulator, last_loaded_form_url):
         # type: (BurstConfiguration, SimulatorAdapterModel, str) -> None
-        self.add_burst_config_to_session(burst_config)
-        self.add_session_stored_simulator(simulator)
+        self.set_burst_config(burst_config)
+        self.set_simulator(simulator)
         self.add_last_loaded_form_url_to_session(last_loaded_form_url)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)
 
     def init_session_at_sim_reset(self, burst_config, last_loaded_form_url):
         # type: (BurstConfiguration, str) -> None
-        self.add_burst_config_to_session(burst_config)
-        self.add_session_stored_simulator(None)
+        self.set_burst_config(burst_config)
+        self.set_simulator(SimulatorAdapterModel())
         self.add_last_loaded_form_url_to_session(last_loaded_form_url)
         common.add2session(self.KEY_IS_SIMULATOR_COPY, False)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)
@@ -124,8 +136,8 @@ class SimulatorContext(object):
 
     def init_session_at_sim_config_from_zip(self, burst_config, simulator, last_loaded_form_url):
         # type: (BurstConfiguration, SimulatorAdapterModel, str) -> None
-        self.add_burst_config_to_session(burst_config)
-        self.add_session_stored_simulator(simulator)
+        self.set_burst_config(burst_config)
+        self.set_simulator(simulator)
         self.add_last_loaded_form_url_to_session(last_loaded_form_url)
         common.add2session(self.KEY_IS_SIMULATOR_COPY, True)
         common.add2session(self.KEY_IS_SIMULATOR_LOAD, False)

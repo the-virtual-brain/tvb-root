@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -29,14 +29,16 @@
 
 import numpy
 
-from tvb.adapters.simulator.equation_forms import get_ui_name_to_monitor_equation_dict, HRFKernelEquation
+from tvb.adapters.simulator.equation_forms import BoldMonitorEquationsEnum
+from tvb.basic.neotraits.api import EnumAttr
 from tvb.core.entities.file.simulator.view_model import *
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField, FloatField, StrField
 from tvb.core.neotraits.forms import SelectField, TraitDataTypeSelectField
-from tvb.datatypes.projections import ProjectionsType
-from tvb.datatypes.sensors import SensorTypes
+from tvb.datatypes.projections import ProjectionsTypeEnum
+from tvb.datatypes.sensors import SensorTypesEnum
+from tvb.simulator.monitors import DefaultMasks
 
 
 def get_monitor_to_form_dict():
@@ -84,36 +86,17 @@ def get_form_for_monitor(monitor_class):
     return get_monitor_to_form_dict().get(monitor_class)
 
 
-def build_list_of_monitors_from_view_models(monitor_view_models):
-    next_monitors_dict = dict()
-    count = 0
-    for monitor_model in monitor_view_models:
-        next_monitors_dict[monitor_model.__class__.__name__] = (monitor_model, count + 1)
-        count = count + 1
-    return next_monitors_dict
-
-
-def build_list_of_monitors_from_names(monitor_names, is_surface_simulation):
-    monitor_dict = get_ui_name_to_monitor_dict(is_surface_simulation)
-    monitor_view_models = [monitor_dict[monitor_name]() for monitor_name in monitor_names]
-    return build_list_of_monitors_from_view_models(monitor_view_models)
-
-
-def prepare_monitor_legend(is_surface_simulation, monitor):
-    return get_monitor_to_ui_name_dict(is_surface_simulation)[type(monitor)] + ' monitor'
-
-
 class MonitorForm(Form):
 
-    def __init__(self, session_stored_simulator=None):
+    def __init__(self, session_stored_simulator=None, are_params_disabled=False):
         super(MonitorForm, self).__init__()
         self.session_stored_simulator = session_stored_simulator
+        self.are_params_disabled = are_params_disabled
         self.period = FloatField(Monitor.period)
         self.variables_of_interest_indexes = {}
 
         if session_stored_simulator is not None:
-            self.variables_of_interest_indexes = self.determine_indexes_for_chosen_vars_of_interest(
-                session_stored_simulator)
+            self.variables_of_interest_indexes = session_stored_simulator.determine_indexes_for_chosen_vars_of_interest()
 
         self.variables_of_interest = MultiSelectField(List(of=str, label='Model Variables to watch',
                                                            choices=tuple(self.variables_of_interest_indexes.keys())),
@@ -128,6 +111,10 @@ class MonitorForm(Form):
             # by default we select all variables of interest for the monitor forms
             self.variables_of_interest.data = list(self.variables_of_interest_indexes.keys())
 
+        if self.are_params_disabled:
+            self.period.disabled = True
+            self.variables_of_interest.disabled = True
+
     def fill_trait(self, datatype):
         super(MonitorForm, self).fill_trait(datatype)
         datatype.variables_of_interest = numpy.array(list(self.variables_of_interest_indexes.values()))
@@ -136,31 +123,14 @@ class MonitorForm(Form):
         super(MonitorForm, self).fill_from_post(form_data)
         all_variables = self.session_stored_simulator.model.variables_of_interest
         chosen_variables = form_data['variables_of_interest']
-        self.variables_of_interest_indexes = self._get_variables_of_interest_indexes(all_variables, chosen_variables)
-
-    @staticmethod
-    def determine_indexes_for_chosen_vars_of_interest(session_stored_simulator):
-        all_variables = session_stored_simulator.model.__class__.variables_of_interest.element_choices
-        chosen_variables = session_stored_simulator.model.variables_of_interest
-        indexes = MonitorForm._get_variables_of_interest_indexes(all_variables, chosen_variables)
-        return indexes
-
-    @staticmethod
-    def _get_variables_of_interest_indexes(all_variables, chosen_variables):
-        variables_of_interest_indexes = {}
-
-        if not isinstance(chosen_variables, (list, tuple)):
-            chosen_variables = [chosen_variables]
-
-        for variable in chosen_variables:
-            variables_of_interest_indexes[variable] = all_variables.index(variable)
-        return variables_of_interest_indexes
+        self.variables_of_interest_indexes = self.session_stored_simulator.\
+            get_variables_of_interest_indexes(all_variables, chosen_variables)
 
 
 class SpatialAverageMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(SpatialAverageMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
         self.spatial_mask = ArrayField(SpatialAverage.spatial_mask)
         self.default_mask = SelectField(SpatialAverage.default_mask)
 
@@ -169,23 +139,23 @@ class SpatialAverageMonitorForm(MonitorForm):
         connectivity_index = load_entity_by_gid(self.session_stored_simulator.connectivity)
 
         if self.session_stored_simulator.is_surface_simulation is False:
-            self.default_mask.choices.pop(SpatialAverage.REGION_MAPPING)
+            self.default_mask.choices.remove(DefaultMasks.REGION_MAPPING)
 
             if connectivity_index.has_cortical_mask is False:
-                self.default_mask.choices.pop(SpatialAverage.CORTICAL)
+                self.default_mask.choices.remove(DefaultMasks.CORTICAL)
 
             if connectivity_index.has_hemispheres_mask is False:
-                self.default_mask.choices.pop(SpatialAverage.HEMISPHERES)
+                self.default_mask.choices.remove(DefaultMasks.HEMISPHERES)
 
         else:
-            self.default_mask.data = SpatialAverage.REGION_MAPPING
+            self.default_mask.data = DefaultMasks.REGION_MAPPING
             self.default_mask.disabled = True
 
 
 class ProjectionMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(ProjectionMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(ProjectionMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         rm_filter = None
         if session_stored_simulator and session_stored_simulator.is_surface_simulation:
@@ -198,14 +168,14 @@ class ProjectionMonitorForm(MonitorForm):
 
 class EEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(EEGMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(EEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_EEG.value])
+                                    values=[SensorTypesEnum.TYPE_EEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.EEG.value])
+                                        values=[ProjectionsTypeEnum.EEG.value])
 
         self.projection = TraitDataTypeSelectField(EEGViewModel.projection, name='projection',
                                                    conditions=projection_filter)
@@ -216,14 +186,14 @@ class EEGMonitorForm(ProjectionMonitorForm):
 
 class MEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(MEGMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(MEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_MEG.value])
+                                    values=[SensorTypesEnum.TYPE_MEG.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.MEG.value])
+                                        values=[ProjectionsTypeEnum.MEG.value])
 
         self.projection = TraitDataTypeSelectField(MEGViewModel.projection, name='projection',
                                                    conditions=projection_filter)
@@ -232,14 +202,14 @@ class MEGMonitorForm(ProjectionMonitorForm):
 
 class iEEGMonitorForm(ProjectionMonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(iEEGMonitorForm, self).__init__(session_stored_simulator)
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(iEEGMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         sensor_filter = FilterChain(fields=[FilterChain.datatype + '.sensors_type'], operations=["=="],
-                                    values=[SensorTypes.TYPE_INTERNAL.value])
+                                    values=[SensorTypesEnum.TYPE_INTERNAL.value])
 
         projection_filter = FilterChain(fields=[FilterChain.datatype + '.projection_type'], operations=["=="],
-                                        values=[ProjectionsType.SEEG.value])
+                                        values=[ProjectionsTypeEnum.SEEG.value])
 
         self.projection = TraitDataTypeSelectField(iEEGViewModel.projection, name='projection',
                                                    conditions=projection_filter)
@@ -249,20 +219,18 @@ class iEEGMonitorForm(ProjectionMonitorForm):
 
 class BoldMonitorForm(MonitorForm):
 
-    def __init__(self, session_stored_simulator=None):
-        super(BoldMonitorForm, self).__init__(session_stored_simulator)
-        self.hrf_kernel_choices = get_ui_name_to_monitor_equation_dict()
-        default_hrf_kernel = list(self.hrf_kernel_choices.values())[0]
+    def __init__(self, session_stored_simulator=None, is_period_disabled=False):
+        super(BoldMonitorForm, self).__init__(session_stored_simulator, is_period_disabled)
 
         self.period = FloatField(Bold.period)
-        self.hrf_kernel = SelectField(Attr(HRFKernelEquation, label='Equation', default=default_hrf_kernel),
-                                      name='hrf_kernel', choices=self.hrf_kernel_choices)
+        self.hrf_kernel = SelectField(EnumAttr(label='Equation', default=BoldMonitorEquationsEnum.Gamma_KERNEL),
+                                      name='hrf_kernel')
 
     def fill_trait(self, datatype):
         super(BoldMonitorForm, self).fill_trait(datatype)
         datatype.period = self.period.data
-        if type(datatype.hrf_kernel) != self.hrf_kernel.data:
-            datatype.hrf_kernel = self.hrf_kernel.data()
+        if type(datatype.hrf_kernel) != self.hrf_kernel.data.value:
+            datatype.hrf_kernel = self.hrf_kernel.data.instance
 
     def fill_from_trait(self, trait):
         super(BoldMonitorForm, self).fill_from_trait(trait)

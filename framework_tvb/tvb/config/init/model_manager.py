@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-# TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+# TheVirtualBrain-Framework Package. This package holds all Data Management, and
 # Web-UI helpful to run brain-simulations. To use it, you also need do download
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -34,14 +34,16 @@
 """
 import os
 import shutil
-import migrate.versioning.api as migratesqlapi
+
+import tvb.config.init.alembic.versions as scripts
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import inspect
 from sqlalchemy.sql import text
-from sqlalchemy.engine import reflection
-from tvb.basic.profile import TvbProfile
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.storage import SA_SESSIONMAKER
 from tvb.core.neotraits.db import Base
-import tvb.core.entities.model.db_update_scripts as scripts
 
 LOGGER = get_logger(__name__)
 
@@ -50,30 +52,52 @@ def initialize_startup():
     """ Force DB tables create, in case no data is already found."""
     is_db_empty = False
     session = SA_SESSIONMAKER()
-    inspector = reflection.Inspector.from_engine(session.connection())
-    if len(inspector.get_table_names()) < 1:
+    inspector = inspect(session.connection())
+    table_names = inspector.get_table_names()
+    if len(table_names) < 1:
         LOGGER.debug("Database access exception, maybe DB is empty")
         is_db_empty = True
     session.close()
 
     versions_repo = TvbProfile.current.db.DB_VERSIONING_REPO
+    alembic_cfg = Config()
+    alembic_cfg.set_main_option('script_location', versions_repo)
+    alembic_cfg.set_main_option('sqlalchemy.url', TvbProfile.current.db.DB_URL)
+
     if is_db_empty:
         LOGGER.info("Initializing Database")
         if os.path.exists(versions_repo):
             shutil.rmtree(versions_repo)
-        migratesqlapi.create(versions_repo, os.path.split(versions_repo)[1])
+
         _update_sql_scripts()
-        migratesqlapi.version_control(TvbProfile.current.db.DB_URL, versions_repo,
-                                      version=TvbProfile.current.version.DB_STRUCTURE_VERSION)
         session = SA_SESSIONMAKER()
         Base.metadata.create_all(bind=session.connection())
         session.commit()
         session.close()
+
+        command.stamp(alembic_cfg, 'head')
         LOGGER.info("Database Default Tables created successfully!")
     else:
         _update_sql_scripts()
-        migratesqlapi.upgrade(TvbProfile.current.db.DB_URL, versions_repo,
-                              version=TvbProfile.current.version.DB_STRUCTURE_VERSION)
+
+        if 'migrate_version' in table_names:
+            db_version = session.execute(text("""SELECT version from migrate_version""")).fetchone()[0]
+
+            if db_version == 18:
+                command.stamp(alembic_cfg, 'head')
+                session.execute(text("""DROP TABLE "migrate_version";"""))
+                session.commit()
+
+                return is_db_empty
+
+        if 'alembic_version' in table_names:
+            db_version = session.execute(text("""SELECT version_num from alembic_version""")).fetchone()
+            if not db_version:
+                command.stamp(alembic_cfg, 'head')
+
+        with session.connection() as connection:
+            alembic_cfg.attributes['connection'] = connection
+            command.upgrade(alembic_cfg, TvbProfile.current.version.DB_STRUCTURE_VERSION)
         LOGGER.info("Database already has some data, will not be re-created!")
     return is_db_empty
 
@@ -86,7 +110,7 @@ def reset_database():
     try:
         session = SA_SESSIONMAKER()
         LOGGER.debug("Delete connection initiated.")
-        inspector = reflection.Inspector.from_engine(session.connection())
+        inspector = inspect(session.connection())
         for table in inspector.get_table_names():
             try:
                 LOGGER.debug("Removing:" + table)
@@ -97,7 +121,7 @@ def reset_database():
                 except Exception as excep1:
                     LOGGER.error("Could no drop table %s", table)
                     LOGGER.exception(excep1)
-        migratesqlapi.drop_version_control(TvbProfile.current.db.DB_URL, TvbProfile.current.db.DB_VERSIONING_REPO)
+
         session.commit()
         LOGGER.info("Database was cleanup!")
     except Exception as excep:
@@ -116,3 +140,5 @@ def _update_sql_scripts():
         shutil.rmtree(versions_folder)
     ignore_patters = shutil.ignore_patterns('.svn')
     shutil.copytree(scripts_folder, versions_folder, ignore=ignore_patters)
+    shutil.copyfile(os.path.join(os.path.dirname(__file__), 'alembic/env.py'),
+                    os.path.join(versions_folder, os.pardir, 'env.py'))

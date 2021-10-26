@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,15 +36,13 @@
 
 import json
 import uuid
-
 import cherrypy
+
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict, GAUSSIAN_EQUATION, \
-    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
+from tvb.adapters.simulator.equation_forms import get_form_for_equation, SpatialEquationsEnum
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
@@ -139,12 +137,12 @@ class LocalConnectivityController(SpatioTemporalController):
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def refresh_subform(self, equation, mapping_key):
-        eq_class = get_ui_name_to_equation_dict().get(equation)
+    def refresh_subform(self, equation):
+        eq_class = TVBEnum.string_to_enum(list(SpatialEquationsEnum), equation).value
         current_lconn = common.get_from_session(KEY_LCONN)
         current_lconn.equation = eq_class()
 
-        eq_params_form = SubformHelper.get_subform_for_field_value(equation, mapping_key)
+        eq_params_form = get_form_for_equation(eq_class)()
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
@@ -284,15 +282,13 @@ class LocalConnectivityController(SpatioTemporalController):
 
         Returns a json which contains the data needed for drawing a gradient view for the selected vertex.
         """
-        lconn_index = load_entity_by_gid(local_connectivity_gid)
         triangle_index = int(selected_triangle)
+        lconn_h5 = h5.h5_file_for_gid(local_connectivity_gid)
 
-        surface_indx = load_entity_by_gid(lconn_index.fk_surface_gid)
-        surface_h5 = h5.h5_file_for_index(surface_indx)
+        surface_h5 = h5.h5_file_for_gid(lconn_h5.surface.load())
         assert isinstance(surface_h5, SurfaceH5)
         vertex_index = int(surface_h5.triangles[triangle_index][0])
 
-        lconn_h5 = h5.h5_file_for_index(lconn_index)
         assert isinstance(lconn_h5, LocalConnectivityH5)
         lconn_matrix = lconn_h5.matrix.load()
         picked_data = list(lconn_matrix[vertex_index].toarray().squeeze())

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -38,6 +38,7 @@ import json
 import numpy
 from six import add_metaclass
 from abc import ABCMeta
+
 from tvb.adapters.visualizers.time_series import ABCSpaceDisplayer
 from tvb.adapters.datatypes.db.spectral import DataTypeMatrix
 from tvb.basic.neotraits.api import Attr
@@ -63,18 +64,15 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         input_size = dtm_index.parsed_shape
         return numpy.prod(input_size) * 8.0
 
-    def generate_preview(self, view_model, **kwargs):
-        # type: (MatrixVisualizerModel, dict) -> dict
-        result = self.launch(view_model)
-        result["isPreview"] = True
-        return result
-
     @staticmethod
     def compute_raw_matrix_params(matrix):
         """
         Serializes matrix data, shape and stride metadata to json
         """
+
+        matrix = ABCDisplayer.handle_infinite_values(matrix)
         matrix_data = ABCDisplayer.dump_with_precision(matrix.flat)
+
         matrix_shape = json.dumps(matrix.shape)
 
         return dict(matrix_data=matrix_data,
@@ -113,7 +111,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
         return result_2d, slice_str(slice_used), slice_used == default
 
     def compute_params(self, dtm_index, matrix2d, title_suffix, labels=None,
-                       given_slice=None, slice_used=None, is_default_slice=True):
+                       given_slice=None, slice_used=None, is_default_slice=True, has_infinite_values=False):
         # type: (DataTypeMatrix, numpy.array, str, list, str, str, bool) -> dict
         view_pars = self.compute_raw_matrix_params(matrix2d)
         view_pars.update(original_matrix_shape=dtm_index.shape,
@@ -122,6 +120,7 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
                          slice_used=slice_used,
                          is_default_slice=is_default_slice,
                          has_complex_numbers=dtm_index.array_has_complex,
+                         has_infinite_values=has_infinite_values,
                          viewer_title=title_suffix,
                          title=dtm_index.display_name + " - " + title_suffix,
                          matrix_labels=json.dumps(labels))
@@ -130,14 +129,12 @@ class ABCMappedArraySVGVisualizer(ABCSpaceDisplayer):
     def extract_source_labels(self, datatype_matrix):
         # type: (DataTypeMatrix) -> list
         if hasattr(datatype_matrix, "fk_connectivity_gid"):
-            conn_idx = self.load_entity_by_gid(datatype_matrix.fk_connectivity_gid)
-            with h5.h5_file_for_index(conn_idx) as conn_h5:
+            with h5.h5_file_for_gid(datatype_matrix.fk_connectivity_gid) as conn_h5:
                 labels = list(conn_h5.region_labels.load())
             return labels
 
         if hasattr(datatype_matrix, "fk_source_gid"):
-            source_index = self.load_entity_by_gid(datatype_matrix.fk_source_gid)
-            with h5.h5_file_for_index(source_index) as source_h5:
+            with h5.h5_file_for_gid(datatype_matrix.fk_source_gid) as source_h5:
                 labels = self.get_space_labels(source_h5)
             return labels
 
@@ -202,5 +199,5 @@ class MappedArrayVisualizer(ABCMappedArraySVGVisualizer):
             labels = [labels, labels]
 
         params = self.compute_params(dtm_index, matrix2d, "Matrix Plot", labels,
-                                     view_model.slice, slice_used, is_default_slice)
+                                     view_model.slice, slice_used, is_default_slice, not dtm_index.array_is_finite)
         return self.build_display_result("matrix/svg_view", params)

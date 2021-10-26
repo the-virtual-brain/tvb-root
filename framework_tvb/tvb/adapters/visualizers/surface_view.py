@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -54,12 +54,12 @@ from tvb.core.neocom import h5
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.graph import ConnectivityMeasure
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import Surface, FACE
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 LOG = get_logger(__name__)
 
 
-def ensure_shell_surface(project_id, shell_surface=None, preferred_type=FACE):
+def ensure_shell_surface(project_id, shell_surface=None, preferred_type=SurfaceTypesEnum.FACE_SURFACE.value):
     filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
                          values=[preferred_type])
     if shell_surface is None:
@@ -210,13 +210,10 @@ class ABCSurfaceDisplayer(ABCSpaceDisplayer):
         boundary_lines = []
         boundary_normals = []
 
-        surface_index = self.load_entity_by_gid(surface_gid)
-        rm_index = self.load_entity_by_gid(region_mapping_gid)
-
-        with h5.h5_file_for_index(rm_index) as rm_h5:
+        with h5.h5_file_for_gid(region_mapping_gid) as rm_h5:
             array_data = rm_h5.array_data[:]
 
-        with h5.h5_file_for_index(surface_index) as surface_h5:
+        with h5.h5_file_for_gid(surface_gid) as surface_h5:
             for slice_idx in range(surface_h5.get_number_of_split_slices()):
                 # Generate the boundaries sliced for the off case where we might overflow the buffer capacity
                 slice_triangles = surface_h5.get_triangles_slice(slice_idx)

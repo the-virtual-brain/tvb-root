@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,13 +37,19 @@ The Equation datatypes.
 """
 import numpy
 from scipy.special import gamma as sp_gamma
-from tvb.basic.neotraits.api import HasTraits, Attr, Final
+from tvb.basic.neotraits.api import HasTraits, Attr, Final, TupleEnum
 from tvb.simulator.backend.ref import RefBase
 
 
 # In how many points should the equation be evaluated for the plot. Increasing this will
 # give smoother results at the cost of some performance
 DEFAULT_PLOT_GRANULARITY = 1024
+
+
+class EquationsEnum(TupleEnum):
+    """
+    Superclass of all enums that have equations as values
+    """
 
 
 # class Equation(basic.MapAsJson, core.Type):
@@ -65,7 +71,6 @@ class Equation(HasTraits):
         doc="""Should be a list of the parameters and their meaning, Traits
                 should be able to take defaults and sensible ranges from any
                 traited information that was provided.""")
-
 
     def summary_info(self):
         """
@@ -189,7 +194,6 @@ class DoubleGaussian(FiniteSupportEquation):
     A Mexican-hat function approximated by the difference of Gaussians functions.
 
     """
-    _ui_name = "Mexican-hat"
 
     equation = Final(
         label="Double Gaussian Equation",
@@ -301,20 +305,14 @@ class PulseTrain(TemporalApplicableEquation):
 
     * :math:`\\tau` :  pulse width or pulse duration
     * :math:`T`     :  pulse repetition period
-    * :math:`f`     :  pulse repetition frequency (1/T)
-    * duty cycle    :  :math:``\\frac{\\tau}{T}`` (for a square wave: 0.5)
-    * onset time    :
+    * onset         :  time of the first pulse
+    * amp           :  amplitude of the pulse
     """
 
     equation = Final(
         label="Pulse Train",
-        default="where((var % T) < tau, amp, 0)",
-        doc=""":math:`\\frac{\\tau}{T}
-        +\\sum_{n=1}^{\\infty}\\frac{2}{n\\pi}
-        \\sin\\left(\\frac{\\pi\\,n\\tau}{T}\\right)
-        \\cos\\left(\\frac{2\\pi\\,n}{T} var\\right)`.
-        The starting time is halfway through the first pulse.
-        The phase can be offset t with t - tau/2""")
+        default="where((var>onset)&(((var-onset) % T) < tau), amp, 0)",
+        doc=""":math:`\\left\\{{\\begin{array}{rl}amp,&{\\text{if }} (var-onset) \\mod T < \\tau \\and var > onset\\\\0,&{\\text{otherwise }}\\end{array}}\\right.`""")
 
     # onset is in milliseconds
     # T and tau are in milliseconds as well
@@ -323,27 +321,6 @@ class PulseTrain(TemporalApplicableEquation):
         field_type=dict,
         default=lambda: {"T": 42.0, "tau": 13.0, "amp": 1.0, "onset": 30.0},
         label="Pulse Train Parameters")
-
-    def evaluate(self, var):
-        """
-        Generate a discrete representation of the equation for the space
-        represented by ``var``.
-
-        The argument ``var`` can represent a distance, or effective distance,
-        for each node in a simulation. Or a time, or in principle any arbitrary
-        `` space ``. ``var`` can be a single number, a numpy.ndarray or a
-        ?scipy.sparse_matrix? TODO: think this last one is true, need to check
-        as we need it for LocalConnectivity...
-
-        """
-        # rolling in the deep ...
-        onset = self.parameters["onset"]
-        off = var < onset
-        var = numpy.roll(var, off.sum() + 1)
-        var[..., off] = 0.0
-        _pattern = RefBase.evaluate(self.equation, global_dict=self.parameters)
-        _pattern[..., off] = 0.0
-        return _pattern
 
 
 
@@ -373,8 +350,6 @@ class Gamma(HRFKernelEquation):
     .. note:: might be filtered from the equations used in Stimulus and Local Connectivity.
 
     """
-
-    _ui_name = "HRF kernel: Gamma kernel"
 
     # TODO: Introduce a time delay in the equation (shifts the hrf onset)
     # """:math:`h(t) = \frac{(\frac{t-\delta}{\tau})^{(n-1)} e^{-(\frac{t-\delta}{\tau})}}{\tau(n-1)!}"""
@@ -415,7 +390,6 @@ class Gamma(HRFKernelEquation):
         return _pattern
 
 
-
 class DoubleExponential(HRFKernelEquation):
     """
     A difference of two exponential functions to define a kernel for the bold monitor.
@@ -438,8 +412,6 @@ class DoubleExponential(HRFKernelEquation):
         perception during binocular rivalry. Nature Neuroscience 3: 1153-1159
 
     """
-
-    _ui_name = "HRF kernel: Difference of Exponentials"
 
     equation = Final(
         label="Double Exponential Equation",
@@ -467,7 +439,6 @@ class DoubleExponential(HRFKernelEquation):
         return _pattern
 
 
-
 class FirstOrderVolterra(HRFKernelEquation):
     """
     Integral form of the first Volterra kernel of the three used in the
@@ -489,8 +460,6 @@ class FirstOrderVolterra(HRFKernelEquation):
         Hemodynamics*, NeuroImage, 12, 466 - 477, 2000.
 
     """
-
-    _ui_name = "HRF kernel: Volterra Kernel"
 
     equation = Final(
         label="First Order Volterra Kernel",
@@ -556,8 +525,6 @@ class MixtureOfGammas(HRFKernelEquation):
 
     """
 
-    _ui_name = "HRF kernel: Mixture of Gammas"
-
     equation = Final(
         label="Mixture of Gammas",
         default="(l * var)**(a_1-1) * exp(-l*var) / gamma_a_1 - c * (l*var)**(a_2-1) * exp(-l*var) / gamma_a_2",
@@ -581,4 +548,3 @@ class MixtureOfGammas(HRFKernelEquation):
         self.parameters["gamma_a_2"] = sp_gamma(self.parameters["a_2"])
 
         return RefBase.evaluate(self.equation, global_dict=self.parameters)
-

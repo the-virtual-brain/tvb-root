@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,13 +35,14 @@
 import tvb_data.surfaceData
 import tvb_data.regionMapping
 from os import path
+
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.view_model import CortexViewModel, SimulatorAdapterModel
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.storage import dao
 from tvb.core.services.project_service import initialize_storage
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -72,7 +73,7 @@ class TestSimulatorAdapter(TransactionalTestCase):
         model.connectivity = connectivity_index_factory(self.CONNECTIVITY_NODES).gid
         model.simulation_length = 32
 
-        TestFactory.launch_synchronously(self.test_user, self.test_project, self.simulator_adapter, model)
+        TestFactory.launch_synchronously(self.test_user.id, self.test_project, self.simulator_adapter, model)
         sim_result = dao.get_generic_entity(TimeSeriesRegionIndex, 'TimeSeriesRegion', 'time_series_type')[0]
         assert (sim_result.data_length_1d, sim_result.data_length_2d, sim_result.data_length_3d,
                 sim_result.data_length_4d) == (32, 1, self.CONNECTIVITY_NODES, 1)
@@ -116,7 +117,8 @@ class TestSimulatorAdapter(TransactionalTestCase):
 
         # import surfaceData and region mapping
         cortex_file = path.join(path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex_file, CORTICAL)
+        surface = TestFactory.import_surface_zip(self.test_user, self.test_project, cortex_file,
+                                                 SurfaceTypesEnum.CORTICAL_SURFACE)
         rm_file = path.join(path.dirname(tvb_data.regionMapping.__file__), 'regionMapping_16k_76.txt')
         region_mapping = TestFactory.import_region_mapping(self.test_user, self.test_project, rm_file, surface.gid,
                                                            model.connectivity.hex)

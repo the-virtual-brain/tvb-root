@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -49,10 +49,10 @@ class VersionSettings(object):
     SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
-    BASE_VERSION = "2.1a1"
+    BASE_VERSION = "2.4.1"
 
-    # Current DB version. Increment this and create a new xxx_update_db.py migrate script
-    DB_STRUCTURE_VERSION = 18
+    # Current DB version. Create a new migration script from command line and copy its gid here
+    DB_STRUCTURE_VERSION = '32d4bf9f8cab'
 
     # This is the version of the data stored in H5 and XML files
     # and should be used by next versions to know how to import
@@ -206,6 +206,7 @@ class HPCSettings(object):
     UNICORE_RESOURCER_KEY = 'Resources'
     UNICORE_ARGS_KEY = 'Arguments'
     UNICORE_EXE_KEY = 'Executable'
+    UNICORE_PROJECT_KEY = 'Project'
 
     JOB_STATUS_KEY = 'status'
     JOB_MOUNT_POINT_KEY = 'mountPoint'
@@ -234,10 +235,18 @@ class WebSettings(object):
     LOCALHOST = "localhost"
     RENDER_HTML = True
     VISUALIZERS_ROOT = "tvb.interfaces.web.templates.jinja2.visualizers"
+    CAN_ENCRYPT_STORAGE = True
 
     def __init__(self, manager):
+        try:
+            from syncrypto import Crypto, Syncrypto
+        except ImportError:
+            WebSettings.CAN_ENCRYPT_STORAGE = False
 
         self.admin = WebAdminSettings(manager)
+
+        self.ENCRYPT_STORAGE = manager.get_attribute(stored.KEY_ENCRYPT_STORAGE, False, eval)
+        self.DECRYPT_PATH = manager.get_attribute(stored.KEY_DECRYPT_PATH)
 
         self.CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -249,6 +258,11 @@ class WebSettings(object):
 
         self.SERVER_PORT = manager.get_attribute(stored.KEY_PORT, 8080, int)
 
+        self.OPENSHIFT_DEPLOY = manager.get_attribute(stored.KEY_OPENSHIFT_DEPLOY, False, eval)
+        self.OPENSHIFT_NAMESPACE = manager.get_attribute(stored.KEY_OPENSHIFT_NAMESPACE, "")
+        self.OPENSHIFT_APPLICATION = manager.get_attribute(stored.KEY_OPENSHIFT_APPLICATION, "")
+        self.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION = manager.get_attribute(stored.KEY_PROCESSING_OPERATIONS_APPLICATION, "")
+        self.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION = manager.get_attribute(stored.KEY_DATA_ENCRYPTION_HANDLER_APPLICATION, self.OPENSHIFT_APPLICATION)
         # Compute reference towards the current web application, valid FROM localhost
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))
@@ -275,7 +289,6 @@ class WebSettings(object):
                                                                        'text/javascript', 'text/css',
                                                                        'application/x.ndarray'],
                                              'tools.sessions.on': True,
-                                             'tools.sessions.storage_type': 'ram',
                                              'tools.sessions.timeout': 600,  # 10 hours
                                              'response.timeout': 1000000,
                                              'tools.sessions.locking': 'explicit',
@@ -327,13 +340,6 @@ class WebAdminSettings(object):
 
 
 class DBSettings(object):
-    # Overwrite number of connections to the DB.
-    # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
-    # MAX_CONNECTION default value will be used for WEB
-    # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
-    MAX_CONNECTIONS = 20
-    MAX_ASYNC_CONNECTIONS = 2
-
     # Nested transactions are not supported by all databases and not really necessary in TVB so far so
     # we don't support them yet. However when running tests we can use them to out advantage to rollback
     # any database changes between tests.
@@ -355,3 +361,10 @@ class DBSettings(object):
 
         # Upgrade/Downgrade repository
         self.DB_VERSIONING_REPO = os.path.join(current_storage, 'db_repo')
+
+        # Overwrite number of connections to the DB.
+        # Otherwise might reach PostgreSQL limit when launching multiple concurrent operations.
+        # MAX_CONNECTION default value will be used for WEB
+        # When launched on cluster, the MAX_ASYNC_CONNECTIONS overwrites MAX_ONNECTIONS value
+        self.MAX_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_CONNECTIONS, 20, int)
+        self.MAX_ASYNC_CONNECTIONS = manager.get_attribute(stored.KEY_MAX_ASYNC_CONNECTIONS, 2, int)

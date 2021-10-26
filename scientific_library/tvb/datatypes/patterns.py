@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and 
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -37,6 +37,7 @@ The Pattern datatypes.
 """
 
 import numpy
+
 from tvb.datatypes import surfaces, volumes, connectivity, equations
 from tvb.basic.neotraits.api import HasTraits, NArray, Attr
 
@@ -46,7 +47,7 @@ class SpatialPattern(HasTraits):
     Equation for space variation.
     """
 
-    spatial = Attr(field_type=equations.FiniteSupportEquation, label="Spatial Equation")
+    spatial =  Attr(field_type=equations.FiniteSupportEquation, label="Spatial Equation")
 
     space = None
     _spatial_pattern = None
@@ -203,7 +204,7 @@ class StimuliSurface(SpatioTemporalPattern):
         focal_points = []
 
         if self.surface is None or self.surface.triangles is None:
-            self.log.warn('Focal points list will be empty. Load the surface triangles before accessing this property!')
+            self.log.warning('Focal points list will be empty. Load the surface triangles before accessing this property!')
             return numpy.array(focal_points)
 
         for triangle_index in self.focal_points_triangles:

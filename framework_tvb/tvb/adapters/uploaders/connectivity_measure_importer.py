@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -33,13 +33,13 @@
 """
 
 from tvb.adapters.datatypes.db.graph import ConnectivityMeasureIndex
-from tvb.basic.neotraits.api import Attr
 from tvb.basic.logger.builder import get_logger
+from tvb.basic.neotraits.api import Attr
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import ParseException, LaunchException
 from tvb.core.entities.storage import transactional
-from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neocom import h5
+from tvb.core.neotraits.forms import TraitUploadField, StrField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
@@ -125,7 +125,7 @@ class ConnectivityMeasureImporter(ABCUploader):
                 measure.connectivity = connectivity
                 measure.title = "Measure %d for Connectivity with %d nodes." % ((i + 1), node_count)
 
-                cm_idx = h5.store_complete(measure, self.storage_path)
+                cm_idx = self.store_complete(measure)
                 measures.append(cm_idx)
             return measures
 

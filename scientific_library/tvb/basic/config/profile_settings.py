@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -77,6 +77,7 @@ class BaseSettingsProfile(object):
         self.web = WebSettings(self.manager)
         self.db = DBSettings(self.manager, self.DEFAULT_STORAGE, self.TVB_STORAGE)
         self.version = VersionSettings(self.manager, self.BIN_FOLDER)
+        self.file_storage = self.manager.get_attribute(stored.KEY_FILE_STORAGE, 'h5', str)
 
         self.EXTERNALS_FOLDER_PARENT = os.path.dirname(self.BIN_FOLDER)
         if not self.env.is_distribution():
@@ -94,6 +95,7 @@ class BaseSettingsProfile(object):
         self.MAX_RANGE_NUMBER = self.manager.get_attribute(stored.KEY_MAX_RANGE_NR, 2000, int)
         # Max number of threads in the pool of ops running in parallel. TO be correlated with CPU cores
         self.MAX_THREADS_NUMBER = self.manager.get_attribute(stored.KEY_MAX_THREAD_NR, 4, int)
+        self.OPERATIONS_BACKGROUND_JOB_INTERVAL = self.manager.get_attribute(stored.KEY_OP_BACKGROUND_INTERVAL, 60, int)
         # The maximum disk space that can be used by one single user, in KB.
         self.MAX_DISK_SPACE = self.manager.get_attribute(stored.KEY_MAX_DISK_SPACE_USR, 5 * 1024 * 1024, int)
 

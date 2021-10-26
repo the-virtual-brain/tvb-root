@@ -1,0 +1,51 @@
+<Lems description="Kuramoto Base type of any cell/population which has a (dimensionless) rate _R.">
+
+    <ComponentType name="derivatives">
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_speed" dimension='1.0, 1.0'/>
+        <Parameter name="global_coupling" dimension='1.0, 1.0'/>
+
+        <DerivedParameter name="rec_n" value="1.0f / n_node"/>
+        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / (dt)"/>
+        <DerivedParameter name="nsig" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>
+
+        <Constant name="omega" value="60.0 * 2.0 * 3.1415927 / 1e3" dimension=""  description="sets the base line frequency for the Kuramoto oscillator in [rad/ms]"/>
+
+        <Exposure name="V" dimension="V" />
+
+        <Dynamics>
+            <!-- For CUDA models a single value for dimension is required -->
+            <StateVariable name="V" dimension="0.0, 0.0" exposure="-2, 1"/>
+            <!-- For python models a dimension range is required -->
+            <!-- <StateVariable name="V" dimension="0.0, numpy.pi * 2.0" exposure="-2, 1"/>-->
+
+            <TimeDerivative variable="dV" value="omega + c_pop0"/>
+        </Dynamics>
+
+    </ComponentType>
+
+    <ComponentType name="coupling_function">
+
+<!--        variables for pre synaptic function-->
+        <Parameter name="V_j" dimension='0'/>
+        <DerivedParameter name="c_pop0" value="global_coupling"/>
+
+        <Constant name="a" value="1" dimension="" description="Rescales the connection strength."/>
+
+<!--        variables for post synaptic function-->
+<!--        <Requirement name="wij" dimension=''/>-->
+        <Dynamics>
+            <DerivedVariable name="pre" value="sin(V_j - V)"/>
+            <DerivedVariable name="post" value="a"/>
+        </Dynamics>
+
+        <!-- Handle local coupling result, full expression is c_0 *= 'value'. Name option is hardcoded -->
+
+
+    </ComponentType>
+
+    <!-- If noise needs to be present, just specify the component type. Detail might be added later -->
+    <ComponentType name="noise" />
+
+</Lems>

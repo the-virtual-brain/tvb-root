@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,17 +35,15 @@
 
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation
-from tvb.adapters.simulator.subforms_mapping import GAUSSIAN_EQUATION, get_ui_name_to_equation_dict, \
-    DOUBLE_GAUSSIAN_EQUATION, SIGMOID_EQUATION
-from tvb.basic.neotraits.api import Attr
+from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation, SpatialEquationsEnum
+from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import FormField, SelectField, TraitDataTypeSelectField, FloatField, StrField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr, Str
 from tvb.datatypes.local_connectivity import LocalConnectivity
-from tvb.datatypes.surfaces import Surface, CORTICAL
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 
 class LocalConnectivitySelectorForm(ABCAdapterForm):
@@ -85,19 +83,18 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
 
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
-    possible_equations = {GAUSSIAN_EQUATION: get_ui_name_to_equation_dict().get(GAUSSIAN_EQUATION),
-                          DOUBLE_GAUSSIAN_EQUATION: get_ui_name_to_equation_dict().get(DOUBLE_GAUSSIAN_EQUATION),
-                          SIGMOID_EQUATION: get_ui_name_to_equation_dict().get(SIGMOID_EQUATION)}
 
     def __init__(self):
         super(LocalConnectivityCreatorForm, self).__init__()
         self.surface = TraitDataTypeSelectField(LocalConnectivityCreatorModel.surface, name=self.get_input_name(),
                                                 conditions=self.get_filters())
-        self.spatial = SelectField(LocalConnectivityCreatorModel.equation, name='spatial',
-                                   choices=self.possible_equations,
-                                   display_none_choice=False, subform=GaussianEquationForm)
+        self.spatial = SelectField(EnumAttr(field_type=SpatialEquationsEnum,
+                                            default=SpatialEquationsEnum.GAUSSIAN.instance, required=True),
+                                   name='spatial', display_none_choice=False, subform=GaussianEquationForm)
         self.cutoff = FloatField(LocalConnectivityCreatorModel.cutoff)
         self.display_name = StrField(LocalConnectivityCreatorModel.display_name, name='display_name')
+
+        del self.spatial.choices[-1]
 
     @staticmethod
     def get_view_model():
@@ -114,7 +111,7 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
     @staticmethod
     def get_filters():
         return FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
-                           values=[CORTICAL])
+                           values=[SurfaceTypesEnum.CORTICAL_SURFACE.value])
 
     def fill_from_trait(self, trait):
         # type: (LocalConnectivityCreatorModel) -> None
@@ -126,7 +123,8 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
         else:
             lc_equation = LocalConnectivity.equation.default
         self.spatial.data = type(lc_equation)
-        self.spatial.subform_field = FormField(get_form_for_equation(type(lc_equation)), self.NAME_EQUATION_PARAMS_DIV)
+        self.spatial.subform_field = FormField(get_form_for_equation(type(lc_equation)),
+                                               self.NAME_EQUATION_PARAMS_DIV)
         self.spatial.subform_field.form.fill_from_trait(lc_equation)
 
     def get_rendering_dict(self):
@@ -167,7 +165,7 @@ class LocalConnectivityCreator(ABCAdapter):
         local_connectivity.compute_sparse_matrix()
         self.generic_attributes.user_tag_1 = view_model.display_name
 
-        return h5.store_complete(local_connectivity, self.storage_path)
+        return self.store_complete(local_connectivity)
 
     def get_required_disk_size(self, view_model):
         # type: (LocalConnectivityCreatorModel) -> int

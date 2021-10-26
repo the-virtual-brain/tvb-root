@@ -1,10 +1,10 @@
 /**
- * TheVirtualBrain-Framework Package. This package holds all Data Management, and 
+ * TheVirtualBrain-Framework Package. This package holds all Data Management, and
  * Web-UI helpful to run brain-simulations. To use it, you also need do download
  * TheVirtualBrain-Scientific Package (for simulators). See content of the
  * documentation-folder for more details. See also http://www.thevirtualbrain.org
  *
- * (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+ * (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
  *
  * This program is free software: you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software Foundation,
@@ -208,22 +208,4 @@ function prepareConnectivity2D(left_json, full_json, right_json) {
         both:full_json,
         right:right_json
     };
-}
-
-/**
- * Prepare Connectivity portlet preview, by selecting all nodes.
- */
-function startPreviewConnectivity() {
-    C2D_selectedView = 'both';
-
-    var currrentJSON = C2D_hemispheresJSON[C2D_selectedView];
-    NO_POSITIONS = currrentJSON.length;
-    GVAR_interestAreaNodeIndexes = [];
-    GVAR_pointsLabels = [];
-
-    for (var i = 0; i < NO_POSITIONS; i++) {
-        GVAR_pointsLabels.push(currrentJSON[i].id);
-        GVAR_interestAreaNodeIndexes.push(i);
-    }
-    C2D_displaySelectedPoints();
 }

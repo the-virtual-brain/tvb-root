@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,15 +36,11 @@ from abc import ABCMeta
 import numpy
 from nibabel import trackvis
 from tvb.adapters.datatypes.db.tracts import TractsIndex
-from tvb.adapters.datatypes.h5.region_mapping_h5 import RegionVolumeMappingH5
 from tvb.adapters.datatypes.h5.tracts_h5 import TractsH5
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.core.entities.file.files_helper import TvbZip
-from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.entities.storage import transactional, dao
+from tvb.core.entities.storage import transactional
 from tvb.core.neocom import h5
-from tvb.core.neocom.h5 import path_for
 from tvb.core.neotraits.forms import TraitUploadField, TraitDataTypeSelectField
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
@@ -136,7 +132,7 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
 
         # not in memory have to go to disk
         slices = slice(x_plane, x_plane + 1), slice(y_plane, y_plane + 1), slice(z_plane, z_plane + 1)
-        region_id = self.region_volume.read_data_slice(slices)[0, 0, 0]
+        region_id = self.region_volume_h5.read_data_slice(slices)[0, 0, 0]
         return region_id
 
     def _attempt_to_cache_regionmap(self, region_volume):
@@ -148,22 +144,20 @@ class _TrackImporterBase(ABCUploader, metaclass=ABCMeta):
         else:
             self.full_rmap_cache = None
 
-    def _base_before_launch(self, data_file, region_volume):
+    def _base_before_launch(self, data_file, region_volume_gid):
         if data_file is None:
             raise LaunchException("Please select a file to import!")
 
-        if region_volume is not None:
-            rvm_index = dao.get_datatype_by_gid(region_volume.hex)
-            rvm_h5_path = h5.path_for_stored_index(rvm_index)
-            with RegionVolumeMappingH5(rvm_h5_path) as rvm:
-                self._attempt_to_cache_regionmap(rvm)
-                self.region_volume_shape = rvm.read_data_shape()
-                self.region_volume = rvm
-
-            region_volume = h5.load_from_index(rvm_index)
+        if region_volume_gid is not None:
+            rvm_h5 = h5.h5_file_for_gid(region_volume_gid)
+            self._attempt_to_cache_regionmap(rvm_h5)
+            self.region_volume_shape = rvm_h5.read_data_shape()
+            self.region_volume_h5 = rvm_h5
 
         datatype = Tracts()
-        datatype.region_volume_map = region_volume
+        dummy_rvm = RegionVolumeMapping()
+        dummy_rvm.gid = region_volume_gid
+        datatype.region_volume_map = dummy_rvm
         return datatype
 
 
@@ -208,7 +202,6 @@ class TrackvizTractsImporter(_TrackImporterBase):
     @transactional
     def launch(self, view_model):
         datatype = self._base_before_launch(view_model.data_file, view_model.region_volume)
-        tracts_h5 = TractsH5(path_for(self.storage_path, TractsH5, datatype.gid))
 
         # note the streaming parsing, we do not load the dataset in memory at once
         tract_gen, hdr = trackvis.read(view_model.data_file, as_generator=True)
@@ -217,31 +210,31 @@ class TrackvizTractsImporter(_TrackImporterBase):
         tract_start_indices = [0]
         tract_region = []
 
-        # we process tracts in bigger chunks to optimize disk write costs
-        for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
-            tract_bundle = [tr[0] for tr in tract_bundle]
+        with TractsH5(self.path_for(TractsH5, datatype.gid)) as tracts_h5:
+            # we process tracts in bigger chunks to optimize disk write costs
+            for tract_bundle in chunk_iter(tract_gen, self.READ_CHUNK):
+                tract_bundle = [tr[0] for tr in tract_bundle]
 
-            for tr in tract_bundle:
-                tract_start_indices.append(tract_start_indices[-1] + len(tr))
-                if view_model.region_volume is not None:
-                    tract_region.append(self._get_tract_region(tr[0]))
+                for tr in tract_bundle:
+                    tract_start_indices.append(tract_start_indices[-1] + len(tr))
+                    if view_model.region_volume is not None:
+                        tract_region.append(self._get_tract_region(tr[0]))
 
-            vertices = numpy.concatenate(tract_bundle)  # in voxel space
-            datatype.vertices = vox2ras.transform(vertices)
-            tracts_h5.write_vertices_slice(datatype.vertices)
+                vertices = numpy.concatenate(tract_bundle)  # in voxel space
+                datatype.vertices = vox2ras.transform(vertices)
+                tracts_h5.write_vertices_slice(datatype.vertices)
 
-        datatype.tract_start_idx = numpy.array(tract_start_indices)
-        datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)
+            datatype.tract_start_idx = numpy.array(tract_start_indices)
+            datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)
+
+            tracts_h5.tract_region.store(datatype.tract_region)
+            tracts_h5.tract_start_idx.store(datatype.tract_start_idx)
+            tracts_h5.region_volume_map.store(view_model.region_volume)
+
+        self.region_volume_h5.close()
 
         tracts_index = TractsIndex()
         tracts_index.fill_from_has_traits(datatype)
-
-        tracts_h5.store(datatype, scalars_only=True)
-        tracts_h5.tract_region.store(datatype.tract_region)
-        tracts_h5.tract_start_idx.store(datatype.tract_start_idx)
-        tracts_h5.store_generic_attributes(GenericAttributes())
-        tracts_h5.close()
-
         return tracts_index
 
 
@@ -258,24 +251,26 @@ class ZipTxtTractsImporter(_TrackImporterBase):
     def launch(self, view_model):
         # type: (TrackImporterModel) -> [TractsIndex]
         datatype = self._base_before_launch(view_model.data_file, view_model.region_volume)
-        tracts_h5 = TractsH5(path_for(self.storage_path, TractsH5, datatype.gid))
+        tracts_h5 = TractsH5(self.path_for(TractsH5, datatype.gid))
 
         tract_start_indices = [0]
         tract_region = []
 
-        with TvbZip(view_model.data_file) as zipf:
-            for tractf in sorted(zipf.namelist()):  # one track per file
-                if not tractf.endswith('.txt'):  # omit directories and other non track files
-                    continue
-                vertices_file = zipf.open(tractf)
-                datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
+        for tractf in sorted(self.storage_interface.get_filenames_in_zip(view_model.data_file)):  # one track per file
+            if not tractf.endswith('.txt'):  # omit directories and other non track files
+                continue
+            vertices_file = self.storage_interface.open_tvb_zip(view_model.data_file, tractf)
+            datatype.tract_vertices = numpy.loadtxt(vertices_file, dtype=numpy.float32)
 
-                tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
-                tracts_h5.write_vertices_slice(datatype.tract_vertices)
+            tract_start_indices.append(tract_start_indices[-1] + len(datatype.tract_vertices))
+            tracts_h5.write_vertices_slice(datatype.tract_vertices)
 
-                if view_model.region_volume is not None:
-                    tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
-                vertices_file.close()
+            if view_model.region_volume is not None:
+                tract_region.append(self._get_tract_region(datatype.tract_vertices[0]))
+            vertices_file.close()
+
+        tracts_h5.close()
+        self.region_volume_h5.close()
 
         datatype.tract_start_idx = tract_start_indices
         datatype.tract_region = numpy.array(tract_region, dtype=numpy.int16)

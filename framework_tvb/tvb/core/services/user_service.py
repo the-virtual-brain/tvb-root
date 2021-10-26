@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -44,7 +44,6 @@ from tvb.config import DEFAULT_PROJECT_GID
 from tvb.core.entities.model.model_project import User, ROLE_ADMINISTRATOR, USER_ROLES
 from tvb.core.entities.storage import dao
 from tvb.core.services import email_sender
-from tvb.core.services.authorization import AuthorizationManager
 from tvb.core.services.exceptions import UsernameException
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.settings_service import SettingsService
@@ -355,10 +354,13 @@ class UserService:
 
     def _extract_user_info(self, keycloak_data):
         email = keycloak_data['email'] if 'email' in keycloak_data else None
-        user_roles = keycloak_data['roles'] if 'roles' in keycloak_data else []
-        user_groups = user_roles['group'] if 'group' in user_roles else []
+        if 'group' in keycloak_data:
+            user_groups = keycloak_data['group']
+        else:
+            user_roles = keycloak_data['roles'] if 'roles' in keycloak_data else []
+            user_groups = user_roles['group'] if 'group' in user_roles else []
 
-        role = ROLE_ADMINISTRATOR if 'group-{}'.format(TvbProfile.current.web.admin.ADMINISTRATORS_GROUP) in user_groups else None
+        role = ROLE_ADMINISTRATOR if TvbProfile.current.web.admin.ADMINISTRATORS_GROUP in user_groups else None
         if role == ROLE_ADMINISTRATOR:
             self.logger.info("Administrator logged in")
 

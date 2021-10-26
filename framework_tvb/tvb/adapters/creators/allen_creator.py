@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -38,19 +38,18 @@ data using their SDK.
 """
 
 import os.path
-
 import numpy
 import numpy as np
 from allensdk.core.mouse_connectivity_cache import MouseConnectivityCache
+
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.region_mapping import RegionVolumeMappingIndex
 from tvb.adapters.datatypes.db.structural import StructuralMRIIndex
 from tvb.adapters.datatypes.db.volume import VolumeIndex
 from tvb.basic.logger.builder import get_logger
-from tvb.basic.neotraits.api import Float, Int
+from tvb.basic.neotraits.api import Float, Int, EnumAttr, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.storage import dao
-from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import SelectField, FloatField
 from tvb.core.neotraits.view_model import ViewModel
 from tvb.datatypes.connectivity import Connectivity
@@ -60,32 +59,28 @@ from tvb.datatypes.volumes import Volume
 
 LOGGER = get_logger(__name__)
 
-RESOLUTION_OPTIONS = {
-    '25': 25,
-    '50': 50,
-    '100': 100
-}
 
-WEIGHTS_OPTIONS = {
-    '(projection density)/(injection density)': 1,
-    'projection density': 2,
-    'projection energy': 3
-}
+class ResolutionOptionsEnum(TVBEnum):
+    TWENTY_FIVE = 25
+    FIFTY = 50
+    ONE_HUNDRED = 100
+
+
+class WeightsOptionsEnum(TVBEnum):
+    PROJECTION_DENSITY_INJECTION_DENSITY = 1
+    PROJECTION_DENSITY = 2
+    PROJECTION_ENERGY = 3
 
 
 class AllenConnectModel(ViewModel):
-    resolution = Int(
+    resolution = EnumAttr(
         label="Spatial resolution (micron)",
-        default=list(RESOLUTION_OPTIONS.values())[2],
-        choices=RESOLUTION_OPTIONS.values(),
-        required=True,
+        default=ResolutionOptionsEnum.ONE_HUNDRED,
         doc="""Definition of the weights of the connectivity :""")
 
-    weighting = Int(
+    weighting = EnumAttr(
         label="Definition of the weights of the connectivity :",
-        default=list(WEIGHTS_OPTIONS.values())[0],
-        choices=WEIGHTS_OPTIONS.values(),
-        required=True,
+        default=WeightsOptionsEnum.PROJECTION_DENSITY_INJECTION_DENSITY,
         doc="""""")
 
     inj_f_thresh = Float(
@@ -107,8 +102,8 @@ class AllenConnectomeBuilderForm(ABCAdapterForm):
 
     def __init__(self):
         super(AllenConnectomeBuilderForm, self).__init__()
-        self.resolution = SelectField(AllenConnectModel.resolution, choices=RESOLUTION_OPTIONS)
-        self.weighting = SelectField(AllenConnectModel.weighting, choices=WEIGHTS_OPTIONS)
+        self.resolution = SelectField(AllenConnectModel.resolution)
+        self.weighting = SelectField(AllenConnectModel.weighting)
         self.inj_f_thresh = FloatField(AllenConnectModel.inj_f_thresh)
         self.vol_thresh = FloatField(AllenConnectModel.vol_thresh)
 
@@ -148,7 +143,7 @@ class AllenConnectomeBuilder(ABCAdapter):
         vol_thresh = view_model.vol_thresh
 
         project = dao.get_project_by_id(self.current_project_id)
-        manifest_file = self.file_handler.get_allen_mouse_cache_folder(project.name)
+        manifest_file = self.storage_interface.get_allen_mouse_cache_folder(project.name)
         manifest_file = os.path.join(manifest_file, 'mouse_connectivity_manifest.json')
         cache = MouseConnectivityCache(resolution=resolution, manifest_file=manifest_file)
 
@@ -226,10 +221,10 @@ class AllenConnectomeBuilder(ABCAdapter):
         result_template.weighting = 'T1'
         result_template.volume = result_volume
 
-        connectivity_index = h5.store_complete(result_connectivity, self.storage_path)
-        volume_index = h5.store_complete(result_volume, self.storage_path)
-        rvm_index = h5.store_complete(result_rvm, self.storage_path)
-        template_index = h5.store_complete(result_template, self.storage_path)
+        connectivity_index = self.store_complete(result_connectivity)
+        volume_index = self.store_complete(result_volume)
+        rvm_index = self.store_complete(result_rvm)
+        template_index = self.store_complete(result_template)
 
         return [connectivity_index, volume_index, rvm_index, template_index]
 

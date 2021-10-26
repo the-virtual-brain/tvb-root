@@ -4,7 +4,7 @@
 #  TheVirtualBrain-Contributors Package. This package holds simulator extensions.
 #  See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -36,11 +36,13 @@ The original Wong and Wang model
 """
 
 import numpy
-from tvb.simulator.common import get_logger
-LOG = get_logger(__name__)
 
+from tvb.simulator.common import get_logger
 from tvb.basic.neotraits.api import NArray, Range, List, Final
 import tvb.simulator.models as models
+
+LOG = get_logger(__name__)
+
 
 class WongWang(models.Model):
     """
@@ -142,6 +144,12 @@ class WongWang(models.Model):
         domain=Range(lo=0.0, hi=1.0),
         doc="""Synaptic coupling""")
 
+    J_N = NArray(
+        label=":math:`J_{N}`",
+        default=numpy.array([0.1137, ]),
+        domain=Range(lo=0.0, hi=1.0),
+        doc="""External synaptic coupling""")
+
     J_ext = NArray(
         label=":math:`J_{ext}`",
         default=numpy.array([0.52, ]),
@@ -174,6 +182,12 @@ class WongWang(models.Model):
         doc="""[%].  Percentage coherence or motion strength. This parameter
         comes from experiments in MT cells.""")
 
+    f = NArray(
+        label=":math:`f`",
+        default=numpy.array([1., ]),  # 0.45
+        domain=Range(lo=0.0, hi=100.0),
+        doc=""" Gain of MT firing rates""")
+
     state_variable_range = Final(
         {
             "S1": numpy.array([0.0, 0.3]),
@@ -190,28 +204,14 @@ class WongWang(models.Model):
         default=("S1",),
         doc="""default state variables to be monitored""")
 
-    def __init__(self, **kwargs):
-        """
-        .. May need to put kwargs back if we can't get them from trait...
-
-        """
-
-        super(WongWang, self).__init__(**kwargs)
-
-        self._nvar = 2
-        self.cvar = numpy.array([0], dtype=numpy.int32)
-
-        #derived parameters
-        self.I_mot_l = None
-        self.I_mot_r = None
-
-        LOG.debug('%s: inited.' % repr(self))
+    state_variables = ["S1", "S2"]
+    _nvar = 2
+    cvar = numpy.array([0], dtype=numpy.int32)
 
     def configure(self):
         """  """
         super(WongWang, self).configure()
         self.update_derived_parameters()
-
 
     def dfun(self, state_variables, coupling, local_coupling=0.0):
         r"""
@@ -226,52 +226,24 @@ class WongWang(models.Model):
         lc_0_l = local_coupling * sl
         lc_0_r = local_coupling * sr
 
-        I_l = self.Jll * sl - self.Jlr*sr + self.I_mot_l + self.I_o + self.J_N * c_0 + self.J_N * lc_0_l
-        I_r = self.Jrr * sr - self.Jrl*sl + self.I_mot_r + self.I_o + self.J_N * c_0 + self.J_N * lc_0_r
+        I_l = self.J11 * sl - self.J12 * sr + self.I_mot_l + self.I_o + self.J_N * c_0 + self.J_N * lc_0_l
+        I_r = self.J22 * sr - self.J21 * sl + self.I_mot_r + self.I_o + self.J_N * c_0 + self.J_N * lc_0_r
 
-        r = lambda I_i: (self.a*I_i - self.b)*1./(1 - numpy.exp(-self.d*(self.a*I_i - self.b)))
+        r = lambda I_i: (self.a * I_i - self.b) * 1. / (1 - numpy.exp(-self.d * (self.a * I_i - self.b)))
 
-        ds1 = -sl*1./ self.tau_s + (1 - sl) * self.gamma * r(I_l) * 0.001 # to ms
-        ds2 = -sr*1./ self.tau_s + (1 - sr) * self.gamma * r(I_r) * 0.001 # to ms
+        ds1 = -sl * 1. / self.tau_s + (1 - sl) * self.gamma * r(I_l) * 0.001  # to ms
+        ds2 = -sr * 1. / self.tau_s + (1 - sr) * self.gamma * r(I_r) * 0.001  # to ms
 
         derivative = numpy.array([ds1, ds2])
         return derivative
-
 
     def update_derived_parameters(self):
         """
         Derived parameters
         """
         # Additional parameter g_stim introduced that controls I_mot strength
-        self.I_mot_l = self.J_ext * self.mu_o * (1 + self.f * self.c *1. / 100)
-        self.I_mot_r = self.J_ext * self.mu_o * (1 - self.f * self.c *1. / 100)
+        self.I_mot_l = self.J_ext * self.mu_o * (1 + self.f * self.c * 1. / 100)
+        self.I_mot_r = self.J_ext * self.mu_o * (1 - self.f * self.c * 1. / 100)
         if len(self.I_mot_l) > 1:
             self.I_mot_l = numpy.expand_dims(self.I_mot_l, -1)
             self.I_mot_r = numpy.expand_dims(self.I_mot_r, -1)
-
-
-
-if __name__ == "__main__":
-    # Do some stuff that tests or makes use of this module...
-    LOG.info("Testing %s module..." % __file__)
-
-    # Check that the docstring examples, if there are any, are accurate.
-    import doctest
-    doctest.testmod()
-
-    #Initialise Models in their default state:
-    WW = WongWang()
-
-    LOG.info("Model initialised in its default state without error...")
-
-    LOG.info("Testing phase plane interactive ... ")
-
-    # Check the Phase Plane
-    from tvb.simulator.plot.phase_plane_interactive import PhasePlaneInteractive
-    import tvb.simulator.integrators
-
-    INTEGRATOR = tvb.simulator.integrators.HeunDeterministic(dt=2**-5)
-    ppi_fig = PhasePlaneInteractive(model=WW, integrator=INTEGRATOR)
-    ppi_fig.show()
-
-#EoF

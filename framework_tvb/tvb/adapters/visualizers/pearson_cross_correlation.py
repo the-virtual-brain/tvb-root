@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -39,6 +39,7 @@ import json
 from tvb.adapters.datatypes.db.graph import CorrelationCoefficientsIndex
 from tvb.adapters.visualizers.matrix_viewer import ABCMappedArraySVGVisualizer
 from tvb.core.adapters.abcadapter import ABCAdapterForm
+from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.adapters.abcdisplayer import URLGenerator
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
@@ -74,7 +75,7 @@ class PearsonCorrelationCoefficientVisualizerForm(ABCAdapterForm):
 
     @staticmethod
     def get_filters():
-        return None
+        return FilterChain(fields=[FilterChain.datatype + '.has_valid_time_series'], operations=['=='], values=[True])
 
 
 class PearsonCorrelationCoefficientVisualizer(ABCMappedArraySVGVisualizer):
@@ -90,7 +91,7 @@ class PearsonCorrelationCoefficientVisualizer(ABCMappedArraySVGVisualizer):
 
     def launch(self, view_model):
         """Construct data for visualization and launch it."""
-        cc_gid = view_model.datatype.hex
+        cc_gid = view_model.datatype
         cc_index = self.load_entity_by_gid(cc_gid)
         assert isinstance(cc_index, CorrelationCoefficientsIndex)
         matrix_shape = cc_index.parsed_shape[0:2]

@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -28,12 +28,10 @@
 #
 #
 import os
-import shutil
 
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcuploader import ABCUploader
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.neocom import h5
 from tvb.core.neotraits.h5 import ViewModelH5
 from tvb.core.services.algorithm_service import AlgorithmService
@@ -101,13 +99,8 @@ class OperationFacade:
                         view_model_h5.store_metadata_param(key, data_file_path)
             view_model = h5.load_view_model_from_file(model_h5_path)
 
-            ga = self.operation_service.prepare_metadata(algorithm.algorithm_category, {}, None,
-                                                         current_ga=view_model.generic_attributes)
-            view_model.generic_attributes = ga
-
-            operation = self.operation_service.prepare_operation(current_user_id, project.id, algorithm,
-                                                                 view_model.gid.hex)
-            self.operation_service.store_view_model(operation, project, view_model)
+            operation = self.operation_service.prepare_operation(current_user_id, project, algorithm,
+                                                                 view_model=view_model)
             if os.path.exists(model_h5_path):
                 os.remove(model_h5_path)
 

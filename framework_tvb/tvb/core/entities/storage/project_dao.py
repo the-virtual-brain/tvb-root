@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -278,7 +278,7 @@ class CaseDAO(RootDAO):
                                              ).filter(Operation.id == operation_id).one()
         return result
 
-    def get_links_for_project(self, project_id):
+    def get_links_to_project(self, project_id):
         """
         :return all links referring to a given project_id
         """

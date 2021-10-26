@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,12 +35,10 @@
 import numpy
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.core.adapters.abcuploader import ABCUploader, ABCUploaderForm
-from tvb.core.entities.file.files_helper import FilesHelper
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.neotraits.uploader_view_model import UploaderViewModel
-from tvb.core.neotraits.view_model import Str, Attr
+from tvb.core.neotraits.view_model import Str
 from tvb.core.neotraits.forms import TraitUploadField, SelectField
-from tvb.core.neocom import h5
 from tvb.datatypes.connectivity import Connectivity
 
 NORMALIZATION_OPTIONS = {'Region (node)': 'region', 'Absolute (max weight)': 'tract'}
@@ -65,8 +63,7 @@ class ZIPConnectivityImporterForm(ABCUploaderForm):
         super(ZIPConnectivityImporterForm, self).__init__()
 
         self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', 'uploaded')
-        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, name='normalization',
-                                         choices=NORMALIZATION_OPTIONS)
+        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, name='normalization')
 
     @staticmethod
     def get_view_model():
@@ -116,7 +113,7 @@ class ZIPConnectivityImporter(ABCUploader):
         if view_model.uploaded is None:
             raise LaunchException("Please select ZIP file which contains data to import")
 
-        files = FilesHelper().unpack_zip(view_model.uploaded, self.storage_path)
+        files = self.storage_interface.unpack_zip(view_model.uploaded, self.get_storage_path())
 
         weights_matrix = None
         centres = None
@@ -146,7 +143,7 @@ class ZIPConnectivityImporter(ABCUploader):
                 hemisphere_vector = self.read_list_data(file_name, dtype=numpy.bool)
 
         # Clean remaining text-files.
-        FilesHelper.remove_files(files, True)
+        self.storage_interface.remove_files(files, True)
 
         result = Connectivity()
 
@@ -206,4 +203,4 @@ class ZIPConnectivityImporter(ABCUploader):
             result.hemispheres = hemisphere_vector
 
         result.configure()
-        return h5.store_complete(result, self.storage_path)
+        return self.store_complete(result)

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 #
 #
-#  TheVirtualBrain-Scientific Package. This package holds all simulators, and
+# TheVirtualBrain-Scientific Package. This package holds all simulators, and
 # analysers necessary to run brain-simulations. You can use it stand alone or
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -321,7 +321,7 @@ class Generic2dOscillator(ModelNumbaDfun):
         of=str,
         label="Variables or quantities available to Monitors",
         choices=("V", "W", "V + W", "V - W"),
-        default=("V", ),
+        default=("V",),
         doc="The quantities of interest for monitoring for the generic 2D oscillator.")
 
     state_variables = ('V', 'W')
@@ -332,7 +332,7 @@ class Generic2dOscillator(ModelNumbaDfun):
         V = state_variables[0, :]
         W = state_variables[1, :]
 
-        #[State_variables, nodes]
+        # [State_variables, nodes]
         c_0 = coupling[0, :]
 
         tau = self.tau
@@ -357,7 +357,6 @@ class Generic2dOscillator(ModelNumbaDfun):
         ev = RefBase.evaluate
         ev('d * tau * (alpha * W - f * V**3 + e * V**2 + g * V + gamma * I + gamma *c_0 + lc_0)', out=derivative[0])
         ev('d * (a + b * V + c * V**2 - beta * W) / tau', out=derivative[1])
-
 
         return derivative
 
@@ -387,13 +386,14 @@ class Generic2dOscillator(ModelNumbaDfun):
         return deriv.T[..., numpy.newaxis]
 
 
-@guvectorize([(float64[:],) * 16], '(n),(m)' + ',()'*13 + '->(n)', nopython=True)
+@guvectorize([(float64[:],) * 16], '(n),(m)' + ',()' * 13 + '->(n)', nopython=True)
 def _numba_dfun_g2d(vw, c_0, tau, I, a, b, c, d, e, f, g, beta, alpha, gamma, lc_0, dx):
     "Gufunc for Generic2dOscillator model equations."
     V = vw[0]
     V2 = V * V
     W = vw[1]
-    dx[0] = d[0] * tau[0] * (alpha[0] * W - f[0] * V2*V + e[0] * V2 + g[0] * V + gamma[0] * I[0] + gamma[0] * c_0[0] + lc_0[0])
+    dx[0] = d[0] * tau[0] * (
+                alpha[0] * W - f[0] * V2 * V + e[0] * V2 + g[0] * V + gamma[0] * I[0] + gamma[0] * c_0[0] + lc_0[0])
     dx[1] = d[0] * (a[0] + b[0] * V + c[0] * V2 - beta[0] * W) / tau[0]
 
 
@@ -431,7 +431,7 @@ class Kuramoto(Model):
         label=r":math:`\omega`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.01, hi=200.0, step=0.1),
-        doc=""":math:`\omega` sets the base line frequency for the
+        doc=""":math:`\\omega` sets the base line frequency for the
             Kuramoto oscillator in [rad/ms]""")
 
     state_variable_range = Final(
@@ -471,14 +471,14 @@ class Kuramoto(Model):
         """
 
         theta = state_variables[0, :]
-        #import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
-        #A) Distribution of phases according to the local connectivity kernel
+        # A) Distribution of phases according to the local connectivity kernel
         local_range_coupling = numpy.sin(local_coupling * theta)
 
         # NOTE: To evaluate.
-        #B) Strength of the interactions
-        #local_range_coupling = local_coupling * numpy.sin(theta)
+        # B) Strength of the interactions
+        # local_range_coupling = local_coupling * numpy.sin(theta)
 
         I = coupling[0, :] + local_range_coupling
 
@@ -499,21 +499,21 @@ class SupHopf(ModelNumbaDfun):
     for a < 0, the local dynamics has a stable fixed point and the system corresponds to a damped oscillatory 
     state, whereas for a > 0, the local dynamics enters in a stable limit cycle and the system switches to an 
     oscillatory state.
-    
+
     See for examples:
-    
+
     .. [Kuznetsov_2013] Kuznetsov, Y.A. *Elements of applied bifurcation theory.* Springer Sci & Business
         Media, 2013, vol. 112.
-    
+
     .. [Deco_2017a] Deco, G., Kringelbach, M.L., Jirsa, V.K., Ritter, P. *The dynamics of resting fluctuations
        in the brain: metastability and its dynamical cortical core* Sci Reports, 2017, 7: 3095.
-    
+
     The equations of the supHopf equations read as follows:
-    
+
     .. math::
         \dot{x}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})x_{i} - {\omega}{i}y_{i} \\
         \dot{y}_{i} &= (a_{i} - x_{i}^{2} - y_{i}^{2})y_{i} + {\omega}{i}x_{i}
-    
+
     where a is the local bifurcation parameter and omega the angular frequency.
     """
 
@@ -548,9 +548,9 @@ class SupHopf(ModelNumbaDfun):
         doc="Quantities of supHopf available to monitor.")
 
     state_variables = ["x", "y"]
-    
-    _nvar = 2                                           # number of state-variables
-    cvar = numpy.array([0, 1], dtype=numpy.int32)       # coupling variables
+
+    _nvar = 2  # number of state-variables
+    cvar = numpy.array([0, 1], dtype=numpy.int32)  # coupling variables
 
     def _numpy_dfun(self, state_variables, coupling, local_coupling=0.0,
                     array=numpy.array, where=numpy.where, concat=numpy.concatenate):
@@ -587,7 +587,7 @@ class SupHopf(ModelNumbaDfun):
         c_ = c.reshape(c.shape[:-1]).T
         lc_0 = local_coupling * x[0, :, 0]
         deriv = _numba_dfun_supHopf(x_, c_, self.a, self.omega, lc_0)
-        
+
         return deriv.T[..., numpy.newaxis]
 
 
@@ -595,10 +595,10 @@ class SupHopf(ModelNumbaDfun):
 def _numba_dfun_supHopf(y, c, a, omega, lc_0, ydot):
     "Gufunc for supHopf model equations."
 
-    #long-range coupling
+    # long-range coupling
     c_0 = c[0]
     c_1 = c[1]
 
-    #supHopf equations
-    ydot[0] = (a[0] - y[0]**2 - y[1]**2) * y[0] - omega[0] * y[1] + c_0 + lc_0[0]
-    ydot[1] = (a[0] - y[0]**2 - y[1]**2) * y[1] + omega[0] * y[0] + c_1
+    # supHopf equations
+    ydot[0] = (a[0] - y[0] ** 2 - y[1] ** 2) * y[0] - omega[0] * y[1] + c_0 + lc_0[0]
+    ydot[1] = (a[0] - y[0] ** 2 - y[1] ** 2) * y[1] + omega[0] * y[0] + c_1

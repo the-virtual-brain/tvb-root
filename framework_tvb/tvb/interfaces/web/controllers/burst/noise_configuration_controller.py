@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,8 +35,7 @@ import json
 import cherrypy
 
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
-from tvb.core.entities.file.files_helper import FilesHelper
-from tvb.core.entities.storage import dao
+from tvb.core.entities import load
 from tvb.core.services.burst_config_serialization import SerializationManager
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -59,8 +58,7 @@ class NoiseConfigurationController(BurstBaseController):
     @expose_page
     def index(self):
         des = SerializationManager(self.simulator_context.simulator)
-        connectivity = des.conf.connectivity
-        conn_idx = dao.get_datatype_by_gid(connectivity.hex)
+        conn_idx = load.load_entity_by_gid(des.conf.connectivity)
         model = des.conf.model
         integrator = des.conf.integrator
 
@@ -69,18 +67,17 @@ class NoiseConfigurationController(BurstBaseController):
         initial_noise = self.group_noise_array_by_state_var(noise_values, state_vars, conn_idx.number_of_regions)
 
         current_project = common.get_current_project()
-        file_handler = FilesHelper()
-        conn_path = file_handler.get_project_folder(current_project, str(conn_idx.fk_from_operation))
 
-        params = ConnectivityViewer.get_connectivity_parameters(conn_idx, conn_path)
+        params = ConnectivityViewer.get_connectivity_parameters(conn_idx, current_project.name,
+                                                                str(conn_idx.fk_from_operation))
         params.update({
             'title': 'Noise configuration',
             'mainContent': 'burst/noise',
             'isSingleMode': True,
             'submit_parameters_url': '/burst/noise/submit',
             'stateVars': state_vars,
-            'stateVarsJson' : json.dumps(state_vars),
-            'noiseInputValues' : initial_noise[0],
+            'stateVarsJson': json.dumps(state_vars),
+            'noiseInputValues': initial_noise[0],
             'initialNoiseValues': json.dumps(initial_noise)
         })
         return self.fill_default_attributes(params, 'regionmodel')
@@ -133,4 +130,4 @@ class NoiseConfigurationController(BurstBaseController):
         elif nsig.shape == (nr_state_vars, nr_nodes):
             return noise_values
         else:
-            raise ValueError("Got unexpected noise shape %s." % (nsig.shape, ))
+            raise ValueError("Got unexpected noise shape %s." % (nsig.shape,))

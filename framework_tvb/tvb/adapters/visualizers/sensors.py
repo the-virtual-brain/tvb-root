@@ -6,7 +6,7 @@
 # TheVirtualBrain-Scientific Package (for simulators). See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -35,18 +35,17 @@
 
 import json
 
-from tvb.basic.logger.builder import get_logger
+from tvb.adapters.datatypes.db.sensors import SensorsIndex
 from tvb.adapters.visualizers.surface_view import ensure_shell_surface, SurfaceURLGenerator
+from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.adapters.abcdisplayer import ABCDisplayer, URLGenerator
 from tvb.core.adapters.exceptions import LaunchException
-from tvb.adapters.datatypes.db.sensors import SensorsIndex
-from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.neotraits.forms import TraitDataTypeSelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.sensors import SensorsInternal, SensorsEEG, SensorsMEG, Sensors
-from tvb.datatypes.surfaces import Surface, CORTICAL, EEG_CAP
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 LOG = get_logger(__name__)
 
@@ -105,11 +104,8 @@ def function_sensors_to_surface(sensors_gid, surface_to_map_gid):
     Assumes coordinate systems are aligned, i.e. common x,y,z and origin.
 
     """
-    index = load_entity_by_gid(sensors_gid)
-    sensors_dt = h5.load_from_index(index)
-
-    index = load_entity_by_gid(surface_to_map_gid)
-    surface_dt = h5.load_from_index(index)
+    sensors_dt = h5.load_from_gid(sensors_gid)
+    surface_dt = h5.load_from_gid(surface_to_map_gid)
 
     return sensors_dt.sensors_to_surface(surface_dt).tolist()
 
@@ -209,7 +205,8 @@ class SensorsViewer(ABCDisplayer):
 
         params = prepare_sensors_as_measure_points_params(internal_sensors)
 
-        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface, CORTICAL)
+        shell_surface = ensure_shell_surface(self.current_project_id, shell_surface,
+                                             SurfaceTypesEnum.CORTICAL_SURFACE.value)
 
         params['shellObject'] = self.prepare_shell_surface_params(shell_surface, SurfaceURLGenerator)
 
@@ -219,7 +216,7 @@ class SensorsViewer(ABCDisplayer):
     def _params_eeg_sensors(self, eeg_sensors, eeg_cap=None, shell_surface=None):
 
         if eeg_cap is None:
-            eeg_cap = ensure_shell_surface(self.current_project_id, eeg_cap, EEG_CAP)
+            eeg_cap = ensure_shell_surface(self.current_project_id, eeg_cap, SurfaceTypesEnum.EEG_CAP_SURFACE.value)
 
         params = prepare_mapped_sensors_as_measure_points_params(eeg_sensors, eeg_cap, self.stored_adapter.id)
 
@@ -231,8 +228,7 @@ class SensorsViewer(ABCDisplayer):
         })
 
         if eeg_cap is not None:
-            eeg_cap_h5_class, eeg_cap_h5_path = self.load_h5_of_gid(eeg_cap.gid)
-            with eeg_cap_h5_class(eeg_cap_h5_path) as eeg_cap_h5:
+            with h5.h5_file_for_gid(eeg_cap.gid) as eeg_cap_h5:
                 params.update(self._compute_surface_params(eeg_cap_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,
@@ -250,8 +246,7 @@ class SensorsViewer(ABCDisplayer):
             'boundaryURL': '', 'urlRegionMap': ''})
 
         if projection_surface is not None:
-            projection_surface_h5_class, projection_surface_h5_path = self.load_h5_of_gid(projection_surface.gid)
-            with projection_surface_h5_class(projection_surface_h5_path) as projection_surface_h5:
+            with h5.h5_file_for_gid(projection_surface.gid) as projection_surface_h5:
                 params.update(self._compute_surface_params(projection_surface_h5))
 
         return self.build_display_result("sensors/sensors_eeg", params,

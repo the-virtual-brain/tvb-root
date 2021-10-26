@@ -6,7 +6,7 @@
 # in conjunction with TheVirtualBrain-Framework Package. See content of the
 # documentation-folder for more details. See also http://www.thevirtualbrain.org
 #
-# (c) 2012-2020, Baycrest Centre for Geriatric Care ("Baycrest") and others
+# (c) 2012-2022, Baycrest Centre for Geriatric Care ("Baycrest") and others
 #
 # This program is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software Foundation,
@@ -32,6 +32,6 @@
 The public api of the neotraits package.
 """
 
-from ._core import HasTraits, trait_property, cached_trait_property
+from ._core import HasTraits, TupleEnum, TVBEnum, TVBEnum, trait_property, cached_trait_property
 from .info import narray_describe, narray_summary_info
-from ._attr import Attr, Int, Float, NArray, Final, List, Range, LinspaceRange, Dim
+from ._attr import Attr, Int, Float, NArray, Final, List, EnumAttr, Range, LinspaceRange, Dim
