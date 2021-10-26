@@ -243,6 +243,7 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
         "Check that rerunning the config doesn't increase matrix size"
         sim = self._build_test_sim_eeg()
         eeg, = sim.monitors
+        eeg: monitors.EEG
         initial_gain_shape = eeg.gain.shape
         eeg.config_for_sim(sim)
         reconfig_gain_shape = eeg.gain.shape

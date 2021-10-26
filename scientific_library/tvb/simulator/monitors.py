@@ -490,9 +490,15 @@ class Projection(Monitor):
             "projection matrices. Please select an appropriate projection "
             "matrix."
         )
+    
+    _gain_configuration_done = False
 
     def config_for_sim(self, simulator):
         "Configure projection matrix monitor for given simulation."
+
+        # method body is not idempotent, so if we've been here before, don't redo
+        if self._gain_configuration_done:
+            return
 
         super(Projection, self).config_for_sim(simulator)
         self._sim = simulator
@@ -547,9 +553,13 @@ class Projection(Monitor):
             self.gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
-        if not using_cortical_surface and self.gain.shape[1] == self.rmap.size:
+        # NB gain may be loaded already, only cortical
+        cortical_rmap = self.rmap.copy()
+        for i in non_cortical_indices:
+            cortical_rmap = numpy.delete(cortical_rmap, numpy.argwhere(cortical_rmap==i)[:,0])
+        if not using_cortical_surface and self.gain.shape[1] == cortical_rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
-            numpy_add_at(gain.T, self.rmap, self.gain.T)
+            numpy_add_at(gain.T, cortical_rmap, self.gain.T)
             self.log.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
             self.gain = gain
 
@@ -558,11 +568,14 @@ class Projection(Monitor):
             # need matrix of shape (proj.shape[0], len(sc_ind))
             src = conn.centres[non_cortical_indices], conn.orientations[non_cortical_indices]
             sub_gain = self.analytic(*src)
-            full_gain = numpy.zeros((self.gain.shape[0], self.gain.shape[1] + sub_gain.shape[1]))
-            full_gain[:, cortical_indices] = self.gain
-            full_gain[:, non_cortical_indices] = self.analytic(*src)
-            self.gain = full_gain
-            self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
+            if self.gain.shape[1] == (cortical_indices.size + non_cortical_indices.size):
+                self.gain[:, non_cortical_indices] = sub_gain
+            else:
+                full_gain = numpy.zeros((self.gain.shape[0], self.gain.shape[1] + sub_gain.shape[1]))
+                full_gain[:, cortical_indices] = self.gain
+                full_gain[:, non_cortical_indices] = self.analytic(*src)
+                self.gain = full_gain
+                self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
 
         if self.sensors.usable is not None and not self.sensors.usable.all():
             mask_unusable = ~self.sensors.usable
@@ -577,6 +590,7 @@ class Projection(Monitor):
         # attrs used for recording
         self._state = numpy.zeros((self.gain.shape[0], len(self.voi)))
         self._period_in_steps = int(self.period / self.dt)
+        self._gain_configuration_done = True
         self.log.debug('State shape %s, period in steps %s', self._state.shape, self._period_in_steps)
 
         self.log.info('Projection configured gain shape %s', self.gain.shape)
