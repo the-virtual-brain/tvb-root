@@ -54,7 +54,7 @@ class DatatypeFacade:
         h5_path = h5_file_for_index(index).path
         file_name = os.path.basename(h5_path)
 
-        if TvbProfile.current.web.ENCRYPT_STORAGE:
+        if StorageInterface.encryption_enabled():
             if public_key_path and os.path.exists(public_key_path):
                 operation = dao.get_operation_by_id(index.fk_from_operation)
                 project = dao.get_project_by_id(operation.fk_launched_in)
