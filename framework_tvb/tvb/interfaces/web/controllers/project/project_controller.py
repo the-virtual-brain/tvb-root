@@ -188,7 +188,9 @@ class ProjectController(BaseController):
                 data = EditForm().to_python(data)
                 saved_project = self.project_service.store_project(current_user, is_create, project_id, **data)
                 if StorageInterface.encryption_enabled() and is_create:
-                    StorageInterface().remove_project(saved_project, True)
+                    project_folder = self.storage_interface.get_project_folder(saved_project.name)
+                    self.storage_interface.sync_folders(project_folder)
+                    self.storage_interface.remove_folder(project_folder)
                 self._mark_selected(saved_project)
                 raise cherrypy.HTTPRedirect('/project/viewall')
         except formencode.Invalid as excep:
