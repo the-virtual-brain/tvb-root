@@ -206,7 +206,9 @@ class ImportService(object):
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
             if StorageInterface.encryption_enabled():
-                self.storage_interface.remove_project(project, True)
+                project_folder = self.storage_interface.get_project_folder(project.name)
+                self.storage_interface.sync_folders(project_folder)
+                self.storage_interface.remove_folder(project_folder)
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """
