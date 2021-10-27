@@ -50,6 +50,7 @@ from tvb.interfaces.rest.server.resources.simulator.simulation_resource import F
 from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource, \
     GetUsersResource, LinksResource
 from tvb.interfaces.rest.server.rest_api import RestApi
+from tvb.storage.storage_interface import StorageInterface
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
@@ -140,6 +141,11 @@ def initialize_flask():
     api.add_namespace(name_space_datatypes)
     api.add_namespace(name_space_operations)
     api.add_namespace(name_space_simulation)
+
+    if StorageInterface.encryption_enabled() and StorageInterface.app_encryption_handler():
+        storage_interface = StorageInterface()
+        storage_interface.start()
+        storage_interface.startup_cleanup()
 
     # Register keycloak authorization manager
     AuthorizationManager(TvbProfile.current.KEYCLOAK_CONFIG)

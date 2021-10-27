@@ -67,7 +67,7 @@ class TVBClient:
         self.datatype_api = DataTypeApi(server_url, auth_token)
         self.simulation_api = SimulationApi(server_url, auth_token)
         self.operation_api = OperationApi(server_url, auth_token)
-        self.is_data_encrypted = self.datatype_api.is_data_encrypted()
+        self.is_data_encrypted = None
 
     @staticmethod
     def _test_free_port(login_callback_port):
@@ -82,6 +82,7 @@ class TVBClient:
     def browser_login(self):
         login_response = self.user_api.browser_login(self.login_callback_port, self.open_browser)
         self._update_token(login_response)
+        self.is_data_encrypted = self.datatype_api.is_data_encrypted()
 
     @staticmethod
     def open_browser(url):

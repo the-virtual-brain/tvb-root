@@ -43,23 +43,30 @@ from tvb.storage.storage_interface import StorageInterface
 class DatatypeFacade:
     def __init__(self):
         self.algorithm_service = AlgorithmService()
+        self.storage_interface = StorageInterface()
 
     @staticmethod
     def is_data_encrypted():
-        return TvbProfile.current.web.ENCRYPT_STORAGE
+        return StorageInterface.encryption_enabled()
 
-    @staticmethod
-    def get_dt_h5_path(datatype_gid, public_key_path=None):
+    def get_dt_h5_path(self, datatype_gid, public_key_path=None):
         index = load_entity_by_gid(datatype_gid)
         h5_path = h5_file_for_index(index).path
         file_name = os.path.basename(h5_path)
 
         if TvbProfile.current.web.ENCRYPT_STORAGE:
             if public_key_path and os.path.exists(public_key_path):
-                encrypted_h5_path = StorageInterface().export_datatype_from_rest_server(
+                operation = dao.get_operation_by_id(index.fk_from_operation)
+                project = dao.get_project_by_id(operation.fk_launched_in)
+                folder_path = self.storage_interface.get_project_folder(project.name)
+                self.storage_interface.inc_running_op_count(folder_path)
+                self.storage_interface.sync_folders(folder_path)
+                encrypted_h5_path = self.storage_interface.export_datatype_from_rest_server(
                     h5_path, index, file_name, public_key_path)
                 file_name = file_name.replace(StorageInterface.TVB_STORAGE_FILE_EXTENSION,
                                               StorageInterface.TVB_ZIP_FILE_EXTENSION)
+                self.storage_interface.dec_running_op_count(folder_path)
+                self.storage_interface.check_and_delete(folder_path)
                 return encrypted_h5_path, file_name
             else:
                 raise ServiceException('Client requested encrypted retrieval of data but the server has no'
