@@ -370,99 +370,9 @@ class Simulator(HasTraits):
         self.current_state = state
         self.current_step = self.current_step + n_steps
 
-<<<<<<< HEAD
     def _configure_history(self, initial_conditions=None):
         "Initialize history instance; cf. from_simulator for more information."
         self.history = SparseHistory.from_simulator(self, initial_conditions)
-=======
-    def _configure_history(self, initial_conditions):
-        """
-        Set initial conditions for the simulation using either the provided
-        initial_conditions or, if none are provided, the model's initial()
-        method. This method is called durin the Simulator's __init__().
-
-        Any initial_conditions that are provided as an argument are expected
-        to have dimensions 1, 2, and 3 with shapse corresponding to the number
-        of state_variables, nodes and modes, respectively. If the provided
-        inital_conditions are shorter in time (dim=0) than the required history
-        the model's initial() method is called to make up the difference.
-
-        """
-        rng = numpy.random
-        if hasattr(self.integrator, 'noise'):
-            rng = self.integrator.noise.random_stream
-        # Default initial conditions
-        if initial_conditions is None:
-            n_time, n_svar, n_node, n_mode = self.good_history_shape
-            self.log.info('Preparing initial history of shape %r using model.initial()', self.good_history_shape)
-            if self.surface is not None:
-                n_node = self.number_of_nodes
-            history = self.model.initial(self.integrator.dt, (n_time, n_svar, n_node, n_mode), rng)
-        # ICs provided
-        else:
-            # history should be [timepoints, state_variables, nodes, modes]
-            self.log.info('Using provided initial history of shape %r', initial_conditions.shape)
-            n_time, n_svar, n_node, n_mode = ic_shape = initial_conditions.shape
-            nr = self.connectivity.number_of_regions
-            if self.surface is not None and n_node == nr:
-                initial_conditions = initial_conditions[:, :, self._regmap]
-                return self._configure_history(initial_conditions)
-            elif self.surface is None and ic_shape[1:] != self.good_history_shape[1:]:
-                raise ValueError("Incorrect history sample shape %s, expected %s"
-                                 % (ic_shape[1:], self.good_history_shape[1:]))
-            else:
-                if ic_shape[0] >= self.horizon:
-                    self.log.debug("Using last %d time-steps for history.", self.horizon)
-                    history = initial_conditions[-self.horizon:, :, :, :].copy()
-                else:
-                    self.log.debug('Padding initial conditions with model.initial')
-                    history = self.model.initial(self.integrator.dt, self.good_history_shape, rng)
-                    shift = self.current_step % self.horizon
-                    history = numpy.roll(history, -shift, axis=0)
-                    if self.surface is not None:
-                        self.log.info("Averaging surface ICs to ROI ICs to obtain history")
-                        # TODO refactor, callling reference impl
-                        n_reg = self.connectivity.number_of_regions
-                        (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
-                        region_initial_conditions = numpy.zeros((nt, ns, n_reg, nm))
-                        numpy_add_at(region_initial_conditions.transpose(ax), self._regmap, initial_conditions.transpose(ax))
-                        region_initial_conditions /= numpy.bincount(self._regmap).reshape((-1, 1))
-                        history[:region_initial_conditions.shape[0], :, :, :] = region_initial_conditions
-                    else:
-                        history[:ic_shape[0], :, :, :] = initial_conditions
-                    history = numpy.roll(history, shift, axis=0)
-                self.current_step += ic_shape[0] - 1
-
-        if self.integrator.state_variable_boundaries is not None:
-            self.integrator.bound_state(numpy.swapaxes(history, 0, 1))
-        self.log.info('Final initial history shape is %r', history.shape)
-
-        if self.surface is not None and initial_conditions is not None:
-            # ensure 4D
-            # TODO refactor to backend
-            initial_conditions = initial_conditions.reshape((-1, ) + initial_conditions.shape[-3:])
-            self.current_state = initial_conditions[-1].copy()
-        else:
-            self.current_state = history[self.current_step % self.horizon].copy()
-        self.log.info('initial state has shape %r' % (self.current_state.shape, ))
-
-        if self.surface is not None and history.shape[2] > self.connectivity.number_of_regions:
-            n_reg = self.connectivity.number_of_regions
-            (nt, ns, _, nm), ax = history.shape, (2, 0, 1, 3)
-            region_history = numpy.zeros((nt, ns, n_reg, nm))
-            numpy_add_at(region_history.transpose(ax), self._regmap, history.transpose(ax))
-            region_history /= numpy.bincount(self._regmap).reshape((-1, 1))
-            history = region_history
-        # create history query implementation
-        self.history = SparseHistory(
-            self.connectivity.weights,
-            self.connectivity.idelays,
-            self.model.cvar,
-            self.model.number_of_modes
-        )
-        # initialize its buffer
-        self.history.initialize(history)
->>>>>>> 9463404f2 (use ic for state iff not None)
 
     def _configure_integrator_noise(self):
         """
