@@ -296,7 +296,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
             return project_key
 
-        project_key = EncryptionHandler.generate_random_password(64)
+        project_key = EncryptionHandler.generate_random_password()
         with open(encrypted_project_key, "wb") as fOut:
             pass_stream = BytesIO(str.encode(project_key))
             pyAesCrypt.encryptStream(pass_stream, fOut, password_encryption_key, 64 * 1024)
