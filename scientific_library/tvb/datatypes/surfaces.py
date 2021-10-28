@@ -95,6 +95,7 @@ class SurfaceTypesEnum(TVBEnum):
     EEG_CAP_SURFACE = "EEG Cap"
     FACE_SURFACE = "Face"
     WHITE_MATTER_SURFACE = "White Matter"
+    BRAIN_SURFACE = "Brain Surface"
     KEY_OPTION_READ_METADATA = 'Specified in the file metadata'  # This last option will be displayed only for gifti
     # surface importer
 
@@ -720,6 +721,15 @@ class FaceSurface(Surface):
         return super(FaceSurface, cls).from_file(source_file)
 
 
+class BrainSurface(Surface):
+    """Brain surface (cortical + subcortical)"""
+    surface_type = Final(field_type=str, default=SurfaceTypesEnum.BRAIN_SURFACE.value)
+
+    @classmethod
+    def from_file(cls, source_file="brain_surface_40686.zip"):
+        return super(BrainSurface, cls).from_file(source_file)
+
+
 def make_surface(surface_type):
     """
     Build a Surface instance, based on an input type
@@ -740,6 +750,8 @@ def make_surface(surface_type):
         return FaceSurface()
     elif surface_type == SurfaceTypesEnum.WHITE_MATTER_SURFACE.value:
         return WhiteMatterSurface()
+    elif surface_type == SurfaceTypesEnum.BRAIN_SURFACE.value:
+        return BrainSurface()
 
     return None
 

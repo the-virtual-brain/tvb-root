@@ -77,8 +77,10 @@ class RegionMappingImporterForm(ABCUploaderForm):
 
         self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'),
                                              'mapping_file')
-        surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
-                                         values=[SurfaceTypesEnum.CORTICAL_SURFACE.value])
+        surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type',
+                                                 FilterChain.datatype + '.surface_type'], operations=['==', '=='],
+                                         values=[SurfaceTypesEnum.CORTICAL_SURFACE.value,
+                                                 SurfaceTypesEnum.BRAIN_SURFACE.value], operator_between_fields='or')
         self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, name='surface',
                                                 conditions=surface_conditions)
         self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, name='connectivity')
