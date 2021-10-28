@@ -110,6 +110,10 @@ class AlgorithmService(object):
     def fill_selectfield_with_datatypes(self, field, project_id, extra_conditions=None):
         # type: (TraitDataTypeSelectField, int, list) -> None
         filtering_conditions = FilterChain()
+
+        if field.conditions is not None:
+            filtering_conditions.operator_between_fields = field.conditions.operator_between_fields
+
         filtering_conditions += field.conditions
         filtering_conditions += extra_conditions
         datatypes, _ = dao.get_values_of_datatype(project_id, field.datatype_index, filtering_conditions)
