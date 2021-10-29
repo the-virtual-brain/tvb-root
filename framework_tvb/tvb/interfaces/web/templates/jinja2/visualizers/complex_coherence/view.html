@@ -1,10 +1,10 @@
 <div id="complex_coherence" class="view-column">
 
-    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
-    <script type="text/javascript" src="/static_view/complex_coherence/complex_coherence.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static_view/commons/scripts/drawCurve.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/complex_coherence/complex_coherence.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/scripts/drawCurve.js?{{ currentVersionJS }}"></script>
 
-    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
+    <link type="text/css" rel="stylesheet" href="{{ deploy_context | safe }}/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
 
     <div id="svg-viewer"></div>
 
