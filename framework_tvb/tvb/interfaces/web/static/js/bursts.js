@@ -638,7 +638,7 @@ function setInitialFocusOnButton(simulator_params) {
 
 function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
     $.ajax({
-        url: '/burst/set_fragment_url',
+        url: deploy_context + '/burst/set_fragment_url',
         type: 'POST',
         data: {"url": previous_action},
     });
@@ -720,7 +720,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     var fieldset = currentForm.elements[0];
 
     $.ajax({
-        url: post_url,
+        url: deploy_context + post_url,
         type: request_method,
         data: form_data,
         success: function (response) {
