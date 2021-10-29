@@ -134,25 +134,33 @@ def init_cherrypy(arguments=None):
                                                'tools.staticdir.root': module_path}
 
     # Mount controllers, and specify the root URL for them.
-    cherrypy.tree.mount(BaseController(), "/", config=CONFIGUER)
-    cherrypy.tree.mount(UserController(), "/user/", config=CONFIGUER)
-    cherrypy.tree.mount(ProjectController(), "/project/", config=CONFIGUER)
-    cherrypy.tree.mount(FigureController(), "/project/figure/", config=CONFIGUER)
-    cherrypy.tree.mount(FlowController(), "/flow/", config=CONFIGUER)
-    cherrypy.tree.mount(SettingsController(), "/settings/", config=CONFIGUER)
-    cherrypy.tree.mount(HelpController(), "/help/", config=CONFIGUER)
-    cherrypy.tree.mount(SimulatorController(), "/burst/", config=CONFIGUER)
-    cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config=CONFIGUER)
-    cherrypy.tree.mount(DynamicModelController(), "/burst/dynamic/", config=CONFIGUER)
-    cherrypy.tree.mount(SpatioTemporalController(), "/spatial/", config=CONFIGUER)
-    cherrypy.tree.mount(RegionsModelParametersController(), "/burst/modelparameters/regions/", config=CONFIGUER)
-    cherrypy.tree.mount(SurfaceModelParametersController(), "/spatial/modelparameters/surface/", config=CONFIGUER)
-    cherrypy.tree.mount(RegionStimulusController(), "/spatial/stimulus/region/", config=CONFIGUER)
-    cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)
-    cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
-    cherrypy.tree.mount(NoiseConfigurationController(), "/burst/noise/", config=CONFIGUER)
-    cherrypy.tree.mount(HPCController(), "/hpc/", config=CONFIGUER)
-    cherrypy.tree.mount(KubeController(), "/kube/", config=CONFIGUER)
+    cherrypy.tree.mount(BaseController(), BaseController.build_path("/"), config=CONFIGUER)
+    cherrypy.tree.mount(UserController(), BaseController.build_path("/user/"), config=CONFIGUER)
+    cherrypy.tree.mount(ProjectController(), BaseController.build_path("/project/"), config=CONFIGUER)
+    cherrypy.tree.mount(FigureController(), BaseController.build_path("/project/figure/"), config=CONFIGUER)
+    cherrypy.tree.mount(FlowController(), BaseController.build_path("/flow/"), config=CONFIGUER)
+    cherrypy.tree.mount(SettingsController(), BaseController.build_path("/settings/"), config=CONFIGUER)
+    cherrypy.tree.mount(HelpController(), BaseController.build_path("/help/"), config=CONFIGUER)
+    cherrypy.tree.mount(SimulatorController(), BaseController.build_path("/burst/"), config=CONFIGUER)
+    cherrypy.tree.mount(ParameterExplorationController(), BaseController.build_path("/burst/explore/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(DynamicModelController(), BaseController.build_path("/burst/dynamic/"), config=CONFIGUER)
+    cherrypy.tree.mount(SpatioTemporalController(), BaseController.build_path("/spatial/"), config=CONFIGUER)
+    cherrypy.tree.mount(RegionsModelParametersController(),
+                        BaseController.build_path("/burst/modelparameters/regions/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(SurfaceModelParametersController(),
+                        BaseController.build_path("/spatial/modelparameters/surface/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(RegionStimulusController(), BaseController.build_path("/spatial/stimulus/region/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(SurfaceStimulusController(), BaseController.build_path("/spatial/stimulus/surface/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(LocalConnectivityController(), BaseController.build_path("/spatial/localconnectivity/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(NoiseConfigurationController(), BaseController.build_path("/burst/noise/"), config=CONFIGUER)
+    cherrypy.tree.mount(HPCController(), BaseController.build_path("/hpc/"), config=CONFIGUER)
+    cherrypy.tree.mount(KubeController(), BaseController.build_path("/kube/"), config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 

@@ -52,8 +52,8 @@ from tvb.interfaces.web.controllers.decorators import expose_page, expose_json, 
     handle_error, check_user
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 
-LOAD_EXISTING_URL = '/spatial/stimulus/surface/load_surface_stimulus'
-RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/surface/reload_default'
+LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/stimulus/surface/load_surface_stimulus')
+RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/stimulus/surface/reload_default')
 CHUNK_SIZE = 20
 
 KEY_SURFACE_STIMULI = "stim-surface"
@@ -104,7 +104,7 @@ class SurfaceStimulusController(SpatioTemporalController):
     DISPLAY_NAME_FIELD = 'set_display_name'
     SPATIAL_PARAMS_FIELD = 'set_spatial_param'
     TEMPORAL_PARAMS_FIELD = 'set_temporal_param'
-    base_url = '/spatial/stimulus/surface'
+    base_url = SpatioTemporalController.build_path('/spatial/stimulus/surface')
 
     @cherrypy.expose
     @using_template('form_fields/form_field')
@@ -188,7 +188,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         template_specification['mainContent'] = 'spatial/stimulus_surface_step1_main'
         template_specification['baseUrl'] = self.base_url
         template_specification['spatialFieldsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
-        template_specification['next_step_url'] = '/spatial/stimulus/surface/step_1_submit'
+        template_specification['next_step_url'] = self.build_path('/spatial/stimulus/surface/step_1_submit')
         template_specification['definedFocalPoints'] = current_surface_stim.focal_points_triangles.tolist()
         template_specification = self._add_extra_fields_to_interface(template_specification)
         return self.fill_default_attributes(template_specification)
@@ -205,7 +205,7 @@ class SurfaceStimulusController(SpatioTemporalController):
         surface_stim_selector_form.surface_stimulus.data = current_surface_stim.gid.hex
         template_specification['surfaceStimulusSelectForm'] = self.render_adapter_form(surface_stim_selector_form)
         template_specification['mainContent'] = 'spatial/stimulus_surface_step2_main'
-        template_specification['next_step_url'] = '/spatial/stimulus/surface/step_2_submit'
+        template_specification['next_step_url'] = self.build_path('/spatial/stimulus/surface/step_2_submit')
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
         template_specification['surfaceGID'] = current_surface_stim.surface.hex

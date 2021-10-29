@@ -31,6 +31,7 @@
 """
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
+import json
 
 import cherrypy
 from tvb.basic.exceptions import TVBException

@@ -27,6 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.interfaces.web.controllers.base_controller import BaseController
 
 
 class SimulatorWizzardURLs(object):
@@ -47,3 +48,21 @@ class SimulatorWizzardURLs(object):
     SETUP_PSE_URL = '/burst/setup_pse'
     SET_PSE_PARAMS_URL = '/burst/set_pse_params'
     LAUNCH_PSE_URL = '/burst/launch_pse'
+
+    # SET_CONNECTIVITY_URL = BaseController.build_path('/burst/set_connectivity')
+    # SET_COUPLING_PARAMS_URL = BaseController.build_path('/burst/set_coupling_params')
+    # SET_SURFACE_URL = BaseController.build_path('/burst/set_surface')
+    # SET_STIMULUS_URL = BaseController.build_path('/burst/set_stimulus')
+    # SET_CORTEX_URL = BaseController.build_path('/burst/set_cortex')
+    # SET_MODEL_URL = BaseController.build_path('/burst/set_model')
+    # SET_MODEL_PARAMS_URL = BaseController.build_path('/burst/set_model_params')
+    # SET_INTEGRATOR_URL = BaseController.build_path('/burst/set_integrator')
+    # SET_INTEGRATOR_PARAMS_URL = BaseController.build_path('/burst/set_integrator_params')
+    # SET_NOISE_PARAMS_URL = BaseController.build_path('/burst/set_noise_params')
+    # SET_NOISE_EQUATION_PARAMS_URL = BaseController.build_path('/burst/set_noise_equation_params')
+    # SET_MONITORS_URL = BaseController.build_path('/burst/set_monitors')
+    # SET_MONITOR_PARAMS_URL = BaseController.build_path('/burst/set_monitor_params')
+    # SET_MONITOR_EQUATION_URL = BaseController.build_path('/burst/set_monitor_equation')
+    # SETUP_PSE_URL = BaseController.build_path('/burst/setup_pse')
+    # SET_PSE_PARAMS_URL = BaseController.build_path('/burst/set_pse_params')
+    # LAUNCH_PSE_URL = BaseController.build_path('/burst/launch_pse')

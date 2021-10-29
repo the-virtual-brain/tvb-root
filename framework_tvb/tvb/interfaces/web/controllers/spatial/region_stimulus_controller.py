@@ -55,8 +55,8 @@ from tvb.interfaces.web.controllers.decorators import handle_error, expose_page,
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import EquationPlotForm
 
-LOAD_EXISTING_URL = '/spatial/stimulus/region/load_region_stimulus'
-RELOAD_DEFAULT_PAGE_URL = '/spatial/stimulus/region/reset_region_stimulus'
+LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/stimulus/region/load_region_stimulus')
+RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/stimulus/region/reset_region_stimulus')
 
 KEY_REGION_STIMULUS = "stim-region"
 
@@ -87,7 +87,7 @@ class RegionStimulusController(SpatioTemporalController):
     TEMPORAL_FIELD = 'set_temporal'
     DISPLAY_NAME_FIELD = 'set_display_name'
     TEMPORAL_PARAMS_FIELD = 'set_temporal_param'
-    base_url = '/spatial/stimulus/region'
+    base_url = SpatioTemporalController.build_path('/spatial/stimulus/region')
     MSG_MISSING_CONNECTIVITY = "There is no structural Connectivity in the current project. " \
                                "Please upload one to continue!"
 
@@ -164,7 +164,7 @@ class RegionStimulusController(SpatioTemporalController):
             self.DISPLAY_NAME_FIELD: region_stim_selector_form.display_name.name
         }
         template_specification['fieldsWithEvents'] = json.dumps(self.plotted_equation_prefixes)
-        template_specification['next_step_url'] = '/spatial/stimulus/region/step_1_submit'
+        template_specification['next_step_url'] = self.build_path('/spatial/stimulus/region/step_1_submit')
         template_specification['anyScaling'] = 0
         template_specification = self._add_extra_fields_to_interface(template_specification)
         return self.fill_default_attributes(template_specification)
@@ -181,7 +181,7 @@ class RegionStimulusController(SpatioTemporalController):
 
         template_specification = dict(title="Spatio temporal - Region stimulus")
         template_specification['mainContent'] = 'spatial/stimulus_region_step2_main'
-        template_specification['next_step_url'] = '/spatial/stimulus/region/step_2_submit'
+        template_specification['next_step_url'] = self.build_path('/spatial/stimulus/region/step_2_submit')
         template_specification['regionStimSelectorForm'] = self.render_adapter_form(region_stim_selector_form)
 
         default_weights = current_region_stimulus.weight

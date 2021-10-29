@@ -159,7 +159,7 @@ def handle_error(redirect):
 
                 if redirect:
                     common.set_error_message(str(ex))
-                    raise cherrypy.HTTPRedirect(ex.redirect_url)
+                    raise cherrypy.HTTPRedirect(TvbProfile.current.web.DEPLOY_CONTEXT + ex.redirect_url)
                 else:
                     raise cherrypy.HTTPError(ex.status, str(ex))
 
@@ -180,7 +180,7 @@ def handle_error(redirect):
                     # set a default error message if one has not been set already
                     if not common.has_error_message():
                         common.set_error_message("An unexpected exception appeared. Please check the log files.")
-                    raise cherrypy.HTTPRedirect("/tvb?error=True")
+                    raise cherrypy.HTTPRedirect(TvbProfile.current.web.DEPLOY_CONTEXT + "/tvb?error=True")
                 else:
                     raise
 
@@ -199,7 +199,7 @@ def check_user(func):
         if hasattr(cherrypy, common.KEY_SESSION):
             if common.get_logged_user():
                 return func(*a, **b)
-        raise common.NotAuthenticated('Login Required!', redirect_url='/user')
+        raise common.NotAuthenticated('Login Required!', redirect_url=TvbProfile.current.web.DEPLOY_CONTEXT + '/user')
 
     return deco
 
@@ -257,7 +257,7 @@ def check_admin(func):
             user = common.get_logged_user()
             if user is not None and user.is_administrator() or TvbProfile.is_first_run():
                 return func(*a, **b)
-        raise common.NotAuthenticated('Only Administrators can access this application area!', redirect_url='/tvb')
+        raise common.NotAuthenticated('Only Administrators can access this application area!', redirect_url=TvbProfile.current.web.DEPLOY_CONTEXT + '/tvb')
 
     return deco
 
@@ -272,7 +272,7 @@ def context_selected(func):
         if hasattr(cherrypy, common.KEY_SESSION):
             if common.KEY_PROJECT in cherrypy.session:
                 return func(*a, **b)
-        raise common.NotAllowed('You should first select a Project!', redirect_url='/project/viewall')
+        raise common.NotAllowed('You should first select a Project!', redirect_url=TvbProfile.current.web.DEPLOY_CONTEXT + '/project/viewall')
 
     return deco
 
@@ -287,7 +287,7 @@ def settings(func):
     def deco(*a, **b):
         if not TvbProfile.is_first_run():
             return func(*a, **b)
-        raise common.NotAllowed('You should first set up tvb', redirect_url='/settings/settings')
+        raise common.NotAllowed('You should first set up tvb', redirect_url=TvbProfile.current.web.DEPLOY_CONTEXT + '/settings/settings')
 
     return deco
 

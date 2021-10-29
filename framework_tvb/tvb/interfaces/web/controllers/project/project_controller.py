@@ -90,7 +90,7 @@ class ProjectController(BaseController):
         """
         current_project = common.get_current_project()
         if current_project is None:
-            raise cherrypy.HTTPRedirect("/project/viewall")
+            self.redirect("/project/viewall")
         template_specification = dict(mainContent="project/project_submenu", title="TVB Project Menu")
         return self.fill_default_attributes(template_specification)
 
@@ -102,7 +102,7 @@ class ProjectController(BaseController):
         """
         page = int(page)
         if cherrypy.request.method == 'POST' and create:
-            raise cherrypy.HTTPRedirect('/project/editone')
+            self.redirect('/project/editone')
         current_user_id = common.get_logged_user().id
 
         ## Select project if user choose one.
@@ -136,7 +136,7 @@ class ProjectController(BaseController):
         except ServicesBaseException as excep:
             self.logger.warning(excep.message)
             common.set_error_message(excep.message)
-        raise cherrypy.HTTPRedirect('/project/viewall')
+        self.redirect('/project/viewall')
 
     def _remove_project(self, project_id):
         """Private method for removing project."""
@@ -158,10 +158,10 @@ class ProjectController(BaseController):
         new entity, otherwise we are to edit and existent one.
         """
         if cherrypy.request.method == 'POST' and cancel:
-            raise cherrypy.HTTPRedirect('/project')
+            self.redirect('/project')
         if cherrypy.request.method == 'POST' and delete:
             self._remove_project(project_id)
-            raise cherrypy.HTTPRedirect('/project/viewall')
+            self.redirect('/project/viewall')
 
         current_user = common.get_logged_user()
         is_create = False
@@ -192,14 +192,14 @@ class ProjectController(BaseController):
                     self.storage_interface.sync_folders(project_folder)
                     self.storage_interface.remove_folder(project_folder)
                 self._mark_selected(saved_project)
-                raise cherrypy.HTTPRedirect('/project/viewall')
+                self.redirect('/project/viewall')
         except formencode.Invalid as excep:
             self.logger.debug(str(excep))
             template_specification[common.KEY_ERRORS] = excep.unpack_errors()
         except ProjectServiceException as excep:
             self.logger.debug(str(excep))
             common.set_error_message(excep.message)
-            raise cherrypy.HTTPRedirect('/project/viewall')
+            self.redirect('/project/viewall')
 
         all_users, members, pages = self.user_service.get_users_for_project(current_user.username, project_id)
         template_specification['usersList'] = all_users
@@ -246,7 +246,7 @@ class ProjectController(BaseController):
         Display table of operations for a given project selected
         """
         if (project_id is None) or (not int(project_id)):
-            raise cherrypy.HTTPRedirect('/project')
+            self.redirect('/project')
 
         ## Toggle filters
         filters = self.__get_operations_filters()
@@ -510,7 +510,7 @@ class ProjectController(BaseController):
         try:
             int(project_id)
         except (ValueError, TypeError):
-            raise cherrypy.HTTPRedirect('/project')
+            self.redirect('/project')
 
         if first_level is None or second_level is None:
             first_level, second_level = self.get_project_structure_grouping()
@@ -571,7 +571,7 @@ class ProjectController(BaseController):
         """ 
         Start Upload mechanism
         """
-        success_link = "/project/editstructure/" + str(project_id)
+        success_link = self.build_path("/project/editstructure/" + str(project_id))
         # do not allow GET
         if cherrypy.request.method != 'POST' or cancel:
             raise cherrypy.HTTPRedirect(success_link)

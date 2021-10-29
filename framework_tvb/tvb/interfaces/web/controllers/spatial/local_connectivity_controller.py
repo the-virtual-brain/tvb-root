@@ -56,8 +56,8 @@ from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller impo
 
 NO_OF_CUTOFF_POINTS = 20
 
-LOAD_EXISTING_URL = '/spatial/localconnectivity/load_local_connectivity'
-RELOAD_DEFAULT_PAGE_URL = '/spatial/localconnectivity/reset_local_connectivity'
+LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/localconnectivity/load_local_connectivity')
+RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/localconnectivity/reset_local_connectivity')
 
 # Between steps/pages we keep a LocalConnectivityCreatorModel in session at this key
 KEY_LCONN = "local-conn"
@@ -74,7 +74,7 @@ class LocalConnectivityController(SpatioTemporalController):
     CUTOFF_FIELD = 'set_cutoff_value'
     DISPLAY_NAME_FIELD = 'set_display_name'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
-    base_url = '/spatial/localconnectivity'
+    base_url = SpatioTemporalController.build_path('/spatial/localconnectivity')
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
@@ -119,8 +119,8 @@ class LocalConnectivityController(SpatioTemporalController):
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
         template_specification['existentEntitiesInputList'] = self.render_spatial_form(existent_lcon_form)
-        template_specification['submit_parameters_url'] = '/spatial/localconnectivity/create_local_connectivity'
-        template_specification['equationViewerUrl'] = '/spatial/localconnectivity/get_equation_chart'
+        template_specification['submit_parameters_url'] = self.build_path('/spatial/localconnectivity/create_local_connectivity')
+        template_specification['equationViewerUrl'] = self.build_path('/spatial/localconnectivity/get_equation_chart')
         template_specification['baseUrl'] = self.base_url
 
         self.plotted_equation_prefixes = {self.SURFACE_FIELD: configure_lcon_form.surface.name,
@@ -192,7 +192,7 @@ class LocalConnectivityController(SpatioTemporalController):
         template_specification['existentEntitiesInputList'] = self.render_adapter_form(left_side_form)
         template_specification['loadExistentEntityUrl'] = LOAD_EXISTING_URL
         template_specification['resetToDefaultUrl'] = RELOAD_DEFAULT_PAGE_URL
-        template_specification['next_step_url'] = '/spatial/localconnectivity/step_1'
+        template_specification['next_step_url'] = self.build_path('/spatial/localconnectivity/step_1')
         msg, _ = common.get_message_from_session()
         template_specification['displayedMessage'] = msg
         if current_lconn is not None:
