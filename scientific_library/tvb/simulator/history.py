@@ -97,6 +97,7 @@ class BaseHistory(StaticAttr):
             if sim.surface is not None:
                 n_node = sim.number_of_nodes
             history = sim.model.initial_for_simulator(sim.integrator, (n_time, n_svar, n_node, n_mode))
+            initial_conditions = history[n_time - 1]
         # ICs provided
         else:
             # history should be [timepoints, state_variables, nodes, modes]
@@ -142,7 +143,7 @@ class BaseHistory(StaticAttr):
             initial_conditions = initial_conditions.reshape((-1, ) + initial_conditions.shape[-3:])
             sim.current_state = initial_conditions[-1].copy()
         else:
-            sim.current_state = history[sim.current_step % sim.horizon].copy()
+            sim.current_state = history[sim.current_step % sim.connectivity.horizon].copy()
         sim.log.info('initial state has shape %r' % (sim.current_state.shape, ))
 
         # create history buffer
