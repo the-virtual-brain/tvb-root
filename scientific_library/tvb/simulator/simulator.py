@@ -371,6 +371,7 @@ class Simulator(HasTraits):
         self.current_step = self.current_step + n_steps
 
     def _configure_history(self, initial_conditions=None):
+        "Initialize history instance; cf. from_simulator for more information."
         self.history = SparseHistory.from_simulator(self, initial_conditions)
 
     def _configure_integrator_noise(self):

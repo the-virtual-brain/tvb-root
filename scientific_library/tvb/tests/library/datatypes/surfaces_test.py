@@ -41,7 +41,7 @@ from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
 from tvb.datatypes import surfaces
-
+from tvb.tests.library.simulator.simulator_test import Simulator
 
 class TestSurfaces(BaseTestCase):
     """
@@ -221,3 +221,13 @@ class TestSurfaces(BaseTestCase):
         assert isinstance(dt, Cortex)
         assert dt.region_mapping is not None
         assert numpy.unique(dt.region_mapping).size == dt.region_mapping_data.connectivity.number_of_regions
+
+    @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
+    def test_init_conds(self):
+        import numpy as np
+        from tvb.datatypes.cortex import Cortex
+        sim = Simulator()
+        ctx = Cortex.from_file()
+        sim.configure(
+            surface_sim=True,
+            initial_conditions=np.random.rand(1,2,ctx.vertices.shape[0],1))
