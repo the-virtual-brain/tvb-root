@@ -128,6 +128,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         super(SurfaceModelParametersController, self).__init__()
         self.simulator_context = SimulatorContext()
         self.model_params_list = None
+        self.model_mathjax_params_list = None
 
     def get_data_from_burst_configuration(self):
         """
@@ -312,7 +313,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
             simulator = self.simulator_context.simulator
 
-            for param_name in list(self.model_params_list.keys()):
+            for param_name in list(self.model_params_list):
                 param_data = context_model_parameters.get_data_for_model_param(param_name)
                 if param_data is None:
                     continue
