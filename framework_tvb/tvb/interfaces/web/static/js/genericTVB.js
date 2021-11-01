@@ -1199,8 +1199,12 @@ function prepareUrlParam(paramName, paramValue) {
 
 function refreshSubform(currentElem, elementType, subformDiv) {
     let url = prepareRefreshSubformUrl(currentElem, subformDiv);
+    if (url.startsWith('/')) {
+        url = deploy_context + url
+    }
+
     $.ajax({
-        url: deploy_context + url,
+        url: url,
         type: 'POST',
         success: function (r) {
             $('#' + subformDiv).html(r);

@@ -104,7 +104,7 @@ class SurfaceStimulusController(SpatioTemporalController):
     DISPLAY_NAME_FIELD = 'set_display_name'
     SPATIAL_PARAMS_FIELD = 'set_spatial_param'
     TEMPORAL_PARAMS_FIELD = 'set_temporal_param'
-    base_url = SpatioTemporalController.build_path('/spatial/stimulus/surface')
+    base_url = '/spatial/stimulus/surface'
 
     @cherrypy.expose
     @using_template('form_fields/form_field')

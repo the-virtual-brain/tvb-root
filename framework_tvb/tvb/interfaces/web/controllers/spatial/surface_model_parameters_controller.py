@@ -121,7 +121,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
     MODEL_PARAM_FIELD = 'set_model_parameter'
     EQUATION_FIELD = 'set_equation'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
-    base_url = SpatioTemporalController.build_path('/spatial/modelparameters/surface')
+    base_url = '/spatial/modelparameters/surface'
 
     def __init__(self):
         super(SurfaceModelParametersController, self).__init__()

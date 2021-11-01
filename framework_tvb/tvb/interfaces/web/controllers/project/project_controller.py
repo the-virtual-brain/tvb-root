@@ -285,7 +285,9 @@ class ProjectController(BaseController):
         Returns the content of a confirmation dialog, with a given question. 
         """
         self.update_operations_count()
-        return {'selectedProject': common.get_current_project()}
+        template = {'selectedProject': common.get_current_project()}
+        template = self.fill_default_attributes(template)
+        return template
 
     def __get_operations_filters(self):
         """
@@ -622,7 +624,6 @@ class ProjectController(BaseController):
         Delegate the creation of the actual link to the algorithm service.
         """
         self.algorithm_service.create_link(link_data, project_id)
-
 
     @cherrypy.expose
     @handle_error(redirect=False)

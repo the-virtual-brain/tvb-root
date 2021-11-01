@@ -87,7 +87,7 @@ class RegionStimulusController(SpatioTemporalController):
     TEMPORAL_FIELD = 'set_temporal'
     DISPLAY_NAME_FIELD = 'set_display_name'
     TEMPORAL_PARAMS_FIELD = 'set_temporal_param'
-    base_url = SpatioTemporalController.build_path('/spatial/stimulus/region')
+    base_url = '/spatial/stimulus/region'
     MSG_MISSING_CONNECTIVITY = "There is no structural Connectivity in the current project. " \
                                "Please upload one to continue!"
 

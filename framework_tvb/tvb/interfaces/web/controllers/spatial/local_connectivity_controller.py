@@ -74,7 +74,7 @@ class LocalConnectivityController(SpatioTemporalController):
     CUTOFF_FIELD = 'set_cutoff_value'
     DISPLAY_NAME_FIELD = 'set_display_name'
     EQUATION_PARAMS_FIELD = 'set_equation_param'
-    base_url = SpatioTemporalController.build_path('/spatial/localconnectivity')
+    base_url = '/spatial/localconnectivity'
 
     def __init__(self):
         SpatioTemporalController.__init__(self)
