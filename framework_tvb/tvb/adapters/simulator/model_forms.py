@@ -48,7 +48,7 @@ class ModelsEnum(TupleEnum):
     JANSEN_RIT = (models.ModelsEnum.JANSEN_RIT.get_class(), "Jansen-Rit")
     ZETTERBERG_JANSEN = (models.ModelsEnum.ZETTERBERG_JANSEN.get_class(), "Zetterberg-Jansen")
     REDUCED_WONG_WANG = (models.ModelsEnum.REDUCED_WONG_WANG.get_class(), "Reduced Wong-Wang")
-    REDUCED_WONG_WANG_EXCH_INH = (models.ModelsEnum.REDUCED_WONG_WANG_EXCH_INH.get_class(),
+    REDUCED_WONG_WANG_EXC_INH = (models.ModelsEnum.REDUCED_WONG_WANG_EXC_INH.get_class(),
                                   "Reduced Wong-Wang With Excitatory And Inhibitory Coupled Populations")
     REDUCED_SET_FITZ_HUGH_NAGUMO = (models.ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.get_class(), "Stefanescu-Jirsa 2D")
     REDUCED_SET_HINDMARSH_ROSE = (models.ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.get_class(), "Stefanescu-Jirsa 3D")
