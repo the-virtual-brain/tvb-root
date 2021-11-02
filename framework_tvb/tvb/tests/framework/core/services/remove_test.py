@@ -47,7 +47,7 @@ from tvb.core.entities.model.model_datatype import DataType, Project
 from tvb.core.neocom import h5
 from tvb.core.services.project_service import ProjectService
 from tvb.core.services.exceptions import RemoveDataTypeException
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.factory import TestFactory
 from tvb.tests.framework.core.base_testcase import TransactionalTestCase
 
@@ -105,7 +105,8 @@ class TestRemove(TransactionalTestCase):
         """
         Tries to remove an used surface
         """
-        filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="], values=[CORTICAL])
+        filter = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=["=="],
+                             values=[SurfaceTypesEnum.CORTICAL_SURFACE.value])
         mapping = try_get_last_datatype(self.test_project.id, RegionMappingIndex)
         surface = try_get_last_datatype(self.test_project.id, SurfaceIndex, filter)
         assert mapping is not None, "There should be one Mapping."
@@ -160,7 +161,7 @@ class TestRemove(TransactionalTestCase):
         conn = h5.load_from_index(conn)
         rm = try_get_last_datatype(self.test_project.id, RegionMappingIndex)
         rm = h5.load_from_index(rm)
-        time_series_region_index_factory(conn, rm)
+        time_series_region_index_factory(conn, rm, test_project=self.test_project)
         series = self.get_all_entities(TimeSeriesRegionIndex)
         assert 1 == len(series), "There should be only one time series"
 

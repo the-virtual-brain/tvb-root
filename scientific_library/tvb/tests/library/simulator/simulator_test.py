@@ -39,9 +39,9 @@ schemes (region and surface based simulations).
 """
 
 import itertools
-
 import numpy
 import pytest
+
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.equations import Linear
@@ -113,7 +113,8 @@ class Simulator(object):
                   surface_sim=False,
                   default_connectivity=True,
                   with_stimulus=False,
-                  with_subcorticals=False):
+                  with_subcorticals=False,
+                  initial_conditions=None):
         """
         Create an instance of the Simulator class, by default use the
         generic plane oscillator local dynamic model and the deterministic 
@@ -176,6 +177,8 @@ class Simulator(object):
         self.sim.monitors = self.monitors
         if with_stimulus:
             self.sim.stimulus = stimulus
+        if initial_conditions is not None:
+            self.sim.initial_conditions = initial_conditions
         self.sim.configure()
 
 

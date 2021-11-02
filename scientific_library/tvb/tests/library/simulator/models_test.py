@@ -34,14 +34,11 @@ Test for tvb.simulator.models module
 .. moduleauthor:: Paula Sanz Leon <sanzleon.paula@gmail.com>
 
 """
-
-from tvb.tests.library.base_testcase import BaseTestCase
+import numpy
 from tvb.basic.neotraits.api import Final, List
 from tvb.simulator import models
 from tvb.simulator.models.base import Model
-from tvb.rateML.XML2model import RateML
-
-import numpy
+from tvb.tests.library.base_testcase import BaseTestCase
 
 
 class TestBoundsModel(Model):
@@ -282,6 +279,13 @@ class TestModels(BaseTestCase):
         model = models.ReducedWongWang()
         self._validate_initialization(model, 1)
         self._test_steady_state(model, numpy.r_[0.452846])
+
+    def test_deco_balanced_exc_inh(self):
+        """
+        """
+        model = models.DecoBalancedExcInh()
+        self._validate_initialization(model, 2)
+        self._test_steady_state(model, numpy.r_[0.416673, 0.078865])
 
     def test_zetterberg_jansen(self):
         """

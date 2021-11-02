@@ -27,15 +27,13 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
+from tvb.adapters.simulator.equation_forms import get_form_for_equation, TemporalEquationsEnum
 from tvb.adapters.simulator.form_with_ranges import FormWithRanges
-from tvb.adapters.simulator.subforms_mapping import SubformsEnum, get_ui_name_to_equation_dict
-from tvb.basic.neotraits.api import Attr, Range
+from tvb.basic.neotraits.api import Attr, EnumAttr, Range
 from tvb.core.entities.file.simulator.view_model import NoiseViewModel, AdditiveNoiseViewModel, \
     MultiplicativeNoiseViewModel
 from tvb.core.entities.transient.range_parameter import RangeParameter
 from tvb.core.neotraits.forms import ArrayField, SelectField, FloatField, IntField
-from tvb.datatypes.equations import Equation
 
 
 def get_form_for_noise(noise_class):
@@ -50,7 +48,7 @@ def get_form_for_noise(noise_class):
 class NoiseForm(FormWithRanges):
 
     def get_subform_key(self):
-        return SubformsEnum.NOISE.name
+        return 'NOISE'
 
     def __init__(self):
         super(NoiseForm, self).__init__()
@@ -64,9 +62,10 @@ class AdditiveNoiseForm(NoiseForm):
         super(AdditiveNoiseForm, self).__init__()
         self.nsig = ArrayField(AdditiveNoiseViewModel.nsig)
 
-    def get_range_parameters(self):
+    def get_range_parameters(self, prefix):
         ntau_range_param = RangeParameter(NoiseViewModel.ntau.field_name, float, Range(lo=0.0, hi=20.0, step=1.0))
-        params_with_range_defined = super(NoiseForm, self).get_range_parameters()
+        params_with_range_defined = super(NoiseForm, self).get_range_parameters(prefix)
+        self.ensure_correct_prefix_for_param_name(ntau_range_param, prefix)
         params_with_range_defined.append(ntau_range_param)
 
         return params_with_range_defined
@@ -76,21 +75,17 @@ class MultiplicativeNoiseForm(NoiseForm):
 
     def __init__(self):
         super(MultiplicativeNoiseForm, self).__init__()
-        self.equation_choices = get_ui_name_to_equation_dict()
-        default_equation = list(self.equation_choices.values())[0]
-
         self.nsig = ArrayField(MultiplicativeNoiseViewModel.nsig)
-        self.equation = SelectField(Attr(Equation, label='Equation', default=default_equation),
-                                    name='equation', choices=self.equation_choices,
-                                    subform=get_form_for_equation(default_equation))
+        self.equation = SelectField(EnumAttr(label='Equation', default=TemporalEquationsEnum.LINEAR),
+                                    name='equation', subform=get_form_for_equation(TemporalEquationsEnum.LINEAR.value))
 
     def fill_trait(self, datatype):
         super(MultiplicativeNoiseForm, self).fill_trait(datatype)
         datatype.nsig = self.nsig.data
-        if type(datatype.b) != self.equation.data:
-            datatype.b = self.equation.data()
+        if type(datatype.b) != self.equation.data.value:
+            datatype.b = self.equation.data.instance
 
     def fill_from_trait(self, trait):
         # type: (NoiseViewModel) -> None
         super(MultiplicativeNoiseForm, self).fill_from_trait(trait)
-        self.equation.data = trait.b.__class__
+        self.equation.data = type(trait.b)

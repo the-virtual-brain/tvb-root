@@ -45,7 +45,7 @@ import numpy as numpy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.storage.h5 import utils
-from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler
+from tvb.storage.h5.encryption.data_encryption_handler import encryption_handler
 from tvb.storage.h5.file.exceptions import MissingDataSetException, IncompatibleFileManagerException, \
     FileStructureException, MissingDataFileException
 from tvb.storage.h5.file.files_helper import FilesHelper
@@ -83,7 +83,7 @@ class HDF5StorageManager(object):
         self.__storage_full_name = storage_full_name
         self.__buffer_array = None
         self.data_buffers = {}
-        self.data_encryption_handler = DataEncryptionHandler()
+        self.data_encryption_handler = encryption_handler
 
     def is_valid_tvb_file(self):
         """

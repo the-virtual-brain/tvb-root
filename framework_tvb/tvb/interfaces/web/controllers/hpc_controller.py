@@ -97,6 +97,6 @@ class HPCController(object):
 
         self._validate_request_params(simulator_gid, operation_id)
 
-        file_path = StorageInterface().get_password_file(simulator_gid)
+        file_path = StorageInterface.get_encryption_handler(simulator_gid).get_password_file()
 
         return serve_file(file_path, "application/x-download", "attachment", os.path.basename(file_path))

@@ -35,21 +35,16 @@ Launches the web server and configure the controllers for UI.
 """
 import time
 
-from tvb.storage.storage_interface import StorageInterface
-from tvb.core.services.backend_clients.standalone_client import StandAloneClient
-from tvb.interfaces.web.controllers.kube_controller import KubeController
-
 STARTUP_TIC = time.time()
 
 import os
 import importlib
-from subprocess import Popen, PIPE
 import sys
 import webbrowser
-
 import cherrypy
 from cherrypy import Tool
 from cherrypy.lib.sessions import RamSession
+from subprocess import Popen, PIPE
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.initializer import initialize, reset
@@ -57,6 +52,7 @@ from tvb.core.adapters.abcdisplayer import ABCDisplayer
 from tvb.core.decorators import user_environment_execution
 from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.core.services.hpc_operation_service import HPCOperationService
+from tvb.core.services.backend_clients.standalone_client import StandAloneClient
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.burst.dynamic_model_controller import DynamicModelController
 from tvb.interfaces.web.controllers.burst.exploration_controller import ParameterExplorationController
@@ -66,6 +62,7 @@ from tvb.interfaces.web.controllers.common import KEY_PROJECT
 from tvb.interfaces.web.controllers.flow_controller import FlowController
 from tvb.interfaces.web.controllers.help.help_controller import HelpController
 from tvb.interfaces.web.controllers.hpc_controller import HPCController
+from tvb.interfaces.web.controllers.kube_controller import KubeController
 from tvb.interfaces.web.controllers.project.figure_controller import FigureController
 from tvb.interfaces.web.controllers.project.project_controller import ProjectController
 from tvb.interfaces.web.controllers.settings_controller import SettingsController
@@ -77,6 +74,7 @@ from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller 
 from tvb.interfaces.web.controllers.spatial.surface_stimulus_controller import SurfaceStimulusController
 from tvb.interfaces.web.controllers.users_controller import UserController
 from tvb.interfaces.web.request_handler import RequestHandler
+from tvb.storage.storage_interface import StorageInterface
 
 if __name__ == '__main__':
     TvbProfile.set_profile(sys.argv[1])
@@ -123,7 +121,7 @@ class CleanupSessionHandler(RamSession):
 
 
 def init_cherrypy(arguments=None):
-    #### Mount static folders from modules marked for introspection
+    # Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
     if StorageInterface.encryption_enabled():
@@ -135,7 +133,7 @@ def init_cherrypy(arguments=None):
                                                'tools.staticdir.dir': '.',
                                                'tools.staticdir.root': module_path}
 
-    #### Mount controllers, and specify the root URL for them.
+    # Mount controllers, and specify the root URL for them.
     cherrypy.tree.mount(BaseController(), "/", config=CONFIGUER)
     cherrypy.tree.mount(UserController(), "/user/", config=CONFIGUER)
     cherrypy.tree.mount(ProjectController(), "/project/", config=CONFIGUER)
@@ -177,7 +175,7 @@ def init_cherrypy(arguments=None):
             bus=cherrypy.engine)
         operations_job.start()
 
-    # HTTP Server is fired now ######
+    # HTTP Server is fired now #
     cherrypy.engine.start()
 
 
@@ -209,7 +207,7 @@ def start_tvb(arguments, browser=True):
     """
 
     if PARAM_RESET_DB in arguments:
-        ##### When specified, clean everything in DB
+        # When specified, clean everything in DB
         reset()
         arguments.remove(PARAM_RESET_DB)
 
@@ -225,22 +223,22 @@ def start_tvb(arguments, browser=True):
         LOGGER.exception(excep)
         sys.exit()
 
-    #### Mark that the interface is Web
+    # Mark that the interface is Web
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
-    if StorageInterface.encryption_enabled():
+    if StorageInterface.encryption_enabled() and StorageInterface.app_encryption_handler():
         storage_interface = StorageInterface()
         storage_interface.start()
         storage_interface.startup_cleanup()
 
-    #### Fire a browser page at the end.
+    # Fire a browser page at the end.
     if browser:
         run_browser()
 
     expose_rest_api()
 
-    ## Launch CherryPy loop forever.
+    # Launch CherryPy loop forever.
     LOGGER.info("Finished starting TVB version %s in %.3f s",
                 TvbProfile.current.version.CURRENT_VERSION, time.time() - STARTUP_TIC)
     cherrypy.engine.block()
@@ -270,6 +268,6 @@ def run_browser():
 
 
 if __name__ == '__main__':
-    #### Prepare parameters and fire CherryPy
-    #### Remove not-relevant parameter, 0 should point towards this "run.py" file, 1 to the profile
+    # Prepare parameters and fire CherryPy
+    # Remove not-relevant parameter, 0 should point towards this "run.py" file, 1 to the profile
     start_tvb(sys.argv[2:])

@@ -48,7 +48,7 @@ from tvb.core.neotraits.uploader_view_model import UploaderViewModel
 from tvb.core.neotraits.view_model import Str, DataTypeGidAttr
 from tvb.datatypes.connectivity import Connectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import CORTICAL, Surface
+from tvb.datatypes.surfaces import Surface, SurfaceTypesEnum
 
 
 class RegionMappingImporterModel(UploaderViewModel):
@@ -78,7 +78,7 @@ class RegionMappingImporterForm(ABCUploaderForm):
         self.mapping_file = TraitUploadField(RegionMappingImporterModel.mapping_file, ('.txt', '.zip', '.bz2'),
                                              'mapping_file')
         surface_conditions = FilterChain(fields=[FilterChain.datatype + '.surface_type'], operations=['=='],
-                                         values=[CORTICAL])
+                                         values=[SurfaceTypesEnum.CORTICAL_SURFACE.value])
         self.surface = TraitDataTypeSelectField(RegionMappingImporterModel.surface, name='surface',
                                                 conditions=surface_conditions)
         self.connectivity = TraitDataTypeSelectField(RegionMappingImporterModel.connectivity, name='connectivity')

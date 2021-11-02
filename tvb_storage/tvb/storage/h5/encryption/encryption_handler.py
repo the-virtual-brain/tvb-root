@@ -59,7 +59,6 @@ class EncryptionHandler(object):
         self.enc_data_dir = TvbProfile.current.hpc.CRYPT_DATADIR
         self.pass_dir = TvbProfile.current.hpc.CRYPT_PASSDIR
         self.buffer_size = TvbProfile.current.hpc.CRYPT_BUFFER_SIZE
-        self.pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
         self._generate_dirs()
 
     def _prepare_encrypted_dir_name(self, dir_gid):
@@ -79,7 +78,8 @@ class EncryptionHandler(object):
                     os.remove(path)
 
     @staticmethod
-    def generate_random_password(pass_size):
+    def generate_random_password():
+        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
         chars = string.ascii_letters + string.digits
         password = ''.join(random.choice(chars) for i in range(pass_size))
         return password
@@ -88,7 +88,7 @@ class EncryptionHandler(object):
         password_file = self.get_password_file()
         if os.path.exists(password_file):
             return password_file
-        password = self.generate_random_password(self.pass_size)
+        password = self.generate_random_password()
         with open(password_file, 'w') as fd:
             fd.write(password)
         os.chmod(password_file, TvbProfile.current.ACCESS_MODE_TVB_FILES)
@@ -116,7 +116,7 @@ class EncryptionHandler(object):
             os.makedirs(encrypted_dir)
         return encrypted_dir
 
-    def encrypt_inputs(self, files_to_encrypt, subdir):
+    def encrypt_inputs(self, files_to_encrypt, subdir=None):
         # type: (list, str) -> list
         """
         Receive a list with all files to encrypt.
@@ -139,7 +139,7 @@ class EncryptionHandler(object):
         # type: (str, str) -> str
         return os.path.join(dir, os.path.basename(encrypted_file).replace(self.encrypted_suffix, ''))
 
-    def decrypt_results_to_dir(self, dir, from_subdir):
+    def decrypt_results_to_dir(self, dir, from_subdir=None):
         # type: (str, str) -> list
         """
         Having an already encrypted directory, decrypt all files,

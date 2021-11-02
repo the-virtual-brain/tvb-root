@@ -32,17 +32,16 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
 import sys
-
 import numpy
 import pytest
-from tvb.datatypes import surfaces
+from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.datatypes.connectivity import Connectivity
+from tvb.datatypes.surfaces import CorticalSurface, SurfaceTypesEnum
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.local_connectivity import LocalConnectivity
 from tvb.datatypes.region_mapping import RegionMapping
-from tvb.datatypes.surfaces import CorticalSurface
-from tvb.tests.library.base_testcase import BaseTestCase
-
+from tvb.datatypes import surfaces
+from tvb.tests.library.simulator.simulator_test import Simulator
 
 class TestSurfaces(BaseTestCase):
     """
@@ -86,7 +85,7 @@ class TestSurfaces(BaseTestCase):
         assert summary_info['Number of edges'] == 49140
         assert summary_info['Number of triangles'] == 32760
         assert summary_info['Number of vertices'] == 16384
-        assert dt.surface_type == surfaces.CORTICAL
+        assert dt.surface_type == SurfaceTypesEnum.CORTICAL_SURFACE.value
         assert len(dt.vertex_neighbours) == 16384
         assert isinstance(dt.vertex_neighbours[0], frozenset)
         assert len(dt.vertex_triangles) == 16384
@@ -203,12 +202,10 @@ class TestSurfaces(BaseTestCase):
 
     @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
     def test_cortexdata(self):
-        dt = Cortex.from_file()
+        dt = Cortex.from_file(local_connectivity_file="local_connectivity_16384.mat")
         dt.region_mapping_data.connectivity = Connectivity.from_file()
         assert isinstance(dt, Cortex)
         assert dt.region_mapping is not None
-        ## Initialize Local Connectivity, to avoid long computation time.
-        dt.local_connectivity = LocalConnectivity.from_file()
 
         dt.configure()
         assert dt.vertices.shape == (16384, 3)
@@ -224,3 +221,13 @@ class TestSurfaces(BaseTestCase):
         assert isinstance(dt, Cortex)
         assert dt.region_mapping is not None
         assert numpy.unique(dt.region_mapping).size == dt.region_mapping_data.connectivity.number_of_regions
+
+    @pytest.mark.skipif(sys.maxsize <= 2147483647, reason="Cannot deal with local connectivity on a 32-bit machine.")
+    def test_init_conds(self):
+        import numpy as np
+        from tvb.datatypes.cortex import Cortex
+        sim = Simulator()
+        ctx = Cortex.from_file()
+        sim.configure(
+            surface_sim=True,
+            initial_conditions=np.random.rand(1,2,ctx.vertices.shape[0],1))

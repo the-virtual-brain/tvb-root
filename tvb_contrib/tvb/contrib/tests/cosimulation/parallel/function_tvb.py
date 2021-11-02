@@ -34,10 +34,8 @@ import numpy as np
 import tvb.simulator.lab as lab
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import \
     ReducedWongWangProxy, _numba_dfun_proxy
-
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
-
 
 
 def tvb_model(dt, weight, delay, id_proxy):

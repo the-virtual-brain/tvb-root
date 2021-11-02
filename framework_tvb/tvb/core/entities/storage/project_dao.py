@@ -278,7 +278,7 @@ class CaseDAO(RootDAO):
                                              ).filter(Operation.id == operation_id).one()
         return result
 
-    def get_links_for_project(self, project_id):
+    def get_links_to_project(self, project_id):
         """
         :return all links referring to a given project_id
         """

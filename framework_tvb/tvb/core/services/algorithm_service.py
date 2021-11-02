@@ -110,6 +110,10 @@ class AlgorithmService(object):
     def fill_selectfield_with_datatypes(self, field, project_id, extra_conditions=None):
         # type: (TraitDataTypeSelectField, int, list) -> None
         filtering_conditions = FilterChain()
+
+        if field.conditions is not None:
+            filtering_conditions.operator_between_fields = field.conditions.operator_between_fields
+
         filtering_conditions += field.conditions
         filtering_conditions += extra_conditions
         datatypes, _ = dao.get_values_of_datatype(project_id, field.datatype_index, filtering_conditions)
@@ -196,13 +200,12 @@ class AlgorithmService(object):
         return dao.get_algorithm_by_module(module, classname)
 
     @staticmethod
-    def create_link(data_ids, project_id):
+    def create_link(data_id, project_id):
         """
         For a list of dataType IDs and a project id create all the required links.
         """
-        for data in data_ids:
-            link = Links(data, project_id)
-            dao.store_entity(link)
+        link = Links(data_id, project_id)
+        dao.store_entity(link)
 
     @staticmethod
     def remove_link(dt_id, project_id):

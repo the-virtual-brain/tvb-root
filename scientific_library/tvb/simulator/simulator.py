@@ -41,8 +41,8 @@ simulation and the method for running the simulation.
 
 import math
 import time
-
 import numpy
+
 from tvb.basic.neotraits.api import HasTraits, Attr, NArray, List, Float
 from tvb.basic.profile import TvbProfile
 from tvb.datatypes import cortex, connectivity, patterns
@@ -371,6 +371,7 @@ class Simulator(HasTraits):
         self.current_step = self.current_step + n_steps
 
     def _configure_history(self, initial_conditions=None):
+        "Initialize history instance; cf. from_simulator for more information."
         self.history = SparseHistory.from_simulator(self, initial_conditions)
 
     def _configure_integrator_noise(self):

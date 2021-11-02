@@ -43,7 +43,7 @@ from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.neocom import h5
 from tvb.core.services.exceptions import OperationException
-from tvb.datatypes.surfaces import CORTICAL
+from tvb.datatypes.surfaces import SurfaceTypesEnum
 from tvb.tests.framework.core.base_testcase import BaseTestCase
 from tvb.tests.framework.core.factory import TestFactory
 
@@ -75,9 +75,9 @@ class TestRegionMappingImporter(BaseTestCase):
         self.connectivity = TestFactory.import_zip_connectivity(self.test_user, self.test_project, zip_path, "John")
 
         field = FilterChain.datatype + '.surface_type'
-        filters = FilterChain('', [field], [CORTICAL], ['=='])
+        filters = FilterChain('', [field], [SurfaceTypesEnum.CORTICAL_SURFACE.value], ['=='])
         cortex = os.path.join(os.path.dirname(tvb_data.surfaceData.__file__), 'cortex_16384.zip')
-        TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, CORTICAL)
+        TestFactory.import_surface_zip(self.test_user, self.test_project, cortex, SurfaceTypesEnum.CORTICAL_SURFACE)
         self.surface = TestFactory.get_entity(self.test_project, SurfaceIndex, filters)
 
     def teardown_method(self):

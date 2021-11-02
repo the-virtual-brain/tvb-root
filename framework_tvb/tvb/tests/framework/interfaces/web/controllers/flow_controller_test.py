@@ -30,12 +30,10 @@
 """
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 """
-from datetime import time
 from time import sleep
-
 import cherrypy
-from tvb.basic.profile import TvbProfile
 
+from tvb.basic.profile import TvbProfile
 from tvb.config.algorithm_categories import CreateAlgorithmCategoryConfig
 from tvb.core.entities.model.model_operation import STATUS_PENDING
 from tvb.core.entities.storage import dao

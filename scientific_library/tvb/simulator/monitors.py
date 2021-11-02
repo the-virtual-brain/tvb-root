@@ -55,18 +55,19 @@ Conversion of power of 2 sample-rates(Hz) to Monitor periods(ms)
 """
 
 import abc
-
 import numpy
-import tvb.datatypes.equations as equations
-import tvb.datatypes.projections as projections_module
-import tvb.datatypes.sensors as sensors_module
-from tvb.basic.neotraits.api import HasTraits, Attr, NArray, Float, narray_describe
-from tvb.datatypes.region_mapping import RegionMapping
+
 from tvb.datatypes.time_series import (TimeSeries, TimeSeriesRegion, TimeSeriesEEG, TimeSeriesMEG, TimeSeriesSEEG,
                                        TimeSeriesSurface)
 from tvb.simulator import noise
-from tvb.simulator.backend.ref import ReferenceBackend
+import tvb.datatypes.sensors as sensors_module
+import tvb.datatypes.projections as projections_module
+from tvb.datatypes.region_mapping import RegionMapping
+import tvb.datatypes.equations as equations
 from tvb.simulator.common import numpy_add_at
+from tvb.simulator.backend.ref import ReferenceBackend
+from tvb.basic.neotraits.api import HasTraits, TVBEnum, Attr, NArray, Float, EnumAttr, narray_describe
+from .backend import ReferenceBackend
 
 
 class Monitor(HasTraits):
@@ -97,10 +98,6 @@ class Monitor(HasTraits):
     def __str__(self):
         clsname = self.__class__.__name__
         return '%s(period=%f, voi=%s)' % (clsname, self.period, self.variables_of_interest.tolist())
-
-    @property
-    def ui_name(self):
-        return self._ui_name
 
     def _config_vois(self, simulator):
         self.voi = self.variables_of_interest
@@ -174,7 +171,6 @@ class Raw(Monitor):
         - all the integration time steps
 
     """
-    _ui_name = "Raw recording"
 
     period = Float(default=0.0, label="Sampling period is ignored for Raw Monitor")
 
@@ -209,8 +205,6 @@ class RawVoi(Raw):
 
         """
 
-    _ui_name = "Selected State Variables' Raw recording"
-
     def _config_vois(self, simulator):
         self.voi = self.variables_of_interest
         if self.voi is None or self.voi.size == 0:
@@ -225,12 +219,17 @@ class SubSample(Monitor):
     Sub-samples or decimates the solution in time.
 
     """
-    _ui_name = "Temporally sub-sample"
 
     def sample(self, step, state):
         if step % self.istep == 0:
             time = step * self.dt
             return [time, state[self.voi, :]]
+
+
+class DefaultMasks(TVBEnum):
+    CORTICAL = "cortical"
+    HEMISPHERES = "hemispheres"
+    REGION_MAPPING = "region_mapping"
 
 
 class SpatialAverage(Monitor):
@@ -248,10 +247,6 @@ class SpatialAverage(Monitor):
     integration steps.
 
     """
-    _ui_name = "Spatial average with temporal sub-sample"
-    CORTICAL = "cortical"
-    HEMISPHERES = "hemispheres"
-    REGION_MAPPING = "region mapping"
 
     spatial_mask = NArray(  # TODO: Check it's a vector of length Nodes (like region mapping for surface)
         dtype=int,
@@ -262,10 +257,8 @@ class SpatialAverage(Monitor):
             for mapping a surface based simulation back to the regions used in 
             its `Long-range Connectivity.`""")
 
-    default_mask = Attr(
-        str,
-        choices=(CORTICAL, HEMISPHERES, REGION_MAPPING),
-        default=HEMISPHERES,
+    default_mask = EnumAttr(
+        default=DefaultMasks.CORTICAL,
         label="Default Mask",
         required=False,
         doc=("Fallback in case spatial mask is none and no surface provided"
@@ -297,9 +290,9 @@ class SpatialAverage(Monitor):
                 self.spatial_mask = simulator.surface.region_mapping
             else:
                 conn = simulator.connectivity
-                if self.default_mask == self.CORTICAL:
+                if self.default_mask == DefaultMasks.CORTICAL:
                     self.spatial_mask = self._support_bool_mask(conn.cortical)
-                elif self.default_mask == self.HEMISPHERES:
+                elif self.default_mask == DefaultMasks.HEMISPHERES:
                     self.spatial_mask = self._support_bool_mask(conn.hemispheres)
                 else:
                     msg = "Must fill either the Spatial Mask parameter or choose a Default Mask for non-surface" \
@@ -357,7 +350,6 @@ class GlobalAverage(Monitor):
     monitor for quickly checking the "global" state of a simulation.
 
     """
-    _ui_name = "Global average"
 
     def sample(self, step, state):
         """Records if integration step corresponds to sampling period."""
@@ -380,7 +372,6 @@ class TemporalAverage(Monitor):
     store is averaged and returned when time step is modulo ``istep``.
 
     """
-    _ui_name = "Temporal average"
 
     def _config_time(self, simulator):
         super(TemporalAverage, self)._config_time(simulator)
@@ -411,8 +402,6 @@ class AfferentCoupling(RawVoi):
 
     """
 
-    _ui_name = "Coupling recording"
-
     variables_of_interest = NArray(
         dtype=int,
         label="Indices of coupling variables to record",
@@ -435,7 +424,6 @@ class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
     store is averaged and returned when time step is modulo ``istep``.
 
     """
-    _ui_name = "Coupling Temporal average"
 
     def _config_vois(self, simulator):
         AfferentCoupling._config_vois(self, simulator)
@@ -451,7 +439,6 @@ class AfferentCouplingTemporalAverage(AfferentCoupling, TemporalAverage):
 
 class Projection(Monitor):
     "Base class monitor providing lead field suppport."
-    _ui_name = "Projection matrix"
 
     region_mapping = Attr(
         RegionMapping,
@@ -503,9 +490,15 @@ class Projection(Monitor):
             "projection matrices. Please select an appropriate projection "
             "matrix."
         )
+    
+    _gain_configuration_done = False
 
     def config_for_sim(self, simulator):
         "Configure projection matrix monitor for given simulation."
+
+        # method body is not idempotent, so if we've been here before, don't redo
+        if self._gain_configuration_done:
+            return
 
         super(Projection, self).config_for_sim(simulator)
         self._sim = simulator
@@ -528,14 +521,16 @@ class Projection(Monitor):
         conn = simulator.connectivity
         using_cortical_surface = surf is not None
         if using_cortical_surface:
-            # This code assumes that subcortical regions are mapped to a single vertex
-            non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
+            cortical_mask = numpy.bincount(surf.region_mapping) == 1
+            non_cortical_indices, = numpy.where(cortical_mask)
+            cortical_indices, = numpy.where(~cortical_mask)
             self.rmap = surf.region_mapping
         else:
             # assume all cortical if no info
             if conn.cortical.size == 0:
                 conn.cortical = numpy.array([True] * conn.weights.shape[0])
             non_cortical_indices, = numpy.where(~conn.cortical)
+            cortical_indices, = numpy.where(conn.cortical)
             if self.region_mapping is None:
                 raise Exception("Please specify a region mapping on the EEG/MEG/iEEG monitor when "
                                 "performing a region simulation.")
@@ -546,7 +541,7 @@ class Projection(Monitor):
 
         have_subcortical = len(non_cortical_indices) > 0
 
-        # determine source space
+        # determine source space for cortical sources
         if using_cortical_surface:
             sources = {'loc': surf.vertices, 'ori': surf.vertex_normals}
         else:
@@ -554,13 +549,22 @@ class Projection(Monitor):
 
         # compute analytic if not provided
         if not hasattr(self, 'projection'):
-            self.log.debug('Precomputed projection not unavailable using analytic approximation.')
+            self.log.debug('Precomputed projection not unavailable, using analytic approximation.')
             self.gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
-        if not using_cortical_surface and self.gain.shape[1] == self.rmap.size:
+        # this fails when rmap doesn't have non_cortical, need to ensure "full" first
+        # OR fix non_cortical_rmap_idx to be empty in that case:
+        cortical_rmap = self.rmap.copy()
+        if (self.rmap.max()+1) == conn.cortical.sum():
+            # there are no non_cortical indices in rmap, so cortical_rmap is already fine
+            pass
+        else:
+            non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap==i)[:,0] for i in non_cortical_indices])
+            cortical_rmap = numpy.delete(cortical_rmap, non_cortical_rmap_idx)
+        if not using_cortical_surface and self.gain.shape[1] == cortical_rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
-            numpy_add_at(gain.T, self.rmap, self.gain.T)
+            numpy_add_at(gain.T, cortical_rmap, self.gain.T)
             self.log.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
             self.gain = gain
 
@@ -568,8 +572,15 @@ class Projection(Monitor):
         if have_subcortical:
             # need matrix of shape (proj.shape[0], len(sc_ind))
             src = conn.centres[non_cortical_indices], conn.orientations[non_cortical_indices]
-            self.gain = numpy.hstack((self.gain, self.analytic(*src)))
-            self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
+            sub_gain = self.analytic(*src)
+            if self.gain.shape[1] == (cortical_indices.size + non_cortical_indices.size):
+                self.gain[:, non_cortical_indices] = sub_gain
+            else:
+                full_gain = numpy.zeros((self.gain.shape[0], self.gain.shape[1] + sub_gain.shape[1]))
+                full_gain[:, self.rmap if using_cortical_surface else cortical_indices] = self.gain
+                full_gain[:, non_cortical_indices] = self.analytic(*src)
+                self.gain = full_gain
+                self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
 
         if self.sensors.usable is not None and not self.sensors.usable.all():
             mask_unusable = ~self.sensors.usable
@@ -577,13 +588,14 @@ class Projection(Monitor):
             self.log.debug('Zeroed gain coefficients for %d unusable sensors', mask_unusable.sum())
 
         # unconditionally zero NaN elements; framework not prepared for NaNs.
-        nan_mask = numpy.isfinite(self.gain).all(axis=1)
+        nan_mask = numpy.isfinite(self.gain)
         self.gain[~nan_mask] = 0.0
         self.log.debug('Zeroed %d NaN gain coefficients', nan_mask.sum())
 
         # attrs used for recording
         self._state = numpy.zeros((self.gain.shape[0], len(self.voi)))
         self._period_in_steps = int(self.period / self.dt)
+        self._gain_configuration_done = True
         self.log.debug('State shape %s, period in steps %s', self._state.shape, self._period_in_steps)
 
         self.log.info('Projection configured gain shape %s', self.gain.shape)
@@ -648,7 +660,6 @@ class EEG(Projection):
         Biology, 1987.
 
     """
-    _ui_name = "EEG"
 
     projection = Attr(
         projections_module.ProjectionSurfaceEEG,
@@ -724,7 +735,6 @@ class EEG(Projection):
 
 class MEG(Projection):
     "Forward solution monitor for magnetoencephalography (MEG)."
-    _ui_name = "MEG"
 
     projection = Attr(
         projections_module.ProjectionSurfaceMEG,
@@ -786,8 +796,6 @@ class MEG(Projection):
 
 class iEEG(Projection):
     "Forward solution for intracranial EEG (not ECoG!)."
-
-    _ui_name = "Intracerebral / Stereo EEG"
 
     projection = Attr(
         projections_module.ProjectionSurfaceSEEG,
@@ -867,7 +875,6 @@ class Bold(Monitor):
     .. note:: see Tutorial_Exploring_The_Bold_Monitor
 
     """
-    _ui_name = "BOLD"
 
     period = Float(
         label="Sampling period (ms)",
@@ -970,7 +977,6 @@ class BoldRegionROI(Bold):
     simulation.
 
     """
-    _ui_name = "BOLD Region ROI (only with surface)"
 
     def config_for_sim(self, simulator):
         super(BoldRegionROI, self).config_for_sim(simulator)

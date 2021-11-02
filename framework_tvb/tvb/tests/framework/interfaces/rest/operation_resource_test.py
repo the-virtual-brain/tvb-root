@@ -31,14 +31,15 @@
 import os
 from io import BytesIO
 from uuid import UUID
-
 import flask
 import pytest
 import tvb_data
-from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel, SUPPORTED_WINDOWING_FUNCTIONS
+
+from tvb.adapters.analyzers.fourier_adapter import FFTAdapterModel
 from tvb.basic.exceptions import TVBException
 from tvb.core.neocom import h5
 from tvb.core.services.operation_service import OperationService
+from tvb.datatypes.spectral import WindowingFunctionsEnum
 from tvb.interfaces.rest.commons.exceptions import InvalidIdentifierException, ServiceException
 from tvb.interfaces.rest.commons.strings import Strings, RequestFileKey
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
@@ -167,7 +168,7 @@ class TestOperationResource(RestResourceTest):
 
         fft_model = FFTAdapterModel()
         fft_model.time_series = UUID(input_ts_index.gid)
-        fft_model.window_function = list(SUPPORTED_WINDOWING_FUNCTIONS)[0]
+        fft_model.window_function = WindowingFunctionsEnum.HAMMING
 
         input_folder = self.storage_interface.get_project_folder(self.test_project.name)
         view_model_h5_path = h5.store_view_model(fft_model, input_folder)

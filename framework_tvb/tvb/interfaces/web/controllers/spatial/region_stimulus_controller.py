@@ -34,15 +34,14 @@
 """
 
 import json
-
 import cherrypy
 import numpy
+
 from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.subform_helper import SubformHelper
-from tvb.adapters.simulator.subforms_mapping import get_ui_name_to_equation_dict
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
@@ -113,12 +112,12 @@ class RegionStimulusController(SpatioTemporalController):
     @using_template('form_fields/form_field')
     @handle_error(redirect=False)
     @check_user
-    def refresh_subform(self, temporal_equation, mapping_key):
-        eq_class = get_ui_name_to_equation_dict().get(temporal_equation)
+    def refresh_subform(self, temporal_equation):
+        eq_class = TVBEnum.string_to_enum(list(TemporalEquationsEnum), temporal_equation).value
         current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
         current_region_stim.temporal = eq_class()
 
-        eq_params_form = SubformHelper.get_subform_for_field_value(temporal_equation, mapping_key)
+        eq_params_form = get_form_for_equation(eq_class)()
         # TODO: check eqPrefixes
         return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
@@ -222,7 +221,7 @@ class RegionStimulusController(SpatioTemporalController):
 
     def _reset_region_stimulus(self):
         new_region_stimulus = RegionStimulusCreatorModel()
-        new_region_stimulus.temporal = RegionStimulusCreatorForm.default_temporal()
+        new_region_stimulus.temporal = RegionStimulusCreatorForm.default_temporal.instance
         # TODO: proper init
         new_region_stimulus.weight = numpy.array([])
         common.add2session(KEY_REGION_STIMULUS, new_region_stimulus)

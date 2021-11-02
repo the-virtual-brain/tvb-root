@@ -63,8 +63,7 @@ class ZIPConnectivityImporterForm(ABCUploaderForm):
         super(ZIPConnectivityImporterForm, self).__init__()
 
         self.uploaded = TraitUploadField(ZIPConnectivityImporterModel.uploaded, '.zip', 'uploaded')
-        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, name='normalization',
-                                         choices=NORMALIZATION_OPTIONS)
+        self.normalization = SelectField(ZIPConnectivityImporterModel.normalization, name='normalization')
 
     @staticmethod
     def get_view_model():

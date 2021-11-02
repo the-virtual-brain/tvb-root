@@ -37,6 +37,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesH5
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.file.simulator.view_model import SimulatorAdapterModel
+from tvb.datatypes.spectral import WindowingFunctionsEnum
 from tvb.interfaces.rest.client.examples.utils import monitor_operation, compute_rest_url
 from tvb.interfaces.rest.client.tvb_client import TVBClient
 
@@ -87,7 +88,9 @@ def fire_simulation_example(tvb_client_instance):
 
         time_series_gid = simulation_results[1].gid
         logger.info("Download the time series file...")
-        time_series_path = tvb_client_instance.retrieve_datatype(time_series_gid, tvb_client_instance.temp_folder)
+        time_series_path = tvb_client_instance.retrieve_datatype(time_series_gid,
+                                                                 tvb_client_instance.temp_folder)
+
         logger.info("The time series file location is: {}".format(time_series_path))
 
         logger.info("Requesting algorithms to run on time series...")
@@ -98,7 +101,7 @@ def fire_simulation_example(tvb_client_instance):
         logger.info("Launch Fourier Analyzer...")
         fourier_model = FFTAdapterModel()
         fourier_model.time_series = time_series_gid
-        fourier_model.window_function = 'hamming'
+        fourier_model.window_function = WindowingFunctionsEnum.HAMMING
 
         operation_gid = tvb_client_instance.launch_operation(project_gid, FourierAdapter, fourier_model)
         logger.info("Fourier Analyzer operation has launched with gid {}".format(operation_gid))
@@ -116,7 +119,9 @@ def fire_simulation_example(tvb_client_instance):
                 break
 
         logger.info("Download the connectivity file...")
-        connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid, tvb_client_instance.temp_folder)
+        connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid,
+                                                                  tvb_client_instance.temp_folder)
+
         logger.info("The connectivity file location is: {}".format(connectivity_path))
 
         logger.info("Loading an entire Connectivity datatype in memory...")

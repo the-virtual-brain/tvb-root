@@ -15,13 +15,12 @@ RUN conda init powershell
 RUN activate && conda create -y --name tvb-run python=3.7 numba scipy numpy networkx scikit-learn cython pip numexpr psutil
 RUN activate && conda install -y --name tvb-run pytest pytest-cov pytest-benchmark pytest-mock matplotlib-base
 RUN activate && conda install -y --name tvb-run psycopg2 pytables scikit-image==0.14.2 simplejson cherrypy docutils werkzeug
-RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab flask gevent
-
 RUN activate tvb-run && pip install --upgrade pip
 RUN activate tvb-run && pip install certifi
-RUN activate tvb-run && pip install h5py==2.10 formencode cfflib jinja2==2.11.3 nibabel sqlalchemy alembic allensdk # h5py and jinja2 versions are constarined by allensdk
+RUN activate tvb-run && pip install h5py==2.10 formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk
+RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab gevent
 RUN activate tvb-run && pip install tvb-gdist BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
-RUN activate tvb-run && pip install autopep8
+RUN activate tvb-run && pip install autopep8 pylems
 
 # Download and install tvb data
 ADD https://zenodo.org/record/4263723/files/tvb_data.zip?download=1 C:\\TEMP\\tvb_data.zip

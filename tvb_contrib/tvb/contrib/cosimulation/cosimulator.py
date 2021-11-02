@@ -33,10 +33,9 @@ It inherits the Simulator class.
 
 import numpy
 
-from tvb.basic.neotraits.api import Attr, NArray, Float, List
+from tvb.basic.neotraits.api import Attr, NArray, Float, List, TupleEnum, EnumAttr
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
-
 from tvb.contrib.cosimulation.cosim_history import CosimHistory
 from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor, CosimMonitorFromCoupling
 from tvb.contrib.cosimulation.exception import NumericalInstability

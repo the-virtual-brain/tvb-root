@@ -40,10 +40,10 @@ import shutil
 import uuid
 from cgi import FieldStorage
 from datetime import datetime
-
 from cherrypy._cpreqbody import Part
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.attributes import manager_of_class
+
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.ex import TraitTypeError, TraitAttributeError
 from tvb.basic.profile import TvbProfile
@@ -111,7 +111,7 @@ class ImportService(object):
 
     def _download_and_unpack_project_zip(self, uploaded, uq_file_name, temp_folder):
 
-        if isinstance(uploaded, FieldStorage) or isinstance(uploaded, Part):
+        if isinstance(uploaded, (FieldStorage, Part)):
             if not uploaded.file:
                 raise ImportException("Please select the archive which contains the project structure.")
             with open(uq_file_name, 'wb') as file_obj:
@@ -206,7 +206,9 @@ class ImportService(object):
             # Import images and move them from temp into target
             self._store_imported_images(project, temp_project_path, project.name)
             if StorageInterface.encryption_enabled():
-                self.storage_interface.remove_project(project, True)
+                project_folder = self.storage_interface.get_project_folder(project.name)
+                self.storage_interface.sync_folders(project_folder)
+                self.storage_interface.remove_folder(project_folder)
 
     def _load_datatypes_from_operation_folder(self, src_op_path, operation_entity, datatype_group):
         """
@@ -262,9 +264,9 @@ class ImportService(object):
             self.store_datatype(datatype, dt_path)
             stored_dt_count = 1
         elif datatype_already_in_tvb.parent_operation.project.id != project_id:
-            AlgorithmService.create_link([datatype_already_in_tvb.id], project_id)
+            AlgorithmService.create_link(datatype_already_in_tvb.id, project_id)
             if datatype_already_in_tvb.fk_datatype_group:
-                AlgorithmService.create_link([datatype_already_in_tvb.fk_datatype_group], project_id)
+                AlgorithmService.create_link(datatype_already_in_tvb.fk_datatype_group, project_id)
         return stored_dt_count
 
     def _store_imported_datatypes_in_db(self, project, all_datatypes):
@@ -689,7 +691,7 @@ class ImportService(object):
         temp_folder = self._compute_unpack_path()
         uq_file_name = temp_folder + ".zip"
 
-        if isinstance(zip_file, FieldStorage) or isinstance(zip_file, Part):
+        if isinstance(zip_file, (FieldStorage, Part)):
             if not zip_file.file:
                 raise ServicesBaseException("Could not process the given ZIP file...")
 

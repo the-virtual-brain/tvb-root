@@ -106,7 +106,7 @@ class ABCExporter(metaclass=ABCMeta):
         necessary since all group elements are the same type.
         """
         # first check if current data is a DataTypeGroup
-        if self.is_data_a_group(data):
+        if DataTypeGroup.is_data_a_group(data):
             if self.skip_group_datatypes():
                 return None
 
@@ -123,46 +123,25 @@ class ABCExporter(metaclass=ABCMeta):
     def skip_group_datatypes(self):
         return False
 
-    def _get_all_data_types_arr(self, data):
+    @staticmethod
+    def prepare_datatypes_for_export(data):
         """
-        This method builds an array with all data types to be processed later.
-        - If current data is a simple data type is added to an array.
-        - If it is an data type group all its children are loaded and added to array.
+        Method used for exporting data type groups. This method returns a list of all datatype indexes needed to be
+        exported and a dictionary where keys are operation folder names and the values are lists containing the paths
+        that belong to one particular operation folder.
         """
-        # first check if current data is a DataTypeGroup
-        if self.is_data_a_group(data):
-            data_types = ProjectService.get_datatypes_from_datatype_group(data.id)
-
-            result = []
-            if data_types is not None and len(data_types) > 0:
-                for data_type in data_types:
-                    entity = load_entity_by_gid(data_type.gid)
-                    result.append(entity)
-
-            return result
-
-        else:
-            return [data]
-
-    def is_data_a_group(self, data):
-        """
-        Checks if the provided data, ready for export is a DataTypeGroup or not
-        """
-        return isinstance(data, DataTypeGroup)
-
-    def prepare_datatypes_for_export(self, data):
-        all_datatypes = self._get_all_data_types_arr(data)
+        all_datatypes = ProjectService.get_all_datatypes_from_data(data)
         first_datatype = all_datatypes[0]
 
         # We are exporting a group of datatype measures so we need to find the group of time series
         if hasattr(first_datatype, 'fk_source_gid'):
             ts = h5.load_entity_by_gid(first_datatype.fk_source_gid)
             dt_metric_group = dao.get_datatypegroup_by_op_group_id(ts.parent_operation.fk_operation_group)
-            datatype_measure_list = self._get_all_data_types_arr(dt_metric_group)
+            datatype_measure_list = ProjectService.get_all_datatypes_from_data(dt_metric_group)
             all_datatypes = datatype_measure_list + all_datatypes
         else:
             ts_group = dao.get_datatype_measure_group_from_ts_from_pse(first_datatype.gid, DatatypeMeasureIndex)
-            time_series_list = self._get_all_data_types_arr(ts_group)
+            time_series_list = ProjectService.get_all_datatypes_from_data(ts_group)
             all_datatypes = all_datatypes + time_series_list
 
         if all_datatypes is None or len(all_datatypes) == 0:
@@ -181,13 +160,17 @@ class ABCExporter(metaclass=ABCMeta):
         return all_datatypes, op_file_dict
 
     @abstractmethod
-    def export(self, data, project):
+    def export(self, data, project, public_key_path, password):
         """
         Actual export method, to be implemented in each sub-class.
 
         :param data: data type to be exported
 
         :param project: project that contains data to be exported
+
+        :param public_key_path: path to public key that will be used for encrypting the password by TVB
+
+        :param password: password used for encrypting the files before exporting
 
         :returns: a tuple with the following elements:
 

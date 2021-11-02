@@ -37,15 +37,16 @@ Adapter that uses the traits module to generate interfaces for BalloonModel Anal
 
 import uuid
 import numpy
+
 from tvb.adapters.datatypes.db.time_series import TimeSeriesRegionIndex
 from tvb.adapters.datatypes.h5.time_series_h5 import TimeSeriesRegionH5
-from tvb.analyzers.fmri_balloon import BalloonModel
-from tvb.basic.neotraits.api import Float, Attr
+from tvb.analyzers.fmri_balloon import BalloonModel, BoldModels, NeuralInputTransformations
+from tvb.basic.neotraits.api import Float, Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
 from tvb.core.neocom import h5
 from tvb.core.neotraits.db import prepare_array_shape_meta
-from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField, StrField, BoolField
+from tvb.core.neotraits.forms import TraitDataTypeSelectField, FloatField, StrField, BoolField, SelectField
 from tvb.core.neotraits.view_model import ViewModel, DataTypeGidAttr
 from tvb.datatypes.time_series import TimeSeries, TimeSeriesRegion
 
@@ -81,11 +82,9 @@ class BalloonModelAdapterModel(ViewModel):
             venous compartment. It is the  ratio of resting blood volume (V0) to
             resting blood flow (F0).""")
 
-    neural_input_transformation = Attr(
-        field_type=str,
+    neural_input_transformation = EnumAttr(
         label="Neural input transformation",
-        choices=("none", "abs_diff", "sum"),
-        default="none",
+        default=NeuralInputTransformations.NONE,
         doc=""" This represents the operation to perform on the state-variable(s) of
             the model used to generate the input TimeSeries. ``none`` takes the
             first state-variable as neural input; `` abs_diff`` is the absolute
@@ -93,11 +92,9 @@ class BalloonModelAdapterModel(ViewModel):
             ``sum``: sum all the state-variables of the input TimeSeries."""
     )
 
-    bold_model = Attr(
-        field_type=str,
+    bold_model = EnumAttr(
         label="Select BOLD model equations",
-        choices=("linear", "nonlinear"),
-        default="nonlinear",
+        default=BoldModels.NONLINEAR,
         doc="""Select the set of equations for the BOLD model."""
     )
 
@@ -120,8 +117,8 @@ class BalloonModelAdapterForm(ABCAdapterForm):
         self.dt = FloatField(BalloonModelAdapterModel.dt)
         self.tau_s = FloatField(BalloonModelAdapterModel.tau_s)
         self.tau_f = FloatField(BalloonModelAdapterModel.tau_f)
-        self.neural_input_transformation = StrField(BalloonModelAdapterModel.neural_input_transformation)
-        self.bold_model = StrField(BalloonModelAdapterModel.bold_model)
+        self.neural_input_transformation = SelectField(BalloonModelAdapterModel.neural_input_transformation)
+        self.bold_model = SelectField(BalloonModelAdapterModel.bold_model)
         self.RBM = BoolField(BalloonModelAdapterModel.RBM)
 
     @staticmethod

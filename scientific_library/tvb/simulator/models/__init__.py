@@ -69,7 +69,7 @@ class ModelsEnum(Enum):
     REDUCED_SET_HINDMARSH_ROSE = "ReducedSetHindmarshRose"
     WILSON_COWAN = "WilsonCowan"
     REDUCED_WONG_WANG = "ReducedWongWang"
-    REDUCED_WONG_WANG_EXCH_INH = "ReducedWongWangExcInh"
+    REDUCED_WONG_WANG_EXC_INH = "ReducedWongWangExcInh"
     ZERLAUT_FIRST_ORDER = "ZerlautAdaptationFirstOrder"
     ZERLAUT_SECOND_ORDER = "ZerlautAdaptationSecondOrder"
     MONTBRIO_PAZO_ROXIN = "MontbrioPazoRoxin"
@@ -78,6 +78,7 @@ class ModelsEnum(Enum):
     GAST_SCHMIDT_KNOSCHE_SD = "GastSchmidtKnosche_SD"
     GAST_SCHMIDT_KNOSCHE_SF = "GastSchmidtKnosche_SF"
     DUMONT_GUTKIN = "DumontGutkin"
+    DECO_BALANCED_EXC_INH = "DecoBalancedExcInh"
 
     def get_class(self):
         return _get_imported_model(self.value)
@@ -110,7 +111,7 @@ _module_models = {
     'stefanescu_jirsa': [ModelsEnum.REDUCED_SET_HINDMARSH_ROSE, ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO],
     'wilson_cowan': [ModelsEnum.WILSON_COWAN],
     'wong_wang': [ModelsEnum.REDUCED_WONG_WANG],
-    'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXCH_INH],
+    'wong_wang_exc_inh': [ModelsEnum.REDUCED_WONG_WANG_EXC_INH, ModelsEnum.DECO_BALANCED_EXC_INH],
     'zerlaut': [ModelsEnum.ZERLAUT_FIRST_ORDER, ModelsEnum.ZERLAUT_SECOND_ORDER],
     'infinite_theta': [ModelsEnum.MONTBRIO_PAZO_ROXIN, ModelsEnum.COOMBES_BYRNE, ModelsEnum.COOMBES_BYRNE_2D, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF, ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD, ModelsEnum.DUMONT_GUTKIN],
 }
@@ -163,4 +164,3 @@ def _delay_model_imports():
 
 
 _delay_model_imports()
-

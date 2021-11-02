@@ -34,7 +34,6 @@ import numpy as np
 import tvb.simulator.lab as lab
 from tvb.tests.library.base_testcase import BaseTestCase
 from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
-
 from tvb.contrib.cosimulation.cosim_monitors import RawCosim
 from tvb.contrib.cosimulation.cosimulator import CoSimulator
 
@@ -80,11 +79,13 @@ class TestModifyWongWang(BaseTestCase):
         init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
                                np.random.random_sample((385, 1, 76, 1))), axis=1)
         np.random.seed(42)
-        result_2 = self._reference_simulation(self._simulation_length,model_class=ReducedWongWangProxy, simulator=CoSimulator, init=init)[5]
+        result_2 = self._reference_simulation(self._simulation_length,model_class=ReducedWongWangProxy,
+                                              simulator=CoSimulator, init=init)[5]
         np.testing.assert_array_equal(result, result_2)
 
     def test_precision_with_proxy(self):
-        connectivity, coupling, integrator, monitors, sim, result, result_all = self._reference_simulation(self._simulation_length)
+        connectivity, coupling, integrator, monitors, sim, result, result_all = \
+            self._reference_simulation(self._simulation_length)
         # New simulator with proxy
         np.random.seed(42)
         init = np.concatenate((np.random.random_sample((385, 1, 76, 1)),
