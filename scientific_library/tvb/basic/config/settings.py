@@ -270,6 +270,7 @@ class WebSettings(object):
         # Compute PUBLIC reference towards the current web application, it will be used in the emails text
         self.BASE_URL = ""
         self.DEPLOY_CONTEXT = manager.get_attribute(stored.KEY_DEPLOY_CONTEXT, "")
+        self.REST_DEPLOY_CONTEXT = manager.get_attribute(stored.KEY_REST_DEPLOY_CONTEXT, "")
 
         # URL for reading current available version information.
         default = "http://www.thevirtualbrain.org/tvb/zwei/action/serialize-version?version=1&type=json"
