@@ -92,7 +92,7 @@ function __storeSVG(svgElement, kwargs, save) {
 
     // get the styles for the svg
 
-    $.get( "/static/style/subsection_svg.css", function (stylesheet) {
+    $.get( deploy_context + "/static/style/subsection_svg.css", function (stylesheet) {
                                                                          // strip all
         var re = new RegExp("[\\s\\n^]*\\/\\*(.|[\\r\\n])*?\\*\\/" +     // block style comments
             "|([\\s\\n]*\\/\\/.*)" +                     // single line comments

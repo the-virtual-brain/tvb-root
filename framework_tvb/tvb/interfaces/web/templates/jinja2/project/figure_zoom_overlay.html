@@ -3,8 +3,8 @@
         use object element, and also both chrome and firefox will change .png images
         sizes if used with object element. -->
     {% if not figure_file_path.endswith('.svg') %}
-        <img src="/flow/readserverstaticfile/{{ figure_file_path }}" class="tvb-snapshot-image"/>
+        <img src="{{ deploy_context | safe }}/flow/readserverstaticfile/{{ figure_file_path }}" class="tvb-snapshot-image"/>
     {% else %}
-        <object style="width:100%; height:100%" data="/flow/readserverstaticfile/{{ figure_file_path }}"></object>
+        <object style="width:100%; height:100%" data="{{ deploy_context | safe }}/flow/readserverstaticfile/{{ figure_file_path }}"></object>
     {% endif %}
 </div>

@@ -144,7 +144,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         except Exception:
             self.logger.exception("Some of the provided parameters have an invalid value.")
             common.set_error_message("Some of the provided parameters have an invalid value.")
-            raise cherrypy.HTTPRedirect("/burst/")
+            self.redirect("/burst/")
 
         cortex = des.conf.surface
         return model, cortex
@@ -211,7 +211,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         }
         template_specification.update(self._prepare_reload(context_model_parameters))
         template_specification.update(
-            submit_parameters_url='/spatial/modelparameters/surface/submit_model_parameters',
+            submit_parameters_url=self.build_path('/spatial/modelparameters/surface/submit_model_parameters'),
             mainContent='spatial/model_param_surface_main',
             submitSurfaceParametersBtn=True
         )
@@ -317,7 +317,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
         ### Clean from session drawing context
         common.remove_from_session(KEY_CONTEXT_MPS)
-        raise cherrypy.HTTPRedirect("/burst/")
+        self.redirect("/burst/")
 
     def fill_default_attributes(self, template_dictionary):
         """

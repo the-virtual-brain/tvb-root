@@ -40,6 +40,7 @@ import tvb.interfaces.web.controllers.base_controller as bc
 from tvb.basic.logger.builder import get_logger
 
 # Constants for upload
+from tvb.basic.profile import TvbProfile
 from tvb.interfaces.web.controllers.common import get_from_session
 
 CONTENT_LENGTH_KEY = 'content-length'
@@ -69,7 +70,7 @@ class RequestHandler(object):
         if CONTENT_LENGTH_KEY in lcHDRS:
             size = float(lcHDRS[CONTENT_LENGTH_KEY])
             if size > cherrypy.server.max_request_body_size:
-                raise cherrypy.HTTPRedirect("/tvb?error=True")
+                raise cherrypy.HTTPRedirect(TvbProfile.current.web.DEPLOY_CONTEXT + "/tvb?error=True")
 
 
     @staticmethod

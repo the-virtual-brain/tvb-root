@@ -1,15 +1,15 @@
 <div id="main" class="columnized colscheme-1">
-    <link rel="stylesheet" type="text/css" href="/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
+    <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/section_stimulus.css?{{ currentVersionJS }}"/>
 
     <section class="configure-stimulus-equation view-column col-2" >
         <div class="model-param-empty">
             <h1> No model dynamics have been defined. </h1>
             <p> Before assigning model dynamics for nodes you have to define some.</p>
-            <h2> Click <a href="/burst/dynamic">here</a> to go to the phase plane page.</h2>
+            <h2> Click <a href="{{ deploy_context | safe }}/burst/dynamic">here</a> to go to the phase plane page.</h2>
         </div>
     </section>
 
-    <form id="base_spatio_temporal_form" action="/burst">
+    <form id="base_spatio_temporal_form" action="{{ deploy_context | safe }}/burst">
 	    <aside class="header-component toolbar can-extend auto-extends">
             <h3>SpatioTemporal Entities</h3>
             <div class="extension">
@@ -17,13 +17,13 @@
                     <ul>
 
                         <li>
-                            <a href="/burst/dynamic" class="action action-new">
+                            <a href="{{ deploy_context | safe }}/burst/dynamic" class="action action-new">
                                 Define dynamic
                             </a>
                         </li>
 
                         <li>
-                            <a href="/burst" class="action action-cancel">
+                            <a href="{{ deploy_context | safe }}/burst" class="action action-cancel">
                                 Cancel
                             </a>
                         </li>

@@ -65,7 +65,7 @@ function ANN_Displayer(treeDataUrl, triangleToRegionUrl, activationPatternsUrl, 
                 "theme": "default",
                 "dots": true,
                 "icons": true,
-                "url": "/static/jquery/jstree-theme/style.css"
+                "url": deploy_context + "/static/jquery/jstree-theme/style.css"
             },
             "json_data": {
                 "ajax": {

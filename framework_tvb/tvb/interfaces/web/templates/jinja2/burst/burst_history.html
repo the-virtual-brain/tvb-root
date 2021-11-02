@@ -1,6 +1,6 @@
 <div>
     <h4>History</h4>
-    <a href="#" title="Import simulation from ZIP " class="column-control action-big-upload" onclick="showOverlay('/burst/get_upload_overlay', true);">Import</a>
+    <a href="#" title="Import simulation from ZIP " class="column-control action-big-upload" onclick="showOverlay(deploy_context + '/burst/get_upload_overlay', true);">Import</a>
     <a href="#" title="Prepare a new simulation " class="column-control action action-big-new" onclick="resetToNewBurst();">New</a>
 
     <ul class="burst-list" id="burst-history">
@@ -35,7 +35,7 @@
                                         Branch</button></p>
                                 {% endif %}
                             {% endif %}
-                            <p><button class="action action-export" onclick="window.location='/burst/export/{{ burst.id }}'; return false;"
+                            <p><button class="action action-export" onclick="window.location='{{ deploy_context | safe }}/burst/export/{{ burst.id }}'; return false;"
                                         title="Export simulation as ZIP, for later import or use in command line">
                                 Export ZIP</button></p>
 
