@@ -33,11 +33,16 @@ Root class for export functionality.
 
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
-from abc import ABCMeta, abstractmethod
+import os
 from datetime import datetime
+from abc import ABCMeta, abstractmethod
 
+from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
+from tvb.adapters.exporters.exceptions import ExportException
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.model.model_datatype import DataTypeGroup
+from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.project_service import ProjectService
 
 # List of DataTypes to be excluded from export due to not having a valid export mechanism implemented yet.
@@ -144,6 +149,36 @@ class ABCExporter(metaclass=ABCMeta):
         Checks if the provided data, ready for export is a DataTypeGroup or not
         """
         return isinstance(data, DataTypeGroup)
+
+    def prepare_datatypes_for_export(self, data):
+        all_datatypes = self._get_all_data_types_arr(data)
+        first_datatype = all_datatypes[0]
+
+        # We are exporting a group of datatype measures so we need to find the group of time series
+        if hasattr(first_datatype, 'fk_source_gid'):
+            ts = h5.load_entity_by_gid(first_datatype.fk_source_gid)
+            dt_metric_group = dao.get_datatypegroup_by_op_group_id(ts.parent_operation.fk_operation_group)
+            datatype_measure_list = self._get_all_data_types_arr(dt_metric_group)
+            all_datatypes = datatype_measure_list + all_datatypes
+        else:
+            ts_group = dao.get_datatype_measure_group_from_ts_from_pse(first_datatype.gid, DatatypeMeasureIndex)
+            time_series_list = self._get_all_data_types_arr(ts_group)
+            all_datatypes = all_datatypes + time_series_list
+
+        if all_datatypes is None or len(all_datatypes) == 0:
+            raise ExportException("Could not export a data type group with no data!")
+
+        op_file_dict = dict()
+        for dt in all_datatypes:
+            h5_path = h5.path_for_stored_index(dt)
+            op_folder = os.path.dirname(h5_path)
+            op_file_dict[op_folder] = [h5_path]
+
+            op = dao.get_operation_by_id(dt.fk_from_operation)
+            vms = h5.gather_references_of_view_model(op.view_model_gid, os.path.dirname(h5_path), only_view_models=True)
+            op_file_dict[op_folder].extend(vms[0])
+
+        return all_datatypes, op_file_dict
 
     @abstractmethod
     def export(self, data, project):

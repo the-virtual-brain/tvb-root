@@ -282,13 +282,6 @@ class StorageInterface:
         self.folders_queue_consumer.join()
 
     # Generic methods start here
-    def get_file_by_gid(self, project_name, op_id, dt_gid):
-        op_path = self.files_helper.get_project_folder(project_name, str(op_id))
-
-        for f in os.listdir(op_path):
-            fp = os.path.join(op_path, f)
-            if dt_gid in f and os.path.isfile(fp):
-                return fp
 
     def get_filename(self, class_name, gid):
         return self.FILE_NAME_STRUCTURE.format(class_name, gid.hex)
@@ -431,6 +424,17 @@ class StorageInterface:
 
         return result_path
 
+    def __copy_datatypes(self, dt_path_list, data):
+        export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
+
+        for dt_path in dt_path_list:
+            file_destination = os.path.join(export_folder, os.path.basename(dt_path))
+            if not os.path.exists(file_destination):
+                self.copy_file(dt_path, file_destination)
+            self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+
+        return export_folder
+
     def export_datatypes(self, dt_path_list, data, download_file_name):
         """
         This method is used to export a list of datatypes as a ZIP file.
@@ -439,41 +443,40 @@ class StorageInterface:
         :param download_file_name: name of the zip file to be downloaded
         """
 
-        export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
-        file_destination = None
-
-        for dt_path in dt_path_list:
-            file_destination = os.path.join(export_folder, os.path.basename(dt_path))
-            if not os.path.exists(file_destination):
-                self.copy_file(dt_path, file_destination)
-            self.get_storage_manager(file_destination).remove_metadata('parent_burst', check_existence=True)
+        export_folder = self.__copy_datatypes(dt_path_list, data)
 
         if len(dt_path_list) == 1:
-            return file_destination
+            return os.path.join(export_folder, os.path.basename(dt_path_list[0]))
 
         export_data_zip_path = os.path.join(os.path.dirname(export_folder), download_file_name)
         self.write_zip_folder(export_data_zip_path, export_folder)
         return export_data_zip_path
 
-    def export_datatypes_structure(self, all_datatypes, data, download_file_name, project_name):
+    def export_datatypes_structure(self, op_file_dict, data, download_file_name, links_tuple_for_copy=None):
         """
         This method is used to export a list of datatypes as a ZIP file, while preserving the folder structure
         (eg: operation folders). It is only used during normal tvb exporting for datatype groups.
-        :param all_datatypes: list of datatype paths to be exported (more than 1 if we export a datatype group)
+        :param op_file_dict: a dictionary where keys are operation folders and the values are lists of files inside
+            that operation folder
         :param data: data to be exported
         :param download_file_name: name of the ZIP file to be exported
-        :param project_name: name of the project in which the data to be exported exists
+        :param links_tuple_for_copy: a tuple containing two elements: a list of paths to be copied and the first
+         datatype of the group
+
         """
+        if links_tuple_for_copy is not None:
+            export_folder = self.__copy_datatypes(links_tuple_for_copy[0], links_tuple_for_copy[1])
+        else:
+            export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
 
-        export_folder = self.__build_data_export_folder(data, self.EXPORT_FOLDER)
-        zip_full_path = os.path.join(export_folder, download_file_name)
+        for op_folder, files in op_file_dict.items():
+            tmp_op_folder_path = os.path.join(export_folder, os.path.basename(op_folder))
+            for file in files:
+                dest_path = os.path.join(tmp_op_folder_path, os.path.basename(file))
+                self.copy_file(file, os.path.join(tmp_op_folder_path, os.path.basename(file)))
+                self.get_storage_manager(dest_path).remove_metadata('parent_burst', check_existence=True)
 
-        operation_folders = []
-        for data_type in all_datatypes:
-            operation_folder = self.get_project_folder(project_name, str(data_type.fk_from_operation))
-            operation_folders.append(operation_folder)
-        self.tvb_zip = TvbZip(zip_full_path, "w")
-        self.tvb_zip.write_zip_folders(operation_folders, [])
-        self.tvb_zip.close()
+        dest_path = os.path.join(os.path.dirname(export_folder), download_file_name)
+        self.write_zip_folder(dest_path, export_folder)
 
-        return zip_full_path
+        return dest_path

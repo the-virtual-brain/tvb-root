@@ -420,10 +420,19 @@ function _displayPseSimulationMessage() {
     const THREASHOLD_WARNING = 500;
     const THREASHOLD_ERROR = 50000;
 
-    pse_param1_number = _computeRangeNumberForParamPrefix('pse_param1');
-    pse_param2_number = _computeRangeNumberForParamPrefix('pse_param2');
+    var maxRangeNumber = document.getElementById("max_range_number");
+    var maxRangeNumberInt = parseInt(maxRangeNumber.value);
+
+    let pse_param1_number = _computeRangeNumberForParamPrefix('pse_param1');
+    let pse_param2_number = _computeRangeNumberForParamPrefix('pse_param2');
 
     let nrOps = pse_param1_number * pse_param2_number;
+
+    if (nrOps > maxRangeNumberInt){
+        message = "Can't launch PSE! Maximum number of operations (" + maxRangeNumberInt + ") has been exceeded!";
+        displayMessage(message, "errorMessage");
+        throw message;
+    }
 
     // Only the first range been chosen
     if(nrOps == 0){

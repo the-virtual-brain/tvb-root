@@ -1,0 +1,86 @@
+<Lems description="A number of ComponentTypes for rate based/population models.
+                    Base type of any cell/population which has a (dimensionless) rate _R.
+                    Reduced Wong Wang model.">
+
+    <ComponentType name="derivatives">
+
+        <!-- Parameters will be assumed to be swept. sweep data will be matched by order of entry -->
+        <Parameter name="global_speed" dimension='1.0, 1.0'/>
+        <Parameter name="global_coupling" dimension='1.0, 1.0'/>
+
+<!--        <DerivedParameter name="rec_n" value="1 / n_node"/>-->
+<!--        &lt;!&ndash; If rec_speed_dt not is defined or is zero, then no delays will be fetched &ndash;&gt;-->
+        <DerivedParameter name="rec_speed_dt" value="1.0f / global_speed / dt"/>
+<!--        <DerivedParameter name="nsigz" value="sqrt(dt) * sqrt(2.0 * 1e-5)"/>-->
+
+        <Constant name="alpha" dimension="lo=0., hi=1., step=0.01" value="0.0" description="Parameters for the the scaling between regional biological measures of heterogeneity, R_i, and the
+            effective gain within a region"/>
+        <Constant name="beta" dimension="lo=0., hi=1., step=0.01" value="0.0" description="Parameters for the the scaling between regional biological measures of heterogeneity, R_i, and the
+            effective gain within a region"/>
+        <Constant name="ratio" dimension="lo=0., hi=1., step=0.01" value="0.0" description="Parameters for the the scaling between regional biological measures of heterogeneity, R_i, and the
+            effective gain within a region"/>
+
+        <Constant name="a_E" dimension="lo=0., hi=500., step=1." value="310.0" description="[n/C]. Excitatory population input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b_E" dimension="lo=0., hi=200., step=1." value="125.0" description="[Hz]. Excitatory population input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d_E" dimension="lo=0.0, hi=0.2, step=0.001" value="0.160" description="[s]. Excitatory population input scaling parameter chosen to fit numerical solutions."/>
+        <Constant name="a_I" dimension="lo=0., hi=1000., step=1." value="615.0" description="[n/C]. Inhibitory population input gain parameter, chosen to fit numerical solutions."/>
+        <Constant name="b_I" dimension="lo=0.0, hi=200.0, step=1.0" value="177.0" description="[Hz]. Inhibitory population input shift parameter chosen to fit numerical solutions."/>
+        <Constant name="d_I" dimension="lo=0.01, hi=0.2, step=0.001" value="0.087" description="[s]. Inhibitory population input scaling parameter chosen to fit numerical solutions."/>
+        <Constant name="gamma_E" dimension="lo=0.0, hi=0.001, step=0.00001" value="0.641 / 1000.0" description="Excitatory population kinetic parameter"/>
+        <Constant name="tau_E" dimension="lo=50., hi=150., step=1." value="100.0" description="[ms]. Excitatory population NMDA decay time constant."/>
+        <Constant name="w_plus" dimension="lo=0.0, hi=2.0, step=0.01" value="1.4" description="Excitatory population recurrence weight"/>
+        <Constant name="J_N" dimension="lo=0.001, hi=0.5, step=0.001" value="0.15" description="[nA] NMDA current"/>
+        <Constant name="w_E" dimension="lo=0.0, hi=2.0, step=0.01" value="1.0" description="Excitatory population external input scaling weight"/>
+        <Constant name="gamma_I" dimension="lo=0.0, hi=0.002, step=0.0001" value="1.0 / 1000.0" description="Inhibitory population kinetic parameter"/>
+        <Constant name="tau_I" dimension="lo=5., hi=150., step=1.0" value="10.0" description="[ms]. Inhibitory population NMDA decay time constant."/>
+        <Constant name="J_I" dimension="lo=0.001, hi=2.0, step=0.001" value="1.0" description="[nA] Local inhibitory current"/>
+        <Constant name="w_I" dimension="lo=0.0, hi=1.0, step=0.01" value="0.7" description="Inhibitory population external input scaling weight"/>
+        <Constant name="I_0" dimension="lo=0.0, hi=1.0, step=0.001" value="0.382" description="[nA]. Effective external input"/>
+        <Constant name="lamda" dimension="lo=0.0, hi=1.0, step=0.01" value="0.0" description="Inhibitory global coupling scaling"/>
+
+        <!-- Enter the name of the variable that needs to be observed -->
+        <Exposure name="S_e" dimension=""/>
+        <Exposure name="S_i" dimension=""/>
+        <Exposure name="H_e" dimension=""/>
+        <Exposure name="I_e" dimension=""/>
+
+        <Dynamics>
+
+            <!-- dimension lo = hi -> init at lo -->
+            <!-- use pi or inf for np.pi and np.inf -->
+            <StateVariable name="S_e" dimension="0.0, 0.0" exposure="0.0, 1.0"/>
+            <StateVariable name="S_i" dimension="0.0, 0.0" exposure="0.0, 1.0"/>
+            <StateVariable name="H_e" dimension="0.0, 0.0" exposure="0.0, 150.0"/>
+            <StateVariable name="I_e" dimension="0.0, 0.0" exposure="0.0, 30.0"/>
+
+            <DerivedVariable name="gain" value="1.0 + alpha + beta + ratio"/>
+            <DerivedVariable name="tmp_I_E" value="(a_E * (w_E*I_0 + w_plus*J_N*S_e + c_pop0 - J_I*S_i) - b_E) * gain"/>
+            <DerivedVariable name="tmp_H_E" value="tmp_I_E/(1.0-exp(-1.0*d_E * tmp_I_E))"/>
+            <DerivedVariable name="tmp_I_I" value="(a_I * (w_I*I_0 + J_N*S_e - S_i + lamda*c_pop0)-b_I) * gain"/>
+            <DerivedVariable name="tmp_H_I" value="tmp_I_I/(1.0-exp(-1.0*d_I*tmp_I_I))"/>
+
+            <TimeDerivative variable="dS_e" value="((-1.0/tau_E) * S_e) + (tmp_H_E * (1-S_e) * gamma_E)"/>
+            <TimeDerivative variable="dS_i" value="((-1.0/tau_I) * S_i) + (tmp_H_I * gamma_I)"/>
+            <TimeDerivative variable="dH_e" value="tmp_H_E - H_e"/>
+            <TimeDerivative variable="dI_e" value="tmp_I_E - I_e"/>
+        </Dynamics>
+
+    </ComponentType>
+
+    <ComponentType name="coupling_function">
+
+        <!-- variables for pre synaptic function-->
+        <Parameter name="V_j" dimension='0'/>
+        <!--        post coupling expression, needs to be present. If no temporary result needs to be computed enter 'None'-->
+        <DerivedParameter name="c_pop0" value="global_coupling"/>
+
+    <Dynamics>
+        <DerivedVariable name="pre" value="V_j"/>
+        <DerivedVariable name="post" value="1"/>
+    </Dynamics>
+
+    </ComponentType>
+
+<!--    <ComponentType name="noise" />-->
+
+</Lems>

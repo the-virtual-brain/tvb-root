@@ -414,7 +414,7 @@ class TestProjectService(TransactionalTestCase):
         Test the new update metaData for a group of dataTypes.
         """
         test_adapter_factory(adapter_class=DummyAdapter3)
-        group = datatype_group_factory()
+        group, _ = datatype_group_factory()
         op_group_id = group.fk_operation_group
 
         new_meta_data = {DataTypeOverlayDetails.DATA_SUBJECT: "new subject",
@@ -457,7 +457,7 @@ class TestProjectService(TransactionalTestCase):
         project1 = project_factory(user, name="TestPS1")
         project2 = project_factory(user, name="TestPS2")
 
-        dt_group = datatype_group_factory(project=project1)
+        dt_group, _ = datatype_group_factory(project=project1)
         dt_simple = dummy_datatype_index_factory(state="RAW_DATA", project=project1)
         # Create 3 DTs directly in Project 2
         dummy_datatype_index_factory(state="RAW_DATA", project=project2)
