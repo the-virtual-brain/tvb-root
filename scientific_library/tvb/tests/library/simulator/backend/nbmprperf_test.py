@@ -102,8 +102,8 @@ def run_sim_pdq(sim, integrate):
         V=V,
         weights = sim.connectivity.weights, 
         idelays = sim.connectivity.idelays,
-        G = sim.coupling.a.item(),
-        parmat = sim.model.spatial_parameter_matrix
+        parmat = sim.model.spatial_parameter_matrix,
+        stimulus = None
     )
     return r[:,horizon:], V[:,horizon:]
 
@@ -114,7 +114,7 @@ def test_nb_pdq_10ms(benchmark):
             compatibility_mode=False, 
             sim=sim
     ) 
-    integrate = NbMPRBackend().build_py_func(template, content, name='_mpr_integrate', print_source=True)
+    integrate = NbMPRBackend().build_py_func(template, content, name='integrate', print_source=True)
 
     benchmark(lambda : run_sim_pdq(sim, integrate))
 
@@ -125,7 +125,7 @@ def test_nb_pdq_100ms(benchmark):
             compatibility_mode=False, 
             sim=sim
     ) 
-    integrate = NbMPRBackend().build_py_func(template, content, name='_mpr_integrate', print_source=True)
+    integrate = NbMPRBackend().build_py_func(template, content, name='integrate', print_source=True)
 
     benchmark(lambda : run_sim_pdq(sim, integrate))
 
@@ -136,6 +136,6 @@ def test_nb_pdq_1000ms(benchmark):
             compatibility_mode=False, 
             sim=sim
     ) 
-    integrate = NbMPRBackend().build_py_func(template, content, name='_mpr_integrate', print_source=True)
+    integrate = NbMPRBackend().build_py_func(template, content, name='integrate', print_source=True)
 
     benchmark(lambda : run_sim_pdq(sim, integrate))
