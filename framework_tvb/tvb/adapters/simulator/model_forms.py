@@ -128,13 +128,6 @@ class ModelForm(FormWithRanges):
         """
         raise NotImplementedError
 
-    @staticmethod
-    def get_mathjax_rendered_params():
-        """
-        Returns the mathjax representation of parameters in phase plane.
-        """
-        raise NotImplementedError
-
 
 class Generic2dOscillatorModelForm(ModelForm):
 
@@ -155,14 +148,9 @@ class Generic2dOscillatorModelForm(ModelForm):
         self.variables_of_interest = MultiSelectField(
             ModelsEnum.GENERIC_2D_OSCILLATOR.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["tau", "a", "b", "c", "I", "d", "e", "f", "g", "alpha", "beta", "gamma"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\tau`", ":math:`a`", ":math:`b`", ":math:`c`", ":math:`I`", ":math:`d`", ":math:`e`",
-                ":math:`f`", ":math:`g`", r":math:`\alpha`", r":math:`\beta`", r":math:`\gamma`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.tau, self.a, self.b, self.c, self.I, self.d, self.e, self.f, self.g, self.alpha, self.beta,
+                self.gamma]
 
 
 class KuramotoModelForm(ModelForm):
@@ -172,13 +160,8 @@ class KuramotoModelForm(ModelForm):
         self.omega = ArrayField(ModelsEnum.KURAMOTO.value.omega)
         self.variables_of_interest = MultiSelectField(ModelsEnum.KURAMOTO.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["omega"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\omega`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.omega]
 
 
 class SupHopfModelForm(ModelForm):
@@ -189,13 +172,8 @@ class SupHopfModelForm(ModelForm):
         self.omega = ArrayField(ModelsEnum.SUP_HOPF.value.omega)
         self.variables_of_interest = MultiSelectField(ModelsEnum.SUP_HOPF.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["a", "omega"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`a`", r":math:`\omega`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.a, self.omega]
 
 
 class HopfieldModelForm(ModelForm):
@@ -207,13 +185,8 @@ class HopfieldModelForm(ModelForm):
         self.dynamic = ArrayField(ModelsEnum.HOPFIELD.value.dynamic)
         self.variables_of_interest = MultiSelectField(ModelsEnum.HOPFIELD.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["taux", "tauT", "dynamic"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\tau_{x}`", r":math:`\tau_{\theta}`", "Dynamic"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.taux, self.tauT, self.dynamic]
 
 
 class EpileptorModelForm(ModelForm):
@@ -240,13 +213,8 @@ class EpileptorModelForm(ModelForm):
         self.modification = ArrayField(ModelsEnum.EPILEPTOR.value.modification)
         self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["Iext", "Iext2", "r", "x0", "slope"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`I_{ext}`", ":math:`I_{ext2}`", ":math:`r`", ":math:`x_0`", ":math:`slope`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.Iext, self.Iext2, self.r, self.x0, self.slope]
 
 
 class Epileptor2DModelForm(ModelForm):
@@ -267,13 +235,8 @@ class Epileptor2DModelForm(ModelForm):
         self.modification = ArrayField(ModelsEnum.EPILEPTOR_2D.value.modification)
         self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_2D.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["r", "Iext", "x0"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`r`", ":math:`I_{ext}`", ":math:`x_0`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.r, self.Iext, self.x0]
 
 
 class EpileptorCodim3ModelForm(ModelForm):
@@ -295,16 +258,9 @@ class EpileptorCodim3ModelForm(ModelForm):
         self.modification = ArrayField(ModelsEnum.EPILEPTOR_CODIM_3.value.modification)
         self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_CODIM_3.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["mu1_start", "mu2_start", "nu_start", "mu1_stop", "mu2_stop", "nu_stop", "b", "R", "c", "dstar", "N",
-                "Ks"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`mu_1 start`", ":math:`mu_2 start`", ":math:`nu start`", ":math:`mu_1 stop`",
-                ":math:`mu_2 stop`", ":math:`nu stop`", ":math:`b`", ":math:`R`", ":math:`c`", ":math:`d^*`",
-                ":math:`N`", ":math:`K_s`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.mu1_start, self.mu2_start, self.nu_start, self.mu1_stop, self.mu2_stop, self.nu_stop, self.b,
+                self.R, self.c, self.dstar, self.N, self.Ks]
 
 
 class EpileptorCodim3SlowModModelForm(ModelForm):
@@ -335,15 +291,10 @@ class EpileptorCodim3SlowModModelForm(ModelForm):
         self.variables_of_interest = MultiSelectField(
             ModelsEnum.EPILEPTOR_CODIM_3_SLOW.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["mu1_Ain", "mu2_Ain", "nu_Ain", "mu1_Bin", "mu2_Bin", "nu_Bin", "mu1_Aend", "mu2_Aend", "nu_Aend",
-                "mu1_Bend", "mu2_Bend", "nu_Bend", "b", "R", "c", "dstar", "N"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return ["mu1_Ain", "mu2_Ain", "nu_Ain", "mu1_Bin", "mu2_Bin", "nu_Bin", "mu1_Aend", "mu2_Aend", "nu_Aend",
-                "mu1_Bend", "mu2_Bend", "nu_Bend", "b", "R", "c", "dstar", "N"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.mu1_Ain, self.mu2_Ain, self.nu_Ain, self.mu1_Bin, self.mu2_Bin, self.nu_Bin, self.mu1_Aend,
+                self.mu2_Aend, self.nu_Aend, self.mu1_Bend, self.mu2_Bend, self.nu_Bend, self.b, self.R, self.c,
+                self.dstar, self.N]
 
 
 class EpileptorRestingStateModelForm(ModelForm):
@@ -380,17 +331,9 @@ class EpileptorRestingStateModelForm(ModelForm):
         self.p = ArrayField(ModelsEnum.EPILEPTOR_RS.value.p)
         self.variables_of_interest = MultiSelectField(ModelsEnum.EPILEPTOR_RS.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["Iext", "Iext2", "r", "x0", "slope", "tau_rs", "a_rs", "b_rs", "I_rs", "d_rs", "e_rs", "f_rs",
-                "alpha_rs", "beta_rs", "gamma_rs"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`I_{ext}`", ":math:`I_{ext2}`", ":math:`r`", ":math:`x_0`", ":math:`slope`",
-                r":math:`\tau_{rs}`", ":math:`a_{rs}`", ":math:`b_{rs}`", ":math:`I_{rs}`", ":math:`d_{rs}`",
-                ":math:`e_{rs}`", ":math:`f_{rs}`", r":math:`\alpha_{rs}`", r":math:`\beta_{rs}`",
-                r":math:`\gamma_{rs}`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.Iext, self.Iext2, self.r, self.x0, self.slope, self.tau_rs, self.a_rs, self.b_rs, self.I_rs,
+                self.d_rs, self.e_rs, self.f_rs, self.alpha_rs, self.beta_rs]
 
 
 class JansenRitModelForm(ModelForm):
@@ -414,15 +357,9 @@ class JansenRitModelForm(ModelForm):
         self.mu = ArrayField(ModelsEnum.JANSEN_RIT.value.mu)
         self.variables_of_interest = MultiSelectField(ModelsEnum.JANSEN_RIT.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["A", "B", "a", "b", "v0", "nu_max", "r", "J", "a_1", "a_2", "a_3", "a_4", "p_min", "p_max", "mu"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`A`", ":math:`B`", ":math:`a`", ":math:`b`", ":math:`v_0`", r":math:`\nu_{max}`", ":math:`r`",
-                ":math:`J`", r":math:`\alpha_1`", r":math:`\alpha_2`", r":math:`\alpha_3`", r":math:`\alpha_4`",
-                ":math:`p_{min}`", ":math:`p_{max}`", r":math:`\mu_{max}`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.A, self.B, self.a, self.b, self.v0, self.nu_max, self.r, self.J, self.a_1, self.a_2, self.a_3,
+                self.a_4, self.p_min, self.p_max, self.mu]
 
 
 class ZetterbergJansenModelForm(ModelForm):
@@ -449,16 +386,9 @@ class ZetterbergJansenModelForm(ModelForm):
         self.Q = ArrayField(ModelsEnum.ZETTERBERG_JANSEN.value.Q)
         self.variables_of_interest = MultiSelectField(ModelsEnum.ZETTERBERG_JANSEN.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["He", "Hi", "ke", "ki", "e0", "rho_2", "rho_1", "gamma_1", "gamma_2", "gamma_3", "gamma_4", "gamma_5",
-                "P", "U", "Q"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`H_e`", ":math:`H_i`", r":math:`\kappa_e`", r":math:`\kappa_i`", r":math:`e_0`",
-                r":math:`\rho_2`", r":math:`\rho_1`", r":math:`\gamma_1`", r":math:`\gamma_2`", r":math:`\gamma_3`",
-                r":math:`\gamma_4`", r":math:`\gamma_5`", ":math:`P`", ":math:`U`", ":math:`Q`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.He, self.Hi, self.ke, self.ki, self.e0, self.rho_2, self.rho_1, self.gamma_1, self.gamma_2,
+                self.gamma_3, self.gamma_4, self.gamma_5, self.P, self.U, self.Q]
 
 
 class ReducedWongWangModelForm(ModelForm):
@@ -476,14 +406,8 @@ class ReducedWongWangModelForm(ModelForm):
         self.sigma_noise = ArrayField(ModelsEnum.REDUCED_WONG_WANG.value.sigma_noise)
         self.variables_of_interest = MultiSelectField(ModelsEnum.REDUCED_WONG_WANG.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["a", "b", "d", "gamma", "tau_s", "w", "J_N", "I_o"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`a`", ":math:`b`", ":math:`d`", r":math:`\gamma`", r":math:`\tau_S`", r":math:`w`",
-                r":math:`J_{N}`", ":math:`I_{o}`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.a, self.b, self.d, self.gamma, self.tau_s, self.w, self.J_N, self.I_o]
 
 
 class ReducedWongWangExcInhModelForm(ModelForm):
@@ -511,17 +435,9 @@ class ReducedWongWangExcInhModelForm(ModelForm):
         self.variables_of_interest = MultiSelectField(
             ModelsEnum.REDUCED_WONG_WANG_EXC_INH.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["a_e", "b_e", "d_e", "gamma_e", "tau_e", "W_e", "w_p", "J_N", "a_i", "b_i", "d_i", "gamma_i", "tau_i",
-                "W_i", "J_i", "I_o", "G", "lamda"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`a_e`", ":math:`b_e`", ":math:`d_e`", r":math:`\gamma_e`", r":math:`\tau_e`", r":math:`W_e`",
-                r":math:`w_p`", r":math:`J_N`", ":math:`a_i`", ":math:`b_i`", ":math:`d_i`", r":math:`\gamma_i`",
-                r":math:`\tau_i`", r":math:`W_i`", r":math:`J_{i}`", ":math:`I_{o}`", ":math:`G`",
-                r":math:`\lambda`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.a_e, self.b_e, self.d_e, self.gamma_e, self.tau_e, self.W_e, self.w_p, self.J_N, self.a_i,
+                self.b_i, self.d_i, self.gamma_i, self.tau_i, self.W_i, self.J_i, self.I_o, self.G, self.lamda]
 
 
 class ReducedSetFitzHughNagumoModelForm(ModelForm):
@@ -539,14 +455,8 @@ class ReducedSetFitzHughNagumoModelForm(ModelForm):
         self.variables_of_interest = MultiSelectField(
             ModelsEnum.REDUCED_SET_FITZ_HUGH_NAGUMO.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["tau", "a", "b", "K11", "K12", "K21", "sigma", "mu"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\tau`", ":math:`a`", ":math:`b`", ":math:`K_{11}`", ":math:`K_{12}`", ":math:`K_{21}`",
-                r":math:`\sigma`", r":math:`\mu`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.tau, self.a, self.b, self.K11, self.K12, self.K21, self.sigma, self.mu]
 
 
 class ReducedSetHindmarshRoseModelForm(ModelForm):
@@ -568,14 +478,9 @@ class ReducedSetHindmarshRoseModelForm(ModelForm):
         self.variables_of_interest = MultiSelectField(
             ModelsEnum.REDUCED_SET_HINDMARSH_ROSE.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["r", "a", "b", "c", "d", "s", "xo", "K11", "K12", "K21", "sigma", "mu"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`r`", ":math:`a`", ":math:`b`", ":math:`c`", ":math:`d`", ":math:`s`", ":math:`x_{o}`",
-                ":math:`K_{11}`", ":math:`K_{12}`", ":math:`K_{21}`", r":math:`\sigma`", r":math:`\mu`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.r, self.a, self.b, self.c, self.d, self.s, self.xo, self.K11, self.K12, self.K21, self.sigma,
+                self.mu]
 
 
 class ZerlautAdaptationFirstOrderModelForm(ModelForm):
@@ -612,19 +517,11 @@ class ZerlautAdaptationFirstOrderModelForm(ModelForm):
         self.external_input_in_in = ArrayField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.external_input_in_in)
         self.variables_of_interest = MultiSelectField(ModelsEnum.ZERLAUT_FIRST_ORDER.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["g_L", "E_L_e", "E_L_i", "C_m", "b_e", "b_i", "a_e", "a_i", "tau_w_e", "tau_w_i", "E_e", "E_i", "Q_e",
-                "Q_i", "tau_e", "tau_i", "N_tot", "p_connect", "g", "K_ext_e", "K_ext_i", "T", "external_input_ex_ex",
-                "external_input_ex_in", "external_input_in_ex", "external_input_in_in"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`g_{L}`", ":math:`E_{Le}`", ":math:`E_{Li}`", ":math:`C_{m}`", ":math:`b_e`", ":math:`b_i`",
-                ":math:`a_e`", ":math:`a_i`", ":math:`tau_{we}`", ":math:`tau_{wi}`", r":math:`E_e`", ":math:`E_i`",
-                r":math:`Q_e`", r":math:`Q_i`", r":math:`\tau_e`", r":math:`\tau_i`", ":math:`N_{tot}`",
-                r":math:`\epsilon`", ":math:`g`", ":math:`K_ext_e`", ":math:`K_ext_i`", ":math:`T`",
-                r":math:`\nu_e^{drive}`", r":math:`\nu_e^{drive}`", r":math:`\nu_e^{drive}`", r":math:`\nu_e^{drive}`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.g_L, self.E_L_e, self.E_L_i, self.C_m, self.b_e, self.b_i, self.a_e, self.a_i, self.tau_w_e,
+                self.tau_w_i, self.E_e, self.E_i, self.Q_e, self.Q_i, self.tau_e, self.tau_i, self.N_tot,
+                self.p_connect, self.g, self.K_ext_e, self.K_ext_i, self.T, self.external_input_ex_ex,
+                self.external_input_ex_in, self.external_input_in_ex, self.external_input_in_in]
 
 
 class ZerlautAdaptationSecondOrderModelForm(ZerlautAdaptationFirstOrderModelForm):
@@ -647,14 +544,8 @@ class MontbrioPazoRoxinModelForm(ModelForm):
         self.cv = ArrayField(ModelsEnum.MONTBRIO_PAZO_ROXIN.value.cv)
         self.variables_of_interest = MultiSelectField(ModelsEnum.MONTBRIO_PAZO_ROXIN.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["tau", "I", "Delta", "J", "eta", "Gamma", "cr", "cv"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\tau`", ":math:`I_{ext}`", r":math:`\Delta`", ":math:`J`", r":math:`\eta`", r":math:`\Gamma`",
-                ":math:`cr`", ":math:`cv`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.tau, self.I, self.Delta, self.J, self.eta, self.Gamma, self.cr, self.cv]
 
 
 class CoombesByrneModelForm(ModelForm):
@@ -668,10 +559,8 @@ class CoombesByrneModelForm(ModelForm):
         self.eta = ArrayField(ModelsEnum.COOMBES_BYRNE.value.eta)
         self.variables_of_interest = MultiSelectField(ModelsEnum.COOMBES_BYRNE.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return {"Delta": r":math:`\Delta`", "alpha": r":math:`\alpha`", "v_syn": ":math:`v_{syn}`", "k": ":math:`k`",
-                "eta": r":math:`\eta`"}
+    def get_params_configurable_in_phase_plane(self):
+        return [self.Delta, self.alpha, self.v_syn, self.k, self.eta]
 
 
 class CoombesByrne2DModelForm(ModelForm):
@@ -684,13 +573,8 @@ class CoombesByrne2DModelForm(ModelForm):
         self.eta = ArrayField(ModelsEnum.COOMBES_BYRNE_2D.value.eta)
         self.variables_of_interest = MultiSelectField(ModelsEnum.COOMBES_BYRNE_2D.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["Delta", "v_syn", "k", "eta"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\Delta`", ":math:`v_syn`", ":math:`k`", r":math:`\eta`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.Delta, self.v_syn, self.k, self.eta]
 
 
 class GastSchmidtKnoscheSDModelForm(ModelForm):
@@ -709,14 +593,8 @@ class GastSchmidtKnoscheSDModelForm(ModelForm):
         self.variables_of_interest = MultiSelectField(
             ModelsEnum.GAST_SCHMIDT_KNOSCHE_SD.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["tau", "tau_A", "alpha", "I", "Delta", "J", "eta", "cr", "cv"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\tau`", r":math:`\tau_A`", r":math:`\alpha`", ":math:`I_{ext}`", r":math:`\Delta`",
-                ":math:`J`", r":math:`\eta`", ":math:`cr`", ":math:`cv`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.tau, self.tau_A, self.alpha, self.I, self.Delta, self.J, self.eta, self.cr, self.cv]
 
 
 class GastSchmidtKnoscheSFModelForm(ModelForm):
@@ -735,14 +613,8 @@ class GastSchmidtKnoscheSFModelForm(ModelForm):
         self.variables_of_interest = MultiSelectField(
             ModelsEnum.GAST_SCHMIDT_KNOSCHE_SF.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["tau", "tau_A", "alpha", "I", "Delta", "J", "eta", "cr", "cv"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\tau`", r":math:`\tau_A`", r":math:`\alpha`", ":math:`I_{ext}`", r":math:`\Delta`",
-                ":math:`J`", r":math:`\eta`", ":math:`cr`", ":math:`cv`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.tau, self.tau_A, self.alpha, self.I, self.Delta, self.J, self.eta, self.cr, self.cv]
 
 
 class DumontGutkinModelForm(ModelForm):
@@ -765,16 +637,9 @@ class DumontGutkinModelForm(ModelForm):
         self.Gamma = ArrayField(ModelsEnum.DUMONT_GUTKIN.value.Gamma)
         self.variables_of_interest = MultiSelectField(ModelsEnum.DUMONT_GUTKIN.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["I_e", "Delta_e", "eta_e", "tau_e", "I_i", "Delta_i", "eta_i", "tau_i", "tau_s",
-                "J_ee", "J_ei", "J_ie", "J_ii", "Gamma"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`I_{ext_e}`", r":math:`\Delta_e`", r":math:`\eta_e`", r":math:`\tau_e`", ":math:`I_{ext_i}`",
-                r":math:`\Delta_i`", r":math:`\eta_i`", r":math:`\tau_i`", r":math:`\tau_s`", ":math:`J_{ee}`",
-                ":math:`J_{ei}`", ":math:`J_{ie}`", ":math:`J_{ii}`", r":math:`\Gamma`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.I_e, self.Delta_e, self.eta_e, self.tau_e, self.I_i, self.Delta_i, self.eta_i, self.tau_i,
+                self.tau_s, self.J_ee, self.J_ei, self.J_ie, self.J_ii, self.Gamma]
 
 
 class LinearModelForm(ModelForm):
@@ -784,13 +649,8 @@ class LinearModelForm(ModelForm):
         self.gamma = ArrayField(ModelsEnum.LINEAR.value.gamma)
         self.variables_of_interest = MultiSelectField(ModelsEnum.LINEAR.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["gamma"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [r":math:`\gamma`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.gamma]
 
 
 class WilsonCowanModelForm(ModelForm):
@@ -821,17 +681,10 @@ class WilsonCowanModelForm(ModelForm):
         self.alpha_i = ArrayField(ModelsEnum.WILSON_COWAN.value.alpha_i)
         self.variables_of_interest = MultiSelectField(ModelsEnum.WILSON_COWAN.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["c_ee", "c_ei", "c_ie", "c_ii", "tau_e", "tau_i", "a_e", "b_e", "c_e", "a_i", "b_i", "c_i", "r_e",
-                "r_i", "k_e", "k_i", "P", "Q", "theta_e", "theta_i", "alpha_e", "alpha_i"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return ["math:`c_{ee}`", ":math:`c_{ei}`", ":math:`c_{ii}`", r":math:`\tau_e`", r":math:`\tau_i`",
-                ":math:`a_e`", ":math:`b_e`", ":math:`c_{ei}`", ":math:`a_i`", ":math:`b_i`", ":math:`c_i`",
-                ":math:`r_e`", ":math:`r_i`", ":math:`k_e`", ":math:`k_i`", ":math:`P`", ":math:`Q`",
-                r":math:`\theta_e`", r":math:`\theta_i", r":math:`\alpha_e`", r":math:`\alpha_i`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.c_ee, self.c_ei, self.c_ie, self.c_ii, self.tau_e, self.tau_i, self.a_e, self.b_e, self.c_e,
+                self.a_i, self.b_i, self.c_i, self.r_e, self.r_i, self.k_e, self.k_i, self.P, self.Q, self.theta_e,
+                self.theta_i, self.alpha_e, self.alpha_i]
 
 
 class LarterBreakspearModelForm(ModelForm):
@@ -872,18 +725,8 @@ class LarterBreakspearModelForm(ModelForm):
         self.t_scale = ArrayField(ModelsEnum.LARTER_BREAKSPEAR.value.t_scale)
         self.variables_of_interest = MultiSelectField(ModelsEnum.LARTER_BREAKSPEAR.value.variables_of_interest)
 
-    @staticmethod
-    def get_params_configurable_in_phase_plane():
-        return ["gCa", "gK", "gL", "phi", "gNa", "TK", "TCa", "TNa", "VCa", "VK", "VL", "VNa", "d_K", "tau_K", "d_Na",
-                "d_Ca", "aei", "aie", "b", "C", "ane", "ani", "aee", "Iext", "rNMDA", "VT", "d_V", "ZT", "d_Z",
-                "QV_max", "QZ_max", "t_scale"]
-
-    @staticmethod
-    def get_mathjax_rendered_params():
-        return [":math:`g_{Ca}`", ":math:`g_{K}`", ":math:`g_{L}`", r":math:`\phi`", ":math:`g_{Na}`",
-                ":math:`T_{K}`", ":math:`T_{Ca}`", ":math:`T_{Na}`", ":math:`V_{Ca}`", ":math:`V_{K}`",
-                ":math:`V_{L}`", ":math:`V_{Na}`", r":math:`\delta_{K}`", r":math:`\tau_{K}`", r":math:`\delta_{Na}`",
-                r":math:`\delta_{Ca}`", ":math:`a_{ei}`", ":math:`a_{ie}`", ":math:`b`", ":math:`C`", ":math:`a_{ne}`",
-                ":math:`a_{ni}`", ":math:`a_{ee}`", ":math:`I_{ext}`", ":math:`r_{NMDA}`", ":math:`V_{T}`",
-                r":math:`\delta_{V}`", ":math:`Z_{T}`", r":math:`\delta_{Z}`", ":math:`QV_{max}`", ":math:`QZ_{max}`",
-                ":math:`t_{scale}`"]
+    def get_params_configurable_in_phase_plane(self):
+        return [self.gCa, self.gK, self.gL, self.phi, self.gNa, self.TK, self.TCa, self.TNa, self.VCa, self.VK, self.VL,
+                self.VNa, self.d_K, self.tau_K, self.d_Na, self.d_Ca, self.aei, self.aie, self.b, self.C, self.ane,
+                self.ani, self.aee, self.Iext, self.rNMDA, self.VT, self.d_V, self.ZT, self.d_Z, self.QV_max,
+                self.QZ_max, self.t_scale]

@@ -68,11 +68,13 @@ class SurfaceModelParametersForm(ABCAdapterForm):
     NAME_EQATION_PARAMS_DIV = 'equation_params'
     default_equation = SurfaceModelEquationsEnum.GAUSSIAN
 
-    def __init__(self, model_params, model_mathjax_params):
+    def __init__(self, model_params):
         super(SurfaceModelParametersForm, self).__init__()
 
-        self.model_param = DynamicSelectField(Str(label='Model parameter'), choices=model_params, name='model_param',
-                                              ui_values=model_mathjax_params)
+        model_labels = [param.name for param in model_params]
+        model_mathjax_representations = [param.label for param in model_params]
+        self.model_param = DynamicSelectField(Str(label='Model parameter'), choices=model_labels, name='model_param',
+                                              ui_values=model_mathjax_representations)
         self.equation = SelectField(EnumAttr(label='Equation', default=self.default_equation),
                                     name='equation',
                                     subform=get_form_for_equation(self.default_equation.value))
@@ -128,7 +130,6 @@ class SurfaceModelParametersController(SpatioTemporalController):
         super(SurfaceModelParametersController, self).__init__()
         self.simulator_context = SimulatorContext()
         self.model_params_list = None
-        self.model_mathjax_params_list = None
 
     def get_data_from_burst_configuration(self):
         """
@@ -154,12 +155,11 @@ class SurfaceModelParametersController(SpatioTemporalController):
 
     def _prepare_model_params_list(self, model):
         model_form = get_model_to_form_dict().get(type(model))
-        model_params = model_form.get_params_configurable_in_phase_plane()
-        model_mathjax_params = model_form.get_mathjax_rendered_params()
-        if len(model_params) == 0 or len(model_mathjax_params) == 0:
+        model_params = model_form().get_params_configurable_in_phase_plane()
+        if len(model_params) == 0:
             self.logger.warning("The list with configurable parameters for the current model is empty!")
 
-        return model_params, model_mathjax_params
+        return model_params
 
     def _fill_form_from_context(self, config_form, context):
         if context.current_model_param in context.applied_equations:
@@ -180,7 +180,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         }
         template_specification.update({'applied_equations': context.get_configure_info()})
 
-        config_form = SurfaceModelParametersForm(self.model_params_list, self.model_mathjax_params_list)
+        config_form = SurfaceModelParametersForm(self.model_params_list)
         config_form.model_param.data = context.current_model_param
         self._fill_form_from_context(config_form, context)
         template_specification.update({'adapter_form': self.render_adapter_form(config_form)})
@@ -199,17 +199,16 @@ class SurfaceModelParametersController(SpatioTemporalController):
         surface_gid = cortex.surface_gid
         surface_index = load.load_entity_by_gid(surface_gid)
 
-        self.model_params_list, self.model_mathjax_params_list = self._prepare_model_params_list(model)
+        self.model_params_list = self._prepare_model_params_list(model)
         context_model_parameters = SurfaceContextModelParameters(surface_index, model,
                                                                  SurfaceModelParametersForm.default_equation,
-                                                                 self.model_params_list[0])
+                                                                 self.model_params_list[0].label)
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")
         template_specification.update(self.display_surface(surface_gid.hex, cortex.region_mapping_data))
 
-        dummy_form_for_initialization = SurfaceModelParametersForm(self.model_params_list,
-                                                                   self.model_mathjax_params_list)
+        dummy_form_for_initialization = SurfaceModelParametersForm(self.model_params_list)
         self.plotted_equation_prefixes = {
             self.MODEL_PARAM_FIELD: dummy_form_for_initialization.model_param.name,
             self.EQUATION_FIELD: dummy_form_for_initialization.equation.name,
@@ -313,11 +312,11 @@ class SurfaceModelParametersController(SpatioTemporalController):
             context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
             simulator = self.simulator_context.simulator
 
-            for param_name in list(self.model_params_list):
-                param_data = context_model_parameters.get_data_for_model_param(param_name)
+            for param in list(self.model_params_list):
+                param_data = context_model_parameters.get_data_for_model_param(param.label)
                 if param_data is None:
                     continue
-                setattr(simulator.model, param_name, param_data)
+                setattr(simulator.model, param.name, param_data)
             ### Update in session the last loaded URL for burst-page.
             self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
 
