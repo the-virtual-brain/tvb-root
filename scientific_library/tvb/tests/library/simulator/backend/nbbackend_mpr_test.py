@@ -283,13 +283,13 @@ class TestNbSim(BaseTestSim):
         np.testing.assert_allclose(pdq_t,raw_t)
         np.testing.assert_allclose(pdq_chu_t,raw_t)
 
-        np.testing.assert_allclose(r_pdq, r_tvb, rtol=1e-3)
-        np.testing.assert_allclose(V_pdq, V_tvb, rtol=1e-3)
+        np.testing.assert_allclose(r_pdq, r_tvb, atol=1e-4, rtol=0.)
+        np.testing.assert_allclose(V_pdq, V_tvb, atol=1e-4, rtol=0.)
         # think a bit about the tolerances...  TVB stores in floats, so that 
         # can accumulate. Might be a good idea to test agains history with 
         # double typed buffer.
-        np.testing.assert_allclose(r_pdq_chu, r_tvb, rtol=1e-3)
-        np.testing.assert_allclose(V_pdq_chu, V_tvb, rtol=1e-3)
+        np.testing.assert_allclose(r_pdq_chu, r_tvb, atol=1e-4, rtol=0.)
+        np.testing.assert_allclose(V_pdq_chu, V_tvb, atol=1e-4, rtol=0.)
 
     def test_stim(self):
 
