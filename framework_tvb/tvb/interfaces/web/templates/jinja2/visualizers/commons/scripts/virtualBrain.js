@@ -106,6 +106,21 @@ var brainLinesBuffers = [];
 var shellBuffers = [];
 var measurePointsBuffers = [];
 
+// These data are used to separate the surface into data that belongs to cortical regions and subcortical regions
+// Only makes sense if we have a region mapping and the conenctivity has both types of regions
+var corticalVertices = [];
+var subCorticalVertices = [];
+var corticalNormals = [];
+var subCorticalNormals = [];
+var corticalVertexRegionMapData = [];
+var subCorticalVertexRegionMapData = [];
+var corticalTriangles = [];
+var subCorticalTriangles = [];
+var hasSubCorticalSurface = false;
+var vertexMappingList = [];
+var corticalBrainLineBuffers = [];
+var subCorticalBrainLineBuffers = [];
+
 var regionBoundariesController = null;
 
 var activitiesData = [], timeData = [], measurePoints = [], measurePointsLabels = [];
@@ -134,6 +149,7 @@ var isFaceToDisplay = false;
 
 var drawNavigator = false;
 var drawTriangleLines = false;
+var drawCorticalSurface = true;
 var drawSpeculars = false;
 /**
  * Used to determine which buffer chunks belong to a hemisphere.
@@ -187,7 +203,7 @@ function VS_SetHemisphere(h) {
 
 function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
                                noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels, boundaryURL, shellObject,
-                               hemisphereChunkMask, argDisplayMeasureNodes, argIsFaceToDisplay,
+                               hemisphereChunkMask, corticalMask, argDisplayMeasureNodes, argIsFaceToDisplay,
                                minMeasure, maxMeasure, urlMeasure) {
     // initialize global configuration
     isDoubleView = false;
@@ -242,7 +258,7 @@ function _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, 
 
     const canvas = document.getElementById(BRAIN_CANVAS_ID);
     _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-        urlRegionMapList, urlLinesList, boundaryURL, shellObject, hemisphereChunkMask);
+        urlRegionMapList, urlLinesList, boundaryURL, shellObject, hemisphereChunkMask, corticalMask);
 
     _bindEvents(canvas);
 
@@ -306,11 +322,12 @@ function _VS_init_cubicalMeasurePoints() {
 
 function VS_StartSurfaceViewer(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
                                noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels,
-                               boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure, hemisphereChunkMask) {
+                               boundaryURL, shelveObject, minMeasure, maxMeasure, urlMeasure,
+                               hemisphereChunkMask, corticalMask) {
 
     _VS_static_entrypoint(urlVerticesList, urlLinesList, urlTrianglesList, urlNormalsList, urlMeasurePoints,
         noOfMeasurePoints, urlRegionMapList, urlMeasurePointsLabels, boundaryURL, shelveObject,
-        hemisphereChunkMask, false, false, minMeasure, maxMeasure, urlMeasure);
+        hemisphereChunkMask, corticalMask, false, false, minMeasure, maxMeasure, urlMeasure);
     _VS_init_cubicalMeasurePoints();
 }
 
@@ -363,10 +380,64 @@ function _isValidActivityData() {
 }
 
 /**
+ * Creates a list of webGl buffers.
+ *
+ * @param dataList a list of lists. Each list will contain the data needed for creating a gl buffer.
+ * @param isIndex a boolean value showing if we expect integer or float data
+ *
+ */
+function createWebGlBuffers(dataList, isIndex=false) {
+    const result = [];
+    for (let i = 0; i < dataList.length; i++) {
+        const buffer = gl.createBuffer();
+        if (isIndex) {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(dataList[i]), gl.STATIC_DRAW);
+        } else {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dataList[i]), gl.STATIC_DRAW);
+        }
+
+        buffer.numItems = dataList[i].length;
+        result.push(buffer);
+    }
+
+    return result;
+}
+
+/**
+ * Read data from the specified urls.
+ *
+ * @param data_url_list a list of urls from where   it should read the data
+ * @param staticFiles <code>true</code> if the urls points to some static files
+ * @param isIndex a boolean value showing if we expect integer or float data
+ */
+function readDataFromUrl(data_url_list, staticFiles, isIndex=false) {
+    const result = [];
+    for (let i = 0; i < data_url_list.length; i++) {
+        let data_json = HLPR_readJSONfromFile(data_url_list[i], staticFiles);
+        if (staticFiles) {
+            if(!isIndex) {
+                for(let j = 0; j < data_json.length; j++){
+                    data_json[j] = parseInt(data_json[j]);
+                }
+            }else{
+                for (let j = 0; j < data_json.length; j++) {
+                    data_json[j] = parseFloat(data_json[j]);
+                }
+            }
+        }
+        result.push(data_json);
+        data_json = null;
+    }
+    return result;
+}
+
+/**
  * Scene setup common to all webgl brain viewers
  */
-function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList,
-                       urlRegionMapList, urlLinesList, boundaryURL, shellObject, hemisphere_chunk_mask) {
+function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList, urlRegionMapList, urlLinesList,
+                       boundaryURL, shellObject, hemisphereChunkMask, corticalMask) {
     customInitGL(canvas);
     GL_initColorPickFrameBuffer();
     initShaders();
@@ -385,17 +456,17 @@ function _initViewerGL(canvas, urlVerticesList, urlNormalsList, urlTrianglesList
             parsedIndices = $.parseJSON(urlRegionMapList);
         }
         brainBuffers = initBuffers($.parseJSON(urlVerticesList), $.parseJSON(urlNormalsList),
-            $.parseJSON(urlTrianglesList), parsedIndices, isDoubleView);
+            $.parseJSON(urlTrianglesList), parsedIndices, corticalMask, isDoubleView, $.parseJSON(urlLinesList));
     }
 
-    VS_init_hemisphere_mask(hemisphere_chunk_mask);
+    VS_init_hemisphere_mask(hemisphereChunkMask);
 
-    brainLinesBuffers = HLPR_getDataBuffers(gl, $.parseJSON(urlLinesList), isDoubleView, true);
     regionBoundariesController = new RB_RegionBoundariesController(boundaryURL);
 
     if (shellObject) {
         shellObject = $.parseJSON(shellObject);
-        shellBuffers = initBuffers(shellObject[0], shellObject[1], shellObject[2], false, true);
+        shellBuffers = initBuffers(shellObject[0], shellObject[1], shellObject[2], false, false,
+            true);
     }
 
     VB_BrainNavigator = new NAV_BrainNavigator(isOneToOneMapping, brainBuffers, measurePoints, measurePointsLabels);
@@ -726,47 +797,12 @@ function toggleDrawBoundaries() {
     regionBoundariesController.toggleBoundariesVisibility();
 }
 
+function toggleSurfaceType(){
+    drawCorticalSurface = !drawCorticalSurface;
+}
+
 function setSpecularHighLights(enable) {
     drawSpeculars = enable;
-}
-
-/**
- * Creates a list of webGl buffers.
- *
- * @param dataList a list of lists. Each list will contain the data needed for creating a gl buffer.
- */
-function createWebGlBuffers(dataList) {
-    const result = [];
-    for (let i = 0; i < dataList.length; i++) {
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dataList[i]), gl.STATIC_DRAW);
-        buffer.numItems = dataList[i].length;
-        result.push(buffer);
-    }
-
-    return result;
-}
-
-/**
- * Read data from the specified urls.
- *
- * @param data_url_list a list of urls from where   it should read the data
- * @param staticFiles <code>true</code> if the urls points to some static files
- */
-function readFloatData(data_url_list, staticFiles) {
-    const result = [];
-    for (let i = 0; i < data_url_list.length; i++) {
-        let data_json = HLPR_readJSONfromFile(data_url_list[i], staticFiles);
-        if (staticFiles) {
-            for (let j = 0; j < data_json.length; j++) {
-                data_json[j] = parseFloat(data_json[j]);
-            }
-        }
-        result.push(data_json);
-        data_json = null;
-    }
-    return result;
 }
 
 /**
@@ -820,21 +856,151 @@ function createColorBufferForCube(isPicked) {
     return cubeColorBuffer;
 }
 
-function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, staticFiles) {
-    const verticesData = readFloatData(urlVertices, staticFiles);
+function __initSurfaceData(){
+    corticalVertices = [];
+    subCorticalVertices = [];
+    corticalNormals = [];
+    subCorticalNormals = [];
+    corticalVertexRegionMapData = [];
+    subCorticalVertexRegionMapData = [];
+    corticalTriangles = [];
+    subCorticalTriangles = [];
+    hasSubCorticalSurface = true;
+}
+
+function __separateSurfaceTriangles(indexData, vertexRegionMapData, corticalMask){
+    for(let i=0; i<indexData.length; i++){
+        corticalTriangles.push([]);
+        subCorticalTriangles.push([]);
+
+        for(let j=0; j<indexData[i].length; j=j+3){
+            let vertex1 = indexData[i][j];
+            let region1 = vertexRegionMapData[i][vertex1];
+
+            let vertex2 = indexData[i][j+1];
+            let region2 = vertexRegionMapData[i][vertex2];
+
+            let vertex3 = indexData[i][j+2];
+            let region3 = vertexRegionMapData[i][vertex3];
+
+            // if a triangle has vertexes both in the cortical and subcortical part, then it will be ignored
+            if(corticalMask[region1] && corticalMask[region2] && corticalMask[region3]){
+                corticalTriangles[i].push(vertexMappingList[i][indexData[i][j]],
+                    vertexMappingList[i][indexData[i][j+1]], vertexMappingList[i][indexData[i][j+2]]);
+            }else if(!corticalMask[region1] && !corticalMask[region2] && !corticalMask[region3]){
+                subCorticalTriangles[i].push(vertexMappingList[i][indexData[i][j]],
+                    vertexMappingList[i][indexData[i][j+1]], vertexMappingList[i][indexData[i][j+2]]);
+            }
+        }
+    }
+}
+
+function __separateSurfaceData(corticalMask, verticesData, normalsData, indexData, vertexRegionMapData){
+    if(corticalMask){
+        __initSurfaceData();
+        let corticalCount = 0;
+        let subCorticalCount = 0;
+        vertexMappingList = [];
+
+        for(let i=0; i<vertexRegionMapData.length; i++){
+            corticalVertices.push([]);
+            subCorticalVertices.push([]);
+            corticalNormals.push([]);
+            subCorticalNormals.push([]);
+            corticalVertexRegionMapData.push([]);
+            subCorticalVertexRegionMapData.push([]);
+
+            vertexMappingList.push({});
+            let vertexCount = 0;
+
+            for(let j=0; j<vertexRegionMapData[i].length; j++){
+                let region = vertexRegionMapData[i][j];
+
+                if(corticalMask[region]){
+                    corticalVertices[i].push(verticesData[i][vertexCount], verticesData[i][vertexCount+1], verticesData[i][vertexCount+2]);
+                    corticalNormals[i].push(normalsData[i][vertexCount], normalsData[i][vertexCount+1], normalsData[i][vertexCount+2]);
+                    corticalVertexRegionMapData[i].push(region);
+
+                    vertexMappingList[i][j] = corticalCount;
+                    corticalCount++;
+                }else{
+                    subCorticalVertices[i].push(verticesData[i][vertexCount], verticesData[i][vertexCount+1], verticesData[i][vertexCount+2]);
+                    subCorticalNormals[i].push(normalsData[i][vertexCount], normalsData[i][vertexCount+1], normalsData[i][vertexCount+2]);
+                    subCorticalVertexRegionMapData[i].push(region);
+
+                    vertexMappingList[i][j] = subCorticalCount;
+                    subCorticalCount++;
+                }
+
+                vertexCount = vertexCount + 3;
+            }
+        }
+
+        __separateSurfaceTriangles(indexData, vertexRegionMapData, corticalMask);
+    }
+}
+
+function __separateSurfaceBrainLineTriangles(urlLinesList, corticalMask, vertexRegionMapData){
+    const brainLinesData = readDataFromUrl(urlLinesList, isDoubleView, true);
+    const brainLines = createWebGlBuffers(brainLinesData, true);
+
+    if(hasSubCorticalSurface){
+        corticalBrainLineBuffers = [];
+        subCorticalBrainLineBuffers = [];
+
+        for(let i=0; i<brainLinesData.length; i++){
+            corticalBrainLineBuffers.push([]);
+            subCorticalBrainLineBuffers.push([]);
+
+            for(let j=0; j<brainLinesData[i].length; j+=6){
+                const vertex1 = brainLinesData[i][j];
+                const region1 = vertexRegionMapData[i][vertex1];
+
+                const vertex2 = brainLinesData[i][j+1];
+                const region2 = vertexRegionMapData[i][vertex2];
+
+                const vertex3 = brainLinesData[i][j+3];
+                const region3 = vertexRegionMapData[i][vertex3];
+
+                const newVertex1 = vertexMappingList[vertex1];
+                const newVertex2 = vertexMappingList[vertex2];
+                const newVertex3 = vertexMappingList[vertex3];
+
+                if(corticalMask[region1] && corticalMask[region2] && corticalMask[region3]){
+                    corticalBrainLineBuffers[i].push(newVertex1, newVertex2, newVertex2, newVertex3, newVertex3, newVertex1);
+                }else if(!corticalMask[region1] && !corticalMask[region2] && !corticalMask[region3]){
+                    subCorticalBrainLineBuffers[i].push(newVertex1, newVertex2, newVertex2, newVertex3, newVertex3, newVertex1);
+                }
+            }
+        }
+    }
+
+    return brainLines;
+}
+
+
+function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, corticalMask, staticFiles, urlLinesList) {
+    const verticesData = readDataFromUrl(urlVertices, staticFiles);
     const vertexBatches = createWebGlBuffers(verticesData);
-    const normals = HLPR_getDataBuffers(gl, urlNormals, staticFiles);
-    const indexes = HLPR_getDataBuffers(gl, urlTriangles, staticFiles, true);
+
+    const normalsData = readDataFromUrl(urlNormals, staticFiles);
+    const normals = createWebGlBuffers(normalsData);
+
+    const indexData = readDataFromUrl(urlTriangles, staticFiles, true);
+    const indexes = createWebGlBuffers(indexData, true);
 
     let vertexRegionMap;
+    let vertexRegionMapData;
     if (!isOneToOneMapping) {
         if (urlRegionMap && urlRegionMap.length) {
-            vertexRegionMap = HLPR_getDataBuffers(gl, urlRegionMap);
+            vertexRegionMapData = readDataFromUrl(urlRegionMap);
+            vertexRegionMap = createWebGlBuffers(vertexRegionMapData);
+            __separateSurfaceData(corticalMask, verticesData, normalsData, indexData, vertexRegionMapData);
         } else if (isEEGView) {
             // if is eeg view than we use the static surface 'eeg_skin_surface' and we have to compute the vertexRegionMap;
             // todo: do this on the server to eliminate this special case
-            const regionData = computeVertexRegionMap(verticesData, measurePoints);
-            vertexRegionMap = createWebGlBuffers(regionData);
+            vertexRegionMapData = computeVertexRegionMap(verticesData, measurePoints);
+            vertexRegionMap = createWebGlBuffers(vertexRegionMapData);
         } else {
             // Fake buffers, copy of the normals, in case of transparency, we only need dummy ones.
             vertexRegionMap = normals;
@@ -852,6 +1018,11 @@ function initBuffers(urlVertices, urlNormals, urlTriangles, urlRegionMap, static
             result.push([vertexBatches[i], normals[i], indexes[i], vertexRegionMap[i]]);
         }
     }
+
+    if(!staticFiles) {
+        brainLinesBuffers = __separateSurfaceBrainLineTriangles(urlLinesList, corticalMask, vertexRegionMapData);
+    }
+
     return result;
 }
 
@@ -930,6 +1101,33 @@ function drawBrainLines(linesBuffers, brainBuffers, bufferSetsMask) {
     drawBuffers(gl.LINES, bufferSets, bufferSetsMask);
     if (drawingMode !== gl.POINTS) {
         setLighting(lightSettings);
+    }
+}
+
+function changeSurfaceData(verticesData, normalsData, vertexRegionMapData, indexesData){
+    let bufferSets = [];
+    let vertices = createWebGlBuffers(verticesData);
+    let normals = createWebGlBuffers(normalsData);
+    let vertexRegionMap = createWebGlBuffers(vertexRegionMapData);
+    let indexes = createWebGlBuffers(indexesData, true);
+    for(let c = 0; c < brainBuffers.length; c++){
+        let chunk = brainBuffers[c].slice();
+        chunk[0] = vertices[c];
+        chunk[1] = normals[c];
+        chunk[2] = indexes[c];
+        chunk[3] = vertexRegionMap[c];
+        bufferSets.push(chunk);
+    }
+
+    brainBuffers = bufferSets;
+}
+
+
+function changeBrainLinesData(brainLinesData){
+    let brainLines = createWebGlBuffers(brainLinesData, true);
+
+    for(let c = 0; c < brainLinesBuffers.length; c++){
+        brainLinesBuffers[c] = brainLines[c]
     }
 }
 
@@ -1053,6 +1251,19 @@ function drawScene() {
             // for internal sensors we render only the sensors
             drawBuffers(gl.TRIANGLES, measurePointsBuffers);
         } else {
+
+            if(hasSubCorticalSurface) {
+                if (drawCorticalSurface) {
+                    changeSurfaceData(corticalVertices, corticalNormals, corticalVertexRegionMapData,
+                        corticalTriangles);
+                    changeBrainLinesData(corticalBrainLineBuffers)
+                } else {
+                    changeSurfaceData(subCorticalVertices, subCorticalNormals, subCorticalVertexRegionMapData,
+                        subCorticalTriangles);
+                    changeBrainLinesData(subCorticalBrainLineBuffers);
+                }
+            }
+
             // draw surface
             drawBuffers(drawingMode, brainBuffers, bufferSetsMask);
 
@@ -1061,6 +1272,7 @@ function drawScene() {
             if (drawTriangleLines) {
                 drawBrainLines(brainLinesBuffers, brainBuffers, bufferSetsMask);
             }
+
             if (displayMeasureNodes) {
                 drawBuffers(gl.TRIANGLES, measurePointsBuffers);
             }

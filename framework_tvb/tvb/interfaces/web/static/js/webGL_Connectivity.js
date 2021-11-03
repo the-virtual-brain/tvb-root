@@ -221,25 +221,6 @@ function HLPR_bufferAtPoint(glcontext, p) {
     return [bufferVertices, bufferNormals, bufferTriangles];
 }
 
-
-/**
- * Create webgl buffers from the specified files
- *
- * @param dataList the list of JS data
- * @return a list in which will be added the buffers created based on the data from the specified files
- */
-function HLPR_getDataBuffers(glcontext, data_url_list, staticFiles, isIndex) {
-    var result = [];
-    for (var i = 0; i < data_url_list.length; i++) {
-        var data_json = HLPR_readJSONfromFile(data_url_list[i], staticFiles);
-        var buffer = HLPR_createWebGlBuffer(glcontext, data_json, isIndex, staticFiles);
-        result.push(buffer);
-        data_json = null;
-    }
-    return result;
-}
-
-
 /**
  * Creates a web gl buffer from the given data.
  *

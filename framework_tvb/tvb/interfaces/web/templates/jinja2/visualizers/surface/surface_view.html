@@ -9,7 +9,7 @@
                     '{{ urlNormals | safe }}', '{{ urlMeasurePoints | safe }}', {{ noOfMeasurePoints }},
                     '{{ urlRegionMap | safe }}', '{{ urlMeasurePointsLabels | safe }}',
                     '{{ boundaryURL | safe }}', '{{ shellObject | safe if shellObject else null }}', {{ minMeasure }}, {{ maxMeasure }},
-                    '{{ clientMeasureUrl | safe }}', {{ hemisphereChunkMask }});
+                    '{{ clientMeasureUrl | safe }}', {{ hemisphereChunkMask }}, {{ corticalMask }});
         });
     </script>
 

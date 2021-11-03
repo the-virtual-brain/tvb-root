@@ -358,6 +358,9 @@ class SurfaceViewer(ABCSurfaceDisplayer):
         return dict(biHemispheric=bi_hemispheric, hemisphereChunkMask=json.dumps(hemisphere_chunk_mask))
 
     def _compute_measure_points_param(self, surface_gid, region_map_gid=None, connectivity_gid=None):
+        has_sub_cortical_surface = False
+        cortical_mask = 'null'
+
         if region_map_gid is None:
             measure_points_no = 0
             url_measure_points = ''
@@ -373,8 +376,17 @@ class SurfaceViewer(ABCSurfaceDisplayer):
             boundary_url = SurfaceURLGenerator.get_url_for_region_boundaries(surface_gid, region_map_gid,
                                                                              self.stored_adapter.id)
 
+            if connectivity_index.has_cortical_mask:
+                connectivity_h5 = h5.load_from_index(connectivity_index)
+                # TODO: Maybe we should think about not letting a conn have a cortical mask at import time if all the values are true
+                if len(set(connectivity_h5.cortical)) > 1:
+                    cortical_mask = json.dumps([True if region else False for region in connectivity_h5.cortical])
+                    has_sub_cortical_surface = True
+
         return dict(noOfMeasurePoints=measure_points_no, urlMeasurePoints=url_measure_points,
-                    urlMeasurePointsLabels=url_measure_points_labels, boundaryURL=boundary_url)
+                    urlMeasurePointsLabels=url_measure_points_labels, boundaryURL=boundary_url,
+                    hasSubCorticalSurface=has_sub_cortical_surface,
+                    corticalMask=cortical_mask)
 
     @staticmethod
     def _compute_measure_param(connectivity_measure, measure_points_no):

@@ -62,3 +62,11 @@
     <input id="showBrainLines" type="checkbox" onchange="toggleDrawTriangleLines();" autocomplete="off" tabindex="1"/>
     <label for="showBrainLines">surface triangles</label>
 </dd>
+
+{% if hasSubCorticalSurface %}
+    <dt></dt>
+    <dd>
+        <input id="showSubCorticalSurfaces" type="checkbox" onchange="toggleSurfaceType();" autocomplete="off" tabindex="1"/>
+        <label for="showSubCorticalSurfaces">subcortical surfaces</label>
+    </dd>
+{% endif %}

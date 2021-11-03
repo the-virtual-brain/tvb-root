@@ -233,7 +233,6 @@ class SurfaceH5(H5File):
                 return i, [triangle[j] - slice_start for j in range(3)]
         return None, triangle
 
-
     def get_slice_vertex_boundaries(self, slice_idx):
         if str(slice_idx) in self._split_slices:
             start_idx = max(0, self._split_slices[str(slice_idx)][KEY_VERTICES][KEY_START])
