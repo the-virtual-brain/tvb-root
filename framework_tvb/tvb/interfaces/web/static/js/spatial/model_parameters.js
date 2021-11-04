@@ -138,7 +138,8 @@ function setModelParam(methodToCall, currentModelParam) {
         url: url,
         type: 'POST',
         success: function (data) {
-            $("#div_spatial_model_params").empty().append(data);
+            $("#div_spatial_model_params").html(data);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
             MP_displayFocalPoints();
         }
     })

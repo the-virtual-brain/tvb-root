@@ -895,8 +895,8 @@ class TestSimulationController(BaseTransactionalControllerTest):
         assert self.session_stored_simulator.simulation_length == 1000, "Incorrect simulation length!"
 
     def test_set_pse_params(self):
-        self.sess_mock['pse_param1'] = 'model.a'
-        self.sess_mock['pse_param2'] = 'model.c'
+        self.sess_mock['pse_param1'] = "model.:math:`a`"
+        self.sess_mock['pse_param2'] = "model.:math:`c`"
 
         self.simulator_controller.range_parameters.coupling_parameters = get_form_for_coupling(type(
             self.session_stored_simulator.coupling))().get_range_parameters(Simulator.coupling.field_name)
@@ -915,17 +915,17 @@ class TestSimulationController(BaseTransactionalControllerTest):
             self.simulator_controller.context.set_simulator(self.session_stored_simulator)
             rendering_rules = self.simulator_controller.set_pse_params(**self.sess_mock._data)
 
-        assert eval(burst_config.range1)[0] == 'model.a', "pse_param1 was not set correctly!"
-        assert eval(burst_config.range2)[0] == 'model.c', "pse_param2 was not set correctly!"
+        assert eval(burst_config.range1)[0] == 'model.:math:`a`', "pse_param1 was not set correctly!"
+        assert eval(burst_config.range2)[0] == 'model.:math:`c`', "pse_param2 was not set correctly!"
         assert rendering_rules['renderer'].include_launch_pse_button, 'Launch PSE button should be displayed!'
         assert not rendering_rules['renderer'].include_next_button, 'Next button should not be displayed!'
 
     def test_launch_pse(self):
-        self.sess_mock['pse_param1_name'] = 'model.a'
+        self.sess_mock['pse_param1_name'] = 'model.:math:`a`'
         self.sess_mock['pse_param1_lo'] = '-5.0'
         self.sess_mock['pse_param1_hi'] = '5.0'
         self.sess_mock['pse_param1_step'] = '5.0'
-        self.sess_mock['pse_param2_name'] = 'model.c'
+        self.sess_mock['pse_param2_name'] = 'model.:math:`c`'
         self.sess_mock['pse_param2_lo'] = '-10.0'
         self.sess_mock['pse_param2_hi'] = '10.0'
         self.sess_mock['pse_param2_step'] = '10.0'

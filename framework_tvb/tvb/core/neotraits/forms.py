@@ -390,11 +390,13 @@ class DynamicSelectField(TraitField):
                     checked=self.data is None
                 )
 
+        choices = self.choices if self.ui_values is None else self.ui_values
+
         for i, choice in enumerate(self.choices):
             yield Option(
                 id='{}_{}'.format(self.name, i),
                 value=str(choice),
-                label=str(choice).title(),
+                label=str(choices[i]),
                 checked=self.value == choice
             )
 
@@ -463,6 +465,18 @@ class HiddenField(TraitField):
     def __init__(self, trait_attribute, name=None, disabled=False):
         super(HiddenField, self).__init__(trait_attribute, name, disabled)
         self.label = ''
+
+
+class LabelField(TraitField):
+    template = 'form_fields/label_field.html'
+
+    def __init__(self, trait_attribute, label_message=None, name=None):
+        super(LabelField, self).__init__(trait_attribute, name, disabled=True)
+
+        if label_message is None:
+            self.label_message = trait_attribute.label
+        else:
+            self.label_message = label_message
 
 
 class FormField(Field):

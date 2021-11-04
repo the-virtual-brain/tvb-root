@@ -274,7 +274,7 @@ class WilsonCowan(ModelNumbaDfun):
         doc="""The slope parameter for the inhibitory response function""")
 
     b_i = NArray(
-        label=r":math:`b_i`",
+        label=":math:`b_i`",
         default=numpy.array([4.0]),
         domain=Range(lo=2.0, hi=6.0, step=0.01),
         doc="""Position of the maximum slope of a sigmoid function [in
@@ -344,14 +344,13 @@ class WilsonCowan(ModelNumbaDfun):
         doc="""External stimulus to the inhibitory population.
         Constant intensity.Entry point for coupling.""")
 
-    shift_sigmoid=NArray(
+    shift_sigmoid = NArray(
         dtype= numpy.bool,
         label=r":math:`shift sigmoid`",
         default=numpy.array([True]),
         doc="""In order to have resting state (E=0 and I=0) in absence of external input,
         the logistic curve are translated downward S(0)=0""",
         )
-
 
     # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
