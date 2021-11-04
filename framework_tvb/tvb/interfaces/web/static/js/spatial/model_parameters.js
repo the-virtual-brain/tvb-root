@@ -49,7 +49,9 @@ function MP_applyEquationForParameter() {
         type:'POST',
         url:url,
         success:function (data) {
-            $("#div_spatial_model_params").empty().append(data);
+            const spatial_div = $("#div_spatial_model_params");
+            spatial_div.empty();
+            renderWithMathjax(spatial_div, data);
             MP_displayFocalPoints();
         }
     });
@@ -138,8 +140,9 @@ function setModelParam(methodToCall, currentModelParam) {
         url: url,
         type: 'POST',
         success: function (data) {
-            $("#div_spatial_model_params").html(data);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
+            const spatial_model_div = $("#div_spatial_model_params");
+            spatial_model_div.empty();
+            renderWithMathjax(spatial_model_div, data)
             MP_displayFocalPoints();
         }
     })

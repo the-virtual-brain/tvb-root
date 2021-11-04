@@ -133,6 +133,11 @@ function fireOnClick(redirectElem) {
     }
 }
 
+// ---------- Function for rendering HTML elements with Mathjax
+function renderWithMathjax(element, elementToAppend){
+    element.append(elementToAppend);
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub, element.id]);
+}
 
 // ---------- Function on the top left call-out
 function updateCallOutProject() {
@@ -1207,8 +1212,9 @@ function refreshSubform(currentElem, elementType, subformDiv) {
         url: url,
         type: 'POST',
         success: function (r) {
-            $('#' + subformDiv).html(r);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, subformDiv]);
+            const subform = $('#' + subformDiv);
+            subform.empty();
+            renderWithMathjax(subform, r);
             setEventsOnFormFields(elementType, subformDiv);
             setupMenuEvents();
             plotEquation(subformDiv);

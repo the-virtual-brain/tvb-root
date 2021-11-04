@@ -418,13 +418,13 @@ function onModelChanged(name){
             data = JSON.parse(data);
 
             var sliderContainer = $('#div_spatial_model_params');
-            sliderContainer.html(data.model_param_sliders_fragment);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_spatial_model_params']);
+            sliderContainer.empty();
+            renderWithMathjax(sliderContainer, data.model_param_sliders_fragment);
             setupMenuEvents(sliderContainer);
 
             var axisSliderContainer = $('#div_phase_plane_settings');
-            axisSliderContainer.html(data.axis_sliders_fragment);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, 'div_phase_plane_settings']);
+            axisSliderContainer.empty();
+            renderWithMathjax(axisSliderContainer, data.axis_sliders_fragment);
             setupMenuEvents(axisSliderContainer);
 
             _initialize_grafic(data.params, data.graph_params);
