@@ -59,9 +59,9 @@ class SpatioTemporalController(BaseController):
         BaseController.__init__(self)
         self.operation_service = OperationService()
         self.logger = get_logger(__name__)
-        editable_entities = [dict(link='/spatial/stimulus/region/step_1_submit/1/1', title='Region Stimulus',
+        editable_entities = [dict(link=self.build_path('/spatial/stimulus/region/step_1_submit/1/1'), title='Region Stimulus',
                                   subsection='regionstim', description='Create a new Stimulus on Region level'),
-                             dict(link='/spatial/stimulus/surface/step_1_submit/1/1', title='Surface Stimulus',
+                             dict(link=self.build_path('/spatial/stimulus/surface/step_1_submit/1/1'), title='Surface Stimulus',
                                   subsection='surfacestim', description='Create a new Stimulus on Surface level')]
         self.submenu_list = editable_entities
 

@@ -1,9 +1,9 @@
 {% macro generateFramePSE(dataTypeGroupGID, available_metrics) -%}
-    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
-    <script type="text/javascript" src="/static/js/alternateDatastructure.js"></script>
-    <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
-    <script type="text/javascript" src="/static/flot/jquery.flot.symbol.js"></script>
-    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/alternateDatastructure.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/flot/jquery.flot.symbol.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/coloring/colorSchemeComponent.js"></script>
 
     <!--! Controls for changing metrics -->
     <ul class="toolbar-inline burst-pse-metrics">

@@ -490,9 +490,15 @@ class Projection(Monitor):
             "projection matrices. Please select an appropriate projection "
             "matrix."
         )
+    
+    _gain_configuration_done = False
 
     def config_for_sim(self, simulator):
         "Configure projection matrix monitor for given simulation."
+
+        # method body is not idempotent, so if we've been here before, don't redo
+        if self._gain_configuration_done:
+            return
 
         super(Projection, self).config_for_sim(simulator)
         self._sim = simulator
@@ -515,14 +521,16 @@ class Projection(Monitor):
         conn = simulator.connectivity
         using_cortical_surface = surf is not None
         if using_cortical_surface:
-            # This code assumes that subcortical regions are mapped to a single vertex
-            non_cortical_indices, = numpy.where(numpy.bincount(surf.region_mapping) == 1)
+            cortical_mask = numpy.bincount(surf.region_mapping) == 1
+            non_cortical_indices, = numpy.where(cortical_mask)
+            cortical_indices, = numpy.where(~cortical_mask)
             self.rmap = surf.region_mapping
         else:
             # assume all cortical if no info
             if conn.cortical.size == 0:
                 conn.cortical = numpy.array([True] * conn.weights.shape[0])
             non_cortical_indices, = numpy.where(~conn.cortical)
+            cortical_indices, = numpy.where(conn.cortical)
             if self.region_mapping is None:
                 raise Exception("Please specify a region mapping on the EEG/MEG/iEEG monitor when "
                                 "performing a region simulation.")
@@ -533,7 +541,7 @@ class Projection(Monitor):
 
         have_subcortical = len(non_cortical_indices) > 0
 
-        # determine source space
+        # determine source space for cortical sources
         if using_cortical_surface:
             sources = {'loc': surf.vertices, 'ori': surf.vertex_normals}
         else:
@@ -541,13 +549,22 @@ class Projection(Monitor):
 
         # compute analytic if not provided
         if not hasattr(self, 'projection'):
-            self.log.debug('Precomputed projection not unavailable using analytic approximation.')
+            self.log.debug('Precomputed projection not unavailable, using analytic approximation.')
             self.gain = self.analytic(**sources)
 
         # reduce to region lead field if region sim
-        if not using_cortical_surface and self.gain.shape[1] == self.rmap.size:
+        # this fails when rmap doesn't have non_cortical, need to ensure "full" first
+        # OR fix non_cortical_rmap_idx to be empty in that case:
+        cortical_rmap = self.rmap.copy()
+        if (self.rmap.max()+1) == conn.cortical.sum():
+            # there are no non_cortical indices in rmap, so cortical_rmap is already fine
+            pass
+        else:
+            non_cortical_rmap_idx = numpy.hstack([numpy.argwhere(self.rmap==i)[:,0] for i in non_cortical_indices])
+            cortical_rmap = numpy.delete(cortical_rmap, non_cortical_rmap_idx)
+        if not using_cortical_surface and self.gain.shape[1] == cortical_rmap.size:
             gain = numpy.zeros((self.gain.shape[0], conn.number_of_regions))
-            numpy_add_at(gain.T, self.rmap, self.gain.T)
+            numpy_add_at(gain.T, cortical_rmap, self.gain.T)
             self.log.debug('Region mapping gain shape %s to %s', self.gain.shape, gain.shape)
             self.gain = gain
 
@@ -555,8 +572,15 @@ class Projection(Monitor):
         if have_subcortical:
             # need matrix of shape (proj.shape[0], len(sc_ind))
             src = conn.centres[non_cortical_indices], conn.orientations[non_cortical_indices]
-            self.gain = numpy.hstack((self.gain, self.analytic(*src)))
-            self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
+            sub_gain = self.analytic(*src)
+            if self.gain.shape[1] == (cortical_indices.size + non_cortical_indices.size):
+                self.gain[:, non_cortical_indices] = sub_gain
+            else:
+                full_gain = numpy.zeros((self.gain.shape[0], self.gain.shape[1] + sub_gain.shape[1]))
+                full_gain[:, self.rmap if using_cortical_surface else cortical_indices] = self.gain
+                full_gain[:, non_cortical_indices] = self.analytic(*src)
+                self.gain = full_gain
+                self.log.debug('Added subcortical analytic gain, for final shape %s', self.gain.shape)
 
         if self.sensors.usable is not None and not self.sensors.usable.all():
             mask_unusable = ~self.sensors.usable
@@ -564,13 +588,14 @@ class Projection(Monitor):
             self.log.debug('Zeroed gain coefficients for %d unusable sensors', mask_unusable.sum())
 
         # unconditionally zero NaN elements; framework not prepared for NaNs.
-        nan_mask = numpy.isfinite(self.gain).all(axis=1)
+        nan_mask = numpy.isfinite(self.gain)
         self.gain[~nan_mask] = 0.0
         self.log.debug('Zeroed %d NaN gain coefficients', nan_mask.sum())
 
         # attrs used for recording
         self._state = numpy.zeros((self.gain.shape[0], len(self.voi)))
         self._period_in_steps = int(self.period / self.dt)
+        self._gain_configuration_done = True
         self.log.debug('State shape %s, period in steps %s', self._state.shape, self._period_in_steps)
 
         self.log.info('Projection configured gain shape %s', self.gain.shape)

@@ -41,7 +41,7 @@ from tvb.core.services.exceptions import InvalidSettingsException
 from tvb.interfaces.rest.commons.strings import RestNamespace, RestLink, LinkPlaceholder, Strings
 from tvb.interfaces.rest.server.decorators.encoders import CustomFlaskEncoder
 from tvb.interfaces.rest.server.resources.datatype.datatype_resource import RetrieveDatatypeResource, \
-    GetOperationsForDatatypeResource, GetExtraInfoForDatatypeResource
+    GetOperationsForDatatypeResource, GetExtraInfoForDatatypeResource, IsDataEncryptedResource
 from tvb.interfaces.rest.server.resources.operation.operation_resource import GetOperationStatusResource, \
     GetOperationResultsResource, LaunchOperationResource
 from tvb.interfaces.rest.server.resources.project.project_resource import GetOperationsInProjectResource, \
@@ -50,6 +50,7 @@ from tvb.interfaces.rest.server.resources.simulator.simulation_resource import F
 from tvb.interfaces.rest.server.resources.user.user_resource import LoginUserResource, GetProjectsListResource, \
     GetUsersResource, LinksResource
 from tvb.interfaces.rest.server.rest_api import RestApi
+from tvb.storage.storage_interface import StorageInterface
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 TvbProfile.set_profile(TvbProfile.COMMAND_PROFILE)
@@ -84,7 +85,11 @@ def initialize_flask():
     app.json_encoder = CustomFlaskEncoder
 
     # creating an API object
-    api = RestApi(app, title="Rest services for TVB", doc="/doc/", version=TvbProfile.current.version.CURRENT_VERSION)
+    api = RestApi(app,
+                  prefix=TvbProfile.current.web.REST_DEPLOY_CONTEXT,
+                  title="Rest services for TVB",
+                  doc=TvbProfile.current.web.REST_DEPLOY_CONTEXT + "/doc/",
+                  version=TvbProfile.current.version.CURRENT_VERSION)
 
     # Users namespace
     name_space_users = api.namespace(build_path(RestNamespace.USERS), description="TVB-REST APIs for users management")
@@ -112,6 +117,7 @@ def initialize_flask():
         values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
     name_space_datatypes.add_resource(GetExtraInfoForDatatypeResource, RestLink.DATATYPE_EXTRA_INFO.compute_url(
         values={LinkPlaceholder.DATATYPE_GID.value: '<string:datatype_gid>'}))
+    name_space_datatypes.add_resource(IsDataEncryptedResource, RestLink.IS_DATA_ENCRYPTED.compute_url())
 
     # Operations namespace
     name_space_operations = api.namespace(build_path(RestNamespace.OPERATIONS),
@@ -139,6 +145,11 @@ def initialize_flask():
     api.add_namespace(name_space_datatypes)
     api.add_namespace(name_space_operations)
     api.add_namespace(name_space_simulation)
+
+    if StorageInterface.encryption_enabled() and StorageInterface.app_encryption_handler():
+        storage_interface = StorageInterface()
+        storage_interface.start()
+        storage_interface.startup_cleanup()
 
     # Register keycloak authorization manager
     AuthorizationManager(TvbProfile.current.KEYCLOAK_CONFIG)

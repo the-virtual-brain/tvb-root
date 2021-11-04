@@ -393,24 +393,22 @@ class LarterBreakspear(Model):
 
     # NOTE: the values were not in the article.
     QV_max = NArray(
-        label=":math:`Q_{max}`",
+        label=":math:`QV_{max}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.1, hi=1., step=0.001),
         doc="""Maximal firing rate for excitatory populations (kHz)""")
 
     QZ_max = NArray(
-        label=":math:`Q_{max}`",
+        label=":math:`QZ_{max}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.1, hi=1., step=0.001),
         doc="""Maximal firing rate for excitatory populations (kHz)""")
-
 
     t_scale = NArray(
         label=":math:`t_{scale}`",
         default=numpy.array([1.0]),
         domain=Range(lo=0.1, hi=1., step=0.001),
         doc="""Time scale factor""")
-
 
     variables_of_interest = List(
         of=str,
@@ -420,7 +418,7 @@ class LarterBreakspear(Model):
         doc="""This represents the default state-variables of this Model to be
         monitored. It can be overridden for each Monitor if desired.""")
 
-    #Informational attribute, used for phase-plane and initial()
+    # Informational attribute, used for phase-plane and initial()
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={

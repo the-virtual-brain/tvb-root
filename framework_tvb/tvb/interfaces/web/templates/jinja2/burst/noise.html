@@ -7,7 +7,7 @@
 {%- endmacro %}
 
 {% macro hole_js() -%}
-    <script type="text/javascript" src="/static/js/bursts_noise.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/bursts_noise.js?{{ currentVersionJS }}" ></script>
     <script type="text/javascript">
         $(document).ready(function () {
             noiseParam.main({{ stateVarsJson | safe }}, {{ initialNoiseValues | safe }}, "{{ measurePointsSelectionGID }}");

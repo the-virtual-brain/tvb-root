@@ -27,13 +27,22 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-import os
 
 import flask
+
+from tvb.interfaces.rest.commons.exceptions import BadRequestException
+from tvb.interfaces.rest.commons.files_helper import save_temporary_file
 from tvb.interfaces.rest.server.access_permissions.permissions import DataTypeAccessPermission
 from tvb.interfaces.rest.server.decorators.rest_decorators import check_permission
 from tvb.interfaces.rest.server.facades.datatype_facade import DatatypeFacade
 from tvb.interfaces.rest.server.resources.rest_resource import RestResource, SecuredResource
+from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
+
+
+class IsDataEncryptedResource(RestResource):
+
+    def get(self):
+        return DatatypeFacade.is_data_encrypted()
 
 
 class RetrieveDatatypeResource(SecuredResource):
@@ -43,9 +52,20 @@ class RetrieveDatatypeResource(SecuredResource):
         """
         :given a guid, this function will download the H5 full data
         """
-        h5_file_path = DatatypeFacade.get_dt_h5_path(datatype_gid)
-        file_name = os.path.basename(h5_file_path)
+
+        public_key_file = flask.request.files.get(ImportExportEncryptionHandler.PUBLIC_KEY_NAME, None)
+        filename = None
+
+        if public_key_file is None and DatatypeFacade.is_data_encrypted():
+            raise BadRequestException('Encryption is enabled on the server side but there is no public file'
+                                      ' key in the request!')
+
+        elif public_key_file:
+            filename = save_temporary_file(public_key_file)
+
+        h5_file_path, file_name = DatatypeFacade().get_dt_h5_path(datatype_gid, filename)
         return flask.send_file(h5_file_path, as_attachment=True, attachment_filename=file_name)
+
 
 class GetExtraInfoForDatatypeResource(RestResource):
 
@@ -59,6 +79,7 @@ class GetExtraInfoForDatatypeResource(RestResource):
         :return the results of DataType.
         """
         return self.datatypes_facade.get_extra_info(datatype_gid)
+
 
 class GetOperationsForDatatypeResource(RestResource):
 

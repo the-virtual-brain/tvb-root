@@ -29,7 +29,7 @@
 #
 
 from tvb.datatypes.equations import *
-from tvb.core.neotraits.forms import Form, FloatField, StrField
+from tvb.core.neotraits.forms import Form, FloatField, LabelField
 from tvb.basic.neotraits.api import Float
 
 
@@ -103,7 +103,8 @@ class EquationForm(Form):
 
     def __init__(self):
         super(EquationForm, self).__init__()
-        self.equation = StrField(self.get_traited_equation().equation, disabled=True)
+        traited_equation = self.get_traited_equation().equation
+        self.equation = LabelField(traited_equation, traited_equation.doc)
         for param_key, param in self.get_traited_equation().parameters.default().items():
             setattr(self, param_key, FloatField(Float(label=param_key, default=param), name=param_key))
 

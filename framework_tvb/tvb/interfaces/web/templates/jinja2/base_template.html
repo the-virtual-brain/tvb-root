@@ -35,18 +35,19 @@
         <meta http-equiv="Pragma" content="no-cache" />
         <meta http-equiv="Cache-Control" content="no-cache" />
 
-        <link rel="shortcut icon" href="/static/style/img/favicon.ico" />
-        <link rel="stylesheet" type="text/css" href="/static/style/base.css?{{ currentVersionJS }}" />
-        <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?{{ currentVersionJS }}"/>
-        <link rel="stylesheet" type="text/css" href="/static/jquery/jquery-ui.css?{{ currentVersionJS }}"/>
+        <link rel="shortcut icon" href="{{ deploy_context | safe }}/static/style/img/favicon.ico" />
+        <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/base.css?{{ currentVersionJS }}" />
+        <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/overlay.css?{{ currentVersionJS }}"/>
+        <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/jquery/jquery-ui.css?{{ currentVersionJS }}"/>
 
         {% include 'mathjax_config.html' %}
+        <script type="text/javascript">const deploy_context = '{{ deploy_context | safe }}'</script>
 
-        <script type="text/javascript" src="/static/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/javascript" src="/static/jquery/jquery.js"></script>
-        <script type="text/javascript" src="/static/jquery/jquery-ui.js?{{ currentVersionJS }}"></script> <!--JQuery custom imports for the Range, Slider controller -->
-        <script type="text/javascript" src="/static/jquery/jquery.json.js"></script>
-        <script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.js"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery-ui.js?{{ currentVersionJS }}"></script> <!--JQuery custom imports for the Range, Slider controller -->
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.json.js"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
 
         <!--  include keycloak initialization      -->
         {% if keycloakConfigWebFile is defined%}

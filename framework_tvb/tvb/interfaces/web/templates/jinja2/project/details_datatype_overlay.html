@@ -91,7 +91,7 @@
 
                                 <li>
                                     <button type="submit" form="export_form"
-                                            formaction="/project/downloaddatatype/{{ entity_gid }}/{{ exporter }}"
+                                            formaction="{{ deploy_context | safe }}/project/downloaddatatype/{{ entity_gid }}/{{ exporter }}"
                                             class="action action-export">{{ exporters[exporter] }}</button>
                                 </li>
                             {% endfor %}

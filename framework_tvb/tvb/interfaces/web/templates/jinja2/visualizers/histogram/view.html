@@ -1,10 +1,10 @@
 <div>
-    <script type="text/javascript" src="/static/flot/jquery.flot.js"></script>
-    <script type="text/javascript" src="/static/flot/jquery.flot.stack.js"></script>
-    <script type="text/javascript" src="/static_view/histogram/histogram.js?{{ currentVersionJS }}" ></script>
-    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/flot/jquery.flot.stack.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/histogram/histogram.js?{{ currentVersionJS }}" ></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
 
-    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
+    <link type="text/css" rel="stylesheet" href="{{ deploy_context | safe }}/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
 
     <script type="text/javascript">
         $(document).ready(function() {

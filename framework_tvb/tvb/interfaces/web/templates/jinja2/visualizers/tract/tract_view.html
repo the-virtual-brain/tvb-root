@@ -2,7 +2,7 @@
     {% include 'visualizers/commons/gl_view_header.html' %}
     {% include 'visualizers/commons/fragment_shader.html' %}
     {% include 'visualizers/commons/surface_pick_vertex_shader.html' %}
-    <script type="text/javascript" src="/static_view/tract/track.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/tract/track.js?{{ currentVersionJS }}"></script>
 
     <script type="text/javascript">
         $(document).ready(function() {

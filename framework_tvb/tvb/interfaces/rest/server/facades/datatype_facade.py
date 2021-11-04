@@ -28,21 +28,50 @@
 #
 #
 
+import os
+
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.neocom.h5 import h5_file_for_index
 from tvb.core.services.algorithm_service import AlgorithmService
-from tvb.interfaces.rest.commons.dtos import AlgorithmDto, DataTypeDto
+from tvb.interfaces.rest.commons.dtos import AlgorithmDto
+from tvb.interfaces.rest.commons.exceptions import ServiceException
+from tvb.storage.storage_interface import StorageInterface
 
 
 class DatatypeFacade:
     def __init__(self):
         self.algorithm_service = AlgorithmService()
+        self.storage_interface = StorageInterface()
 
     @staticmethod
-    def get_dt_h5_path(datatype_gid):
+    def is_data_encrypted():
+        return StorageInterface.encryption_enabled()
+
+    def get_dt_h5_path(self, datatype_gid, public_key_path=None):
         index = load_entity_by_gid(datatype_gid)
-        return h5_file_for_index(index).path
+        h5_path = h5_file_for_index(index).path
+        file_name = os.path.basename(h5_path)
+
+        if StorageInterface.encryption_enabled():
+            if public_key_path and os.path.exists(public_key_path):
+                operation = dao.get_operation_by_id(index.fk_from_operation)
+                project = dao.get_project_by_id(operation.fk_launched_in)
+                folder_path = self.storage_interface.get_project_folder(project.name)
+                self.storage_interface.inc_running_op_count(folder_path)
+                self.storage_interface.sync_folders(folder_path)
+                encrypted_h5_path = self.storage_interface.export_datatype_from_rest_server(
+                    h5_path, index, file_name, public_key_path)
+                file_name = file_name.replace(StorageInterface.TVB_STORAGE_FILE_EXTENSION,
+                                              StorageInterface.TVB_ZIP_FILE_EXTENSION)
+                self.storage_interface.dec_running_op_count(folder_path)
+                self.storage_interface.check_and_delete(folder_path)
+                return encrypted_h5_path, file_name
+            else:
+                raise ServiceException('Client requested encrypted retrieval of data but the server has no'
+                                       ' valid private key!')
+        return h5_path, file_name
 
     def get_datatype_operations(self, datatype_gid):
         categories = dao.get_launchable_categories(elimin_viewers=True)
