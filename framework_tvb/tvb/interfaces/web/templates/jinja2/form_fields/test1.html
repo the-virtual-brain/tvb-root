@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title> Test </title>
-    <link rel="stylesheet" type="text/css" href="/static/style/base.css" />
-    <link rel="stylesheet" type="text/css" href="/static/style/overlay.css"/>
-    <link rel="stylesheet" type="text/css" href="/static/jquery/jquery-ui.css"/>
+    <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/base.css" />
+    <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/overlay.css"/>
+    <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/jquery/jquery-ui.css"/>
 
     <style>html{overflow: auto}</style>
-    <script type="text/javascript" src="/static/jquery/jquery.js"></script>
-    <script type="text/javascript" src="/static/js/genericTVB.js"></script>
+    <script type="text/javascript">const deploy_context = '{{ deploy_context | safe }}'</script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/genericTVB.js"></script>
 </head>
 
 <body class="is-helping">
 
-<form method="post" action="/" enctype="multipart/form-data">
+<form method="post" action="{{ deploy_context | safe }}/" enctype="multipart/form-data">
     <fieldset>
     {% for error in form.errors %}
         <span> {{ error }} </span>

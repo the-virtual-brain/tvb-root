@@ -505,7 +505,7 @@
 
             $(".sortable").sortable({
                 items: '> g.list-item', // this is used to avoid dragging UI elements.
-                cursor: "url(/static/style/img/cursor_move_tsv.png), move",
+                cursor: "url(" + deploy_context + "/static/style/img/cursor_move_tsv.png), move",
                 connectWith: '#sortable-delete,g#mini-container',
                 start: function (e, ui) {
                     originalPosition = ui.item.index();

@@ -74,7 +74,7 @@ class NoiseConfigurationController(BurstBaseController):
             'title': 'Noise configuration',
             'mainContent': 'burst/noise',
             'isSingleMode': True,
-            'submit_parameters_url': '/burst/noise/submit',
+            'submit_parameters_url': self.build_path('/burst/noise/submit'),
             'stateVars': state_vars,
             'stateVarsJson': json.dumps(state_vars),
             'noiseInputValues': initial_noise[0],
@@ -93,7 +93,7 @@ class NoiseConfigurationController(BurstBaseController):
         des = SerializationManager(self.simulator_context.simulator)
         des.write_noise_parameters(json.loads(node_values))
         self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_NOISE_PARAMS_URL)
-        raise cherrypy.HTTPRedirect("/burst/")
+        self.redirect("/burst/")
 
     @staticmethod
     def group_noise_array_by_state_var(noise_values, state_vars, number_of_regions):

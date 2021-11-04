@@ -88,6 +88,6 @@
 	</form>
 <!--! Form submitted by the Create New button from the aside panel -->
 	{% if keycloakConfigWebFile is not defined %}
-		<form id="create-new-user" action="/user/create_new"></form>
+		<form id="create-new-user" action="{{ deploy_context | safe }}/user/create_new"></form>
 	{% endif %}
 </div>

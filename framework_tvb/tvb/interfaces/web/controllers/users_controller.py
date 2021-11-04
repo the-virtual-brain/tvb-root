@@ -107,7 +107,7 @@ class UserController(BaseController):
                         prj = user.selected_project
                         prj = self.project_service.find_project(prj)
                         self._mark_selected(prj)
-                    raise cherrypy.HTTPRedirect('/user/profile')
+                    self.redirect('/user/profile')
                 elif not keycloak_login:
                     common.set_error_message('Wrong username/password, or user not yet validated...')
                     self.logger.debug("Wrong username " + username + " !!!")
@@ -132,7 +132,7 @@ class UserController(BaseController):
         On POST: logout, or save password/email.
         """
         if cherrypy.request.method == 'POST' and logout:
-            raise cherrypy.HTTPRedirect('/user/logout')
+            self.redirect('/user/logout')
         template_specification = dict(mainContent="user/profile", title="User Profile")
         user = common.get_logged_user()
 
@@ -191,7 +191,7 @@ class UserController(BaseController):
         common.set_info_message("Thank you for using The Virtual Brain!")
 
         common.expire_session()
-        raise cherrypy.HTTPRedirect("/user")
+        self.redirect("/user")
 
     @cherrypy.expose
     @handle_error(redirect=False)
@@ -213,7 +213,7 @@ class UserController(BaseController):
         # Change OnlineHelp Active flag and save user
         user.switch_online_help_state()
         self.user_service.edit_user(user)
-        raise cherrypy.HTTPRedirect("/user/profile")
+        self.redirect("/user/profile")
 
     @expose_json
     def get_viewer_color_scheme(self):
@@ -243,7 +243,7 @@ class UserController(BaseController):
         redirect = False
         if cherrypy.request.method == 'POST':
             if cancel:
-                raise cherrypy.HTTPRedirect('/user')
+                self.redirect('/user')
             try:
                 okmessage = self._create_user(**data)
                 common.set_info_message(okmessage)
@@ -260,7 +260,7 @@ class UserController(BaseController):
 
         if redirect:
             # Redirect to login page, with some success message to display
-            raise cherrypy.HTTPRedirect('/user')
+            self.redirect('/user')
         else:
             # Stay on the same page
             return self.fill_default_attributes(template_specification)
@@ -273,7 +273,7 @@ class UserController(BaseController):
         Create new user with data submitted from UI.
         """
         if cancel:
-            raise cherrypy.HTTPRedirect('/user/usermanagement')
+            self.redirect('/user/usermanagement')
         template_specification = dict(mainContent="user/create_new", title="Create New", data=data)
         redirect = False
         if cherrypy.request.method == 'POST':
@@ -295,7 +295,7 @@ class UserController(BaseController):
                 common.set_error_message("We are very sorry, but we could not create your user. Most probably is "
                                          "because it was impossible to send emails. Please try again later...")
         if redirect:
-            raise cherrypy.HTTPRedirect('/user/usermanagement')
+            self.redirect('/user/usermanagement')
         else:
             return self.fill_default_attributes(template_specification)
 
@@ -308,7 +308,7 @@ class UserController(BaseController):
         Display a table used for user management.
         """
         if cancel:
-            raise cherrypy.HTTPRedirect('/user/profile')
+            self.redirect('/user/profile')
 
         page = int(page)
         if cherrypy.request.method == 'POST' and do_persist:
@@ -353,7 +353,7 @@ class UserController(BaseController):
         redirect = False
         if cherrypy.request.method == 'POST':
             if cancel:
-                raise cherrypy.HTTPRedirect('/user')
+                self.redirect('/user')
             form = RecoveryForm()
             try:
                 data = form.to_python(data)
@@ -369,7 +369,7 @@ class UserController(BaseController):
                 redirect = False
         if redirect:
             # Redirect to login page, with some success message to display
-            raise cherrypy.HTTPRedirect('/user')
+            self.redirect('/user')
         else:
             # Stay on the same page
             return self.fill_default_attributes(template_specification)
@@ -400,12 +400,14 @@ class UserController(BaseController):
             self.logger.error("Problem validating user " + name)
         else:
             common.set_info_message("User Validated successfully and notification email sent!")
-        raise cherrypy.HTTPRedirect('/tvb')
+        self.redirect('/tvb')
 
     @cherrypy.expose
     def base_url(self, **data):
         if not TvbProfile.current.web.BASE_URL:
             url = data['url']
+            if TvbProfile.current.web.DEPLOY_CONTEXT:
+                url += TvbProfile.current.web.DEPLOY_CONTEXT
             self.logger.info("Set base url to {}".format(url))
             TvbProfile.current.web.BASE_URL = url
 

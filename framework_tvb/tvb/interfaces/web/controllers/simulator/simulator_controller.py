@@ -818,4 +818,4 @@ class SimulatorController(BurstBaseController):
             self.logger.warning(excep.message)
             self.context.set_warning_message(excep.message)
 
-        raise cherrypy.HTTPRedirect('/burst/')
+        self.redirect('/burst/')

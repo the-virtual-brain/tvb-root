@@ -173,7 +173,7 @@ class JansenRit(ModelNumbaDfun):
         domain=Range(lo=0.0, hi=0.22, step=0.01),
         doc="""Mean input firing rate""")
 
-    #Used for phase-plane axis ranges and to bound random initial() conditions.
+    # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"y0": numpy.array([-1.0, 1.0]),
@@ -208,7 +208,7 @@ class JansenRit(ModelNumbaDfun):
 
         # NOTE: This is assumed to be \sum_j u_kj * S[y_{1_j} - y_{2_j}]
         lrc = coupling[0, :]
-        short_range_coupling =  local_coupling*(y1 -  y2)
+        short_range_coupling = local_coupling*(y1 - y2)
 
         # NOTE: for local couplings
         # 0: pyramidal cells
@@ -436,7 +436,7 @@ class ZetterbergJansen(Model):
         doc="""Maximum firing rate to the interneurons population [ms^-1].
         (External stimulus. Constant intensity.Entry point for coupling.)""")
 
-    #Used for phase-plane axis ranges and to bound random initial() conditions.
+    # Used for phase-plane axis ranges and to bound random initial() conditions.
     state_variable_range = Final(
         label="State Variable ranges [lo, hi]",
         default={"v1": numpy.array([-100.0, 100.0]),

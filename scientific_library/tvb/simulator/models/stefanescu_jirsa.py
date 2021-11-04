@@ -169,7 +169,6 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         conditions when the simulation isn't started from an explicit history,
         it is also provides the default range of phase-plane plots.""")
 
-
     variables_of_interest = List(
         of=str,
         label="Variables watched by Monitors",
@@ -253,7 +252,6 @@ class ReducedSetFitzHughNagumo(ReducedSetBase):
         Include equations here...
 
         """
-
         newaxis = numpy.newaxis
         trapz = scipy_integrate_trapz
 

@@ -504,7 +504,7 @@ dynamicPage.main = main;
 
 function setIntegratorParamAndRedrawChart(methodToCall, fieldName, fieldValue, type) {
     let currentParam = fieldName + '=' + fieldValue;
-    let url = methodToCall + '/' + dynamicPage.dynamic_gid + '/' + type + '?' + currentParam;
+    let url = deploy_context + methodToCall + '/' + dynamicPage.dynamic_gid + '/' + type + '?' + currentParam;
     $.ajax({
         url: url,
         type: 'POST',

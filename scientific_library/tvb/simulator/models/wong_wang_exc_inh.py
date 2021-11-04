@@ -201,7 +201,7 @@ class ReducedWongWangExcInh(ModelNumbaDfun):
         doc="""Global coupling scaling""")
 
     lamda = NArray(
-        label=":math:`\lambda`",
+        label=r":math:`\lambda`",
         default=numpy.array([0.0, ]),
         domain=Range(lo=0.0, hi=1.0, step=0.01),
         doc="""Inhibitory global coupling scaling""")
@@ -322,9 +322,9 @@ class DecoBalancedExcInh(ReducedWongWangExcInh):
     brain’s transcriptional landscape." Science Advances 7, no. 29 (2021):
     eabf4752.
 
-    Equations extend the [DPA_2013] with effective gain parameter M_i to 
+    Equations extend the [DPA_2013] with effective gain parameter M_i to
 
-    
+
     .. math::
                  x_{ek}       &=   w_p\,J_N \, S_{ek} - J_iS_{ik} + W_eI_o + GJ_N \mathbf\Gamma(S_{ek}, S_{ej}, u_{kj}) \\
                  H(x_{ek})    &=  \dfrac{M_i(a_ex_{ek}- b_e)}{1 - \exp(-d_e M_i(a_ex_{ek} -b_e))} \\

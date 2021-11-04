@@ -1,8 +1,8 @@
 <div id="wavelet-root" class="view-column">
-    <script type="text/javascript" src="/static/js/d3.v3.js"></script>
-    <script type="text/javascript" src="/static_view/commons/scripts/matrix2d.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
-    <link type="text/css" rel="stylesheet" href="/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/d3.v3.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/scripts/matrix2d.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+    <link type="text/css" rel="stylesheet" href="{{ deploy_context | safe }}/static/style/section_visualisers.css?{{ currentVersionJS }}"/>
 
     <div class="matrix2d-draw-content" id="canvasParent">
         <div class="matrix-legend" id="colorWeightsLegend"></div>

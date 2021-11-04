@@ -97,7 +97,9 @@ class CoSimulator(Simulator):
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
         # Check if the synchronization time is smaller than the delay of the connectivity
         # the condition is probably not correct. It will change with usage.
-        if self.synchronization_n_step > numpy.min(self.connectivity.idelays[numpy.nonzero(self.connectivity.idelays)]):
+        if self.synchronization_n_step > numpy.min(self.connectivity.idelays[
+                                                       numpy.nonzero(self.connectivity.weights *
+                                                                     self.connectivity.idelays)]):
             raise ValueError('the synchronization time is too long')
 
         # Check if the couplings variables are in the cosimulation variables of interest

@@ -77,7 +77,7 @@ class SettingsController(UserController):
                     thread.start()
                     common.add2session(common.KEY_IS_RESTART, True)
                     common.set_important_message('Please wait until TVB is restarted properly!')
-                    raise cherrypy.HTTPRedirect('/tvb')
+                    self.redirect('/tvb')
                 # Here we will leave the same settings page to be displayed.
                 # It will continue reloading when CherryPy restarts.
             except formencode.Invalid as excep:
