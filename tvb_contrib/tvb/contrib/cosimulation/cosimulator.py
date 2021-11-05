@@ -97,7 +97,7 @@ class CoSimulator(Simulator):
         self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
         # Check if the synchronization time is smaller than the minimum delay of the connectivity:
         mask =  numpy.logical_and(self.connectivity.weights != 0,
-                                  self.connectivity.idelays != 0 )
+                                  self.connectivity.idelays != 0)
         if self.synchronization_n_step > self.connectivity.idelays[mask].min():
             raise ValueError('the synchronization time is too long')
 
