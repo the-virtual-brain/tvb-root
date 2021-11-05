@@ -134,7 +134,10 @@ function fireOnClick(redirectElem) {
 }
 
 // ---------- Function for rendering HTML elements with Mathjax
-function renderWithMathjax(element, elementToAppend){
+function renderWithMathjax(element, elementToAppend, empty=false){
+    if(empty){
+        element.empty();
+    }
     element.append(elementToAppend);
     MathJax.Hub.Queue(["Typeset", MathJax.Hub, element.id]);
 }
@@ -1213,8 +1216,7 @@ function refreshSubform(currentElem, elementType, subformDiv) {
         type: 'POST',
         success: function (r) {
             const subform = $('#' + subformDiv);
-            subform.empty();
-            renderWithMathjax(subform, r);
+            renderWithMathjax(subform, r, true);
             setEventsOnFormFields(elementType, subformDiv);
             setupMenuEvents();
             plotEquation(subformDiv);

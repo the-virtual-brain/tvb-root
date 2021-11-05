@@ -170,8 +170,7 @@ function loadBurstHistory(initBurst = false) {
         async: false,
         success: function (r) {
             const historyElem = $('#section-view-history');
-            historyElem.empty();
-            renderWithMathjax(historyElem, r);
+            renderWithMathjax(historyElem, r, true);
             //setupMenuEvents(historyElem);
         },
         error: function () {

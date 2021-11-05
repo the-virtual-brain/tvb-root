@@ -50,8 +50,7 @@ function MP_applyEquationForParameter() {
         url:url,
         success:function (data) {
             const spatial_div = $("#div_spatial_model_params");
-            spatial_div.empty();
-            renderWithMathjax(spatial_div, data);
+            renderWithMathjax(spatial_div, data, true);
             MP_displayFocalPoints();
         }
     });
@@ -141,8 +140,7 @@ function setModelParam(methodToCall, currentModelParam) {
         type: 'POST',
         success: function (data) {
             const spatial_model_div = $("#div_spatial_model_params");
-            spatial_model_div.empty();
-            renderWithMathjax(spatial_model_div, data)
+            renderWithMathjax(spatial_model_div, data, true)
             MP_displayFocalPoints();
         }
     })
