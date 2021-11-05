@@ -99,10 +99,10 @@ class CoSimulator(Simulator):
         if numpy.any(existing_connections.size):
             min_idelay = self.connectivity.idelays[existing_connections].min()
             if self.synchronization_n_step > min_idelay:
-                raise ValueError('The synchronization time is longer than '
+                raise ValueError('The synchronization time %g is longer than '
                                  'the minimum delay time %g '
                                  'of all existing connections (i.e., of nonzero weight)!'
-                                 % min_idelay * self.integrator.dt)
+                                 % (self.synchronization_time, min_idelay * self.integrator.dt))
 
     def _configure_cosimulation(self):
         """This method will
