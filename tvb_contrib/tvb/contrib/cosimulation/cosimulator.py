@@ -143,15 +143,8 @@ class CoSimulator(Simulator):
            - configure the cosimulation monitor
            - zero connectivity weights to/from nodes modelled exclusively by the other cosimulator
            """
-        # the synchronization time should be at least equal to integrator.dt:
-        self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
-        # Compute the number of synchronization time steps:
-        self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
-        # Check if the synchronization time is smaller than the minimum delay of the connectivity:
-        mask =  numpy.logical_and(self.connectivity.weights != 0,
-                                  self.connectivity.idelays != 0)
-        if self.synchronization_n_step > self.connectivity.idelays[mask].min():
-            raise ValueError('the synchronization time is too long')
+        # Configure the synchronizatin time and number of steps
+        self._configure_synchronization_time()
 
         # Check if the couplings variables are in the cosimulation variables of interest
         for cvar in self.model.cvar:
