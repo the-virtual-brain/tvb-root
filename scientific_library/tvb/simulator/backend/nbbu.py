@@ -31,7 +31,11 @@
 """
 A Numba backend which handles inner and outer batching via
 unrolling and numba.prange respectively.  This backend is
-ideal for CPU parameter sweeps.
+ideal for CPU parameter sweeps: when benchmarked across a
+range of machines, this approach achieves a significant
+portion or exceeds the CPU's state memory bandwidth; on an
+i7-8665U, it is nearly 50x faster throughput than single
+threaded Numba backend.
 
 ... moduleauthor:: Marmaduke Woodman <marmaduke.woodman@univ-amu.fr>
 
