@@ -36,6 +36,7 @@ import tvb.adapters.visualizers
 import tvb.adapters.datatypes.db
 from tvb.adapters.analyzers import ALL_ANALYZERS
 from tvb.adapters.creators import ALL_CREATORS
+from tvb.adapters.creators.pipeline_creator import IPPipelineCreator
 from tvb.adapters.simulator import ALL_SIMULATORS
 from tvb.adapters.uploaders import ALL_UPLOADERS
 from tvb.adapters.visualizers import ALL_VISUALIZERS
@@ -135,6 +136,9 @@ class IntrospectionRegistry(object):
     SIIBRA_CREATOR_MODULE = SiibraCreator.__module__
     SIIBRA_CREATOR_CLASS = SiibraCreator.__name__
 
+    IP_PIPELINE_MODULE = IPPipelineCreator.__module__
+    IP_PIPELINE_CLASS = IPPipelineCreator.__name__
+
     MEASURE_METRICS_MODULE = TimeseriesMetricsAdapter.__module__
     MEASURE_METRICS_CLASS = TimeseriesMetricsAdapter.__name__
 
@@ -143,6 +147,3 @@ class IntrospectionRegistry(object):
 
     ISOCLINE_PSE_ADAPTER_MODULE = IsoclinePSEAdapter.__module__
     ISOCLINE_PSE_ADAPTER_CLASS = IsoclinePSEAdapter.__name__
-
-
-
