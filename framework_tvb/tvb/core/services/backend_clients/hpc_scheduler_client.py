@@ -36,22 +36,18 @@
 import os
 import typing
 import uuid
-from contextlib import closing
-from enum import Enum
-from threading import Thread, Event
-from requests import HTTPError
 
+from requests import HTTPError
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.config import MEASURE_METRICS_MODEL_CLASS
 from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasureH5
-from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR, OperationProcessIdentifier
+from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR
 from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
-from tvb.core.services.backend_clients.backend_client import BackendClient
+from tvb.core.services.backend_clients.hpc_client import HPCClient, get_op_thread
 from tvb.core.services.burst_service import BurstService
-from tvb.core.services.exceptions import OperationException
 from tvb.storage.storage_interface import StorageInterface
 
 try:
@@ -65,53 +61,11 @@ LOGGER = get_logger(__name__)
 HPC_THREADS = []
 
 
-class HPCJobStatus(Enum):
-    STAGINGIN = "STAGINGIN"
-    READY = "READY"
-    QUEUED = "QUEUED"
-    STAGINGOUT = "STAGINGOUT"
-    SUCCESSFUL = "SUCCESSFUL"
-    FAILED = "FAILED"
-
-
-def get_op_thread(op_id):
-    # type: (int) -> HPCOperationThread
-    op_thread = None
-    for thread in HPC_THREADS:
-        if thread.operation_id == op_id:
-            op_thread = thread
-            break
-    if op_thread is not None:
-        HPC_THREADS.remove(op_thread)
-    return op_thread
-
-
-class HPCOperationThread(Thread):
-    def __init__(self, operation_id, *args, **kwargs):
-        super(HPCOperationThread, self).__init__(*args, **kwargs)
-        self.operation_id = operation_id
-        self._stop_event = Event()
-
-    def stop(self):
-        self._stop_event.set()
-
-    def stopped(self):
-        return self._stop_event.is_set()
-
-
-class HPCSchedulerClient(BackendClient):
+class HPCSchedulerClient(HPCClient):
     """
     Simple class, to mimic the same behavior we are expecting from StandAloneClient, but firing the operation on
     an HPC node. Define TVB_BIN_ENV_KEY and CSCS_LOGIN_TOKEN_ENV_KEY as environment variables before running on HPC.
     """
-    OUTPUT_FOLDER = 'output'
-    TVB_BIN_ENV_KEY = 'TVB_BIN'
-    CSCS_LOGIN_TOKEN_ENV_KEY = 'CSCS_LOGIN_TOKEN'
-    CSCS_PROJECT = 'CSCS_PROJECT'
-    HOME_FOLDER_MOUNT = '/HOME_FOLDER'
-    CSCS_DATA_FOLDER = 'data'
-    CONTAINER_INPUT_FOLDER = '/home/tvb_user/.data'
-    storage_interface = StorageInterface()
 
     @staticmethod
     def _prepare_input(operation, simulator_gid):
@@ -124,7 +78,7 @@ class HPCSchedulerClient(BackendClient):
 
     @staticmethod
     def _configure_job(simulator_gid, available_space, is_group_launch, operation_id):
-        # type: (str, int, bool, int) -> (dict, list)
+        # type: (str, int, bool, int) -> (dict, str)
         bash_entrypoint = os.path.join(os.environ[HPCSchedulerClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_LAUNCHER_SH_SCRIPT)
         base_url = TvbProfile.current.web.BASE_URL
@@ -142,31 +96,6 @@ class HPCSchedulerClient(BackendClient):
             my_job[HPCSettings.UNICORE_PROJECT_KEY] = os.environ[HPCSchedulerClient.CSCS_PROJECT]
 
         return my_job, bash_entrypoint
-
-    @staticmethod
-    def _listdir(working_dir, base='/'):
-        # type: (Storage, str) -> dict
-        """
-        We took this code from pyunicore Storage.listdir method and extended it to use a subdirectory.
-        Looking at the method signature, it should have had this behavior, but the 'base' argument is not used later
-        inside the method code.
-        Probably will be fixed soon in their API, so we could delete this.
-        :return: dict of {str: PathFile} objects
-        """
-        ret = {}
-        try:
-            for path, meta in working_dir.contents(base)['content'].items():
-                path_url = working_dir.path_urls['files'] + path
-                path = path[1:]  # strip leading '/'
-                if meta['isDirectory']:
-                    ret[path] = unicore_client.PathDir(working_dir, path_url, path)
-                else:
-                    ret[path] = unicore_client.PathFile(working_dir, path_url, path)
-            return ret
-        except HTTPError as http_error:
-            if http_error.response.status_code == 404:
-                raise OperationException("Folder {} is not present on HPC storage.".format(base))
-            raise http_error
 
     def update_datatype_groups(self):
         # TODO: update column count_results
@@ -202,67 +131,6 @@ class HPCSchedulerClient(BackendClient):
         burst_service.update_burst_status(burst_config)
 
     @staticmethod
-    def _create_job_with_pyunicore(pyunicore_client, job_description, job_script, inputs):
-        # type: (Client, {}, str, list) -> Job
-        """
-        Submit and start a batch job on the site, optionally uploading input data files.
-        We took this code from the pyunicore Client.new_job method in order to use our own upload method
-        :return: job
-        """
-
-        if len(inputs) > 0 or job_description.get('haveClientStageIn') is True:
-            job_description['haveClientStageIn'] = "true"
-
-        with closing(
-                pyunicore_client.transport.post(url=pyunicore_client.site_urls['jobs'], json=job_description)) as resp:
-            job_url = resp.headers['Location']
-
-        job = Job(pyunicore_client.transport, job_url)
-
-        if len(inputs) > 0:
-            working_dir = job.working_dir
-            HPCSchedulerClient._upload_file_with_pyunicore(working_dir, job_script, None)
-            for input in inputs:
-                HPCSchedulerClient._upload_file_with_pyunicore(working_dir, input)
-        if job_description.get('haveClientStageIn', None) == "true":
-            try:
-                job.start()
-            except:
-                pass
-
-        return job
-
-    @staticmethod
-    def _upload_file_with_pyunicore(working_dir, input_name, subfolder=CSCS_DATA_FOLDER, destination=None):
-        # type: (Storage, str, object, str) -> None
-        """
-        Upload file to the HPC working dir.
-        We took this upload code from pyunicore Storage.upload method and modified it because in the original code the
-        upload URL is generated using the os.path.join method. The result is an invalid URL for windows os.
-        """
-        if destination is None:
-            destination = os.path.basename(input_name)
-
-        if subfolder:
-            url = "{}/{}/{}/{}".format(working_dir.resource_url, "files", subfolder, destination)
-        else:
-            url = "{}/{}/{}".format(working_dir.resource_url, "files", destination)
-
-        headers = {'Content-Type': 'application/octet-stream'}
-        with open(input_name, 'rb') as fd:
-            working_dir.transport.put(
-                url=url,
-                headers=headers,
-                data=fd)
-
-    @staticmethod
-    def _build_unicore_client(auth_token, registry_url, supercomputer):
-        # type: (str, str, str) -> Client
-        transport = unicore_client.Transport(auth_token)
-        registry = unicore_client.Registry(transport, registry_url)
-        return registry.site(supercomputer)
-
-    @staticmethod
     def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch):
         # type: (Operation, str, bool) -> Job
         LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
@@ -275,38 +143,15 @@ class HPCSchedulerClient(BackendClient):
 
         LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
         encryption_handler = StorageInterface.get_encryption_handler(simulator_gid)
-        LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
-        job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
 
-        # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
-        LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
-        site_client = HPCSchedulerClient._build_unicore_client(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY],
-                                                               unicore_client._HBP_REGISTRY_URL,
-                                                               TvbProfile.current.hpc.HPC_COMPUTE_SITE)
-
-        LOGGER.info("Submit job for operation: {}".format(operation.id))
-        job = HPCSchedulerClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
-                                                            job_script=job_script, inputs=job_encrypted_inputs)
-        LOGGER.info("Job url {} for operation: {}".format(job.resource_url, operation.id))
-        op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
-        dao.store_entity(op_identifier)
-        LOGGER.info("Job mount point: {}".format(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]))
+        job = HPCClient._prepare_pyunicore_job(operation, job_plain_inputs, job_script, job_config, encryption_handler)
         return job
-
-    @staticmethod
-    def compute_available_disk_space(operation):
-        # type: (Operation) -> int
-        disk_space_per_user = TvbProfile.current.MAX_DISK_SPACE
-        pending_op_disk_space = dao.compute_disk_size_for_started_ops(operation.fk_launched_by)
-        user_disk_space = dao.compute_user_generated_disk_size(operation.fk_launched_by)  # From kB to Bytes
-        available_space = disk_space_per_user - pending_op_disk_space - user_disk_space
-        return available_space
 
     @staticmethod
     def _stage_out_results(working_dir, simulator_gid):
         # type: (Storage, typing.Union[uuid.UUID, str]) -> list
         output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSchedulerClient.OUTPUT_FOLDER
-        output_list = HPCSchedulerClient._listdir(working_dir, output_subfolder)
+        output_list = HPCClient._listdir(working_dir, output_subfolder)
         LOGGER.info("Output list {}".format(output_list))
         storage_interface = StorageInterface()
         encrypted_dir = os.path.join(storage_interface.get_encryption_handler(simulator_gid).get_encrypted_dir(),
@@ -397,15 +242,6 @@ class HPCSchedulerClient(BackendClient):
             output_filepath.download(filename)
             encrypted_files.append(filename)
         return encrypted_files
-
-    @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
-        # type: (int, None, None) -> None
-        """Call the correct system command to submit a job to HPC."""
-        thread = HPCOperationThread(operation_id, target=HPCSchedulerClient._run_hpc_job,
-                                    kwargs={'operation_identifier': operation_id})
-        thread.start()
-        HPC_THREADS.append(thread)
 
     @staticmethod
     def stop_operation(operation_id):
