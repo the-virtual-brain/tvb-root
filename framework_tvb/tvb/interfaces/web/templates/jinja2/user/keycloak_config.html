@@ -11,13 +11,13 @@
     let keycloak_initialized = false;
     let keycloak_error = false;
 
-    const keycloak = new Keycloak('/user/keycloak_web_config');
+    const keycloak = new Keycloak(deploy_context + '/user/keycloak_web_config');
     keycloak.onAuthRefreshError = invalidate_session;
     keycloak.onAuthError = invalidate_session;
 
     keycloak.init({
         onLoad: 'check-sso',
-        silentCheckSsoRedirectUri: window.location.origin + '/user/check_sso',
+        silentCheckSsoRedirectUri: window.location.origin + deploy_context + '/user/check_sso',
         promiseType: 'native',
         checkSsoLoginScope: 'profile email group'
     }).then(function () {
@@ -28,7 +28,7 @@
 
     function keycloak_logout() {
         keycloak.logout({
-            redirectUri: window.location.origin + '/user/logout'
+            redirectUri: window.location.origin + deploy_context + '/user/logout'
         });
         return false;
     }
