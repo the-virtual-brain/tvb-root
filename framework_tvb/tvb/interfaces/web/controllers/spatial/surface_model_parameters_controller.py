@@ -202,7 +202,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         self.model_params_list = self._prepare_model_params_list(model)
         context_model_parameters = SurfaceContextModelParameters(surface_index, model,
                                                                  SurfaceModelParametersForm.default_equation,
-                                                                 self.model_params_list[0].label)
+                                                                 self.model_params_list[0].name)
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")
@@ -313,7 +313,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
             simulator = self.simulator_context.simulator
 
             for param in list(self.model_params_list):
-                param_data = context_model_parameters.get_data_for_model_param(param.label)
+                param_data = context_model_parameters.get_data_for_model_param(param.name)
                 if param_data is None:
                     continue
                 setattr(simulator.model, param.name, param_data)
