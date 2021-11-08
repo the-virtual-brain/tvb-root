@@ -49,7 +49,7 @@ class VersionSettings(object):
     SVN_GIT_MIGRATION_REVISION = 10000
 
     # Current release number
-    BASE_VERSION = "2.4"
+    BASE_VERSION = "2.4.1"
 
     # Current DB version. Create a new migration script from command line and copy its gid here
     DB_STRUCTURE_VERSION = '32d4bf9f8cab'
@@ -262,13 +262,15 @@ class WebSettings(object):
         self.OPENSHIFT_NAMESPACE = manager.get_attribute(stored.KEY_OPENSHIFT_NAMESPACE, "")
         self.OPENSHIFT_APPLICATION = manager.get_attribute(stored.KEY_OPENSHIFT_APPLICATION, "")
         self.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION = manager.get_attribute(stored.KEY_PROCESSING_OPERATIONS_APPLICATION, "")
-        self.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION = manager.get_attribute(stored.KEY_DATA_ENCRYPTION_HANDLER_APPLICATION, "")
+        self.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION = manager.get_attribute(stored.KEY_DATA_ENCRYPTION_HANDLER_APPLICATION, self.OPENSHIFT_APPLICATION)
         # Compute reference towards the current web application, valid FROM localhost
         server_IP = manager.get_attribute(stored.KEY_IP, self.LOCALHOST)
         self.BASE_LOCAL_URL = "http://%s:%s/" % (server_IP, str(self.SERVER_PORT))
 
         # Compute PUBLIC reference towards the current web application, it will be used in the emails text
         self.BASE_URL = ""
+        self.DEPLOY_CONTEXT = manager.get_attribute(stored.KEY_DEPLOY_CONTEXT, "")
+        self.REST_DEPLOY_CONTEXT = manager.get_attribute(stored.KEY_REST_DEPLOY_CONTEXT, "")
 
         # URL for reading current available version information.
         default = "http://www.thevirtualbrain.org/tvb/zwei/action/serialize-version?version=1&type=json"

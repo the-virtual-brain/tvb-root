@@ -88,7 +88,9 @@ def fire_simulation_example(tvb_client_instance):
 
         time_series_gid = simulation_results[1].gid
         logger.info("Download the time series file...")
-        time_series_path = tvb_client_instance.retrieve_datatype(time_series_gid, tvb_client_instance.temp_folder)
+        time_series_path = tvb_client_instance.retrieve_datatype(time_series_gid,
+                                                                 tvb_client_instance.temp_folder)
+
         logger.info("The time series file location is: {}".format(time_series_path))
 
         logger.info("Requesting algorithms to run on time series...")
@@ -117,7 +119,9 @@ def fire_simulation_example(tvb_client_instance):
                 break
 
         logger.info("Download the connectivity file...")
-        connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid, tvb_client_instance.temp_folder)
+        connectivity_path = tvb_client_instance.retrieve_datatype(connectivity_gid,
+                                                                  tvb_client_instance.temp_folder)
+
         logger.info("The connectivity file location is: {}".format(connectivity_path))
 
         logger.info("Loading an entire Connectivity datatype in memory...")

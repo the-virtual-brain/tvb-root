@@ -173,7 +173,7 @@ function setLconnParamAndRedrawChart(method_to_call, field_name, field_value) {
     let current_param = field_name + '=' + field_value;
     let url = refreshBaseUrl + '/' + method_to_call + '?' + current_param;
     $.ajax({
-        url: url,
+        url: deploy_context + url,
         type: 'POST',
         success: function () {
             plotEquation()

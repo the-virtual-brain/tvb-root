@@ -74,10 +74,10 @@ function updateTree(treeSelector, projectId, visibilityFilter) {
             "theme": "default",
             "dots": true,
             "icons": true,
-            "url": "/static/jquery/jstree-theme/style.css"
+            "url": deploy_context + "/static/jquery/jstree-theme/style.css"
         },
         "json_data": {
-            "ajax": { url: url,
+            "ajax": { url: deploy_context + url,
                 success: function (d) {
                     return eval(d);
                 }
@@ -172,7 +172,7 @@ function tvbSubmitPage(action, params){
     var form = document.createElement("form");
 
     form.method="POST" ;
-    form.action = action;
+    form.action = deploy_context + action;
 
     for (var name in params){
         if(params.hasOwnProperty(name)){

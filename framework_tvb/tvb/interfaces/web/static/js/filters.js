@@ -42,7 +42,7 @@ function _FIL_createUiForFilterType(filter, newDiv, isDate){
             changeMonth: true,
             changeYear: true,
             showOn: "both",
-            buttonImage: "/static/style/img/calendar.png",
+            buttonImage: deploy_context + "/static/style/img/calendar.png",
             buttonImageOnly: true,
             dateFormat : "mm-dd-yy",
             buttonText: "pick a date"

@@ -34,12 +34,14 @@
         <meta http-equiv="Pragma" content="no-cache"/>
         <meta http-equiv="Cache-Control" content="no-cache"/>
 
-        <link rel="shortcut icon" href="/static/style/img/favicon.ico"/>
-        <link rel="stylesheet" type="text/css" href="/static/style/base.css?{{ currentVersionJS }}"/>
-        <link rel="stylesheet" type="text/css" href="/static/style/section_user.css?{{ currentVersionJS }}"/>
-        <link rel="stylesheet" type="text/css" href="/static/style/overlay.css?{{ currentVersionJS }}"/>
-        <script type="text/javascript" src="/static/jquery/jquery.js"></script>
-        <script type="text/javascript" src="/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
+        <link rel="shortcut icon" href="{{ deploy_context | safe }}/static/style/img/favicon.ico"/>
+        <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/base.css?{{ currentVersionJS }}"/>
+        <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/section_user.css?{{ currentVersionJS }}"/>
+        <link rel="stylesheet" type="text/css" href="{{ deploy_context | safe }}/static/style/overlay.css?{{ currentVersionJS }}"/>
+
+        <script type="text/javascript">const deploy_context = '{{ deploy_context | safe }}'</script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.js"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/genericTVB.js?{{ currentVersionJS }}"></script>
         <script type="text/javascript">checkForIE()</script>
 
         <!--  include keycloak initialization      -->

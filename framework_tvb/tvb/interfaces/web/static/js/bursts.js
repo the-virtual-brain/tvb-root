@@ -141,8 +141,8 @@ function renderAllSimulatorForms(url, stop_at_url = '', onFinishFunction = null)
             url: url,
             success: function (response) {
                 const t = document.createRange().createContextualFragment(response);
-                simulator_params.appendChild(t);
-                MathJax.Hub.Queue(["Typeset", MathJax.Hub, "div-simulator-parameters"]);
+                renderWithMathjax(simulator_params, t);
+
 
                 const next_url = $(response).attr("action");
                 if (next_url && next_url.length > 0) {
@@ -170,9 +170,7 @@ function loadBurstHistory(initBurst = false) {
         async: false,
         success: function (r) {
             const historyElem = $('#section-view-history');
-            historyElem.empty();
-            historyElem.append(r);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, "section-view-history"]);
+            renderWithMathjax(historyElem, r, true);
             //setupMenuEvents(historyElem);
         },
         error: function () {
@@ -638,7 +636,7 @@ function setInitialFocusOnButton(simulator_params) {
 
 function previousWizzardStep(currentForm, previous_action, div_id = 'div-simulator-parameters') {
     $.ajax({
-        url: '/burst/set_fragment_url',
+        url: deploy_context + '/burst/set_fragment_url',
         type: 'POST',
         data: {"url": previous_action},
     });
@@ -720,7 +718,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
     var fieldset = currentForm.elements[0];
 
     $.ajax({
-        url: post_url,
+        url: deploy_context + post_url,
         type: request_method,
         data: form_data,
         success: function (response) {
@@ -757,8 +755,7 @@ function wizzard_submit(currentForm, success_function = null, div_id = 'div-simu
                 fieldset.disabled = true;
                 var t = document.createRange().createContextualFragment(response);
                 const simulator_params = document.getElementById(div_id);
-                simulator_params.appendChild(t);
-                MathJax.Hub.Queue(["Typeset", MathJax.Hub, div_id]);
+                renderWithMathjax(simulator_params, t);
                 setInitialFocusOnButton(simulator_params);
                 setupMenuEvents();
             }

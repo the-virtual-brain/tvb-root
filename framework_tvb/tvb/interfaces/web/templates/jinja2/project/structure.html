@@ -3,7 +3,7 @@
 <!-- ============================= -->
 <div id="main" class="columnized colscheme-2-1st-narrow">
 
-    <script type="text/javascript" src="/static/js/tumor_dataset_import.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/tumor_dataset_import.js"></script>
 
     {% macro drawLevelSelect(level_index, data, default_selected, project_id) -%}
         <label for="levelTree_{{ level_index }}" id="label_levelTree_{{ level_index }}">Level {{ level_index }}:</label>
@@ -89,7 +89,7 @@
             </div>
         </div>
 
-        <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/projectTree.js?{{ currentVersionJS }}"></script>
         <script type="text/javascript">
             $(document).ready(function() {
                 updateTree('#treeStructure', {{ project.id }});

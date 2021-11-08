@@ -119,7 +119,7 @@ class FilterChain(object):
         new_values.extend(other.values)
         operations = self.operations[:]
         operations.extend(other.operations)
-        return FilterChain(new_display_name, new_fields, new_values, operations, 'and')
+        return FilterChain(new_display_name, new_fields, new_values, operations, self.operator_between_fields)
 
     def __str__(self):
         return self.__class__.__name__ + "(fields=%s, operations=%s, values=%s, operator_between_fields=%s)" % (
@@ -186,8 +186,7 @@ class FilterChain(object):
                            values=filter_dictionary[KEY_VALUES], operations=filter_dictionary[KEY_OPERATIONS],
                            operator_between_fields=filter_dictionary[KEY_OPERATOR])
 
-    def get_python_filter_equivalent(self, datatype_to_check=None, algorithm_to_check=None,
-                                     algocategory_to_check=None, operation_to_check=None):
+    def get_python_filter_equivalent(self, datatype_to_check=None):
         """
         Python evaluate of the filter against a current given DataType
         Check a filter instance next to a given input.

@@ -1,9 +1,9 @@
 <div id="main" class="columnized colscheme-2-2nd-narrow">
 	<div>
-		<script type="text/javascript" src="/static_view/commons/scripts/regionBoundaries.js?{{ currentVersionJS }}"></script>
-		<script type="text/javascript" src="/static/js/base_vertice_pick.js?{{ currentVersionJS }}"></script>
-    	<script type="text/javascript" src="/static/js/spatial/local_connectivity.js?{{ currentVersionJS }}"></script>
-        <script type="text/javascript" src="/static/js/canvas2image.js?{{ currentVersionJS }}"></script>
+		<script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/scripts/regionBoundaries.js?{{ currentVersionJS }}"></script>
+		<script type="text/javascript" src="{{ deploy_context | safe }}/static/js/base_vertice_pick.js?{{ currentVersionJS }}"></script>
+    	<script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/local_connectivity.js?{{ currentVersionJS }}"></script>
+        <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/canvas2image.js?{{ currentVersionJS }}"></script>
 
 		{% include 'spatial/local_connectivity_step2_left.html' %}
 		{% include 'spatial/local_connectivity_step2_right.html' %}

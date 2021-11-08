@@ -121,7 +121,7 @@ class CleanupSessionHandler(RamSession):
 
 
 def init_cherrypy(arguments=None):
-    #### Mount static folders from modules marked for introspection
+    # Mount static folders from modules marked for introspection
     arguments = arguments or []
     CONFIGUER = TvbProfile.current.web.CHERRYPY_CONFIGURATION
     if StorageInterface.encryption_enabled():
@@ -133,26 +133,34 @@ def init_cherrypy(arguments=None):
                                                'tools.staticdir.dir': '.',
                                                'tools.staticdir.root': module_path}
 
-    #### Mount controllers, and specify the root URL for them.
-    cherrypy.tree.mount(BaseController(), "/", config=CONFIGUER)
-    cherrypy.tree.mount(UserController(), "/user/", config=CONFIGUER)
-    cherrypy.tree.mount(ProjectController(), "/project/", config=CONFIGUER)
-    cherrypy.tree.mount(FigureController(), "/project/figure/", config=CONFIGUER)
-    cherrypy.tree.mount(FlowController(), "/flow/", config=CONFIGUER)
-    cherrypy.tree.mount(SettingsController(), "/settings/", config=CONFIGUER)
-    cherrypy.tree.mount(HelpController(), "/help/", config=CONFIGUER)
-    cherrypy.tree.mount(SimulatorController(), "/burst/", config=CONFIGUER)
-    cherrypy.tree.mount(ParameterExplorationController(), "/burst/explore/", config=CONFIGUER)
-    cherrypy.tree.mount(DynamicModelController(), "/burst/dynamic/", config=CONFIGUER)
-    cherrypy.tree.mount(SpatioTemporalController(), "/spatial/", config=CONFIGUER)
-    cherrypy.tree.mount(RegionsModelParametersController(), "/burst/modelparameters/regions/", config=CONFIGUER)
-    cherrypy.tree.mount(SurfaceModelParametersController(), "/spatial/modelparameters/surface/", config=CONFIGUER)
-    cherrypy.tree.mount(RegionStimulusController(), "/spatial/stimulus/region/", config=CONFIGUER)
-    cherrypy.tree.mount(SurfaceStimulusController(), "/spatial/stimulus/surface/", config=CONFIGUER)
-    cherrypy.tree.mount(LocalConnectivityController(), "/spatial/localconnectivity/", config=CONFIGUER)
-    cherrypy.tree.mount(NoiseConfigurationController(), "/burst/noise/", config=CONFIGUER)
-    cherrypy.tree.mount(HPCController(), "/hpc/", config=CONFIGUER)
-    cherrypy.tree.mount(KubeController(), "/kube/", config=CONFIGUER)
+    # Mount controllers, and specify the root URL for them.
+    cherrypy.tree.mount(BaseController(), BaseController.build_path("/"), config=CONFIGUER)
+    cherrypy.tree.mount(UserController(), BaseController.build_path("/user/"), config=CONFIGUER)
+    cherrypy.tree.mount(ProjectController(), BaseController.build_path("/project/"), config=CONFIGUER)
+    cherrypy.tree.mount(FigureController(), BaseController.build_path("/project/figure/"), config=CONFIGUER)
+    cherrypy.tree.mount(FlowController(), BaseController.build_path("/flow/"), config=CONFIGUER)
+    cherrypy.tree.mount(SettingsController(), BaseController.build_path("/settings/"), config=CONFIGUER)
+    cherrypy.tree.mount(HelpController(), BaseController.build_path("/help/"), config=CONFIGUER)
+    cherrypy.tree.mount(SimulatorController(), BaseController.build_path("/burst/"), config=CONFIGUER)
+    cherrypy.tree.mount(ParameterExplorationController(), BaseController.build_path("/burst/explore/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(DynamicModelController(), BaseController.build_path("/burst/dynamic/"), config=CONFIGUER)
+    cherrypy.tree.mount(SpatioTemporalController(), BaseController.build_path("/spatial/"), config=CONFIGUER)
+    cherrypy.tree.mount(RegionsModelParametersController(),
+                        BaseController.build_path("/burst/modelparameters/regions/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(SurfaceModelParametersController(),
+                        BaseController.build_path("/spatial/modelparameters/surface/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(RegionStimulusController(), BaseController.build_path("/spatial/stimulus/region/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(SurfaceStimulusController(), BaseController.build_path("/spatial/stimulus/surface/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(LocalConnectivityController(), BaseController.build_path("/spatial/localconnectivity/"),
+                        config=CONFIGUER)
+    cherrypy.tree.mount(NoiseConfigurationController(), BaseController.build_path("/burst/noise/"), config=CONFIGUER)
+    cherrypy.tree.mount(HPCController(), BaseController.build_path("/hpc/"), config=CONFIGUER)
+    cherrypy.tree.mount(KubeController(), BaseController.build_path("/kube/"), config=CONFIGUER)
 
     cherrypy.config.update(CONFIGUER)
 
@@ -175,7 +183,7 @@ def init_cherrypy(arguments=None):
             bus=cherrypy.engine)
         operations_job.start()
 
-    # HTTP Server is fired now ######
+    # HTTP Server is fired now #
     cherrypy.engine.start()
 
 
@@ -207,7 +215,7 @@ def start_tvb(arguments, browser=True):
     """
 
     if PARAM_RESET_DB in arguments:
-        ##### When specified, clean everything in DB
+        # When specified, clean everything in DB
         reset()
         arguments.remove(PARAM_RESET_DB)
 
@@ -223,7 +231,7 @@ def start_tvb(arguments, browser=True):
         LOGGER.exception(excep)
         sys.exit()
 
-    #### Mark that the interface is Web
+    # Mark that the interface is Web
     ABCDisplayer.VISUALIZERS_ROOT = TvbProfile.current.web.VISUALIZERS_ROOT
 
     init_cherrypy(arguments)
@@ -232,13 +240,13 @@ def start_tvb(arguments, browser=True):
         storage_interface.start()
         storage_interface.startup_cleanup()
 
-    #### Fire a browser page at the end.
+    # Fire a browser page at the end.
     if browser:
         run_browser()
 
     expose_rest_api()
 
-    ## Launch CherryPy loop forever.
+    # Launch CherryPy loop forever.
     LOGGER.info("Finished starting TVB version %s in %.3f s",
                 TvbProfile.current.version.CURRENT_VERSION, time.time() - STARTUP_TIC)
     cherrypy.engine.block()
@@ -268,6 +276,6 @@ def run_browser():
 
 
 if __name__ == '__main__':
-    #### Prepare parameters and fire CherryPy
-    #### Remove not-relevant parameter, 0 should point towards this "run.py" file, 1 to the profile
+    # Prepare parameters and fire CherryPy
+    # Remove not-relevant parameter, 0 should point towards this "run.py" file, 1 to the profile
     start_tvb(sys.argv[2:])

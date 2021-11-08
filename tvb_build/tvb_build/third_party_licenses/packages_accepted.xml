@@ -1500,6 +1500,16 @@
         <copyright-notice value="Copyright (c) 2010 Meme Dough"/>
         <description value="Used for TVB unit-tests coverage"/>
     </dependency>
+        <dependency env="[win,linux]" name="pytest-xdist">
+        <full-name value="xdist: pytest distributed testing plugin"/>
+        <project-home value="https://pypi.org/project/pytest-xdist"/>
+        <version value="[2.4.0]"/>
+        <usage value="dynamic linking"/>
+        <license value="LICENSE_pytest_xdist.txt"/>
+        <license-type value="MIT_"/>
+        <copyright-notice value="Copyright (c) 2010 pytest-xdist authors"/>
+        <description value="Used for running scientific-library tests on multiple cores"/>
+    </dependency>
     <dependency env="[win,mac,linux]" name="python">
         <full-name value="Python"/>
         <project-home value="http://docs.python.org/license.html"/>

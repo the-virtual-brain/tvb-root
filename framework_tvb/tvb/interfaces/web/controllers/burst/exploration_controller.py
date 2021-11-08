@@ -136,7 +136,7 @@ class ParameterExplorationController(BaseController):
         try:
             return self._prepare_pse_context(datatype_group_gid, back_page, color_metric, size_metric, False)
         except LaunchException as ex:
-            raise cherrypy.HTTPRedirect(ex.message)
+            self.redirect(ex.message)
 
     @expose_json
     def get_series_array_discrete(self, datatype_group_gid, back_page, color_metric=None, size_metric=None):
@@ -146,7 +146,7 @@ class ParameterExplorationController(BaseController):
         try:
             return self._prepare_pse_context(datatype_group_gid, back_page, color_metric, size_metric, True)
         except LaunchException as ex:
-            raise cherrypy.HTTPRedirect(ex.message)
+            self.redirect(ex.message)
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -169,7 +169,7 @@ class ParameterExplorationController(BaseController):
             error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
 
         name = urllib.parse.quote(adapter._ui_name)
-        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+        self.redirect(REDIRECT_MSG % (name, error_msg))
 
     @expose_json
     def get_metric_matrix(self, datatype_group_gid, metric_name=None):
@@ -187,7 +187,7 @@ class ParameterExplorationController(BaseController):
             error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
 
         name = urllib.parse.quote(adapter._ui_name)
-        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+        self.redirect(REDIRECT_MSG % (name, error_msg))
 
     @expose_json
     def get_node_matrix(self, datatype_group_gid):
@@ -205,4 +205,4 @@ class ParameterExplorationController(BaseController):
             error_msg = urllib.parse.quote("Isocline PSE requires a 2D range of floating point values.")
 
         name = urllib.parse.quote(adapter._ui_name)
-        raise cherrypy.HTTPRedirect(REDIRECT_MSG % (name, error_msg))
+        self.redirect(REDIRECT_MSG % (name, error_msg))

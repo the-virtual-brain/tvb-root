@@ -1,5 +1,5 @@
 <div id="main" class="columnized colscheme-2-even">
-	<script type="text/javascript" src="/static/js/spatial/local_connectivity.js?{{ currentVersionJS }}"></script>
+	<script type="text/javascript" src="{{ deploy_context | safe }}/static/js/spatial/local_connectivity.js?{{ currentVersionJS }}"></script>
     {% include 'spatial/refreshBaseUrl_initializer.html' %}
     <script type="text/javascript">
         // 	Define function here to use when create button is not disabled and populate with jinja2 provided values.

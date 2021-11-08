@@ -150,7 +150,7 @@ class FigureController(ProjectController):
                 common.set_error_message("Figure could not be removed!")
         elif figure_id is not None:
             self._update_figure(figure_id, **data)
-        raise cherrypy.HTTPRedirect(redirect_url)
+        self.redirect(redirect_url)
 
     def _update_figure(self, figure_id, **data):
         """

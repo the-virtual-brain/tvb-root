@@ -93,13 +93,13 @@ class Hopfield(Model):
 
     # Define traited attributes for this model, these represent possible kwargs.
     taux = NArray(
-        label=":math:`\\tau_{x}`",
+        label=r":math:`\tau_{x}`",
         default=numpy.array([1.]),
         domain=Range(lo=0.01, hi=100., step=0.01),
         doc="""The fast time-scale for potential calculus :math:`x`, state-variable of the model.""")
 
     tauT = NArray(
-        label=":math:`\\tau_{\\theta}`",
+        label=r":math:`\tau_{\theta}`",
         default=numpy.array([5.]),
         domain=Range(lo = 0.01, hi = 100., step = 0.01),
         doc="""The slow time-scale for threshold calculus :math:`\\theta`, state-variable of the model.""")

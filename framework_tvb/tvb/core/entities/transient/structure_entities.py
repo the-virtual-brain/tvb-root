@@ -35,6 +35,7 @@
 
 import json
 from tvb.basic.config.utils import EnhancedDictionary
+from tvb.basic.profile import TvbProfile
 
 
 class StructureNode:
@@ -165,12 +166,12 @@ class StructureNode:
         json_children = StructureNode.__convert2json(forest, project_id)
         if len(json_children) > 0:
             result = '{data: [{ data: {title: "' + project_name + '"'
-            result += ',icon: "/static/style/nodes/nodeRoot.png"},'
+            result += f',icon: "{TvbProfile.current.web.DEPLOY_CONTEXT}/static/style/nodes/nodeRoot.png"}},'
             result += 'state:"open", attr:{id:"' + StructureNode.PREFIX_ID_PROJECT
             result += '"}, children: [' + json_children + '] } ] }'
         else:
             result = '{data: [{ data: {title: "' + project_name + '"'
-            result += ',icon: "/static/style/nodes/nodeRoot.png"}'
+            result += f',icon: "{TvbProfile.current.web.DEPLOY_CONTEXT}/static/style/nodes/nodeRoot.png"}}'
             result += ',attr:{id:"' + StructureNode.PREFIX_ID_PROJECT + '"}}]}'
 
         return result
@@ -201,7 +202,7 @@ class StructureNode:
         place_comma = False
         for node in nodes_list:
             json_node = '{data: {title:"' + (node.name if len(node.name) < 100 else node.name[:95] + "...")
-            json_node += '",icon: "/static/style/nodes/node'
+            json_node += '",icon: "{}/static/style/nodes/node'.format(TvbProfile.current.web.DEPLOY_CONTEXT)
             if node.is_group:
                 json_node += 'Group.png"},'
             else:
