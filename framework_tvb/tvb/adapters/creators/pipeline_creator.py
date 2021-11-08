@@ -27,6 +27,50 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.neotraits.view_model import ViewModel
 
-ALL_CREATORS = ["allen_creator", "connectivity_creator", "local_connectivity_creator", "stimulus_creator",
-                "tumor_dataset_creator", "pipeline_creator"]
+
+class IPPipelineCreatorModel(ViewModel):
+    pass
+
+
+class IPPipelineCreatorForm(ABCAdapterForm):
+
+    @staticmethod
+    def get_required_datatype():
+        pass
+
+    @staticmethod
+    def get_filters():
+        pass
+
+    @staticmethod
+    def get_input_name():
+        return None
+
+    @staticmethod
+    def get_view_model():
+        return IPPipelineCreatorModel
+
+
+class IPPipelineCreator(ABCAdapter):
+
+    _ui_name = "Launch Image Preprocessing Pipeline"
+    _ui_description = "Launch Image Preprocessing Pipeline from tvb-web when it is deployed to EBRAINS"
+
+    def get_form_class(self):
+        return IPPipelineCreatorForm
+
+    def get_output(self):
+        return []
+
+    def get_required_disk_size(self, view_model):
+        return -1
+
+    def get_required_memory_size(self, view_model):
+        return -1
+
+    def launch(self, view_model):
+        # type: (IPPipelineCreatorModel) -> []
+        pass

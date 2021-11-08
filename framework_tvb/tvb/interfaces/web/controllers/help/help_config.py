@@ -110,7 +110,8 @@ class HelpConfig:
         self._add_mapping(WebStructure.SECTION_CONNECTIVITY, WebStructure.SUB_SECTION_CONNECTIVITY, self.CONNECTIVITY_HELP_PAGE, "long-range-connectivity")
         self._add_mapping(WebStructure.SECTION_CONNECTIVITY, WebStructure.SUB_SECTION_LOCAL_CONNECTIVITY, self.CONNECTIVITY_HELP_PAGE, "local-connectivity")
         self._add_mapping(WebStructure.SECTION_CONNECTIVITY, WebStructure.SUB_SECTION_ALLEN, self.CONNECTIVITY_HELP_PAGE, "allen-connectome-downloader")
-
+        self._add_mapping(WebStructure.SECTION_CONNECTIVITY, WebStructure.SUB_SECTION_IP_PIPELINE,
+                          self.CONNECTIVITY_HELP_PAGE, "pipeline-launcher")
 
     def _add_mapping(self, section, subsection, page, paragraph):
         """

@@ -92,7 +92,23 @@ class BaseController(object):
             allen_link = self.get_url_adapter(allen_algo.fk_category, allen_algo.id)
             self.connectivity_submenu.append(dict(title="Allen Connectome Builder", link=allen_link,
                                                   subsection=WebStructure.SUB_SECTION_ALLEN,
-                                                  description="Download data from Allen dataset and create a mouse connectome"))
+                                                  description="Download data from Allen dataset and create a mouse "
+                                                              "connectome"))
+
+        is_ebrain_running = True  # This should be true only when the EBRAIN deployment is running and
+        # when the current user has an HPC account linked (or a SA exists...)
+
+        pipeline_algo = self.algorithm_service.get_algorithm_by_module_and_class(
+            IntrospectionRegistry.IP_PIPELINE_MODULE,
+            IntrospectionRegistry.IP_PIPELINE_CLASS
+        )
+
+        if is_ebrain_running and pipeline_algo and not pipeline_algo.removed:
+            # Only add the Image Preprocessing Creator if tvb is deployed on EBRAINS
+            pipeline_link = self.get_url_adapter(pipeline_algo.fk_category, pipeline_algo.id)
+            self.connectivity_submenu.append(dict(title="Image Preprocessing Pipeline", link=pipeline_link,
+                                                  subsection=WebStructure.SUB_SECTION_IP_PIPELINE,
+                                                  description="Launch Image Preprocessing pipeline"))
 
         self.burst_submenu = [dict(link=self.build_path('/burst'), subsection=WebStructure.SUB_SECTION_BURST,
                                    title='Simulation Cockpit', description='Manage simulations'),
@@ -254,6 +270,11 @@ class BaseController(object):
         elif algorithm.module == IntrospectionRegistry.ALLEN_CREATOR_MODULE:
             result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
             result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_ALLEN
+            result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
+
+        elif algorithm.module == IntrospectionRegistry.IP_PIPELINE_MODULE:
+            result_template[common.KEY_SECTION] = WebStructure.SECTION_CONNECTIVITY
+            result_template[common.KEY_SUB_SECTION] = WebStructure.SUB_SECTION_IP_PIPELINE
             result_template[common.KEY_SUBMENU_LIST] = self.connectivity_submenu
 
         elif algorithm.algorithm_category.display:
