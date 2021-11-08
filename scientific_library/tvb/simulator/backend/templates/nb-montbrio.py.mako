@@ -28,159 +28,142 @@
 #
 #
 
+import math
 import numpy as np
-import numba
+import numba as nb
 
-def run_sim(sim, nstep):
-    horizon = sim.connectivity.horizon
-    buf_len = horizon + nstep
-    N = sim.connectivity.number_of_regions
-    gf = sim.integrator.noise.gfun(None)
+<%include file="nb-dfuns.py.mako" />
 
-    r, V = sim.integrator.noise.generate( shape=(2,N,buf_len) ) * gf
-    r[:,:horizon] = np.roll(sim.history.buffer[:,0,:,0], -1, axis=0).T
-    V[:,:horizon] = np.roll(sim.history.buffer[:,1,:,0], -1, axis=0).T
 
-    r, V = _mpr_integrate(
-        N = N,
-        dt = sim.integrator.dt,
-        nstep = nstep,
-        i0 = sim.connectivity.horizon,
-        r=r,
-        V=V,
-        weights = sim.connectivity.weights, 
-        idelays = sim.connectivity.idelays,
-        G = sim.coupling.a.item(),
-        I = sim.model.I.item(),
-        Delta = sim.model.Delta.item(), 
-        Gamma = sim.model.Gamma.item(),
-        eta = sim.model.eta.item(),
-        tau = sim.model.tau.item(),
-        J = sim.model.J.item(),       # end of model params
-    )
-    return r, V
+<%
+    import numpy as np
+    from tvb.simulator.integrators import IntegratorStochastic
+    cvars = [sim.model.state_variables[i] for i in sim.model.cvar]
+    stochastic = isinstance(sim.integrator, IntegratorStochastic)
 
-@numba.njit
-def _mpr_integrate(
+    cvar_symbols =  ','.join([f'{cvar}_c' for cvar in cvars])
+%>
+
+# Coupling
+${'' if debug_nojit else '@nb.njit(inline="always")'}
+def cx(t, i, N, weights, ${','.join(cvars)}, idelays):
+% for par in sim.coupling.parameter_names:
+    ${par} = ${getattr(sim.coupling, par)[0]}
+% endfor
+
+% for cterm in sim.model.coupling_terms:
+    ${cterm} = 0.0
+% endfor
+    for j in range(N):
+% for cterm, cvar in zip(sim.model.coupling_terms, cvars):
+        x_j = ${cvar}[j, t - idelays[i,j]]
+        ${cterm} +=  weights[i, j]* ${sim.coupling.pre_expr}
+% endfor
+% for cterm, cvar in zip(sim.model.coupling_terms, cvars):
+    gx = ${cterm}
+    x_i = ${cvar}[i, t]
+    ${cterm} = ${sim.coupling.post_expr}
+% endfor
+    return ${','.join(sim.model.coupling_terms)}
+
+# svar bound functions
+% if sim.model.state_variable_boundaries is not None:
+% for svar, (lo, hi) in sim.model.state_variable_boundaries.items():
+${'' if debug_nojit else '@nb.njit(inline="always")'}
+def bound_${svar}(x):
+% if lo > -np.inf: # this doesn't work, fix later
+    x = x if x >= ${lo} else ${lo} 
+% endif
+% if hi < np.inf:
+    x = x if x <= ${hi} else ${hi}
+% endif
+    return x
+% endfor
+% endif
+
+## this is fragile due to fixed intentation
+<%def name='call_bound_svars(svars)'>
+% if sim.model.state_variable_boundaries is not None:
+% for svar, lsvar in zip(sim.model.state_variables, svars):
+% if svar in sim.model.state_variable_boundaries.keys():
+            ${lsvar} = bound_${svar}(${lsvar})
+% endif
+% endfor    
+% endif
+</%def>
+
+
+@nb.njit
+def integrate(
         N,       # number of regions
         dt,
         nstep,   # integration length
         i0,      # index to t0
-        r,       # r buffer with initial history and pre-filled with noise
-        V,       # V buffer with initial history and pre-filled with noise
+% for svar in sim.model.state_variables:
+        ${svar},       # ${svar} buffer with initial history and pre-filled with noise
+% endfor
         weights, 
         idelays,
-        G,       # coupling scaling
-        I,       # model params 
-        Delta, 
-        Gamma,
-        eta,
-        tau,
-        J,       # end of model params
+        parmat,  # spatial parameters [nparams, nnodes]
+        stimulus # stimulus [nnodes, ntimes] or None
 ):
-
-    def dr(r, V):
-        dr = 1/tau * ( Delta / (np.pi * tau) + 2 * V * r)
-        return dr
-        
-    def dV(r, V, r_c):
-        dV = 1/tau * ( V**2 - np.pi**2 * tau**2 * r**2 + eta + J * tau * r + I + r_c ) 
-        return dV
-
-    def r_bound(r):
-        return r if r >= 0. else 0. # max(0., r) is faster?
 
     for i in range(i0, i0 + nstep):
         for n in range(N):
-            
-            # coupling
-            r_c = 0
-            for m in range(N):
-                r_c += weights[n,m] * r[m, i - idelays[n, m] - 1]
-            r_c = r_c * G # post
+            ${cvar_symbols} = cx(i-1, n, N, weights, ${','.join(cvars)}, idelays)
 
+% for svar in sim.model.state_variables:
+% if stochastic:
             # precomputed additive noise 
-            r_noise = r[n,i]
-            V_noise = V[n,i]
+            ${svar}_noise = ${svar}[n,i]
+% else:
+            ${svar}_noise = 0.0
+% endif
+% endfor
 
+% if sim.stimulus is not None:
+% for i, svar in enumerate(sim.model.state_variables):
+% if i in sim.model.stvar:
+            ${svar}_stim = dt*stimulus[n,i-i0]
+% else:
+            ${svar}_stim = 0.0
+% endif
+% endfor
+% else:
+% for svar in sim.model.state_variables:
+            ${svar}_stim = 0.0
+% endfor
+% endif
             # Heun integration step
-            dr_0 = dr(r[n,i-1], V[n,i-1]) 
-            dV_0 = dV(r[n,i-1], V[n,i-1], r_c) 
+% for svar in sim.model.state_variables:
+            d${svar}_0 = dx_${svar}(
+% for ssvar in sim.model.state_variables:
+                                ${ssvar}[n,i-1], 
+% endfor
+                                ${cvar_symbols},
+                                parmat[n] 
+            ) 
+% endfor
 
-            r_int = r[n,i-1] + dt*dr_0 + r_noise
-            V_int = V[n,i-1] + dt*dV_0 + V_noise
-            r_int = r_bound(r_int)
+% for svar in sim.model.state_variables:
+            ${svar}_int = ${svar}[n,i-1] + dt*d${svar}_0 + ${svar}_noise + ${svar}_stim
+% endfor
 
-            r[n,i] = r[n,i-1] + dt*(dr_0 + dr(r_int, V_int))/2.0 + r_noise
-            V[n,i] = V[n,i-1] + dt*(dV_0 + dV(r_int, V_int, r_c))/2.0 + V_noise
-            r[n,i] = r_bound(r[n,i])
+            ${call_bound_svars([f'{ssvar}_int' for ssvar in sim.model.state_variables])}
 
-    return r, V
-        
+% if not compatibility_mode:
+            # coupling
+            ${cvar_symbols} = cx(i, n, N, weights, ${','.join(cvars)}, idelays)
+% endif
+% for svar in sim.model.state_variables:
+            ${svar}_n = ${svar}[n,i-1] + dt*(d${svar}_0 + dx_${svar}(
+                ${','.join([f'{ssvar}_int' for ssvar in sim.model.state_variables])},
+                ${cvar_symbols}, parmat[n]  ))/2.0 + ${svar}_noise + ${svar}_stim
+% endfor
+            ${call_bound_svars([f'{ssvar}_n' for ssvar in sim.model.state_variables])}
 
+% for svar in sim.model.state_variables:
+            ${svar}[n,i] = ${svar}_n
+% endfor
 
-
-
-
-if __name__ == "__main__":
-    from tvb.simulator.lab import *
-    import matplotlib.pylab as plt
-    import time
-
-    G=0.1 # G=0.720 is too much -- integration fails numerically (NaN)
-    conn_speed = 2.0
-    dt = 0.01
-    seed = 42
-    nsigma = 0.01
-    eta = -4.6
-    J = 14.5
-    Delta = 0.7
-    tau = 1
-
-    nstep = 100000 # 1000 ms
-
-    conn = connectivity.Connectivity.from_file() # default 76 regions
-    conn.speed = np.array([conn_speed])
-    np.fill_diagonal(conn.weights, 0.)
-    conn.weights = conn.weights/np.max(conn.weights)
-    conn.configure()
-
-    sim = simulator.Simulator(
-        model=models.MontbrioPazoRoxin(
-            eta   = np.r_[eta],
-            J     = np.r_[J],
-            Delta = np.r_[Delta],
-            tau = np.r_[tau],
-        ),
-        connectivity=conn,
-        coupling=coupling.Scaling(
-          a=np.r_[G]
-        ),
-        conduction_speed=conn_speed,
-        integrator=integrators.HeunStochastic(
-          dt=dt,
-          noise=noise.Additive(
-              nsig=np.r_[nsigma, nsigma*2],
-              noise_seed=seed
-          )
-        ),
-        monitors=[
-          monitors.Raw()
-        ]
-    )
-
-    sim.configure()
-
-    start = time.time()
-    r, V = run_sim(sim, nstep)
-    end = time.time()
-    print( f'numba: {end - start:.2f} s')
-
-
-    start = time.time()
-    sim.run(simulation_length=nstep*dt)
-    end = time.time()
-    print( f'TVB: {end - start:.2f} s')
-
-    plt.plot(r[:,::20].T)
-    plt.show()
+    return ${','.join(svar for svar in sim.model.state_variables)}

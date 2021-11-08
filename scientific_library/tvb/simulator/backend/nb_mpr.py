@@ -42,6 +42,7 @@ import numpy as np
 import autopep8
 
 from .templates import MakoUtilMix
+from tvb.simulator.lab import *
 
 
 class NbMPRBackend(MakoUtilMix):
@@ -79,4 +80,151 @@ class NbMPRBackend(MakoUtilMix):
         fns = [getattr(mod,n) for n in name.split(',')]
         return fns[0] if len(fns)==1 else fns
 
+    def check_compatibility(self, sim): 
+        def check_choices(val, choices):
+            if not isinstance(val, choices):
+                raise NotImplementedError("Unsupported simulator component. Given: {}\nExpected one of: {}".format(val, choices))
+        # monitors
+        if len(sim.monitors) > 1:
+            raise NotImplementedError("Configure with one monitor.")
+        check_choices(sim.monitors[0], (monitors.Raw, monitors.TemporalAverage))
+        # integrators
+        check_choices(sim.integrator, integrators.HeunStochastic)
+        # models
+        check_choices(sim.model, models.MontbrioPazoRoxin)
+        # coupling
+        check_choices(sim.coupling, coupling.Linear)
+        # surface
+        if sim.surface is not None:
+            raise NotImplementedError("Surface simulation not supported.")
+        # stimulus evaluated outside the backend, no restrictions
 
+
+    def run_sim(self, sim, nstep=None, simulation_length=None, chunksize=100000, compatibility_mode=False):
+        assert nstep is not None or simulation_length is not None or sim.simulation_length is not None
+
+        self.check_compatibility(sim)
+        if nstep is None:
+            if simulation_length is None:
+                simulation_length = sim.simulation_length
+            nstep = int(np.ceil(simulation_length/sim.integrator.dt))
+
+        if isinstance(sim.monitors[0], monitors.Raw):
+            svar_bufs = self._run_sim_plain(sim, nstep, compatibility_mode=compatibility_mode)
+            time = np.arange(svar_bufs[0].shape[1]) * sim.integrator.dt
+        elif isinstance(sim.monitors[0], monitors.TemporalAverage):
+            svar_bufs = self._run_sim_tavg_chunked(sim, nstep, chunksize=chunksize, compatibility_mode=compatibility_mode)
+            T = sim.monitors[0].period
+            time = np.arange(svar_bufs[0].shape[1]) * T + 0.5 * T
+        else:
+            raise NotImplementedError("Only Raw or TemporalAverage monitors supported.")
+        data = np.concatenate(
+                [svar_buf.T[:,np.newaxis,:, np.newaxis] for svar_buf in svar_bufs],
+                axis=1
+        )
+        return (time, data),   
+
+    def _run_sim_plain(self, sim, nstep=None, compatibility_mode=False):
+        template = '<%include file="nb-montbrio.py.mako"/>'
+        content = dict(
+                compatibility_mode=compatibility_mode, 
+                sim=sim
+        ) 
+        integrate = self.build_py_func(template, content, name='integrate', print_source=True)
+
+        horizon = sim.connectivity.horizon
+        buf_len = horizon + nstep
+        N = sim.connectivity.number_of_regions
+        gf = sim.integrator.noise.gfun(None)
+
+        svar_bufs = [buf for buf in sim.integrator.noise.generate( shape=(sim.model.nvar,N,buf_len) ) * gf]
+        for i, svar_buf in enumerate(svar_bufs):
+            svar_buf[:,:horizon] = np.roll(sim.history.buffer[:,i,:,0], -1, axis=0).T
+
+        if sim.stimulus is None:
+            stimulus = None
+        else:
+            sim.stimulus.configure_space()
+            sim.stimulus.configure_time(np.arange(nstep)*sim.integrator.dt)
+            stimulus = sim.stimulus()
+
+        svar_bufs = integrate(
+            N = N,
+            dt = sim.integrator.dt,
+            nstep = nstep,
+            i0 = horizon,
+            **dict(zip(sim.model.state_variables,svar_bufs)),
+            weights = sim.connectivity.weights, 
+            idelays = sim.connectivity.idelays,
+            parmat = sim.model.spatial_parameter_matrix.T,
+            stimulus = stimulus
+        )
+        return [svar_buf[:,horizon:] for svar_buf in svar_bufs]
+
+    def _time_average(self, ts, istep):
+        N, T = ts.shape
+        return np.mean(ts.reshape(N,T//istep,istep),-1) # length of ts better be multiple of istep 
+
+    def _run_sim_tavg_chunked(self, sim, nstep, chunksize, compatibility_mode=False):
+        template = '<%include file="nb-montbrio.py.mako"/>'
+        content = dict(sim=sim, compatibility_mode=compatibility_mode) 
+        integrate = self.build_py_func(template, content, name='integrate', print_source=False)
+        # chunksize in number of steps 
+        horizon = sim.connectivity.horizon
+        N = sim.connectivity.number_of_regions
+        gf = sim.integrator.noise.gfun(None)
+
+        tavg_steps=sim.monitors[0].istep
+        assert tavg_steps < chunksize
+        assert chunksize % tavg_steps == 0
+        tavg_chunksize = chunksize // tavg_steps
+
+
+        assert nstep % tavg_steps == 0
+        svar_outs = [svar_out for svar_out in np.zeros((sim.model.nvar,N,nstep//tavg_steps))]
+
+        svar_bufs = [buf for buf in sim.integrator.noise.generate( shape=(sim.model.nvar,N,chunksize+horizon) ) * gf]
+        for i, svar_buf in enumerate(svar_bufs):
+            svar_buf[:,:horizon] = np.roll(sim.history.buffer[:,i,:,0], -1, axis=0).T
+
+
+        for chunk, _ in enumerate(range(horizon, nstep+horizon, chunksize)):
+            if sim.stimulus is None:
+                stimulus = None
+            else:
+                sim.stimulus.configure_space()
+                sim.stimulus.configure_time(
+                        np.arange(chunk*chunksize, (chunk+1)*chunksize)*sim.integrator.dt
+                )
+                stimulus = sim.stimulus()
+            svar_bufs = integrate(
+                N = N,
+                dt = sim.integrator.dt,
+                nstep = chunksize,
+                i0 = horizon,
+                **dict(zip(sim.model.state_variables,svar_bufs)),
+                weights = sim.connectivity.weights, 
+                idelays = sim.connectivity.idelays,
+                parmat = sim.model.spatial_parameter_matrix,
+                stimulus = stimulus
+            )
+
+            tavg_chunk = chunk * tavg_chunksize
+            svar_chunks = [self._time_average(svar[:, horizon:], tavg_steps) for svar in svar_bufs]
+            if tavg_chunk+tavg_chunksize > svar_outs[0].shape[1]:
+                cutoff = tavg_chunk+tavg_chunksize - svar_outs[0].shape[1]
+                for svar_chunk in svar_chunks:
+                    svar_chunk = svar_chunk[:,:-cutoff]
+                    
+            for svar_out, svar_chunk in zip (svar_outs, svar_chunks):
+                svar_out[:,tavg_chunk:tavg_chunk+tavg_chunksize] = svar_chunk
+
+            for svar_buf in svar_bufs:
+                svar_buf[:,:horizon] = svar_buf[:,-horizon:]
+
+
+            for svar_buf, svar_noise in zip(svar_bufs, sim.integrator.noise.generate( shape=(sim.model.nvar,N,chunksize) ) * gf):
+                svar_buf[:,horizon:] = svar_noise
+
+
+        return svar_outs
