@@ -202,6 +202,7 @@ class HPCSettings(object):
     HPC related specifications
     """
     HPC_LAUNCHER_SH_SCRIPT = "hpcLauncher"
+    HPC_PIPELINE_LAUNCHER_SH_SCRIPT = "tvb_image_processing_pipeline_v3.sh"
 
     UNICORE_RESOURCER_KEY = 'Resources'
     UNICORE_ARGS_KEY = 'Arguments'
