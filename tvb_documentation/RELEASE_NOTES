@@ -4,7 +4,10 @@
  Release Date: x xxx xxx
  Description:
 ======================================================================================================================================
-    *
+    * Add GUI for preprocessing pipeline
+    * Add support for a web context path (different than ROOT)
+    * Review form code
+    * Small review in CLI
 
 ======================================================================================================================================
  The Virtual Brain (TVB)
