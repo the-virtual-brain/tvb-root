@@ -83,6 +83,27 @@ class CoSimulator(Simulator):
     _cosim_monitors_noncoupling_indices = []
     _cosim_monitors_coupling_indices = []
 
+    def _configure_synchronization_time(self):
+        """This method will set the synchronization time and number of steps,
+           and certainly longer or equal to the integration time step.
+           Moreover, the synchronization time must be equal or shorter
+           than the minimum delay of all existing connections.
+           Existing connections are considered those with nonzero weights.
+        """
+        # The synchronization time should be at least equal to integrator.dt:
+        self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
+        # Compute the number of synchronization time steps:
+        self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
+        # Check if the synchronization time is smaller than the minimum delay of the connectivity:
+        existing_connections = self.connectivity.weights != 0
+        if numpy.any(existing_connections):
+            min_idelay = self.connectivity.idelays[existing_connections].min()
+            if self.synchronization_n_step > min_idelay:
+                raise ValueError('The synchronization time %g is longer than '
+                                 'the minimum delay time %g '
+                                 'of all existing connections (i.e., of nonzero weight)!'
+                                 % (self.synchronization_time, min_idelay * self.integrator.dt))
+
     def _configure_cosimulation(self):
         """This method will
            - set the synchronization time and number of steps,
@@ -91,14 +112,8 @@ class CoSimulator(Simulator):
            - configure the cosimulation monitor
            - zero connectivity weights to/from nodes modelled exclusively by the other cosimulator
            """
-        # the synchronization time should be at least equal to integrator.dt:
-        self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
-        # Compute the number of synchronization time steps:
-        self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
-        # Check if the synchronization time is smaller than the delay of the connectivity
-        # the condition is probably not correct. It will change with usage.
-        if self.synchronization_n_step > numpy.min(self.connectivity.idelays[numpy.nonzero(self.connectivity.idelays)]):
-            raise ValueError('the synchronization time is too long')
+        # Configure the synchronizatin time and number of steps
+        self._configure_synchronization_time()
 
         # Check if the couplings variables are in the cosimulation variables of interest
         for cvar in self.model.cvar:
