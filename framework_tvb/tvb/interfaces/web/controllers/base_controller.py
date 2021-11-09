@@ -67,10 +67,10 @@ class BaseController(object):
         self.user_service = UserService()
         self.project_service = ProjectService()
         self.algorithm_service = AlgorithmService()
-        self.analyze_category_link = '/flow/step_analyzers'
+        self.analyze_category_link = self.build_path('/flow/step_analyzers')
         self.analyze_adapters = None
 
-        self.connectivity_tab_link = '/flow/step_connectivity'
+        self.connectivity_tab_link = self.build_path('/flow/step_connectivity')
         view_category = self.algorithm_service.get_visualisers_category()
         conn_id = self.algorithm_service.get_algorithm_by_module_and_class(IntrospectionRegistry.CONNECTIVITY_MODULE,
                                                                            IntrospectionRegistry.CONNECTIVITY_CLASS).id
@@ -79,7 +79,8 @@ class BaseController(object):
         self.connectivity_submenu = [dict(title="Large Scale Connectivity", link=connectivity_link,
                                           subsection=WebStructure.SUB_SECTION_CONNECTIVITY,
                                           description="View Connectivity Regions. Perform Connectivity lesions"),
-                                     dict(title="Local Connectivity", link='/spatial/localconnectivity/step_1/1',
+                                     dict(title="Local Connectivity",
+                                          link=self.build_path('/spatial/localconnectivity/step_1/1'),
                                           subsection=WebStructure.SUB_SECTION_LOCAL_CONNECTIVITY,
                                           description="Create or view existent Local Connectivity entities.")]
 
@@ -93,9 +94,9 @@ class BaseController(object):
                                                   subsection=WebStructure.SUB_SECTION_ALLEN,
                                                   description="Download data from Allen dataset and create a mouse connectome"))
 
-        self.burst_submenu = [dict(link='/burst', subsection=WebStructure.SUB_SECTION_BURST,
+        self.burst_submenu = [dict(link=self.build_path('/burst'), subsection=WebStructure.SUB_SECTION_BURST,
                                    title='Simulation Cockpit', description='Manage simulations'),
-                              dict(link='/burst/dynamic', subsection='dynamic',
+                              dict(link=self.build_path('/burst/dynamic'), subsection='dynamic',
                                    title='Phase plane', description='Configure model dynamics')]
 
     @staticmethod
@@ -158,7 +159,7 @@ class BaseController(object):
         Compute the URLs for a given adapter. 
         Same URL is used both for GET and POST.
         """
-        result_url = '/flow/' + str(step_key) + '/' + str(adapter_id)
+        result_url = BaseController.build_path('/flow/' + str(step_key) + '/' + str(adapter_id))
         if back_page is not None:
             result_url = result_url + "?back_page=" + str(back_page)
         return result_url
@@ -169,7 +170,7 @@ class BaseController(object):
         / Path response
         Redirects to /tvb
         """
-        raise cherrypy.HTTPRedirect('/user')
+        self.redirect('/user')
 
     @cherrypy.expose()
     @using_template('user/base_user')
@@ -311,6 +312,9 @@ class BaseController(object):
         js_suffix = TvbProfile.current.version.CURRENT_VERSION.replace(".", "").replace("-", "")
         template_dictionary[common.KEY_CURRENT_VERSION] = TvbProfile.current.version.BASE_VERSION
         template_dictionary[common.KEY_CURRENT_JS_VERSION] = js_suffix
+
+        template_dictionary[common.KEY_DEPLOY_CONTEXT] = TvbProfile.current.web.DEPLOY_CONTEXT
+
         return template_dictionary
 
     def fill_overlay_attributes(self, template_dictionary, title, description, content_template,
@@ -369,3 +373,12 @@ class BaseController(object):
     def render_adapter_form(self, adapter_form, is_callout=False):
         show_online_help = common.get_logged_user().is_online_help_active()
         return {'adapter_form': adapter_form, 'showOnlineHelp': show_online_help, 'isCallout': is_callout}
+
+    @staticmethod
+    def build_path(path):
+        if path is None:
+            return None
+        return TvbProfile.current.web.DEPLOY_CONTEXT + path
+
+    def redirect(self, path):
+        raise cherrypy.HTTPRedirect(self.build_path(path))

@@ -39,7 +39,7 @@ from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.simulator.model_forms import get_form_for_model
 from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
 from tvb.adapters.simulator.noise_forms import get_form_for_noise
-from tvb.adapters.simulator.range_parameters import SimulatorRangeParameters
+from tvb.adapters.simulator.range_parameters import RangeParametersCollector
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
 from tvb.adapters.simulator.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
@@ -72,7 +72,7 @@ class SimulatorController(BurstBaseController):
 
     def __init__(self):
         BurstBaseController.__init__(self)
-        self.range_parameters = SimulatorRangeParameters()
+        self.range_parameters = RangeParametersCollector()
         self.burst_service = BurstService()
         self.simulator_service = SimulatorService()
         self.cached_simulator_algorithm = self.algorithm_service.get_algorithm_by_module_and_class(
@@ -183,7 +183,7 @@ class SimulatorController(BurstBaseController):
 
         next_form = self.algorithm_service.prepare_adapter_form(
             form_instance=get_form_for_coupling(type(session_stored_simulator.coupling))())
-        self.range_parameters.coupling_parameters = next_form.get_range_parameters()
+        self.range_parameters.range_param_forms[FormWithRanges.COUPLING_FRAGMENT_KEY] = next_form
         next_form.fill_from_trait(session_stored_simulator.coupling)
 
         rendering_rules = SimulatorFragmentRenderingRules(
@@ -223,7 +223,7 @@ class SimulatorController(BurstBaseController):
             form = SimulatorSurfaceFragment()
             form.fill_from_post(data)
             self.simulator_service.reset_at_surface_change(is_simulation_copy, form, session_stored_simulator)
-            self.range_parameters.surface_parameters = None
+            self.range_parameters.range_param_forms.pop(FormWithRanges.CORTEX_FRAGMENT_KEY, None)
             form.fill_trait(session_stored_simulator)
 
             if session_stored_simulator.surface:
@@ -245,7 +245,7 @@ class SimulatorController(BurstBaseController):
             rm_fragment.fill_from_post(data)
             rm_fragment.fill_trait(session_stored_simulator.surface)
 
-        self.range_parameters.surface_parameters = rm_fragment.get_range_parameters()
+        self.range_parameters.range_param_forms[FormWithRanges.CORTEX_FRAGMENT_KEY] = rm_fragment
         rendering_rules = SimulatorFragmentRenderingRules(
             None, None, SimulatorWizzardURLs.SET_CORTEX_URL, is_simulation_copy, is_simulation_load,
             self.context.last_loaded_fragment_url, cherrypy.request.method)
@@ -290,7 +290,7 @@ class SimulatorController(BurstBaseController):
 
         form = self.algorithm_service.prepare_adapter_form(
             form_instance=get_form_for_model(type(session_stored_simulator.model))(is_branch))
-        self.range_parameters.model_parameters = form.get_range_parameters()
+        self.range_parameters.range_param_forms[FormWithRanges.MODEL_FRAGMENT_KEY] = form
         form.fill_from_trait(session_stored_simulator.model)
 
         rendering_rules = SimulatorFragmentRenderingRules(
@@ -363,7 +363,7 @@ class SimulatorController(BurstBaseController):
             else:
                 self.context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_MONITORS_URL)
 
-            self.range_parameters.integrator_noise_parameters = None
+            self.range_parameters.range_param_forms.pop(FormWithRanges.NOISE_FRAGMENT_KEY, None)
 
         rendering_rules = SimulatorFragmentRenderingRules(
             None, None, SimulatorWizzardURLs.SET_INTEGRATOR_PARAMS_URL, is_simulation_copy,
@@ -378,7 +378,7 @@ class SimulatorController(BurstBaseController):
         if hasattr(integrator_noise_fragment, 'equation'):
             integrator_noise_fragment.equation.display_subform = False
 
-        self.range_parameters.integrator_noise_parameters = integrator_noise_fragment.get_range_parameters()
+        self.range_parameters.range_param_forms[FormWithRanges.NOISE_FRAGMENT_KEY] = integrator_noise_fragment
         integrator_noise_fragment.fill_from_trait(session_stored_simulator.integrator.noise)
 
         rendering_rules.form = integrator_noise_fragment
@@ -818,4 +818,4 @@ class SimulatorController(BurstBaseController):
             self.logger.warning(excep.message)
             self.context.set_warning_message(excep.message)
 
-        raise cherrypy.HTTPRedirect('/burst/')
+        self.redirect('/burst/')

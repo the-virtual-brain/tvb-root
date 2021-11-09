@@ -179,7 +179,6 @@ class Gaussian(SpatialApplicableEquation, FiniteSupportEquation):
     equation = Final(
         label="Gaussian Equation",
         default="(amp * exp(-((var-midpoint)**2 / (2.0 * sigma**2))))+offset",
-        # locked=True,
         doc=""":math:`(amp \\exp\\left(-\\left(\\left(x-midpoint\\right)^2 /
         \\left(2.0 \\sigma^2\\right)\\right)\\right)) + offset`""")
 
@@ -197,8 +196,8 @@ class DoubleGaussian(FiniteSupportEquation):
 
     equation = Final(
         label="Double Gaussian Equation",
-        default="(amp_1 * exp(-((var-midpoint_1)**2 / (2.0 * sigma_1**2)))) - (amp_2 * exp(-((var-midpoint_2)**2 / (2.0 * sigma_2**2))))",
-        # locked=True,
+        default="""(amp_1 * exp(-((var-midpoint_1)**2 / (2.0 * sigma_1**2)))) - (amp_2 * exp(-((var-midpoint_2)**2 /
+         (2.0 * sigma_2**2))))""",
         doc=""":math:`amp_1 \\exp\\left(-\\left((x-midpoint_1)^2 / \\left(2.0
         \\sigma_1^2\\right)\\right)\\right) -
         amp_2 \\exp\\left(-\\left((x-midpoint_2)^2 / \\left(2.0
@@ -227,7 +226,7 @@ class Sigmoid(SpatialApplicableEquation, FiniteSupportEquation):
     parameters = Attr(
         field_type=dict,
         label="Sigmoid Parameters",
-        default=lambda: {"amp": 1.0, "radius": 5.0, "sigma": 1.0, "offset": 0.0}) #"pi": numpy.pi,
+        default=lambda: {"amp": 1.0, "radius": 5.0, "sigma": 1.0, "offset": 0.0})
 
 
 class GeneralizedSigmoid(TemporalApplicableEquation):
@@ -244,8 +243,7 @@ class GeneralizedSigmoid(TemporalApplicableEquation):
     parameters = Attr(
         field_type=dict,
         label="Sigmoid Parameters",
-        default=lambda: {"low": 0.0, "high": 1.0, "midpoint": 1.0, "sigma": 0.3}) #,
-    #"pi": numpy.pi})
+        default=lambda: {"low": 0.0, "high": 1.0, "midpoint": 1.0, "sigma": 0.3})
 
 
 class Sinusoid(TemporalApplicableEquation):
@@ -261,7 +259,7 @@ class Sinusoid(TemporalApplicableEquation):
     parameters = Attr(
         field_type=dict,
         label="Sinusoid Parameters",
-        default=lambda: {"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
+        default=lambda: {"amp": 1.0, "frequency": 0.01})
 
 
 class Cosine(TemporalApplicableEquation):
@@ -277,7 +275,7 @@ class Cosine(TemporalApplicableEquation):
     parameters = Attr(
         field_type=dict,
         label="Cosine Parameters",
-        default=lambda: {"amp": 1.0, "frequency": 0.01}) #kHz #"pi": numpy.pi,
+        default=lambda: {"amp": 1.0, "frequency": 0.01})
 
 
 class Alpha(TemporalApplicableEquation):
@@ -287,7 +285,8 @@ class Alpha(TemporalApplicableEquation):
 
     equation = Final(
         label="Alpha Equation",
-        default="where((var-onset) > 0, (alpha * beta) / (beta - alpha) * (exp(-alpha * (var-onset)) - exp(-beta * (var-onset))), 0.0 * var)",
+        default="""where((var-onset) > 0, (alpha * beta) / (beta - alpha) * (exp(-alpha * (var-onset)) - exp(-beta
+         * (var-onset))), 0.0 * var)""",
         doc=""":math:`(\\alpha * \\beta) / (\\beta - \\alpha) *
             (\\exp(-\\alpha * (x-onset)) - \\exp(-\\beta * (x-onset)))` for :math:`(x-onset) > 0`""")
 
@@ -312,7 +311,8 @@ class PulseTrain(TemporalApplicableEquation):
     equation = Final(
         label="Pulse Train",
         default="where((var>onset)&(((var-onset) % T) < tau), amp, 0)",
-        doc=""":math:`\\left\\{{\\begin{array}{rl}amp,&{\\text{if }} (var-onset) \\mod T < \\tau \\and var > onset\\\\0,&{\\text{otherwise }}\\end{array}}\\right.`""")
+        doc=""":math:`\\left\\{{\\begin{array}{rl}amp,&{\\text{if }} ((var-onset) \\mod T) < \\tau \\space and \\space
+         var > onset\\\\0, &{\\text{otherwise }}\\end{array}}\\right.`""")
 
     # onset is in milliseconds
     # T and tau are in milliseconds as well
@@ -323,9 +323,8 @@ class PulseTrain(TemporalApplicableEquation):
         label="Pulse Train Parameters")
 
 
-
 class HRFKernelEquation(Equation):
-    "Base class for hemodynamic response functions."
+    """Base class for hemodynamic response functions."""
 
 
 class Gamma(HRFKernelEquation):
@@ -463,7 +462,8 @@ class FirstOrderVolterra(HRFKernelEquation):
 
     equation = Final(
         label="First Order Volterra Kernel",
-        default="1/3. * exp(-0.5*(var / tau_s)) * (sin(sqrt(1./tau_f - 1./(4.*tau_s**2)) * var)) / (sqrt(1./tau_f - 1./(4.*tau_s**2)))",
+        default="""1/3. * exp(-0.5*(var / tau_s)) * (sin(sqrt(1./tau_f - 1./(4.*tau_s**2)) * var)) /
+         (sqrt(1./tau_f - 1./(4.*tau_s**2)))""",
         doc=""":math:`G(t - t^{\\prime}) =
              e^{\\frac{1}{2} \\left(\\frac{t - t^{\\prime}}{\\tau_s} \\right)}
              \\frac{\\sin\\left((t - t^{\\prime})

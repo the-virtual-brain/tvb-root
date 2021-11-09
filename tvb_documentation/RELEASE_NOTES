@@ -1,8 +1,19 @@
 ======================================================================================================================================
  The Virtual Brain (TVB)
- Version: 2.4 - build 16***
- Release Date: 08 October 2021
- Description: Bug fixing, spack packaging and support encryption at export
+ Version: 2.5 - build xxxx
+ Release Date: x xxx xxx
+ Description:
+======================================================================================================================================
+    * Add GUI for preprocessing pipeline
+    * Add support for a web context path (different than ROOT)
+    * Review form code
+    * Small review in CLI
+
+======================================================================================================================================
+ The Virtual Brain (TVB)
+ Version: 2.4 - build 16845
+ Release Date: 09 October 2021
+ Description: Bug fixing, Spack packaging and support encryption at export
 ======================================================================================================================================
     * Bug fixing
     * Extend encryption support to data export features
@@ -10,6 +21,7 @@
     * Add EnumAttr to tvb-library neotraits
     * Code reviews related to tvb-storage module
     * Support Spack packaging for tvb-library, tvb-data, tvb-storage and tvb-framework
+
 ======================================================================================================================================
  The Virtual Brain (TVB)
  Version: 2.3 - build 16440
@@ -22,6 +34,7 @@
     * Separate tvb-storage as a module on pypi
     * Bug fixing
     * Update documentation
+
 ======================================================================================================================================
  The Virtual Brain (TVB)
  Version: 2.2.2 - build 16153
@@ -29,6 +42,7 @@
  Description: Bug fixing related to H5 migration
 ======================================================================================================================================
     * Fix migration of H5 files to work in case truncated files are present
+
 ======================================================================================================================================
  The Virtual Brain (TVB)
  Version: 2.2.1 - build 16148
@@ -37,6 +51,7 @@
 ======================================================================================================================================
     * Fix second startup with SQLite after migrating data from 1.5.8
     * Fix second startup with PostgreSQL with clean storage
+
 ======================================================================================================================================
  The Virtual Brain (TVB)
  Version: 2.2 - build 16145
@@ -56,6 +71,7 @@
     * CFF importer was removed
     * New export button on datatypes to allow exporting a datatype together with its references.
     * Data migration from version 1.5.8 is supported. For data generated with older versions, users should first install 1.5.8 to update their data, and then install 2.2
+
 ======================================================================================================================================
  The Virtual Brain (TVB) tvb-library
  Version: 2.0 - build 8898

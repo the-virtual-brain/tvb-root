@@ -31,11 +31,14 @@
 """
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
+import json
 
 import cherrypy
+from tvb.basic.exceptions import TVBException
 from tvb.core.services.backend_clients.standalone_client import StandAloneClient, LOCKS_QUEUE
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.decorators import check_kube_user
+from tvb.storage.h5.encryption.data_encryption_handler import encryption_handler
 
 
 class KubeController(BaseController):
@@ -54,3 +57,13 @@ class KubeController(BaseController):
             return
         LOCKS_QUEUE.get()
         StandAloneClient.start_operation(operation_id)
+
+    @cherrypy.expose
+    def data_encryption_handler(self, method, **data):
+        self.logger.debug("Received a request to data encryption handler: method {} data {}".format(method, data))
+        func = getattr(encryption_handler, method, None)
+        if func:
+            return json.dumps(func(**data))
+        else:
+            self.logger.error("Cannot find {} method in {}".format(method, encryption_handler))
+            raise TVBException("Invalid data encryption handler method")

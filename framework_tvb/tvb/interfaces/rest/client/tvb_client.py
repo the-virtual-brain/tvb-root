@@ -67,6 +67,7 @@ class TVBClient:
         self.datatype_api = DataTypeApi(server_url, auth_token)
         self.simulation_api = SimulationApi(server_url, auth_token)
         self.operation_api = OperationApi(server_url, auth_token)
+        self.is_data_encrypted = None
 
     @staticmethod
     def _test_free_port(login_callback_port):
@@ -81,6 +82,7 @@ class TVBClient:
     def browser_login(self):
         login_response = self.user_api.browser_login(self.login_callback_port, self.open_browser)
         self._update_token(login_response)
+        self.is_data_encrypted = self.datatype_api.is_data_encrypted()
 
     @staticmethod
     def open_browser(url):
@@ -167,9 +169,9 @@ class TVBClient:
     def retrieve_datatype(self, datatype_gid, download_folder):
         """
         Given a guid, this function will download locally the H5 full data from the server to the given folder.
+        If encryption was activated, the function will also decrypt the H5 data.
         """
-
-        return self.datatype_api.retrieve_datatype(datatype_gid, download_folder)
+        return self.datatype_api.retrieve_datatype(datatype_gid, download_folder, self.is_data_encrypted)
 
     def load_datatype_from_file(self, datatype_path):
         """
@@ -185,7 +187,8 @@ class TVBClient:
         :param datatype_gid: GID of datatype to load
         :return: datatype object with all references fully loaded
         """
-        return self.datatype_api.load_datatype_with_full_references(datatype_gid, download_folder)
+        return self.datatype_api.load_datatype_with_full_references(datatype_gid, download_folder,
+                                                                    self.is_data_encrypted)
 
     def load_datatype_with_links(self, datatype_gid, download_folder):
         # type: (str, str) -> HasTraits
@@ -195,7 +198,7 @@ class TVBClient:
         :param datatype_gid: GID of datatype to load
         :return: datatype object with correct GIDs for references
         """
-        return self.datatype_api.load_datatype_with_links(datatype_gid, download_folder)
+        return self.datatype_api.load_datatype_with_links(datatype_gid, download_folder, self.is_data_encrypted)
 
     def get_operations_for_datatype(self, datatype_gid):
         """

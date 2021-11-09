@@ -45,6 +45,7 @@ from tvb.simulator import monitors, models, coupling, integrators, noise, simula
 from tvb.datatypes import connectivity
 from tvb.datatypes.cortex import Cortex
 from tvb.datatypes.region_mapping import RegionMapping
+from tvb.datatypes.projections import ProjectionSurfaceEEG
 from tvb.datatypes.sensors import SensorsInternal
 
 
@@ -208,7 +209,7 @@ class TestProjectionMonitorsWithNoSubcortical(TestProjectionMonitorsWithSubcorti
 class TestAllAnalyticWithSubcortical(BaseTestCase):
     """Test correct gain matrix shape for all analytic with subcortical nodes."""
 
-    def test_gain_size(self):
+    def _build_test_sim(self):
         sim = simulator.Simulator(
             connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
             monitors=(monitors.iEEG(
@@ -216,8 +217,66 @@ class TestAllAnalyticWithSubcortical(BaseTestCase):
                 region_mapping=RegionMapping.from_file('regionMapping_16k_192.txt')
             ),)
         ).configure()
+        return sim
 
+    def _build_test_sim_eeg(self):
+        eeg_monitor = monitors.EEG()
+        eeg_monitor.sensors = sensors.SensorsEEG.from_file()
+        eeg_monitor.region_mapping = RegionMapping.from_file('regionMapping_16k_192.txt')
+        eeg_monitor.projection = ProjectionSurfaceEEG.from_file()
+
+        sim = simulator.Simulator(
+                connectivity=connectivity.Connectivity.from_file('connectivity_192.zip'),
+                monitors=[eeg_monitor],
+                simulation_length=100
+        ).configure()
+        return sim
+
+    def test_gain_size(self):
+        sim = self._build_test_sim()
         ieeg = sim.monitors[0]  # type: SensorsInternal
         n_sens, n_reg = ieeg.gain.shape
         assert ieeg.sensors.locations.shape[0] == n_sens
         assert sim.connectivity.number_of_regions == n_reg
+
+    def test_gain_config_idempotent(self):
+        "Check that rerunning the config doesn't increase matrix size"
+        sim = self._build_test_sim_eeg()
+        eeg, = sim.monitors
+        eeg: monitors.EEG
+        initial_gain_shape = eeg.gain.shape
+        eeg.config_for_sim(sim)
+        reconfig_gain_shape = eeg.gain.shape
+        assert initial_gain_shape == reconfig_gain_shape
+        eeg.config_for_sim(sim)
+        rereconfig_gain_shape = eeg.gain.shape
+        assert reconfig_gain_shape == rereconfig_gain_shape
+
+    def test_gain_order(self):
+        conn = connectivity.Connectivity()
+        conn.generate_surrogate_connectivity(4)
+        conn.centres /= 100.0
+        conn.cortical = numpy.array([1, 0, 1, 1], numpy.bool)
+        seeg_sensors = SensorsInternal(
+            locations=conn.centres,
+            labels=conn.region_labels)
+        region_mapping = RegionMapping(
+            array_data=numpy.r_[:conn.number_of_regions],
+            connectivity=conn)
+        seeg_monitor = monitors.iEEG(
+            sensors=seeg_sensors,
+            region_mapping=region_mapping,
+            )
+        sim = simulator.Simulator(
+            connectivity=conn,
+            monitors=[seeg_monitor],
+        )
+        sim.configure()
+        # NB: each sensor above is on one node, in same order
+        # they must create NaN values in gain matrix
+        # we zero NaNs
+        # order of zeros by tell us order of node-sensor pairs
+        zero_mask = seeg_monitor.gain == 0.0
+        row, col = numpy.where(zero_mask)
+        assert (row == col).all()
+

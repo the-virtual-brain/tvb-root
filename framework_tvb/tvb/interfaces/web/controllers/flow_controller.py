@@ -100,7 +100,7 @@ class FlowController(BaseController):
             if len(adapter_group.children) > 1:
                 ids = [str(child.id) for child in adapter_group.children]
                 ids = ','.join(ids)
-                adapter_link = '/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids
+                adapter_link = self.build_path('/flow/show_group_of_algorithms/' + str(analyze_category.id) + "/" + ids)
             else:
                 adapter_link = self.get_url_adapter(analyze_category.id, adapter_group.children[0].id)
 
@@ -129,7 +129,7 @@ class FlowController(BaseController):
             message = 'Could not load analyzers!'
             common.set_warning_message(message)
             self.logger.warning(message)
-            raise cherrypy.HTTPRedirect('/tvb')
+            self.redirect('/tvb')
 
     @expose_page
     @settings
@@ -157,7 +157,7 @@ class FlowController(BaseController):
             back_page_link = '/project/viewoperations/' + str(project.id)
         else:
             back_page_link = '/project/editstructure/' + str(project.id)
-        return back_page_link
+        return BaseController.build_path(back_page_link)
 
     @expose_page
     @settings
@@ -216,7 +216,7 @@ class FlowController(BaseController):
         back_page_link = self._compute_back_link(back_page, project)
 
         if algorithm is None:
-            raise cherrypy.HTTPRedirect("/tvb?error=True")
+            self.redirect("/tvb?error=True")
 
         if cherrypy.request.method == 'POST' and cancel:
             raise cherrypy.HTTPRedirect(back_page_link)
@@ -231,7 +231,7 @@ class FlowController(BaseController):
             template_specification = self.get_template_for_adapter(project.id, step_key, algorithm,
                                                                    submit_link, is_burst=is_burst)
         if template_specification is None:
-            raise cherrypy.HTTPRedirect('/tvb')
+            self.redirect('/tvb')
 
         if KEY_CONTROLLS not in template_specification:
             template_specification[KEY_CONTROLLS] = None
@@ -514,7 +514,7 @@ class FlowController(BaseController):
         # Display the inputs tree for the current op
         category_id = operation.algorithm.fk_category
         algo_id = operation.fk_from_algo
-        raise cherrypy.HTTPRedirect("/flow/" + str(category_id) + "/" + str(algo_id))
+        self.redirect("/flow/" + str(category_id) + "/" + str(algo_id))
 
     @cherrypy.expose
     @handle_error(redirect=True)
@@ -533,7 +533,7 @@ class FlowController(BaseController):
             operation = OperationService.load_operation(int(first_op.id))
         self.simulator_controller.copy_simulator_configuration(operation.burst.id)
 
-        raise cherrypy.HTTPRedirect("/burst/")
+        self.redirect("/burst/")
 
     @expose_json
     def cancel_or_remove_operation(self, operation_id, is_group, remove_after_stop=False):

@@ -257,7 +257,7 @@ function setSurfaceStimParamAndRedrawChart(methodToCall, fieldName, fieldValue) 
     let current_param = prepareUrlParam(fieldName, fieldValue);
     let url = refreshBaseUrl + '/' + methodToCall + '?' + current_param;
     $.ajax({
-        url: url,
+        url: deploy_context + url,
         type: 'POST',
         success: function () {
             plotEquations()

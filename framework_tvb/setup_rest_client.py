@@ -40,9 +40,9 @@ from setuptools.command.egg_info import manifest_maker
 
 manifest_maker.template = 'MANIFEST_rest_client.in'
 
-VERSION = "2.4"
+VERSION = "2.5"
 
-TVB_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
+TVB_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
 
 TVB_INSTALL_REQUIREMENTS = ["alembic", "h5py", "nibabel", "numpy", "Pillow", "psutil",
                             "pyAesCrypt", "requests", "scipy", "simplejson", "sqlalchemy",

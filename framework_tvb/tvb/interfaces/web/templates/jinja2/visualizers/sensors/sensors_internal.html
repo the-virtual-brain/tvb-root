@@ -1,7 +1,7 @@
 <div id="s-brain" class="brain">
     {% include 'visualizers/commons/gl_view_header.html' %}
 
-    <script type="text/javascript" src="/static_view/commons/scripts/internalBrain.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/scripts/internalBrain.js?{{ currentVersionJS }}"></script>
 
     {% include 'visualizers/commons/fragment_shader.html' %}
 

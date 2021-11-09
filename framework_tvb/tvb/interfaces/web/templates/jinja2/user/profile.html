@@ -52,7 +52,7 @@
 					administrator
 					{% endif %}
 					{% if user.is_administrator() %}
-                		<a href="/user/usermanagement" tabindex="-1"><u>manage other users</u></a>
+                		<a href="{{ deploy_context | safe }}/user/usermanagement" tabindex="-1"><u>manage other users</u></a>
 					{% endif %}
             	</dd>
 				{% endif %}
@@ -60,7 +60,7 @@
 				{% if user.is_administrator() and keycloakConfigWebFile is not defined %}
             		<dt>Settings</dt>
             		<dd tabindex='3' onkeypress="redirectToHrefChild(this)">
-						<a href='/settings/settings/' tabindex="-1"><u>TVB Settings</u></a>
+						<a href="{{ deploy_context | safe }}/settings/settings/" tabindex="-1"><u>TVB Settings</u></a>
             		</dd>
 				{% endif %}
 
@@ -122,7 +122,7 @@
             	<dt>Online Help</dt>
 
             	<dd tabindex='10' onkeypress="redirectToHrefChild(this)">
-               	 <a href="/user/switch_online_help" tabindex="-1"><u>{{ 'deactivate' if user.is_online_help_active() else 'activate' }}</u></a>
+               	 <a href="{{ deploy_context | safe }}/user/switch_online_help" tabindex="-1"><u>{{ 'deactivate' if user.is_online_help_active() else 'activate' }}</u></a>
             	</dd>
 				{% else %}
 				<dt>Account</dt>

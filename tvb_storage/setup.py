@@ -38,11 +38,11 @@ import os
 import shutil
 import setuptools
 
-STORAGE_VERSION = "2.4"
+STORAGE_VERSION = "2.5"
 
-STORAGE_TEAM = "Lia Domide, Paula Popa, Bogdan Valean, Robert Vincze"
+STORAGE_TEAM = "Lia Domide, Paula Prodan, Bogdan Valean, Robert Vincze"
 
-STORAGE_REQUIRED_PACKAGES = ["h5py", "numpy", "scipy"]
+STORAGE_REQUIRED_PACKAGES = ["cryptography", "h5py", "numpy", "pyAesCrypt", "scipy"]
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as fd:
     DESCRIPTION = fd.read()

@@ -29,6 +29,8 @@
 #
 
 import os
+
+import flask
 import pytest
 import tvb_data
 
@@ -71,6 +73,11 @@ class TestDatatypeResource(RestResourceTest):
 
         # Mock flask.send_file to behave like send_file_dummy
         mocker.patch('flask.send_file', send_file_dummy)
+
+        # Mock flask.request.files
+        request_mock = mocker.patch.object(flask, 'request', spec={})
+        request_mock.files = {}
+
         result = self.retrieve_resource.get(datatype_gid=datatypes_in_project[0].gid)
 
         assert type(result) is tuple

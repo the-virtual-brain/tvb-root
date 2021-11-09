@@ -322,6 +322,8 @@ class ViewModelH5(H5File):
                         ref = JsonFinal(attr, self)
                     elif attr.field_type == list:
                         ref = Json(attr, self)
+                    else:
+                        ref = Scalar(attr, self)
                 elif issubclass(attr.field_type, (HasTraits, TupleEnum)):
                     ref = Reference(attr, self)
                 elif issubclass(attr.field_type, TVBEnum):

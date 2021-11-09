@@ -1,5 +1,5 @@
 <div id="main" class="columnized colscheme-2-2nd-narrow">
-    <script type="text/javascript" src="/static/js/canvas2image.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/canvas2image.js?{{ currentVersionJS }}"></script>
 
     {% include 'spatial/stimulus_surface_step2_left.html' %}
     {% include 'spatial/stimulus_surface_step2_right.html' %}

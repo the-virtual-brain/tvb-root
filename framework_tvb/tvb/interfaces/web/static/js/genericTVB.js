@@ -133,6 +133,14 @@ function fireOnClick(redirectElem) {
     }
 }
 
+// ---------- Function for rendering HTML elements with Mathjax
+function renderWithMathjax(element, elementToAppend, empty=false){
+    if(empty){
+        element.empty();
+    }
+    element.append(elementToAppend);
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub, element.id]);
+}
 
 // ---------- Function on the top left call-out
 function updateCallOutProject() {
@@ -588,7 +596,7 @@ function setOperationRelevant(operationGID, isGroup, toBeRelevant, submitFormId)
 
 function cancelOrRemoveOperation(operationId, isGroup, removeAfter) {
 
-    let urlBase = "/flow/cancel_or_remove_operation/"+ operationId + '/' + isGroup;
+    let urlBase = "/flow/cancel_or_remove_operation/" + operationId + '/' + isGroup;
     if (removeAfter) {
         urlBase += '/True';
     }
@@ -670,7 +678,7 @@ function showOverlay(url, allowClose, message_data) {
     $.ajax({
         async: false,
         type: 'GET',
-        url: url,
+        url: deploy_context + url,
         dataType: 'html',
         cache: true,
         data: message_data,
@@ -795,8 +803,10 @@ function showQuestionOverlay(question, yesCallback, noCallback) {
         noCallback = 'closeOverlay()';
     }
     const url = "/project/show_confirmation_overlay";
-    const data = {'yes_action': yesCallback,
-                  'no_action': noCallback};
+    const data = {
+        'yes_action': yesCallback,
+        'no_action': noCallback
+    };
     if (question !== null) {
         data['question'] = question;
     }
@@ -968,7 +978,7 @@ function doAjaxCall(params) {
 
     // Do AJAX call
     $.ajax({
-        url: params.url,
+        url: deploy_context + params.url,
         type: params.type,
         async: params.async,
         success: [onSuccess, closeOverlay],
@@ -1108,7 +1118,7 @@ function HLPR_fetchNdArray(binary_url, onload, kwargs) {
 // -------------End Binary transport parsing ----------------------------------
 
 function checkArg(arg, def) {
-    return ( typeof arg === 'undefined' ? def : arg);
+    return (typeof arg === 'undefined' ? def : arg);
 }
 
 /**
@@ -1197,12 +1207,16 @@ function prepareUrlParam(paramName, paramValue) {
 
 function refreshSubform(currentElem, elementType, subformDiv) {
     let url = prepareRefreshSubformUrl(currentElem, subformDiv);
+    if (url.startsWith('/')) {
+        url = deploy_context + url
+    }
+
     $.ajax({
         url: url,
         type: 'POST',
         success: function (r) {
-            $('#' + subformDiv).html(r);
-            MathJax.Hub.Queue(["Typeset", MathJax.Hub, subformDiv]);
+            const subform = $('#' + subformDiv);
+            renderWithMathjax(subform, r, true);
             setEventsOnFormFields(elementType, subformDiv);
             setupMenuEvents();
             plotEquation(subformDiv);

@@ -310,16 +310,16 @@ class DynamicModelController(BurstBaseController):
         """
         ret = []
         model_form_class = get_form_for_model(type(model))
-        for name in model_form_class.get_params_configurable_in_phase_plane():
-            attr = getattr(type(model), name)
+        for param in model_form_class().get_params_configurable_in_phase_plane():
+            attr = getattr(type(model), param.name)
             ranger = attr.domain
             if ranger is None:
-                DynamicModelController.LOGGER.warning("Param %s doesn't have a domain specified" % (name))
+                DynamicModelController.LOGGER.warning("Param %s doesn't have a domain specified" % param.name)
                 continue
             default = float(attr.default)
 
             ret.append({
-                'name': name,
+                'name': param.name,
                 'label': attr.label,
                 'description': attr.doc,
                 'min': ranger.lo,
@@ -392,9 +392,9 @@ class DynamicModelController(BurstBaseController):
         model_parameters = []
 
         model_form_class = get_form_for_model(type(model))
-        for name in model_form_class.get_params_configurable_in_phase_plane():
-            value = getattr(model, name)[0]
-            model_parameters.append((name, value))
+        for param in model_form_class().get_params_configurable_in_phase_plane():
+            value = getattr(model, param.name)[0]
+            model_parameters.append((param.name, value))
 
         entity = model_burst.Dynamic(
             dynamic_name,

@@ -40,12 +40,14 @@ from queue import Queue
 from threading import Lock
 
 import pyAesCrypt
+import requests
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.storage.h5.decorators import synchronized
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
 from tvb.storage.h5.file.files_helper import FilesHelper
+from tvb.storage.kube.kube_notifier import KubeNotifier
 
 LOGGER = get_logger(__name__)
 
@@ -69,18 +71,19 @@ class DataEncryptionHandlerMeta(type):
     Metaclass used to generate the singleton instance
     """
 
-    _instance = None
+    _instances = {}
 
     def __call__(cls):
-        if cls._instance is None:
-            cls._instance = super(DataEncryptionHandlerMeta, cls).__call__()
-        return cls._instance
+        if cls._instances.get(cls, None) is None:
+            cls._instances[cls] = super(DataEncryptionHandlerMeta, cls).__call__()
+        return DataEncryptionHandlerMeta._instances[cls]
 
 
 class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
     ENCRYPTED_FOLDER_SUFFIX = "_encrypted"
     KEYS_FOLDER = ".storage-keys"
     CRYPTO_PASS = "CRYPTO_PASS"
+    APP_ENCRYPTION_HANDLER = "APP_ENCRYPTION_HANDLER"
 
     file_helper = FilesHelper()
 
@@ -169,10 +172,10 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             LOGGER.info("Remove folder {}".format(folder))
             shutil.rmtree(folder)
 
-    def is_in_usage(self, project_folder):
-        return self._queue_count(project_folder) > 0 \
-               or self._project_active_count(project_folder) > 0 \
-               or self._running_op_count(project_folder) > 0
+    def is_in_usage(self, folder):
+        return self._queue_count(folder) > 0 \
+               or self._project_active_count(folder) > 0 \
+               or self._running_op_count(folder) > 0
 
     @staticmethod
     def compute_encrypted_folder_path(current_project_folder):
@@ -180,16 +183,15 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         project_path = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER, project_name)
         return "{}{}".format(project_path, DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX)
 
-    @staticmethod
-    def sync_folders(folder):
-        if not DataEncryptionHandler.encryption_enabled():
+    def sync_folders(self, folder):
+        if not self.encryption_enabled():
             return
 
         project_name = os.path.basename(folder)
-        encrypted_folder = DataEncryptionHandler.compute_encrypted_folder_path(folder)
+        encrypted_folder = self.compute_encrypted_folder_path(folder)
 
         if os.path.exists(encrypted_folder) or os.path.exists(folder):
-            crypto_pass = DataEncryptionHandler._project_key(project_name)
+            crypto_pass = self._project_key(project_name)
             crypto = Crypto(crypto_pass)
             syncro = Syncrypto(crypto, encrypted_folder, folder)
             syncro.sync_folder()
@@ -234,11 +236,11 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
             LOGGER.info("Remove project: {}".format(project_folder))
             shutil.rmtree(project_folder)
 
-    def push_folder_to_sync(self, project_folder):
-        if not self.encryption_enabled() or self._queue_count(project_folder) > 0:
+    def push_folder_to_sync(self, folder):
+        if not self.encryption_enabled() or self._queue_count(folder) > 0:
             return
-        self._inc_queue_count(project_folder)
-        self.sync_project_queue.put(project_folder)
+        self._inc_queue_count(folder)
+        self.sync_project_queue.put(folder)
 
     @staticmethod
     def encryption_enabled():
@@ -250,19 +252,24 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
         return True
 
     @staticmethod
+    def app_encryption_handler():
+        app_encryption_handler = True if DataEncryptionHandler.APP_ENCRYPTION_HANDLER in os.environ and os.environ[
+            DataEncryptionHandler.APP_ENCRYPTION_HANDLER].lower() == 'true' else False
+        return not TvbProfile.current.web.OPENSHIFT_DEPLOY or app_encryption_handler
+
+    @staticmethod
     def _get_unencrypted_projects(projects_folder):
         project_list = os.listdir(projects_folder)
         return list(map(lambda project: os.path.join(projects_folder, str(project)),
                         filter(lambda project: not str(project).endswith(DataEncryptionHandler.ENCRYPTED_FOLDER_SUFFIX),
                                project_list)))
 
-    @staticmethod
-    def startup_cleanup():
+    def startup_cleanup(self):
         unencrypted_projects_folder = os.path.join(TvbProfile.current.TVB_STORAGE, FilesHelper.PROJECTS_FOLDER)
-        projects_list = DataEncryptionHandler._get_unencrypted_projects(unencrypted_projects_folder)
+        projects_list = self._get_unencrypted_projects(unencrypted_projects_folder)
         for project in projects_list:
             LOGGER.info("Sync and clean project: {}".format(project))
-            DataEncryptionHandler.sync_folders(project)
+            self.sync_folders(project)
             shutil.rmtree(project)
 
     @staticmethod
@@ -289,7 +296,7 @@ class DataEncryptionHandler(metaclass=DataEncryptionHandlerMeta):
 
             return project_key
 
-        project_key = EncryptionHandler.generate_random_password(64)
+        project_key = EncryptionHandler.generate_random_password()
         with open(encrypted_project_key, "wb") as fOut:
             pass_stream = BytesIO(str.encode(project_key))
             pyAesCrypt.encryptStream(pass_stream, fOut, password_encryption_key, 64 * 1024)
@@ -306,7 +313,7 @@ class FoldersQueueConsumer(threading.Thread):
         self.marked_stop = True
 
     def run(self):
-        if not DataEncryptionHandler.encryption_enabled():
+        if not encryption_handler.encryption_enabled():
             return
         while True:
             if encryption_handler.sync_project_queue.empty():
@@ -320,10 +327,83 @@ class FoldersQueueConsumer(threading.Thread):
                 LOGGER.info("Start processing queue")
                 self.was_processing = True
             folder = encryption_handler.sync_project_queue.get()
-            DataEncryptionHandler.sync_folders(folder)
+            encryption_handler.sync_folders(folder)
             encryption_handler.dec_queue_count(folder)
             encryption_handler.check_and_delete(folder)
             encryption_handler.sync_project_queue.task_done()
 
 
-encryption_handler = DataEncryptionHandler()
+class DataEncryptionRemoteHandler(DataEncryptionHandler):
+    lock = Lock()
+
+    @staticmethod
+    def _notify_pods(method, folder=None, **kwargs):
+        if folder:
+            kwargs['folder'] = folder
+        if TvbProfile.current.web.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION == "":
+            raise TVBException("Openshift Data Encryption handler application is not defined")
+        openshift_pods, auth_header = KubeNotifier.get_pods(
+            TvbProfile.current.web.OPENSHIFT_DATA_ENCRYPTION_HANDLER_APPLICATION)
+        if len(openshift_pods) == 0:
+            raise TVBException("Openshift Data Encryption handler app not found")
+        encryption_app = openshift_pods[0]
+        url = "http://{}:{}/kube/data_encryption_handler/{}".format(encryption_app['ip'], str(TvbProfile.current.web.SERVER_PORT), method)
+        return requests.post(url=url, headers=auth_header, data=kwargs)
+
+    @synchronized(lock)
+    def inc_project_usage_count(self, folder):
+        self._notify_pods("inc_project_usage_count", folder)
+
+    @synchronized(lock)
+    def check_and_delete(self, folder):
+        self._notify_pods("check_and_delete", folder)
+
+    @synchronized(lock)
+    def dec_queue_count(self, folder):
+        self._notify_pods("dec_queue_count", folder)
+
+    @synchronized(lock)
+    def dec_running_op_count(self, folder):
+        self._notify_pods("dec_running_op_count", folder)
+
+    @synchronized(lock)
+    def inc_project_usage_count(self, folder):
+        self._notify_pods("inc_project_usage_count", folder)
+
+    @synchronized(lock)
+    def inc_running_op_count(self, folder):
+        self._notify_pods("inc_running_op_count", folder)
+
+    @synchronized(lock)
+    def is_in_usage(self, folder):
+        response = self._notify_pods("is_in_usage", folder)
+        in_usage = True
+        if response.ok and response.content.decode('utf-8').lower() == 'false':
+            in_usage = False
+        return in_usage
+
+    def push_folder_to_sync(self, folder):
+        self._notify_pods("push_folder_to_sync", folder)
+
+    def startup_cleanup(self):
+        self._notify_pods("startup_cleanup")
+
+    def sync_folders(self, folder):
+        self._notify_pods("sync_folders", folder)
+
+    def set_project_active(self, project, linked_dt):
+        self._notify_pods("set_project_active", **{'project': project, 'linked_dt': linked_dt})
+
+    def set_project_inactive(self, project):
+        self._notify_pods("set_project_inactive", **{'project': project})
+
+
+class DataEncryptionHandlerBuilder:
+    @staticmethod
+    def build_handler():
+        if DataEncryptionHandler.app_encryption_handler():
+            return DataEncryptionHandler()
+        return DataEncryptionRemoteHandler()
+
+
+encryption_handler = DataEncryptionHandlerBuilder.build_handler()

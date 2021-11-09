@@ -3,10 +3,10 @@
 <!-- ====================================================== -->
 <div id="main" class="columnized colscheme-3-1st-narrow">
 
-    <script type="text/javascript" src="/static/js/bursts.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/bursts.js?{{ currentVersionJS }}"></script>
     <!--! We need projectTree.js for the Results TAB. -->
-    <script type="text/javascript" src="/static/js/projectTree.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static/js/filters.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/projectTree.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/filters.js?{{ currentVersionJS }}"></script>
 
     <script type="text/javascript">
         $(document).ready(function () {

@@ -121,7 +121,7 @@ __global__ void kernel(float *dX, float *state, float *cX, float *parmat) {
         kernel(Out(dX), In(state), In(cX), In(parmat), 
             grid=(1,1), block=(content['n_node'],1,1))
         expected = sim.model.dfun(state, cX)
-        np.testing.assert_allclose(dX, expected, 1e-4, 1e-6)
+        np.testing.assert_allclose(dX, expected, 1e-3, 1e-5)
 
     @unittest.skipUnless(pycuda_available, 'requires working PyCUDA')
     def test_mpr_symmetric(self):

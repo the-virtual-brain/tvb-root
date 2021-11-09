@@ -202,7 +202,7 @@ class Epileptor(ModelNumbaDfun):
         doc="External input current to the second population")
 
     tau = NArray(
-        label=":math:`\\tau`",
+        label=r":math:`\tau`",
         default=numpy.array([10.0]),
         doc="Temporal scaling coefficient in fifth state variable")
 
@@ -414,8 +414,8 @@ class Epileptor2D(ModelNumbaDfun):
         label=":math:`r`",
         domain=Range(lo=0.0, hi=0.001, step=0.00005),
         default=numpy.array([0.00035]),
-        doc="Temporal scaling in the slow state-variable, \
-        called :math:`1\\tau_{0}` in Jirsa paper (see class Epileptor).")
+        doc=r"Temporal scaling in the slow state-variable, \
+        called :math:`1\tau_{0}` in Jirsa paper (see class Epileptor).")
 
     x0 = NArray(
         label=":math:`x_0`",

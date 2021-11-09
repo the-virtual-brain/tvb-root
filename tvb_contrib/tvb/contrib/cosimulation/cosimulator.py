@@ -34,25 +34,11 @@ It inherits the Simulator class.
 import numpy
 
 from tvb.basic.neotraits.api import Attr, NArray, Float, List, TupleEnum, EnumAttr
-from tvb.contrib.tests.cosimulation.parallel.ReducedWongWang import ReducedWongWangProxy
 from tvb.simulator.common import iround
 from tvb.simulator.simulator import Simulator, math
 from tvb.contrib.cosimulation.cosim_history import CosimHistory
 from tvb.contrib.cosimulation.cosim_monitors import CosimMonitor, CosimMonitorFromCoupling
 from tvb.contrib.cosimulation.exception import NumericalInstability
-
-
-class ContribModelsEnum(TupleEnum):
-    REDUCED_WONG_WANG_PROXY = (ReducedWongWangProxy, "Reduced Wong-Wang Proxy")
-
-
-# This class exists only for testing purposes
-class ContribTestSimulator(Simulator):
-    model = EnumAttr(
-        field_type=ContribModelsEnum,
-        label="Local dynamic model",
-        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.instance,
-        required=True)
 
 
 class CoSimulator(Simulator):
@@ -88,12 +74,6 @@ class CoSimulator(Simulator):
                in milliseconds, must be an integral multiple
                of integration-step size. It defaults to simulator.integrator.dt""")
 
-    model = EnumAttr(
-        field_type=ContribModelsEnum,
-        label="Local dynamic model",
-        default=ContribModelsEnum.REDUCED_WONG_WANG_PROXY.instance,
-        required=True)
-
     synchronization_n_step = 0
     good_cosim_update_values_shape = (0, 0, 0, 0)
     cosim_history = None  # type: CosimHistory
@@ -117,6 +97,27 @@ class CoSimulator(Simulator):
         # Check if the synchronization time is smaller than the minimum delay of the connectivity:
         existing_connections = self.connectivity.weights != 0
         if numpy.any(existing_connections.size):
+            min_idelay = self.connectivity.idelays[existing_connections].min()
+            if self.synchronization_n_step > min_idelay:
+                raise ValueError('The synchronization time %g is longer than '
+                                 'the minimum delay time %g '
+                                 'of all existing connections (i.e., of nonzero weight)!'
+                                 % (self.synchronization_time, min_idelay * self.integrator.dt))
+
+    def _configure_synchronization_time(self):
+        """This method will set the synchronization time and number of steps,
+           and certainly longer or equal to the integration time step.
+           Moreover, the synchronization time must be equal or shorter
+           than the minimum delay of all existing connections.
+           Existing connections are considered those with nonzero weights.
+        """
+        # The synchronization time should be at least equal to integrator.dt:
+        self.synchronization_time = numpy.maximum(self.synchronization_time, self.integrator.dt)
+        # Compute the number of synchronization time steps:
+        self.synchronization_n_step = iround(self.synchronization_time / self.integrator.dt)
+        # Check if the synchronization time is smaller than the minimum delay of the connectivity:
+        existing_connections = self.connectivity.weights != 0
+        if numpy.any(existing_connections):
             min_idelay = self.connectivity.idelays[existing_connections].min()
             if self.synchronization_n_step > min_idelay:
                 raise ValueError('The synchronization time %g is longer than '

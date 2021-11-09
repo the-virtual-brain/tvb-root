@@ -1,16 +1,16 @@
 <div id="s-pick">
-    <script type="text/javascript" src="/static/jquery/jquery.mousewheel.js"></script>
-    <script type="text/javascript" src="/static/js/sylvester.js"></script>
-    <script type="text/javascript" src="/static/js/glUtils.js"></script>
-    <script type="text/javascript" src="/static/js/zoom.js"></script>
-    <script type="text/javascript" src="/static_view/commons/scripts/brainLegend.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static_view/commons/shading/shading.js"></script>
-    <script type="text/javascript" src="/static/js/webGL_ShaderAndMatrixes.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static/js/webGL_Mouse.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static/js/webGL_Pick.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static/js/webGL_Connectivity.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static_view/commons/scripts/visualizers_commons.js?{{ currentVersionJS }}"></script>
-    <script type="text/javascript" src="/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/jquery/jquery.mousewheel.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/sylvester.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/glUtils.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/zoom.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/scripts/brainLegend.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/shading/shading.js"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/webGL_ShaderAndMatrixes.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/webGL_Mouse.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/webGL_Pick.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/js/webGL_Connectivity.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static_view/commons/scripts/visualizers_commons.js?{{ currentVersionJS }}"></script>
+    <script type="text/javascript" src="{{ deploy_context | safe }}/static/coloring/colorSchemeComponent.js?{{ currentVersionJS }}"></script>
 
     {% include 'visualizers/commons/fragment_shader.html' %}
     {% include 'visualizers/commons/surface_pick_vertex_shader.html' %}

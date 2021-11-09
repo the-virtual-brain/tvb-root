@@ -85,8 +85,7 @@ class TestEncryptionDecryption(TransactionalTestCase):
         connectivity_model = ZIPConnectivityImporterModel()
 
         # Generate password
-        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
-        password = EncryptionHandler.generate_random_password(pass_size)
+        password = EncryptionHandler.generate_random_password()
 
         # Encrypt files using an AES symmetric key
         encrypted_file_path = import_export_encryption_handler.get_path_to_encrypt(path_to_file)

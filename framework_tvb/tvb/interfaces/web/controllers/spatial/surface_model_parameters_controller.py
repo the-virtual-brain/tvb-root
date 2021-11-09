@@ -71,7 +71,10 @@ class SurfaceModelParametersForm(ABCAdapterForm):
     def __init__(self, model_params):
         super(SurfaceModelParametersForm, self).__init__()
 
-        self.model_param = DynamicSelectField(Str(label='Model parameter'), choices=model_params, name='model_param')
+        model_labels = [param.name for param in model_params]
+        model_mathjax_representations = [param.label for param in model_params]
+        self.model_param = DynamicSelectField(Str(label='Model parameter'), choices=model_labels, name='model_param',
+                                              ui_values=model_mathjax_representations)
         self.equation = SelectField(EnumAttr(label='Equation', default=self.default_equation),
                                     name='equation',
                                     subform=get_form_for_equation(self.default_equation.value))
@@ -126,6 +129,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
     def __init__(self):
         super(SurfaceModelParametersController, self).__init__()
         self.simulator_context = SimulatorContext()
+        self.model_params_list = None
 
     def get_data_from_burst_configuration(self):
         """
@@ -144,14 +148,14 @@ class SurfaceModelParametersController(SpatioTemporalController):
         except Exception:
             self.logger.exception("Some of the provided parameters have an invalid value.")
             common.set_error_message("Some of the provided parameters have an invalid value.")
-            raise cherrypy.HTTPRedirect("/burst/")
+            self.redirect("/burst/")
 
         cortex = des.conf.surface
         return model, cortex
 
     def _prepare_model_params_list(self, model):
         model_form = get_model_to_form_dict().get(type(model))
-        model_params = model_form.get_params_configurable_in_phase_plane()
+        model_params = model_form().get_params_configurable_in_phase_plane()
         if len(model_params) == 0:
             self.logger.warning("The list with configurable parameters for the current model is empty!")
 
@@ -182,7 +186,8 @@ class SurfaceModelParametersController(SpatioTemporalController):
         template_specification.update({'adapter_form': self.render_adapter_form(config_form)})
 
         parameters_equation_plot_form = EquationPlotForm()
-        template_specification.update({'parametersEquationPlotForm': self.render_adapter_form(parameters_equation_plot_form)})
+        template_specification.update({'parametersEquationPlotForm': self.render_adapter_form(
+            parameters_equation_plot_form)})
         return template_specification
 
     @expose_page
@@ -197,7 +202,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         self.model_params_list = self._prepare_model_params_list(model)
         context_model_parameters = SurfaceContextModelParameters(surface_index, model,
                                                                  SurfaceModelParametersForm.default_equation,
-                                                                 self.model_params_list[0])
+                                                                 self.model_params_list[0].name)
         common.add2session(KEY_CONTEXT_MPS, context_model_parameters)
 
         template_specification = dict(title="Spatio temporal - Model parameters")
@@ -211,7 +216,7 @@ class SurfaceModelParametersController(SpatioTemporalController):
         }
         template_specification.update(self._prepare_reload(context_model_parameters))
         template_specification.update(
-            submit_parameters_url='/spatial/modelparameters/surface/submit_model_parameters',
+            submit_parameters_url=self.build_path('/spatial/modelparameters/surface/submit_model_parameters'),
             mainContent='spatial/model_param_surface_main',
             submitSurfaceParametersBtn=True
         )
@@ -307,17 +312,17 @@ class SurfaceModelParametersController(SpatioTemporalController):
             context_model_parameters = common.get_from_session(KEY_CONTEXT_MPS)
             simulator = self.simulator_context.simulator
 
-            for param_name in self.model_params_list:
-                param_data = context_model_parameters.get_data_for_model_param(param_name)
+            for param in list(self.model_params_list):
+                param_data = context_model_parameters.get_data_for_model_param(param.name)
                 if param_data is None:
                     continue
-                setattr(simulator.model, param_name, param_data)
+                setattr(simulator.model, param.name, param_data)
             ### Update in session the last loaded URL for burst-page.
             self.simulator_context.add_last_loaded_form_url_to_session(SimulatorWizzardURLs.SET_INTEGRATOR_URL)
 
         ### Clean from session drawing context
         common.remove_from_session(KEY_CONTEXT_MPS)
-        raise cherrypy.HTTPRedirect("/burst/")
+        self.redirect("/burst/")
 
     def fill_default_attributes(self, template_dictionary):
         """

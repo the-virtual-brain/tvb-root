@@ -145,13 +145,13 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""leak conductance [nS]""")
 
     E_L_e = NArray(
-        label=":math:`E_{L}`",
+        label=":math:`E_{Le}`",
         default=numpy.array([-65.0]),
         domain=Range(lo=-90.0, hi=-60.0, step=0.1),  # resting potential, usually between -85mV and -65mV
         doc="""leak reversal potential for excitatory [mV]""")
 
     E_L_i = NArray(
-        label=":math:`E_{L}`",
+        label=":math:`E_{Li}`",
         default=numpy.array([-65.0]),
         domain=Range(lo=-90.0, hi=-60.0, step=0.1),  # resting potential, usually between -85mV and -65mV
         doc="""leak reversal potential for inhibitory [mV]""")
@@ -188,13 +188,13 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""Inhibitory adaptation conductance [nS]""")
 
     tau_w_e = NArray(
-        label=":math:`tau_we`",
+        label=":math:`tau_{we}`",
         default=numpy.array([500.0]),
         domain=Range(lo=1.0, hi=1000.0, step=1.0),
         doc="""Adaptation time constant of excitatory neurons [ms]""")
 
     tau_w_i = NArray(
-        label=":math:`tau_wi`",
+        label=":math:`tau_{wi}`",
         default=numpy.array([1.0]),
         domain=Range(lo=1.0, hi=1000.0, step=1.0),
         doc="""Adaptation time constant of inhibitory neurons [ms]""")
@@ -224,13 +224,13 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""inhibitory quantal conductance [nS]""")
 
     tau_e = NArray(
-        label=":math:`\tau_e`",
+        label=r":math:`\tau_e`",
         default=numpy.array([5.0]),
         domain=Range(lo=1.0, hi=10.0, step=1.0),
         doc="""excitatory decay [ms]""")
 
     tau_i = NArray(
-        label=":math:`\tau_i`",
+        label=r":math:`\tau_i`",
         default=numpy.array([5.0]),
         domain=Range(lo=0.5, hi=10.0, step=0.01),
         doc="""inhibitory decay [ms]""")
@@ -243,7 +243,7 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""cell number""")
 
     p_connect = NArray(
-        label=":math:`\epsilon`",
+        label=r":math:`\epsilon`",
         default=numpy.array([0.05]),
         domain=Range(lo=0.001, hi=0.2, step=0.001),  # valid only for relatively sparse connectivities
         doc="""connectivity probability""")
@@ -292,25 +292,25 @@ class ZerlautAdaptationFirstOrder(Model):
         doc="""Polynome of inhibitory phenomenological threshold (order 9)""")
 
     external_input_ex_ex = NArray(
-        label=":math:`\nu_e^{drive}`",
+        label=r":math:`\nu_e^{drive}`",
         default=numpy.array([0.000]),
         domain=Range(lo=0.00, hi=0.1, step=0.001),
         doc="""external drive""")
 
     external_input_ex_in = NArray(
-        label=":math:`\nu_e^{drive}`",
+        label=r":math:`\nu_e^{drive}`",
         default=numpy.array([0.000]),
         domain=Range(lo=0.00, hi=0.1, step=0.001),
         doc="""external drive""")
 
     external_input_in_ex = NArray(
-        label=":math:`\nu_e^{drive}`",
+        label=r":math:`\nu_e^{drive}`",
         default=numpy.array([0.000]),
         domain=Range(lo=0.00, hi=0.1, step=0.001),
         doc="""external drive""")
 
     external_input_in_in = NArray(
-        label=":math:`\nu_e^{drive}`",
+        label=r":math:`\nu_e^{drive}`",
         default=numpy.array([0.000]),
         domain=Range(lo=0.00, hi=0.1, step=0.001),
         doc="""external drive""")

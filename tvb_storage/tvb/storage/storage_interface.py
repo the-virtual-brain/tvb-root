@@ -41,7 +41,7 @@ from datetime import datetime
 
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.storage.h5.encryption.data_encryption_handler import DataEncryptionHandler, FoldersQueueConsumer, \
+from tvb.storage.h5.encryption.data_encryption_handler import FoldersQueueConsumer, \
     encryption_handler
 from tvb.storage.h5.encryption.encryption_handler import EncryptionHandler
 from tvb.storage.h5.encryption.import_export_encryption_handler import ImportExportEncryptionHandler
@@ -205,8 +205,7 @@ class StorageInterface:
         public_key_file_path = os.path.join(temp_folder, public_key_file_name)
 
         # Generate a random password for the files
-        pass_size = TvbProfile.current.hpc.CRYPT_PASS_SIZE
-        password = EncryptionHandler.generate_random_password(pass_size)
+        password = EncryptionHandler.generate_random_password()
 
         return public_key_file_path, password
 
@@ -230,9 +229,8 @@ class StorageInterface:
         self.data_encryption_handler.dec_running_op_count(folder)
         return self.data_encryption_handler.check_and_delete(folder)
 
-    @staticmethod
-    def sync_folders(folder):
-        DataEncryptionHandler.sync_folders(folder)
+    def sync_folders(self, folder):
+        self.data_encryption_handler.sync_folders(folder)
 
     def set_project_active(self, project, linked_dt=None):
         self.data_encryption_handler.set_project_active(project, linked_dt)
@@ -246,11 +244,14 @@ class StorageInterface:
 
     @staticmethod
     def encryption_enabled():
-        return DataEncryptionHandler.encryption_enabled()
+        return encryption_handler.encryption_enabled()
 
     @staticmethod
-    def startup_cleanup():
-        return DataEncryptionHandler.startup_cleanup()
+    def app_encryption_handler():
+        return encryption_handler.app_encryption_handler()
+
+    def startup_cleanup(self):
+        return self.data_encryption_handler.startup_cleanup()
 
     # Folders Queue Consumer methods start here #
 
@@ -296,9 +297,9 @@ class StorageInterface:
             raise RenameWhileSyncEncryptingException(
                 "A project can not be renamed while sync encryption operations are running")
         self.files_helper.rename_project_structure(current_proj_name, new_name)
-        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
+        encrypted_path = self.data_encryption_handler.compute_encrypted_folder_path(project_folder)
         if os.path.exists(encrypted_path):
-            new_encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(
+            new_encrypted_path = self.data_encryption_handler.compute_encrypted_folder_path(
                 self.get_project_folder(new_name))
             os.rename(encrypted_path, new_encrypted_path)
 
@@ -313,8 +314,8 @@ class StorageInterface:
             self.logger.exception("A problem occurred while removing folder.")
             raise FileStructureException("Permission denied. Make sure you have write access on TVB folder!")
 
-        encrypted_path = DataEncryptionHandler.compute_encrypted_folder_path(project_folder)
-        FilesHelper.remove_files([encrypted_path, DataEncryptionHandler.project_key_path(project.id)], True)
+        encrypted_path = self.data_encryption_handler.compute_encrypted_folder_path(project_folder)
+        FilesHelper.remove_files([encrypted_path, self.data_encryption_handler.project_key_path(project.id)], True)
 
     def move_datatype_with_sync(self, to_project, to_project_path, new_op_id, path_list):
         self.set_project_active(to_project)
@@ -492,3 +493,19 @@ class StorageInterface:
         self.write_zip_folder(dest_path, export_folder)
 
         return dest_path
+
+    def export_datatype_from_rest_server(self, dt, data, download_file_name, public_key_path):
+        password = EncryptionHandler.generate_random_password()
+        dest_path = self.export_datatypes([dt], data, download_file_name, public_key_path, password)
+
+        return dest_path
+
+    def import_datatype_to_rest_client(self, file_path, temp_folder, private_key_path):
+        import_export_encryption_handler = self.get_import_export_encryption_handler()
+        result = self.unpack_zip(file_path, temp_folder)
+        encrypted_password_path = import_export_encryption_handler.extract_encrypted_password_from_list(result)
+
+        decrypted_file_path = import_export_encryption_handler.decrypt_content(encrypted_password_path,
+                                                                               result, private_key_path)[0]
+        os.remove(file_path)
+        return decrypted_file_path
