@@ -28,14 +28,23 @@
 #
 #
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
+from tvb.core.neotraits.forms import TraitUploadField, LabelField
 from tvb.core.neotraits.view_model import ViewModel
+from tvb.core.neotraits.view_model import Str
 
 
 class IPPipelineCreatorModel(ViewModel):
-    pass
+    mri_data = Str(
+        label='Select MRI data for upload'
+    )
 
 
 class IPPipelineCreatorForm(ABCAdapterForm):
+
+    def __init__(self):
+        super(IPPipelineCreatorForm, self).__init__()
+
+        self.mri_data = TraitUploadField(IPPipelineCreatorModel.mri_data, '.zip', 'mri_data')
 
     @staticmethod
     def get_required_datatype():
