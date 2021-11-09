@@ -38,7 +38,6 @@ This is the main UI entry point.
 """
 
 import os
-
 import cherrypy
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -390,7 +389,7 @@ class BaseController(object):
             project.operations_pending = pending
             common.add2session(common.KEY_PROJECT, project)
 
-    @using_template('form_fields/form')
+    @using_template('form_fields/form_field')
     def render_adapter_form(self, adapter_form, is_callout=False):
         show_online_help = common.get_logged_user().is_online_help_active()
         return {'adapter_form': adapter_form, 'showOnlineHelp': show_online_help, 'isCallout': is_callout}
