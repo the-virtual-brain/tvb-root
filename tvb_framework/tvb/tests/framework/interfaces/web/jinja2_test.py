@@ -97,7 +97,7 @@ class DummyTraitAdapterForm(Jinja2Test):
     Test HTML generation for a traited form.
     """
 
-    @using_template('form_fields/form')
+    @using_template('form_fields/form_field')
     def prepare_adapter_for_rendering(self):
         adapter = TraitAdapter()
         datatype = DummyTrait()
