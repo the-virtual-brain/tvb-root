@@ -30,7 +30,7 @@ import os
 import shutil
 import setuptools
 
-CONTRIB_VERSION = "2.4.1"
+CONTRIB_VERSION = "2.5"
 CONTRIB_DEPENDENCIES = ["tvb-library", "xarray", "scikit-learn"]
 TEAM = "Stuart Knock, Dionysios Perdikis, Paula Sanz Leon, Bogdan Valean, Marmaduke Woodman"
 
