@@ -64,18 +64,15 @@ class HPCPipelineClient(HPCClient):
         return []
 
     @staticmethod
-    def _configure_job(operation_id, available_space):
+    def _configure_job(operation_id):
         # type: (int, int) -> (dict, str)
         bash_entrypoint = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY],
                                        HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
-        inputs_in_container = os.path.join(
-            HPCClient.CONTAINER_INPUT_FOLDER,
-            StorageInterface.get_encryption_handler(operation_id).current_enc_dirname)
 
         # Build job configuration JSON
+        # TODO: correct parameters for pipeline to be added (mode, args for containers etc)
         my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
-                  HPCSettings.UNICORE_ARGS_KEY: [available_space, inputs_in_container,
-                                                 HPCClient.HOME_FOLDER_MOUNT,
+                  HPCSettings.UNICORE_ARGS_KEY: [HPCClient.HOME_FOLDER_MOUNT,
                                                  operation_id],
                   HPCSettings.UNICORE_RESOURCER_KEY: {"CPUs": "1"}}
 
@@ -89,16 +86,15 @@ class HPCPipelineClient(HPCClient):
         # type: (Operation) -> Job
         LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
         job_plain_inputs = HPCPipelineClient._prepare_input(operation)
-        available_space = HPCClient.compute_available_disk_space(operation)
 
         LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
-        job_config, job_script = HPCPipelineClient._configure_job(operation.id, available_space)
+        job_config, job_script = HPCPipelineClient._configure_job(operation.id)
 
-        LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
-        # TODO: fix encryption_handler as it expects a GID, not ID
-        encryption_handler = StorageInterface.get_encryption_handler(operation.id)
+        LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
+        # TODO: encrypt inputs before stage-in!!!
+        job_encrypted_inputs = job_plain_inputs
 
-        job = HPCClient._prepare_pyunicore_job(operation, job_plain_inputs, job_script, job_config, encryption_handler)
+        job = HPCClient._prepare_pyunicore_job(operation, job_encrypted_inputs, job_script, job_config)
         return job
 
     @staticmethod
