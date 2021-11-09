@@ -144,7 +144,10 @@ class HPCSchedulerClient(HPCClient):
         LOGGER.info("Prepare encryption for operation: {}".format(operation.id))
         encryption_handler = StorageInterface.get_encryption_handler(simulator_gid)
 
-        job = HPCClient._prepare_pyunicore_job(operation, job_plain_inputs, job_script, job_config, encryption_handler)
+        LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
+        job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
+
+        job = HPCClient._prepare_pyunicore_job(operation, job_encrypted_inputs, job_script, job_config)
         return job
 
     @staticmethod

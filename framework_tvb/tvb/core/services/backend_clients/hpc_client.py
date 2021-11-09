@@ -103,8 +103,8 @@ class HPCClient(BackendClient):
     CONTAINER_INPUT_FOLDER = '/home/tvb_user/.data'
     storage_interface = StorageInterface()
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _run_hpc_job(operation_id):
         # type: (int) -> None
         """
@@ -133,10 +133,7 @@ class HPCClient(BackendClient):
         return available_space
 
     @staticmethod
-    def _prepare_pyunicore_job(operation, job_plain_inputs, job_script, job_config, encryption_handler):
-        LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
-        job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
-
+    def _prepare_pyunicore_job(operation, job_encrypted_inputs, job_script, job_config):
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
         site_client = HPCClient._build_unicore_client(os.environ[HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY],
@@ -150,6 +147,7 @@ class HPCClient(BackendClient):
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
         LOGGER.info("Job mount point: {}".format(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]))
+        return job
 
     @staticmethod
     def _build_unicore_client(auth_token, registry_url, supercomputer):
