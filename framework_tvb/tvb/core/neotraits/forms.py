@@ -525,6 +525,7 @@ class Form(object):
         for field in self.fields:
             if not field.validate():
                 valid = False
+                break
         return valid
 
     def get_errors_dict(self):

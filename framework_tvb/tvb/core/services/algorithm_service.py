@@ -38,6 +38,7 @@ Code related to launching/duplicating operations is placed here.
 import os
 from inspect import getmro
 
+from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorForm
 from tvb.basic.logger.builder import get_logger
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.adapters.abcadapter import ABCAdapterForm
@@ -168,7 +169,8 @@ class AlgorithmService(object):
     def fill_adapter_form(self, adapter_instance, post_data, project_id):
         # type: (ABCAdapter, dict, int) -> ABCAdapterForm
         form = self.prepare_adapter_form(adapter_instance=adapter_instance, project_id=project_id)
-        if isinstance(form, ABCUploaderForm):
+        # TODO: Quick-fix if we hurry but we need a better solution (maybe validation inside of TraitUploadField)
+        if isinstance(form, (ABCUploaderForm, IPPipelineCreatorForm)):
             self._prepare_upload_post_data(form, post_data, project_id)
 
         if 'fill_defaults' in post_data:
