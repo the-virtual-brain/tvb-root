@@ -371,7 +371,7 @@ function settingsPageInitialize() {
 // ---------------------------------------------------------
 
 function viewProject(projectId, formId) {
-    document.getElementById(formId).action = "/project/editone/" + projectId;
+    document.getElementById(formId).action = deploy_context + "/project/editone/" + projectId;
     document.getElementById(formId).submit();
 }
 
@@ -382,12 +382,12 @@ function selectProject(projectId, formId) {
 }
 
 function exportProject(projectId) {
-    window.location = "/project/downloadproject/?project_id=" + projectId
+    window.location = deploy_context + "/project/downloadproject/?project_id=" + projectId
 }
 
 function removeProject(projectId, formId) {
     const form = document.getElementById(formId);
-    form.action = "/project/editone/" + projectId + "/?delete=Delete";
+    form.action = deploy_context + "/project/editone/" + projectId + "/?delete=Delete";
     form.submit();
 }
 
@@ -509,7 +509,7 @@ function overlayRemoveEntity(projectId, dataGid, backPage) {
  * Used from Operation-Overlay and View All Operations button/each row.
  */
 function reloadOperation(operationId, formId) {
-    document.getElementById(formId).action = "/flow/reloadoperation/" + operationId;
+    document.getElementById(formId).action = deploy_context + "/flow/reloadoperation/" + operationId;
     document.getElementById(formId).submit();
 }
 
@@ -519,7 +519,7 @@ function reloadOperation(operationId, formId) {
  * burst page with that given burst as the selected one.
  */
 function reloadBurstOperation(operationId, isGroup, formId) {
-    document.getElementById(formId).action = "/flow/reload_burst_operation/" + operationId + '/' + isGroup;
+    document.getElementById(formId).action = deploy_context + "/flow/reload_burst_operation/" + operationId + '/' + isGroup;
     document.getElementById(formId).submit();
 }
 
@@ -904,7 +904,7 @@ function zoomInFigure(figure_id) {
 
 
 function displayFiguresForSession(selected_session) {
-    const actionUrl = "/project/figure/displayresultfigures/" + selected_session;
+    const actionUrl = deploy_context + "/project/figure/displayresultfigures/" + selected_session;
     const myForm = document.createElement("form");
     myForm.method = "POST";
     myForm.action = actionUrl;
