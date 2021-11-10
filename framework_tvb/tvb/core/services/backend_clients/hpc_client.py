@@ -146,7 +146,9 @@ class HPCClient(BackendClient):
         LOGGER.info("Job url {} for operation: {}".format(job.resource_url, operation.id))
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
-        LOGGER.info("Job mount point: {}".format(job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]))
+
+        mount_point = job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
+        LOGGER.info("Job mount point: {}".format(mount_point))
         return job
 
     @staticmethod
