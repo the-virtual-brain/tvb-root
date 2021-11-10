@@ -235,14 +235,14 @@ class List(Attr):
     Choices and type are reinterpreted as applying not to the list but to the elements of it
     """
 
-    def __init__(self, of=object, default=(), doc='', label='', final=False, choices=None):
+    def __init__(self, of=object, default=(), doc='', label='', final=False, choices=None, required=True):
         # type: (type, tuple, str, str, bool, typing.Optional[tuple]) -> None
         super(List, self).__init__(
             field_type=collections.abc.Sequence,
             default=default,
             doc=doc,
             label=label,
-            required=True,
+            required=required,
             final=final,
             choices=None,
         )

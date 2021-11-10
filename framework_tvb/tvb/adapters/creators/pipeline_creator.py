@@ -27,15 +27,77 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.neotraits.forms import TraitUploadField, LabelField
-from tvb.core.neotraits.view_model import ViewModel
-from tvb.core.neotraits.view_model import Str
+from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, IntField
+from tvb.core.neotraits.view_model import ViewModel, Str
+
+
+class OutputVerbosityLevelsEnum(TVBEnum):
+    LEVEL_1 = 1
+    LEVEL_2 = 2
+    LEVEL_3 = 3
+    LEVEL_4 = 4
+
+
+class ParcellationOptionsEnum(TVBEnum):
+    AAL_PARC = "aal"
+    AAL2_PARC = "aal2"
+    BRAINNETOME_PARC = "brainnetome246fs"
+    CRADDOCK200_PARC = "craddock200"
+    CRADDOCK400_PARC = "craddock400"
+    DESIKAN_PARC = "desikan"
+    DESTRIEUX_PARC = "destrieux"
+    HCPMMP1_PARC = "hcpmmp1"
+    PERRY512_PARC = "perry512"
+    YEO7fs_PARC = "yeo7fs"
+    YEO7mni_PARC = "yeo7mni"
+    YEO17fs_PARC = "yeo17fs"
+    YEO17mni_PARC = "yeo17mni"
+
+
+class AnalysisLevelsEnum(TVBEnum):
+    PREPROC_LEVEL = "preproc"
+    PARTICIPANT_LEVEL = "participant"
+    GROUP_LEVEL = "group"
 
 
 class IPPipelineCreatorModel(ViewModel):
     mri_data = Str(
         label='Select MRI data for upload'
+    )
+
+    output_verbosity = EnumAttr(
+        label="Select Output Verbosity",
+        default=OutputVerbosityLevelsEnum.LEVEL_1,
+        doc="""Select the verbosity of script output."""
+    )
+
+    analysis_level = EnumAttr(
+        label="Select Analysis Level",
+        default=AnalysisLevelsEnum.PREPROC_LEVEL,
+        doc="""Select the analysis level that the pipeline will be launched on."""
+    )
+
+    parcellation = EnumAttr(
+        label="Select Parcellation",
+        default=ParcellationOptionsEnum.AAL_PARC,
+        doc="""The choice of connectome parcellation scheme (compulsory for participant-level analysis)"""
+    )
+
+    stream_lines = Int(
+        label="Number of stream lines",
+        required=False,
+        default=1,
+        doc="""The number of streamlines to generate for each subject (will be determined heuristically
+         if not explicitly set)."""
+    )
+
+    step_1_parameters = List(
+        of=str,
+        label='Parameters',
+        choices=('6 DoF', 'MNI normalization'),
+        required=False
     )
 
 
@@ -44,7 +106,26 @@ class IPPipelineCreatorForm(ABCAdapterForm):
     def __init__(self):
         super(IPPipelineCreatorForm, self).__init__()
 
+        self.pipeline_job = SimpleLabelField("Pipeline Job1")
         self.mri_data = TraitUploadField(IPPipelineCreatorModel.mri_data, '.zip', 'mri_data')
+        self.output_verbosity = SelectField(IPPipelineCreatorModel.output_verbosity, name='output_verbosity')
+        self.pipeline_steps_label = SimpleLabelField("Configure pipeline steps")
+
+        self.step1_choice = MultiSelectField(List(of=str, label="Step 1", choices=('Run step 1: fmriprep',),
+                                                  default=(), required=False))
+        self.parameters = MultiSelectField(IPPipelineCreatorModel.step_1_parameters)
+
+        self.step2_choice = MultiSelectField(List(of=str, label="Step 2", choices=('Run step 2: mrtrix3',),
+                                                  default=(), required=False))
+        self.analysis_level = SelectField(IPPipelineCreatorModel.analysis_level, name='analysis_level')
+        self.parcellation = SelectField(IPPipelineCreatorModel.parcellation, name='parcellation')
+        self.stream_lines = IntField(IPPipelineCreatorModel.stream_lines)
+
+        self.step3_choice = MultiSelectField(List(of=str, label="Step 3",
+                                                  choices=('Run step 3: freesurfer',), default=(), required=False))
+        self.step4_choice = MultiSelectField(List(of=str, label="Step 4",
+                                                  choices=('Run step 4: tvb-pipeline-converter',),
+                                                  default=(), required=False))
 
     @staticmethod
     def get_required_datatype():

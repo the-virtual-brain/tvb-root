@@ -113,7 +113,7 @@ class EquationForm(Form):
             if field.name in form_data:
                 field.fill_from_post(form_data)
 
-    def fill_trait_partially(self, datatype, fields = None):
+    def fill_trait_partially(self, datatype, fields=None):
         if fields is None:
             fields = []
 
