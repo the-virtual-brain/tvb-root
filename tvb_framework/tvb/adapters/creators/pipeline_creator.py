@@ -27,10 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
+import os
+
 from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, Str
+from tvb.storage.storage_interface import StorageInterface
 
 
 class OutputVerbosityLevelsEnum(TVBEnum):
@@ -145,7 +149,6 @@ class IPPipelineCreatorForm(ABCAdapterForm):
 
 
 class IPPipelineCreator(ABCAdapter):
-
     _ui_name = "Launch Image Preprocessing Pipeline"
     _ui_description = "Launch Image Preprocessing Pipeline from tvb-web when it is deployed to EBRAINS"
 
@@ -163,4 +166,6 @@ class IPPipelineCreator(ABCAdapter):
 
     def launch(self, view_model):
         # type: (IPPipelineCreatorModel) -> []
-        pass
+        storage_interface = StorageInterface()
+        pipeline_folder = storage_interface.get_pipeline_dataset_folder()
+        storage_interface.unpack_zip(view_model.mri_data, pipeline_folder)
