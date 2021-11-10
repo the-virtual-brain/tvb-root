@@ -53,6 +53,7 @@ class HPCPipelineClient(HPCClient):
     """
     HPC backend client to run the image processing pipeline.
     """
+    SCRIPT_FOLDER_NAME = "ebrains"
 
     @staticmethod
     def _prepare_input(operation):
@@ -61,12 +62,13 @@ class HPCPipelineClient(HPCClient):
         :param operation:
         :return:
         """
+        # TODO: return correct input data here
         return []
 
     @staticmethod
     def _configure_job(operation_id):
         # type: (int, int) -> (dict, str)
-        bash_entrypoint = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY],
+        bash_entrypoint = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY], HPCPipelineClient.SCRIPT_FOLDER_NAME,
                                        HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
 
         # Build job configuration JSON
