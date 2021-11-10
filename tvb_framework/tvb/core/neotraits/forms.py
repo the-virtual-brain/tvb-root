@@ -485,6 +485,15 @@ class LabelField(TraitField):
             self.label_message = label_message
 
 
+class SimpleLabelField(Field):
+    template = 'form_fields/label_field.html'
+
+    def __init__(self, label_message):
+        super(SimpleLabelField, self).__init__(label_message, label=label_message)
+        self.label_message = label_message
+        self.only_label = True
+
+
 class FormField(Field):
     template = 'form_fields/form_field.html'
 
