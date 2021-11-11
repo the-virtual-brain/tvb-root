@@ -41,6 +41,7 @@ from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELE
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_client import HPCJobStatus
+from tvb.core.services.backend_clients.hpc_pipeline_client import HPCPipelineClient
 from tvb.core.services.backend_clients.hpc_scheduler_client import HPCSchedulerClient
 from tvb.core.services.exceptions import OperationException
 from tvb.storage.storage_interface import StorageInterface
@@ -101,6 +102,36 @@ class HPCOperationService(object):
             if storage_interface.encryption_enabled():
                 storage_interface.sync_folders(folder)
                 storage_interface.set_project_inactive(operation.project)
+
+    @staticmethod
+    def _pipeline_operation_finished(self, operation):
+        op_ident = dao.get_operation_process_for_operation(operation.id)
+        # TODO: Handle login
+        job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
+                  op_ident.job_id)
+
+        operation = dao.get_operation_by_id(operation.id)
+        folder = HPCSchedulerClient.storage_interface.get_project_folder(operation.project.name)
+        # storage_interface = StorageInterface()
+        # if storage_interface.encryption_enabled():
+        #     storage_interface.inc_project_usage_count(folder)
+        #     storage_interface.sync_folders(folder)
+
+        try:
+            pipeline_results_zip = HPCPipelineClient.stage_out_to_operation_folder(job.working_dir, operation)
+
+            operation.mark_complete(STATUS_FINISHED)
+            dao.store_entity(operation)
+            HPCPipelineClient().update_db_with_results(operation, pipeline_results_zip)
+
+        except OperationException as exception:
+            HPCOperationService.LOGGER.error(exception)
+            HPCOperationService._operation_error(operation)
+
+        # finally:
+        #     if storage_interface.encryption_enabled():
+        #         storage_interface.sync_folders(folder)
+        #         storage_interface.set_project_inactive(operation.project)
 
     @staticmethod
     def handle_hpc_status_changed(operation, simulator_gid, new_status):

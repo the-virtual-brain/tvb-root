@@ -36,20 +36,20 @@ Entities for Generic DataTypes, Links and Groups of DataTypes are defined here.
 .. moduleauthor:: Yann Gordon <yann@tvb.invalid>
 """
 import json
-import numpy
 import typing
-from datetime import datetime
 from copy import copy
-from sqlalchemy.orm import relationship, backref
+from datetime import datetime
+
+import numpy
 from sqlalchemy import Boolean, Integer, String, Float, Column, ForeignKey
+from sqlalchemy.orm import relationship, backref
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.neotraits.api import HasTraits
 from tvb.core.entities.generic_attributes import GenericAttributes
-from tvb.core.entities.model.model_project import Project
-from tvb.core.entities.model.model_operation import Operation, OperationGroup
 from tvb.core.entities.model.model_burst import BurstConfiguration
+from tvb.core.entities.model.model_operation import Operation, OperationGroup
+from tvb.core.entities.model.model_project import Project
 from tvb.core.neotraits.db import HasTraitsIndex, Base, from_ndarray
-
 
 LOG = get_logger(__name__)
 
@@ -153,7 +153,6 @@ class DataType(HasTraitsIndex):
         LOG.warning("fill_from_h5 for: {}".format(type(self)))
         self.gid = h5_file.gid.load().hex
 
-
     def after_store(self):
         """
         Put here code (as a trigger after storage) to be executed by
@@ -244,6 +243,11 @@ class DataType(HasTraitsIndex):
         self.create_date = attrs.create_date or datetime.now()
 
 
+class ZipDatatype(DataType):
+    id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
+    zip_path = Column(String)
+
+
 class DataTypeMatrix(DataType):
     id = Column(Integer, ForeignKey(DataType.id), primary_key=True)
     subtype = Column(String, nullable=True)
@@ -331,15 +335,12 @@ class Links(Base):
     referenced_project = relationship(Project, backref=backref('LINKS', order_by=id, cascade="delete, all"))
     referenced_datatype = relationship(DataType, backref=backref('LINKS', order_by=id, cascade="delete, all"))
 
-
     def __init__(self, from_datatype, to_project):
         self.fk_from_datatype = from_datatype
         self.fk_to_project = to_project
 
-
     def __repr__(self):
         return '<Link(%d, %d)>' % (self.fk_from_datatype, self.fk_to_project)
-
 
 
 class MeasurePointsSelection(Base):
@@ -360,13 +361,11 @@ class MeasurePointsSelection(Base):
     # Current Project the selection was defined in:
     fk_in_project = Column(Integer, ForeignKey('PROJECTS.id', ondelete="CASCADE"))
 
-
     def __init__(self, ui_name, selected_nodes, datatype_gid, project_id):
         self.ui_name = ui_name
         self.selected_nodes = selected_nodes
         self.fk_in_project = project_id
         self.fk_datatype_gid = datatype_gid
-
 
     def __repr__(self):
         return '<Selection(%s, %s, for %s)>' % (self.ui_name, self.selected_nodes, self.fk_datatype_gid)
@@ -394,7 +393,6 @@ class StoredPSEFilter(Base):
         self.fk_datatype_gid = datatype_gid
         self.threshold_value = threshold_value
         self.applied_on = applied_on
-
 
     def __repr__(self):
         return '<StoredPSEFilter(%s, for %s, %s, %s)>' % (self.ui_name, self.fk_datatype_gid,

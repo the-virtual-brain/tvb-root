@@ -29,10 +29,12 @@
 #
 
 import os
+import shutil
 
 from requests import HTTPError
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
+from tvb.core.entities.model.model_datatype import ZipDatatype
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_client import HPCClient, HPCOperationThread
@@ -133,3 +135,47 @@ class HPCPipelineClient(HPCClient):
         Stop the thread for a given operation id
         """
         return True
+
+    @staticmethod
+    def _stage_out_results(working_dir):
+        # type: (Storage) -> list
+        output_subfolder = HPCClient.CSCS_DATA_FOLDER  # + '/' + HPCClient.OUTPUT_FOLDER
+        output_list = HPCClient._listdir(working_dir, output_subfolder)
+        LOGGER.info("Output list {}".format(output_list))
+        storage_interface = StorageInterface()
+        # TODO: Choose a local folder to copy back the encrypted results
+        encrypted_dir = os.path.join("enc_dir",
+                                     HPCClient.OUTPUT_FOLDER)
+        encrypted_files = HPCClient._stage_out_outputs(encrypted_dir, output_list)
+
+        # Clean data uploaded on CSCS
+        LOGGER.info("Clean uploaded files and results")
+        # working_dir.rmdir(HPCClient.CSCS_DATA_FOLDER)
+
+        LOGGER.info(encrypted_files)
+        return encrypted_files
+
+    @staticmethod
+    def stage_out_to_operation_folder(working_dir, operation):
+        # type: (Storage, Operation) -> (list, Operation, str)
+        encrypted_files = HPCPipelineClient._stage_out_results(working_dir)
+
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        operation_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
+
+        # TODO: decrypt pipeline results under the operation dir?
+        assert len(encrypted_files) == 1
+        result_path = shutil.copy(encrypted_files[0], operation_dir)
+
+        # TODO: unzip and try to import tvb-ready data
+        # tvb_data_dir = os.path.join(results_dir, 'tvb-ready')
+
+        return result_path
+
+    @staticmethod
+    def update_db_with_results(operation, results_zip):
+        # type: (Operation, str) -> (str, int)
+        index = ZipDatatype()
+        index.fk_from_operation = operation.id
+        index.zip_path = results_zip
+        dao.store_entity(index)
