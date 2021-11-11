@@ -46,7 +46,7 @@ from tvb.core.entities.file.simulator.datatype_measure_h5 import DatatypeMeasure
 from tvb.core.entities.model.model_operation import Operation, STATUS_CANCELED, STATUS_ERROR
 from tvb.core.entities.storage import dao, OperationDAO
 from tvb.core.neocom import h5
-from tvb.core.services.backend_clients.hpc_client import HPCClient, get_op_thread
+from tvb.core.services.backend_clients.hpc_client import HPCClient, get_op_thread, HPCOperationThread
 from tvb.core.services.burst_service import BurstService
 from tvb.storage.storage_interface import StorageInterface
 
@@ -229,6 +229,17 @@ class HPCSchedulerClient(HPCClient):
                                     exception.response.text if isinstance(exception, HTTPError) else repr(exception))
             dao.store_entity(operation)
         storage_interface.check_and_delete(project_folder)
+
+    @staticmethod
+    def execute(operation_id, user_name_label, adapter_instance):
+        # type: (int, None, None) -> None
+        """
+        Submit an operation asynchronously on HPC
+        """
+        thread = HPCOperationThread(operation_id, target=HPCSchedulerClient._run_hpc_job,
+                                    kwargs={'operation_identifier': operation_id})
+        thread.start()
+        HPC_THREADS.append(thread)
 
     @staticmethod
     def _stage_out_outputs(encrypted_dir_path, output_list):
