@@ -35,6 +35,7 @@ from requests import HTTPError
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_datatype import ZipDatatype
+from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_client import HPCClient, HPCOperationThread
@@ -56,6 +57,9 @@ class HPCPipelineClient(HPCClient):
     HPC backend client to run the image processing pipeline.
     """
     SCRIPT_FOLDER_NAME = "ebrains"
+    PUBLIC_KEY_FILENAME = "public_key_pipeline_keys.pem"
+    INPUT_FILES_CSCS_FOLDER = 'input'
+    RESULTS_KEYS_FOLDER = "results_keys"
 
     @staticmethod
     def _prepare_input(operation):
@@ -88,18 +92,62 @@ class HPCPipelineClient(HPCClient):
     @staticmethod
     def _launch_job_with_pyunicore(operation):
         # type: (Operation) -> Job
-        LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
-        job_plain_inputs = HPCPipelineClient._prepare_input(operation)
-
+        # Step1 prepare main job
         LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
         job_config, job_script = HPCPipelineClient._configure_job(operation.id)
+        job = HPCClient._prepare_pyunicore_job(operation, [], job_script, job_config)
+        job_working_dir = job.working_dir
 
+        # Step2 generate PRIVATE-PUBLIC Keys pair on HPC
+        mount_point = job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
+        HPCPipelineClient._generate_public_private_keys_hpc(mount_point)
+
+        # Step3 download public key from HPC in operation's folder
+        storage_path = StorageInterface().get_project_folder(operation.project.name,
+                                                             str(operation.id))
+        input_files_public_key_path = os.path.join(storage_path, HPCPipelineClient.PUBLIC_KEY_FILENAME)
+        job_working_dir.stat(os.path.join('keys', HPCPipelineClient.PUBLIC_KEY_FILENAME)).download(
+            input_files_public_key_path)
+
+        # Step4 Prepare job input files. Encrypt these files using downloaded public key
+        LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
+        job_plain_inputs = HPCPipelineClient._prepare_input(operation)
         LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
         # TODO: encrypt inputs before stage-in!!!
         job_encrypted_inputs = job_plain_inputs
 
-        job = HPCClient._prepare_pyunicore_job(operation, job_encrypted_inputs, job_script, job_config)
+        # Step5 Generate a PRIVATE-PUBLIC key pair for results encryption
+        results_public_key = HPCPipelineClient._generate_results_keys(storage_path)
+        job_encrypted_inputs.append(results_public_key)
+
+        # Step6 Upload encrypted files and the public key used for results encryption
+        for input_file in job_encrypted_inputs:
+            HPCPipelineClient._upload_file_with_pyunicore(job_working_dir, input_name=input_file,
+                                                          subfolder=HPCPipelineClient.INPUT_FILES_CSCS_FOLDER)
+
+        # Step7 Start pipeline job
+        # job.start()
         return job
+
+    @staticmethod
+    def _generate_results_keys(storage_path):
+        enc_handler = StorageInterface.get_import_export_encryption_handler()
+        results_key_folder = os.path.join(storage_path, HPCPipelineClient.RESULTS_KEYS_FOLDER)
+        StorageInterface().check_created(results_key_folder)
+        enc_handler.generate_public_private_key_pair(results_key_folder)
+        results_public_key = os.path.join(results_key_folder, enc_handler.PUBLIC_KEY_NAME)
+        return results_public_key
+
+    @staticmethod
+    def _generate_public_private_keys_hpc(mount_point):
+        site_client = HPCClient._build_unicore_client(os.environ[HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY],
+                                                      unicore_client._HBP_REGISTRY_URL,
+                                                      TvbProfile.current.hpc.HPC_COMPUTE_SITE)
+        script_path = os.path.join(mount_point, HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
+        mkdir_job = site_client.execute('mkdir {}'.format(os.path.join(mount_point, 'keys')))
+        mkdir_job.poll()
+        generate_keys_job = site_client.execute('sh {} -m 5 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        generate_keys_job.poll()
 
     @staticmethod
     def _run_hpc_job(operation_identifier):

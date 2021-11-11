@@ -155,17 +155,10 @@ class HPCClient(BackendClient):
 
         job = Job(pyunicore_client.transport, job_url)
 
-        if len(inputs) > 0:
-            working_dir = job.working_dir
-            HPCClient._upload_file_with_pyunicore(working_dir, job_script, None)
-            for input in inputs:
-                HPCClient._upload_file_with_pyunicore(working_dir, input)
-        if job_description.get('haveClientStageIn', None) == "true":
-            try:
-                job.start()
-            except:
-                pass
-
+        working_dir = job.working_dir
+        HPCClient._upload_file_with_pyunicore(working_dir, job_script, None)
+        for input_file in inputs:
+            HPCClient._upload_file_with_pyunicore(working_dir, input_file)
         return job
 
     @staticmethod

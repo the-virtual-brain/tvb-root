@@ -148,6 +148,7 @@ class HPCSchedulerClient(HPCClient):
         job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
 
         job = HPCClient._prepare_pyunicore_job(operation, job_encrypted_inputs, job_script, job_config)
+        job.start()
         return job
 
     @staticmethod
