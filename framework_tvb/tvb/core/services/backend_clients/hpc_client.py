@@ -30,6 +30,7 @@
 
 import os
 from contextlib import closing
+from enum import Enum
 from threading import Thread, Event
 
 from requests import HTTPError
@@ -38,7 +39,6 @@ from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import OperationProcessIdentifier
 from tvb.core.entities.storage import dao
-from tvb.core.neotraits.h5 import Enum
 from tvb.core.services.backend_clients.backend_client import BackendClient
 from tvb.core.services.exceptions import OperationException
 from tvb.storage.storage_interface import StorageInterface

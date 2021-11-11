@@ -37,6 +37,9 @@ import os
 from functools import partial
 
 from tvb.basic.logger.builder import get_logger
+from tvb.config import SIMULATOR_MODULE, SIMULATOR_CLASS
+from tvb.core.adapters.abcadapter import ABCAdapter
+from tvb.core.entities.load import get_class_by_name
 from tvb.core.entities.model.model_operation import STATUS_ERROR, STATUS_CANCELED, STATUS_FINISHED
 from tvb.core.entities.model.model_operation import STATUS_STARTED, STATUS_PENDING
 from tvb.core.entities.storage import dao
@@ -104,14 +107,14 @@ class HPCOperationService(object):
                 storage_interface.set_project_inactive(operation.project)
 
     @staticmethod
-    def _pipeline_operation_finished(self, operation):
+    def _pipeline_operation_finished(operation):
         op_ident = dao.get_operation_process_for_operation(operation.id)
         # TODO: Handle login
         job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
                   op_ident.job_id)
 
         operation = dao.get_operation_by_id(operation.id)
-        folder = HPCSchedulerClient.storage_interface.get_project_folder(operation.project.name)
+        # folder = HPCSchedulerClient.storage_interface.get_project_folder(operation.project.name)
         # storage_interface = StorageInterface()
         # if storage_interface.encryption_enabled():
         #     storage_interface.inc_project_usage_count(folder)
@@ -147,6 +150,17 @@ class HPCOperationService(object):
         update_func(operation)
 
     @staticmethod
+    def stop_operation(operation):
+        operation = dao.get_operation_by_id(operation.id)
+        algorithm = operation.algorithm
+        adapter_instance = ABCAdapter.build_adapter(algorithm)
+        if type(adapter_instance) is get_class_by_name("{}.{}".format(SIMULATOR_MODULE, SIMULATOR_CLASS)):
+            simulator_gid = operation.view_model_gid
+            HPCOperationService._operation_finished(operation, simulator_gid)
+        else:
+            HPCOperationService._pipeline_operation_finished(operation)
+
+    @staticmethod
     def check_operations_job():
         operations = dao.get_operations_for_hpc_job()
         if operations is None or len(operations) == 0:
@@ -169,8 +183,7 @@ class HPCOperationService(object):
                     HPCOperationService.LOGGER.info(
                         "Job for operation {} has status {}".format(operation.id, job_status))
                     if job_status == HPCJobStatus.SUCCESSFUL.value:
-                        simulator_gid = operation.view_model_gid
-                        HPCOperationService._operation_finished(operation, simulator_gid)
+                        HPCOperationService.stop_operation(operation)
                     else:
                         HPCOperationService._operation_error(operation)
             except Exception:
