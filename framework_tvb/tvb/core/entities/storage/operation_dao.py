@@ -129,11 +129,11 @@ class OperationDAO(RootDAO):
 
     def get_operations_for_hpc_job(self):
         status = [STATUS_PENDING, STATUS_STARTED]
-        algorithm_classname = "SimulatorAdapter"
+        algorithm_classnames = ["SimulatorAdapter", "IPPipelineCreator"]
         queue_full = False
         try:
             result = self.session.query(Operation).join(Algorithm) \
-                .filter(Algorithm.classname == algorithm_classname) \
+                .filter(Algorithm.classname.in_(algorithm_classnames)) \
                 .filter(Operation.status.in_(status)) \
                 .filter(Operation.queue_full == queue_full).all()
             return result
