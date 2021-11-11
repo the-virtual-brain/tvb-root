@@ -215,3 +215,19 @@ class HPCClient(BackendClient):
             if http_error.response.status_code == 404:
                 raise OperationException("Folder {} is not present on HPC storage.".format(base))
             raise http_error
+
+    @staticmethod
+    def _stage_out_outputs(encrypted_dir_path, output_list):
+        # type: (str, dict) -> list
+        if not os.path.isdir(encrypted_dir_path):
+            os.makedirs(encrypted_dir_path)
+
+        encrypted_files = list()
+        for output_filename, output_filepath in output_list.items():
+            if type(output_filepath) is not unicore_client.PathFile:
+                LOGGER.info("Object {} is not a file.")
+                continue
+            filename = os.path.join(encrypted_dir_path, os.path.basename(output_filename))
+            output_filepath.download(filename)
+            encrypted_files.append(filename)
+        return encrypted_files

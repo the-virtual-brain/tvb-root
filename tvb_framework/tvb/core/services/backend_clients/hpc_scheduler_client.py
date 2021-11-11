@@ -153,17 +153,17 @@ class HPCSchedulerClient(HPCClient):
     @staticmethod
     def _stage_out_results(working_dir, simulator_gid):
         # type: (Storage, typing.Union[uuid.UUID, str]) -> list
-        output_subfolder = HPCSchedulerClient.CSCS_DATA_FOLDER + '/' + HPCSchedulerClient.OUTPUT_FOLDER
+        output_subfolder = HPCClient.CSCS_DATA_FOLDER + '/' + HPCClient.OUTPUT_FOLDER
         output_list = HPCClient._listdir(working_dir, output_subfolder)
         LOGGER.info("Output list {}".format(output_list))
         storage_interface = StorageInterface()
         encrypted_dir = os.path.join(storage_interface.get_encryption_handler(simulator_gid).get_encrypted_dir(),
-                                     HPCSchedulerClient.OUTPUT_FOLDER)
-        encrypted_files = HPCSchedulerClient._stage_out_outputs(encrypted_dir, output_list)
+                                     HPCClient.OUTPUT_FOLDER)
+        encrypted_files = HPCClient._stage_out_outputs(encrypted_dir, output_list)
 
         # Clean data uploaded on CSCS
         LOGGER.info("Clean uploaded files and results")
-        working_dir.rmdir(HPCSchedulerClient.CSCS_DATA_FOLDER)
+        working_dir.rmdir(HPCClient.CSCS_DATA_FOLDER)
 
         LOGGER.info(encrypted_files)
         return encrypted_files
@@ -240,22 +240,6 @@ class HPCSchedulerClient(HPCClient):
                                     kwargs={'operation_identifier': operation_id})
         thread.start()
         HPC_THREADS.append(thread)
-
-    @staticmethod
-    def _stage_out_outputs(encrypted_dir_path, output_list):
-        # type: (str, dict) -> list
-        if not os.path.isdir(encrypted_dir_path):
-            os.makedirs(encrypted_dir_path)
-
-        encrypted_files = list()
-        for output_filename, output_filepath in output_list.items():
-            if type(output_filepath) is not unicore_client.PathFile:
-                LOGGER.info("Object {} is not a file.")
-                continue
-            filename = os.path.join(encrypted_dir_path, os.path.basename(output_filename))
-            output_filepath.download(filename)
-            encrypted_files.append(filename)
-        return encrypted_files
 
     @staticmethod
     def stop_operation(operation_id):
