@@ -29,7 +29,6 @@
 #
 
 import os
-from abc import abstractmethod
 from contextlib import closing
 from threading import Thread, Event
 
@@ -102,26 +101,6 @@ class HPCClient(BackendClient):
     CSCS_DATA_FOLDER = 'data'
     CONTAINER_INPUT_FOLDER = '/home/tvb_user/.data'
     storage_interface = StorageInterface()
-
-    @staticmethod
-    @abstractmethod
-    def _run_hpc_job(operation_id):
-        # type: (int) -> None
-        """
-         :param operation_id:
-         :return:
-         """
-
-    @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
-        # type: (int, None, None) -> None
-        """
-        Submit an operation asynchronously on HPC
-        """
-        thread = HPCOperationThread(operation_id, target=HPCClient._run_hpc_job,
-                                    kwargs={'operation_identifier': operation_id})
-        thread.start()
-        HPC_THREADS.append(thread)
 
     @staticmethod
     def compute_available_disk_space(operation):

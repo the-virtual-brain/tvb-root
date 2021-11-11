@@ -35,7 +35,7 @@ from tvb.basic.config.settings import HPCSettings
 from tvb.basic.logger.builder import get_logger
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
-from tvb.core.services.backend_clients.hpc_client import HPCClient
+from tvb.core.services.backend_clients.hpc_client import HPCClient, HPCOperationThread
 from tvb.storage.storage_interface import StorageInterface
 
 try:
@@ -100,9 +100,9 @@ class HPCPipelineClient(HPCClient):
         return job
 
     @staticmethod
-    def _run_hpc_job(operation_id):
+    def _run_hpc_job(operation_identifier):
         # type: (int) -> None
-        operation = dao.get_operation_by_id(operation_id)
+        operation = dao.get_operation_by_id(operation_identifier)
         project_folder = HPCClient.storage_interface.get_project_folder(operation.project.name)
         storage_interface = StorageInterface()
         storage_interface.inc_running_op_count(project_folder)
@@ -115,6 +115,17 @@ class HPCPipelineClient(HPCClient):
                                     exception.response.text if isinstance(exception, HTTPError) else repr(exception))
             dao.store_entity(operation)
         storage_interface.check_and_delete(project_folder)
+
+    @staticmethod
+    def execute(operation_id, user_name_label, adapter_instance):
+        # type: (int, None, None) -> None
+        """
+        Submit an operation asynchronously on HPC
+        """
+        thread = HPCOperationThread(operation_id, target=HPCPipelineClient._run_hpc_job,
+                                    kwargs={'operation_identifier': operation_id})
+        thread.start()
+        HPC_THREADS.append(thread)
 
     @staticmethod
     def stop_operation(operation_id):
