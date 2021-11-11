@@ -858,6 +858,12 @@ main() {
         run_workflow_DataLad
         exit 0
     fi
+
+    # generate encryption keys
+    if ((mode == 5)); then
+        generate_keys "pipeline_keys"
+        exit 0
+    fi
 }
 
 # Start script
