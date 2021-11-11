@@ -54,7 +54,6 @@ class FilesHelper(object):
     PROJECTS_FOLDER = "PROJECTS"
     ALLEN_MOUSE_CONNECTIVITY_CACHE_FOLDER = "ALLEN_MOUSE_CONNECTIVITY_CACHE"
     TUMOR_DATASET_FOLDER = "TUMOR_DATASET"
-    PIPELINE_DATASET_FOLDER = "PIPELINE_DATASET"
 
     def __init__(self):
         self.logger = get_logger(self.__class__.__module__)
@@ -218,12 +217,6 @@ class FilesHelper(object):
     def get_tumor_dataset_folder(self):
         project_folder = self.get_projects_folder()
         folder = os.path.join(os.path.dirname(project_folder), self.TUMOR_DATASET_FOLDER)
-        self.check_created(folder)
-        return folder
-
-    def get_pipeline_dataset_folder(self):
-        project_folder = self.get_projects_folder()
-        folder = os.path.join(os.path.dirname(project_folder), self.PIPELINE_DATASET_FOLDER)
         self.check_created(folder)
         return folder
 

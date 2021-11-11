@@ -130,9 +130,6 @@ class StorageInterface:
     def get_tumor_dataset_folder(self):
         return self.files_helper.get_tumor_dataset_folder()
 
-    def get_pipeline_dataset_folder(self):
-        return self.files_helper.get_pipeline_dataset_folder()
-
     @staticmethod
     def copy_file(source, dest, dest_postfix=None, buffer_size=1024 * 1024):
         FilesHelper.copy_file(source, dest, dest_postfix, buffer_size)

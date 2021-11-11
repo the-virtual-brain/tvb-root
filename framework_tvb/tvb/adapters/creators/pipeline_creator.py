@@ -35,6 +35,7 @@ from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, IntField
 from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.storage.storage_interface import StorageInterface
+from tvb.core.neocom import h5
 
 
 class OutputVerbosityLevelsEnum(TVBEnum):
@@ -151,6 +152,7 @@ class IPPipelineCreatorForm(ABCAdapterForm):
 class IPPipelineCreator(ABCAdapter):
     _ui_name = "Launch Image Preprocessing Pipeline"
     _ui_description = "Launch Image Preprocessing Pipeline from tvb-web when it is deployed to EBRAINS"
+    PIPELINE_DATASET_FILE = "pipeline_dataset.zip"
 
     def get_form_class(self):
         return IPPipelineCreatorForm
@@ -166,6 +168,8 @@ class IPPipelineCreator(ABCAdapter):
 
     def launch(self, view_model):
         # type: (IPPipelineCreatorModel) -> []
-        storage_interface = StorageInterface()
-        pipeline_folder = storage_interface.get_pipeline_dataset_folder()
-        storage_interface.unpack_zip(view_model.mri_data, pipeline_folder)
+        storage_path = self.get_storage_path()
+        dest_path = os.path.join(storage_path, self.PIPELINE_DATASET_FILE)
+        StorageInterface.copy_file(view_model.mri_data, dest_path)
+        view_model.mri_data = dest_path
+        h5.store_view_model(view_model, storage_path)
