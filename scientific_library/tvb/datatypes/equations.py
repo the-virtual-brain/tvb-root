@@ -196,7 +196,7 @@ class DoubleGaussian(FiniteSupportEquation):
 
     equation = Final(
         label="Double Gaussian Equation",
-        default="""(amp_1 * exp(-((var-midpoint_1)**2 / (2.0 * sigma_1**2)))) - """ + \
+        default="""(amp_1 * exp(-((var-midpoint_1)**2 / (2.0 * sigma_1**2)))) - """
                 """(amp_2 * exp(-((var-midpoint_2)**2 / (2.0 * sigma_2**2))))""",
         doc=""":math:`amp_1 \\exp\\left(-\\left((x-midpoint_1)^2 / \\left(2.0
         \\sigma_1^2\\right)\\right)\\right) -
@@ -285,7 +285,7 @@ class Alpha(TemporalApplicableEquation):
 
     equation = Final(
         label="Alpha Equation",
-        default="""where((var-onset) > 0, (alpha * beta) / (beta - alpha) * (exp(-alpha * (var-onset)) """ + \
+        default="""where((var-onset) > 0, (alpha * beta) / (beta - alpha) * (exp(-alpha * (var-onset)) """
                 """ - exp(-beta * (var-onset))), 0.0 * var)""",
         doc=""":math:`(\\alpha * \\beta) / (\\beta - \\alpha) *
             (\\exp(-\\alpha * (x-onset)) - \\exp(-\\beta * (x-onset)))` for :math:`(x-onset) > 0`""")
@@ -462,7 +462,7 @@ class FirstOrderVolterra(HRFKernelEquation):
 
     equation = Final(
         label="First Order Volterra Kernel",
-        default="""1/3. * exp(-0.5*(var / tau_s)) * (sin(sqrt(1./tau_f - 1./(4.*tau_s**2)) * var)) / """ + \
+        default="""1/3. * exp(-0.5*(var / tau_s)) * (sin(sqrt(1./tau_f - 1./(4.*tau_s**2)) * var)) / """
                 """(sqrt(1./tau_f - 1./(4.*tau_s**2)))""",
         doc=""":math:`G(t - t^{\\prime}) =
              e^{\\frac{1}{2} \\left(\\frac{t - t^{\\prime}}{\\tau_s} \\right)}
