@@ -8,7 +8,7 @@ from tvb.core.services.backend_clients.hpc_pipeline_client import HPCPipelineCli
 from tvb.tests.framework.core.factory import TestFactory
 
 
-@pytest.mark.skipif(not HPCSettings.CAN_RUN_HPC, reason="pyunicore not installed")
+@pytest.mark.skip
 def test_hpc_pipeline(operation_factory):
     test_user = TestFactory.create_user()
     test_project = TestFactory.create_project(test_user)
