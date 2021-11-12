@@ -32,6 +32,7 @@ import os
 import sys
 
 from flask import Flask
+from flask_restx.apidoc import apidoc
 from gevent.pywsgi import WSGIServer
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
@@ -79,6 +80,9 @@ def build_path(namespace):
 
 
 def initialize_flask():
+    if TvbProfile.current.web.REST_DEPLOY_CONTEXT:
+        apidoc.url_prefix = TvbProfile.current.web.REST_DEPLOY_CONTEXT
+
     # creating the flask app
     app = Flask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
