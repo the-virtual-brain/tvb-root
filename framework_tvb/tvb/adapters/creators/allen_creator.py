@@ -490,7 +490,7 @@ def construct_structural_conn(projmaps, order, key_ord):
     sc_down = np.concatenate((second_quarter, first_quarter), axis=1)
     structural_conn = np.concatenate((structural_conn, sc_down), axis=0)
     structural_conn = structural_conn / (np.amax(structural_conn))  # normalize the matrix
-    return structural_conn
+    return structural_conn.T  # transpose because TVB convention requires SC[target, source]!
 
 
 # the method returns the centres of the brain areas in the selected parcellation
@@ -545,7 +545,7 @@ def construct_tract_lengths(centres):
     second_quarter = tracts[:, (tracts.shape[1] // 2):]
     tracts_down = np.concatenate((second_quarter, first_quarter), axis=1)
     tracts = np.concatenate((tracts, tracts_down), axis=0)
-    return tracts
+    return tracts.T  # transpose because TVB convention requires SC[target, source]!
 
 
 # the method associated the parent and the grandparents to the child in the selected parcellation with the biggest vol
