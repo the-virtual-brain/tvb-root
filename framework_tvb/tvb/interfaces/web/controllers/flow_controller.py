@@ -490,7 +490,8 @@ class FlowController(BaseController):
 
         algorithm = self.algorithm_service.get_algorithm_by_identifier(algorithm_id)
         if is_upload:
-            submit_link = "/project/launchloader/" + str(project_id) + "/" + str(algorithm_id)
+        if is_upload:
+            submit_link = BaseController.build_path("/project/launchloader/" + str(project_id) + "/" + str(algorithm_id))
         else:
             submit_link = self.get_url_adapter(algorithm.fk_category, algorithm.id, back_page)
 
