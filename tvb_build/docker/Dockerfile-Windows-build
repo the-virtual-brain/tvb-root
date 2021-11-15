@@ -20,6 +20,7 @@ RUN activate tvb-run && pip install certifi
 RUN activate tvb-run && pip install h5py==2.10 formencode cfflib flask==1.1.4 jinja2==2.11.3 nibabel sqlalchemy alembic allensdk
 RUN activate && conda install -y --name tvb-run -c conda-forge jupyterlab gevent
 RUN activate tvb-run && pip install tvb-gdist BeautifulSoup4 subprocess32 flask-restx python-keycloak mako pyAesCrypt pyunicore==0.6.0
+RUN activate tvb-run && pip install lockfile syncrypto
 RUN activate tvb-run && pip install autopep8 pylems
 
 # Download and install tvb data
