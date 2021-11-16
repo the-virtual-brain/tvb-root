@@ -29,7 +29,7 @@
 #
 
 from tvb.simulator import models
-from tvb.adapters.simulator.form_with_ranges import FormWithRanges
+from tvb.adapters.forms.form_with_ranges import FormWithRanges
 from tvb.basic.neotraits.api import TupleEnum
 from tvb.core.neotraits.forms import Form, ArrayField, MultiSelectField
 

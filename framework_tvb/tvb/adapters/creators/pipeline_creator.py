@@ -30,9 +30,12 @@
 
 import os
 
-from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum
+from tvb.adapters.forms.form_methods import PIPELINE_KEY
+from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, CommonPipelineForm
+from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum, Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
-from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, IntField
+from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, StrField, \
+    BoolField
 from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.storage.storage_interface import StorageInterface
 from tvb.core.neocom import h5
@@ -45,31 +48,34 @@ class OutputVerbosityLevelsEnum(TVBEnum):
     LEVEL_4 = 4
 
 
-class ParcellationOptionsEnum(TVBEnum):
-    AAL_PARC = "aal"
-    AAL2_PARC = "aal2"
-    BRAINNETOME_PARC = "brainnetome246fs"
-    CRADDOCK200_PARC = "craddock200"
-    CRADDOCK400_PARC = "craddock400"
-    DESIKAN_PARC = "desikan"
-    DESTRIEUX_PARC = "destrieux"
-    HCPMMP1_PARC = "hcpmmp1"
-    PERRY512_PARC = "perry512"
-    YEO7fs_PARC = "yeo7fs"
-    YEO7mni_PARC = "yeo7mni"
-    YEO17fs_PARC = "yeo17fs"
-    YEO17mni_PARC = "yeo17mni"
-
-
-class AnalysisLevelsEnum(TVBEnum):
-    PREPROC_LEVEL = "preproc"
-    PARTICIPANT_LEVEL = "participant"
-    GROUP_LEVEL = "group"
-
-
 class IPPipelineCreatorModel(ViewModel):
     mri_data = Str(
         label='Select MRI data for upload'
+    )
+
+    participant_label = Str(
+        label='Participant Label',
+        doc=r"""The filename part after "sub-" in BIDS format"""
+    )
+
+    step1_choice = Attr(
+        field_type=bool,
+        label="Run step 1: MRtrix3",
+    )
+
+    step2_choice = Attr(
+        field_type=bool,
+        label="Run step 2: fmriprep",
+    )
+
+    step3_choice = Attr(
+        field_type=bool,
+        label="Run step 3: freesurfer",
+    )
+
+    step4_choice = Attr(
+        field_type=bool,
+        label="Run step 4: tvb-pipeline-converter",
     )
 
     output_verbosity = EnumAttr(
@@ -80,14 +86,8 @@ class IPPipelineCreatorModel(ViewModel):
 
     analysis_level = EnumAttr(
         label="Select Analysis Level",
-        default=AnalysisLevelsEnum.PREPROC_LEVEL,
+        default=IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL,
         doc="""Select the analysis level that the pipeline will be launched on."""
-    )
-
-    parcellation = EnumAttr(
-        label="Select Parcellation",
-        default=ParcellationOptionsEnum.AAL_PARC,
-        doc="""The choice of connectome parcellation scheme (compulsory for participant-level analysis)"""
     )
 
     stream_lines = Int(
@@ -116,24 +116,19 @@ class IPPipelineCreatorForm(ABCAdapterForm):
 
         self.pipeline_job = SimpleLabelField("Pipeline Job1")
         self.mri_data = TraitUploadField(IPPipelineCreatorModel.mri_data, '.zip', 'mri_data')
-        self.output_verbosity = SelectField(IPPipelineCreatorModel.output_verbosity, name='output_verbosity')
+        self.participant_label = StrField(IPPipelineCreatorModel.participant_label)
         self.pipeline_steps_label = SimpleLabelField("Configure pipeline steps")
 
-        self.step1_choice = MultiSelectField(List(of=str, label="Step 1", choices=('Run step 1: fmriprep',),
-                                                  default=(), required=False))
+        self.step1_choice = BoolField(IPPipelineCreatorModel.step1_choice)
+        self.output_verbosity = SelectField(IPPipelineCreatorModel.output_verbosity, name='output_verbosity')
+        self.analysis_level = SelectField(IPPipelineCreatorModel.analysis_level, name='analysis_level',
+                                          subform=CommonPipelineForm, session_key=KEY_PIPELINE, form_key=PIPELINE_KEY)
+
+        self.step2_choice = BoolField(IPPipelineCreatorModel.step2_choice)
         self.parameters = MultiSelectField(IPPipelineCreatorModel.step_1_parameters)
 
-        self.step2_choice = MultiSelectField(List(of=str, label="Step 2", choices=('Run step 2: mrtrix3',),
-                                                  default=(), required=False))
-        self.analysis_level = SelectField(IPPipelineCreatorModel.analysis_level, name='analysis_level')
-        self.parcellation = SelectField(IPPipelineCreatorModel.parcellation, name='parcellation')
-        self.stream_lines = IntField(IPPipelineCreatorModel.stream_lines)
-
-        self.step3_choice = MultiSelectField(List(of=str, label="Step 3",
-                                                  choices=('Run step 3: freesurfer',), default=(), required=False))
-        self.step4_choice = MultiSelectField(List(of=str, label="Step 4",
-                                                  choices=('Run step 4: tvb-pipeline-converter',),
-                                                  default=(), required=False))
+        self.step3_choice = BoolField(IPPipelineCreatorModel.step3_choice)
+        self.step4_choice = BoolField(IPPipelineCreatorModel.step4_choice)
 
     @staticmethod
     def get_required_datatype():

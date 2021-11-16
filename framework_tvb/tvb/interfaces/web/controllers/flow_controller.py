@@ -69,7 +69,7 @@ from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_er
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
-from tvb.adapters.simulator.form_methods import get_form_method_by_name
+from tvb.adapters.forms.form_methods import get_form_method_by_name
 from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel, KEY_LCONN
 from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel, KEY_PIPELINE
 

@@ -37,7 +37,7 @@ import tvb_data.surfaceData
 from tvb.adapters.creators.stimulus_creator import RegionStimulusCreator, SurfaceStimulusCreator
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
-from tvb.adapters.simulator.equation_forms import SpatialEquationsEnum, TemporalEquationsEnum
+from tvb.adapters.forms.equation_forms import SpatialEquationsEnum, TemporalEquationsEnum
 from tvb.core.services.operation_service import OperationService
 from tvb.datatypes.equations import PulseTrain
 from tvb.datatypes.surfaces import SurfaceTypesEnum

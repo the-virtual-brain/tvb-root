@@ -34,14 +34,14 @@ from cherrypy.lib.static import serve_file
 from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.simulation_history import SimulationHistoryIndex
 from tvb.adapters.exporters.export_manager import ExportManager
-from tvb.adapters.simulator.coupling_forms import get_form_for_coupling
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.model_forms import get_form_for_model
-from tvb.adapters.simulator.monitor_forms import get_form_for_monitor
-from tvb.adapters.simulator.noise_forms import get_form_for_noise
+from tvb.adapters.forms.coupling_forms import get_form_for_coupling
+from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.adapters.forms.model_forms import get_form_for_model
+from tvb.adapters.forms.monitor_forms import get_form_for_monitor
+from tvb.adapters.forms.noise_forms import get_form_for_noise
 from tvb.adapters.simulator.range_parameters import RangeParametersCollector
 from tvb.adapters.simulator.simulator_adapter import SimulatorAdapterForm
-from tvb.adapters.simulator.simulator_fragments import *
+from tvb.adapters.forms.simulator_fragments import *
 from tvb.config.init.introspector_registry import IntrospectionRegistry
 from tvb.core.entities.file.simulator.view_model import AdditiveNoiseViewModel, BoldViewModel
 from tvb.core.entities.file.simulator.view_model import IntegratorStochasticViewModel

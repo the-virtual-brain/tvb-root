@@ -36,9 +36,9 @@
 import json
 import cherrypy
 
-from tvb.adapters.simulator.equation_forms import get_form_for_equation
-from tvb.adapters.simulator.model_forms import get_model_to_form_dict
-from tvb.adapters.simulator.surface_model_parameters_form import SurfaceModelParametersForm, EquationPlotForm, \
+from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.adapters.forms.model_forms import get_model_to_form_dict
+from tvb.adapters.forms.surface_model_parameters_form import SurfaceModelParametersForm, EquationPlotForm, \
     KEY_CONTEXT_MPS
 from tvb.core.entities import load
 from tvb.core.services.burst_config_serialization import SerializationManager

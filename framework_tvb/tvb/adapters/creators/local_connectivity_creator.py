@@ -35,8 +35,8 @@
 
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
-from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation, SpatialEquationsEnum
-from tvb.adapters.simulator.form_methods import SPATIAL_EQ_KEY
+from tvb.adapters.forms.equation_forms import GaussianEquationForm, get_form_for_equation, SpatialEquationsEnum
+from tvb.adapters.forms.form_methods import SPATIAL_EQ_KEY
 from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
