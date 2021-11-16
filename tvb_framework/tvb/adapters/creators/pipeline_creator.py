@@ -106,6 +106,9 @@ class IPPipelineCreatorModel(ViewModel):
     )
 
 
+KEY_PIPELINE = "ip-pipeline"
+
+
 class IPPipelineCreatorForm(ABCAdapterForm):
 
     def __init__(self):

@@ -41,7 +41,6 @@ import cherrypy
 import formencode
 import numpy
 import six
-from tvb.adapters.forms.equation_forms import get_form_for_equation
 
 from tvb.basic.neotraits.api import TVBEnum, SubformEnum
 from tvb.basic.neotraits.ex import TraitValueError
@@ -71,6 +70,8 @@ from tvb.interfaces.web.controllers.decorators import expose_page, settings, con
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
 from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel, KEY_LCONN
+from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel, KEY_PIPELINE
+from tvb.adapters.forms.equation_forms import get_form_for_equation
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
 FILTER_FIELDS = "fields"
@@ -147,6 +148,7 @@ class FlowController(BaseController):
                                       title="Select an algorithm", displayControl=False, subsection_name='step',
                                       submenu_list=self.connectivity_submenu)
         common.add2session(KEY_LCONN, LocalConnectivityCreatorModel)
+        common.add2session(KEY_PIPELINE, IPPipelineCreatorModel)
         return self.fill_default_attributes(template_specification)
 
     @staticmethod
