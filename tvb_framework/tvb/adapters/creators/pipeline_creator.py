@@ -271,6 +271,9 @@ class PipelineStep3Form(Form):
         self.wall_time_step3 = IntField(IPPipelineCreatorModel.wall_time_step3, name='wall_time_step3')
 
 
+KEY_PIPELINE = "ip-pipeline"
+
+
 class IPPipelineCreatorForm(ABCAdapterForm):
 
     def __init__(self):

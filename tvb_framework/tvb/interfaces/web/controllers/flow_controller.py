@@ -45,7 +45,7 @@ import six
 from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel, KEY_LCONN
 from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel, KEY_PIPELINE
 from tvb.adapters.forms.equation_forms import get_form_for_equation
-from tvb.basic.neotraits.api import TVBEnum
+from tvb.basic.neotraits.api import TVBEnum, SubformEnum
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum

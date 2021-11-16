@@ -29,21 +29,15 @@
 #
 
 """
-.. moduleauthor:: Paula Popa <paula.popa@codemart.ro>
+.. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
+.. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
-
-from tvb.adapters.forms.equation_forms import get_form_for_equation
-from tvb.basic.neotraits.api import TupleEnum, EnumAttr
+from tvb.adapters.simulator.equation_forms import get_form_for_equation, SurfaceModelEquationsEnum
+from tvb.adapters.simulator.form_methods import SURFACE_EQ_KEY
+from tvb.basic.neotraits.api import Attr, Float, EnumAttr, TupleEnum, TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapterForm
-from tvb.core.neotraits.forms import DynamicSelectField, SelectField, FormField
+from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
 from tvb.core.neotraits.view_model import Str
-from tvb.datatypes.equations import Gaussian, Sigmoid
-
-
-class SurfaceModelEquationsEnum(TupleEnum):
-    GAUSSIAN = (Gaussian, "Gaussian")
-    SIGMOID = (Sigmoid, "Sigmoid")
-
 
 ### SESSION KEY for ContextModelParameter entity.
 KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
@@ -52,7 +46,6 @@ KEY_CONTEXT_MPS = "ContextForModelParametersOnSurface"
 class SurfaceModelParametersForm(ABCAdapterForm):
     NAME_EQATION_PARAMS_DIV = 'equation_params'
     default_equation = SurfaceModelEquationsEnum.GAUSSIAN
-    equation_field_label = 'Equation'
 
     def __init__(self, model_params):
         super(SurfaceModelParametersForm, self).__init__()
@@ -61,9 +54,10 @@ class SurfaceModelParametersForm(ABCAdapterForm):
         model_mathjax_representations = [param.label for param in model_params]
         self.model_param = DynamicSelectField(Str(label='Model parameter'), choices=model_labels, name='model_param',
                                               ui_values=model_mathjax_representations)
-        self.equation = SelectField(EnumAttr(label=self.equation_field_label, default=self.default_equation),
-                                    name='equation', subform=get_form_for_equation(self.default_equation.value),
-                                    session_key=KEY_CONTEXT_MPS)
+        self.equation = SelectField(EnumAttr(label='Equation', default=self.default_equation),
+                                    name='equation',
+                                    subform=get_form_for_equation(self.default_equation.value),
+                                    session_key=KEY_CONTEXT_MPS, form_key=SURFACE_EQ_KEY)
 
     @staticmethod
     def get_required_datatype():
@@ -82,3 +76,20 @@ class SurfaceModelParametersForm(ABCAdapterForm):
         self.equation.subform_field = FormField(get_form_for_equation(type(trait)),
                                                 self.NAME_EQATION_PARAMS_DIV)
         self.equation.subform_field.form.fill_from_trait(trait)
+
+
+class EquationPlotForm(Form):
+    def __init__(self):
+        super(EquationPlotForm, self).__init__()
+        self.min_x = FloatField(Float(label='Min distance(mm)', default=0,
+                                      doc="The minimum value of the x-axis for spatial equation plot."),
+                                name='min_x')
+        self.max_x = FloatField(Float(label='Max distance(mm)', default=100,
+                                      doc="The maximum value of the x-axis for spatial equation plot."),
+                                name='max_x')
+
+    def fill_from_post(self, form_data):
+        if self.min_x.name in form_data:
+            self.min_x.fill_from_post(form_data)
+        if self.max_x.name in form_data:
+            self.max_x.fill_from_post(form_data)
