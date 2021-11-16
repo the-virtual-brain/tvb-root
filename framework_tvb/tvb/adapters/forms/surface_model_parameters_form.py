@@ -32,9 +32,10 @@
 .. moduleauthor:: Bogdan Neacsa <bogdan.neacsa@codemart.ro>
 .. moduleauthor:: Ionel Ortelecan <ionel.ortelecan@codemart.ro>
 """
-from tvb.adapters.simulator.equation_forms import get_form_for_equation, SurfaceModelEquationsEnum
-from tvb.adapters.simulator.form_methods import SURFACE_EQ_KEY
-from tvb.basic.neotraits.api import Attr, Float, EnumAttr, TupleEnum, TVBEnum
+
+from tvb.adapters.forms.equation_forms import get_form_for_equation, SurfaceModelEquationsEnum
+from tvb.adapters.forms.form_methods import SURFACE_EQ_KEY
+from tvb.basic.neotraits.api import Float, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm
 from tvb.core.neotraits.forms import Form, FormField, SelectField, FloatField, DynamicSelectField
 from tvb.core.neotraits.view_model import Str
