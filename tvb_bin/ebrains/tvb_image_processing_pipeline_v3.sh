@@ -19,8 +19,9 @@ version="3.0.0" # Sets version variable
 
 # vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 # FIXME: set some arguments manually for now
-source_ds="pipeline"
-subid="sub-CON04"
+source_ds_init="Demo_data_pipeline_CON03"
+source_ds="Demo_data_pipeline_CON03_ds"
+subid="sub-CON03"
 outputstore_folder="outputstore"
 inputstore_folder="inputstore"
 JOBID="testjob"
@@ -217,7 +218,7 @@ parse_params() {
     fi
 
     # check if mode number is valid (must be from 1-4)
-    if ((mode > 5 || mode < 0)); then
+    if ((mode > 500 || mode < 0)); then
         echo "Error: Invalid usage mode "${mode}". Mode must be a number between 1 and 4." >&2
         script_usage
         exit 1
@@ -266,10 +267,12 @@ install_datalad() {
     # dependencies on a supercomputer without root
     # permissions is by using conda
     # FIXME: Version may change
+    rm -rf $HOME/miniconda
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    bash Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda
     # acknowledge license, initialize Miniconda3, close and
     # re-open shell
+    export PATH="$HOME/miniconda/bin:$PATH"
     conda install -c conda-forge datalad
 
     # DataLad extensions are required
@@ -375,7 +378,7 @@ slurm_header_singularity() {
 #
 # NOTE: Pulling fails with errors when containers are pulled in parallel.
 # Therefore: only sequential pulling within the same job.
-pull_containers_DataLad() {
+pull_containers_DataLad1() {
     echo "pull_containers_DataLad(): Generating batch file to pull containers with DataLad." >&2
     log "pull_containers_DataLad(): Generating batch file to pull containers with DataLad."
 
@@ -390,10 +393,13 @@ pull_containers_DataLad() {
 
     # create slurm batch job files
     cat <<EOF > pull_co.sh
-${head1}
+#!/bin/bash
 export SINGULARITY_CACHEDIR="$containerstore"/tmp-singularity-cache
 export SINGULARITY_TMPDIR="$containerstore"/tmp-singularity
+export PATH="$HOME/miniconda/bin:$PATH"
 
+module load daint-mc
+module load singularity
 
 # CAUTION: alternative pull/build may be necessary e.g.
 # singularity build /my_images/fmriprep-v1.3.2.simg docker://poldracklab/fmriprep:latest
@@ -402,22 +408,8 @@ export SINGULARITY_TMPDIR="$containerstore"/tmp-singularity
 cd "$containerstore"
 datalad create "${containername1}"
 cd "${containername1}"
-datalad containers-add "${containername1}" --url "${container_repoimage1}" \
-  --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}'
-
-# container 2
-cd "$containerstore"
-datalad create "${containername2}"
-cd "${containername2}"
-datalad containers-add "${containername2}" --url "${container_repoimage2}" \
-  --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}'
-
-# container 3
-cd "$containerstore"
-datalad create "${containername3}"
-cd "${containername3}"
-datalad containers-add "${containername3}" --url "${container_repoimage3}" \
-  --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}'
+datalad containers-add --url "${container_repoimage1}" \
+  --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}' "${containername1}"
 wait
 EOF
 
@@ -426,13 +418,113 @@ EOF
     log "pull_containers_DataLad(): Slurm batch file generated. Submitting job..."
 
     # submit SLURM job files
-    sbatch pull_co.sh
+    /bin/bash pull_co.sh
 
     echo "pull_containers_DataLad(): Job submitted. Removing batch file." >&2
     log "pull_containers_DataLad(): Job submitted. Removing batch file."
 
     # delete SLURM job files
     rm pull_co.sh
+
+    exit 0
+}
+pull_containers_DataLad2() {
+    echo "pull_containers_DataLad(): Generating batch file to pull containers with DataLad." >&2
+    log "pull_containers_DataLad(): Generating batch file to pull containers with DataLad."
+
+    # otherwise built may fail due to missing space in e.g. /tmp
+    mkdir -p "$containerstore"/tmp-singularity
+    mkdir -p "$containerstore"/tmp-singularity-cache
+    export SINGULARITY_TMPDIR="$containerstore"/tmp-singularity
+    export SINGULARITY_CACHEDIR="$containerstore"/tmp-singularity-cache
+
+    # specify header of slurm batch job files
+    head1=$(slurm_header_singularity "coPull" "05:00:00")
+
+    # create slurm batch job files
+    cat <<EOF > pull_co2.sh
+#!/bin/bash
+export SINGULARITY_CACHEDIR="$containerstore"/tmp-singularity-cache
+export SINGULARITY_TMPDIR="$containerstore"/tmp-singularity
+export PATH="$HOME/miniconda/bin:$PATH"
+
+module load daint-mc
+module load singularity
+
+# CAUTION: alternative pull/build may be necessary e.g.
+# singularity build /my_images/fmriprep-v1.3.2.simg docker://poldracklab/fmriprep:latest
+
+# container 2
+cd "$containerstore"
+datalad create "${containername2}"
+cd "${containername2}"
+datalad containers-add --url "${container_repoimage2}" \
+  --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}' "${containername2}"
+wait
+EOF
+
+
+    echo "pull_containers_DataLad(): Slurm batch file generated. Submitting job..." >&2
+    log "pull_containers_DataLad(): Slurm batch file generated. Submitting job..."
+
+    # submit SLURM job files
+    /bin/bash pull_co2.sh
+
+    echo "pull_containers_DataLad(): Job submitted. Removing batch file." >&2
+    log "pull_containers_DataLad(): Job submitted. Removing batch file."
+
+    # delete SLURM job files
+    rm pull_co2.sh
+
+    exit 0
+}
+pull_containers_DataLad3() {
+    echo "pull_containers_DataLad(): Generating batch file to pull containers with DataLad." >&2
+    log "pull_containers_DataLad(): Generating batch file to pull containers with DataLad."
+
+    # otherwise built may fail due to missing space in e.g. /tmp
+    mkdir -p "$containerstore"/tmp-singularity
+    mkdir -p "$containerstore"/tmp-singularity-cache
+    export SINGULARITY_TMPDIR="$containerstore"/tmp-singularity
+    export SINGULARITY_CACHEDIR="$containerstore"/tmp-singularity-cache
+
+    # specify header of slurm batch job files
+    head1=$(slurm_header_singularity "coPull" "05:00:00")
+
+    # create slurm batch job files
+    cat <<EOF > pull_co3.sh
+#!/bin/bash
+export SINGULARITY_CACHEDIR="$containerstore"/tmp-singularity-cache
+export SINGULARITY_TMPDIR="$containerstore"/tmp-singularity
+export PATH="$HOME/miniconda/bin:$PATH"
+
+module load daint-mc
+module load singularity
+
+# CAUTION: alternative pull/build may be necessary e.g.
+# singularity build /my_images/fmriprep-v1.3.2.simg docker://poldracklab/fmriprep:latest
+
+# container 3
+cd "$containerstore"
+datalad create "${containername3}"
+cd "${containername3}"
+datalad containers-add --url "${container_repoimage3}" \
+  --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}' "${containername3}"
+wait
+EOF
+
+
+    echo "pull_containers_DataLad(): Slurm batch file generated. Submitting job..." >&2
+    log "pull_containers_DataLad(): Slurm batch file generated. Submitting job..."
+
+    # submit SLURM job files
+    /bin/bash pull_co3.sh
+
+    echo "pull_containers_DataLad(): Job submitted. Removing batch file." >&2
+    log "pull_containers_DataLad(): Job submitted. Removing batch file."
+
+    # delete SLURM job files
+    rm pull_co3.sh
 
     exit 0
 }
@@ -602,13 +694,14 @@ create_analysis_dataset_DataLad() {
     module load singularity
     export SINGULARITY_CACHEDIR="$containerstore"/tmp-singularity-cache
     export SINGULARITY_TMPDIR="$containerstore"/tmp-singularity
+    export PATH="$HOME/miniconda/bin:$PATH"
 
     #vvvvvvvvvvvvvvvv
     #DataLad workflow
     #^^^^^^^^^^^^^^^^
 
     # Step 1: Turn input into DataLad dataset
-    cd "$working_dir"/input-data
+    cd "$working_dir"/"$source_ds_init"
     datalad create -f . # create dataset in existing directory
     datalad save . -m "Import all data" # save its contents
 
@@ -662,7 +755,7 @@ create_analysis_dataset_DataLad() {
 
 
     # Step 6: Clone input dataset
-    datalad clone -d . "$working_dir"/input-data inputs/data
+    datalad clone -d . "$working_dir"/"$source_ds_init" inputs/data
 
     # amend the previous commit with a nicer commit message
     git commit --amend -m 'Register input data dataset as a subdataset'
@@ -702,6 +795,7 @@ run_workflow_DataLad() {
     #^^^^^^^^^^^^^^^^
 
     # define DSLOCKFILE, DATALAD & GIT ENV for participant_job
+    export PATH="$HOME/miniconda/bin:$PATH"
     export DSLOCKFILE="$working_dir"/.SLURM_datalad_lock \
     GIT_AUTHOR_NAME=$(git config user.name) \
     GIT_AUTHOR_EMAIL=$(git config user.email) \
@@ -709,21 +803,21 @@ run_workflow_DataLad() {
 
     # Step 1: set variables
     cd "$working_dir"/$source_ds
-    input_store="ria+file://${working_dir}/${inputstore_folder}"
-    dssource="${input_store}#$(datalad -f '{infos[dataset][id]}' wtf -S dataset)"
-    pushgitremote="$(git remote get-url --push output)"
+#    input_store="ria+file://${working_dir}/${inputstore_folder}"
+#    dssource="${input_store}#$(datalad -f '{infos[dataset][id]}' wtf -S dataset)"
+#    pushgitremote="$(git remote get-url --push output)"
 
     # Step 2: use job-specific temporary folder
-    tmpDir="$working_dir"/${JOBID}
-    mkdir "$tmpDir"
-    cd "$tmpDir"
+#    tmpDir="$working_dir"/${JOBID}
+#    mkdir "$tmpDir"
+#    cd "$tmpDir"
 
     # Step 3: get the analysis dataset, which includes the inputs as well
     # IMPORTANT: do not clone from the lcoation that we want to push the
     # results to, in order to avoid too many jobs blocking access to
     # the same location and creating a throughput bottleneck
-    datalad clone "${dssource}" ds
-    cd ds
+#    datalad clone "${dssource}" ds
+#    cd ds
 
 
     # Step 4: to avoid accumulating temporary git-annex availability information
@@ -836,7 +930,15 @@ main() {
 
     # pull containers
     if ((mode == 1)); then
-        pull_containers_DataLad
+        pull_containers_DataLad1
+        exit 0
+    fi
+    if ((mode == 11)); then
+        pull_containers_DataLad2
+        exit 0
+    fi
+    if ((mode == 111)); then
+        pull_containers_DataLad3
         exit 0
     fi
 

@@ -97,33 +97,66 @@ class HPCPipelineClient(HPCClient):
         job_config, job_script = HPCPipelineClient._configure_job(operation.id)
         job = HPCClient._prepare_pyunicore_job(operation, [], job_script, job_config)
         job_working_dir = job.working_dir
+        mount_point = job_working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
 
+        script_path = os.path.join(mount_point, HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
+
+        site_client = HPCClient._build_unicore_client(os.environ[HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY],
+                                                      unicore_client._HBP_REGISTRY_URL,
+                                                      TvbProfile.current.hpc.HPC_COMPUTE_SITE)
+        install_datalad = site_client.execute('sh {} -m 0 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        install_datalad.poll()
+        pull_containers_DataLad1 = site_client.execute(
+            'sh {} -m 1 -p {}'.format(script_path, os.path.normpath(mount_point)))
+
+        pull_containers_DataLad2 = site_client.execute(
+            'sh {} -m 11 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        pull_containers_DataLad3 = site_client.execute(
+            'sh {} -m 111 -p {}'.format(script_path, os.path.normpath(mount_point)))
+
+        pull_containers_DataLad1.poll()
+        pull_containers_DataLad2.poll()
+        pull_containers_DataLad3.poll()
+
+        HPCPipelineClient._upload_file_with_pyunicore(job_working_dir,
+                                                      '/Users/bvalean/Downloads/Demo_data_pipeline_CON03.zip',
+                                                      subfolder=None)
+
+        zip_path = os.path.join(mount_point, 'Demo_data_pipeline_CON03.zip')
+        unzip_archive = site_client.execute('unzip {} -d {}'.format(zip_path, mount_point))
+        unzip_archive.poll()
+
+        dataset_anal = site_client.execute('sh {} -m 2 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        dataset_anal.poll()
+
+        run_job = site_client.execute('sh {} -m 4 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        run_job.poll()
         # Step2 generate PRIVATE-PUBLIC Keys pair on HPC
-        mount_point = job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
-        HPCPipelineClient._generate_public_private_keys_hpc(mount_point)
+
+        # HPCPipelineClient._generate_public_private_keys_hpc(mount_point)
 
         # Step3 download public key from HPC in operation's folder
-        storage_path = StorageInterface().get_project_folder(operation.project.name,
-                                                             str(operation.id))
-        input_files_public_key_path = os.path.join(storage_path, HPCPipelineClient.PUBLIC_KEY_FILENAME)
-        job_working_dir.stat(os.path.join('keys', HPCPipelineClient.PUBLIC_KEY_FILENAME)).download(
-            input_files_public_key_path)
+        # storage_path = StorageInterface().get_project_folder(operation.project.name,
+        #                                                      str(operation.id))
+        # input_files_public_key_path = os.path.join(storage_path, HPCPipelineClient.PUBLIC_KEY_FILENAME)
+        # job_working_dir.stat(os.path.join('keys', HPCPipelineClient.PUBLIC_KEY_FILENAME)).download(
+        #     input_files_public_key_path)
 
         # Step4 Prepare job input files. Encrypt these files using downloaded public key
-        LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
-        job_plain_inputs = HPCPipelineClient._prepare_input(operation)
-        LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
+        # LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
+        # job_plain_inputs = HPCPipelineClient._prepare_input(operation)
+        # LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
         # TODO: encrypt inputs before stage-in!!!
-        job_encrypted_inputs = job_plain_inputs
+        # job_encrypted_inputs = job_plain_inputs
 
         # Step5 Generate a PRIVATE-PUBLIC key pair for results encryption
-        results_public_key = HPCPipelineClient._generate_results_keys(storage_path)
-        job_encrypted_inputs.append(results_public_key)
+        # results_public_key = HPCPipelineClient._generate_results_keys(storage_path)
+        # job_encrypted_inputs.append(results_public_key)
 
         # Step6 Upload encrypted files and the public key used for results encryption
-        for input_file in job_encrypted_inputs:
-            HPCPipelineClient._upload_file_with_pyunicore(job_working_dir, input_name=input_file,
-                                                          subfolder=HPCPipelineClient.INPUT_FILES_CSCS_FOLDER)
+        # for input_file in job_encrypted_inputs:
+        #     HPCPipelineClient._upload_file_with_pyunicore(job_working_dir, input_name=input_file,
+        #                                                   subfolder=HPCPipelineClient.INPUT_FILES_CSCS_FOLDER)
 
         # Step7 Start pipeline job
         # job.start()
