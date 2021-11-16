@@ -41,8 +41,7 @@ import cherrypy
 from tvb.adapters.creators.local_connectivity_creator import *
 from tvb.adapters.datatypes.h5.local_connectivity_h5 import LocalConnectivityH5
 from tvb.adapters.datatypes.h5.surface_h5 import SurfaceH5
-from tvb.adapters.simulator.equation_forms import get_form_for_equation, SpatialEquationsEnum
-from tvb.basic.neotraits.api import TVBEnum
+from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.neocom import h5
@@ -50,7 +49,7 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import MissingDataException
-from tvb.interfaces.web.controllers.decorators import check_user, handle_error, using_template
+from tvb.interfaces.web.controllers.decorators import check_user, handle_error
 from tvb.interfaces.web.controllers.decorators import expose_fragment, expose_page, expose_json
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 
@@ -58,9 +57,6 @@ NO_OF_CUTOFF_POINTS = 20
 
 LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/localconnectivity/load_local_connectivity')
 RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/localconnectivity/reset_local_connectivity')
-
-# Between steps/pages we keep a LocalConnectivityCreatorModel in session at this key
-KEY_LCONN = "local-conn"
 
 
 @traced
@@ -132,18 +128,6 @@ class LocalConnectivityController(SpatioTemporalController):
         template_specification['equationsPrefixes'] = json.dumps(self.plotted_equation_prefixes)
         template_specification['next_step_url'] = '/spatial/localconnectivity/step_2'
         return self.fill_default_attributes(template_specification)
-
-    @cherrypy.expose
-    @using_template('form_fields/form_field')
-    @handle_error(redirect=False)
-    @check_user
-    def refresh_subform(self, equation):
-        eq_class = TVBEnum.string_to_enum(list(SpatialEquationsEnum), equation).value
-        current_lconn = common.get_from_session(KEY_LCONN)
-        current_lconn.equation = eq_class()
-
-        eq_params_form = get_form_for_equation(eq_class)()
-        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_equation_param(self, **param):

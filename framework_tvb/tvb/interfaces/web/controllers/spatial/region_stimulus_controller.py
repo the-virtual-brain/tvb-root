@@ -41,7 +41,6 @@ from tvb.adapters.creators.stimulus_creator import *
 from tvb.adapters.datatypes.h5.patterns_h5 import StimuliRegionH5
 from tvb.adapters.simulator.equation_forms import get_form_for_equation
 from tvb.adapters.visualizers.connectivity import ConnectivityViewer
-from tvb.basic.neotraits.api import TVBEnum
 from tvb.core.adapters.abcadapter import ABCAdapter
 from tvb.core.entities.load import try_get_last_datatype, load_entity_by_gid
 from tvb.core.entities.storage import dao
@@ -50,15 +49,12 @@ from tvb.datatypes.patterns import StimuliRegion
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.common import MissingDataException
-from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment, using_template, \
-    check_user
+from tvb.interfaces.web.controllers.decorators import handle_error, expose_page, expose_fragment
 from tvb.interfaces.web.controllers.spatial.base_spatio_temporal_controller import SpatioTemporalController
 from tvb.interfaces.web.controllers.spatial.surface_model_parameters_controller import EquationPlotForm
 
 LOAD_EXISTING_URL = SpatioTemporalController.build_path('/spatial/stimulus/region/load_region_stimulus')
 RELOAD_DEFAULT_PAGE_URL = SpatioTemporalController.build_path('/spatial/stimulus/region/reset_region_stimulus')
-
-KEY_REGION_STIMULUS = "stim-region"
 
 
 class TemporalPlotForm(EquationPlotForm):
@@ -107,19 +103,6 @@ class RegionStimulusController(SpatioTemporalController):
         if display_name_form_field.value is not None:
             current_stimulus_region = common.get_from_session(KEY_REGION_STIMULUS)
             current_stimulus_region.display_name = display_name_form_field.value
-
-    @cherrypy.expose
-    @using_template('form_fields/form_field')
-    @handle_error(redirect=False)
-    @check_user
-    def refresh_subform(self, temporal_equation):
-        eq_class = TVBEnum.string_to_enum(list(TemporalEquationsEnum), temporal_equation).value
-        current_region_stim = common.get_from_session(KEY_REGION_STIMULUS)
-        current_region_stim.temporal = eq_class()
-
-        eq_params_form = get_form_for_equation(eq_class)()
-        # TODO: check eqPrefixes
-        return {'adapter_form': eq_params_form, 'equationsPrefixes': self.plotted_equation_prefixes}
 
     @cherrypy.expose
     def set_temporal_param(self, **param):

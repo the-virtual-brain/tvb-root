@@ -52,6 +52,11 @@ class TemporalEquationsEnum(EquationsEnum):
     PULSETRAIN = (PulseTrain, "PulseTrain")
 
 
+class SurfaceModelEquationsEnum(TupleEnum):
+    GAUSSIAN = (Gaussian, "Gaussian")
+    SIGMOID = (Sigmoid, "Sigmoid")
+
+
 class BoldMonitorEquationsEnum(EquationsEnum):
     Gamma_KERNEL = (Gamma, "Hrf Kernel: Gamma Kernel")
     DOUBLE_EXPONENTIAL_KERNEL = (DoubleExponential, "Hrf Kernel: Difference of Exponentials")
@@ -95,7 +100,8 @@ def get_form_for_equation(equation_class):
 
 class EquationForm(Form):
 
-    def get_subform_key(self):
+    @staticmethod
+    def get_subform_key():
         return 'EQUATION'
 
     def get_traited_equation(self):

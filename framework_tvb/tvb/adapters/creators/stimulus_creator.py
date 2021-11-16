@@ -38,6 +38,7 @@ from tvb.adapters.datatypes.db.connectivity import ConnectivityIndex
 from tvb.adapters.datatypes.db.patterns import StimuliRegionIndex, StimuliSurfaceIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import get_form_for_equation, SpatialEquationsEnum, TemporalEquationsEnum
+from tvb.adapters.simulator.form_methods import TEMPORAL_EQ_KEY, SPATIAL_EQ_KEY
 from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, AdapterLaunchModeEnum, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
@@ -78,6 +79,10 @@ class SurfaceStimulusCreatorModel(ViewModel, StimuliSurface):
     )
 
 
+KEY_REGION_STIMULUS = "stim-region"
+KEY_SURFACE_STIMULUS = "stim-surface"
+
+
 class SurfaceStimulusCreatorForm(ABCAdapterForm):
     NAME_SPATIAL_PARAMS_DIV = 'spatial_params'
     NAME_TEMPORAL_PARAMS_DIV = 'temporal_params'
@@ -90,9 +95,11 @@ class SurfaceStimulusCreatorForm(ABCAdapterForm):
         self.surface = TraitDataTypeSelectField(SurfaceStimulusCreatorModel.surface, name='surface',
                                                 conditions=self.get_filters())
         self.spatial = SelectField(SurfaceStimulusCreatorModel.spatial, name='spatial',
-                                   subform=get_form_for_equation(self.default_spatial.value))
+                                   subform=get_form_for_equation(self.default_spatial.value),
+                                   session_key=KEY_SURFACE_STIMULUS, form_key=SPATIAL_EQ_KEY)
         self.temporal = SelectField(SurfaceStimulusCreatorModel.temporal, name='temporal',
-                                    subform=get_form_for_equation(self.default_temporal.value))
+                                    subform=get_form_for_equation(self.default_temporal.value),
+                                    session_key=KEY_SURFACE_STIMULUS, form_key=TEMPORAL_EQ_KEY)
 
         del self.spatial.choices[-1]
 
@@ -229,7 +236,8 @@ class RegionStimulusCreatorForm(ABCAdapterForm):
         super(RegionStimulusCreatorForm, self).__init__()
         self.connectivity = TraitDataTypeSelectField(RegionStimulusCreatorModel.connectivity, name='connectivity')
         self.temporal = SelectField(RegionStimulusCreatorModel.temporal, name='temporal',
-                                    subform=get_form_for_equation(self.default_temporal.value))
+                                    subform=get_form_for_equation(self.default_temporal.value),
+                                    session_key=KEY_REGION_STIMULUS, form_key=TEMPORAL_EQ_KEY)
 
     @staticmethod
     def get_view_model():

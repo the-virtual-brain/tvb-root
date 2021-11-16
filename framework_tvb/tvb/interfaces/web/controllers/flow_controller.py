@@ -42,6 +42,7 @@ import formencode
 import numpy
 import six
 
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -63,10 +64,14 @@ from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
 from tvb.interfaces.web.controllers.common import InvalidFormValues
-from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json
+from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_error, check_user, expose_json, \
+    using_template
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
+from tvb.adapters.simulator.form_methods import get_form_method_by_name
+from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel, KEY_LCONN
+from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel, KEY_PIPELINE
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
 FILTER_FIELDS = "fields"
@@ -141,6 +146,8 @@ class FlowController(BaseController):
         template_specification = dict(mainContent="header_menu", section_name='connectivity', controlPage=None,
                                       title="Select an algorithm", displayControl=False, subsection_name='step',
                                       submenu_list=self.connectivity_submenu)
+        common.add2session(KEY_LCONN, LocalConnectivityCreatorModel)
+        common.add2session(KEY_PIPELINE, IPPipelineCreatorModel)
         return self.fill_default_attributes(template_specification)
 
     @staticmethod
@@ -669,3 +676,18 @@ class FlowController(BaseController):
                                                   **parameters)
 
         return [True, 'Stored the exploration material successfully']
+
+    @cherrypy.expose
+    @using_template('form_fields/form_field')
+    @handle_error(redirect=False)
+    @check_user
+    def refresh_subform(self, data_name, form_method_key, vm_session_key):
+        subform_info = get_form_method_by_name(form_method_key)
+        data_class = TVBEnum.string_to_enum(list(subform_info[1]), data_name).value
+
+        vm = common.get_from_session(vm_session_key)
+        setattr(vm, form_method_key.lower(), data_class())
+
+        adapter_form = subform_info[0](data_class)()
+
+        return {'adapter_form': adapter_form}

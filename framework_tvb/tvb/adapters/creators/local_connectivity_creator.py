@@ -36,6 +36,7 @@
 from tvb.adapters.datatypes.db.local_connectivity import LocalConnectivityIndex
 from tvb.adapters.datatypes.db.surface import SurfaceIndex
 from tvb.adapters.simulator.equation_forms import GaussianEquationForm, get_form_for_equation, SpatialEquationsEnum
+from tvb.adapters.simulator.form_methods import SPATIAL_EQ_KEY
 from tvb.basic.neotraits.api import Attr, EnumAttr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.entities.filters.chain import FilterChain
@@ -81,6 +82,9 @@ class LocalConnectivityCreatorModel(ViewModel, LocalConnectivity):
     )
 
 
+KEY_LCONN = "local-conn"
+
+
 class LocalConnectivityCreatorForm(ABCAdapterForm):
     NAME_EQUATION_PARAMS_DIV = 'spatial_params'
 
@@ -90,7 +94,9 @@ class LocalConnectivityCreatorForm(ABCAdapterForm):
                                                 conditions=self.get_filters())
         self.spatial = SelectField(EnumAttr(field_type=SpatialEquationsEnum,
                                             default=SpatialEquationsEnum.GAUSSIAN.instance, required=True),
-                                   name='spatial', display_none_choice=False, subform=GaussianEquationForm)
+                                   name='spatial', display_none_choice=False, subform=GaussianEquationForm,
+                                   session_key=KEY_LCONN, form_key=SPATIAL_EQ_KEY)
+
         self.cutoff = FloatField(LocalConnectivityCreatorModel.cutoff)
         self.display_name = StrField(LocalConnectivityCreatorModel.display_name, name='display_name')
 
