@@ -64,6 +64,13 @@ class NIFTIImporterModel(UploaderViewModel):
         label='Please select file to import (gz or nii)'
     )
 
+    one_based = Attr(
+        field_type=bool,
+        required=False,
+        label='Indexes from 1',
+        doc='Check this when the NII mapping has values [0..N] with 0 the background, instead  of [-1..N-1]'
+    )
+
     apply_corrections = Attr(
         field_type=bool,
         required=False,
@@ -94,6 +101,7 @@ class NIFTIImporterForm(ABCUploaderForm):
 
         self.data_file = TraitUploadField(NIFTIImporterModel.data_file, ('.nii', '.gz', '.zip'), 'data_file')
         self.apply_corrections = BoolField(NIFTIImporterModel.apply_corrections, name='apply_corrections')
+        self.one_based = BoolField(NIFTIImporterModel.one_based, name='one_based')
         self.mappings_file = TraitUploadField(NIFTIImporterModel.mappings_file, '.txt', 'mappings_file')
         self.connectivity = TraitDataTypeSelectField(NIFTIImporterModel.connectivity, name='connectivity')
 
@@ -175,13 +183,12 @@ class NIFTIImporter(ABCUploader):
             data_shape)
         return ts_idx
 
-    def _create_region_map(self, volume, connectivity, apply_corrections, mappings_file, title):
+    def _create_region_map(self, volume, connectivity, view_model):
 
         nifti_data = self.parser.parse()
-        nifti_data = self._apply_corrections_and_mapping(nifti_data, apply_corrections,
-                                                         mappings_file, connectivity.number_of_regions)
+        nifti_data = self._apply_corrections_and_mapping(nifti_data, connectivity.number_of_regions, view_model)
         rvm = RegionVolumeMapping()
-        rvm.title = title
+        rvm.title = view_model.title
         rvm.dimensions_labels = ["X", "Y", "Z"]
         rvm.volume = volume
         rvm.connectivity = h5.load_from_index(connectivity)
@@ -189,13 +196,13 @@ class NIFTIImporter(ABCUploader):
 
         return self.store_complete(rvm)
 
-    def _apply_corrections_and_mapping(self, data, apply_corrections, mappings_file, conn_nr_regions):
+    def _apply_corrections_and_mapping(self, data, conn_nr_regions, view_model):
 
         self.log.info("Writing RegionVolumeMapping with min=%d, mix=%d" % (data.min(), data.max()))
 
-        if mappings_file:
+        if view_model.mappings_file:
             try:
-                mapping_data = numpy.loadtxt(mappings_file, dtype=numpy.str, usecols=(0, 2))
+                mapping_data = numpy.loadtxt(view_model.mappings_file, dtype=numpy.str, usecols=(0, 2))
                 mapping_data = {int(row[0]): int(row[1]) for row in mapping_data}
             except Exception:
                 raise ValidationException("Invalid Mapping File. Expected 3 columns (int, string, int)")
@@ -215,10 +222,13 @@ class NIFTIImporter(ABCUploader):
             self.log.info("Imported RM with values in interval [%d - %d]" % (data.min(), data.max()))
             if not_matched:
                 self.log.warning("Not matched regions will be considered background: %s" % not_matched)
-                if not apply_corrections:
+                if not view_model.apply_corrections:
                     raise ValidationException("Not matched regions were identified %s" % not_matched)
 
-        if apply_corrections:
+        if view_model.one_based:
+            data = data - 1
+
+        if view_model.apply_corrections:
             data[data >= conn_nr_regions] = -1
             data[data < -1] = -1
             self.log.debug("After corrections: RegionVolumeMapping min=%d, mix=%d" % (data.min(), data.max()))
@@ -241,8 +251,7 @@ class NIFTIImporter(ABCUploader):
 
             if view_model.connectivity is not None:
                 connectivity_index = self.load_entity_by_gid(view_model.connectivity)
-                rm = self._create_region_map(volume_ht, connectivity_index, view_model.apply_corrections,
-                                             view_model.mappings_file, view_model.title)
+                rm = self._create_region_map(volume_ht, connectivity_index, view_model)
                 return [volume_idx, rm]
 
             if self.parser.has_time_dimension:
