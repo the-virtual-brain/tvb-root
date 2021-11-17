@@ -799,25 +799,25 @@ run_workflow_DataLad() {
     export DSLOCKFILE="$working_dir"/.SLURM_datalad_lock \
     GIT_AUTHOR_NAME=$(git config user.name) \
     GIT_AUTHOR_EMAIL=$(git config user.email) \
-    #JOBID=${SLURM_JOB_ID}
+    JOBID=${SLURM_JOB_ID}
 
     # Step 1: set variables
     cd "$working_dir"/$source_ds
-#    input_store="ria+file://${working_dir}/${inputstore_folder}"
-#    dssource="${input_store}#$(datalad -f '{infos[dataset][id]}' wtf -S dataset)"
-#    pushgitremote="$(git remote get-url --push output)"
+    input_store="ria+file://${working_dir}/${inputstore_folder}"
+    dssource="${input_store}#$(datalad -f '{infos[dataset][id]}' wtf -S dataset)"
+    pushgitremote="$(git remote get-url --push output)"
 
     # Step 2: use job-specific temporary folder
-#    tmpDir="$working_dir"/${JOBID}
-#    mkdir "$tmpDir"
-#    cd "$tmpDir"
+    tmpDir="$working_dir"/${JOBID}
+    mkdir "$tmpDir"
+    cd "$tmpDir"
 
     # Step 3: get the analysis dataset, which includes the inputs as well
     # IMPORTANT: do not clone from the lcoation that we want to push the
     # results to, in order to avoid too many jobs blocking access to
     # the same location and creating a throughput bottleneck
-#    datalad clone "${dssource}" ds
-#    cd ds
+    datalad clone "${dssource}" ds
+    cd ds
 
 
     # Step 4: to avoid accumulating temporary git-annex availability information
