@@ -37,7 +37,7 @@ Dict to be used to rerender subforms when a parent form is refreshed.
 from tvb.adapters.forms.equation_forms import get_form_for_equation, SpatialEquationsEnum, TemporalEquationsEnum, \
     SurfaceModelEquationsEnum
 from tvb.adapters.forms.pipeline_forms import CommonPipelineForm, ParticipantPipelineForm, GroupPipelineForm, \
-    IPPipelineAnalysisLevelsEnum
+    IPPipelineAnalysisLevelsEnum, get_analysis_level_form
 
 SPATIAL_EQ_KEY = "SPATIAL_EQ"
 TEMPORAL_EQ_KEY = "TEMPORAL_EQ"
@@ -50,10 +50,7 @@ def get_form_method_by_name(form_name):
         SPATIAL_EQ_KEY: (get_form_for_equation, SpatialEquationsEnum),
         TEMPORAL_EQ_KEY: (get_form_for_equation, TemporalEquationsEnum),
         SURFACE_EQ_KEY: (get_form_for_equation, SurfaceModelEquationsEnum),
-        # We have to do this trick because here we have the form directly in the Enum
-        PIPELINE_KEY: ((lambda x: {CommonPipelineForm: CommonPipelineForm,
-                                   ParticipantPipelineForm: ParticipantPipelineForm,
-                                   GroupPipelineForm: GroupPipelineForm}[x]), IPPipelineAnalysisLevelsEnum)
+        PIPELINE_KEY: (get_analysis_level_form, IPPipelineAnalysisLevelsEnum)
     }
 
     return form_name_to_form_methods.get(form_name)

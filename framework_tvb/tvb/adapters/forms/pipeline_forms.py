@@ -32,9 +32,9 @@
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
 
-from tvb.core.neotraits.forms import Form, TraitUploadField, SelectField, IntField, StrField
+from tvb.core.neotraits.forms import Form, SelectField, IntField, StrField
 from tvb.core.neotraits.view_model import Str
-from tvb.basic.neotraits.api import EnumAttr, TVBEnum, Int, TupleEnum
+from tvb.basic.neotraits.api import EnumAttr, TVBEnum, Int, TupleEnum, HasTraits
 
 
 class ParcellationOptionsEnum(TVBEnum):
@@ -62,6 +62,23 @@ class PipelineForm(Form):
     @staticmethod
     def get_subform_key():
         return "PIPELINE"
+
+
+# The next 4 classes exist only because we need HasTraits object for the enums
+class PipelineAnalysisLevel(HasTraits):
+    pass
+
+
+class PreprocAnalysisLevel(PipelineAnalysisLevel):
+    pass
+
+
+class ParticipantAnalysisLevel(PipelineAnalysisLevel):
+    pass
+
+
+class GroupAnalysisLevel(PipelineAnalysisLevel):
+    pass
 
 
 class CommonPipelineForm(PipelineForm):
@@ -112,6 +129,16 @@ class GroupPipelineForm(PipelineForm):
 
 
 class IPPipelineAnalysisLevelsEnum(TupleEnum):
-    PREPROC_LEVEL = (CommonPipelineForm, "preproc")
-    PARTICIPANT_LEVEL = (ParticipantPipelineForm, "participant")
-    GROUP_LEVEL = (GroupPipelineForm, "group")
+    PREPROC_LEVEL = (PreprocAnalysisLevel, "preproc")
+    PARTICIPANT_LEVEL = (ParticipantAnalysisLevel, "participant")
+    GROUP_LEVEL = (GroupAnalysisLevel, "group")
+
+
+def get_analysis_level_form(analysis_level):
+    al_form = {
+        PreprocAnalysisLevel: CommonPipelineForm,
+        ParticipantAnalysisLevel: ParticipantPipelineForm,
+        GroupAnalysisLevel: GroupPipelineForm
+    }
+
+    return al_form[analysis_level]
