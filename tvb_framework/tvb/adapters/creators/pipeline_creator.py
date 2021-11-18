@@ -31,7 +31,8 @@
 import os
 
 from tvb.adapters.forms.form_methods import PIPELINE_KEY
-from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, CommonPipelineForm
+from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, CommonPipelineForm, PreprocAnalysisLevel, \
+    PipelineAnalysisLevel
 from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum, Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, StrField, \
@@ -84,10 +85,12 @@ class IPPipelineCreatorModel(ViewModel):
         doc="""Select the verbosity of script output."""
     )
 
-    analysis_level = EnumAttr(
-        label="Select Analysis Level",
-        default=IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL,
-        doc="""Select the analysis level that the pipeline will be launched on."""
+    analysis_level = Attr(
+        field_type=PipelineAnalysisLevel,
+        label="Analysis Level",
+        required=True,
+        doc="""Select the analysis level that the pipeline will be launched on.""",
+        default=PreprocAnalysisLevel()
     )
 
     stream_lines = Int(
@@ -121,8 +124,12 @@ class IPPipelineCreatorForm(ABCAdapterForm):
 
         self.step1_choice = BoolField(IPPipelineCreatorModel.step1_choice)
         self.output_verbosity = SelectField(IPPipelineCreatorModel.output_verbosity, name='output_verbosity')
-        self.analysis_level = SelectField(IPPipelineCreatorModel.analysis_level, name='analysis_level',
-                                          subform=CommonPipelineForm, session_key=KEY_PIPELINE, form_key=PIPELINE_KEY)
+        self.analysis_level = SelectField(EnumAttr(field_type=IPPipelineAnalysisLevelsEnum,
+                                                   label="Select Analysis Level", required=True,
+                                                   default=IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL.instance,
+                                                   doc="""Select the analysis level that the pipeline will be launched
+                                                    on."""), name='analysis_level', subform=CommonPipelineForm,
+                                          session_key=KEY_PIPELINE, form_key=PIPELINE_KEY)
 
         self.step2_choice = BoolField(IPPipelineCreatorModel.step2_choice)
         self.parameters = MultiSelectField(IPPipelineCreatorModel.step_1_parameters)
