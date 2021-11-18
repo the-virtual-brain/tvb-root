@@ -713,12 +713,12 @@ create_analysis_dataset_DataLad() {
     # Step 3: Clone the container datasets as subdatasets
     # and register them in the analysis dataset
     # Previously:    --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}'
-    containerstore1="$containerstore"/$containername1
-    datalad clone -d . ${containerstore1} code/${containername1}
-    datalad containers-add \
-      --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}' \
-      -i "$working_dir"/${source_ds}/code/${containername1}/.datalad/environments/${containername1}/image \
-      $containername1
+#    containerstore1="$containerstore"/$containername1
+#    datalad clone -d . ${containerstore1} code/${containername1}
+#    datalad containers-add \
+#      --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}' \
+#      -i "$working_dir"/${source_ds}/code/${containername1}/.datalad/environments/${containername1}/image \
+#      $containername1
 
     containerstore2="$containerstore"/$containername2
     datalad clone -d . ${containerstore2} code/${containername2}
@@ -727,12 +727,12 @@ create_analysis_dataset_DataLad() {
       -i "$working_dir"/${source_ds}/code/${containername2}/.datalad/environments/${containername2}/image \
       $containername2
 
-    containerstore3="$containerstore"/$containername3
-    datalad clone -d . ${containerstore3} code/${containername3}
-    datalad containers-add \
-      --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}' \
-      -i "$working_dir"/${source_ds}/code/${containername3}/.datalad/environments/${containername3}/image \
-      $containername3
+#    containerstore3="$containerstore"/$containername3
+#    datalad clone -d . ${containerstore3} code/${containername3}
+#    datalad containers-add \
+#      --call-fmt 'singularity run -B {{pwd}} --cleanenv {img} {cmd}' \
+#      -i "$working_dir"/${source_ds}/code/${containername3}/.datalad/environments/${containername3}/image \
+#      $containername3
 
     # amend the previous commit with a nicer commit message
     git commit --amend -m 'Pipeline containers added'
@@ -799,7 +799,7 @@ run_workflow_DataLad() {
     export DSLOCKFILE="$working_dir"/.SLURM_datalad_lock \
     GIT_AUTHOR_NAME=$(git config user.name) \
     GIT_AUTHOR_EMAIL=$(git config user.email) \
-    JOBID=${SLURM_JOB_ID}
+    #JOBID=${SLURM_JOB_ID}
 
     # Step 1: set variables
     cd "$working_dir"/$source_ds
@@ -842,7 +842,6 @@ run_workflow_DataLad() {
 
 
     # Step 6: run the containers
-    module purge
     module load daint-mc
     module load singularity
 
@@ -862,7 +861,7 @@ run_workflow_DataLad() {
       -n "${containername2}" \
       --explicit \
       -o fmriprep/${subid} \
-      -i inputs/data/${subid}/ses-preop/ \
+      -i inputs/data/${subid}/ses-postop/ \
       -i code/license.txt \
       "inputs/data/${subid} . participant --participant-label $subid \
         --anat-only -w .git/tmp/wdir --fs-no-reconall --skip-bids-validation \
