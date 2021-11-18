@@ -34,8 +34,8 @@ Root class for export functionality.
 .. moduleauthor:: Lia Domide <lia.domide@codemart.ro>
 """
 import os
-from datetime import datetime
 from abc import ABCMeta, abstractmethod
+from datetime import datetime
 
 from tvb.adapters.datatypes.db.mapped_value import DatatypeMeasureIndex
 from tvb.adapters.exporters.exceptions import ExportException
@@ -75,6 +75,9 @@ class ABCExporter(metaclass=ABCMeta):
         """
         return self.__class__.__name__
 
+    def exclude_extra_datatypes(self, data):
+        pass
+
     def accepts(self, data):
         """
         This method specify if the current exporter can export provided data.
@@ -90,6 +93,9 @@ class ABCExporter(metaclass=ABCMeta):
         # Now we should check if any data type is accepted by current exporter
         # Check if the data type is one of the global exclusions
         if hasattr(effective_data_type, "type") and effective_data_type.type in EXCLUDED_DATATYPES:
+            return False
+
+        if self.exclude_extra_datatypes(data) is False:
             return False
 
         for supported_type in self.get_supported_types():
