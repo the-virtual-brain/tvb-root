@@ -79,3 +79,8 @@ class TVBExporter(ABCExporter):
             return StorageInterface.TVB_ZIP_FILE_EXTENSION
         else:
             return StorageInterface.TVB_STORAGE_FILE_EXTENSION
+
+    def exclude_extra_datatypes(self, data):
+        if type(data).__name__ == "ZipDatatype":
+            return False
+        return True

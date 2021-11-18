@@ -102,3 +102,8 @@ class TVBLinkedExporter(ABCExporter):
 
     def skip_group_datatypes(self):
         return False
+
+    def exclude_extra_datatypes(self, data):
+        if type(data).__name__ == "ZipDatatype":
+            return False
+        return True
