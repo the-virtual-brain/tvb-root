@@ -91,7 +91,7 @@ class ClusterSchedulerClient(BackendClient):
         dao.store_entity(operation_identifier)
 
     @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
+    def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
         """Call the correct system command to submit a job to the cluster."""
         thread = Thread(target=ClusterSchedulerClient._run_cluster_job,
                         kwargs={'operation_identifier': operation_id,

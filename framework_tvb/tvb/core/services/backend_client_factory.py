@@ -70,9 +70,9 @@ class BackendClientFactory(object):
         return StandAloneClient()
 
     @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
+    def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
         backend_client = BackendClientFactory._get_backend_client(adapter_instance)
-        backend_client.execute(operation_id, user_name_label, adapter_instance)
+        backend_client.execute(operation_id, user_name_label, adapter_instance, auth_token)
 
     @staticmethod
     def stop_operation(operation_id):

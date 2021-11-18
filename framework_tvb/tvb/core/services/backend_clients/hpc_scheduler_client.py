@@ -131,8 +131,8 @@ class HPCSchedulerClient(HPCClient):
         burst_service.update_burst_status(burst_config)
 
     @staticmethod
-    def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch):
-        # type: (Operation, str, bool) -> Job
+    def _launch_job_with_pyunicore(operation, simulator_gid, is_group_launch, auth_token):
+        # type: (Operation, str, bool,str) -> Job
         LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
         job_plain_inputs = HPCSchedulerClient._prepare_input(operation, simulator_gid)
         available_space = HPCSchedulerClient.compute_available_disk_space(operation)
@@ -147,7 +147,8 @@ class HPCSchedulerClient(HPCClient):
         LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
         job_encrypted_inputs = encryption_handler.encrypt_inputs(job_plain_inputs)
 
-        job = HPCClient._prepare_pyunicore_job(operation, job_encrypted_inputs, job_script, job_config)
+        job = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=job_encrypted_inputs,
+                                               job_script=job_script, job_config=job_config, auth_token=auth_token)
         job.start()
         return job
 
@@ -214,8 +215,8 @@ class HPCSchedulerClient(HPCClient):
         return h5_filenames, metric_op, metric_file
 
     @staticmethod
-    def _run_hpc_job(operation_identifier):
-        # type: (int) -> None
+    def _run_hpc_job(operation_identifier, auth_token):
+        # type: (int, str) -> None
         operation = dao.get_operation_by_id(operation_identifier)
         project_folder = HPCSchedulerClient.storage_interface.get_project_folder(operation.project.name)
         storage_interface = StorageInterface()
@@ -223,7 +224,7 @@ class HPCSchedulerClient(HPCClient):
         is_group_launch = operation.fk_operation_group is not None
         simulator_gid = operation.view_model_gid
         try:
-            HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch)
+            HPCSchedulerClient._launch_job_with_pyunicore(operation, simulator_gid, is_group_launch, auth_token)
         except Exception as exception:
             LOGGER.error("Failed to submit job HPC", exc_info=True)
             operation.mark_complete(STATUS_ERROR,
@@ -232,13 +233,13 @@ class HPCSchedulerClient(HPCClient):
         storage_interface.check_and_delete(project_folder)
 
     @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
-        # type: (int, None, None) -> None
+    def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
+        # type: (int, None, None, str) -> None
         """
         Submit an operation asynchronously on HPC
         """
         thread = HPCOperationThread(operation_id, target=HPCSchedulerClient._run_hpc_job,
-                                    kwargs={'operation_identifier': operation_id})
+                                    kwargs={'operation_identifier': operation_id, 'auth_token': auth_token})
         thread.start()
         HPC_THREADS.append(thread)
 

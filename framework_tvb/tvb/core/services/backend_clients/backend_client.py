@@ -42,7 +42,7 @@ class BackendClient(object):
 
     @staticmethod
     @abstractmethod
-    def execute(operation_id, user_name_label, adapter_instance):
+    def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
         """
         Start operation asynchronously
         """

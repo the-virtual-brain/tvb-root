@@ -112,16 +112,18 @@ class HPCClient(BackendClient):
         return available_space
 
     @staticmethod
-    def _prepare_pyunicore_job(operation, job_encrypted_inputs, job_script, job_config):
+    def _prepare_pyunicore_job(operation, job_inputs, job_script, job_config, auth_token,
+                               inputs_subfolder=''):
         # use "DAINT-CSCS" -- change if another supercomputer is prepared for usage
         LOGGER.info("Prepare unicore client for operation: {}".format(operation.id))
-        site_client = HPCClient._build_unicore_client(os.environ[HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY],
+        site_client = HPCClient._build_unicore_client(auth_token,
                                                       unicore_client._HBP_REGISTRY_URL,
                                                       TvbProfile.current.hpc.HPC_COMPUTE_SITE)
 
         LOGGER.info("Submit job for operation: {}".format(operation.id))
         job = HPCClient._create_job_with_pyunicore(pyunicore_client=site_client, job_description=job_config,
-                                                   job_script=job_script, inputs=job_encrypted_inputs)
+                                                   job_script=job_script, inputs=job_inputs,
+                                                   inputs_subfolder=inputs_subfolder)
         LOGGER.info("Job url {} for operation: {}".format(job.resource_url, operation.id))
         op_identifier = OperationProcessIdentifier(operation_id=operation.id, job_id=job.resource_url)
         dao.store_entity(op_identifier)
@@ -138,8 +140,8 @@ class HPCClient(BackendClient):
         return registry.site(supercomputer)
 
     @staticmethod
-    def _create_job_with_pyunicore(pyunicore_client, job_description, job_script, inputs):
-        # type: (Client, {}, str, list) -> Job
+    def _create_job_with_pyunicore(pyunicore_client, job_description, job_script, inputs, inputs_subfolder=''):
+        # type: (Client, {}, str, list, str) -> Job
         """
         Submit and start a batch job on the site, optionally uploading input data files.
         We took this code from the pyunicore Client.new_job method in order to use our own upload method
@@ -158,11 +160,11 @@ class HPCClient(BackendClient):
         working_dir = job.working_dir
         HPCClient._upload_file_with_pyunicore(working_dir, job_script, None)
         for input_file in inputs:
-            HPCClient._upload_file_with_pyunicore(working_dir, input_file)
+            HPCClient._upload_file_with_pyunicore(working_dir, input_file, inputs_subfolder)
         return job
 
     @staticmethod
-    def _upload_file_with_pyunicore(working_dir, input_name, subfolder=CSCS_DATA_FOLDER, destination=None):
+    def _upload_file_with_pyunicore(working_dir, input_name, subfolder='', destination=None):
         # type: (Storage, str, object, str) -> None
         """
         Upload file to the HPC working dir.
@@ -171,6 +173,8 @@ class HPCClient(BackendClient):
         """
         if destination is None:
             destination = os.path.basename(input_name)
+        if subfolder == '':
+            subfolder = HPCClient.CSCS_DATA_FOLDER
 
         if subfolder:
             url = "{}/{}/{}/{}".format(working_dir.resource_url, "files", subfolder, destination)

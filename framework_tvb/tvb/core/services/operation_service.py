@@ -266,10 +266,10 @@ class OperationService:
             self.launch_operation(next_op.id)
         return result_msg
 
-    def _send_to_cluster(self, operation, adapter_instance, current_username="unknown"):
+    def _send_to_cluster(self, operation, adapter_instance, current_username="unknown", auth_token=""):
         """ Initiate operation on cluster"""
         try:
-            BackendClientFactory.execute(str(operation.id), current_username, adapter_instance)
+            BackendClientFactory.execute(str(operation.id), current_username, adapter_instance, auth_token)
         except TVBException as ex:
             self._handle_exception(ex, {}, ex.message, operation)
         except Exception as excep:

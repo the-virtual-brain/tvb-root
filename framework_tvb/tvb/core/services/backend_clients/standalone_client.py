@@ -210,7 +210,7 @@ class StandAloneClient(BackendClient):
             thread.start()
 
     @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
+    def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
         """Start asynchronous operation locally"""
         if TvbProfile.current.web.OPENSHIFT_DEPLOY or LOCKS_QUEUE.qsize() == 0:
             operation = dao.get_operation_by_id(operation_id)

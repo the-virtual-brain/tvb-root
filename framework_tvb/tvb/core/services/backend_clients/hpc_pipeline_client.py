@@ -29,13 +29,15 @@
 #
 
 import os
-import shutil
+from datetime import datetime
 
 from requests import HTTPError
+from tvb.adapters.creators.pipeline_creator import IPPipelineCreator
 from tvb.basic.config.settings import HPCSettings
+from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
-from tvb.core.entities.model.model_datatype import ZipDatatype
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.model.model_datatype import ZipDatatype
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
 from tvb.core.services.backend_clients.hpc_client import HPCClient, HPCOperationThread
@@ -66,101 +68,100 @@ class HPCPipelineClient(HPCClient):
         """
         Gather raw images to process with pipeline on HPC
         :param operation:
-        :return:
+        :return: list of input files [input dataset zip, arguments file]
         """
-        # TODO: return correct input data here
-        return []
+        storage_path = StorageInterface().get_project_folder(operation.project.name,
+                                                             str(operation.id))
+        pipeline_data_zip = os.path.join(storage_path, IPPipelineCreator.PIPELINE_DATASET_FILE)
+        if not os.path.exists(pipeline_data_zip):
+            raise TVBException(
+                "Pipeline input data was not found in the operation folder for operation {}".format(operation.id))
+
+        # TODO: Use actual args path
+        args_file = os.path.join(storage_path, "args.json")
+        if not os.path.exists(args_file):
+            raise TVBException(
+                "Arguments file for the pipeline script was not found in the operation folder for operation {}".format(
+                    operation.id))
+        return [pipeline_data_zip, args_file]
 
     @staticmethod
-    def _configure_job(operation_id):
+    def _configure_job(mode):
         # type: (int, int) -> (dict, str)
         bash_entrypoint = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY], HPCPipelineClient.SCRIPT_FOLDER_NAME,
                                        HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
 
         # Build job configuration JSON
         # TODO: correct parameters for pipeline to be added (mode, args for containers etc)
-        my_job = {HPCSettings.UNICORE_EXE_KEY: os.path.basename(bash_entrypoint),
-                  HPCSettings.UNICORE_ARGS_KEY: [HPCClient.HOME_FOLDER_MOUNT,
-                                                 operation_id],
-                  HPCSettings.UNICORE_RESOURCER_KEY: {"CPUs": "1"}}
+        my_job = {HPCSettings.UNICORE_EXE_KEY: 'sh ' + os.path.basename(bash_entrypoint),
+                  HPCSettings.UNICORE_ARGS_KEY: ['-m {}'.format(mode), '-p $PWD']}
 
+        # TODO: Maybe take HPC Project also from GUI?
         if HPCClient.CSCS_PROJECT in os.environ:
             my_job[HPCSettings.UNICORE_PROJECT_KEY] = os.environ[HPCClient.CSCS_PROJECT]
 
         return my_job, bash_entrypoint
 
     @staticmethod
-    def _launch_job_with_pyunicore(operation):
-        # type: (Operation) -> Job
-        # Step1 prepare main job
+    def _launch_job_with_pyunicore(operation, authorization_token):
+        # type: (Operation, str) -> Job
         LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
-        job_config, job_script = HPCPipelineClient._configure_job(operation.id)
-        job = HPCClient._prepare_pyunicore_job(operation, [], job_script, job_config)
-        job_working_dir = job.working_dir
-        mount_point = job_working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
+        job_config, job_script = HPCPipelineClient._configure_job(4)
 
-        script_path = os.path.join(mount_point, HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
+        LOGGER.info("Prepare input files: pipeline input data zip file and pipeline arguments json file. ")
+        inputs = HPCPipelineClient._prepare_input(operation)
 
-        site_client = HPCClient._build_unicore_client(os.environ[HPCClient.CSCS_LOGIN_TOKEN_ENV_KEY],
+        LOGGER.info("Prepare unicore job")
+        job = HPCClient._prepare_pyunicore_job(operation=operation, job_inputs=inputs, job_script=job_script,
+                                               job_config=job_config,
+                                               auth_token=authorization_token, inputs_subfolder=None)
+        mount_point = job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
+
+        site_client = HPCClient._build_unicore_client(authorization_token,
                                                       unicore_client._HBP_REGISTRY_URL,
                                                       TvbProfile.current.hpc.HPC_COMPUTE_SITE)
-        install_datalad = site_client.execute('sh {} -m 0 -p {}'.format(script_path, os.path.normpath(mount_point)))
-        install_datalad.poll()
-        pull_containers_DataLad1 = site_client.execute(
-            'sh {} -m 1 -p {}'.format(script_path, os.path.normpath(mount_point)))
 
-        pull_containers_DataLad2 = site_client.execute(
-            'sh {} -m 11 -p {}'.format(script_path, os.path.normpath(mount_point)))
-        pull_containers_DataLad3 = site_client.execute(
-            'sh {} -m 111 -p {}'.format(script_path, os.path.normpath(mount_point)))
-
-        pull_containers_DataLad1.poll()
-        pull_containers_DataLad2.poll()
-        pull_containers_DataLad3.poll()
-
-        HPCPipelineClient._upload_file_with_pyunicore(job_working_dir,
-                                                      '/Users/bvalean/Downloads/Demo_data_pipeline_CON03.zip',
-                                                      subfolder=None)
-
-        zip_path = os.path.join(mount_point, 'Demo_data_pipeline_CON03.zip')
-        unzip_archive = site_client.execute('unzip {} -d {}'.format(zip_path, mount_point))
+        # TODO: Should we run these steps or these will be run from sh script?
+        zip_path = os.path.join(mount_point, IPPipelineCreator.PIPELINE_DATASET_FILE)
+        unzip_path = os.path.join(mount_point, 'Demo_data_pipeline_CON03')
+        unzip_archive = site_client.execute('unzip {} -d {}'.format(zip_path, unzip_path))
         unzip_archive.poll()
 
-        dataset_anal = site_client.execute('sh {} -m 2 -p {}'.format(script_path, os.path.normpath(mount_point)))
-        dataset_anal.poll()
+        script_path = os.path.join(mount_point, HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
+        install_datalad = site_client.execute('sh {} -m 0 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        install_datalad.poll()
+        HPCPipelineClient._transfer_logs(site_client, install_datalad, job, 'install_datalad')
 
-        run_job = site_client.execute('sh {} -m 4 -p {}'.format(script_path, os.path.normpath(mount_point)))
-        run_job.poll()
-        # Step2 generate PRIVATE-PUBLIC Keys pair on HPC
+        pull_fmri = site_client.execute('sh {} -m 11 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        pull_fmri.poll()
+        HPCPipelineClient._transfer_logs(site_client, pull_fmri, job, 'pull_fmri')
 
-        # HPCPipelineClient._generate_public_private_keys_hpc(mount_point)
+        create_datasets = site_client.execute('sh {} -m 2 -p {}'.format(script_path, os.path.normpath(mount_point)))
+        create_datasets.poll()
+        HPCPipelineClient._transfer_logs(site_client, create_datasets, job, 'create_datasets')
 
-        # Step3 download public key from HPC in operation's folder
-        # storage_path = StorageInterface().get_project_folder(operation.project.name,
-        #                                                      str(operation.id))
-        # input_files_public_key_path = os.path.join(storage_path, HPCPipelineClient.PUBLIC_KEY_FILENAME)
-        # job_working_dir.stat(os.path.join('keys', HPCPipelineClient.PUBLIC_KEY_FILENAME)).download(
-        #     input_files_public_key_path)
-
-        # Step4 Prepare job input files. Encrypt these files using downloaded public key
-        # LOGGER.info("Prepare job inputs for operation: {}".format(operation.id))
-        # job_plain_inputs = HPCPipelineClient._prepare_input(operation)
-        # LOGGER.info("Encrypt job inputs for operation: {}".format(operation.id))
-        # TODO: encrypt inputs before stage-in!!!
-        # job_encrypted_inputs = job_plain_inputs
-
-        # Step5 Generate a PRIVATE-PUBLIC key pair for results encryption
-        # results_public_key = HPCPipelineClient._generate_results_keys(storage_path)
-        # job_encrypted_inputs.append(results_public_key)
-
-        # Step6 Upload encrypted files and the public key used for results encryption
-        # for input_file in job_encrypted_inputs:
-        #     HPCPipelineClient._upload_file_with_pyunicore(job_working_dir, input_name=input_file,
-        #                                                   subfolder=HPCPipelineClient.INPUT_FILES_CSCS_FOLDER)
-
-        # Step7 Start pipeline job
-        # job.start()
+        try:
+            LOGGER.info("Start unicore job")
+            job.start()
+            LOGGER.info("Job has started")
+        except Exception as e:
+            LOGGER.error('Cannot start unicore job for operation {}'.format(operation.id), e)
+            raise TVBException(e)
         return job
+
+    @staticmethod
+    def _transfer_logs(site_client, from_job, to_job, files_prefix, to_folder='intermediary_logs'):
+        from_job_mount_point = from_job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
+        to_job_mount_point = to_job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
+        make_logs_dir = site_client.execute("mkdir -p {}{}".format(to_job_mount_point, to_folder))
+        make_logs_dir.poll()
+        command = 'cp {}{} {}{}/{}-{}'
+        stderr_command = command.format(from_job_mount_point, 'stderr', to_job_mount_point, to_folder, files_prefix,
+                                        'stderr')
+        stdout_command = command.format(from_job_mount_point, 'stdout', to_job_mount_point, to_folder, files_prefix,
+                                        'stdout')
+        transfer_logs = site_client.execute('{} && {}'.format(stderr_command, stdout_command))
+        transfer_logs.poll()
 
     @staticmethod
     def _generate_results_keys(storage_path):
@@ -183,15 +184,15 @@ class HPCPipelineClient(HPCClient):
         generate_keys_job.poll()
 
     @staticmethod
-    def _run_hpc_job(operation_identifier):
-        # type: (int) -> None
+    def _run_hpc_job(operation_identifier, authorization_token):
+        # type: (int, str) -> None
         operation = dao.get_operation_by_id(operation_identifier)
         project_folder = HPCClient.storage_interface.get_project_folder(operation.project.name)
         storage_interface = StorageInterface()
         storage_interface.inc_running_op_count(project_folder)
 
         try:
-            HPCPipelineClient._launch_job_with_pyunicore(operation)
+            HPCPipelineClient._launch_job_with_pyunicore(operation, authorization_token)
         except Exception as exception:
             LOGGER.error("Failed to submit job HPC", exc_info=True)
             operation.mark_complete(STATUS_ERROR,
@@ -200,13 +201,13 @@ class HPCPipelineClient(HPCClient):
         storage_interface.check_and_delete(project_folder)
 
     @staticmethod
-    def execute(operation_id, user_name_label, adapter_instance):
+    def execute(operation_id, user_name_label, adapter_instance, auth_token=""):
         # type: (int, None, None) -> None
         """
         Submit an operation asynchronously on HPC
         """
         thread = HPCOperationThread(operation_id, target=HPCPipelineClient._run_hpc_job,
-                                    kwargs={'operation_identifier': operation_id})
+                                    kwargs={'operation_identifier': operation_id, 'authorization_token': auth_token})
         thread.start()
         HPC_THREADS.append(thread)
 
@@ -220,14 +221,16 @@ class HPCPipelineClient(HPCClient):
     @staticmethod
     def _stage_out_results(working_dir):
         # type: (Storage) -> list
-        output_subfolder = HPCClient.CSCS_DATA_FOLDER  # + '/' + HPCClient.OUTPUT_FOLDER
-        output_list = HPCClient._listdir(working_dir, output_subfolder)
+        output_list = HPCClient._listdir(working_dir)
         LOGGER.info("Output list {}".format(output_list))
         storage_interface = StorageInterface()
         # TODO: Choose a local folder to copy back the encrypted results
-        encrypted_dir = os.path.join("enc_dir",
-                                     HPCClient.OUTPUT_FOLDER)
-        encrypted_files = HPCClient._stage_out_outputs(encrypted_dir, output_list)
+        now = datetime.now()
+        date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
+                                             now.minute, now.second, now.microsecond)
+        uq_name = "PipelineResults-%s" % date_str
+        unique_Path = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, uq_name)
+        encrypted_files = HPCClient._stage_out_outputs(unique_Path, output_list)
 
         # Clean data uploaded on CSCS
         LOGGER.info("Clean uploaded files and results")
@@ -245,13 +248,13 @@ class HPCPipelineClient(HPCClient):
         operation_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
 
         # TODO: decrypt pipeline results under the operation dir?
-        assert len(encrypted_files) == 1
-        result_path = shutil.copy(encrypted_files[0], operation_dir)
+        assert len(encrypted_files) > 0
+        tmp_folder = os.path.basename(encrypted_files[0])
+        results_zip = os.path.join(operation_dir, 'pipeline_results.zip')
+        StorageInterface().write_zip_folder(results_zip, tmp_folder)
+        StorageInterface.remove_folder(tmp_folder)
 
-        # TODO: unzip and try to import tvb-ready data
-        # tvb_data_dir = os.path.join(results_dir, 'tvb-ready')
-
-        return result_path
+        return results_zip
 
     @staticmethod
     def update_db_with_results(operation, results_zip):
