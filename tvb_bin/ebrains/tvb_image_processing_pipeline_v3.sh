@@ -799,7 +799,7 @@ run_workflow_DataLad() {
     export DSLOCKFILE="$working_dir"/.SLURM_datalad_lock \
     GIT_AUTHOR_NAME=$(git config user.name) \
     GIT_AUTHOR_EMAIL=$(git config user.email) \
-    JOBID=${SLURM_JOB_ID}
+    #JOBID=${SLURM_JOB_ID}
 
     # Step 1: set variables
     cd "$working_dir"/$source_ds
