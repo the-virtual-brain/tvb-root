@@ -294,7 +294,7 @@ class IPPipelineCreator(ABCAdapter):
     def launch(self, view_model):
         # type: (IPPipelineCreatorModel) -> []
         storage_path = self.get_storage_path()
-        dest_path = os.path.join(storage_path, self.PIPELINE_DATASET_FILE)
+        dest_path = os.path.join(storage_path, view_model.PIPELINE_DATASET_FILE)
         StorageInterface.copy_file(view_model.mri_data, dest_path)
         view_model.mri_data = dest_path
         h5.store_view_model(view_model, storage_path)
