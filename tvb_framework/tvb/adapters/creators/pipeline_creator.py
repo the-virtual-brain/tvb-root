@@ -36,7 +36,7 @@ from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, Comm
 from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum, Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, StrField, \
-    BoolField, FormField
+    BoolField, FormField, IntField
 from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.core.pipeline.analysis_levels import PipelineAnalysisLevel, PreprocAnalysisLevel, ParticipantAnalysisLevel, \
     GroupAnalysisLevel
@@ -63,6 +63,20 @@ class IPPipelineCreatorModel(ViewModel):
         doc=r"""The filename part after "sub-" in BIDS format"""
     )
 
+    nr_of_cpus = Int(
+        label="Number of cpus",
+        required=False,
+        default=1,
+        doc="""The number of cpus that will be used for launching the pipeline."""
+    )
+
+    estimated_time = Int(
+        label="Estimated runtime (hours)",
+        required=False,
+        default=1,
+        doc="""Estimated duration of running the pipeline expressed in hours."""
+    )
+
     step1_choice = Attr(
         field_type=bool,
         default=False,
@@ -73,6 +87,27 @@ class IPPipelineCreatorModel(ViewModel):
         field_type=bool,
         default=False,
         label="Run step 2: fmriprep",
+    )
+
+    skip_bids = Attr(
+        field_type=bool,
+        default=False,
+        doc="Assume the input dataset is BIDS compliant and skip the validation.",
+        label="Skip Bids Validation"
+    )
+
+    anat_only = Attr(
+        field_type=bool,
+        default=False,
+        doc="Run anatomical workflows only.",
+        label="Anat Only"
+    )
+
+    no_reconall = Attr(
+        field_type=bool,
+        default=False,
+        doc="Disable FreeSurfer surface preprocessing.",
+        label="No Reconall"
     )
 
     step3_choice = Attr(
@@ -127,6 +162,8 @@ class IPPipelineCreatorForm(ABCAdapterForm):
         self.pipeline_job = SimpleLabelField("Pipeline Job1")
         self.mri_data = TraitUploadField(IPPipelineCreatorModel.mri_data, '.zip', 'mri_data')
         self.participant_label = StrField(IPPipelineCreatorModel.participant_label)
+        self.nr_of_cpus = IntField(IPPipelineCreatorModel.nr_of_cpus, name='number_of_cpus')
+        self.estimated_time = IntField(IPPipelineCreatorModel.estimated_time, name='estimated_time')
         self.pipeline_steps_label = SimpleLabelField("Configure pipeline steps")
 
         self.step1_choice = BoolField(IPPipelineCreatorModel.step1_choice)
@@ -139,6 +176,9 @@ class IPPipelineCreatorForm(ABCAdapterForm):
                                           session_key=KEY_PIPELINE, form_key=PIPELINE_KEY)
 
         self.step2_choice = BoolField(IPPipelineCreatorModel.step2_choice)
+        self.skip_bids = BoolField(IPPipelineCreatorModel.skip_bids)
+        self.anat_only = BoolField(IPPipelineCreatorModel.anat_only)
+        self.no_reconall = BoolField(IPPipelineCreatorModel.no_reconall)
         self.parameters = MultiSelectField(IPPipelineCreatorModel.step_1_parameters)
 
         self.step3_choice = BoolField(IPPipelineCreatorModel.step3_choice)
