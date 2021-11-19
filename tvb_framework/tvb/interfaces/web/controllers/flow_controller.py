@@ -43,6 +43,10 @@ import numpy
 import six
 
 from tvb.basic.neotraits.api import TVBEnum, SubformEnum
+from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel, KEY_LCONN
+from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel, KEY_PIPELINE
+from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.basic.neotraits.api import TVBEnum
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
 from tvb.core.adapters.abcadapter import ABCAdapter
@@ -58,8 +62,6 @@ from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import url2path
-from tvb.storage.storage_interface import StorageInterface
-from tvb.storage.h5.utils import string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -69,9 +71,8 @@ from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_er
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
-from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel, KEY_LCONN
-from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel, KEY_PIPELINE
-from tvb.adapters.forms.equation_forms import get_form_for_equation
+from tvb.storage.h5.utils import string2bool
+from tvb.storage.storage_interface import StorageInterface
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
 FILTER_FIELDS = "fields"
