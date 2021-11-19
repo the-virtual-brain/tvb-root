@@ -72,8 +72,7 @@ class IPPipelineCreatorModel(ViewModel):
     PIPELINE_DATASET_FILE = "pipeline_dataset.zip"
 
     mri_data = Str(
-        label='Select MRI data for upload',
-        default='enter path here'
+        label='Select MRI data for upload'
     )
 
     participant_label = Str(
