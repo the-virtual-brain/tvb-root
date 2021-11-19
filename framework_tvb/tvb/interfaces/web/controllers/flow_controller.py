@@ -316,7 +316,8 @@ class FlowController(BaseController):
                 return {}
 
             self.operation_services.fire_operation(adapter_instance, common.get_logged_user(), project_id,
-                                                   view_model=view_model)
+                                                   view_model=view_model,
+                                                   auth_token=common.get_from_session(common.KEY_AUTH_TOKEN))
             common.set_important_message("Launched an operation.")
 
         except formencode.Invalid as excep:

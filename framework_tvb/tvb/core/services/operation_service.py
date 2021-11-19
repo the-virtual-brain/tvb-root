@@ -88,7 +88,7 @@ class OperationService:
     ######## Methods related to launching operations start here ##############################
     ##########################################################################################
 
-    def initiate_operation(self, current_user, project, adapter_instance, visible=True, model_view=None):
+    def initiate_operation(self, current_user, project, adapter_instance, visible=True, model_view=None, auth_token=None):
         """
         Gets the parameters of the computation from the previous inputs form,
         and launches a computation (on the cluster or locally).
@@ -105,7 +105,7 @@ class OperationService:
         if adapter_instance.launch_mode == AdapterLaunchModeEnum.SYNC_SAME_MEM:
             return self.initiate_prelaunch(operation, adapter_instance)
         else:
-            return self._send_to_cluster(operation, adapter_instance, current_user.username)
+            return self._send_to_cluster(operation, adapter_instance, current_user.username, auth_token)
 
     @staticmethod
     def prepare_metadata(algo_category, burst=None, current_ga=GenericAttributes()):
@@ -342,7 +342,7 @@ class OperationService:
     def _range_name(range_no):
         return PARAM_RANGE_PREFIX + str(range_no)
 
-    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None):
+    def fire_operation(self, adapter_instance, current_user, project_id, visible=True, view_model=None, auth_token=None):
         """
         Launch an operation, specified by AdapterInstance, for current_user and project with project_id.
         """
@@ -352,7 +352,7 @@ class OperationService:
             project = dao.get_project_by_id(project_id)
 
             result = self.initiate_operation(current_user, project, adapter_instance, visible,
-                                             model_view=view_model)
+                                             model_view=view_model, auth_token=auth_token)
             self.logger.info("Finished operation launch:" + operation_name)
             return result
 
