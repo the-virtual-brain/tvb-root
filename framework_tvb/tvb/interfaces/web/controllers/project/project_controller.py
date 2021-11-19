@@ -37,21 +37,20 @@ This represents the Controller part (from MVC).
 """
 import cherrypy
 import formencode
+import tvb.core.entities.model.model_operation as model
 from cherrypy.lib.static import serve_file
 from formencode import validators
 from simplejson import JSONEncoder
-
-import tvb.core.entities.model.model_operation as model
 from tvb.adapters.creators.tumor_dataset_creator import TumorDatasetCreator
 from tvb.adapters.exporters.export_manager import ExportManager
 from tvb.basic.profile import TvbProfile
 from tvb.config.init.introspector_registry import IntrospectionRegistry
-from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.filters.factory import StaticFiltersFactory
 from tvb.core.entities.load import load_entity_by_gid
 from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
+from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.core.services.import_service import ImportService
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
@@ -247,6 +246,9 @@ class ProjectController(BaseController):
         """
         if (project_id is None) or (not int(project_id)):
             self.redirect('/project')
+
+        auth_token = common.get_from_session(common.KEY_AUTH_TOKEN)
+        HPCOperationService.check_operations_job(auth_token, algos=["IPPipelineCreator"])
 
         ## Toggle filters
         filters = self.__get_operations_filters()

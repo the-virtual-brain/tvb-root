@@ -61,9 +61,31 @@ class HPCOperationService(object):
     LOGGER = get_logger(__name__)
 
     @staticmethod
-    def _operation_error(operation):
-        operation.mark_complete(STATUS_ERROR)
-        dao.store_entity(operation)
+    def _operation_error(operation, auth_token):
+        operation = dao.get_operation_by_id(operation.id)
+        algorithm = operation.algorithm
+        adapter_instance = ABCAdapter.build_adapter(algorithm)
+        if type(adapter_instance) is get_class_by_name("{}.{}".format(SIMULATOR_MODULE, SIMULATOR_CLASS)):
+            simulator_gid = operation.view_model_gid
+            HPCOperationService._operation_finished(operation, simulator_gid)
+        else:
+            op_ident = dao.get_operation_process_for_operation(operation.id)
+            job = Job(Transport(auth_token), op_ident.job_id)
+
+            operation = dao.get_operation_by_id(operation.id)
+            # folder = HPCSchedulerClient.storage_interface.get_project_folder(operation.project.name)
+            # storage_interface = StorageInterface()
+            # if storage_interface.encryption_enabled():
+            #     storage_interface.inc_project_usage_count(folder)
+            #     storage_interface.sync_folders(folder)
+
+            pipeline_results_zip = HPCPipelineClient.stage_out_logs(job.working_dir, operation)
+
+            operation.mark_complete(STATUS_ERROR)
+            dao.store_entity(operation)
+            HPCPipelineClient().update_db_with_results(operation, pipeline_results_zip)
+
+
 
     @staticmethod
     def _operation_canceled(operation):
@@ -107,11 +129,10 @@ class HPCOperationService(object):
                 storage_interface.set_project_inactive(operation.project)
 
     @staticmethod
-    def _pipeline_operation_finished(operation):
+    def _pipeline_operation_finished(operation, auth_token):
         op_ident = dao.get_operation_process_for_operation(operation.id)
         # TODO: Handle login
-        job = Job(Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY]),
-                  op_ident.job_id)
+        job = Job(Transport(auth_token), op_ident.job_id)
 
         operation = dao.get_operation_by_id(operation.id)
         # folder = HPCSchedulerClient.storage_interface.get_project_folder(operation.project.name)
@@ -150,7 +171,7 @@ class HPCOperationService(object):
         update_func(operation)
 
     @staticmethod
-    def stop_operation(operation):
+    def stop_operation(operation, auth_token):
         operation = dao.get_operation_by_id(operation.id)
         algorithm = operation.algorithm
         adapter_instance = ABCAdapter.build_adapter(algorithm)
@@ -158,11 +179,11 @@ class HPCOperationService(object):
             simulator_gid = operation.view_model_gid
             HPCOperationService._operation_finished(operation, simulator_gid)
         else:
-            HPCOperationService._pipeline_operation_finished(operation)
+            HPCOperationService._pipeline_operation_finished(operation, auth_token)
 
     @staticmethod
-    def check_operations_job():
-        operations = dao.get_operations_for_hpc_job()
+    def check_operations_job(auth_token=HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY, algos=None):
+        operations = dao.get_operations_for_hpc_job(algos)
         if operations is None or len(operations) == 0:
             return
 
@@ -171,7 +192,7 @@ class HPCOperationService(object):
             try:
                 op_ident = dao.get_operation_process_for_operation(operation.id)
                 if op_ident is not None:
-                    transport = Transport(os.environ[HPCSchedulerClient.CSCS_LOGIN_TOKEN_ENV_KEY])
+                    transport = Transport(auth_token)
                     job = Job(transport, op_ident.job_id)
                     job_status = job.properties['status']
                     if job.is_running():
@@ -183,9 +204,9 @@ class HPCOperationService(object):
                     HPCOperationService.LOGGER.info(
                         "Job for operation {} has status {}".format(operation.id, job_status))
                     if job_status == HPCJobStatus.SUCCESSFUL.value:
-                        HPCOperationService.stop_operation(operation)
+                        HPCOperationService.stop_operation(operation, auth_token)
                     else:
-                        HPCOperationService._operation_error(operation)
+                        HPCOperationService._operation_error(operation, auth_token)
             except Exception:
                 HPCOperationService.LOGGER.error(
                     "There was an error on background processing process for operation {}".format(operation.id),

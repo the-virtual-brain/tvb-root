@@ -127,13 +127,14 @@ class OperationDAO(RootDAO):
             self.logger.exception(excep)
             return None
 
-    def get_operations_for_hpc_job(self):
+    def get_operations_for_hpc_job(self, algos_list=None):
         status = [STATUS_PENDING, STATUS_STARTED]
-        algorithm_classnames = ["SimulatorAdapter", "IPPipelineCreator"]
+        if algos_list is None:
+            algos_list = ["SimulatorAdapter"]
         queue_full = False
         try:
             result = self.session.query(Operation).join(Algorithm) \
-                .filter(Algorithm.classname.in_(algorithm_classnames)) \
+                .filter(Algorithm.classname.in_(algos_list)) \
                 .filter(Operation.status.in_(status)) \
                 .filter(Operation.queue_full == queue_full).all()
             return result

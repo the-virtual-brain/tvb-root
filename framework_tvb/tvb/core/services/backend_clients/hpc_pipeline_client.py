@@ -241,6 +241,43 @@ class HPCPipelineClient(HPCClient):
         return encrypted_files
 
     @staticmethod
+    def stage_out_logs(working_dir, operation):
+        # type: (Storage, Operation) -> str
+        now = datetime.now()
+        date_str = "%d-%d-%d_%d-%d-%d_%d" % (now.year, now.month, now.day, now.hour,
+                                             now.minute, now.second, now.microsecond)
+        uq_name = "PipelineResults-%s" % date_str
+        local_logs_dir = os.path.join(TvbProfile.current.TVB_TEMP_FOLDER, uq_name)
+
+        if not os.path.isdir(local_logs_dir):
+            os.makedirs(local_logs_dir)
+
+        stderr_f = 'stderr'
+        stdout_f = 'stdout'
+        stderr = working_dir.stat(stderr_f)
+        stdout = working_dir.stat(stdout_f)
+
+        stderr.download(os.path.join(local_logs_dir, stderr_f))
+        stdout.download(os.path.join(local_logs_dir, stdout_f))
+
+        output_list = HPCClient._listdir(working_dir, base='intermediary_logs')
+
+        for output_filename, output_filepath in output_list.items():
+            if type(output_filepath) is not unicore_client.PathFile:
+                LOGGER.info("Object {} is not a file.")
+                continue
+            filename = os.path.join(local_logs_dir, os.path.basename(output_filename))
+            output_filepath.download(filename)
+
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        operation_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
+        results_zip = os.path.join(operation_dir, 'pipeline_results.zip')
+        StorageInterface().write_zip_folder(results_zip, local_logs_dir)
+        # StorageInterface.remove_folder(local_logs_dir)
+
+        return results_zip
+
+    @staticmethod
     def stage_out_to_operation_folder(working_dir, operation):
         # type: (Storage, Operation) -> (list, Operation, str)
         encrypted_files = HPCPipelineClient._stage_out_results(working_dir)
