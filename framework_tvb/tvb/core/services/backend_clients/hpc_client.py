@@ -143,8 +143,8 @@ class HPCClient(BackendClient):
     @staticmethod
     def _poll_job(job):
         '''wait until job completes'''
-        while job.properties['status'] not in (HPCJobStatus.SUCCESSFUL, HPCJobStatus.FAILED):
-            time.sleep(5 + 0.1)
+        while job.is_running():
+            time.sleep(5.1)
 
     @staticmethod
     def _create_job_with_pyunicore(pyunicore_client, job_description, job_script, inputs, inputs_subfolder=''):
