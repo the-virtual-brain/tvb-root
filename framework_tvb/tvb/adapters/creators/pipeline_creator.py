@@ -32,11 +32,11 @@ import os
 
 from tvb.adapters.forms.form_methods import PIPELINE_KEY
 from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, CommonPipelineForm, \
-    ParticipantPipelineForm, GroupPipelineForm, get_form_for_analysis_level
+    get_form_for_analysis_level
 from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum, Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, StrField, \
-    BoolField, FormField, IntField
+    BoolField, FormField, IntField, Form
 from tvb.core.neotraits.view_model import ViewModel, Str
 from tvb.core.pipeline.analysis_levels import PipelineAnalysisLevel, PreprocAnalysisLevel, ParticipantAnalysisLevel, \
     GroupAnalysisLevel
@@ -152,17 +152,17 @@ class IPPipelineCreatorModel(ViewModel):
             'estimated_time': self.estimated_time,
             'mrtrix': self.step1_choice,
             'mrtrix_parameters': {
-                                'output_verbosity': self.output_verbosity,
-                                'analysis_level': str(self.analysis_level),
-                                'analysis_level_config': self.analysis_level.parameters,
-                                },
+                'output_verbosity': self.output_verbosity,
+                'analysis_level': str(self.analysis_level),
+                'analysis_level_config': self.analysis_level.parameters,
+            },
             'fmriprep': self.step2_choice,
             'fmriprip_parameters': {
-                                'skip_bids': self.skip_bids,
-                                'anat_only': self.anat_only,
-                                'no_reconall': self.no_reconall,
-                                'parameters': self.step2_parameters
-                                },
+                'skip_bids': self.skip_bids,
+                'anat_only': self.anat_only,
+                'no_reconall': self.no_reconall,
+                'parameters': self.step2_parameters
+            },
             'freesurfer': self.step3_choice,
             'tvb_converter': self.step4_choice,
         }
@@ -172,6 +172,29 @@ class IPPipelineCreatorModel(ViewModel):
 
 
 KEY_PIPELINE = "ip-pipeline"
+
+
+class PipelineStep1Form(Form):
+
+    def __init__(self):
+        super(PipelineStep1Form, self).__init__()
+        self.output_verbosity = SelectField(IPPipelineCreatorModel.output_verbosity, name='output_verbosity')
+        self.analysis_level = SelectField(EnumAttr(field_type=IPPipelineAnalysisLevelsEnum,
+                                                   label="Select Analysis Level", required=True,
+                                                   default=IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL.instance,
+                                                   doc="""Select the analysis level that the pipeline will be launched
+                                                    on."""), name='analysis_level', subform=CommonPipelineForm,
+                                          session_key=KEY_PIPELINE, form_key=PIPELINE_KEY)
+
+
+class PipelineStep2Form(Form):
+
+    def __init__(self):
+        super(PipelineStep2Form, self).__init__()
+        self.skip_bids = BoolField(IPPipelineCreatorModel.skip_bids)
+        self.anat_only = BoolField(IPPipelineCreatorModel.anat_only)
+        self.no_reconall = BoolField(IPPipelineCreatorModel.no_reconall)
+        self.step2_parameters = MultiSelectField(IPPipelineCreatorModel.step2_parameters)
 
 
 class IPPipelineCreatorForm(ABCAdapterForm):
@@ -187,19 +210,10 @@ class IPPipelineCreatorForm(ABCAdapterForm):
         self.pipeline_steps_label = SimpleLabelField("Configure pipeline steps")
 
         self.step1_choice = BoolField(IPPipelineCreatorModel.step1_choice)
-        self.output_verbosity = SelectField(IPPipelineCreatorModel.output_verbosity, name='output_verbosity')
-        self.analysis_level = SelectField(EnumAttr(field_type=IPPipelineAnalysisLevelsEnum,
-                                                   label="Select Analysis Level", required=True,
-                                                   default=IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL.instance,
-                                                   doc="""Select the analysis level that the pipeline will be launched
-                                                    on."""), name='analysis_level', subform=CommonPipelineForm,
-                                          session_key=KEY_PIPELINE, form_key=PIPELINE_KEY)
+        self.step1_subform = FormField(PipelineStep1Form, 'pipeline_step1')
 
         self.step2_choice = BoolField(IPPipelineCreatorModel.step2_choice)
-        self.skip_bids = BoolField(IPPipelineCreatorModel.skip_bids)
-        self.anat_only = BoolField(IPPipelineCreatorModel.anat_only)
-        self.no_reconall = BoolField(IPPipelineCreatorModel.no_reconall)
-        self.step2_parameters = MultiSelectField(IPPipelineCreatorModel.step2_parameters)
+        self.step2_subform = FormField(PipelineStep2Form, 'pipeline_step2')
 
         self.step3_choice = BoolField(IPPipelineCreatorModel.step3_choice)
         self.step4_choice = BoolField(IPPipelineCreatorModel.step4_choice)
@@ -224,32 +238,33 @@ class IPPipelineCreatorForm(ABCAdapterForm):
         # type: (IPPipelineCreatorModel) -> None
         super(IPPipelineCreatorForm, self).fill_from_trait(trait)
         analysis_level = trait.analysis_level
-        self.analysis_level.data = type(analysis_level)
-        self.analysis_level.subform_field = FormField(get_form_for_analysis_level(type(analysis_level)),
-                                                      'subform_analysis_level')
-        self.analysis_level.subform_field.form.fill_from_trait(analysis_level)
+        self.step1_subform.form.analysis_level.data = type(analysis_level)
+        self.step1_subform.form.analysis_level.subform_field = FormField(
+            get_form_for_analysis_level(type(analysis_level)),
+            'subform_analysis_level')
+        self.step1_subform.form.fill_from_trait(trait)
+        self.step2_subform.form.fill_from_trait(trait)
+        self.step1_subform.form.analysis_level.subform_field.form.fill_from_trait(analysis_level)
+
 
     def fill_trait(self, datatype):
         super(IPPipelineCreatorForm, self).fill_trait(datatype)
-        if self.analysis_level.data == IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL:
+        if self.step1_subform.form.analysis_level.data == IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL:
             datatype.analysis_level = PreprocAnalysisLevel()
-        elif self.analysis_level.data == IPPipelineAnalysisLevelsEnum.PARTICIPANT_LEVEL:
+        elif self.step1_subform.form.analysis_level.data == IPPipelineAnalysisLevelsEnum.PARTICIPANT_LEVEL:
             datatype.analysis_level = ParticipantAnalysisLevel()
         else:
             datatype.analysis_level = GroupAnalysisLevel()
 
-        self.analysis_level.subform_field.form.fill_trait(datatype.analysis_level)
+        self.step1_subform.form.fill_trait(datatype)
+        self.step2_subform.form.fill_trait(datatype)
+        self.step1_subform.form.analysis_level.subform_field.form.fill_trait(datatype.analysis_level)
 
     def fill_from_post(self, form_data):
         super(IPPipelineCreatorForm, self).fill_from_post(form_data)
-        if form_data['analysis_level'] == 'preproc':
-            self.analysis_level.subform_field.form = CommonPipelineForm()
-        elif form_data['analysis_level'] == 'participant':
-            self.analysis_level.subform_field.form = ParticipantPipelineForm()
-        else:
-            self.analysis_level.subform_field.form = GroupPipelineForm()
-
-        self.analysis_level.subform_field.form.fill_from_post(form_data)
+        self.step1_subform.form.analysis_level.subform_field.form = get_form_for_analysis_level(
+            self.step1_subform.form.analysis_level.data.value)()
+        self.step1_subform.form.analysis_level.subform_field.form.fill_from_post(form_data)
 
 
 class IPPipelineCreator(ABCAdapter):
