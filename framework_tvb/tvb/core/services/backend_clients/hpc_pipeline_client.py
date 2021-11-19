@@ -32,7 +32,7 @@ import os
 from datetime import datetime
 
 from requests import HTTPError
-from tvb.adapters.creators.pipeline_creator import IPPipelineCreator
+from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel
 from tvb.basic.config.settings import HPCSettings
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
@@ -72,13 +72,12 @@ class HPCPipelineClient(HPCClient):
         """
         storage_path = StorageInterface().get_project_folder(operation.project.name,
                                                              str(operation.id))
-        pipeline_data_zip = os.path.join(storage_path, IPPipelineCreator.PIPELINE_DATASET_FILE)
+        pipeline_data_zip = os.path.join(storage_path, IPPipelineCreatorModel.PIPELINE_DATASET_FILE)
         if not os.path.exists(pipeline_data_zip):
             raise TVBException(
                 "Pipeline input data was not found in the operation folder for operation {}".format(operation.id))
 
-        # TODO: Use actual args path
-        args_file = os.path.join(storage_path, "args.json")
+        args_file = os.path.join(storage_path, IPPipelineCreatorModel.PIPELINE_CONFIG_FILE)
         if not os.path.exists(args_file):
             raise TVBException(
                 "Arguments file for the pipeline script was not found in the operation folder for operation {}".format(
@@ -124,7 +123,7 @@ class HPCPipelineClient(HPCClient):
                                                       TvbProfile.current.hpc.HPC_COMPUTE_SITE)
 
         # TODO: Should we run these steps or these will be run from sh script?
-        zip_path = os.path.join(mount_point, IPPipelineCreator.PIPELINE_DATASET_FILE)
+        zip_path = os.path.join(mount_point, IPPipelineCreatorModel.PIPELINE_DATASET_FILE)
         unzip_path = os.path.join(mount_point, 'Demo_data_pipeline_CON03')
         unzip_archive = site_client.execute('unzip {} -d {}'.format(zip_path, unzip_path))
         unzip_archive.poll()
