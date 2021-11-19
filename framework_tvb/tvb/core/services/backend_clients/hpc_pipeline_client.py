@@ -86,14 +86,16 @@ class HPCPipelineClient(HPCClient):
         return [pipeline_data_zip, args_file]
 
     @staticmethod
-    def _configure_job(mode):
+    def _configure_job(operation_id, mode):
         # type: (int, int) -> (dict, str)
         bash_entrypoint = os.path.join(os.environ[HPCClient.TVB_BIN_ENV_KEY], HPCPipelineClient.SCRIPT_FOLDER_NAME,
                                        HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
 
         # Build job configuration JSON
         # TODO: correct parameters for pipeline to be added (mode, args for containers etc)
-        my_job = {HPCSettings.UNICORE_EXE_KEY: 'sh ' + os.path.basename(bash_entrypoint),
+        my_job = {HPCSettings.UNICORE_JOB_NAME: 'PipelineProcessing_{}'.format(operation_id),
+                  HPCSettings.UNICORE_RESOURCER_KEY: {'Runtime': '23h'},
+                  HPCSettings.UNICORE_EXE_KEY: 'sh ' + os.path.basename(bash_entrypoint),
                   HPCSettings.UNICORE_ARGS_KEY: ['-m {}'.format(mode), '-p $PWD']}
 
         # TODO: Maybe take HPC Project also from GUI?
@@ -106,7 +108,7 @@ class HPCPipelineClient(HPCClient):
     def _launch_job_with_pyunicore(operation, authorization_token):
         # type: (Operation, str) -> Job
         LOGGER.info("Prepare job configuration for operation: {}".format(operation.id))
-        job_config, job_script = HPCPipelineClient._configure_job(4)
+        job_config, job_script = HPCPipelineClient._configure_job(operation.id, 4)
 
         LOGGER.info("Prepare input files: pipeline input data zip file and pipeline arguments json file. ")
         inputs = HPCPipelineClient._prepare_input(operation)
