@@ -37,11 +37,14 @@ given action are described here.
 
 import json
 import sys
+import threading
+
 import cherrypy
 import formencode
 import numpy
 import six
-
+from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel
+from tvb.adapters.forms.form_methods import get_form_method_by_name
 from tvb.basic.neotraits.api import TVBEnum
 from tvb.basic.neotraits.ex import TraitValueError
 from tvb.core.adapters import constants
@@ -58,8 +61,6 @@ from tvb.core.services.exceptions import OperationException
 from tvb.core.services.operation_service import OperationService, RANGE_PARAMETER_1, RANGE_PARAMETER_2
 from tvb.core.services.project_service import ProjectService
 from tvb.core.utils import url2path
-from tvb.storage.storage_interface import StorageInterface
-from tvb.storage.h5.utils import string2bool
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
 from tvb.interfaces.web.controllers.base_controller import BaseController
@@ -69,9 +70,8 @@ from tvb.interfaces.web.controllers.decorators import expose_fragment, handle_er
 from tvb.interfaces.web.controllers.decorators import expose_page, settings, context_selected, expose_numpy_array
 from tvb.interfaces.web.controllers.simulator.simulator_controller import SimulatorController
 from tvb.interfaces.web.entities.context_selected_adapter import SelectedAdapterContext
-from tvb.adapters.forms.form_methods import get_form_method_by_name
-from tvb.adapters.creators.local_connectivity_creator import LocalConnectivityCreatorModel, KEY_LCONN
-from tvb.adapters.creators.pipeline_creator import IPPipelineCreatorModel, KEY_PIPELINE
+from tvb.storage.h5.utils import string2bool
+from tvb.storage.storage_interface import StorageInterface
 
 KEY_CONTENT = ABCDisplayer.KEY_CONTENT
 FILTER_FIELDS = "fields"
@@ -315,9 +315,14 @@ class FlowController(BaseController):
                     common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
                 return {}
 
-            self.operation_services.fire_operation(adapter_instance, common.get_logged_user(), project_id,
-                                                   view_model=view_model,
-                                                   auth_token=common.get_from_session(common.KEY_AUTH_TOKEN))
+            thread = threading.Thread(target=self.operation_services.fire_operation,
+                                      kwargs={'adapter_instance': adapter_instance,
+                                              'current_user': common.get_logged_user(),
+                                              'project_id': project_id,
+                                              'visible': True,
+                                              'view_model': view_model,
+                                              'auth_token': common.get_from_session(common.KEY_AUTH_TOKEN)})
+            thread.start()
             common.set_important_message("Launched an operation.")
 
         except formencode.Invalid as excep:
