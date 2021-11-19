@@ -53,6 +53,7 @@ class OutputVerbosityLevelsEnum(str, TVBEnum):
 
 class IPPipelineCreatorModel(ViewModel):
     PIPELINE_CONFIG_FILE = "pipeline_configurations.json"
+    PIPELINE_DATASET_FILE = "pipeline_dataset.zip"
 
     mri_data = Str(
         label='Select MRI data for upload',
@@ -174,7 +175,7 @@ class IPPipelineCreatorModel(ViewModel):
         }
 
         with open(os.path.join(storage_path, self.PIPELINE_CONFIG_FILE), 'w') as f:
-            json.dump(pipeline_config, f)
+            json.dump(pipeline_config, f, indent=4)
 
 
 KEY_PIPELINE = "ip-pipeline"
@@ -277,7 +278,6 @@ class IPPipelineCreatorForm(ABCAdapterForm):
 class IPPipelineCreator(ABCAdapter):
     _ui_name = "Launch Image Preprocessing Pipeline"
     _ui_description = "Launch Image Preprocessing Pipeline from tvb-web when it is deployed to EBRAINS"
-    PIPELINE_DATASET_FILE = "pipeline_dataset.zip"
 
     def get_form_class(self):
         return IPPipelineCreatorForm

@@ -47,7 +47,7 @@ from inspect import isclass
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
-from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS, ALGORITHMS
+from tvb.config import MEASURE_METRICS_MODULE, MEASURE_METRICS_CLASS, MEASURE_METRICS_MODEL_CLASS, ALGORITHMS, IPPIPELINE_CREATOR_MODULE, IPPIPELINE_CREATOR_CLASS
 from tvb.core.adapters.abcadapter import ABCAdapter, AdapterLaunchModeEnum
 from tvb.core.adapters.exceptions import LaunchException
 from tvb.core.entities.generic_attributes import GenericAttributes
@@ -198,6 +198,14 @@ class OperationService:
         operation = dao.store_entity(operation)
 
         self.store_view_model(operation, project, view_model)
+
+        if view_model.__module__ == IPPIPELINE_CREATOR_MODULE:
+            storage_path = StorageInterface().get_project_folder(project.name, str(operation.id))
+            dest_path = os.path.join(storage_path, view_model.PIPELINE_DATASET_FILE)
+            StorageInterface.copy_file(view_model.mri_data, dest_path)
+            view_model.mri_data = dest_path
+            h5.store_view_model(view_model, storage_path)
+            view_model.to_json(storage_path)
 
         return operation
 
