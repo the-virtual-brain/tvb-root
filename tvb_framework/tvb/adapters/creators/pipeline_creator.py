@@ -125,11 +125,16 @@ class IPPipelineCreatorModel(ViewModel):
         label="No Reconall"
     )
 
-    step2_parameters = List(
-        of=str,
-        label='Parameters',
-        choices=('6 DoF', 'MNI normalization'),
-        required=False
+    dof_6 = Attr(
+        field_type=bool,
+        required=False,
+        label="6 DoF"
+    )
+
+    mni_normalization = Attr(
+        field_type=bool,
+        required=False,
+        label="MNI normalization"
     )
 
     step3_choice = Attr(
@@ -161,7 +166,8 @@ class IPPipelineCreatorModel(ViewModel):
                 'skip_bids': self.skip_bids,
                 'anat_only': self.anat_only,
                 'no_reconall': self.no_reconall,
-                'parameters': self.step2_parameters
+                'dof_6': self.dof_6,
+                'mni_normalization': self.mni_normalization
             },
             'freesurfer': self.step3_choice,
             'tvb_converter': self.step4_choice,
@@ -194,7 +200,8 @@ class PipelineStep2Form(Form):
         self.skip_bids = BoolField(IPPipelineCreatorModel.skip_bids)
         self.anat_only = BoolField(IPPipelineCreatorModel.anat_only)
         self.no_reconall = BoolField(IPPipelineCreatorModel.no_reconall)
-        self.step2_parameters = MultiSelectField(IPPipelineCreatorModel.step2_parameters)
+        self.dof_6 = BoolField(IPPipelineCreatorModel.dof_6)
+        self.mni_normalization = BoolField(IPPipelineCreatorModel.mni_normalization)
 
 
 class IPPipelineCreatorForm(ABCAdapterForm):
