@@ -51,6 +51,7 @@ from tvb.core.entities.storage import dao
 from tvb.core.services.exceptions import RemoveDataTypeException
 from tvb.core.services.exceptions import ServicesBaseException, ProjectServiceException
 from tvb.core.services.import_service import ImportService
+from tvb.core.services.hpc_operation_service import HPCOperationService
 from tvb.core.services.operation_service import OperationService
 from tvb.interfaces.web.controllers import common
 from tvb.interfaces.web.controllers.autologging import traced
@@ -246,6 +247,9 @@ class ProjectController(BaseController):
         """
         if (project_id is None) or (not int(project_id)):
             self.redirect('/project')
+
+        auth_token = common.get_from_session(common.KEY_AUTH_TOKEN)
+        HPCOperationService.check_operations_job(auth_token, algos=["IPPipelineCreator"])
 
         ## Toggle filters
         filters = self.__get_operations_filters()
