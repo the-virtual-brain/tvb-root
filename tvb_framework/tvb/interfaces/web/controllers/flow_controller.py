@@ -317,7 +317,8 @@ class FlowController(BaseController):
                     common.set_error_message("Invalid result returned from Displayer! Dictionary is expected!")
                 return {}
 
-            self.operation_services.fire_operation(adapter_instance, user, project_id, view_model=view_model)
+            self.operation_services.fire_operation(adapter_instance, user, project_id, view_model=view_model,
+                                                   auth_token=common.get_from_session(common.KEY_AUTH_TOKEN))
             common.set_important_message("Launched an operation.")
 
         except formencode.Invalid as excep:

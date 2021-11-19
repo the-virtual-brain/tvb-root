@@ -100,6 +100,7 @@ class UserController(BaseController):
                     password = data[KEY_PASSWORD]
                     user = self.user_service.check_login(username, password)
                 if user is not None:
+                    common.add2session(common.KEY_AUTH_TOKEN, auth_token)
                     common.add2session(common.KEY_USER, user)
                     common.set_info_message('Welcome ' + user.display_name)
                     self.logger.debug("User " + user.username + " has just logged in!")
