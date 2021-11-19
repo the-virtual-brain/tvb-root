@@ -126,19 +126,19 @@ class HPCPipelineClient(HPCClient):
         zip_path = os.path.join(mount_point, IPPipelineCreatorModel.PIPELINE_DATASET_FILE)
         unzip_path = os.path.join(mount_point, 'Demo_data_pipeline_CON03')
         unzip_archive = site_client.execute('unzip {} -d {}'.format(zip_path, unzip_path))
-        unzip_archive.poll()
+        HPCPipelineClient._poll_job(unzip_archive)
 
         script_path = os.path.join(mount_point, HPCSettings.HPC_PIPELINE_LAUNCHER_SH_SCRIPT)
         install_datalad = site_client.execute('sh {} -m 0 -p {}'.format(script_path, os.path.normpath(mount_point)))
-        install_datalad.poll()
+        HPCPipelineClient._poll_job(install_datalad)
         HPCPipelineClient._transfer_logs(site_client, install_datalad, job, 'install_datalad')
 
         pull_fmri = site_client.execute('sh {} -m 11 -p {}'.format(script_path, os.path.normpath(mount_point)))
-        pull_fmri.poll()
+        HPCPipelineClient._poll_job(pull_fmri)
         HPCPipelineClient._transfer_logs(site_client, pull_fmri, job, 'pull_fmri')
 
         create_datasets = site_client.execute('sh {} -m 2 -p {}'.format(script_path, os.path.normpath(mount_point)))
-        create_datasets.poll()
+        HPCPipelineClient._poll_job(create_datasets)
         HPCPipelineClient._transfer_logs(site_client, create_datasets, job, 'create_datasets')
 
         try:
