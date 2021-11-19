@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-from tvb.core.neotraits.h5 import H5File, Scalar, Reference, SparseMatrix, EquationScalar
+from tvb.core.neotraits.h5 import H5File, Scalar, Reference, SparseMatrix, ScalarWithParameters
 from tvb.datatypes.local_connectivity import LocalConnectivity
 
 
@@ -36,7 +36,7 @@ class LocalConnectivityH5(H5File):
         super(LocalConnectivityH5, self).__init__(path)
         self.surface = Reference(LocalConnectivity.surface, self)
         self.matrix = SparseMatrix(LocalConnectivity.matrix, self)
-        self.equation = EquationScalar(LocalConnectivity.equation, self)
+        self.equation = ScalarWithParameters(LocalConnectivity.equation, self)
         self.cutoff = Scalar(LocalConnectivity.cutoff, self)
 
     def store(self, datatype, scalars_only=False, store_references=True):

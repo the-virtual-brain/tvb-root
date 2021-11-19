@@ -148,7 +148,7 @@ class FlowController(BaseController):
                                       title="Select an algorithm", displayControl=False, subsection_name='step',
                                       submenu_list=self.connectivity_submenu)
         common.add2session(KEY_LCONN, LocalConnectivityCreatorModel)
-        common.add2session(KEY_PIPELINE, IPPipelineCreatorModel)
+        self.context.add_view_model_to_session(IPPipelineCreatorModel())
         return self.fill_default_attributes(template_specification)
 
     @staticmethod
