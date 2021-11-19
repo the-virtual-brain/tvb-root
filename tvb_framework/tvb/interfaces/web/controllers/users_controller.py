@@ -90,6 +90,7 @@ class UserController(BaseController):
 
             try:
                 data = form.to_python(data)
+                auth_token = None
                 if keycloak_login:
                     auth_token = data[KEY_AUTH_TOKEN]
                     kc_user_info = AuthorizationManager(
@@ -100,7 +101,8 @@ class UserController(BaseController):
                     password = data[KEY_PASSWORD]
                     user = self.user_service.check_login(username, password)
                 if user is not None:
-                    common.add2session(common.KEY_AUTH_TOKEN, auth_token)
+                    if auth_token is not None:
+                        common.add2session(common.KEY_AUTH_TOKEN, auth_token)
                     common.add2session(common.KEY_USER, user)
                     common.set_info_message('Welcome ' + user.display_name)
                     self.logger.debug("User " + user.username + " has just logged in!")
