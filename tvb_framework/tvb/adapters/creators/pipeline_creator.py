@@ -27,7 +27,7 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
-
+import json
 import os
 
 from tvb.adapters.forms.form_methods import PIPELINE_KEY
@@ -44,7 +44,7 @@ from tvb.storage.storage_interface import StorageInterface
 from tvb.core.neocom import h5
 
 
-class OutputVerbosityLevelsEnum(TVBEnum):
+class OutputVerbosityLevelsEnum(str, TVBEnum):
     LEVEL_1 = 1
     LEVEL_2 = 2
     LEVEL_3 = 3
@@ -52,6 +52,8 @@ class OutputVerbosityLevelsEnum(TVBEnum):
 
 
 class IPPipelineCreatorModel(ViewModel):
+    PIPELINE_CONFIG_FILE = "pipeline_configurations.json"
+
     mri_data = Str(
         label='Select MRI data for upload',
         default='enter path here'
@@ -83,6 +85,19 @@ class IPPipelineCreatorModel(ViewModel):
         label="Run step 1: MRtrix3",
     )
 
+    output_verbosity = EnumAttr(
+        label="Select Output Verbosity",
+        default=OutputVerbosityLevelsEnum.LEVEL_1,
+        doc="""Select the verbosity of script output."""
+    )
+
+    analysis_level = Attr(
+        field_type=PipelineAnalysisLevel,
+        label="Analysis Level",
+        doc="""Select the analysis level that the pipeline will be launched on.""",
+        default=PreprocAnalysisLevel()
+    )
+
     step2_choice = Attr(
         field_type=bool,
         default=False,
@@ -110,6 +125,13 @@ class IPPipelineCreatorModel(ViewModel):
         label="No Reconall"
     )
 
+    step2_parameters = List(
+        of=str,
+        label='Parameters',
+        choices=('6 DoF', 'MNI normalization'),
+        required=False
+    )
+
     step3_choice = Attr(
         field_type=bool,
         default=False,
@@ -122,33 +144,30 @@ class IPPipelineCreatorModel(ViewModel):
         label="Run step 4: tvb-pipeline-converter",
     )
 
-    output_verbosity = EnumAttr(
-        label="Select Output Verbosity",
-        default=OutputVerbosityLevelsEnum.LEVEL_1,
-        doc="""Select the verbosity of script output."""
-    )
+    def to_json(self, storage_path):
+        pipeline_config = {
+            'mri_data': os.path.basename(self.mri_data),
+            'participant_label': self.participant_label,
+            'nr_of_cpus': self.nr_of_cpus,
+            'estimated_time': self.estimated_time,
+            'step1_choice': self.step1_choice,
+            'step1_parameters': {
+                                'output_verbosity': self.output_verbosity,
+                                'analysis_level': str(self.analysis_level),
+                                'analysis_level_config': self.analysis_level.parameters,
+                                },
+            'step2_choice': self.step2_choice,
+            'step2_parameters': {
+                                'skip_bids': self.skip_bids,
+                                'anat_only': self.anat_only,
+                                'no_reconall': self.no_reconall,
+                                },
+            'step3_choice': self.step3_choice,
+            'step4_choice': self.step4_choice,
+        }
 
-    analysis_level = Attr(
-        field_type=PipelineAnalysisLevel,
-        label="Analysis Level",
-        doc="""Select the analysis level that the pipeline will be launched on.""",
-        default=PreprocAnalysisLevel()
-    )
-
-    stream_lines = Int(
-        label="Number of stream lines",
-        required=False,
-        default=1,
-        doc="""The number of streamlines to generate for each subject (will be determined heuristically
-         if not explicitly set)."""
-    )
-
-    step_1_parameters = List(
-        of=str,
-        label='Parameters',
-        choices=('6 DoF', 'MNI normalization'),
-        required=False
-    )
+        with open(os.path.join(storage_path, self.PIPELINE_CONFIG_FILE), 'w') as f:
+            json.dump(pipeline_config, f)
 
 
 KEY_PIPELINE = "ip-pipeline"
@@ -179,7 +198,7 @@ class IPPipelineCreatorForm(ABCAdapterForm):
         self.skip_bids = BoolField(IPPipelineCreatorModel.skip_bids)
         self.anat_only = BoolField(IPPipelineCreatorModel.anat_only)
         self.no_reconall = BoolField(IPPipelineCreatorModel.no_reconall)
-        self.parameters = MultiSelectField(IPPipelineCreatorModel.step_1_parameters)
+        self.step2_parameters = MultiSelectField(IPPipelineCreatorModel.step2_parameters)
 
         self.step3_choice = BoolField(IPPipelineCreatorModel.step3_choice)
         self.step4_choice = BoolField(IPPipelineCreatorModel.step4_choice)
@@ -206,7 +225,7 @@ class IPPipelineCreatorForm(ABCAdapterForm):
         analysis_level = trait.analysis_level
         self.analysis_level.data = type(analysis_level)
         self.analysis_level.subform_field = FormField(get_form_for_analysis_level(type(analysis_level)),
-                                               'subform_analysis_level')
+                                                      'subform_analysis_level')
         self.analysis_level.subform_field.form.fill_from_trait(analysis_level)
 
     def fill_trait(self, datatype):
@@ -256,3 +275,5 @@ class IPPipelineCreator(ABCAdapter):
         StorageInterface.copy_file(view_model.mri_data, dest_path)
         view_model.mri_data = dest_path
         h5.store_view_model(view_model, storage_path)
+
+        view_model.to_json(storage_path)
