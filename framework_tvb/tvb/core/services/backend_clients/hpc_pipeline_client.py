@@ -154,6 +154,7 @@ class HPCPipelineClient(HPCClient):
     def _transfer_logs(site_client, from_job, to_job, files_prefix, to_folder='intermediary_logs'):
         from_job_mount_point = from_job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
         to_job_mount_point = to_job.working_dir.properties[HPCSettings.JOB_MOUNT_POINT_KEY]
+        LOGGER.info("Transfer logs from {} to {}".format(from_job_mount_point, to_job_mount_point))
         make_logs_dir = site_client.execute("mkdir -p {}{}".format(to_job_mount_point, to_folder))
         make_logs_dir.poll()
         command = 'cp {}{} {}{}/{}-{}'
