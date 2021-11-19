@@ -29,6 +29,7 @@
 #
 
 import os
+import time
 from contextlib import closing
 from enum import Enum
 from threading import Thread, Event
@@ -138,6 +139,12 @@ class HPCClient(BackendClient):
         transport = unicore_client.Transport(auth_token)
         registry = unicore_client.Registry(transport, registry_url)
         return registry.site(supercomputer)
+
+    @staticmethod
+    def _poll_job(job):
+        '''wait until job completes'''
+        while job.properties['status'] not in (HPCJobStatus.SUCCESSFUL, HPCJobStatus.FAILED):
+            time.sleep(5 + 0.1)
 
     @staticmethod
     def _create_job_with_pyunicore(pyunicore_client, job_description, job_script, inputs, inputs_subfolder=''):
