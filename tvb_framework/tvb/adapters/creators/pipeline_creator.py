@@ -150,20 +150,21 @@ class IPPipelineCreatorModel(ViewModel):
             'participant_label': self.participant_label,
             'nr_of_cpus': self.nr_of_cpus,
             'estimated_time': self.estimated_time,
-            'step1_choice': self.step1_choice,
-            'step1_parameters': {
+            'mrtrix': self.step1_choice,
+            'mrtrix_parameters': {
                                 'output_verbosity': self.output_verbosity,
                                 'analysis_level': str(self.analysis_level),
                                 'analysis_level_config': self.analysis_level.parameters,
                                 },
-            'step2_choice': self.step2_choice,
-            'step2_parameters': {
+            'fmriprep': self.step2_choice,
+            'fmriprip_parameters': {
                                 'skip_bids': self.skip_bids,
                                 'anat_only': self.anat_only,
                                 'no_reconall': self.no_reconall,
+                                'parameters': self.step2_parameters
                                 },
-            'step3_choice': self.step3_choice,
-            'step4_choice': self.step4_choice,
+            'freesurfer': self.step3_choice,
+            'tvb_converter': self.step4_choice,
         }
 
         with open(os.path.join(storage_path, self.PIPELINE_CONFIG_FILE), 'w') as f:

@@ -70,7 +70,7 @@ class PreprocAnalysisLevel(PipelineAnalysisLevel):
         default=lambda: {"t1w_preproc_path": ""})
 
     def __str__(self):
-        return "Preproc Analysis Level"
+        return "preproc"
 
 
 class ParticipantAnalysisLevel(PipelineAnalysisLevel):
@@ -81,7 +81,7 @@ class ParticipantAnalysisLevel(PipelineAnalysisLevel):
                          "template_reg": TemplateRegOptionsEnum.ANTS_TEMPLATE_REG})
 
     def __str__(self):
-        return "Participant Analysis Level"
+        return "participant"
 
 
 class GroupAnalysisLevel(PipelineAnalysisLevel):
@@ -91,4 +91,4 @@ class GroupAnalysisLevel(PipelineAnalysisLevel):
         default=lambda: {"group_participant_label": "default", "session_label": "default"})
 
     def __str__(self):
-        return "Group Analysis Level"
+        return "group"
