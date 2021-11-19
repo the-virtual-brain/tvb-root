@@ -69,6 +69,9 @@ class PreprocAnalysisLevel(PipelineAnalysisLevel):
         label="Linear Parameters",
         default=lambda: {"t1w_preproc_path": ""})
 
+    def __str__(self):
+        return "Preproc Analysis Level"
+
 
 class ParticipantAnalysisLevel(PipelineAnalysisLevel):
     parameters = Attr(
@@ -77,9 +80,15 @@ class ParticipantAnalysisLevel(PipelineAnalysisLevel):
         default=lambda: {"t1w_preproc_path": "", "parcellation": ParcellationOptionsEnum.AAL_PARC, "stream_lines": 1,
                          "template_reg": TemplateRegOptionsEnum.ANTS_TEMPLATE_REG})
 
+    def __str__(self):
+        return "Participant Analysis Level"
+
 
 class GroupAnalysisLevel(PipelineAnalysisLevel):
     parameters = Attr(
         field_type=dict,
         label="Linear Parameters",
         default=lambda: {"group_participant_label": "default", "session_label": "default"})
+
+    def __str__(self):
+        return "Group Analysis Level"
