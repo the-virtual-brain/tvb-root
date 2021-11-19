@@ -146,8 +146,7 @@ class FlowController(BaseController):
         template_specification = dict(mainContent="header_menu", section_name='connectivity', controlPage=None,
                                       title="Select an algorithm", displayControl=False, subsection_name='step',
                                       submenu_list=self.connectivity_submenu)
-        common.add2session(KEY_LCONN, LocalConnectivityCreatorModel)
-        common.add2session(KEY_PIPELINE, IPPipelineCreatorModel)
+        self.context.add_view_model_to_session(IPPipelineCreatorModel())
         return self.fill_default_attributes(template_specification)
 
     @staticmethod
@@ -685,7 +684,7 @@ class FlowController(BaseController):
         subform_info = get_form_method_by_name(form_method_key)
         data_class = TVBEnum.string_to_enum(list(subform_info[1]), data_name).value
 
-        vm = common.get_from_session(vm_session_key)
+        vm = self.context.get_view_model_from_session()
         setattr(vm, form_method_key.lower(), data_class())
 
         adapter_form = subform_info[0](data_class)()

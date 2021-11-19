@@ -29,28 +29,16 @@
 #
 
 """
-Dict to be used to rerender subforms when a parent form is refreshed.
-
 .. moduleauthor:: Robert Vincze <robert.vincze@codemart.ro>
 """
-
-from tvb.adapters.forms.equation_forms import get_form_for_equation, SpatialEquationsEnum, TemporalEquationsEnum, \
-    SurfaceModelEquationsEnum
-from tvb.adapters.forms.pipeline_forms import CommonPipelineForm, ParticipantPipelineForm, GroupPipelineForm, \
-    IPPipelineAnalysisLevelsEnum, get_form_for_analysis_level
-
-SPATIAL_EQ_KEY = "SPATIAL_EQ"
-TEMPORAL_EQ_KEY = "TEMPORAL_EQ"
-SURFACE_EQ_KEY = "SURFACE_EQ"
-PIPELINE_KEY = "PIPELINE"
+from tvb.basic.neotraits.api import HasTraits, Attr
 
 
-def get_form_method_by_name(form_name):
-    form_name_to_form_methods = {
-        SPATIAL_EQ_KEY: (get_form_for_equation, SpatialEquationsEnum),
-        TEMPORAL_EQ_KEY: (get_form_for_equation, TemporalEquationsEnum),
-        SURFACE_EQ_KEY: (get_form_for_equation, SurfaceModelEquationsEnum),
-        PIPELINE_KEY: (get_form_for_analysis_level, IPPipelineAnalysisLevelsEnum)
-    }
-
-    return form_name_to_form_methods.get(form_name)
+class TraitsWithParameters(HasTraits):
+    parameters = Attr(
+        field_type=dict,
+        label="Parameters in a dictionary.",
+        default=lambda: {},
+        doc="""Should be a list of the parameters and their meaning, Traits
+                should be able to take defaults and sensible ranges from any
+                traited information that was provided.""")

@@ -1209,6 +1209,15 @@ function prepareRefreshSubformUrl(currentElem, subformDiv, sessionKey, formKey) 
     return '/flow/refresh_subform/' + currentElem.value + "/" + formKey + "/" + sessionKey;
 }
 
+//These 2 exist just to avoid a JS error in case there is no implementation somewhere else
+function setEventsOnFormFields(){
+
+}
+
+function plotEquation(){
+
+}
+
 function refreshSubform(currentElem, elementType, subformDiv, sessionKey, formKey) {
     let url = prepareRefreshSubformUrl(currentElem, subformDiv, sessionKey, formKey);
     if (url.startsWith('/')) {

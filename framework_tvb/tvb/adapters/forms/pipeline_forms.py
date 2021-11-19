@@ -34,51 +34,15 @@
 
 from tvb.core.neotraits.forms import Form, SelectField, IntField, StrField
 from tvb.core.neotraits.view_model import Str
-from tvb.basic.neotraits.api import EnumAttr, TVBEnum, Int, TupleEnum, HasTraits
-
-
-class ParcellationOptionsEnum(TVBEnum):
-    AAL_PARC = "aal"
-    AAL2_PARC = "aal2"
-    BRAINNETOME_PARC = "brainnetome246fs"
-    CRADDOCK200_PARC = "craddock200"
-    CRADDOCK400_PARC = "craddock400"
-    DESIKAN_PARC = "desikan"
-    DESTRIEUX_PARC = "destrieux"
-    HCPMMP1_PARC = "hcpmmp1"
-    PERRY512_PARC = "perry512"
-    YEO7fs_PARC = "yeo7fs"
-    YEO7mni_PARC = "yeo7mni"
-    YEO17fs_PARC = "yeo17fs"
-    YEO17mni_PARC = "yeo17mni"
-
-
-class TemplateRegOptionsEnum(TVBEnum):
-    ANTS_TEMPLATE_REG = "ants"
-    FSL_TEMPLATE_REG = "fsl"
+from tvb.basic.neotraits.api import EnumAttr, TVBEnum, Int, TupleEnum, HasTraits, Attr
+from tvb.core.pipeline.analysis_levels import PreprocAnalysisLevel, ParticipantAnalysisLevel, GroupAnalysisLevel, \
+    ParcellationOptionsEnum, TemplateRegOptionsEnum
 
 
 class PipelineForm(Form):
     @staticmethod
     def get_subform_key():
         return "PIPELINE"
-
-
-# The next 4 classes exist only because we need HasTraits object for the enums
-class PipelineAnalysisLevel(HasTraits):
-    pass
-
-
-class PreprocAnalysisLevel(PipelineAnalysisLevel):
-    pass
-
-
-class ParticipantAnalysisLevel(PipelineAnalysisLevel):
-    pass
-
-
-class GroupAnalysisLevel(PipelineAnalysisLevel):
-    pass
 
 
 class CommonPipelineForm(PipelineForm):
@@ -88,8 +52,16 @@ class CommonPipelineForm(PipelineForm):
 
     def __init__(self):
         super(CommonPipelineForm, self).__init__()
-        self.t1w_preproc_path = StrField(Str('t1w_preproc', label='t1w preproc', doc="""Provide a path by which
-         pre-processed T1-weighted image data may be found for the processed participant(s) / session(s) """))
+        self.t1w_preproc_path = StrField(Attr(field_type=str, label='t1w preproc', required=False,
+                                              doc="""Provide a path by which pre-processed T1-weighted image data may
+                                              be found for the processed participant(s) / session(s) """),
+                                         name="t1w_preproc")
+
+    def fill_trait(self, datatype):
+        datatype.parameters['t1w_preproc_path'] = self.t1w_preproc_path.value
+
+    def fill_from_trait(self, trait):
+        self.t1w_preproc_path.data = trait.parameters['t1w_preproc_path']
 
 
 class ParticipantPipelineForm(CommonPipelineForm):
@@ -106,11 +78,23 @@ class ParticipantPipelineForm(CommonPipelineForm):
 
         self.stream_lines = IntField(Int(label="Number of stream lines", required=False, default=1,
                                          doc="""The number of streamlines to generate for each subject (will be 
-                                         determined heuristically if not explicitly set)."""))
+                                         determined heuristically if not explicitly set)."""), name="stream_lines")
 
         self.template_reg = SelectField(EnumAttr(label="Template Reg", default=TemplateRegOptionsEnum.ANTS_TEMPLATE_REG,
                                                  doc="""The choice of registration software for mapping subject to
-                                                  template space."""))
+                                                  template space."""), name="template_reg")
+
+    def fill_trait(self, datatype):
+        datatype.parameters['t1w_preproc_path'] = self.t1w_preproc_path.value
+        datatype.parameters['parcellation'] = self.parcellation.value
+        datatype.parameters['stream_lines'] = self.stream_lines.value
+        datatype.parameters['template_reg'] = self.template_reg.value
+
+    def fill_from_trait(self, trait):
+        self.t1w_preproc_path.data = trait.parameters['t1w_preproc_path']
+        self.parcellation.data = trait.parameters['parcellation']
+        self.stream_lines.data = trait.parameters['stream_lines']
+        self.template_reg.data = trait.parameters['template_reg']
 
 
 class GroupPipelineForm(PipelineForm):
@@ -121,11 +105,20 @@ class GroupPipelineForm(PipelineForm):
     def __init__(self):
         super(GroupPipelineForm, self).__init__()
 
-        self.participant_label = StrField(Str('Participant label(s)', label="Participant label",
-                                              doc="Select one or multiple participant labels by delimiting the names"
-                                                  " with commas."))
+        self.group_participant_label = StrField(Str('Participant label(s)', label="Participant label",
+                                                    doc="Select one or multiple participant labels by delimiting"
+                                                        " the names with commas."), name='group_participant_label')
         self.session_label = StrField(Str('Session label', label="Session label",
-                                          doc="The session(s) within each participant that should be analyzed."))
+                                          doc="The session(s) within each participant that should be analyzed."),
+                                      name='session_label')
+
+    def fill_trait(self, datatype):
+        datatype.parameters['group_participant_label'] = self.group_participant_label.value
+        datatype.parameters['session_label'] = self.session_label.value
+
+    def fill_from_trait(self, trait):
+        self.group_participant_label.data = trait.parameters['group_participant_label']
+        self.session_label.data = trait.parameters['session_label']
 
 
 class IPPipelineAnalysisLevelsEnum(TupleEnum):
@@ -134,7 +127,7 @@ class IPPipelineAnalysisLevelsEnum(TupleEnum):
     GROUP_LEVEL = (GroupAnalysisLevel, "group")
 
 
-def get_analysis_level_form(analysis_level):
+def get_form_for_analysis_level(analysis_level):
     al_form = {
         PreprocAnalysisLevel: CommonPipelineForm,
         ParticipantAnalysisLevel: ParticipantPipelineForm,

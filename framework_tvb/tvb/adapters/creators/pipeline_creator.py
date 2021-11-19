@@ -31,13 +31,15 @@
 import os
 
 from tvb.adapters.forms.form_methods import PIPELINE_KEY
-from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, CommonPipelineForm, PreprocAnalysisLevel, \
-    PipelineAnalysisLevel
+from tvb.adapters.forms.pipeline_forms import IPPipelineAnalysisLevelsEnum, CommonPipelineForm, \
+    ParticipantPipelineForm, GroupPipelineForm, get_form_for_analysis_level
 from tvb.basic.neotraits.api import List, Int, EnumAttr, TVBEnum, Attr
 from tvb.core.adapters.abcadapter import ABCAdapterForm, ABCAdapter
 from tvb.core.neotraits.forms import TraitUploadField, SimpleLabelField, MultiSelectField, SelectField, StrField, \
-    BoolField
+    BoolField, FormField
 from tvb.core.neotraits.view_model import ViewModel, Str
+from tvb.core.pipeline.analysis_levels import PipelineAnalysisLevel, PreprocAnalysisLevel, ParticipantAnalysisLevel, \
+    GroupAnalysisLevel
 from tvb.storage.storage_interface import StorageInterface
 from tvb.core.neocom import h5
 
@@ -51,30 +53,36 @@ class OutputVerbosityLevelsEnum(TVBEnum):
 
 class IPPipelineCreatorModel(ViewModel):
     mri_data = Str(
-        label='Select MRI data for upload'
+        label='Select MRI data for upload',
+        default='enter path here'
     )
 
     participant_label = Str(
         label='Participant Label',
+        default='sub-Con03',
         doc=r"""The filename part after "sub-" in BIDS format"""
     )
 
     step1_choice = Attr(
         field_type=bool,
+        default=False,
         label="Run step 1: MRtrix3",
     )
 
     step2_choice = Attr(
         field_type=bool,
+        default=False,
         label="Run step 2: fmriprep",
     )
 
     step3_choice = Attr(
         field_type=bool,
+        default=False,
         label="Run step 3: freesurfer",
     )
 
     step4_choice = Attr(
+        default=False,
         field_type=bool,
         label="Run step 4: tvb-pipeline-converter",
     )
@@ -88,7 +96,6 @@ class IPPipelineCreatorModel(ViewModel):
     analysis_level = Attr(
         field_type=PipelineAnalysisLevel,
         label="Analysis Level",
-        required=True,
         doc="""Select the analysis level that the pipeline will be launched on.""",
         default=PreprocAnalysisLevel()
     )
@@ -152,6 +159,37 @@ class IPPipelineCreatorForm(ABCAdapterForm):
     @staticmethod
     def get_view_model():
         return IPPipelineCreatorModel
+
+    def fill_from_trait(self, trait):
+        # type: (IPPipelineCreatorModel) -> None
+        super(IPPipelineCreatorForm, self).fill_from_trait(trait)
+        analysis_level = trait.analysis_level
+        self.analysis_level.data = type(analysis_level)
+        self.analysis_level.subform_field = FormField(get_form_for_analysis_level(type(analysis_level)),
+                                               'subform_analysis_level')
+        self.analysis_level.subform_field.form.fill_from_trait(analysis_level)
+
+    def fill_trait(self, datatype):
+        super(IPPipelineCreatorForm, self).fill_trait(datatype)
+        if self.analysis_level.data == IPPipelineAnalysisLevelsEnum.PREPROC_LEVEL:
+            datatype.analysis_level = PreprocAnalysisLevel()
+        elif self.analysis_level.data == IPPipelineAnalysisLevelsEnum.PARTICIPANT_LEVEL:
+            datatype.analysis_level = ParticipantAnalysisLevel()
+        else:
+            datatype.analysis_level = GroupAnalysisLevel()
+
+        self.analysis_level.subform_field.form.fill_trait(datatype.analysis_level)
+
+    def fill_from_post(self, form_data):
+        super(IPPipelineCreatorForm, self).fill_from_post(form_data)
+        if form_data['analysis_level'] == 'preproc':
+            self.analysis_level.subform_field.form = CommonPipelineForm()
+        elif form_data['analysis_level'] == 'participant':
+            self.analysis_level.subform_field.form = ParticipantPipelineForm()
+        else:
+            self.analysis_level.subform_field.form = GroupPipelineForm()
+
+        self.analysis_level.subform_field.form.fill_from_post(form_data)
 
 
 class IPPipelineCreator(ABCAdapter):
