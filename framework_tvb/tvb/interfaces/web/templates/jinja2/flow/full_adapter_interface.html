@@ -42,3 +42,10 @@
         {% endif %}
     </form>
 </div>
+
+<!--! This if statement makes sure that a form won't be resubmitted after refreshing a page -->
+<script>
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
+</script>
