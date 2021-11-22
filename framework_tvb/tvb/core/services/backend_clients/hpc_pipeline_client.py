@@ -37,10 +37,13 @@ from tvb.basic.config.settings import HPCSettings
 from tvb.basic.exceptions import TVBException
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
+from tvb.core.entities.generic_attributes import GenericAttributes
 from tvb.core.entities.model.model_datatype import ZipDatatype
 from tvb.core.entities.model.model_operation import STATUS_ERROR
 from tvb.core.entities.storage import dao
+from tvb.core.neocom import h5
 from tvb.core.services.backend_clients.hpc_client import HPCClient, HPCOperationThread
+from tvb.core.services.exceptions import OperationException
 from tvb.storage.storage_interface import StorageInterface
 
 try:
@@ -269,14 +272,18 @@ class HPCPipelineClient(HPCClient):
         stderr.download(os.path.join(local_logs_dir, stderr_f))
         stdout.download(os.path.join(local_logs_dir, stdout_f))
 
-        output_list = HPCClient._listdir(working_dir, base='intermediary_logs')
+        try:
+            output_list = HPCClient._listdir(working_dir, base='intermediary_logs')
 
-        for output_filename, output_filepath in output_list.items():
-            if type(output_filepath) is not unicore_client.PathFile:
-                LOGGER.info("Object {} is not a file.")
-                continue
-            filename = os.path.join(local_logs_dir, os.path.basename(output_filename))
-            output_filepath.download(filename)
+            for output_filename, output_filepath in output_list.items():
+                if type(output_filepath) is not unicore_client.PathFile:
+                    LOGGER.info("Object {} is not a file.")
+                    continue
+                filename = os.path.join(local_logs_dir, os.path.basename(output_filename))
+                output_filepath.download(filename)
+
+        except OperationException as e:
+            LOGGER.warning("Exception when trying to download intermediary logs from HPC: {}".format(e.message))
 
         project = dao.get_project_by_id(operation.fk_launched_in)
         operation_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
@@ -306,7 +313,15 @@ class HPCPipelineClient(HPCClient):
     @staticmethod
     def update_db_with_results(operation, results_zip):
         # type: (Operation, str) -> (str, int)
+        project = dao.get_project_by_id(operation.fk_launched_in)
+        op_dir = HPCClient.storage_interface.get_project_folder(project.name, str(operation.id))
+        view_model = h5.load_view_model(operation.view_model_gid, op_dir)
+
+        ga = GenericAttributes()
+        ga.fill_from(view_model.generic_attributes)
+
         index = ZipDatatype()
+        index.fill_from_generic_attributes(ga)
         index.fk_from_operation = operation.id
         index.zip_path = results_zip
         dao.store_entity(index)
