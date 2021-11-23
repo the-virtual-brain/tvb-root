@@ -37,6 +37,7 @@ from copy import deepcopy
 from typing import List, Any
 from dataclasses import dataclass, field
 import numpy as np
+from tvb.datatypes.connectivity import Connectivity
 from .simulator import Simulator
 
 @dataclass
@@ -60,6 +61,7 @@ class SimSeq:
         for key, val in updates:
             exec(f'obj.{key} = val',
                  {'obj': obj, 'val': val})
+        self.pos += 1
         return obj
 
 class Metric:
@@ -92,6 +94,7 @@ class PostProcess:
 class Exec:
     pass
 
+@dataclass
 class JobLibExec:
     seq: SimSeq
     post: PostProcess
@@ -101,22 +104,22 @@ class JobLibExec:
         pool = Parallel(n_jobs)
         @delayed
         def job(sim):
-            t, y = sim.run()
+            (t, y), = sim.configure().run()
             return np.hstack([m(t, y) for m in self.post.metrics])
         metrics = pool(job(_) for _ in self.seq)
         self.post.reduction(metrics)
 
 if __name__ == '__main__':
 
-    sim = Simulator()
+    sim = Simulator(connectivity=Connectivity.from_file()).configure() # deepcopy doesn't work on un-configured simulator o_O
     seq = SimSeq(
         template=sim,
         params=['coupling.a'],
-        values=[[_] for _ in 10**np.r_[-4:-1:10j]]
+        values=[[np.r_[_]] for _ in 10**np.r_[-4:-1:10j]]
     )
     pp = PostProcess(
         metrics=[NodeVariability()],
         reduction=SaveMetricsToDisk('foo.npz'),
     )  
-    exe = JobLibExec(seq=seq, post=post)
+    exe = JobLibExec(seq=seq, post=pp)
     exe(n_jobs=4)
