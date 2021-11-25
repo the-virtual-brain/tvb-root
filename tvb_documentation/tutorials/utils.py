@@ -37,22 +37,23 @@ import sys
 from matplotlib.tri import Triangulation
 from matplotlib import pyplot as plt
 
+
 class SimThread(threading.Thread):
-    
+
     def set_sim(self, sim, **kwds):
         self.sim = sim
         self.kwds = kwds
         self.t = -1.0
 
     def run(self):
-        "Convenience method to call the simulator with **kwds and collect output data."
+        """Convenience method to call the simulator with **kwds and collect output data."""
         tic = time.time()
         ts, xs = [], []
-        
+
         for _ in self.sim.monitors:
             ts.append([])
             xs.append([])
-            
+
         for data in self.sim(**self.kwds):
             for tl, xl, t_x in zip(ts, xs, data):
                 if t_x is not None:
@@ -61,36 +62,39 @@ class SimThread(threading.Thread):
                         self.t = t
                     tl.append(t)
                     xl.append(x)
-                    
+
         for i in range(len(ts)):
             ts[i] = numpy.array(ts[i])
             xs[i] = numpy.array(xs[i])
-            
+
         self.results = list(zip(ts, xs))
         self.wall_time = time.time() - tic
-        
+
+
 def formattime(eta):
     m = 60
-    h = m*60
-    d = 24*h
+    h = m * 60
+    d = 24 * h
     msg = ''
     if eta > d:
-        msg += '%d day(s), %d hour(s)' % (eta/d, ((eta/h) % 24))
+        msg += '%d day(s), %d hour(s)' % (eta / d, ((eta / h) % 24))
     elif eta > h:
-        msg += '%d hour(s), %d minute(s)' % (eta/h, ((eta/m) % 60))
+        msg += '%d hour(s), %d minute(s)' % (eta / h, ((eta / m) % 60))
     else:
-        msg += '%d minute(s), %d seconds(s)' % (eta/m, eta%m)    
+        msg += '%d minute(s), %d seconds(s)' % (eta / m, eta % m)
     return msg
 
+
 def pbpct(p=1e2, eta=None, walltime=None):
-    i = int(p/2)
-    msg = '\r[%s%s] %d %%' % ('.'*i, ' '*(50 - i), p)
+    i = int(p / 2)
+    msg = '\r[%s%s] %d %%' % ('.' * i, ' ' * (50 - i), p)
     if eta:
         msg += ', ETA: ' + formattime(eta)
     elif walltime:
         msg += ' Wall Time: ' + formattime(walltime)
     sys.stdout.write(msg)
     sys.stdout.flush()
+
 
 def run_sim_with_progress_bar(sim, simulation_length, polltime=1):
     tic = time.time()
@@ -99,7 +103,7 @@ def run_sim_with_progress_bar(sim, simulation_length, polltime=1):
     ar.start()
     while True:
         prog = ar.t
-        pct = prog*1e2/simulation_length
+        pct = prog * 1e2 / simulation_length
         toc = time.time() - tic
         if pct > 0.0:
             time_per_centile = toc / pct
@@ -110,17 +114,15 @@ def run_sim_with_progress_bar(sim, simulation_length, polltime=1):
         time.sleep(polltime)
         if hasattr(ar, 'wall_time'):
             pbpct(100.0, walltime=ar.wall_time)
-            break 
+            break
     return ar.results
 
-cortex = cortex.Cortex.from_file()
 
-def multiview(data, suptitle='', figsize=(15, 10), **kwds):
+def multiview(data, cortex, suptitle='', figsize=(15, 10), **kwds):
 
-    cs = cortex
-    vtx = cs.vertices
-    tri = cs.triangles
-    rm = cs.region_mapping
+    vtx = cortex.vertices
+    tri = cortex.triangles
+    rm = cortex.region_mapping
     x, y, z = vtx.T
     lh_tri = tri[(rm[tri] < 38).any(axis=1)]
     lh_vtx = vtx[rm < 38]
@@ -140,7 +142,8 @@ def multiview(data, suptitle='', figsize=(15, 10), **kwds):
         'both-superior': Triangulation(y, x, tri[argsort(tz)]),
     }
 
-    def plotview(i, j, k, viewkey, z=None, zlim=None, zthresh=None, suptitle='', shaded=True, cmap=plt.cm.coolwarm, viewlabel=False):
+    def plotview(i, j, k, viewkey, z=None, zlim=None, zthresh=None, suptitle='',
+                 shaded=True, cmap=plt.cm.coolwarm, viewlabel=False):
         v = views[viewkey]
         ax = subplot(i, j, k)
         if z is None:
