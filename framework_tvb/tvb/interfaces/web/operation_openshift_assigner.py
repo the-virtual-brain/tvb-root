@@ -27,13 +27,14 @@
 #   Frontiers in Neuroinformatics (7:10. doi: 10.3389/fninf.2013.00010)
 #
 #
+
 """
 .. moduleauthor:: Bogdan Valean <bogdan.valean@codemart.ro>
 """
-import random
-from time import sleep
 
+import random
 import requests
+from time import sleep
 from tvb.basic.logger.builder import get_logger
 from tvb.basic.profile import TvbProfile
 from tvb.core.entities.model.model_operation import Operation
@@ -52,12 +53,13 @@ if __name__ == '__main__':
             log.info("Found {} operations with the queue full flag set.".format(len(operations)))
             if len(operations) == 0:
                 continue
-            pods, auth_header = KubeNotifier.get_pods(TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
+            pods, auth_header = KubeNotifier.get_pods(
+                TvbProfile.current.web.OPENSHIFT_PROCESSING_OPERATIONS_APPLICATION)
             if pods:
                 random.shuffle(pods)
                 pods_no = len(pods)
                 operations.sort(key=lambda l_operation: l_operation.id)
-                for index, operation in enumerate(operations[0:TvbProfile.current.MAX_THREADS_NUMBER*pods_no]):
+                for index, operation in enumerate(operations[0:TvbProfile.current.MAX_THREADS_NUMBER * pods_no]):
                     pod_ip = pods[index % pods_no]['ip']
                     log.info("Notify pod: {}".format(pod_ip))
                     url_pattern = "http://{}:{}/kube/start_operation_pod/{}"
