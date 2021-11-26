@@ -148,12 +148,7 @@ class ZIPConnectivityImporter(ABCUploader):
         result = Connectivity()
 
         # Fill positions
-        if centres is None:
-            raise Exception("Region centres are required for Connectivity Regions! "
-                            "We expect a file that contains *centres* inside the uploaded ZIP.")
-        expected_number_of_nodes = len(centres)
-        if expected_number_of_nodes < 2:
-            raise Exception("A connectivity with at least 2 nodes is expected")
+        expected_number_of_nodes = self.check_centres(centres)
         result.centres = centres
         if labels_vector is not None:
             result.region_labels = labels_vector
@@ -167,16 +162,8 @@ class ZIPConnectivityImporter(ABCUploader):
             if view_model.normalization:
                 result.weights = result.scaled_weights(view_model.normalization)
 
-        # Fill and check tracts. Allow empty files for tracts, they will be computed by tvb-library.
-        if tract_matrix is not None:
-            if tract_matrix.size != 0:
-                if numpy.any([x < 0 for x in tract_matrix.flatten()]):
-                    raise Exception("Negative values are not accepted in tracts matrix! "
-                                    "Please check your file, and use values >= 0")
-                if tract_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
-                    raise Exception("Unexpected shape for tracts matrix! "
-                                    "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
-            result.tract_lengths = tract_matrix
+        self.check_tracts(tract_matrix, expected_number_of_nodes)
+        result.tract_lengths = tract_matrix
 
         if orientation is not None:
             if len(orientation) != expected_number_of_nodes:
@@ -204,3 +191,27 @@ class ZIPConnectivityImporter(ABCUploader):
 
         result.configure()
         return self.store_complete(result)
+
+    @staticmethod
+    def check_centres(centres):
+        # Fill positions
+        if centres is None:
+            raise Exception("Region centres are required for Connectivity Regions! "
+                            "We expect a file that contains *centres* inside the uploaded ZIP.")
+        expected_number_of_nodes = len(centres)
+        if expected_number_of_nodes < 2:
+            raise Exception("A connectivity with at least 2 nodes is expected")
+
+        return expected_number_of_nodes
+
+    @staticmethod
+    def check_tracts(tract_matrix, expected_number_of_nodes):
+        # Fill and check tracts. Allow empty files for tracts, they will be computed by tvb-library.
+        if tract_matrix is not None:
+            if tract_matrix.size != 0:
+                if numpy.any([x < 0 for x in tract_matrix.flatten()]):
+                    raise Exception("Negative values are not accepted in tracts matrix! "
+                                    "Please check your file, and use values >= 0")
+                if tract_matrix.shape != (expected_number_of_nodes, expected_number_of_nodes):
+                    raise Exception("Unexpected shape for tracts matrix! "
+                                    "Should be %d x %d " % (expected_number_of_nodes, expected_number_of_nodes))
